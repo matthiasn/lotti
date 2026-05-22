@@ -5,11 +5,11 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -65,12 +65,12 @@ void main() {
 
         // Assert
         expect(results.length, equals(3));
-        expect(results[0].choices?.first.delta?.content, equals(chunk1));
+        expect(results[0].choices.first.delta.content, equals(chunk1));
         expect(
-          results[0].choices?.first.delta?.role,
-          equals(ChatCompletionMessageRole.assistant),
+          results[0].choices.first.delta.role,
+          equals(AiMessageRole.assistant),
         );
-        expect(results[1].choices?.first.delta?.content, equals(chunk2));
+        expect(results[1].choices.first.delta.content, equals(chunk2));
 
         // Verify the request
         final captured = verify(
@@ -223,19 +223,16 @@ void main() {
         );
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'get_weather',
-              description: 'Get the weather for a location',
-              parameters: {
-                'type': 'object',
-                'properties': {
-                  'location': {'type': 'string'},
-                },
-                'required': ['location'],
+          const AiTool(
+            name: 'get_weather',
+            description: 'Get the weather for a location',
+            parameters: <String, dynamic>{
+              'type': 'object',
+              'properties': <String, dynamic>{
+                'location': <String, dynamic>{'type': 'string'},
               },
-            ),
+              'required': <String>['location'],
+            },
           ),
         ];
 
@@ -252,14 +249,14 @@ void main() {
 
         // Assert - verify tool calls are parsed
         expect(results.length, equals(2));
-        expect(results[0].choices?.first.delta?.toolCalls, isNotNull);
-        expect(results[0].choices?.first.delta?.toolCalls?.length, equals(1));
+        expect(results[0].choices.first.delta.toolCalls, isNotNull);
+        expect(results[0].choices.first.delta.toolCalls?.length, equals(1));
         expect(
-          results[0].choices?.first.delta?.toolCalls?.first.id,
+          results[0].choices.first.delta.toolCalls?.first.id,
           equals('call_123'),
         );
         expect(
-          results[0].choices?.first.delta?.toolCalls?.first.function?.name,
+          results[0].choices.first.delta.toolCalls?.first.name,
           equals('get_weather'),
         );
 
@@ -346,13 +343,9 @@ void main() {
           (_) async => createSseStreamedResponse(events: events),
         );
 
-        final messages = [
-          const ChatCompletionMessage.system(
-            content: 'You are a helpful assistant.',
-          ),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+        final messages = <AiChatMessage>[
+          const AiSystemMessage('You are a helpful assistant.'),
+          const AiUserMessage(AiUserTextContent('Hello')),
         ];
 
         // Act
@@ -394,20 +387,15 @@ void main() {
           (_) async => createSseStreamedResponse(events: events),
         );
 
-        final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('What is 2+2?'),
-          ),
-          const ChatCompletionMessage.assistant(
+        final messages = <AiChatMessage>[
+          const AiUserMessage(AiUserTextContent('What is 2+2?')),
+          const AiAssistantMessage(
             content: 'Let me calculate that.',
             toolCalls: [
-              ChatCompletionMessageToolCall(
+              AiToolCall(
                 id: 'call_123',
-                type: ChatCompletionMessageToolCallType.function,
-                function: ChatCompletionMessageFunctionCall(
-                  name: 'calculate',
-                  arguments: '{"expression": "2+2"}',
-                ),
+                name: 'calculate',
+                arguments: '{"expression": "2+2"}',
               ),
             ],
           ),
@@ -457,11 +445,8 @@ void main() {
           (_) async => createSseStreamedResponse(events: events),
         );
 
-        final messages = [
-          const ChatCompletionMessage.tool(
-            toolCallId: 'call_123',
-            content: '4',
-          ),
+        final messages = <AiChatMessage>[
+          const AiToolResultMessage(toolCallId: 'call_123', content: '4'),
         ];
 
         // Act
@@ -688,7 +673,7 @@ void main() {
         final results = await stream.toList();
 
         // Assert
-        expect(results[0].choices?.first.delta?.content, equals('Hello world'));
+        expect(results[0].choices.first.delta.content, equals('Hello world'));
       });
 
       test('should handle content as array of text parts', () async {
@@ -727,7 +712,7 @@ void main() {
         final results = await stream.toList();
 
         // Assert - should concatenate text parts
-        expect(results[0].choices?.first.delta?.content, equals('Hello world'));
+        expect(results[0].choices.first.delta.content, equals('Hello world'));
       });
 
       test('should handle content as array of strings', () async {
@@ -763,7 +748,7 @@ void main() {
         final results = await stream.toList();
 
         // Assert
-        expect(results[0].choices?.first.delta?.content, equals('Hello world'));
+        expect(results[0].choices.first.delta.content, equals('Hello world'));
       });
 
       test('should handle null content', () async {
@@ -799,10 +784,10 @@ void main() {
         final results = await stream.toList();
 
         // Assert
-        expect(results[0].choices?.first.delta?.content, isNull);
+        expect(results[0].choices.first.delta.content, isNull);
         expect(
-          results[0].choices?.first.delta?.role,
-          equals(ChatCompletionMessageRole.assistant),
+          results[0].choices.first.delta.role,
+          equals(AiMessageRole.assistant),
         );
       });
 
@@ -839,7 +824,7 @@ void main() {
         final results = await stream.toList();
 
         // Assert
-        expect(results[0].choices?.first.delta?.content, isNull);
+        expect(results[0].choices.first.delta.content, isNull);
       });
 
       test('should stringify non-string, non-list content', () async {
@@ -919,9 +904,9 @@ void main() {
 
         // Assert - should properly buffer and parse both events
         expect(results.length, equals(2));
-        expect(results[0].choices?.first.delta?.content, equals('First chunk'));
+        expect(results[0].choices.first.delta.content, equals('First chunk'));
         expect(
-          results[1].choices?.first.delta?.content,
+          results[1].choices.first.delta.content,
           equals('Second chunk'),
         );
       });
@@ -953,9 +938,9 @@ void main() {
 
         // Assert
         expect(results.length, equals(3));
-        expect(results[0].choices?.first.delta?.content, equals('Chunk 1'));
-        expect(results[1].choices?.first.delta?.content, equals('Chunk 2'));
-        expect(results[2].choices?.first.delta?.content, equals('Chunk 3'));
+        expect(results[0].choices.first.delta.content, equals('Chunk 1'));
+        expect(results[1].choices.first.delta.content, equals('Chunk 2'));
+        expect(results[2].choices.first.delta.content, equals('Chunk 3'));
       });
 
       test('should handle malformed SSE data gracefully', () async {
@@ -988,9 +973,9 @@ data: [DONE]
 
         // Assert - should skip invalid JSON and continue
         expect(results.length, equals(2));
-        expect(results[0].choices?.first.delta?.content, equals('Valid chunk'));
+        expect(results[0].choices.first.delta.content, equals('Valid chunk'));
         expect(
-          results[1].choices?.first.delta?.content,
+          results[1].choices.first.delta.content,
           equals('Another valid'),
         );
       });
@@ -1199,14 +1184,14 @@ data: not valid json 5
 
         // Assert
         expect(results.length, equals(1));
-        final toolCalls = results[0].choices?.first.delta?.toolCalls;
+        final toolCalls = results[0].choices.first.delta.toolCalls;
         expect(toolCalls, isNotNull);
         expect(toolCalls?.length, equals(1));
         expect(toolCalls?.first.id, equals('call_abc123'));
         expect(toolCalls?.first.index, equals(0));
-        expect(toolCalls?.first.function?.name, equals('get_weather'));
+        expect(toolCalls?.first.name, equals('get_weather'));
         expect(
-          toolCalls?.first.function?.arguments,
+          toolCalls?.first.arguments,
           equals('{"location": "Paris"}'),
         );
       });
@@ -1255,10 +1240,10 @@ data: not valid json 5
         final results = await stream.toList();
 
         // Assert
-        final toolCalls = results[0].choices?.first.delta?.toolCalls;
+        final toolCalls = results[0].choices.first.delta.toolCalls;
         expect(toolCalls?.length, equals(2));
-        expect(toolCalls?[0].function?.name, equals('tool_a'));
-        expect(toolCalls?[1].function?.name, equals('tool_b'));
+        expect(toolCalls?[0].name, equals('tool_a'));
+        expect(toolCalls?[1].name, equals('tool_b'));
       });
 
       test('should handle null tool_calls', () async {
@@ -1280,7 +1265,7 @@ data: not valid json 5
         final results = await stream.toList();
 
         // Assert
-        expect(results[0].choices?.first.delta?.toolCalls, isNull);
+        expect(results[0].choices.first.delta.toolCalls, isNull);
       });
     });
 
@@ -1350,8 +1335,8 @@ data: not valid json 5
 
         // Assert
         expect(
-          results[0].choices?.first.finishReason,
-          equals(ChatCompletionFinishReason.stop),
+          results[0].choices.first.finishReason,
+          equals('stop'),
         );
       });
 
@@ -1378,12 +1363,12 @@ data: not valid json 5
 
         // Assert
         expect(
-          results[0].choices?.first.finishReason,
-          equals(ChatCompletionFinishReason.toolCalls),
+          results[0].choices.first.finishReason,
+          equals('tool_calls'),
         );
       });
 
-      test('should fallback to stop for unknown finish reason', () async {
+      test('should pass through unknown finish reason as raw string', () async {
         // Arrange
         final event = {
           'id': 'chatcmpl-test',
@@ -1413,10 +1398,10 @@ data: not valid json 5
 
         final results = await stream.toList();
 
-        // Assert - should fallback to stop
+        // Assert - raw string passes through (no enum mapping)
         expect(
-          results[0].choices?.first.finishReason,
-          equals(ChatCompletionFinishReason.stop),
+          results[0].choices.first.finishReason,
+          equals('unknown_reason'),
         );
       });
     });
@@ -1561,7 +1546,7 @@ data: not valid json 5
         expect(results, isEmpty);
       });
 
-      test('should generate fallback id when missing', () async {
+      test('should default id to empty string when missing', () async {
         // Arrange
         final event = {
           'object': 'chat.completion.chunk',
@@ -1590,11 +1575,11 @@ data: not valid json 5
 
         final results = await stream.toList();
 
-        // Assert - should generate fallback id
-        expect(results[0].id, startsWith('mistral-'));
+        // Assert - parser returns '' for missing id (no synthetic fallback)
+        expect(results[0].id, equals(''));
       });
 
-      test('should generate fallback created when missing', () async {
+      test('should leave created null when missing', () async {
         // Arrange
         final event = {
           'id': 'chatcmpl-test',
@@ -1623,8 +1608,8 @@ data: not valid json 5
 
         final results = await stream.toList();
 
-        // Assert - should have a valid created timestamp
-        expect(results[0].created, isPositive);
+        // Assert - parser passes created through as-is (null when missing)
+        expect(results[0].created, isNull);
       });
     });
 

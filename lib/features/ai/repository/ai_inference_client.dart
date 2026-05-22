@@ -39,6 +39,7 @@ class AiInferenceClient {
     int? maxCompletionTokens,
     List<AiTool>? tools,
     AiToolChoice? toolChoice,
+    AiReasoningEffort? reasoningEffort,
   }) async* {
     final body = <String, dynamic>{
       'model': model,
@@ -50,6 +51,7 @@ class AiInferenceClient {
       if (tools != null && tools.isNotEmpty)
         'tools': tools.map((t) => t.toJson()).toList(),
       'tool_choice': ?toolChoice?.toJson(),
+      'reasoning_effort': ?reasoningEffort?.wire,
     };
 
     final uri = _resolve('chat/completions');

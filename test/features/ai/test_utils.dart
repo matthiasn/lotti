@@ -7,13 +7,13 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../widget_test_utils.dart' show resolveTestTheme;
@@ -384,18 +384,15 @@ class ChecklistTestDataFactory {
     );
   }
 
-  static ChatCompletionMessageToolCall createToolCall({
+  static AiToolCall createToolCall({
     required String functionName,
     required String arguments,
     String? id,
   }) {
-    return ChatCompletionMessageToolCall(
+    return AiToolCall(
       id: id ?? 'tool-1',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: functionName,
-        arguments: arguments,
-      ),
+      name: functionName,
+      arguments: arguments,
     );
   }
 }

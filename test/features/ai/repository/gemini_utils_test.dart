@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 enum _GeneratedGeminiFrame {
   spaces,
@@ -173,20 +173,17 @@ void main() {
       expect(body.containsKey('tools'), isFalse);
     });
 
-    test('maps ChatCompletionTool list to functionDeclarations', () {
+    test('maps AiTool list to functionDeclarations', () {
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'lookup',
-            description: 'lookup something',
-          ),
+        AiTool(
+          name: 'lookup',
+          description: 'lookup something',
+          parameters: <String, dynamic>{},
         ),
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'search',
-          ),
+        AiTool(
+          name: 'search',
+          description: '',
+          parameters: <String, dynamic>{},
         ),
       ];
 
@@ -207,24 +204,19 @@ void main() {
       expect(fn0['name'], 'lookup');
       expect(fn0['description'], 'lookup something');
       expect(fn1['name'], 'search');
-      // parameters omitted when null
-      expect(fn0.containsKey('parameters'), isFalse);
     });
   });
 
   group('GeminiUtils.buildMultiTurnRequestBody', () {
     test('handles malformed JSON in tool call arguments gracefully', () {
       // Tool call with invalid JSON arguments
-      final messages = [
-        const ChatCompletionMessage.assistant(
+      final messages = <AiChatMessage>[
+        const AiAssistantMessage(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: 'not valid json {{{',
-              ),
+              name: 'test_function',
+              arguments: 'not valid json {{{',
             ),
           ],
         ),
@@ -252,16 +244,13 @@ void main() {
     });
 
     test('includes thought signatures in function calls', () {
-      final messages = [
-        const ChatCompletionMessage.assistant(
+      final messages = <AiChatMessage>[
+        const AiAssistantMessage(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{"key": "value"}',
-              ),
+              name: 'test_function',
+              arguments: '{"key": "value"}',
             ),
           ],
         ),
@@ -286,16 +275,13 @@ void main() {
     });
 
     test('omits thought signature when not in map', () {
-      final messages = [
-        const ChatCompletionMessage.assistant(
+      final messages = <AiChatMessage>[
+        const AiAssistantMessage(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{"key": "value"}',
-              ),
+              name: 'test_function',
+              arguments: '{"key": "value"}',
             ),
           ],
         ),
@@ -317,24 +303,18 @@ void main() {
     });
 
     test('handles multiple tool calls with mixed signatures', () {
-      final messages = [
-        const ChatCompletionMessage.assistant(
+      final messages = <AiChatMessage>[
+        const AiAssistantMessage(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'tool-0',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'func_a',
-                arguments: '{}',
-              ),
+              name: 'func_a',
+              arguments: '{}',
             ),
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'func_b',
-                arguments: '{}',
-              ),
+              name: 'func_b',
+              arguments: '{}',
             ),
           ],
         ),
@@ -364,10 +344,8 @@ void main() {
     });
 
     test('converts user message with string content', () {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello, world!'),
-        ),
+      final messages = <AiChatMessage>[
+        const AiUserMessage(AiUserTextContent('Hello, world!')),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -385,10 +363,8 @@ void main() {
     });
 
     test('converts assistant message with text content', () {
-      final messages = [
-        const ChatCompletionMessage.assistant(
-          content: 'I am an assistant response',
-        ),
+      final messages = <AiChatMessage>[
+        const AiAssistantMessage(content: 'I am an assistant response'),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -407,20 +383,17 @@ void main() {
 
     test('converts tool response message with correct function name', () {
       // Include assistant message with tool calls to build the ID->name mapping
-      final messages = [
-        const ChatCompletionMessage.assistant(
+      final messages = <AiChatMessage>[
+        const AiAssistantMessage(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-123',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'lookup_data',
-                arguments: '{}',
-              ),
+              name: 'lookup_data',
+              arguments: '{}',
             ),
           ],
         ),
-        const ChatCompletionMessage.tool(
+        const AiToolResultMessage(
           toolCallId: 'call-123',
           content: 'Tool result data',
         ),
@@ -443,36 +416,10 @@ void main() {
       expect((funcResponse['response'] as Map)['result'], 'Tool result data');
     });
 
-    test('converts function message (legacy format)', () {
-      final messages = [
-        const ChatCompletionMessage.function(
-          name: 'my_function',
-          content: 'Function result',
-        ),
-      ];
-
-      final body = GeminiUtils.buildMultiTurnRequestBody(
-        messages: messages,
-        temperature: 0.7,
-        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
-      );
-
-      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      expect(contents.length, 1);
-      expect(contents.first['role'], 'function');
-      final parts = (contents.first['parts'] as List)
-          .cast<Map<String, dynamic>>();
-      final funcResponse = parts.first['functionResponse'] as Map;
-      expect(funcResponse['name'], 'my_function');
-      expect((funcResponse['response'] as Map)['result'], 'Function result');
-    });
-
     test('skips system messages (handled separately)', () {
-      final messages = [
-        const ChatCompletionMessage.system(content: 'You are a helper'),
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+      final messages = <AiChatMessage>[
+        const AiSystemMessage('You are a helper'),
+        const AiUserMessage(AiUserTextContent('Hello')),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -491,20 +438,15 @@ void main() {
     });
 
     test('includes tools in request body', () {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Call a function'),
-        ),
+      final messages = <AiChatMessage>[
+        const AiUserMessage(AiUserTextContent('Call a function')),
       ];
 
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'my_tool',
-            description: 'Does something',
-            parameters: {'type': 'object', 'properties': <String, dynamic>{}},
-          ),
+        AiTool(
+          name: 'my_tool',
+          description: 'Does something',
+          parameters: {'type': 'object', 'properties': <String, dynamic>{}},
         ),
       ];
 
@@ -526,41 +468,36 @@ void main() {
     });
 
     test('strips additionalProperties from tool parameter schemas', () {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Call a function'),
-        ),
+      final messages = <AiChatMessage>[
+        const AiUserMessage(AiUserTextContent('Call a function')),
       ];
 
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'my_tool',
-            description: 'Does something',
-            parameters: {
-              'type': 'object',
-              'properties': {
-                'title': {
-                  'type': 'string',
-                  'description': 'A title',
-                },
+        AiTool(
+          name: 'my_tool',
+          description: 'Does something',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'title': {
+                'type': 'string',
+                'description': 'A title',
+              },
+              'items': {
+                'type': 'array',
                 'items': {
-                  'type': 'array',
-                  'items': {
-                    'type': 'object',
-                    'properties': {
-                      'name': {'type': 'string'},
-                    },
-                    'required': ['name'],
-                    'additionalProperties': false,
+                  'type': 'object',
+                  'properties': {
+                    'name': {'type': 'string'},
                   },
+                  'required': ['name'],
+                  'additionalProperties': false,
                 },
               },
-              'required': ['title'],
-              'additionalProperties': false,
             },
-          ),
+            'required': ['title'],
+            'additionalProperties': false,
+          },
         ),
       ];
 
@@ -665,16 +602,14 @@ void main() {
 
     test('strips additionalProperties from buildRequestBody tools too', () {
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'my_tool',
-            parameters: {
-              'type': 'object',
-              'properties': <String, dynamic>{},
-              'additionalProperties': false,
-            },
-          ),
+        AiTool(
+          name: 'my_tool',
+          description: '',
+          parameters: {
+            'type': 'object',
+            'properties': <String, dynamic>{},
+            'additionalProperties': false,
+          },
         ),
       ];
 
@@ -694,11 +629,9 @@ void main() {
     });
 
     test('skips assistant message with no content or tool calls', () {
-      final messages = [
-        const ChatCompletionMessage.assistant(),
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+      final messages = <AiChatMessage>[
+        const AiAssistantMessage(),
+        const AiUserMessage(AiUserTextContent('Hello')),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -714,10 +647,8 @@ void main() {
     });
 
     test('handles empty string system message', () {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+      final messages = <AiChatMessage>[
+        const AiUserMessage(AiUserTextContent('Hello')),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -732,10 +663,8 @@ void main() {
     });
 
     test('includes maxTokens in generation config', () {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+      final messages = <AiChatMessage>[
+        const AiUserMessage(AiUserTextContent('Hello')),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -750,15 +679,11 @@ void main() {
     });
 
     test('converts user message with content parts including image', () {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: 'Describe this: '),
-            ChatCompletionMessageContentPart.image(
-              imageUrl: ChatCompletionMessageImageUrl(
-                url: 'data:image/png;base64,abc123',
-              ),
-            ),
+      final messages = <AiChatMessage>[
+        const AiUserMessage(
+          AiUserPartsContent([
+            AiTextPart('Describe this: '),
+            AiImagePart('data:image/png;base64,abc123'),
           ]),
         ),
       ];
@@ -780,16 +705,11 @@ void main() {
     });
 
     test('converts user message with audio content part', () {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: 'Transcribe: '),
-            ChatCompletionMessageContentPart.audio(
-              inputAudio: ChatCompletionMessageInputAudio(
-                data: 'base64audiodata',
-                format: ChatCompletionMessageInputAudioFormat.wav,
-              ),
-            ),
+      final messages = <AiChatMessage>[
+        const AiUserMessage(
+          AiUserPartsContent([
+            AiTextPart('Transcribe: '),
+            AiAudioPart(data: 'base64audiodata', format: AiAudioFormat.wav),
           ]),
         ),
       ];
@@ -807,58 +727,10 @@ void main() {
       expect(parts.first['text'], contains('[audio]'));
     });
 
-    test('skips developer messages (not supported by Gemini)', () {
-      final messages = [
-        const ChatCompletionMessage.developer(
-          content: ChatCompletionDeveloperMessageContent.text(
-            'Developer instructions',
-          ),
-        ),
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
-      ];
-
-      final body = GeminiUtils.buildMultiTurnRequestBody(
-        messages: messages,
-        temperature: 0.7,
-        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
-      );
-
-      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      // Should only have user message, developer is skipped
-      expect(contents.length, 1);
-      expect(contents.first['role'], 'user');
-    });
-
-    test('handles function message with null content', () {
-      final messages = [
-        const ChatCompletionMessage.function(
-          name: 'my_function',
-          content: null,
-        ),
-      ];
-
-      final body = GeminiUtils.buildMultiTurnRequestBody(
-        messages: messages,
-        temperature: 0.7,
-        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
-      );
-
-      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      expect(contents.length, 1);
-      final parts = (contents.first['parts'] as List)
-          .cast<Map<String, dynamic>>();
-      final funcResponse = parts.first['functionResponse'] as Map;
-      expect(funcResponse['name'], 'my_function');
-      // Should use empty string for null content
-      expect((funcResponse['response'] as Map)['result'], '');
-    });
-
     test('falls back to toolCallId when function name not in mapping', () {
       // Tool response without corresponding assistant message
-      final messages = [
-        const ChatCompletionMessage.tool(
+      final messages = <AiChatMessage>[
+        const AiToolResultMessage(
           toolCallId: 'unknown-id',
           content: 'Result',
         ),

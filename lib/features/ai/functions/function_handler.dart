@@ -1,30 +1,30 @@
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
-/// Base interface for handling different function types in conversations
+/// Base interface for handling different function types in conversations.
 abstract class FunctionHandler {
-  /// The name of the function this handler processes
+  /// The name of the function this handler processes.
   String get functionName;
 
-  /// Process a function call and return the result
-  FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call);
+  /// Process a function call and return the result.
+  FunctionCallResult processFunctionCall(AiToolCall call);
 
-  /// Check if this result would be a duplicate
+  /// Check if this result would be a duplicate.
   bool isDuplicate(FunctionCallResult result);
 
-  /// Get a retry prompt for failed items of this type
+  /// Get a retry prompt for failed items of this type.
   String getRetryPrompt({
     required List<FunctionCallResult> failedItems,
     required List<String> successfulDescriptions,
   });
 
-  /// Extract the human-readable description from the result
+  /// Extract the human-readable description from the result.
   String? getDescription(FunctionCallResult result);
 
-  /// Create a tool response message
+  /// Create a tool response message.
   String createToolResponse(FunctionCallResult result);
 }
 
-/// Result of processing a function call
+/// Result of processing a function call.
 class FunctionCallResult {
   const FunctionCallResult({
     required this.success,

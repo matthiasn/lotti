@@ -14,8 +14,8 @@ extension UnifiedAiResponseProcessor on UnifiedAiInferenceRepository {
     required bool isRerun,
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
-    List<ChatCompletionMessageToolCall>? toolCalls,
-    CompletionUsage? usage,
+    List<AiToolCall>? toolCalls,
+    AiUsage? usage,
     int? durationMs,
     double? temperature,
     String? effectiveSystemMessage,
@@ -82,7 +82,7 @@ extension UnifiedAiResponseProcessor on UnifiedAiInferenceRepository {
       type: promptConfig.aiResponseType,
       inputTokens: usage?.promptTokens,
       outputTokens: usage?.completionTokens,
-      thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
+      thoughtsTokens: usage?.reasoningTokens,
       durationMs: durationMs,
     );
 

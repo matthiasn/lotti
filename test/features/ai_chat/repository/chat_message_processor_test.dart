@@ -3,54 +3,63 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
+String? _messageContent(AiChatMessage message) {
+  if (message is AiSystemMessage) return message.content;
+  if (message is AiAssistantMessage) return message.content;
+  if (message is AiToolResultMessage) return message.content;
+  if (message is AiUserMessage) {
+    final content = message.content;
+    if (content is AiUserTextContent) return content.text;
+  }
+  return null;
+}
+
 /// A streamed chunk carrying only [content].
-CreateChatCompletionStreamResponse _contentChunk(String content) {
-  return CreateChatCompletionStreamResponse(
+AiStreamChunk _contentChunk(String content) {
+  return AiStreamChunk(
     id: 'response-1',
     created: 0,
     model: 'model',
     choices: [
-      ChatCompletionStreamResponseChoice(
+      AiStreamChoice(
         index: 0,
-        delta: ChatCompletionStreamResponseDelta(content: content),
+        delta: AiStreamDelta(content: content),
       ),
     ],
   );
 }
 
 /// A streamed chunk carrying a single tool-call delta.
-CreateChatCompletionStreamResponse _toolCallChunk({
+AiStreamChunk _toolCallChunk({
   required String arguments,
   int index = 0,
   String? id,
   String? name,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return AiStreamChunk(
     id: 'response-1',
     created: 0,
     model: 'model',
     choices: [
-      ChatCompletionStreamResponseChoice(
+      AiStreamChoice(
         index: 0,
-        delta: ChatCompletionStreamResponseDelta(
+        delta: AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: index,
               id: id,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: name,
-                arguments: arguments,
-              ),
+              name: name,
+              arguments: arguments,
             ),
           ],
         ),
@@ -105,8 +114,8 @@ void main() {
 
         // Assert
         expect(result.length, 2);
-        expect(result[0].role, ChatCompletionMessageRole.user);
-        expect(result[1].role, ChatCompletionMessageRole.assistant);
+        expect(result[0].role, AiMessageRole.user);
+        expect(result[1].role, AiMessageRole.assistant);
       });
 
       test('returns empty list when only system messages provided', () {
@@ -128,10 +137,8 @@ void main() {
       test('builds prompt from conversation messages', () {
         // Arrange
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
-          const ChatCompletionMessage.assistant(content: 'Hi there!'),
+          const AiUserMessage(AiUserTextContent('Hello')),
+          const AiAssistantMessage(content: 'Hi there!'),
         ];
         const currentMessage = 'How are you?';
 
@@ -168,10 +175,10 @@ void main() {
           // the user-text extraction, which maps each part to its string and
           // joins them with a space.
           final messages = [
-            const ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.parts([
-                ChatCompletionMessageContentPart.text(text: 'first part'),
-                ChatCompletionMessageContentPart.text(text: 'second part'),
+            const AiUserMessage(
+              AiUserPartsContent([
+                AiTextPart('first part'),
+                AiTextPart('second part'),
               ]),
             ),
           ];
@@ -207,17 +214,14 @@ void main() {
     group('processTaskSummaryTool', () {
       test('processes tool call and returns task summaries', () async {
         // Arrange
-        final toolCall = ChatCompletionMessageToolCall(
+        final toolCall = AiToolCall(
           id: 'tool_1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'get_task_summaries',
-            arguments: jsonEncode({
-              'start_date': '2024-01-01',
-              'end_date': '2024-01-01',
-              'limit': 10,
-            }),
-          ),
+          name: 'get_task_summaries',
+          arguments: jsonEncode({
+            'start_date': '2024-01-01',
+            'end_date': '2024-01-01',
+            'limit': 10,
+          }),
         );
 
         final taskSummaries = [
@@ -253,17 +257,14 @@ void main() {
 
       test('returns empty message when no tasks found', () async {
         // Arrange
-        final toolCall = ChatCompletionMessageToolCall(
+        final toolCall = AiToolCall(
           id: 'tool_1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'get_task_summaries',
-            arguments: jsonEncode({
-              'start_date': '2024-01-01',
-              'end_date': '2024-01-01',
-              'limit': 10,
-            }),
-          ),
+          name: 'get_task_summaries',
+          arguments: jsonEncode({
+            'start_date': '2024-01-01',
+            'end_date': '2024-01-01',
+            'limit': 10,
+          }),
         );
 
         when(
@@ -289,13 +290,10 @@ void main() {
 
       test('handles errors gracefully', () async {
         // Arrange
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'tool_1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'get_task_summaries',
-            arguments: 'invalid json',
-          ),
+          name: 'get_task_summaries',
+          arguments: 'invalid json',
         );
 
         // Cause repository to fail like real validation would
@@ -331,16 +329,13 @@ void main() {
         'handles invalid date format or calendar date in arguments',
         () async {
           // Arrange
-          final toolCall = ChatCompletionMessageToolCall(
+          final toolCall = AiToolCall(
             id: 'test-id',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'get_task_summaries',
-              arguments: jsonEncode({
-                'start_date': 'invalid-date-format',
-                'end_date': '2024-02-31',
-              }),
-            ),
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': 'invalid-date-format',
+              'end_date': '2024-02-31',
+            }),
           );
 
           // Cause repository to fail like real validation would
@@ -384,16 +379,13 @@ void main() {
         'handles invalid calendar date in start_date specifically',
         () async {
           // Arrange
-          final toolCall = ChatCompletionMessageToolCall(
+          final toolCall = AiToolCall(
             id: 'test-id-2',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'get_task_summaries',
-              arguments: jsonEncode({
-                'start_date': '2024-02-31', // invalid start date
-                'end_date': '2024-03-01',
-              }),
-            ),
+            name: 'get_task_summaries',
+            arguments: jsonEncode({
+              'start_date': '2024-02-31', // invalid start date
+              'end_date': '2024-03-01',
+            }),
           );
 
           // Simulate repository validation failure
@@ -435,16 +427,13 @@ void main() {
 
       test('handles missing required fields in JSON', () async {
         // Arrange
-        final toolCall = ChatCompletionMessageToolCall(
+        final toolCall = AiToolCall(
           id: 'test-id',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'get_task_summaries',
-            arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000',
-              // Missing end_date
-            }),
-          ),
+          name: 'get_task_summaries',
+          arguments: jsonEncode({
+            'start_date': '2024-01-01T00:00:00.000',
+            // Missing end_date
+          }),
         );
 
         // Act
@@ -468,16 +457,13 @@ void main() {
 
       test('handles repository exceptions gracefully', () async {
         // Arrange
-        final toolCall = ChatCompletionMessageToolCall(
+        final toolCall = AiToolCall(
           id: 'test-id',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'get_task_summaries',
-            arguments: jsonEncode({
-              'start_date': '2024-01-01T00:00:00.000Z',
-              'end_date': '2024-01-02T00:00:00.000Z',
-            }),
-          ),
+          name: 'get_task_summaries',
+          arguments: jsonEncode({
+            'start_date': '2024-01-01T00:00:00.000Z',
+            'end_date': '2024-01-02T00:00:00.000Z',
+          }),
         );
 
         when(
@@ -504,13 +490,11 @@ void main() {
       test('builds final prompt with all message types', () {
         // Arrange
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
-          const ChatCompletionMessage.assistant(
+          const AiUserMessage(AiUserTextContent('Hello')),
+          const AiAssistantMessage(
             content: 'Hi! Let me check your tasks.',
           ),
-          const ChatCompletionMessage.tool(
+          const AiToolResultMessage(
             toolCallId: 'tool_1',
             content: '{"tasks": []}',
           ),
@@ -535,12 +519,8 @@ void main() {
       test('builds messages list with system prompt and history', () {
         // Arrange
         final previousMessages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string(
-              'Previous message',
-            ),
-          ),
-          const ChatCompletionMessage.assistant(content: 'Previous response'),
+          const AiUserMessage(AiUserTextContent('Previous message')),
+          const AiAssistantMessage(content: 'Previous response'),
         ];
         const message = 'Current message';
         const systemMessage = 'You are a helpful assistant';
@@ -554,19 +534,15 @@ void main() {
 
         // Assert
         expect(result.length, 4);
-        expect(result[0].role, ChatCompletionMessageRole.system);
-        expect(result[0].content, systemMessage);
-        expect(result[1].role, ChatCompletionMessageRole.user);
-        expect(result[2].role, ChatCompletionMessageRole.assistant);
-        expect(result[3].role, ChatCompletionMessageRole.user);
-        final content = result[3].content;
-        expect(content, isNotNull);
-        expect(
-          (content! as ChatCompletionUserMessageContent).whenOrNull(
-            string: (s) => s,
-          ),
-          message,
-        );
+        expect(result[0].role, AiMessageRole.system);
+        expect(_messageContent(result[0]), systemMessage);
+        expect(result[1].role, AiMessageRole.user);
+        expect(result[2].role, AiMessageRole.assistant);
+        expect(result[3].role, AiMessageRole.user);
+        final lastUser = result[3] as AiUserMessage;
+        final lastContent = lastUser.content;
+        expect(lastContent, isA<AiUserTextContent>());
+        expect((lastContent as AiUserTextContent).text, message);
       });
     });
 
@@ -607,16 +583,16 @@ void main() {
         // Assert
         expect(result.toolCalls.length, 1);
         expect(result.toolCalls[0].id, 'tool_1');
-        expect(result.toolCalls[0].function.name, 'get_task_summaries');
+        expect(result.toolCalls[0].name, 'get_task_summaries');
         expect(
-          result.toolCalls[0].function.arguments,
+          result.toolCalls[0].arguments,
           '{"start_date": "2024-01-01T00:00:00.000Z"}',
         );
       });
 
       test('handles empty stream', () async {
         // Arrange
-        const stream = Stream<CreateChatCompletionStreamResponse>.empty();
+        const stream = Stream<AiStreamChunk>.empty();
 
         // Act
         final result = await processor.processStreamResponse(stream);
@@ -631,74 +607,66 @@ void main() {
         () async {
           // Two tools with interleaved chunks
           final stream = Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'r',
               created: 0,
               model: 'm',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'A',
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'get_task_summaries',
-                          arguments: '{"start_',
-                        ),
+                        name: 'get_task_summaries',
+                        arguments: '{"start_',
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'r',
               created: 0,
               model: 'm',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'B',
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'get_task_summaries',
-                          arguments: '{"end_',
-                        ),
+                        name: 'get_task_summaries',
+                        arguments: '{"end_',
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'r',
               created: 0,
               model: 'm',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'A',
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'get_task_summaries',
-                          arguments: 'date":"2024-01-01"}',
-                        ),
+                        name: 'get_task_summaries',
+                        arguments: 'date":"2024-01-01"}',
                       ),
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 1,
                         id: 'B',
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'get_task_summaries',
-                          arguments: 'date":"2024-01-02"}',
-                        ),
+                        name: 'get_task_summaries',
+                        arguments: 'date":"2024-01-02"}',
                       ),
                     ],
                   ),
@@ -711,36 +679,35 @@ void main() {
           expect(result.toolCalls.length, 2);
           final a = result.toolCalls.firstWhere((t) => t.id == 'A');
           final b = result.toolCalls.firstWhere((t) => t.id == 'B');
-          expect(a.function.arguments, '{"start_date":"2024-01-01"}');
-          expect(b.function.arguments, '{"end_date":"2024-01-02"}');
+          expect(a.arguments, '{"start_date":"2024-01-01"}');
+          expect(b.arguments, '{"end_date":"2024-01-02"}');
         },
       );
 
       test(
         'ignores tool call deltas with null function without crashing',
         () async {
-          final stream =
-              Stream<CreateChatCompletionStreamResponse>.fromIterable([
-                const CreateChatCompletionStreamResponse(
-                  id: 'r',
-                  created: 0,
-                  model: 'm',
-                  choices: [
-                    ChatCompletionStreamResponseChoice(
-                      index: 0,
-                      delta: ChatCompletionStreamResponseDelta(
-                        toolCalls: [
-                          ChatCompletionStreamMessageToolCallChunk(
-                            index: 0,
-                            id: 'x',
-                            // function: null
-                          ),
-                        ],
+          final stream = Stream<AiStreamChunk>.fromIterable([
+            const AiStreamChunk(
+              id: 'r',
+              created: 0,
+              model: 'm',
+              choices: [
+                AiStreamChoice(
+                  index: 0,
+                  delta: AiStreamDelta(
+                    toolCalls: [
+                      AiToolCallChunk(
+                        index: 0,
+                        id: 'x',
+                        // function: null
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ]);
+              ],
+            ),
+          ]);
 
           final result = await processor.processStreamResponse(stream);
           expect(result.toolCalls, isEmpty);
@@ -752,17 +719,14 @@ void main() {
       test('processes multiple tool calls', () async {
         // Arrange
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'tool_1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: TaskSummaryTool.name,
-              arguments: jsonEncode({
-                'start_date': '2024-01-01T00:00:00.000',
-                'end_date': '2024-01-01T23:59:59.999',
-                'limit': 10,
-              }),
-            ),
+            name: TaskSummaryTool.name,
+            arguments: jsonEncode({
+              'start_date': '2024-01-01T00:00:00.000',
+              'end_date': '2024-01-01T23:59:59.999',
+              'limit': 10,
+            }),
           ),
         ];
 
@@ -791,7 +755,7 @@ void main() {
 
         // Assert
         expect(result.length, 1);
-        expect(result[0].role, ChatCompletionMessageRole.tool);
+        expect(result[0].role, AiMessageRole.tool);
         // Tool message role verification is sufficient
         // The toolCallId is correctly passed in processTaskSummaryTool test
 
@@ -807,14 +771,7 @@ void main() {
       test('skips non-task-summary tools', () async {
         // Arrange
         final toolCalls = [
-          const ChatCompletionMessageToolCall(
-            id: 'tool_1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'unknown_tool',
-              arguments: '{}',
-            ),
-          ),
+          const AiToolCall(id: 'tool_1', name: 'unknown_tool', arguments: '{}'),
         ];
 
         // Act
@@ -832,10 +789,8 @@ void main() {
       test('generates final response after tool calls', () async {
         // Arrange
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Show my tasks'),
-          ),
-          const ChatCompletionMessage.tool(
+          const AiUserMessage(AiUserTextContent('Show my tasks')),
+          const AiToolResultMessage(
             toolCallId: 'tool_1',
             content: '{"tasks": []}',
           ),
@@ -1029,36 +984,36 @@ void main() {
         );
 
         final stream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'r1',
             created: 0,
             model: 'm',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: ''),
+                delta: AiStreamDelta(content: ''),
               ),
             ],
           ),
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'r1',
             created: 0,
             model: 'm',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+                delta: AiStreamDelta(content: 'Hello'),
               ),
             ],
           ),
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'r1',
             created: 0,
             model: 'm',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: ' world'),
+                delta: AiStreamDelta(content: ' world'),
               ),
             ],
           ),
@@ -1080,9 +1035,7 @@ void main() {
         final chunks = await processor
             .generateFinalResponseStream(
               messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('hi'),
-                ),
+                AiUserMessage(AiUserTextContent('hi')),
               ],
               config: config,
               systemMessage: 'sys',
@@ -1115,26 +1068,27 @@ void main() {
           ),
         );
 
-        final stream = Stream<CreateChatCompletionStreamResponse>.fromIterable([
-          const CreateChatCompletionStreamResponse(
+        final stream = Stream<AiStreamChunk>.fromIterable([
+          const AiStreamChunk(
             id: 'r0',
             created: 0,
             model: 'm',
+            choices: [],
           ),
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'r1',
             created: 0,
             model: 'm',
             choices: [],
           ),
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'r2',
             created: 0,
             model: 'm',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+                delta: AiStreamDelta(content: 'ok'),
               ),
             ],
           ),
@@ -1156,9 +1110,7 @@ void main() {
         final out = await processor
             .generateFinalResponseStream(
               messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('x'),
-                ),
+                AiUserMessage(AiUserTextContent('x')),
               ],
               config: config,
               systemMessage: 'sys',

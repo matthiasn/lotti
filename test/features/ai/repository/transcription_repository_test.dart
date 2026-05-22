@@ -32,7 +32,7 @@ void main() {
 
         expect(responses, hasLength(1));
         expect(
-          responses.first.choices?.first.delta?.content,
+          responses.first.choices.first.delta.content,
           equals('Hello, world!'),
         );
       });

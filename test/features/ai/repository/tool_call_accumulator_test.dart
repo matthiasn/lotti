@@ -9,8 +9,8 @@ import 'package:glados/glados.dart'
         IntAnys,
         ListAnys,
         any;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 class _GeneratedToolCallStream {
   const _GeneratedToolCallStream({
@@ -68,18 +68,15 @@ class _GeneratedCompleteToolCallBatch {
 
   String argumentsFor(int callIndex) => '{"value":${values[callIndex]}}';
 
-  ChatCompletionStreamResponseDelta get delta {
-    return ChatCompletionStreamResponseDelta(
+  AiStreamDelta get delta {
+    return AiStreamDelta(
       toolCalls: [
         for (var callIndex = 0; callIndex < values.length; callIndex++)
-          ChatCompletionStreamMessageToolCallChunk(
+          AiToolCallChunk(
             index: 0,
             id: idFor(callIndex),
-            type: ChatCompletionStreamMessageToolCallChunkType.function,
-            function: ChatCompletionStreamMessageFunctionCall(
-              name: nameFor(callIndex),
-              arguments: argumentsFor(callIndex),
-            ),
+            name: nameFor(callIndex),
+            arguments: argumentsFor(callIndex),
           ),
       ],
     );
@@ -138,16 +135,13 @@ class _AccumulatorBench {
   }) {
     for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
       _accumulator.processChunk(
-        ChatCompletionStreamResponseDelta(
+        AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: callIndex,
               id: startWithEmptyIds ? '' : scenario.idFor(callIndex),
-              type: ChatCompletionStreamMessageToolCallChunkType.function,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: scenario.nameFor(callIndex),
-                arguments: scenario.argumentPart(callIndex, 0),
-              ),
+              name: scenario.nameFor(callIndex),
+              arguments: scenario.argumentPart(callIndex, 0),
             ),
           ],
         ),
@@ -161,14 +155,12 @@ class _AccumulatorBench {
         }
 
         _accumulator.processChunk(
-          ChatCompletionStreamResponseDelta(
+          AiStreamDelta(
             toolCalls: [
-              ChatCompletionStreamMessageToolCallChunk(
+              AiToolCallChunk(
                 index: callIndex,
                 id: continueWithEmptyIds ? '' : null,
-                function: ChatCompletionStreamMessageFunctionCall(
-                  arguments: scenario.argumentPart(callIndex, partIndex),
-                ),
+                arguments: scenario.argumentPart(callIndex, partIndex),
               ),
             ],
           ),
@@ -191,11 +183,11 @@ class _AccumulatorBench {
 
     for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
       final toolCall = toolCalls.singleWhere(
-        (call) => call.function.name == scenario.nameFor(callIndex),
+        (call) => call.name == scenario.nameFor(callIndex),
       );
       expect(toolCall.id, idMatcher(callIndex));
       expect(
-        toolCall.function.arguments,
+        toolCall.arguments,
         scenario.expectedArgumentsFor(callIndex),
         reason: '$reasonForArguments for $scenario',
       );
@@ -221,7 +213,7 @@ void main() {
       });
 
       test('handles delta without tool calls', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = AiStreamDelta(
           content: 'Hello',
         );
         accumulator.processChunk(delta);
@@ -229,16 +221,13 @@ void main() {
       });
 
       test('accumulates single complete tool call', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_123',
-              type: ChatCompletionStreamMessageToolCallChunkType.function,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{"key": "value"}',
-              ),
+              name: 'test_function',
+              arguments: '{"key": "value"}',
             ),
           ],
         );
@@ -249,26 +238,22 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 1);
-        expect(toolCalls.first.function.name, 'test_function');
-        expect(toolCalls.first.function.arguments, '{"key": "value"}');
+        expect(toolCalls.first.name, 'test_function');
+        expect(toolCalls.first.arguments, '{"key": "value"}');
       });
 
       test('accumulates multiple complete tool calls in single chunk', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'function_one',
-                arguments: '{"a": 1}',
-              ),
+              name: 'function_one',
+              arguments: '{"a": 1}',
             ),
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'function_two',
-                arguments: '{"b": 2}',
-              ),
+              name: 'function_two',
+              arguments: '{"b": 2}',
             ),
           ],
         );
@@ -278,46 +263,39 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 2);
-        expect(toolCalls[0].function.name, 'function_one');
-        expect(toolCalls[1].function.name, 'function_two');
+        expect(toolCalls[0].name, 'function_one');
+        expect(toolCalls[1].name, 'function_two');
       });
 
       test('accumulates streamed tool call chunks by ID', () {
         // First chunk - starts the tool call
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_abc',
-              type: ChatCompletionStreamMessageToolCallChunkType.function,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'my_function',
-                arguments: '{"par',
-              ),
+              name: 'my_function',
+              arguments: '{"par',
             ),
           ],
         );
 
         // Second chunk - continues arguments (no ID, uses index)
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: 'am": "val',
-              ),
+              arguments: 'am": "val',
             ),
           ],
         );
 
         // Third chunk - finishes arguments
-        const chunk3 = ChatCompletionStreamResponseDelta(
+        const chunk3 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: 'ue"}',
-              ),
+              arguments: 'ue"}',
             ),
           ],
         );
@@ -331,59 +309,51 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 1);
-        expect(toolCalls.first.function.name, 'my_function');
-        expect(toolCalls.first.function.arguments, '{"param": "value"}');
+        expect(toolCalls.first.name, 'my_function');
+        expect(toolCalls.first.arguments, '{"param": "value"}');
       });
 
       test('accumulates multiple parallel tool calls', () {
         // First tool call starts
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func_a',
-                arguments: '{"x": ',
-              ),
+              name: 'func_a',
+              arguments: '{"x": ',
             ),
           ],
         );
 
         // Second tool call starts
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 1,
               id: 'call_2',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func_b',
-                arguments: '{"y": ',
-              ),
+              name: 'func_b',
+              arguments: '{"y": ',
             ),
           ],
         );
 
         // First tool call continues
-        const chunk3 = ChatCompletionStreamResponseDelta(
+        const chunk3 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '1}',
-              ),
+              arguments: '1}',
             ),
           ],
         );
 
         // Second tool call continues
-        const chunk4 = ChatCompletionStreamResponseDelta(
+        const chunk4 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 1,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '2}',
-              ),
+              arguments: '2}',
             ),
           ],
         );
@@ -400,49 +370,43 @@ void main() {
         expect(toolCalls.length, 2);
 
         final funcA = toolCalls.firstWhere(
-          (tc) => tc.function.name == 'func_a',
+          (tc) => tc.name == 'func_a',
         );
         final funcB = toolCalls.firstWhere(
-          (tc) => tc.function.name == 'func_b',
+          (tc) => tc.name == 'func_b',
         );
 
-        expect(funcA.function.arguments, '{"x": 1}');
-        expect(funcB.function.arguments, '{"y": 2}');
+        expect(funcA.arguments, '{"x": 1}');
+        expect(funcB.arguments, '{"y": 2}');
       });
 
       test('continues last tool call when chunk has no ID or index', () {
         // Start a tool call
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'my_func',
-                arguments: '{"start": ',
-              ),
+              name: 'my_func',
+              arguments: '{"start": ',
             ),
           ],
         );
 
         // Continue without ID or index (should append to last)
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '"middle", ',
-              ),
+            AiToolCallChunk(
+              arguments: '"middle", ',
             ),
           ],
         );
 
         // Another continuation without ID or index
-        const chunk3 = ChatCompletionStreamResponseDelta(
+        const chunk3 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '"end": true}',
-              ),
+            AiToolCallChunk(
+              arguments: '"end": true}',
             ),
           ],
         );
@@ -455,21 +419,19 @@ void main() {
         expect(accumulator.count, 1);
         final toolCalls = accumulator.toToolCalls();
         expect(
-          toolCalls.first.function.arguments,
+          toolCalls.first.arguments,
           '{"start": "middle", "end": true}',
         );
       });
 
       test('handles chunk with empty ID string', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: '', // Empty string ID
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'empty_id_func',
-                arguments: '{"test": true}',
-              ),
+              name: 'empty_id_func',
+              arguments: '{"test": true}',
             ),
           ],
         );
@@ -479,28 +441,26 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.first.id, startsWith('tool_'));
-        expect(toolCalls.first.function.name, 'empty_id_func');
+        expect(toolCalls.first.name, 'empty_id_func');
       });
 
       test('handles continuation chunk without function data', () {
         // Start a tool call
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'my_func',
-                arguments: '{"key": "value"}',
-              ),
+              name: 'my_func',
+              arguments: '{"key": "value"}',
             ),
           ],
         );
 
         // Continuation chunk without function (edge case)
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
             ),
           ],
@@ -513,17 +473,15 @@ void main() {
         // Should still have the original tool call unchanged
         expect(accumulator.count, 1);
         final toolCalls = accumulator.toToolCalls();
-        expect(toolCalls.first.function.arguments, '{"key": "value"}');
+        expect(toolCalls.first.arguments, '{"key": "value"}');
       });
 
       test('ignores continuation when no tool calls exist', () {
         // Try to continue without any existing tool calls
-        const chunk = ChatCompletionStreamResponseDelta(
+        const chunk = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: 'orphan data',
-              ),
+            AiToolCallChunk(
+              arguments: 'orphan data',
             ),
           ],
         );
@@ -536,16 +494,13 @@ void main() {
       });
 
       test('appends continuation chunks that repeat the explicit ID', () {
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_repeat',
-              type: ChatCompletionStreamMessageToolCallChunkType.function,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'repeat_func',
-                arguments: '{"a": ',
-              ),
+              name: 'repeat_func',
+              arguments: '{"a": ',
             ),
           ],
         );
@@ -553,26 +508,22 @@ void main() {
         // Some providers repeat the same non-empty id on continuation chunks
         // and only ship more arguments. The accumulator must append rather
         // than reset the entry.
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_repeat',
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '1, "b": ',
-              ),
+              arguments: '1, "b": ',
             ),
           ],
         );
 
-        const chunk3 = ChatCompletionStreamResponseDelta(
+        const chunk3 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_repeat',
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '2}',
-              ),
+              arguments: '2}',
             ),
           ],
         );
@@ -586,33 +537,29 @@ void main() {
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls, hasLength(1));
         expect(toolCalls.first.id, 'call_repeat');
-        expect(toolCalls.first.function.name, 'repeat_func');
-        expect(toolCalls.first.function.arguments, '{"a": 1, "b": 2}');
+        expect(toolCalls.first.name, 'repeat_func');
+        expect(toolCalls.first.arguments, '{"a": 1, "b": 2}');
       });
 
       test('preserves function name when continuing with only arguments', () {
         // Start a tool call with name and partial arguments
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'my_function',
-                arguments: '{"a": ',
-              ),
+              name: 'my_function',
+              arguments: '{"a": ',
             ),
           ],
         );
 
         // Continue with only arguments (no name)
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '1}',
-              ),
+              arguments: '1}',
             ),
           ],
         );
@@ -623,8 +570,8 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 1);
-        expect(toolCalls.first.function.name, 'my_function');
-        expect(toolCalls.first.function.arguments, '{"a": 1}');
+        expect(toolCalls.first.name, 'my_function');
+        expect(toolCalls.first.arguments, '{"a": 1}');
       });
 
       Glados(any.toolCallStream).test(
@@ -678,11 +625,11 @@ void main() {
           for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
             expect(toolCalls[callIndex].id, scenario.idFor(callIndex));
             expect(
-              toolCalls[callIndex].function.name,
+              toolCalls[callIndex].name,
               scenario.nameFor(callIndex),
             );
             expect(
-              toolCalls[callIndex].function.arguments,
+              toolCalls[callIndex].arguments,
               scenario.argumentsFor(callIndex),
             );
           }
@@ -698,23 +645,19 @@ void main() {
       });
 
       test('skips tool calls with empty arguments', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_empty',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'empty_func',
-                arguments: '',
-              ),
+              name: 'empty_func',
+              arguments: '',
             ),
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 1,
               id: 'call_valid',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'valid_func',
-                arguments: '{"valid": true}',
-              ),
+              name: 'valid_func',
+              arguments: '{"valid": true}',
             ),
           ],
         );
@@ -724,25 +667,21 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 1); // But only valid one is returned
-        expect(toolCalls.first.function.name, 'valid_func');
+        expect(toolCalls.first.name, 'valid_func');
       });
 
       test('generates unique IDs for tool calls without IDs', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func_1',
-                arguments: '{"a": 1}',
-              ),
+              name: 'func_1',
+              arguments: '{"a": 1}',
             ),
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func_2',
-                arguments: '{"b": 2}',
-              ),
+              name: 'func_2',
+              arguments: '{"b": 2}',
             ),
           ],
         );
@@ -755,29 +694,6 @@ void main() {
         expect(toolCalls[0].id, startsWith('tool_'));
         expect(toolCalls[1].id, startsWith('tool_'));
       });
-
-      test('sets function type on all tool calls', () {
-        const delta = ChatCompletionStreamResponseDelta(
-          toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
-              id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'test_func',
-                arguments: '{}',
-              ),
-            ),
-          ],
-        );
-
-        accumulator.processChunk(delta);
-        final toolCalls = accumulator.toToolCalls();
-
-        expect(
-          toolCalls.first.type,
-          ChatCompletionMessageToolCallType.function,
-        );
-      });
     });
 
     group('hasToolCalls', () {
@@ -786,15 +702,13 @@ void main() {
       });
 
       test('returns true after processing tool calls', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func',
-                arguments: '{}',
-              ),
+              name: 'func',
+              arguments: '{}',
             ),
           ],
         );
@@ -810,23 +724,19 @@ void main() {
       });
 
       test('returns correct count after processing', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 0,
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func1',
-                arguments: '{}',
-              ),
+              name: 'func1',
+              arguments: '{}',
             ),
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: 1,
               id: 'call_2',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func2',
-                arguments: '{}',
-              ),
+              name: 'func2',
+              arguments: '{}',
             ),
           ],
         );

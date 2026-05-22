@@ -2,7 +2,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
 enum _GeneratedConversationOperationKind {
   initializeEmpty,
@@ -272,41 +272,45 @@ extension _AnyGeneratedConversationScenario on glados.Any {
   );
 }
 
-ChatCompletionMessageToolCall _generatedToolCall(String toolId) {
-  return ChatCompletionMessageToolCall(
+AiToolCall _generatedToolCall(String toolId) {
+  return AiToolCall(
     id: toolId,
-    type: ChatCompletionMessageToolCallType.function,
-    function: const ChatCompletionMessageFunctionCall(
-      name: 'generated_function',
-      arguments: '{"ok": true}',
-    ),
+    name: 'generated_function',
+    arguments: '{"ok": true}',
   );
 }
 
 List<_GeneratedConversationRole> _conversationRoles(
-  List<ChatCompletionMessage> messages,
+  List<AiChatMessage> messages,
 ) {
   return messages.map((message) {
     if (_isGeneratedTruncationNotice(message)) {
       return _GeneratedConversationRole.truncationNotice;
     }
 
-    return switch (message.role) {
-      ChatCompletionMessageRole.system => _GeneratedConversationRole.system,
-      ChatCompletionMessageRole.user => _GeneratedConversationRole.user,
-      ChatCompletionMessageRole.assistant =>
-        _GeneratedConversationRole.assistant,
-      ChatCompletionMessageRole.tool => _GeneratedConversationRole.tool,
-      ChatCompletionMessageRole.function => _GeneratedConversationRole.tool,
-      ChatCompletionMessageRole.developer => _GeneratedConversationRole.system,
+    return switch (message) {
+      AiSystemMessage() => _GeneratedConversationRole.system,
+      AiUserMessage() => _GeneratedConversationRole.user,
+      AiAssistantMessage() => _GeneratedConversationRole.assistant,
+      AiToolResultMessage() => _GeneratedConversationRole.tool,
     };
   }).toList();
 }
 
-bool _isGeneratedTruncationNotice(ChatCompletionMessage message) {
-  return message.role == ChatCompletionMessageRole.system &&
-      (message.content?.toString().contains('Previous messages truncated') ??
-          false);
+bool _isGeneratedTruncationNotice(AiChatMessage message) {
+  return message is AiSystemMessage &&
+      message.content.contains('Previous messages truncated');
+}
+
+String? _systemOrAssistantContent(AiChatMessage message) {
+  if (message is AiSystemMessage) return message.content;
+  if (message is AiAssistantMessage) return message.content;
+  if (message is AiToolResultMessage) return message.content;
+  if (message is AiUserMessage) {
+    final content = message.content;
+    if (content is AiUserTextContent) return content.text;
+  }
+  return null;
 }
 
 void main() {
@@ -330,7 +334,8 @@ void main() {
         expect(manager.messages.length, 20);
         expect(
           manager.messages.any(
-            (msg) => msg.content?.toString().contains('truncated') ?? false,
+            (msg) =>
+                _systemOrAssistantContent(msg)?.contains('truncated') ?? false,
           ),
           false,
         );
@@ -346,9 +351,11 @@ void main() {
         expect(manager.messages.length, lessThanOrEqualTo(50));
 
         // Should have truncation notice as the first message
-        expect(manager.messages.first.role, ChatCompletionMessageRole.system);
+        expect(manager.messages.first.role, AiMessageRole.system);
         expect(
-          manager.messages.first.content?.toString().contains('truncated') ??
+          _systemOrAssistantContent(manager.messages.first)?.contains(
+                'truncated',
+              ) ??
               false,
           true,
         );
@@ -364,16 +371,16 @@ void main() {
         }
 
         // System message should still be first
-        expect(manager.messages.first.role, ChatCompletionMessageRole.system);
+        expect(manager.messages.first.role, AiMessageRole.system);
         expect(
-          manager.messages.first.content?.toString() ?? '',
+          _systemOrAssistantContent(manager.messages.first) ?? '',
           contains('helpful assistant'),
         );
 
         // Truncation notice should be second
-        expect(manager.messages[1].role, ChatCompletionMessageRole.system);
+        expect(manager.messages[1].role, AiMessageRole.system);
         expect(
-          manager.messages[1].content?.toString() ?? '',
+          _systemOrAssistantContent(manager.messages[1]) ?? '',
           contains('truncated'),
         );
       });
@@ -403,15 +410,13 @@ void main() {
         final messages = manager.messages;
 
         // Should have system messages
-        final systemMessages = messages
-            .where((m) => m.role == ChatCompletionMessageRole.system)
-            .toList();
+        final systemMessages = messages.whereType<AiSystemMessage>().toList();
         expect(systemMessages.length, greaterThanOrEqualTo(1));
 
         // Should have truncation notice
         expect(
           messages.any(
-            (m) => m.content?.toString().contains('truncated') ?? false,
+            (m) => _systemOrAssistantContent(m)?.contains('truncated') ?? false,
           ),
           true,
         );
@@ -445,7 +450,7 @@ void main() {
         );
 
         expect(manager.messages.length, 1);
-        expect(manager.messages.first.role, ChatCompletionMessageRole.tool);
+        expect(manager.messages.first.role, AiMessageRole.tool);
       });
     });
 
@@ -523,7 +528,7 @@ void main() {
           async.flushMicrotasks();
 
           expect(manager.messages.length, 1);
-          expect(manager.messages.first.role, ChatCompletionMessageRole.tool);
+          expect(manager.messages.first.role, AiMessageRole.tool);
 
           expect(events.length, 1);
           expect(events.first, isA<ToolResponseEvent>());
@@ -536,13 +541,10 @@ void main() {
 
     group('Assistant Message Handling', () {
       const sampleToolCalls = [
-        ChatCompletionMessageToolCall(
+        AiToolCall(
           id: 'tool-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'test_function',
-            arguments: '{"arg": "value"}',
-          ),
+          name: 'test_function',
+          arguments: '{"arg": "value"}',
         ),
       ];
 
@@ -555,7 +557,7 @@ void main() {
               (
                 String,
                 String?,
-                List<ChatCompletionMessageToolCall>?,
+                List<AiToolCall>?,
                 Type?,
               )
             >[
@@ -594,11 +596,11 @@ void main() {
             expect(caseManager.messages.length, 1, reason: description);
             expect(
               caseManager.messages.first.role,
-              ChatCompletionMessageRole.assistant,
+              AiMessageRole.assistant,
               reason: description,
             );
             expect(
-              caseManager.messages.first.content,
+              _systemOrAssistantContent(caseManager.messages.first),
               content,
               reason: description,
             );
@@ -637,8 +639,11 @@ void main() {
 
         // Should have only the system message
         expect(manager.messages.length, 1);
-        expect(manager.messages.first.role, ChatCompletionMessageRole.system);
-        expect(manager.messages.first.content, 'New system message');
+        expect(manager.messages.first.role, AiMessageRole.system);
+        expect(
+          _systemOrAssistantContent(manager.messages.first),
+          'New system message',
+        );
       });
 
       test('initialize without system message', () {
@@ -722,7 +727,10 @@ void main() {
 
         // But contain the same data
         expect(messages1.length, messages2.length);
-        expect(messages1.first.content, messages2.first.content);
+        expect(
+          _systemOrAssistantContent(messages1.first),
+          _systemOrAssistantContent(messages2.first),
+        );
       });
     });
 
@@ -737,7 +745,8 @@ void main() {
         // No truncation message
         expect(
           manager.messages.any(
-            (msg) => msg.content?.toString().contains('truncated') ?? false,
+            (msg) =>
+                _systemOrAssistantContent(msg)?.contains('truncated') ?? false,
           ),
           false,
         );
@@ -761,7 +770,8 @@ void main() {
         // Should have truncation notice
         expect(
           smallManager.messages.any(
-            (msg) => msg.content?.toString().contains('truncated') ?? false,
+            (msg) =>
+                _systemOrAssistantContent(msg)?.contains('truncated') ?? false,
           ),
           true,
         );
@@ -780,13 +790,10 @@ void main() {
     group('Thought Signatures', () {
       test('stores thought signatures when adding assistant message', () {
         final toolCalls = [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'test_function',
-              arguments: '{"arg": "value"}',
-            ),
+            name: 'test_function',
+            arguments: '{"arg": "value"}',
           ),
         ];
 
@@ -800,24 +807,18 @@ void main() {
 
       test('accumulates signatures across multiple messages', () {
         final toolCalls1 = [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'func1',
-              arguments: '{}',
-            ),
+            name: 'func1',
+            arguments: '{}',
           ),
         ];
 
         final toolCalls2 = [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'tool-2',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'func2',
-              arguments: '{}',
-            ),
+            name: 'func2',
+            arguments: '{}',
           ),
         ];
 
@@ -852,13 +853,10 @@ void main() {
 
       test('does not store signatures when null', () {
         final toolCalls = [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'test_function',
-              arguments: '{}',
-            ),
+            name: 'test_function',
+            arguments: '{}',
           ),
         ];
 
@@ -982,9 +980,7 @@ void main() {
               .where(_isGeneratedTruncationNotice)
               .length;
           final retainedUserMessages = messages
-              .where(
-                (message) => message.role == ChatCompletionMessageRole.user,
-              )
+              .whereType<AiUserMessage>()
               .toList();
 
           expect(
@@ -1004,13 +1000,16 @@ void main() {
           );
 
           if (scenario.hasSystemMessage) {
-            expect(messages.first.content, 'generated system');
+            expect(
+              _systemOrAssistantContent(messages.first),
+              'generated system',
+            );
           } else {
             expect(
               messages
                   .where(
                     (message) =>
-                        message.role == ChatCompletionMessageRole.system &&
+                        message is AiSystemMessage &&
                         !_isGeneratedTruncationNotice(message),
                   )
                   .toList(),
@@ -1021,7 +1020,7 @@ void main() {
 
           if (scenario.userMessageCount > 0) {
             expect(
-              messages.last.content?.toString(),
+              _systemOrAssistantContent(messages.last),
               contains('generated user ${scenario.userMessageCount - 1}'),
               reason: '$scenario',
             );
@@ -1070,13 +1069,10 @@ void main() {
 
       test('ToolCallsEvent properties', () {
         final toolCalls = [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'test',
-              arguments: '{}',
-            ),
+            name: 'test',
+            arguments: '{}',
           ),
         ];
 

@@ -5,16 +5,13 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 void main() {
   group('TaskSummaryTool', () {
-    test('toolDefinition is function type with required params', () {
+    test('toolDefinition has required params', () {
       final tool = TaskSummaryTool.toolDefinition;
-      expect(tool.type, ChatCompletionToolType.function);
-      expect(tool.function.name, TaskSummaryTool.name);
-      final params = tool.function.parameters!;
-      expect(params, isNotNull);
+      expect(tool.name, TaskSummaryTool.name);
+      final params = tool.parameters;
       expect(
         params['required'],
         containsAll(<String>['start_date', 'end_date']),
@@ -92,8 +89,6 @@ void main() {
       expect(back.taskId, 't1');
       expect(back.metadata?['m'], 'v');
     });
-
-    // Date validation is enforced in the repository (conversion stage), not in the model.
   });
 }
 

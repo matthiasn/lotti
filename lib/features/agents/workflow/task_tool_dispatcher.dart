@@ -25,6 +25,7 @@ import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart'
 import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
 import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
 import 'package:lotti/features/ai/functions/task_priority_handler.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -34,7 +35,6 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Dispatches tool calls from the Task Agent to the appropriate journal-domain
@@ -266,13 +266,10 @@ class TaskToolDispatcher {
       }
     }
 
-    final toolCall = ChatCompletionMessageToolCall(
+    final toolCall = AiToolCall(
       id: 'agent_${toolName}_${_uuid.v4()}',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: toolName,
-        arguments: jsonEncode(args),
-      ),
+      name: toolName,
+      arguments: jsonEncode(args),
     );
 
     // Only estimate, due date, and priority tools are routed here by the
@@ -455,13 +452,10 @@ class TaskToolDispatcher {
       checklistRepository: checklistRepository,
     );
 
-    final toolCall = ChatCompletionMessageToolCall(
+    final toolCall = AiToolCall(
       id: 'agent_${toolName}_${_uuid.v4()}',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: toolName,
-        arguments: jsonEncode(args),
-      ),
+      name: toolName,
+      arguments: jsonEncode(args),
     );
 
     final parseResult = handler.processFunctionCall(toolCall);
@@ -511,13 +505,10 @@ class TaskToolDispatcher {
       checklistRepository: checklistRepository,
     );
 
-    final toolCall = ChatCompletionMessageToolCall(
+    final toolCall = AiToolCall(
       id: 'agent_${toolName}_${_uuid.v4()}',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: toolName,
-        arguments: jsonEncode(args),
-      ),
+      name: toolName,
+      arguments: jsonEncode(args),
     );
 
     final parseResult = handler.processFunctionCall(toolCall);

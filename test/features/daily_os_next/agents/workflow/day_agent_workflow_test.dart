@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
@@ -22,7 +23,6 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -746,7 +746,7 @@ void main() {
         expect(result.success, isTrue);
         expect(conversationRepository.deletedConversationCount, 1);
         expect(
-          conversationRepository.lastTools.map((tool) => tool.function.name),
+          conversationRepository.lastTools.map((tool) => tool.name),
           containsAll([
             DayAgentToolNames.recordObservations,
             DayAgentToolNames.setNextWake,
@@ -976,7 +976,7 @@ void main() {
           );
           conversationRepository
             ..toolCallsByInvocation = [
-              const <ChatCompletionMessageToolCall>[],
+              const <AiToolCall>[],
               [
                 _toolCall(
                   id: 'parse-call',
@@ -1019,14 +1019,14 @@ void main() {
           );
           expect(retryCall.message, contains('capture `capture-1`'));
           expect(
-            retryCall.tools.map((tool) => tool.function.name),
+            retryCall.tools.map((tool) => tool.name),
             [DayAgentToolNames.parseCaptureToItems],
           );
           retryCall.toolChoice!.map(
             mode: (_) => fail('Expected named tool choice, got mode.'),
             tool: (named) {
               expect(
-                named.value.function.name,
+                named.value.name,
                 DayAgentToolNames.parseCaptureToItems,
               );
             },
@@ -1060,8 +1060,8 @@ void main() {
           final captureService = MockDayAgentCaptureService();
           stubCaptureContext(captureService);
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
-            const <ChatCompletionMessageToolCall>[],
+            const <AiToolCall>[],
+            const <AiToolCall>[],
           ];
 
           final result = await execute(
@@ -1145,7 +1145,7 @@ void main() {
             ),
           );
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
+            const <AiToolCall>[],
             [
               _toolCall(
                 id: 'parse-call',
@@ -1455,7 +1455,7 @@ void main() {
           );
           conversationRepository
             ..toolCallsByInvocation = [
-              const <ChatCompletionMessageToolCall>[],
+              const <AiToolCall>[],
               [
                 _toolCall(
                   id: 'draft-call',
@@ -1490,13 +1490,13 @@ void main() {
             contains('You did not call `draft_day_plan`'),
           );
           expect(
-            retryCall.tools.map((tool) => tool.function.name),
+            retryCall.tools.map((tool) => tool.name),
             [DayAgentToolNames.draftDayPlan],
           );
           retryCall.toolChoice!.map(
             mode: (_) => fail('Expected named tool choice, got mode.'),
             tool: (named) {
-              expect(named.value.function.name, DayAgentToolNames.draftDayPlan);
+              expect(named.value.name, DayAgentToolNames.draftDayPlan);
             },
           );
           verify(
@@ -1522,7 +1522,7 @@ void main() {
         () async {
           final planService = MockDayAgentPlanService();
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
+            const <AiToolCall>[],
           ];
 
           final result = await execute(
@@ -1564,7 +1564,7 @@ void main() {
             ),
           );
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
+            const <AiToolCall>[],
             [
               _toolCall(
                 id: 'draft-call',
@@ -1602,8 +1602,8 @@ void main() {
           final planService = MockDayAgentPlanService();
           stubDraftingPlanContext(planService);
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
-            const <ChatCompletionMessageToolCall>[],
+            const <AiToolCall>[],
+            const <AiToolCall>[],
           ];
 
           final result = await execute(
@@ -2328,18 +2328,15 @@ void main() {
   });
 }
 
-ChatCompletionMessageToolCall _toolCall({
+AiToolCall _toolCall({
   required String name,
   required Map<String, dynamic> args,
   String id = 'call-1',
 }) {
-  return ChatCompletionMessageToolCall(
+  return AiToolCall(
     id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: jsonEncode(args),
-    ),
+    name: name,
+    arguments: jsonEncode(args),
   );
 }
 
@@ -2361,24 +2358,24 @@ class _ConversationHarness extends ConversationRepository {
   int createdConversationCount = 0;
   int deletedConversationCount = 0;
 
-  List<ChatCompletionMessageToolCall> toolCalls = const [];
+  List<AiToolCall> toolCalls = const [];
   String? finalResponse;
   InferenceUsage? usage;
   Exception? errorToThrow;
   String? lastSystemMessage;
   String? lastUserMessage;
-  List<ChatCompletionTool> lastTools = const [];
+  List<AiTool> lastTools = const [];
   final sendMessageCalls =
       <
         ({
           InferenceRepositoryInterface inferenceRepo,
           String message,
           String model,
-          ChatCompletionToolChoiceOption? toolChoice,
-          List<ChatCompletionTool> tools,
+          AiToolChoice? toolChoice,
+          List<AiTool> tools,
         })
       >[];
-  List<List<ChatCompletionMessageToolCall>> toolCallsByInvocation = const [];
+  List<List<AiToolCall>> toolCallsByInvocation = const [];
   List<InferenceUsage?> usageByInvocation = const [];
   final toolResponses = <String>[];
 
@@ -2409,8 +2406,8 @@ class _ConversationHarness extends ConversationRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
   }) async {
@@ -2425,7 +2422,7 @@ class _ConversationHarness extends ConversationRepository {
         message: message,
         model: model,
         toolChoice: toolChoice,
-        tools: tools ?? const <ChatCompletionTool>[],
+        tools: tools ?? const <AiTool>[],
       ),
     );
     final invocationIndex = sendMessageCalls.length - 1;
@@ -2444,7 +2441,7 @@ class _ConversationHarness extends ConversationRepository {
         ..addAll(
           manager.messages
               .where(
-                (message) => message.role == ChatCompletionMessageRole.tool,
+                (message) => message.role == AiMessageRole.tool,
               )
               .map((message) => message.content)
               .whereType<String>(),

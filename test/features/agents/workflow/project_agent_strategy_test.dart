@@ -6,8 +6,8 @@ import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -16,18 +16,15 @@ const _agentId = 'agent-001';
 const _threadId = 'thread-001';
 const _runKey = 'run-key-001';
 
-ChatCompletionMessageToolCall _makeToolCall({
+AiToolCall _makeToolCall({
   required String name,
   required Map<String, dynamic> args,
   String id = 'call-1',
 }) {
-  return ChatCompletionMessageToolCall(
+  return AiToolCall(
     id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: jsonEncode(args),
-    ),
+    name: name,
+    arguments: jsonEncode(args),
   );
 }
 
@@ -549,13 +546,10 @@ void main() {
     group('invalid arguments', () {
       test('returns error for malformed JSON arguments', () async {
         final toolCalls = [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: ProjectAgentToolNames.updateProjectReport,
-              arguments: 'not valid json {{{',
-            ),
+            name: ProjectAgentToolNames.updateProjectReport,
+            arguments: 'not valid json {{{',
           ),
         ];
 
@@ -586,13 +580,10 @@ void main() {
 }
 ```''';
         final toolCalls = [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: ProjectAgentToolNames.updateProjectReport,
-              arguments: wrappedJson,
-            ),
+            name: ProjectAgentToolNames.updateProjectReport,
+            arguments: wrappedJson,
           ),
         ];
 

@@ -73,9 +73,8 @@ void main() {
         // Assert
         expect(stream.isBroadcast, isTrue);
         expect(response.choices, hasLength(1));
-        expect(response.choices?[0].delta?.content, equals(transcribedText));
+        expect(response.choices[0].delta.content, equals(transcribedText));
         expect(response.id, startsWith('whisper-'));
-        expect(response.object, equals('chat.completion.chunk'));
         expect(response.created, isA<int>());
 
         // Verify HTTP call
@@ -120,7 +119,7 @@ void main() {
         final response = await stream.first;
 
         // Assert
-        expect(response.choices?[0].delta?.content, equals(transcribedText));
+        expect(response.choices[0].delta.content, equals(transcribedText));
       });
 
       test('throws TranscriptionException on HTTP error', () async {
@@ -310,7 +309,7 @@ void main() {
         final response = await stream.first;
 
         // Assert
-        expect(response.choices?[0].delta?.content, equals(transcribedText));
+        expect(response.choices[0].delta.content, equals(transcribedText));
         // maxCompletionTokens is accepted but not used by Whisper
       });
 
@@ -422,7 +421,7 @@ void main() {
         final response = await stream.first;
 
         // Assert
-        expect(response.choices?[0].delta?.content, equals(transcribedText));
+        expect(response.choices[0].delta.content, equals(transcribedText));
       });
 
       test('handles very long transcriptions', () async {
@@ -453,8 +452,8 @@ void main() {
         final response = await stream.first;
 
         // Assert
-        expect(response.choices?[0].delta?.content, equals(longText));
-        expect(response.choices?[0].delta?.content?.length, equals(10000));
+        expect(response.choices[0].delta.content, equals(longText));
+        expect(response.choices[0].delta.content?.length, equals(10000));
       });
 
       test('sends correct request body to server', () async {
@@ -727,7 +726,7 @@ void main() {
         // Assert
         final response = await stream.first;
         expect(
-          response.choices?.first.delta?.content,
+          response.choices.first.delta.content,
           equals('Test transcription'),
         );
       });

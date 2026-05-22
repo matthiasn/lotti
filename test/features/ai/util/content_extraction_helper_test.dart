@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 enum _GeneratedContentPartShape {
   text,
@@ -30,13 +30,11 @@ class _GeneratedContentPartSpec {
 
   String get expectedText => text.trim().isEmpty ? '' : text;
 
-  ChatCompletionMessageContentPart toPart() => switch (shape) {
-    _GeneratedContentPartShape.image => ChatCompletionMessageContentPart.image(
-      imageUrl: ChatCompletionMessageImageUrl(
-        url: 'data:image/jpeg;base64,generated-$seed',
-      ),
+  AiContentPart toPart() => switch (shape) {
+    _GeneratedContentPartShape.image => AiImagePart(
+      'data:image/jpeg;base64,generated-$seed',
     ),
-    _ => ChatCompletionMessageContentPart.text(text: text),
+    _ => AiTextPart(text),
   };
 
   @override
@@ -56,9 +54,9 @@ class _GeneratedUserContentScenario {
   final int stringSeed;
   final List<_GeneratedContentPartSpec> parts;
 
-  ChatCompletionUserMessageContent get content => asString
-      ? ChatCompletionUserMessageContent.string('generated-string-$stringSeed')
-      : ChatCompletionUserMessageContent.parts(
+  AiUserContent get content => asString
+      ? AiUserTextContent('generated-string-$stringSeed')
+      : AiUserPartsContent(
           parts.map((part) => part.toPart()).toList(),
         );
 
@@ -108,7 +106,7 @@ void main() {
   group('ContentExtractionHelper', () {
     group('extractTextFromUserContent', () {
       test('should extract text from string content', () {
-        const content = ChatCompletionUserMessageContent.string('Hello world');
+        const content = AiUserTextContent('Hello world');
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
         );
@@ -116,12 +114,10 @@ void main() {
       });
 
       test('should extract and join text from multiple content parts', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'Hello'),
-          ChatCompletionMessageContentPart.text(
-            text: ' ',
-          ), // This will be skipped as it's only whitespace
-          ChatCompletionMessageContentPart.text(text: 'world'),
+        const content = AiUserPartsContent([
+          AiTextPart('Hello'),
+          AiTextPart(' '), // This will be skipped as it's only whitespace
+          AiTextPart('world'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -130,11 +126,11 @@ void main() {
       });
 
       test('should skip empty text parts', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'Hello'),
-          ChatCompletionMessageContentPart.text(text: ''),
-          ChatCompletionMessageContentPart.text(text: '   '), // Only whitespace
-          ChatCompletionMessageContentPart.text(text: 'world'),
+        const content = AiUserPartsContent([
+          AiTextPart('Hello'),
+          AiTextPart(''),
+          AiTextPart('   '), // Only whitespace
+          AiTextPart('world'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -143,13 +139,9 @@ void main() {
       });
 
       test('should preserve spacing in non-empty text parts', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(
-            text: 'Hello ',
-          ), // Trailing space preserved
-          ChatCompletionMessageContentPart.text(
-            text: ' world',
-          ), // Leading space preserved
+        const content = AiUserPartsContent([
+          AiTextPart('Hello '), // Trailing space preserved
+          AiTextPart(' world'), // Leading space preserved
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -158,10 +150,10 @@ void main() {
       });
 
       test('should join parts with meaningful spacing', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'The quick brown fox'),
-          ChatCompletionMessageContentPart.text(text: ' jumps over '),
-          ChatCompletionMessageContentPart.text(text: 'the lazy dog'),
+        const content = AiUserPartsContent([
+          AiTextPart('The quick brown fox'),
+          AiTextPart(' jumps over '),
+          AiTextPart('the lazy dog'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -170,7 +162,7 @@ void main() {
       });
 
       test('should handle empty parts list', () {
-        const content = ChatCompletionUserMessageContent.parts([]);
+        const content = AiUserPartsContent([]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
         );
@@ -179,14 +171,10 @@ void main() {
 
       test('should handle mixed content types (skip non-text parts)', () {
         // Create a content with mixed types (text and image)
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'Describe this image:'),
-          ChatCompletionMessageContentPart.image(
-            imageUrl: ChatCompletionMessageImageUrl(
-              url: 'data:image/jpeg;base64,somebase64data',
-            ),
-          ),
-          ChatCompletionMessageContentPart.text(text: ' Please be detailed.'),
+        const content = AiUserPartsContent([
+          AiTextPart('Describe this image:'),
+          AiImagePart('data:image/jpeg;base64,somebase64data'),
+          AiTextPart(' Please be detailed.'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -195,12 +183,8 @@ void main() {
       });
 
       test('should handle content with only non-text parts', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.image(
-            imageUrl: ChatCompletionMessageImageUrl(
-              url: 'data:image/jpeg;base64,somebase64data',
-            ),
-          ),
+        const content = AiUserPartsContent([
+          AiImagePart('data:image/jpeg;base64,somebase64data'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -209,10 +193,10 @@ void main() {
       });
 
       test('should handle content with newlines and special characters', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'Line 1\n'),
-          ChatCompletionMessageContentPart.text(text: 'Line 2\t'),
-          ChatCompletionMessageContentPart.text(text: r'Special: @#$%'),
+        const content = AiUserPartsContent([
+          AiTextPart('Line 1\n'),
+          AiTextPart('Line 2\t'),
+          AiTextPart(r'Special: @#$%'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -224,42 +208,11 @@ void main() {
         // This is a edge case test for the fallback behavior
         // In practice, the value should always be String or List
         // but we test the fallback just in case
-        const content = ChatCompletionUserMessageContent.string(
-          'Test fallback',
-        );
+        const content = AiUserTextContent('Test fallback');
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
         );
         expect(result, 'Test fallback');
-      });
-
-      test('ChatCompletionMessageContentPart JSON schema stability', () {
-        // This test ensures that the toJson() output of ChatCompletionMessageContentPart
-        // maintains a stable schema that our code relies on
-        const textPart = ChatCompletionMessageContentPart.text(
-          text: 'Hello world',
-        );
-        final json = textPart.toJson();
-
-        // Assert the JSON structure matches our expectations
-        expect(json, isA<Map<String, dynamic>>());
-        expect(json['type'], 'text');
-        expect(json['text'], isA<String>());
-        expect(json['text'], 'Hello world');
-
-        // Test with empty text
-        const emptyTextPart = ChatCompletionMessageContentPart.text(text: '');
-        final emptyJson = emptyTextPart.toJson();
-        expect(emptyJson['type'], 'text');
-        expect(emptyJson['text'], '');
-
-        // Test with special characters
-        const specialTextPart = ChatCompletionMessageContentPart.text(
-          text: 'Line 1\nLine 2\t@#\$%',
-        );
-        final specialJson = specialTextPart.toJson();
-        expect(specialJson['type'], 'text');
-        expect(specialJson['text'], 'Line 1\nLine 2\t@#\$%');
       });
 
       glados.Glados(

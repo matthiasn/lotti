@@ -72,7 +72,7 @@ final class ConversationRepositoryProvider
 }
 
 String _$conversationRepositoryHash() =>
-    r'a6319d3ff2f09eeb959bb17c7398d18a69008fd0';
+    r'6453e3e88cc99f25e30e4e53e32620b5f79eae37';
 
 /// Repository for managing AI conversations.
 ///
@@ -200,11 +200,11 @@ final conversationMessagesProvider = ConversationMessagesFamily._();
 final class ConversationMessagesProvider
     extends
         $FunctionalProvider<
-          List<ChatCompletionMessage>,
-          List<ChatCompletionMessage>,
-          List<ChatCompletionMessage>
+          List<AiChatMessage>,
+          List<AiChatMessage>,
+          List<AiChatMessage>
         >
-    with $Provider<List<ChatCompletionMessage>> {
+    with $Provider<List<AiChatMessage>> {
   /// Provider for conversation messages
   ConversationMessagesProvider._({
     required ConversationMessagesFamily super.from,
@@ -229,21 +229,21 @@ final class ConversationMessagesProvider
 
   @$internal
   @override
-  $ProviderElement<List<ChatCompletionMessage>> $createElement(
+  $ProviderElement<List<AiChatMessage>> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  List<ChatCompletionMessage> create(Ref ref) {
+  List<AiChatMessage> create(Ref ref) {
     final argument = this.argument as String;
     return conversationMessages(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(List<ChatCompletionMessage> value) {
+  Override overrideWithValue(List<AiChatMessage> value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<List<ChatCompletionMessage>>(value),
+      providerOverride: $SyncValueProvider<List<AiChatMessage>>(value),
     );
   }
 
@@ -259,12 +259,12 @@ final class ConversationMessagesProvider
 }
 
 String _$conversationMessagesHash() =>
-    r'ff023f0f613dafddbf533de2f684bc9953d444bf';
+    r'0aa7f0255d6f6513f7ad8a6de821b8c2b429f63d';
 
 /// Provider for conversation messages
 
 final class ConversationMessagesFamily extends $Family
-    with $FunctionalFamilyOverride<List<ChatCompletionMessage>, String> {
+    with $FunctionalFamilyOverride<List<AiChatMessage>, String> {
   ConversationMessagesFamily._()
     : super(
         retry: null,

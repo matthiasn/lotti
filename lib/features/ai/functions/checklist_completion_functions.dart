@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
 part 'checklist_completion_functions.freezed.dart';
 part 'checklist_completion_functions.g.dart';
@@ -13,135 +13,126 @@ class ChecklistCompletionFunctions {
   static const String updateChecklistItems = 'update_checklist_items';
 
   /// Get all available function definitions for checklist operations
-  static List<ChatCompletionTool> getTools() {
+  static List<AiTool> getTools() {
     return [
-      const ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: suggestChecklistCompletion,
-          description:
-              'Suggest that a checklist item should be marked as completed based on evidence from audio transcriptions, task summaries, or other context',
-          parameters: {
-            'type': 'object',
-            'properties': {
-              'checklistItemId': {
-                'type': 'string',
-                'description':
-                    'The ID of the checklist item that appears to be completed',
-              },
-              'reason': {
-                'type': 'string',
-                'description':
-                    'A brief explanation of why this item appears to be completed based on the evidence',
-              },
-              'confidence': {
-                'type': 'string',
-                'enum': ['high', 'medium', 'low'],
-                'description': 'Confidence level in the completion suggestion',
-              },
+      const AiTool(
+        name: suggestChecklistCompletion,
+        description:
+            'Suggest that a checklist item should be marked as completed based on evidence from audio transcriptions, task summaries, or other context',
+        parameters: {
+          'type': 'object',
+          'properties': {
+            'checklistItemId': {
+              'type': 'string',
+              'description':
+                  'The ID of the checklist item that appears to be completed',
             },
-            'required': ['checklistItemId', 'reason', 'confidence'],
+            'reason': {
+              'type': 'string',
+              'description':
+                  'A brief explanation of why this item appears to be completed based on the evidence',
+            },
+            'confidence': {
+              'type': 'string',
+              'enum': ['high', 'medium', 'low'],
+              'description': 'Confidence level in the completion suggestion',
+            },
           },
-        ),
+          'required': ['checklistItemId', 'reason', 'confidence'],
+        },
       ),
-      const ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: addMultipleChecklistItems,
-          description:
-              'Add one or more checklist items to the task in a single call. Always pass a JSON array of objects. If no checklist exists, create a "Todos" checklist first.',
-          parameters: {
-            'type': 'object',
-            'properties': {
+      const AiTool(
+        name: addMultipleChecklistItems,
+        description:
+            'Add one or more checklist items to the task in a single call. Always pass a JSON array of objects. If no checklist exists, create a "Todos" checklist first.',
+        parameters: {
+          'type': 'object',
+          'properties': {
+            'items': {
+              'type': 'array',
+              'minItems': 1,
               'items': {
-                'type': 'array',
-                'minItems': 1,
-                'items': {
-                  'type': 'object',
-                  'properties': {
-                    'title': {
-                      'type': 'string',
-                      'minLength': 1,
-                      'maxLength': 400,
-                      'description':
-                          'Checklist item title (trimmed, non-empty, max 400 chars)',
-                    },
-                    'isChecked': {
-                      'type': 'boolean',
-                      'description':
-                          'Whether the item is already checked (default: false)',
-                    },
+                'type': 'object',
+                'properties': {
+                  'title': {
+                    'type': 'string',
+                    'minLength': 1,
+                    'maxLength': 400,
+                    'description':
+                        'Checklist item title (trimmed, non-empty, max 400 chars)',
                   },
-                  'required': ['title'],
+                  'isChecked': {
+                    'type': 'boolean',
+                    'description':
+                        'Whether the item is already checked (default: false)',
+                  },
                 },
-                'description':
-                    'Array of checklist item objects. Example: {"items": [{"title": "Buy milk"}, {"title": "Write tests", "isChecked": true}] }',
+                'required': ['title'],
               },
+              'description':
+                  'Array of checklist item objects. Example: {"items": [{"title": "Buy milk"}, {"title": "Write tests", "isChecked": true}] }',
             },
-            'required': ['items'],
           },
-        ),
+          'required': ['items'],
+        },
       ),
-      const ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: updateChecklistItems,
-          description:
-              'Update one or more existing checklist items. Use to mark items '
-              'as done/undone or to correct titles (e.g., fix transcription '
-              'errors like "mac OS" → "macOS"). When an item was last toggled '
-              'by the user, you must provide a reason citing evidence from '
-              "AFTER the user's action to change its checked state. Title "
-              'updates are always allowed.',
-          parameters: {
-            'type': 'object',
-            'properties': {
+      const AiTool(
+        name: updateChecklistItems,
+        description:
+            'Update one or more existing checklist items. Use to mark items '
+            'as done/undone or to correct titles (e.g., fix transcription '
+            'errors like "mac OS" → "macOS"). When an item was last toggled '
+            'by the user, you must provide a reason citing evidence from '
+            "AFTER the user's action to change its checked state. Title "
+            'updates are always allowed.',
+        parameters: {
+          'type': 'object',
+          'properties': {
+            'items': {
+              'type': 'array',
+              'minItems': 1,
+              'maxItems': 20,
               'items': {
-                'type': 'array',
-                'minItems': 1,
-                'maxItems': 20,
-                'items': {
-                  'type': 'object',
-                  'properties': {
-                    'id': {
-                      'type': 'string',
-                      'description': 'The ID of the checklist item to update',
-                    },
-                    'isChecked': {
-                      'type': 'boolean',
-                      'description':
-                          'New checked status. For items last set by the user, '
-                          'you must also provide a reason citing post-dated '
-                          'evidence. Without a reason, isChecked changes on '
-                          'user-set items will be rejected.',
-                    },
-                    'title': {
-                      'type': 'string',
-                      'minLength': 1,
-                      'maxLength': 400,
-                      'description':
-                          'Updated title text. Use to fix transcription errors '
-                          'or clarify wording.',
-                    },
-                    'reason': {
-                      'type': 'string',
-                      'description':
-                          'Required when changing isChecked on a user-set '
-                          'item. Must cite specific evidence (e.g. a '
-                          'recording or note) that postdates the '
-                          "user's last toggle.",
-                    },
+                'type': 'object',
+                'properties': {
+                  'id': {
+                    'type': 'string',
+                    'description': 'The ID of the checklist item to update',
                   },
-                  'required': ['id'],
+                  'isChecked': {
+                    'type': 'boolean',
+                    'description':
+                        'New checked status. For items last set by the user, '
+                        'you must also provide a reason citing post-dated '
+                        'evidence. Without a reason, isChecked changes on '
+                        'user-set items will be rejected.',
+                  },
+                  'title': {
+                    'type': 'string',
+                    'minLength': 1,
+                    'maxLength': 400,
+                    'description':
+                        'Updated title text. Use to fix transcription errors '
+                        'or clarify wording.',
+                  },
+                  'reason': {
+                    'type': 'string',
+                    'description':
+                        'Required when changing isChecked on a user-set '
+                        'item. Must cite specific evidence (e.g. a '
+                        'recording or note) that postdates the '
+                        "user's last toggle.",
+                  },
                 },
-                'description':
-                    'Array of updates. Each must have id and at least one of '
-                    'isChecked or title.',
+                'required': ['id'],
               },
+              'description':
+                  'Array of updates. Each must have id and at least one of '
+                  'isChecked or title.',
             },
-            'required': ['items'],
           },
-        ),
+          'required': ['items'],
+        },
       ),
     ];
   }

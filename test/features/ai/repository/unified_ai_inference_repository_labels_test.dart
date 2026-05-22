@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart'
     show aiInputRepositoryProvider;
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
@@ -17,7 +18,6 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -31,11 +31,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(
-      const ChatCompletionMessageToolCall(
-        id: 't',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(name: 'f', arguments: '{}'),
-      ),
+      const AiToolCall(id: 't', name: 'f', arguments: '{}'),
     );
   });
 
@@ -112,15 +108,11 @@ void main() {
     deletedAt: deleted ? DateTime(2024, 3, 15, 10, 30) : null,
   );
 
-  ChatCompletionMessageToolCall makeCall(List<String> ids) =>
-      ChatCompletionMessageToolCall(
-        id: 'tool-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'assign_task_labels',
-          arguments: jsonEncode({'labelIds': ids}),
-        ),
-      );
+  AiToolCall makeCall(List<String> ids) => AiToolCall(
+    id: 'tool-1',
+    name: 'assign_task_labels',
+    arguments: jsonEncode({'labelIds': ids}),
+  );
 
   test('assign_task_labels assigns valid labels and filters invalid', () async {
     // Existing labels on the task (group is ignored for exclusivity)
@@ -193,20 +185,17 @@ void main() {
 
       final repo = container.read(unifiedAiInferenceRepositoryProvider);
       final calls = [
-        ChatCompletionMessageToolCall(
+        AiToolCall(
           id: 'tool-2',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'assign_task_labels',
-            arguments: jsonEncode({
-              'labels': [
-                {'id': 'h2', 'confidence': 'high'},
-                {'id': 'vh', 'confidence': 'very_high'},
-                {'id': 'low', 'confidence': 'low'},
-                {'id': 'h1', 'confidence': 'high'},
-              ],
-            }),
-          ),
+          name: 'assign_task_labels',
+          arguments: jsonEncode({
+            'labels': [
+              {'id': 'h2', 'confidence': 'high'},
+              {'id': 'vh', 'confidence': 'very_high'},
+              {'id': 'low', 'confidence': 'low'},
+              {'id': 'h1', 'confidence': 'high'},
+            ],
+          }),
         ),
       ];
 

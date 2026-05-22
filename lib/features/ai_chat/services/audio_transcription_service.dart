@@ -131,7 +131,7 @@ class AudioTranscriptionService {
     );
 
     await for (final chunk in stream) {
-      final content = chunk.choices?.firstOrNull?.delta?.content ?? '';
+      final content = chunk.choices.firstOrNull?.delta.content ?? '';
       if (content.isNotEmpty) {
         yield content;
       }

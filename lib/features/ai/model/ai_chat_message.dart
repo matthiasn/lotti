@@ -34,7 +34,8 @@ enum AiMessageRole {
   assistant,
   tool,
   function,
-  developer;
+  developer
+  ;
 
   String get wire => name;
 
@@ -170,7 +171,8 @@ final class AiAudioPart extends AiContentPart {
 
 enum AiAudioFormat {
   mp3,
-  wav;
+  wav
+  ;
 
   String get wire => name;
 }
@@ -210,6 +212,19 @@ final class AiToolCall {
   /// Raw JSON string emitted by the model — caller is responsible for
   /// parsing/validating it against the tool's parameter schema.
   final String arguments;
+}
+
+/// OpenAI-compatible `reasoning_effort` request value. Used to control the
+/// reasoning/thinking depth of models served through the OpenAI-compatible
+/// protocol (e.g. Gemini 3 via its OpenAI endpoint).
+enum AiReasoningEffort {
+  minimal,
+  low,
+  medium,
+  high
+  ;
+
+  String get wire => name;
 }
 
 /// Policy that controls whether/which tool the model calls.
@@ -313,9 +328,21 @@ final class AiUsage {
     this.promptTokens,
     this.completionTokens,
     this.totalTokens,
+    this.reasoningTokens,
+    this.cachedInputTokens,
   });
 
   final int? promptTokens;
   final int? completionTokens;
   final int? totalTokens;
+
+  /// Reasoning/"thinking" tokens billed separately by some providers (Gemini
+  /// surfaces them as `thoughtsTokenCount`; OpenAI as
+  /// `completion_tokens_details.reasoning_tokens`).
+  final int? reasoningTokens;
+
+  /// Prompt tokens served from the provider's cache (OpenAI exposes them as
+  /// `prompt_tokens_details.cached_tokens`; Gemini as
+  /// `cachedContentTokenCount`). Used for cost accounting.
+  final int? cachedInputTokens;
 }

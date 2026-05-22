@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
@@ -27,7 +28,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -464,16 +464,15 @@ void main() {
   }
 
   /// Creates a stream response chunk with the given content.
-  CreateChatCompletionStreamResponse makeStreamChunk(String content) {
-    return CreateChatCompletionStreamResponse(
+  AiStreamChunk makeStreamChunk(String content) {
+    return AiStreamChunk(
       id: 'resp-1',
       choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(content: content),
+        AiStreamChoice(
+          delta: AiStreamDelta(content: content),
           index: 0,
         ),
       ],
-      object: 'chat.completion.chunk',
       created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
     );
   }

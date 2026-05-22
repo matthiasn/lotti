@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -8,7 +9,6 @@ import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// A clock function used for time-dependent logic.
 ///
@@ -36,7 +36,7 @@ class StreamProcessingResult {
   });
 
   final String content;
-  final List<ChatCompletionMessageToolCall> toolCalls;
+  final List<AiToolCall> toolCalls;
 }
 
 /// Helper class to extract testable units from ChatRepository's sendMessage logic
@@ -104,76 +104,56 @@ class ChatMessageProcessor {
     _cachedModelId = null;
   }
 
-  /// Convert conversation history to OpenAI messages, filtering out system messages
-  List<ChatCompletionMessage> convertConversationHistory(
+  /// Convert UI chat history into provider messages, dropping system entries.
+  List<AiChatMessage> convertConversationHistory(
     List<ChatMessage> conversationHistory,
   ) {
     return conversationHistory
         .where((msg) => msg.role != ChatMessageRole.system)
-        .map(_convertToOpenAIMessage)
+        .map(_convertToProviderMessage)
         .toList();
   }
 
-  /// Build messages list with system prompt and history
-  List<ChatCompletionMessage> buildMessagesList(
-    List<ChatCompletionMessage> previousMessages,
+  /// Build a messages list with system prompt and history.
+  List<AiChatMessage> buildMessagesList(
+    List<AiChatMessage> previousMessages,
     String message,
     String systemMessage,
   ) {
-    return <ChatCompletionMessage>[
-      ChatCompletionMessage.system(content: systemMessage),
+    return <AiChatMessage>[
+      AiSystemMessage(systemMessage),
       ...previousMessages,
-      ChatCompletionMessage.user(
-        content: ChatCompletionUserMessageContent.string(message),
-      ),
+      AiUserMessage(AiUserTextContent(message)),
     ];
   }
 
-  List<String> _buildConversationContextLines(
-    List<ChatCompletionMessage> messages,
-  ) {
+  List<String> _buildConversationContextLines(List<AiChatMessage> messages) {
     final parts = <String>[];
     for (final msg in messages) {
-      String? line;
-      if (msg.role == ChatCompletionMessageRole.user) {
-        final content = _extractUserText(msg.content);
-        line = 'User: $content';
-      } else if (msg.role == ChatCompletionMessageRole.assistant &&
-          msg.content != null) {
-        final content = _extractAssistantText(msg.content);
-        line = 'Assistant: $content';
-      } else if (msg.role == ChatCompletionMessageRole.tool) {
-        final content = _extractToolText(msg.content);
-        line = 'Tool response: $content';
-      }
+      final line = switch (msg) {
+        AiUserMessage(:final content) => 'User: ${_extractUserText(content)}',
+        AiAssistantMessage(:final content) when content != null =>
+          'Assistant: $content',
+        AiAssistantMessage() => null,
+        AiToolResultMessage(:final content) => 'Tool response: $content',
+        AiSystemMessage() => null,
+      };
       if (line != null) parts.add(line);
     }
     return parts;
   }
 
-  String _extractUserText(Object? content) {
-    if (content is ChatCompletionUserMessageContent) {
-      return content.when(
-        string: (text) => text,
-        parts: (parts) => parts.map((p) => p.toString()).join(' '),
-      );
-    }
-    return content?.toString() ?? '';
+  String _extractUserText(AiUserContent content) {
+    return switch (content) {
+      AiUserTextContent(:final text) => text,
+      AiUserPartsContent(:final parts) =>
+        parts.whereType<AiTextPart>().map((p) => p.text).join(' '),
+    };
   }
 
-  String _extractAssistantText(Object? content) {
-    // Assistant content is typically a plain string in our usage
-    return content?.toString() ?? '';
-  }
-
-  String _extractToolText(Object? content) {
-    // Tool content should be stringified JSON; ensure a string fallback
-    return content?.toString() ?? '';
-  }
-
-  /// Build conversation context for the prompt
+  /// Build conversation context for the prompt.
   String buildPromptFromMessages(
-    List<ChatCompletionMessage> previousMessages,
+    List<AiChatMessage> previousMessages,
     String message,
   ) {
     final promptParts = _buildConversationContextLines(previousMessages)
@@ -191,28 +171,21 @@ class ChatMessageProcessor {
   /// The chat UI uses `thinking_parser.dart` to hide/show thinking blocks
   /// without altering provider semantics.
   Future<StreamProcessingResult> processStreamResponse(
-    Stream<CreateChatCompletionStreamResponse> stream,
+    Stream<AiStreamChunk> stream,
   ) async {
     final contentBuffer = StringBuffer();
-    final toolCalls = <ChatCompletionMessageToolCall>[];
-    // Buffer for accumulating tool call arguments by ID
+    final toolCalls = <AiToolCall>[];
     final toolCallArgumentBuffers = <String, StringBuffer>{};
 
     await for (final chunk in stream) {
-      if (chunk.choices?.isNotEmpty ?? false) {
-        final delta = chunk.choices!.first.delta;
+      if (chunk.choices.isEmpty) continue;
+      final delta = chunk.choices.first.delta;
 
-        // Handle content streaming
-        if (delta?.content != null) contentBuffer.write(delta!.content);
+      if (delta.content != null) contentBuffer.write(delta.content);
 
-        // Collect tool calls
-        if (delta?.toolCalls != null) {
-          accumulateToolCalls(
-            toolCalls,
-            delta!.toolCalls!,
-            toolCallArgumentBuffers,
-          );
-        }
+      final chunks = delta.toolCalls;
+      if (chunks != null) {
+        accumulateToolCalls(toolCalls, chunks, toolCallArgumentBuffers);
       }
     }
 
@@ -228,79 +201,68 @@ class ChatMessageProcessor {
   /// complete. The method is idempotent across multiple invocations on the
   /// same buffers.
   void accumulateToolCalls(
-    List<ChatCompletionMessageToolCall> toolCalls,
-    List<ChatCompletionStreamMessageToolCallChunk> toolCallDeltas,
+    List<AiToolCall> toolCalls,
+    List<AiToolCallChunk> toolCallDeltas,
     Map<String, StringBuffer> argumentBuffers,
   ) {
     for (final toolCallDelta in toolCallDeltas) {
-      if (toolCallDelta.function != null) {
-        // Use a stable deterministic id for this tool call within the stream.
-        // Prefer provided id; otherwise, use index. If neither is present, skip as malformed.
-        final toolId =
-            toolCallDelta.id ??
-            (toolCallDelta.index != null
-                ? 'tool_${toolCallDelta.index}'
-                : null);
-        if (toolId == null) {
-          loggingService.log(
-            LogDomain.chat,
-            'Malformed tool call stream: missing id and index. delta: $toolCallDelta',
-            subDomain: 'accumulateToolCalls',
-          );
-          continue;
-        }
+      // A chunk is meaningful only if it carries a name or arguments delta.
+      if (toolCallDelta.name == null && toolCallDelta.arguments == null) {
+        continue;
+      }
 
-        // Initialize buffer for this tool call if needed
-        argumentBuffers.putIfAbsent(toolId, StringBuffer.new);
+      // Use a stable deterministic id within the stream. Prefer provided id;
+      // otherwise derive one from index. Skip as malformed if neither.
+      final toolId =
+          toolCallDelta.id ??
+          (toolCallDelta.index != null ? 'tool_${toolCallDelta.index}' : null);
+      if (toolId == null) {
+        loggingService.log(
+          LogDomain.chat,
+          'Malformed tool call stream: missing id and index. delta: $toolCallDelta',
+          subDomain: 'accumulateToolCalls',
+        );
+        continue;
+      }
 
-        // Append arguments to buffer. If both existing and incoming are
-        // complete JSON objects, replace with the latest instead of
-        // concatenating (guards against providers that resend full args).
-        final incoming = toolCallDelta.function?.arguments;
-        if (incoming != null) {
-          final buf = argumentBuffers[toolId]!;
-          final incomingStr = incoming;
-          if (_isCompleteJson(incomingStr) && _isCompleteJson(buf.toString())) {
-            argumentBuffers[toolId] = StringBuffer(incomingStr);
-          } else {
-            buf.write(incomingStr);
-          }
-        }
+      argumentBuffers.putIfAbsent(toolId, StringBuffer.new);
 
-        // Find or create tool call
-        final existingIndex = toolCalls.indexWhere((tc) => tc.id == toolId);
-
-        if (existingIndex >= 0) {
-          // Update existing tool call with accumulated arguments
-          final existing = toolCalls[existingIndex];
-          toolCalls[existingIndex] = ChatCompletionMessageToolCall(
-            id: existing.id,
-            type: existing.type,
-            function: ChatCompletionMessageFunctionCall(
-              name: toolCallDelta.function?.name ?? existing.function.name,
-              arguments: argumentBuffers[toolId]!.toString(),
-            ),
-          );
+      // Append arguments. If both existing and incoming are complete JSON
+      // objects, replace instead of concatenating — guards against providers
+      // that resend full args.
+      final incoming = toolCallDelta.arguments;
+      if (incoming != null) {
+        final buf = argumentBuffers[toolId]!;
+        if (_isCompleteJson(incoming) && _isCompleteJson(buf.toString())) {
+          argumentBuffers[toolId] = StringBuffer(incoming);
         } else {
-          // Add new tool call
-          toolCalls.add(
-            ChatCompletionMessageToolCall(
-              id: toolId,
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: toolCallDelta.function?.name ?? '',
-                arguments: argumentBuffers[toolId]!.toString(),
-              ),
-            ),
-          );
+          buf.write(incoming);
         }
+      }
+
+      final existingIndex = toolCalls.indexWhere((tc) => tc.id == toolId);
+      if (existingIndex >= 0) {
+        final existing = toolCalls[existingIndex];
+        toolCalls[existingIndex] = AiToolCall(
+          id: existing.id,
+          name: toolCallDelta.name ?? existing.name,
+          arguments: argumentBuffers[toolId]!.toString(),
+        );
+      } else {
+        toolCalls.add(
+          AiToolCall(
+            id: toolId,
+            name: toolCallDelta.name ?? '',
+            arguments: argumentBuffers[toolId]!.toString(),
+          ),
+        );
       }
     }
   }
 
-  /// Process multiple tool calls and return tool response messages
-  Future<List<ChatCompletionMessage>> processToolCalls(
-    List<ChatCompletionMessageToolCall> toolCalls,
+  /// Process multiple tool calls and return tool response messages.
+  Future<List<AiChatMessage>> processToolCalls(
+    List<AiToolCall> toolCalls,
     String categoryId,
   ) async {
     loggingService.log(
@@ -309,17 +271,17 @@ class ChatMessageProcessor {
       subDomain: 'processToolCalls',
     );
 
-    final toolMessages = <ChatCompletionMessage>[];
+    final toolMessages = <AiChatMessage>[];
 
     for (final toolCall in toolCalls) {
-      if (toolCall.function.name == TaskSummaryTool.name) {
+      if (toolCall.name == TaskSummaryTool.name) {
         final toolResponse = await processTaskSummaryTool(
           toolCall: toolCall,
           categoryId: categoryId,
         );
 
         toolMessages.add(
-          ChatCompletionMessage.tool(
+          AiToolResultMessage(
             toolCallId: toolCall.id,
             content: toolResponse,
           ),
@@ -330,14 +292,13 @@ class ChatMessageProcessor {
     return toolMessages;
   }
 
-  /// Process a single task summary tool call
+  /// Process a single task summary tool call.
   Future<String> processTaskSummaryTool({
-    required ChatCompletionMessageToolCall toolCall,
+    required AiToolCall toolCall,
     required String categoryId,
   }) async {
     try {
-      final args =
-          jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
+      final args = jsonDecode(toolCall.arguments) as Map<String, dynamic>;
 
       final request = TaskSummaryRequest.fromJson(args);
 
@@ -402,8 +363,8 @@ class ChatMessageProcessor {
     }
   }
 
-  /// Build final prompt from all messages including tool results
-  String buildFinalPromptFromMessages(List<ChatCompletionMessage> messages) {
+  /// Build final prompt from all messages including tool results.
+  String buildFinalPromptFromMessages(List<AiChatMessage> messages) {
     final parts = _buildConversationContextLines(messages)
       ..add(
         'Based on the conversation and tool results above, provide a helpful response to the user.',
@@ -411,9 +372,9 @@ class ChatMessageProcessor {
     return parts.join('\n\n');
   }
 
-  /// Generate final response after tool calls
+  /// Generate final response after tool calls.
   Future<String> generateFinalResponse({
-    required List<ChatCompletionMessage> messages,
+    required List<AiChatMessage> messages,
     required AiInferenceConfig config,
     required String systemMessage,
   }) async {
@@ -435,9 +396,9 @@ class ChatMessageProcessor {
     return finalResult.content;
   }
 
-  /// Generate final response after tool calls, streaming content chunks
+  /// Generate final response after tool calls, streaming content chunks.
   Stream<String> generateFinalResponseStream({
-    required List<ChatCompletionMessage> messages,
+    required List<AiChatMessage> messages,
     required AiInferenceConfig config,
     required String systemMessage,
   }) async* {
@@ -455,32 +416,21 @@ class ChatMessageProcessor {
     );
 
     await for (final chunk in finalStream) {
-      if (chunk.choices?.isNotEmpty ?? false) {
-        final delta = chunk.choices!.first.delta;
-        final content = delta?.content;
-        if (content != null && content.isNotEmpty) {
-          yield content;
-        }
+      if (chunk.choices.isEmpty) continue;
+      final content = chunk.choices.first.delta.content;
+      if (content != null && content.isNotEmpty) {
+        yield content;
       }
     }
   }
 
-  /// Convert ChatMessage to OpenAI ChatCompletionMessage
-  ChatCompletionMessage _convertToOpenAIMessage(ChatMessage message) {
-    switch (message.role) {
-      case ChatMessageRole.user:
-        return ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string(message.content),
-        );
-      case ChatMessageRole.assistant:
-        return ChatCompletionMessage.assistant(
-          content: message.content,
-        );
-      case ChatMessageRole.system:
-        return ChatCompletionMessage.system(
-          content: message.content,
-        );
-    }
+  /// Convert UI [ChatMessage] to provider [AiChatMessage].
+  AiChatMessage _convertToProviderMessage(ChatMessage message) {
+    return switch (message.role) {
+      ChatMessageRole.user => AiUserMessage(AiUserTextContent(message.content)),
+      ChatMessageRole.assistant => AiAssistantMessage(content: message.content),
+      ChatMessageRole.system => AiSystemMessage(message.content),
+    };
   }
 }
 

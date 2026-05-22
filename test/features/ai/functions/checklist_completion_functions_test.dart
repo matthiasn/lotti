@@ -1,17 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 void main() {
   test('add_multiple_checklist_items tool requires array of objects', () {
     final tools = ChecklistCompletionFunctions.getTools();
     final tool = tools.firstWhere(
-      (t) =>
-          t.type == ChatCompletionToolType.function &&
-          t.function.name ==
-              ChecklistCompletionFunctions.addMultipleChecklistItems,
+      (t) => t.name == ChecklistCompletionFunctions.addMultipleChecklistItems,
     );
-    final params = tool.function.parameters! as Map<String, Object?>;
+    final params = tool.parameters as Map<String, Object?>;
     final props = params['properties']! as Map<String, Object?>;
     final items = props['items']! as Map<String, Object?>;
     expect(items['type'], equals('array'));
@@ -26,11 +22,9 @@ void main() {
   test('update_checklist_items tool requires array of update objects', () {
     final tools = ChecklistCompletionFunctions.getTools();
     final tool = tools.firstWhere(
-      (t) =>
-          t.type == ChatCompletionToolType.function &&
-          t.function.name == ChecklistCompletionFunctions.updateChecklistItems,
+      (t) => t.name == ChecklistCompletionFunctions.updateChecklistItems,
     );
-    final params = tool.function.parameters! as Map<String, Object?>;
+    final params = tool.parameters as Map<String, Object?>;
     final props = params['properties']! as Map<String, Object?>;
     final items = props['items']! as Map<String, Object?>;
     expect(items['type'], equals('array'));

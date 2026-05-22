@@ -11,8 +11,8 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -67,7 +67,7 @@ class _GeneratedSplitSequenceScenario {
     return ChangeSetBuilder.deterministicPlaceholder(taskId, '$title||');
   }
 
-  List<ChatCompletionMessageToolCall> toolCalls() {
+  List<AiToolCall> toolCalls() {
     final create = _toolCall(
       id: 'call-create',
       name: TaskAgentToolNames.createFollowUpTask,
@@ -125,19 +125,12 @@ extension _AnyGeneratedSplitSequenceScenario on glados.Any {
       );
 }
 
-ChatCompletionMessageToolCall _toolCall({
+AiToolCall _toolCall({
   required String id,
   required String name,
   required Map<String, dynamic> args,
 }) {
-  return ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: jsonEncode(args),
-    ),
-  );
+  return AiToolCall(id: id, name: name, arguments: jsonEncode(args));
 }
 
 /// Creates a [TaskAgentStrategy] with an attached [ChangeSetBuilder] and
@@ -246,13 +239,10 @@ void main() {
         'parses arguments, delegates to executor, feeds results back',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'set_task_title',
-                arguments: jsonEncode({'title': 'New Title'}),
-              ),
+              name: 'set_task_title',
+              arguments: jsonEncode({'title': 'New Title'}),
             ),
           ];
 
@@ -302,21 +292,15 @@ void main() {
 
       test('processes multiple tool calls sequentially', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'set_task_title',
-              arguments: jsonEncode({'title': 'Title'}),
-            ),
+            name: 'set_task_title',
+            arguments: jsonEncode({'title': 'Title'}),
           ),
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-2',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_task_priority',
-              arguments: jsonEncode({'priority': 'P1'}),
-            ),
+            name: 'update_task_priority',
+            arguments: jsonEncode({'priority': 'P1'}),
           ),
         ];
 
@@ -373,13 +357,10 @@ void main() {
             allowedRelatedTaskIds: const {'task-002'},
           ).strategy;
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-related',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.getRelatedTaskDetails,
-                arguments: jsonEncode({'taskId': 'task-002'}),
-              ),
+              name: TaskAgentToolNames.getRelatedTaskDetails,
+              arguments: jsonEncode({'taskId': 'task-002'}),
             ),
           ];
 
@@ -416,13 +397,10 @@ void main() {
           allowedRelatedTaskIds: {taskId},
         ).strategy;
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-current',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: TaskAgentToolNames.getRelatedTaskDetails,
-              arguments: jsonEncode({'taskId': taskId}),
-            ),
+            name: TaskAgentToolNames.getRelatedTaskDetails,
+            arguments: jsonEncode({'taskId': taskId}),
           ),
         ];
 
@@ -454,13 +432,10 @@ void main() {
           allowedRelatedTaskIds: const {'task-002'},
         ).strategy;
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-outside',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: TaskAgentToolNames.getRelatedTaskDetails,
-              arguments: jsonEncode({'taskId': 'task-999'}),
-            ),
+            name: TaskAgentToolNames.getRelatedTaskDetails,
+            arguments: jsonEncode({'taskId': 'task-999'}),
           ),
         ];
 
@@ -491,13 +466,10 @@ void main() {
             allowedRelatedTaskIds: const {'task-002'},
           ).strategy;
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-null',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.getRelatedTaskDetails,
-                arguments: jsonEncode({'taskId': 'task-002'}),
-              ),
+              name: TaskAgentToolNames.getRelatedTaskDetails,
+              arguments: jsonEncode({'taskId': 'task-002'}),
             ),
           ];
 
@@ -530,13 +502,10 @@ void main() {
             allowedRelatedTaskIds: const {'task-002'},
           ).strategy;
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-throw',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.getRelatedTaskDetails,
-                arguments: jsonEncode({'taskId': 'task-002'}),
-              ),
+              name: TaskAgentToolNames.getRelatedTaskDetails,
+              arguments: jsonEncode({'taskId': 'task-002'}),
             ),
           ];
 
@@ -559,21 +528,15 @@ void main() {
 
       test('records error and continues on invalid JSON arguments', () async {
         final toolCalls = [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'call-bad',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'set_task_title',
-              arguments: '{invalid json!!!',
-            ),
+            name: 'set_task_title',
+            arguments: '{invalid json!!!',
           ),
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-good',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_task_priority',
-              arguments: jsonEncode({'priority': 'P2'}),
-            ),
+            name: 'update_task_priority',
+            arguments: jsonEncode({'priority': 'P2'}),
           ),
         ];
 
@@ -654,13 +617,10 @@ void main() {
           );
 
           final toolCalls = [
-            const ChatCompletionMessageToolCall(
+            const AiToolCall(
               id: 'call-fenced',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_task_priority',
-                arguments: '```json\n{"priority": "P0"}\n```',
-              ),
+              name: 'update_task_priority',
+              arguments: '```json\n{"priority": "P0"}\n```',
             ),
           ];
 
@@ -719,13 +679,10 @@ void main() {
               '{"status": "IN_PROGRESS"} (setting task to in progress)';
 
           final toolCalls = [
-            const ChatCompletionMessageToolCall(
+            const AiToolCall(
               id: 'call-trailing',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'set_task_status',
-                arguments: trailingText,
-              ),
+              name: 'set_task_status',
+              arguments: trailingText,
             ),
           ];
 
@@ -785,13 +742,10 @@ void main() {
           const raw = '```json\nnot valid json\n```\n{"priority": "P3"}';
 
           final toolCalls = [
-            const ChatCompletionMessageToolCall(
+            const AiToolCall(
               id: 'call-fence-invalid',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_task_priority',
-                arguments: raw,
-              ),
+              name: 'update_task_priority',
+              arguments: raw,
             ),
           ];
 
@@ -833,13 +787,10 @@ void main() {
           const raw = '{not: valid, json}';
 
           final toolCalls = [
-            const ChatCompletionMessageToolCall(
+            const AiToolCall(
               id: 'call-bad-braces',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_task_priority',
-                arguments: raw,
-              ),
+              name: 'update_task_priority',
+              arguments: raw,
             ),
           ];
 
@@ -878,13 +829,10 @@ void main() {
 
       test('persists assistant message before processing tool calls', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'set_task_title',
-              arguments: jsonEncode({'title': 'T'}),
-            ),
+            name: 'set_task_title',
+            arguments: jsonEncode({'title': 'T'}),
           ),
         ];
 
@@ -919,15 +867,12 @@ void main() {
     group('record_observations tool', () {
       test('accumulates observations from tool call', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-obs',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': ['Pattern A', 'Pattern B'],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': ['Pattern A', 'Pattern B'],
+            }),
           ),
         ];
 
@@ -952,28 +897,22 @@ void main() {
 
       test('accumulates across multiple tool calls', () async {
         final firstBatch = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': ['Note 1'],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': ['Note 1'],
+            }),
           ),
         ];
 
         final secondBatch = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-2',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': ['Note 2', 'Note 3'],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': ['Note 2', 'Note 3'],
+            }),
           ),
         ];
 
@@ -994,15 +933,12 @@ void main() {
 
       test('filters empty strings from observations', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-obs',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': ['Valid', '', '  ', 'Also valid'],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': ['Valid', '', '  ', 'Also valid'],
+            }),
           ),
         ];
 
@@ -1019,15 +955,12 @@ void main() {
 
       test('filters non-string values from observations', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-obs',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': ['Valid', 42, null, 'Also valid'],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': ['Valid', 42, null, 'Also valid'],
+            }),
           ),
         ];
 
@@ -1044,15 +977,12 @@ void main() {
 
       test('records zero observations from empty array', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-obs',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': <String>[],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': <String>[],
+            }),
           ),
         ];
 
@@ -1075,13 +1005,10 @@ void main() {
         // When the LLM sends literal 'null' as arguments, jsonDecode returns
         // null which is not a Map — caught at the parsing stage.
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-null-args',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode(null),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode(null),
           ),
         ];
 
@@ -1106,15 +1033,12 @@ void main() {
 
       test('returns error when observations is not an array', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-obs',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': 'not an array',
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': 'not an array',
+            }),
           ),
         ];
 
@@ -1135,15 +1059,12 @@ void main() {
 
       test('does not delegate to executor', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-obs',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': ['Note'],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': ['Note'],
+            }),
           ),
         ];
 
@@ -1187,17 +1108,14 @@ void main() {
       test('returns null after report is submitted', () async {
         await strategy.processToolCalls(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-report',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_report',
-                arguments: jsonEncode({
-                  'content': '# Report',
-                  'oneLiner': 'Implementation done, release next',
-                  'tldr': 'Implementation is done and release is next.',
-                }),
-              ),
+              name: 'update_report',
+              arguments: jsonEncode({
+                'content': '# Report',
+                'oneLiner': 'Implementation done, release next',
+                'tldr': 'Implementation is done and release is next.',
+              }),
             ),
           ],
           manager: mockManager,
@@ -1210,17 +1128,14 @@ void main() {
     group('update_report tool', () {
       test('captures report content from tool call', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-report',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': '# Task Summary\n\nAll good.',
-                'oneLiner': 'Implementation done, release next',
-                'tldr': 'Implementation is done and release is next.',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': '# Task Summary\n\nAll good.',
+              'oneLiner': 'Implementation done, release next',
+              'tldr': 'Implementation is done and release is next.',
+            }),
           ),
         ];
 
@@ -1256,17 +1171,14 @@ void main() {
           ('call-2', '# Second', 'Second one-liner', 'Second summary'),
         ]) {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: id,
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_report',
-                arguments: jsonEncode({
-                  'content': content,
-                  'oneLiner': oneLiner,
-                  'tldr': tldr,
-                }),
-              ),
+              name: 'update_report',
+              arguments: jsonEncode({
+                'content': content,
+                'oneLiner': oneLiner,
+                'tldr': tldr,
+              }),
             ),
           ];
 
@@ -1283,17 +1195,14 @@ void main() {
 
       test('trims whitespace from report content', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-report',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': '  # Report\n\nContent  \n\n',
-                'oneLiner': '  Release blocked on docs  ',
-                'tldr': '  Release blocked on docs and QA.  ',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': '  # Report\n\nContent  \n\n',
+              'oneLiner': '  Release blocked on docs  ',
+              'tldr': '  Release blocked on docs and QA.  ',
+            }),
           ),
         ];
 
@@ -1309,17 +1218,14 @@ void main() {
 
       test('returns error for empty content', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-report',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': '  ',
-                'oneLiner': 'Release blocked on docs',
-                'tldr': 'Release blocked on docs and QA.',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': '  ',
+              'oneLiner': 'Release blocked on docs',
+              'tldr': 'Release blocked on docs and QA.',
+            }),
           ),
         ];
 
@@ -1342,17 +1248,14 @@ void main() {
 
       test('returns error for non-string content', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-report',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': 42,
-                'oneLiner': 'Release blocked on docs',
-                'tldr': 'Release blocked on docs and QA.',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': 42,
+              'oneLiner': 'Release blocked on docs',
+              'tldr': 'Release blocked on docs and QA.',
+            }),
           ),
         ];
 
@@ -1368,17 +1271,14 @@ void main() {
 
       test('does not delegate to executor', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-report',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': '# Report',
-                'oneLiner': 'Implementation done, release next',
-                'tldr': 'Implementation is done and release is next.',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': '# Report',
+              'oneLiner': 'Implementation done, release next',
+              'tldr': 'Implementation is done and release is next.',
+            }),
           ),
         ];
 
@@ -1407,17 +1307,14 @@ void main() {
 
       test('captures oneLiner and tldr from update_report tool call', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-report-tldr',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': '# Full Report\n\nDetailed analysis.',
-                'oneLiner': 'Implementation done, release next',
-                'tldr': 'Brief summary of the report.',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': '# Full Report\n\nDetailed analysis.',
+              'oneLiner': 'Implementation done, release next',
+              'tldr': 'Brief summary of the report.',
+            }),
           ),
         ];
 
@@ -1442,16 +1339,13 @@ void main() {
 
       test('returns error when tldr is missing', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-no-tldr',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': '# Report',
-                'oneLiner': 'Implementation done, release next',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': '# Report',
+              'oneLiner': 'Implementation done, release next',
+            }),
           ),
         ];
 
@@ -1474,16 +1368,13 @@ void main() {
 
       test('returns error when oneLiner is missing', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-no-one-liner',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': '# Report',
-                'tldr': 'Implementation is done and release is next.',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': '# Report',
+              'tldr': 'Implementation is done and release is next.',
+            }),
           ),
         ];
 
@@ -1556,24 +1447,21 @@ void main() {
     group('structured observations', () {
       test('parses structured observation items', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-structured',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': [
-                  {
-                    'text': 'User requested P0 but I kept P1.',
-                    'priority': 'critical',
-                    'category': 'grievance',
-                  },
-                  {
-                    'text': 'Routine check completed.',
-                  },
-                ],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': [
+                {
+                  'text': 'User requested P0 but I kept P1.',
+                  'priority': 'critical',
+                  'category': 'grievance',
+                },
+                {
+                  'text': 'Routine check completed.',
+                },
+              ],
+            }),
           ),
         ];
 
@@ -1596,21 +1484,18 @@ void main() {
 
       test('parses excellence category', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-exc',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': [
-                  {
-                    'text': 'User praised the report quality.',
-                    'priority': 'critical',
-                    'category': 'excellence',
-                  },
-                ],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': [
+                {
+                  'text': 'User praised the report quality.',
+                  'priority': 'critical',
+                  'category': 'excellence',
+                },
+              ],
+            }),
           ),
         ];
 
@@ -1626,21 +1511,18 @@ void main() {
 
       test('handles snake_case category from tool schema', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-snake',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': [
-                  {
-                    'text': 'User suggested a prompt change.',
-                    'priority': 'notable',
-                    'category': 'template_improvement',
-                  },
-                ],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': [
+                {
+                  'text': 'User suggested a prompt change.',
+                  'priority': 'notable',
+                  'category': 'template_improvement',
+                },
+              ],
+            }),
           ),
         ];
 
@@ -1656,22 +1538,19 @@ void main() {
 
       test('handles mixed legacy and structured items', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-mixed',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': [
-                  'Legacy bare string',
-                  {
-                    'text': 'Structured item',
-                    'priority': 'critical',
-                    'category': 'grievance',
-                  },
-                ],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': [
+                'Legacy bare string',
+                {
+                  'text': 'Structured item',
+                  'priority': 'critical',
+                  'category': 'grievance',
+                },
+              ],
+            }),
           ),
         ];
 
@@ -1691,21 +1570,18 @@ void main() {
 
       test('ignores unknown priority/category values gracefully', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-unknown',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_observations',
-              arguments: jsonEncode({
-                'observations': [
-                  {
-                    'text': 'Unknown values',
-                    'priority': 'super_urgent',
-                    'category': 'banana',
-                  },
-                ],
-              }),
-            ),
+            name: 'record_observations',
+            arguments: jsonEncode({
+              'observations': [
+                {
+                  'text': 'Unknown values',
+                  'priority': 'super_urgent',
+                  'category': 'banana',
+                },
+              ],
+            }),
           ),
         ];
 
@@ -1742,13 +1618,10 @@ void main() {
 
       test('routes deferred tools to change set builder', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'set_task_title',
-              arguments: jsonEncode({'title': 'New Title'}),
-            ),
+            name: 'set_task_title',
+            arguments: jsonEncode({'title': 'New Title'}),
           ),
         ];
 
@@ -1789,17 +1662,14 @@ void main() {
 
       test('still executes immediate tools (update_report)', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-report',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': '# Report',
-                'oneLiner': 'Implementation done, release next',
-                'tldr': 'Implementation is done and release is next.',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': '# Report',
+              'oneLiner': 'Implementation done, release next',
+              'tldr': 'Implementation is done and release is next.',
+            }),
           ),
         ];
 
@@ -1818,19 +1688,16 @@ void main() {
 
       test('explodes batch checklist tools into individual items', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-batch',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'add_multiple_checklist_items',
-              arguments: jsonEncode({
-                'items': [
-                  {'title': 'Design mockup'},
-                  {'title': 'Implement API'},
-                  {'title': 'Write tests'},
-                ],
-              }),
-            ),
+            name: 'add_multiple_checklist_items',
+            arguments: jsonEncode({
+              'items': [
+                {'title': 'Design mockup'},
+                {'title': 'Implement API'},
+                {'title': 'Write tests'},
+              ],
+            }),
           ),
         ];
 
@@ -1864,25 +1731,19 @@ void main() {
         );
 
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-deferred',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_task_estimate',
-              arguments: jsonEncode({'minutes': 120}),
-            ),
+            name: 'update_task_estimate',
+            arguments: jsonEncode({'minutes': 120}),
           ),
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-report',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: jsonEncode({
-                'content': '# Summary',
-                'oneLiner': 'Implementation done, release next',
-                'tldr': 'Implementation is done and release is next.',
-              }),
-            ),
+            name: 'update_report',
+            arguments: jsonEncode({
+              'content': '# Summary',
+              'oneLiner': 'Implementation done, release next',
+              'tldr': 'Implementation is done and release is next.',
+            }),
           ),
         ];
 
@@ -1932,13 +1793,10 @@ void main() {
 
         for (final entry in deferredToolCalls.entries) {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-${entry.key}',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: entry.key,
-                arguments: jsonEncode(entry.value),
-              ),
+              name: entry.key,
+              arguments: jsonEncode(entry.value),
             ),
           ];
 
@@ -1967,17 +1825,14 @@ void main() {
         'generates correct human summary for create_time_entry — completed session',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-te',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'create_time_entry',
-                arguments: jsonEncode({
-                  'startTime': '2026-03-17T14:00:00',
-                  'endTime': '2026-03-17T15:30:00',
-                  'summary': 'Worked on API integration',
-                }),
-              ),
+              name: 'create_time_entry',
+              arguments: jsonEncode({
+                'startTime': '2026-03-17T14:00:00',
+                'endTime': '2026-03-17T15:30:00',
+                'summary': 'Worked on API integration',
+              }),
             ),
           ];
 
@@ -1999,16 +1854,13 @@ void main() {
         'generates correct human summary for create_time_entry — running timer',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-timer',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'create_time_entry',
-                arguments: jsonEncode({
-                  'startTime': '2026-03-17T09:05:00',
-                  'summary': 'Starting morning standup',
-                }),
-              ),
+              name: 'create_time_entry',
+              arguments: jsonEncode({
+                'startTime': '2026-03-17T09:05:00',
+                'summary': 'Starting morning standup',
+              }),
             ),
           ];
 
@@ -2029,17 +1881,14 @@ void main() {
         'uses raw endTime when create_time_entry includes an invalid end timestamp',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-invalid-end',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'create_time_entry',
-                arguments: jsonEncode({
-                  'startTime': '2026-03-17T14:00:00',
-                  'endTime': 'later',
-                  'summary': 'Worked on API integration',
-                }),
-              ),
+              name: 'create_time_entry',
+              arguments: jsonEncode({
+                'startTime': '2026-03-17T14:00:00',
+                'endTime': 'later',
+                'summary': 'Worked on API integration',
+              }),
             ),
           ];
 
@@ -2060,17 +1909,14 @@ void main() {
         'handles malformed create_time_entry args without crashing',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-malformed-time-entry',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'create_time_entry',
-                arguments: jsonEncode({
-                  'startTime': 42,
-                  'endTime': true,
-                  'summary': {'text': 'bad'},
-                }),
-              ),
+              name: 'create_time_entry',
+              arguments: jsonEncode({
+                'startTime': 42,
+                'endTime': true,
+                'summary': {'text': 'bad'},
+              }),
             ),
           ];
 
@@ -2088,16 +1934,13 @@ void main() {
         'generates correct human summary for update_running_timer',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-update-timer',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_running_timer',
-                arguments: jsonEncode({
-                  'timerId': 'timer-123',
-                  'summary': '  Refined description of work in progress  ',
-                }),
-              ),
+              name: 'update_running_timer',
+              arguments: jsonEncode({
+                'timerId': 'timer-123',
+                'summary': '  Refined description of work in progress  ',
+              }),
             ),
           ];
 
@@ -2120,18 +1963,15 @@ void main() {
         'generates correct human summary for update_time_entry',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-update-time-entry',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_time_entry',
-                arguments: jsonEncode({
-                  'entryId': 'entry-123',
-                  'startTime': '2026-03-17T14:15:00',
-                  'endTime': '2026-03-17T15:45:00',
-                  'summary': '  Refined historical session  ',
-                }),
-              ),
+              name: 'update_time_entry',
+              arguments: jsonEncode({
+                'entryId': 'entry-123',
+                'startTime': '2026-03-17T14:15:00',
+                'endTime': '2026-03-17T15:45:00',
+                'summary': '  Refined historical session  ',
+              }),
             ),
           ];
 
@@ -2154,16 +1994,13 @@ void main() {
         'generates readable human summary for text-only update_time_entry',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-update-time-entry-text',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_time_entry',
-                arguments: jsonEncode({
-                  'entryId': 'entry-123',
-                  'summary': 'Added rollout discussion',
-                }),
-              ),
+              name: 'update_time_entry',
+              arguments: jsonEncode({
+                'entryId': 'entry-123',
+                'summary': 'Added rollout discussion',
+              }),
             ),
           ];
 
@@ -2187,17 +2024,14 @@ void main() {
           // summary should describe only the time range rather than crashing or
           // producing an empty string.
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-te-nosummary',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_time_entry',
-                arguments: jsonEncode({
-                  'entryId': 'entry-456',
-                  'startTime': '2026-03-17T09:00:00',
-                  'endTime': '2026-03-17T10:30:00',
-                }),
-              ),
+              name: 'update_time_entry',
+              arguments: jsonEncode({
+                'entryId': 'entry-456',
+                'startTime': '2026-03-17T09:00:00',
+                'endTime': '2026-03-17T10:30:00',
+              }),
             ),
           ];
 
@@ -2220,15 +2054,12 @@ void main() {
           // Neither summary nor time fields: falls through to the empty-range
           // empty-summary branch and returns the bare label.
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-te-empty',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_time_entry',
-                arguments: jsonEncode({
-                  'entryId': 'entry-789',
-                }),
-              ),
+              name: 'update_time_entry',
+              arguments: jsonEncode({
+                'entryId': 'entry-789',
+              }),
             ),
           ];
 
@@ -2264,13 +2095,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-dedup',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_task_priority',
-                arguments: jsonEncode({'priority': 'P2'}),
-              ),
+              name: 'update_task_priority',
+              arguments: jsonEncode({'priority': 'P2'}),
             ),
           ];
 
@@ -2303,16 +2131,13 @@ void main() {
         'handles malformed update_running_timer summary without crashing',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-malformed-update',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_running_timer',
-                arguments: jsonEncode({
-                  'timerId': 'timer-123',
-                  'summary': 99,
-                }),
-              ),
+              name: 'update_running_timer',
+              arguments: jsonEncode({
+                'timerId': 'timer-123',
+                'summary': 99,
+              }),
             ),
           ];
 
@@ -2331,13 +2156,10 @@ void main() {
 
       test('handles malformed labels arg without crashing', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-bad-labels',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'assign_task_labels',
-              arguments: jsonEncode({'labels': 'not-a-list'}),
-            ),
+            name: 'assign_task_labels',
+            arguments: jsonEncode({'labels': 'not-a-list'}),
           ),
         ];
 
@@ -2353,19 +2175,16 @@ void main() {
 
       test('warns LLM when batch items contain non-map elements', () async {
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-mixed',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'add_multiple_checklist_items',
-              arguments: jsonEncode({
-                'items': [
-                  {'title': 'Valid item'},
-                  'not-a-map',
-                  42,
-                ],
-              }),
-            ),
+            name: 'add_multiple_checklist_items',
+            arguments: jsonEncode({
+              'items': [
+                {'title': 'Valid item'},
+                'not-a-map',
+                42,
+              ],
+            }),
           ),
         ];
 
@@ -2405,13 +2224,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-redundant',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_task_estimate',
-                arguments: jsonEncode({'minutes': 120}),
-              ),
+              name: 'update_task_estimate',
+              arguments: jsonEncode({'minutes': 120}),
             ),
           ];
 
@@ -2440,13 +2256,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-actual',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_task_priority',
-                arguments: jsonEncode({'priority': 'P0'}),
-              ),
+              name: 'update_task_priority',
+              arguments: jsonEncode({'priority': 'P0'}),
             ),
           ];
 
@@ -2506,13 +2319,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-initial-title',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'Buy groceries'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'Buy groceries'}),
             ),
           ];
 
@@ -2584,13 +2394,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-blank-title',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'Write specs'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'Write specs'}),
             ),
           ];
 
@@ -2652,21 +2459,15 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-policy-denied-title',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'PR Review for Ibad'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'PR Review for Ibad'}),
             ),
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-repeat-title',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'PR Review for Ibad'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'PR Review for Ibad'}),
             ),
           ];
 
@@ -2771,13 +2572,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-policy-denied-title',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'PR Review for Ibad'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'PR Review for Ibad'}),
             ),
           ];
 
@@ -2813,13 +2611,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-rename',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'New name'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'New name'}),
             ),
           ];
 
@@ -2897,21 +2692,15 @@ void main() {
           });
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-first',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'First title'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'First title'}),
             ),
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-second',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'Second title'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'Second title'}),
             ),
           ];
 
@@ -2980,17 +2769,14 @@ void main() {
             ),
           );
 
-          ChatCompletionMessageToolCall call(
+          AiToolCall call(
             String id,
             String name,
             Map<String, dynamic> args,
-          ) => ChatCompletionMessageToolCall(
+          ) => AiToolCall(
             id: id,
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: name,
-              arguments: jsonEncode(args),
-            ),
+            name: name,
+            arguments: jsonEncode(args),
           );
 
           await strategy.processToolCalls(
@@ -3052,13 +2838,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-no-resolver',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'Something'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'Something'}),
             ),
           ];
 
@@ -3095,13 +2878,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-throws',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'Any'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'Any'}),
             ),
           ];
 
@@ -3142,13 +2922,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-null-snap',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskTitle,
-                arguments: jsonEncode({'title': 'Any'}),
-              ),
+              name: TaskAgentToolNames.setTaskTitle,
+              arguments: jsonEncode({'title': 'Any'}),
             ),
           ];
 
@@ -3208,13 +2985,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-initial-lang',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskLanguage,
-                arguments: jsonEncode({'languageCode': 'en'}),
-              ),
+              name: TaskAgentToolNames.setTaskLanguage,
+              arguments: jsonEncode({'languageCode': 'en'}),
             ),
           ];
 
@@ -3259,13 +3033,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-relang',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskLanguage,
-                arguments: jsonEncode({'languageCode': 'de'}),
-              ),
+              name: TaskAgentToolNames.setTaskLanguage,
+              arguments: jsonEncode({'languageCode': 'de'}),
             ),
           ];
 
@@ -3343,21 +3114,15 @@ void main() {
           });
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-lang-first',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskLanguage,
-                arguments: jsonEncode({'languageCode': 'en'}),
-              ),
+              name: TaskAgentToolNames.setTaskLanguage,
+              arguments: jsonEncode({'languageCode': 'en'}),
             ),
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-lang-second',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskLanguage,
-                arguments: jsonEncode({'languageCode': 'de'}),
-              ),
+              name: TaskAgentToolNames.setTaskLanguage,
+              arguments: jsonEncode({'languageCode': 'de'}),
             ),
           ];
 
@@ -3391,13 +3156,10 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-lang-throws',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.setTaskLanguage,
-                arguments: jsonEncode({'languageCode': 'en'}),
-              ),
+              name: TaskAgentToolNames.setTaskLanguage,
+              arguments: jsonEncode({'languageCode': 'en'}),
             ),
           ];
 
@@ -3428,13 +3190,10 @@ void main() {
         );
 
         final toolCalls = [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-err',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_task_estimate',
-              arguments: jsonEncode({'minutes': 120}),
-            ),
+            name: 'update_task_estimate',
+            arguments: jsonEncode({'minutes': 120}),
           ),
         ];
 
@@ -3466,17 +3225,14 @@ void main() {
           );
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-batch-redundant',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_checklist_items',
-                arguments: jsonEncode({
-                  'items': [
-                    {'id': 'item-1', 'isChecked': true},
-                  ],
-                }),
-              ),
+              name: 'update_checklist_items',
+              arguments: jsonEncode({
+                'items': [
+                  {'id': 'item-1', 'isChecked': true},
+                ],
+              }),
             ),
           ];
 
@@ -3509,13 +3265,10 @@ void main() {
         'placeholder ID',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-split',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'create_follow_up_task',
-                arguments: jsonEncode({'title': 'Design v2'}),
-              ),
+              name: 'create_follow_up_task',
+              arguments: jsonEncode({'title': 'Design v2'}),
             ),
           ];
 
@@ -3556,19 +3309,16 @@ void main() {
         'migrate_checklist_items passes targetTaskId as groupId',
         () async {
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-migrate',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'migrate_checklist_items',
-                arguments: jsonEncode({
-                  'targetTaskId': 'placeholder-123',
-                  'items': [
-                    {'id': 'item-1', 'title': 'Buy milk'},
-                    {'id': 'item-2', 'title': 'Walk dog'},
-                  ],
-                }),
-              ),
+              name: 'migrate_checklist_items',
+              arguments: jsonEncode({
+                'targetTaskId': 'placeholder-123',
+                'items': [
+                  {'id': 'item-1', 'title': 'Buy milk'},
+                  {'id': 'item-2', 'title': 'Walk dog'},
+                ],
+              }),
             ),
           ];
 
@@ -3593,15 +3343,12 @@ void main() {
         () async {
           // First, the LLM calls create_follow_up_task.
           final createCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-create',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'create_follow_up_task',
-                arguments: jsonEncode({
-                  'title': 'Release Task',
-                }),
-              ),
+              name: 'create_follow_up_task',
+              arguments: jsonEncode({
+                'title': 'Release Task',
+              }),
             ),
           ];
 
@@ -3619,18 +3366,15 @@ void main() {
           // Then the LLM calls migrate_checklist_items with a hallucinated
           // targetTaskId that doesn't match the real placeholder.
           final migrateCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-migrate',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'migrate_checklist_items',
-                arguments: jsonEncode({
-                  'targetTaskId': 'hallucinated_id',
-                  'items': [
-                    {'id': 'item-1', 'title': 'Do thing'},
-                  ],
-                }),
-              ),
+              name: 'migrate_checklist_items',
+              arguments: jsonEncode({
+                'targetTaskId': 'hallucinated_id',
+                'items': [
+                  {'id': 'item-1', 'title': 'Do thing'},
+                ],
+              }),
             ),
           ];
 
@@ -3762,20 +3506,17 @@ void main() {
           ).strategy;
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-retract-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.retractSuggestions,
-                arguments: jsonEncode({
-                  'proposals': [
-                    {
-                      'fingerprint': 'fp-abc',
-                      'reason': 'Already P1',
-                    },
-                  ],
-                }),
-              ),
+              name: TaskAgentToolNames.retractSuggestions,
+              arguments: jsonEncode({
+                'proposals': [
+                  {
+                    'fingerprint': 'fp-abc',
+                    'reason': 'Already P1',
+                  },
+                ],
+              }),
             ),
           ];
 
@@ -3848,17 +3589,14 @@ void main() {
 
           await retractionStrategy.processToolCalls(
             toolCalls: [
-              ChatCompletionMessageToolCall(
+              AiToolCall(
                 id: 'call-retract-stage',
-                type: ChatCompletionMessageToolCallType.function,
-                function: ChatCompletionMessageFunctionCall(
-                  name: TaskAgentToolNames.retractSuggestions,
-                  arguments: jsonEncode({
-                    'proposals': [
-                      {'fingerprint': 'fp-stage', 'reason': 'stale'},
-                    ],
-                  }),
-                ),
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {'fingerprint': 'fp-stage', 'reason': 'stale'},
+                  ],
+                }),
               ),
             ],
             manager: mockManager,
@@ -3903,18 +3641,15 @@ void main() {
             retractionService: fakeService,
           ).strategy;
 
-          ChatCompletionMessageToolCall retractCall(String id) =>
-              ChatCompletionMessageToolCall(
+          AiToolCall retractCall(String id) =>
+              AiToolCall(
                 id: id,
-                type: ChatCompletionMessageToolCallType.function,
-                function: ChatCompletionMessageFunctionCall(
-                  name: TaskAgentToolNames.retractSuggestions,
-                  arguments: jsonEncode({
-                    'proposals': [
-                      {'fingerprint': 'fp-stage', 'reason': 'stale'},
-                    ],
-                  }),
-                ),
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {'fingerprint': 'fp-stage', 'reason': 'stale'},
+                  ],
+                }),
               );
 
           await retractionStrategy.processToolCalls(
@@ -3953,14 +3688,10 @@ void main() {
           ).strategy;
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-retract-bad',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.retractSuggestions,
-                // `proposals` is not an array — should error.
-                arguments: jsonEncode({'proposals': 'not-an-array'}),
-              ),
+              name: TaskAgentToolNames.retractSuggestions,
+              arguments: jsonEncode({'proposals': 'not-an-array'}),
             ),
           ];
 
@@ -4003,20 +3734,17 @@ void main() {
           ).strategy;
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-mixed',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.retractSuggestions,
-                arguments: jsonEncode({
-                  'proposals': [
-                    'not-an-object',
-                    {'fingerprint': '  ', 'reason': 'empty fp'},
-                    {'fingerprint': 'fp-ok', 'reason': '  '},
-                    {'fingerprint': 'fp-valid', 'reason': 'Looks stale'},
-                  ],
-                }),
-              ),
+              name: TaskAgentToolNames.retractSuggestions,
+              arguments: jsonEncode({
+                'proposals': [
+                  'not-an-object',
+                  {'fingerprint': '  ', 'reason': 'empty fp'},
+                  {'fingerprint': 'fp-ok', 'reason': '  '},
+                  {'fingerprint': 'fp-valid', 'reason': 'Looks stale'},
+                ],
+              }),
             ),
           ];
 
@@ -4061,18 +3789,15 @@ void main() {
           ).strategy;
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-all-bad',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.retractSuggestions,
-                arguments: jsonEncode({
-                  'proposals': [
-                    {'fingerprint': null, 'reason': 'x'},
-                    {'fingerprint': 'fp', 'reason': ''},
-                  ],
-                }),
-              ),
+              name: TaskAgentToolNames.retractSuggestions,
+              arguments: jsonEncode({
+                'proposals': [
+                  {'fingerprint': null, 'reason': 'x'},
+                  {'fingerprint': 'fp', 'reason': ''},
+                ],
+              }),
             ),
           ];
 
@@ -4125,19 +3850,16 @@ void main() {
           ).strategy;
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-labels',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.retractSuggestions,
-                arguments: jsonEncode({
-                  'proposals': [
-                    {'fingerprint': 'fp-retracted', 'reason': 'r'},
-                    {'fingerprint': 'fp-closed', 'reason': 'r'},
-                    {'fingerprint': 'fp-missing', 'reason': 'r'},
-                  ],
-                }),
-              ),
+              name: TaskAgentToolNames.retractSuggestions,
+              arguments: jsonEncode({
+                'proposals': [
+                  {'fingerprint': 'fp-retracted', 'reason': 'r'},
+                  {'fingerprint': 'fp-closed', 'reason': 'r'},
+                  {'fingerprint': 'fp-missing', 'reason': 'r'},
+                ],
+              }),
             ),
           ];
 
@@ -4179,17 +3901,14 @@ void main() {
           ).strategy;
 
           final toolCalls = [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-retract-nowire',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.retractSuggestions,
-                arguments: jsonEncode({
-                  'proposals': [
-                    {'fingerprint': 'fp-abc', 'reason': 'x'},
-                  ],
-                }),
-              ),
+              name: TaskAgentToolNames.retractSuggestions,
+              arguments: jsonEncode({
+                'proposals': [
+                  {'fingerprint': 'fp-abc', 'reason': 'x'},
+                ],
+              }),
             ),
           ];
 

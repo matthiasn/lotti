@@ -110,10 +110,16 @@ AiStreamChunk? aiStreamChunkFromJson(Map<String, dynamic> json) {
   AiUsage? usage;
   final usageJson = json['usage'] as Map<String, dynamic>?;
   if (usageJson != null) {
+    final completionDetails =
+        usageJson['completion_tokens_details'] as Map<String, dynamic>?;
+    final promptDetails =
+        usageJson['prompt_tokens_details'] as Map<String, dynamic>?;
     usage = AiUsage(
       promptTokens: usageJson['prompt_tokens'] as int?,
       completionTokens: usageJson['completion_tokens'] as int?,
       totalTokens: usageJson['total_tokens'] as int?,
+      reasoningTokens: completionDetails?['reasoning_tokens'] as int?,
+      cachedInputTokens: promptDetails?['cached_tokens'] as int?,
     );
   }
 

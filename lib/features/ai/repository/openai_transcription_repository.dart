@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling OpenAI transcription via the dedicated
 /// `/v1/audio/transcriptions` endpoint.
@@ -32,7 +32,7 @@ class OpenAiTranscriptionRepository extends TranscriptionRepository {
   ///
   /// Sends audio data to OpenAI's `/v1/audio/transcriptions`
   /// endpoint using multipart/form-data format.
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<AiStreamChunk> transcribeAudio({
     required String model,
     required String audioBase64,
     required String apiKey,

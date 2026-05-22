@@ -7,9 +7,9 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Callback used by [DayAgentStrategy] for non-local tool execution.
@@ -94,16 +94,16 @@ class DayAgentStrategy extends ConversationStrategy {
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<AiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     await _recordAssistantMessage();
 
     for (final call in toolCalls) {
-      final toolName = call.function.name;
+      final toolName = call.name;
       late final Map<String, dynamic> args;
       try {
-        args = _parseToolArguments(call.function.arguments);
+        args = _parseToolArguments(call.arguments);
       } catch (e) {
         final errorMsg =
             'Error: invalid arguments format — expected a JSON object. '

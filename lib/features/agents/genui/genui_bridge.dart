@@ -1,6 +1,6 @@
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
 /// Bridges Lotti's OpenAI tool-calling layer to GenUI's A2UI message protocol.
 ///
@@ -32,48 +32,45 @@ class GenUiBridge {
   bool isGenUiTool(String name) => name == toolName;
 
   /// OpenAI-compatible tool definition for the `render_surface` tool.
-  ChatCompletionTool get toolDefinition => const ChatCompletionTool(
-    type: ChatCompletionToolType.function,
-    function: FunctionObject(
-      name: toolName,
-      description:
-          'Render rich UI content inline in the chat. Available widget '
-          'types: EvolutionProposal, EvolutionNoteConfirmation, '
-          'MetricsSummary, VersionComparison, CategoryRatings, '
-          'BinaryChoicePrompt, '
-          'HighPriorityFeedback. Each surface needs a unique surfaceId '
-          'and a root component type with its data.',
-      parameters: {
-        'type': 'object',
-        'properties': {
-          'surfaceId': {
-            'type': 'string',
-            'description': 'Unique identifier for this surface',
-          },
-          'rootType': {
-            'type': 'string',
-            'enum': [
-              'EvolutionProposal',
-              'EvolutionNoteConfirmation',
-              'MetricsSummary',
-              'VersionComparison',
-              'CategoryRatings',
-              'BinaryChoicePrompt',
-              'ABComparison',
-              'HighPriorityFeedback',
-            ],
-            'description': 'Widget type to render',
-          },
-          'data': {
-            'type': 'object',
-            'description':
-                'Properties matching the widget schema for the chosen type',
-          },
+  AiTool get toolDefinition => const AiTool(
+    name: toolName,
+    description:
+        'Render rich UI content inline in the chat. Available widget '
+        'types: EvolutionProposal, EvolutionNoteConfirmation, '
+        'MetricsSummary, VersionComparison, CategoryRatings, '
+        'BinaryChoicePrompt, '
+        'HighPriorityFeedback. Each surface needs a unique surfaceId '
+        'and a root component type with its data.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'surfaceId': {
+          'type': 'string',
+          'description': 'Unique identifier for this surface',
         },
-        'required': ['surfaceId', 'rootType', 'data'],
-        'additionalProperties': false,
+        'rootType': {
+          'type': 'string',
+          'enum': [
+            'EvolutionProposal',
+            'EvolutionNoteConfirmation',
+            'MetricsSummary',
+            'VersionComparison',
+            'CategoryRatings',
+            'BinaryChoicePrompt',
+            'ABComparison',
+            'HighPriorityFeedback',
+          ],
+          'description': 'Widget type to render',
+        },
+        'data': {
+          'type': 'object',
+          'description':
+              'Properties matching the widget schema for the chosen type',
+        },
       },
-    ),
+      'required': ['surfaceId', 'rootType', 'data'],
+      'additionalProperties': false,
+    },
   );
 
   /// Process a `render_surface` tool call.

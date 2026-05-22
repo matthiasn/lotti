@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
@@ -111,26 +111,24 @@ void main() {
         speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-        const CreateChatCompletionStreamResponse(
+      (_) => Stream<AiStreamChunk>.fromIterable([
+        const AiStreamChunk(
           id: '1',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'foo'),
+              delta: AiStreamDelta(content: 'foo'),
             ),
           ],
         ),
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '2',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'bar'),
+              delta: AiStreamDelta(content: 'bar'),
             ),
           ],
         ),
@@ -303,14 +301,13 @@ void main() {
       ),
     ).thenAnswer(
       (_) => Stream.value(
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '1',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+              delta: AiStreamDelta(content: 'ok'),
             ),
           ],
         ),
@@ -431,26 +428,24 @@ void main() {
         speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-        const CreateChatCompletionStreamResponse(
+      (_) => Stream<AiStreamChunk>.fromIterable([
+        const AiStreamChunk(
           id: '1',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: ''),
+              delta: AiStreamDelta(content: ''),
             ),
           ],
         ),
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '2',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+              delta: AiStreamDelta(content: 'ok'),
             ),
           ],
         ),
@@ -517,37 +512,34 @@ void main() {
         speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-        const CreateChatCompletionStreamResponse(
+      (_) => Stream<AiStreamChunk>.fromIterable([
+        const AiStreamChunk(
           id: '1',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'First '),
+              delta: AiStreamDelta(content: 'First '),
             ),
           ],
         ),
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '2',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'Second '),
+              delta: AiStreamDelta(content: 'Second '),
             ),
           ],
         ),
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '3',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'Third'),
+              delta: AiStreamDelta(content: 'Third'),
             ),
           ],
         ),
@@ -658,14 +650,13 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.value(
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: '1',
-            object: 'chat.completion.chunk',
             created: 0,
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'batch ok'),
+                delta: AiStreamDelta(content: 'batch ok'),
               ),
             ],
           ),
@@ -800,14 +791,13 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.value(
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: '1',
-            object: 'chat.completion.chunk',
             created: 0,
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'mistral batch',
                 ),
               ),
@@ -878,41 +868,38 @@ void main() {
         speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-        // Chunk with null choices
-        const CreateChatCompletionStreamResponse(
+      (_) => Stream<AiStreamChunk>.fromIterable([
+        // Chunk with empty choices list (handled gracefully)
+        const AiStreamChunk(
           id: '1',
-          object: 'chat.completion.chunk',
           created: 0,
+          choices: [],
         ),
         // Chunk with empty choices list
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '2',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [],
         ),
         // Chunk with null delta content
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '3',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(),
+              delta: AiStreamDelta(),
             ),
           ],
         ),
         // Normal chunk with content
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '4',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'hello'),
+              delta: AiStreamDelta(content: 'hello'),
             ),
           ],
         ),
@@ -984,37 +971,34 @@ void main() {
         speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-        const CreateChatCompletionStreamResponse(
+      (_) => Stream<AiStreamChunk>.fromIterable([
+        const AiStreamChunk(
           id: '1',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: ''),
+              delta: AiStreamDelta(content: ''),
             ),
           ],
         ),
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '2',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'content'),
+              delta: AiStreamDelta(content: 'content'),
             ),
           ],
         ),
-        const CreateChatCompletionStreamResponse(
+        const AiStreamChunk(
           id: '3',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: ''),
+              delta: AiStreamDelta(content: ''),
             ),
           ],
         ),
@@ -1392,14 +1376,13 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.value(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: '1',
-              object: 'chat.completion.chunk',
               created: 0,
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     content: 'mistral biased',
                   ),
                 ),

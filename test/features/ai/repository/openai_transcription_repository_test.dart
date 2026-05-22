@@ -148,7 +148,7 @@ void main() {
 
           expect(responses, hasLength(1));
           expect(
-            responses.first.choices?.first.delta?.content,
+            responses.first.choices.first.delta.content,
             'Hello, world!',
           );
           expect(responses.first.id, startsWith('openai-transcription-'));

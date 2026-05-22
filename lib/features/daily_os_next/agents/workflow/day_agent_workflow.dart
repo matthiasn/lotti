@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -31,7 +32,6 @@ import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 part 'day_agent_context_builder.dart';
@@ -774,7 +774,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required String modelId,
     required AiConfigInferenceProvider provider,
     required CloudInferenceWrapper inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<AiTool> tools,
     required DayAgentStrategy strategy,
     required String captureId,
   }) {
@@ -783,18 +783,11 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       'tool choice',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: DayAgentToolNames.parseCaptureToItems,
-        ),
-      ),
+    const forcedToolChoice = AiToolChoiceFunction(
+      DayAgentToolNames.parseCaptureToItems,
     );
     final parseOnlyTools = tools
-        .where(
-          (tool) => tool.function.name == DayAgentToolNames.parseCaptureToItems,
-        )
+        .where((tool) => tool.name == DayAgentToolNames.parseCaptureToItems)
         .toList(growable: false);
 
     return conversationRepository.sendMessage(
@@ -820,23 +813,18 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required String modelId,
     required AiConfigInferenceProvider provider,
     required CloudInferenceWrapper inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<AiTool> tools,
     required DayAgentStrategy strategy,
   }) {
     _log(
       'drafting wake missed draft_day_plan — retrying with forced tool choice',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: DayAgentToolNames.draftDayPlan,
-        ),
-      ),
+    const forcedToolChoice = AiToolChoiceFunction(
+      DayAgentToolNames.draftDayPlan,
     );
     final draftOnlyTools = tools
-        .where((tool) => tool.function.name == DayAgentToolNames.draftDayPlan)
+        .where((tool) => tool.name == DayAgentToolNames.draftDayPlan)
         .toList(growable: false);
 
     return conversationRepository.sendMessage(
@@ -856,26 +844,29 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     );
   }
 
-  List<ChatCompletionTool> _buildToolDefinitions() {
-    return dayAgentTools.where((tool) => _isToolEnabled(tool.name)).map((tool) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters,
-        ),
-      );
-    }).toList();
+  List<AiTool> _buildToolDefinitions() {
+    return dayAgentTools
+        .where((tool) => _isToolEnabled(tool.name))
+        .map(
+          (tool) => AiTool(
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.parameters,
+          ),
+        )
+        .toList();
   }
 
   String? _extractFinalAssistantContent(ConversationManager? manager) {
     if (manager == null) return null;
     final messages = manager.messages;
     for (var i = messages.length - 1; i >= 0; i--) {
-      final content = messages[i].mapOrNull(assistant: (a) => a.content);
-      if (content != null && content.isNotEmpty) {
-        return content;
+      final msg = messages[i];
+      if (msg is AiAssistantMessage) {
+        final content = msg.content;
+        if (content != null && content.isNotEmpty) {
+          return content;
+        }
       }
     }
     return null;

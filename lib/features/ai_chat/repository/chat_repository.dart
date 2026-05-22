@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
@@ -12,7 +13,6 @@ import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/system_message_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 final Provider<ChatRepository> chatRepositoryProvider = Provider((ref) {
   return ChatRepository(
@@ -128,37 +128,33 @@ class ChatRepository {
         geminiThinkingMode: config.model.geminiThinkingMode,
       );
 
-      // Accumulate tool calls while streaming content to UI
-      final toolCalls = <ChatCompletionMessageToolCall>[];
+      // Accumulate tool calls while streaming content to UI.
+      final toolCalls = <AiToolCall>[];
       final toolCallArgBuffers = <String, StringBuffer>{};
 
       await for (final chunk in stream) {
-        if (chunk.choices?.isNotEmpty ?? false) {
-          final delta = chunk.choices!.first.delta;
+        if (chunk.choices.isEmpty) continue;
+        final delta = chunk.choices.first.delta;
 
-          // Stream content deltas directly to UI
-          final content = delta?.content;
-          if (content != null && content.isNotEmpty) {
-            yield content;
-          }
+        final content = delta.content;
+        if (content != null && content.isNotEmpty) {
+          yield content;
+        }
 
-          // Accumulate tool call deltas
-          if (delta?.toolCalls != null) {
-            _messageProcessor.accumulateToolCalls(
-              toolCalls,
-              delta!.toolCalls!,
-              toolCallArgBuffers,
-            );
-          }
+        final chunks = delta.toolCalls;
+        if (chunks != null) {
+          _messageProcessor.accumulateToolCalls(
+            toolCalls,
+            chunks,
+            toolCallArgBuffers,
+          );
         }
       }
 
-      // If we have tool calls, process them and then stream the final response
+      // If we have tool calls, process them and then stream the final
+      // response.
       if (toolCalls.isNotEmpty) {
-        // Add assistant message with tool calls to history
-        messages.add(
-          ChatCompletionMessage.assistant(toolCalls: toolCalls),
-        );
+        messages.add(AiAssistantMessage(toolCalls: toolCalls));
 
         // Process tool calls (fetch data, etc.)
         final toolResults = await _messageProcessor.processToolCalls(

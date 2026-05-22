@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
 /// Minimal concrete implementation of [FunctionHandler] for testing the
 /// abstract interface contract and [FunctionCallResult] data class.
@@ -19,16 +19,16 @@ class _TestPriorityHandler extends FunctionHandler {
   String get functionName => 'set_priority';
 
   @override
-  FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call) {
+  FunctionCallResult processFunctionCall(AiToolCall call) {
     try {
-      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
+      final args = jsonDecode(call.arguments) as Map<String, dynamic>;
       final priority = args['priority'] as String?;
 
       if (priority == null || priority.isEmpty) {
         return FunctionCallResult(
           success: false,
           functionName: functionName,
-          arguments: call.function.arguments,
+          arguments: call.arguments,
           data: {'toolCallId': call.id},
           error: 'Missing required field "priority"',
         );
@@ -37,7 +37,7 @@ class _TestPriorityHandler extends FunctionHandler {
       return FunctionCallResult(
         success: true,
         functionName: functionName,
-        arguments: call.function.arguments,
+        arguments: call.arguments,
         data: {
           'priority': priority,
           'toolCallId': call.id,
@@ -47,7 +47,7 @@ class _TestPriorityHandler extends FunctionHandler {
       return FunctionCallResult(
         success: false,
         functionName: functionName,
-        arguments: call.function.arguments,
+        arguments: call.arguments,
         data: {'toolCallId': call.id},
         error: 'Invalid JSON: $e',
       );
@@ -97,19 +97,12 @@ class _TestPriorityHandler extends FunctionHandler {
   }
 }
 
-ChatCompletionMessageToolCall _makeToolCall({
+AiToolCall _makeToolCall({
   required String arguments,
   String name = 'set_priority',
   String id = 'call-1',
 }) {
-  return ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: arguments,
-    ),
-  );
+  return AiToolCall(id: id, name: name, arguments: arguments);
 }
 
 void main() {

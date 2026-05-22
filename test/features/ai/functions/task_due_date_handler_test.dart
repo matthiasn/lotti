@@ -5,8 +5,8 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/glados_generators.dart';
@@ -210,35 +210,29 @@ void main() {
   }
 
   /// Creates a tool call for update_task_due_date.
-  ChatCompletionMessageToolCall createDueDateToolCall({
+  AiToolCall createDueDateToolCall({
     required String dueDate,
     String? reason,
     String? confidence,
   }) {
-    return ChatCompletionMessageToolCall(
+    return AiToolCall(
       id: 'call_due_date_456',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: 'update_task_due_date',
-        arguments: jsonEncode({
-          'dueDate': dueDate,
-          'reason': ?reason,
-          'confidence': ?confidence,
-        }),
-      ),
+      name: 'update_task_due_date',
+      arguments: jsonEncode({
+        'dueDate': dueDate,
+        'reason': ?reason,
+        'confidence': ?confidence,
+      }),
     );
   }
 
-  ChatCompletionMessageToolCall createDueDateToolCallFromArgs(
+  AiToolCall createDueDateToolCallFromArgs(
     Map<String, Object?> args,
   ) {
-    return ChatCompletionMessageToolCall(
+    return AiToolCall(
       id: 'call_due_date_generated',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: 'update_task_due_date',
-        arguments: jsonEncode(args),
-      ),
+      name: 'update_task_due_date',
+      arguments: jsonEncode(args),
     );
   }
 
@@ -434,13 +428,10 @@ void main() {
     group('validation errors', () {
       test('should reject null dueDate', () async {
         final task = createTask();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call_due_date_456',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_due_date',
-            arguments: '{"reason": "Some reason"}',
-          ),
+          name: 'update_task_due_date',
+          arguments: '{"reason": "Some reason"}',
         );
 
         final handler = TaskDueDateHandler(
@@ -528,13 +519,10 @@ void main() {
 
       test('should handle malformed JSON', () async {
         final task = createTask();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call_due_date_456',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_due_date',
-            arguments: 'not valid json',
-          ),
+          name: 'update_task_due_date',
+          arguments: 'not valid json',
         );
 
         final handler = TaskDueDateHandler(

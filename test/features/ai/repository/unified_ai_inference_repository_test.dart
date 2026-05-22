@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart'
@@ -45,7 +46,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -116,7 +116,7 @@ void main() {
     registerFallbackValue(FakeJournalAudio());
     registerFallbackValue(FakeChecklistData());
     registerFallbackValue(FakeChecklistItemData());
-    registerFallbackValue(ChatCompletionMessageInputAudioFormat.wav);
+    registerFallbackValue(AiAudioFormat.wav);
 
     // One suite-level temp root; each test gets a cheap unique subdirectory
     // instead of its own systemTemp dir + recursive delete (~92 fs round
@@ -287,19 +287,18 @@ void main() {
       ).thenAnswer((_) async => false);
 
       // Stream a single assign_task_labels tool call for X and Y
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              _createStreamChunkWithToolCalls([
-                _createMockToolCall(
-                  index: 0,
-                  id: 'tool-1',
-                  functionName: 'assign_task_labels',
-                  arguments: '{"labelIds":["X","Y"]}',
-                ),
-              ]),
-            )
-            ..close();
+      final streamController = StreamController<AiStreamChunk>()
+        ..add(
+          _createStreamChunkWithToolCalls([
+            _createMockToolCall(
+              index: 0,
+              id: 'tool-1',
+              functionName: 'assign_task_labels',
+              arguments: '{"labelIds":["X","Y"]}',
+            ),
+          ]),
+        )
+        ..close();
 
       _stubGenerate(
         mockCloudInferenceRepo,
@@ -2093,28 +2092,26 @@ void main() {
         final statusChanges = <InferenceStatus>[];
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(),
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-2',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
-                finishReason: ChatCompletionFinishReason.stop,
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(content: 'Hello'),
+                finishReason: 'stop',
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
@@ -2280,18 +2277,17 @@ void main() {
           const transcriptText = 'This is the transcribed audio content.';
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: transcriptText,
                   ),
-                  finishReason: ChatCompletionFinishReason.stop,
+                  finishReason: 'stop',
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
@@ -2433,18 +2429,17 @@ void main() {
           const newTranscriptText = 'This is the new AI transcription.';
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: newTranscriptText,
                   ),
-                  finishReason: ChatCompletionFinishReason.stop,
+                  finishReason: 'stop',
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
@@ -2574,16 +2569,15 @@ void main() {
             'This image shows a beautiful landscape with mountains.';
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: analysisText),
-                finishReason: ChatCompletionFinishReason.stop,
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(content: analysisText),
+                finishReason: 'stop',
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
@@ -2698,16 +2692,15 @@ void main() {
             'This image shows a beautiful landscape with mountains.';
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: analysisText),
-                finishReason: ChatCompletionFinishReason.stop,
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(content: analysisText),
+                finishReason: 'stop',
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
@@ -2819,18 +2812,17 @@ void main() {
           ).thenAnswer((_) async => '{"audio": "test.mp3"}');
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Transcribed text',
                   ),
-                  finishReason: ChatCompletionFinishReason.stop,
+                  finishReason: 'stop',
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
@@ -2926,18 +2918,17 @@ void main() {
           ).thenAnswer((_) async => '{"task": "Test Task"}');
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Task analysis result',
                   ),
-                  finishReason: ChatCompletionFinishReason.stop,
+                  finishReason: 'stop',
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
@@ -3051,19 +3042,18 @@ If the image IS relevant:
         final statusChanges = <InferenceStatus>[];
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content:
                       'This appears to be a photo of ducks by a lake, which seems unrelated to your database migration task. Moving on...',
                 ),
-                finishReason: ChatCompletionFinishReason.stop,
+                finishReason: 'stop',
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
@@ -3215,18 +3205,17 @@ Extract ONLY information from the image that is relevant to this task. Be concis
           );
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'The image shows a cat sitting on a windowsill.',
                   ),
-                  finishReason: ChatCompletionFinishReason.stop,
+                  finishReason: 'stop',
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
@@ -3366,19 +3355,18 @@ be consulted to ensure accuracy.''',
         final statusChanges = <InferenceStatus>[];
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content:
                       'John Smith: Thank you for having me. Let me tell you about our latest project.',
                 ),
-                finishReason: ChatCompletionFinishReason.stop,
+                finishReason: 'stop',
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
@@ -3515,18 +3503,17 @@ Take into account the following task context:
           );
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'This is the transcribed audio content.',
                   ),
-                  finishReason: ChatCompletionFinishReason.stop,
+                  finishReason: 'stop',
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
@@ -3650,13 +3637,13 @@ Take into account the following task context:
         ),
       ).thenAnswer(
         (_) => Stream.value(
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'test-id',
             created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            choices: const [
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'Test response',
                 ),
               ),
@@ -4230,16 +4217,16 @@ Take into account the following task context:
         ).thenAnswer((_) async => '{"task": "details"}');
 
         // Create stream with multiple tool calls with empty IDs
-        final streamController = StreamController<CreateChatCompletionStreamResponse>()
+        final streamController = StreamController<AiStreamChunk>()
           // Add chunks with multiple tool calls, all with empty IDs
           // Since the implementation uses dynamic checking, we can send a custom object
           ..add(
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'test-completion-id',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
                       _createMockToolCall(
                         index: 0,
@@ -4269,7 +4256,6 @@ Take into account the following task context:
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
               model: 'test-model',
-              object: 'chat.completion.chunk',
             ),
           )
           // Add content chunk
@@ -4348,7 +4334,7 @@ Take into account the following task context:
         ).thenAnswer((_) async => '{"task": "details"}');
 
         // Create stream with concatenated JSON in a single tool call
-        final streamController = StreamController<CreateChatCompletionStreamResponse>()
+        final streamController = StreamController<AiStreamChunk>()
           ..add(
             _createStreamChunkWithToolCalls([
               _createMockToolCall(
@@ -4452,21 +4438,20 @@ Take into account the following task context:
       ).thenAnswer((_) async => '{"task": "details"}');
 
       // Stream with one tool call using array-of-objects; grouped comma stays within title
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              _createStreamChunkWithToolCalls([
-                _createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'add_multiple_checklist_items',
-                  arguments:
-                      '{"items": [{"title": "Start database (index cache, warm)"}, {"title": "Verify"}]}',
-                ),
-              ]),
-            )
-            ..add(_createStreamChunk('Done'))
-            ..close();
+      final streamController = StreamController<AiStreamChunk>()
+        ..add(
+          _createStreamChunkWithToolCalls([
+            _createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'add_multiple_checklist_items',
+              arguments:
+                  '{"items": [{"title": "Start database (index cache, warm)"}, {"title": "Verify"}]}',
+            ),
+          ]),
+        )
+        ..add(_createStreamChunk('Done'))
+        ..close();
 
       _stubGenerate(
         mockCloudInferenceRepo,
@@ -4578,20 +4563,19 @@ Take into account the following task context:
       );
 
       // Create stream with add_multiple_checklist_items tool call
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              _createStreamChunkWithToolCalls([
-                _createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'add_multiple_checklist_items',
-                  arguments: '{"items": [{"title": "Review documentation"}]}',
-                ),
-              ]),
-            )
-            ..add(_createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<AiStreamChunk>()
+        ..add(
+          _createStreamChunkWithToolCalls([
+            _createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'add_multiple_checklist_items',
+              arguments: '{"items": [{"title": "Review documentation"}]}',
+            ),
+          ]),
+        )
+        ..add(_createStreamChunk('Task analysis complete'))
+        ..close();
 
       _stubGenerate(
         mockCloudInferenceRepo,
@@ -4698,20 +4682,19 @@ Take into account the following task context:
       ).thenAnswer((_) async => newChecklistItem);
 
       // Create stream with add_multiple_checklist_items tool call
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              _createStreamChunkWithToolCalls([
-                _createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'add_multiple_checklist_items',
-                  arguments: '{"items": [{"title": "New checklist item"}]}',
-                ),
-              ]),
-            )
-            ..add(_createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<AiStreamChunk>()
+        ..add(
+          _createStreamChunkWithToolCalls([
+            _createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'add_multiple_checklist_items',
+              arguments: '{"items": [{"title": "New checklist item"}]}',
+            ),
+          ]),
+        )
+        ..add(_createStreamChunk('Task analysis complete'))
+        ..close();
 
       _stubGenerate(
         mockCloudInferenceRepo,
@@ -4836,33 +4819,32 @@ Take into account the following task context:
         );
 
         // Create stream with a single add_multiple_checklist_items tool call containing multiple items
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>()
-              ..add(
-                _createStreamChunkWithToolCalls([
-                  _createMockToolCall(
-                    index: 0,
-                    id: 'call-1',
-                    functionName: 'add_multiple_checklist_items',
-                    arguments:
-                        '{"items": [{"title": "First item"}, {"title": "Second item"}, {"title": "Third item"}]}',
-                  ),
-                  _createMockToolCall(
-                    index: 1,
-                    id: 'call-2',
-                    functionName: 'add_multiple_checklist_items',
-                    arguments: '{"items": [{"title": "noop"}]}',
-                  ),
-                  _createMockToolCall(
-                    index: 2,
-                    id: 'call-3',
-                    functionName: 'add_multiple_checklist_items',
-                    arguments: '{"items": [{"title": "noop2"}]}',
-                  ),
-                ]),
-              )
-              ..add(_createStreamChunk('Task analysis complete'))
-              ..close();
+        final streamController = StreamController<AiStreamChunk>()
+          ..add(
+            _createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'add_multiple_checklist_items',
+                arguments:
+                    '{"items": [{"title": "First item"}, {"title": "Second item"}, {"title": "Third item"}]}',
+              ),
+              _createMockToolCall(
+                index: 1,
+                id: 'call-2',
+                functionName: 'add_multiple_checklist_items',
+                arguments: '{"items": [{"title": "noop"}]}',
+              ),
+              _createMockToolCall(
+                index: 2,
+                id: 'call-3',
+                functionName: 'add_multiple_checklist_items',
+                arguments: '{"items": [{"title": "noop2"}]}',
+              ),
+            ]),
+          )
+          ..add(_createStreamChunk('Task analysis complete'))
+          ..close();
 
         _stubGenerate(
           mockCloudInferenceRepo,
@@ -4992,21 +4974,20 @@ Take into account the following task context:
       ).thenAnswer((_) async => true);
 
       // Create stream with high confidence suggestion
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              _createStreamChunkWithToolCalls([
-                _createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'suggest_checklist_completion',
-                  arguments:
-                      '{"checklistItemId":"item-1","reason":"Task completed","confidence":"high"}',
-                ),
-              ]),
-            )
-            ..add(_createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<AiStreamChunk>()
+        ..add(
+          _createStreamChunkWithToolCalls([
+            _createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'suggest_checklist_completion',
+              arguments:
+                  '{"checklistItemId":"item-1","reason":"Task completed","confidence":"high"}',
+            ),
+          ]),
+        )
+        ..add(_createStreamChunk('Task analysis complete'))
+        ..close();
 
       _stubGenerate(
         mockCloudInferenceRepo,
@@ -5098,21 +5079,20 @@ Take into account the following task context:
       ).thenAnswer((_) async => '{"task": "details"}');
 
       // Create stream with medium confidence suggestion
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              _createStreamChunkWithToolCalls([
-                _createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'suggest_checklist_completion',
-                  arguments:
-                      '{"checklistItemId":"item-2","reason":"Might be done","confidence":"medium"}',
-                ),
-              ]),
-            )
-            ..add(_createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<AiStreamChunk>()
+        ..add(
+          _createStreamChunkWithToolCalls([
+            _createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'suggest_checklist_completion',
+              arguments:
+                  '{"checklistItemId":"item-2","reason":"Might be done","confidence":"medium"}',
+            ),
+          ]),
+        )
+        ..add(_createStreamChunk('Task analysis complete'))
+        ..close();
 
       _stubGenerate(
         mockCloudInferenceRepo,
@@ -5204,21 +5184,20 @@ Take into account the following task context:
       ).thenAnswer((_) async => alreadyCheckedItem);
 
       // Create stream with high confidence suggestion for already checked item
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              _createStreamChunkWithToolCalls([
-                _createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'suggest_checklist_completion',
-                  arguments:
-                      '{"checklistItemId":"item-3","reason":"Task completed","confidence":"high"}',
-                ),
-              ]),
-            )
-            ..add(_createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<AiStreamChunk>()
+        ..add(
+          _createStreamChunkWithToolCalls([
+            _createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'suggest_checklist_completion',
+              arguments:
+                  '{"checklistItemId":"item-3","reason":"Task completed","confidence":"high"}',
+            ),
+          ]),
+        )
+        ..add(_createStreamChunk('Task analysis complete'))
+        ..close();
 
       _stubGenerate(
         mockCloudInferenceRepo,
@@ -5310,21 +5289,20 @@ Take into account the following task context:
         () => mockJournalRepo.getJournalEntityById('item-user'),
       ).thenAnswer((_) async => userOwnedItem);
 
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              _createStreamChunkWithToolCalls([
-                _createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'suggest_checklist_completion',
-                  arguments:
-                      '{"checklistItemId":"item-user","reason":"Completed","confidence":"high"}',
-                ),
-              ]),
-            )
-            ..add(_createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<AiStreamChunk>()
+        ..add(
+          _createStreamChunkWithToolCalls([
+            _createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'suggest_checklist_completion',
+              arguments:
+                  '{"checklistItemId":"item-user","reason":"Completed","confidence":"high"}',
+            ),
+          ]),
+        )
+        ..add(_createStreamChunk('Task analysis complete'))
+        ..close();
 
       _stubGenerate(
         mockCloudInferenceRepo,
@@ -5451,8 +5429,7 @@ Take into account the following task context:
         aiResponseType: AiResponseType.imageAnalysis,
       );
 
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>();
+      final streamController = StreamController<AiStreamChunk>();
 
       when(
         () => mockAiInputRepo.getEntity(any()),
@@ -5485,54 +5462,44 @@ Take into account the following task context:
       // Add chunks with empty tool call IDs and continuation by index
       streamController
         ..add(
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            choices: const [
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
+                    AiToolCallChunk(
                       index: 0,
                       id: '', // Empty ID - should generate tool_0
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'add_multiple_checklist_items',
-                        arguments: '{"title":',
-                      ),
+                      name: 'add_multiple_checklist_items',
+                      arguments: '{"title":',
                     ),
                   ],
                 ),
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         )
         // Continue by index without ID
         ..add(
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-2',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            choices: const [
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
+                    AiToolCallChunk(
                       index: 0, // Same index, no ID
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        arguments: '"Test item"}',
-                      ),
+                      arguments: '"Test item"}',
                     ),
                   ],
                 ),
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
@@ -5559,8 +5526,7 @@ Take into account the following task context:
         aiResponseType: AiResponseType.imageAnalysis,
       );
 
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>();
+      final streamController = StreamController<AiStreamChunk>();
 
       when(
         () => mockAiInputRepo.getEntity(any()),
@@ -5592,28 +5558,24 @@ Take into account the following task context:
 
       // Add chunk with no ID but with function name - should create new tool call
       streamController.add(
-        CreateChatCompletionStreamResponse(
+        AiStreamChunk(
           id: 'response-1',
-          choices: [
-            const ChatCompletionStreamResponseChoice(
+          choices: const [
+            AiStreamChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(
+              delta: AiStreamDelta(
                 toolCalls: [
-                  ChatCompletionStreamMessageToolCallChunk(
+                  AiToolCallChunk(
                     index: 0,
                     // No ID field
-                    type: ChatCompletionStreamMessageToolCallChunkType.function,
-                    function: ChatCompletionStreamMessageFunctionCall(
-                      name:
-                          'add_multiple_checklist_items', // Has name - indicates new tool call
-                      arguments: '{"title": "Item with name but no ID"}',
-                    ),
+                    name:
+                        'add_multiple_checklist_items', // Has name - indicates new tool call
+                    arguments: '{"title": "Item with name but no ID"}',
                   ),
                 ],
               ),
             ),
           ],
-          object: 'chat.completion.chunk',
           created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
         ),
       );
@@ -5970,21 +5932,20 @@ Take into account the following task context:
 
       // A stream that includes a chunk with usage data
       // ignore: prefer_const_constructors
-      final chunkWithUsage = CreateChatCompletionStreamResponse(
+      final chunkWithUsage = AiStreamChunk(
         id: 'response-with-usage',
         choices: [
-          const ChatCompletionStreamResponseChoice(
+          const AiStreamChoice(
             index: 0,
-            delta: ChatCompletionStreamResponseDelta(content: 'Answer'),
-            finishReason: ChatCompletionFinishReason.stop,
+            delta: AiStreamDelta(content: 'Answer'),
+            finishReason: 'stop',
           ),
         ],
-        usage: const CompletionUsage(
+        usage: const AiUsage(
           promptTokens: 50,
           completionTokens: 20,
           totalTokens: 70,
         ),
-        object: 'chat.completion.chunk',
         created: 1710493800,
       );
       final mockStream = Stream.fromIterable([chunkWithUsage]);
@@ -6388,7 +6349,7 @@ Take into account the following task context:
         );
       }
 
-      ChatCompletionMessageToolCall langCall(String json) {
+      AiToolCall langCall(String json) {
         return _createMockMessageToolCall(
           id: 'lang-call-1',
           functionName: TaskFunctions.setTaskLanguage,
@@ -6711,18 +6672,17 @@ Take into account the following task context:
                       '{"languageCode":"de","confidence":"high","reason":"German text"}',
                 ),
               ]),
-              CreateChatCompletionStreamResponse(
+              AiStreamChunk(
                 id: 'response-text',
                 choices: const [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
+                  AiStreamChoice(
+                    delta: AiStreamDelta(
                       content: 'Zusammenfassung der Aufgabe',
                     ),
-                    finishReason: ChatCompletionFinishReason.stop,
+                    finishReason: 'stop',
                     index: 0,
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             ]);
@@ -7639,40 +7599,36 @@ AiConfigInferenceProvider _createProvider({
   );
 }
 
-CreateChatCompletionStreamResponse _createStreamChunk(String content) {
-  return CreateChatCompletionStreamResponse(
+AiStreamChunk _createStreamChunk(String content) {
+  return AiStreamChunk(
     id: 'test-completion-id',
     choices: [
-      ChatCompletionStreamResponseChoice(
+      AiStreamChoice(
         index: 0,
-        delta: ChatCompletionStreamResponseDelta(content: content),
+        delta: AiStreamDelta(content: content),
       ),
     ],
     created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
     model: 'test-model',
-    object: 'chat.completion.chunk',
   );
 }
 
 /// Creates a mock stream of text chunks. The last chunk includes a stop
 /// finish reason. Replaces verbose inline [Stream.fromIterable] blocks.
-Stream<CreateChatCompletionStreamResponse> _createMockTextStream(
+Stream<AiStreamChunk> _createMockTextStream(
   List<String> chunks,
 ) {
   return Stream.fromIterable([
     for (var i = 0; i < chunks.length; i++)
-      CreateChatCompletionStreamResponse(
+      AiStreamChunk(
         id: 'response-${i + 1}',
         choices: [
-          ChatCompletionStreamResponseChoice(
-            delta: ChatCompletionStreamResponseDelta(content: chunks[i]),
-            finishReason: i == chunks.length - 1
-                ? ChatCompletionFinishReason.stop
-                : null,
+          AiStreamChoice(
+            delta: AiStreamDelta(content: chunks[i]),
+            finishReason: i == chunks.length - 1 ? 'stop' : null,
             index: 0,
           ),
         ],
-        object: 'chat.completion.chunk',
         created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
       ),
   ]);
@@ -7681,7 +7637,7 @@ Stream<CreateChatCompletionStreamResponse> _createMockTextStream(
 /// Stubs `CloudInferenceRepository.generate` to return [stream].
 void _stubGenerate(
   MockCloudInferenceRepository mock, {
-  required Stream<CreateChatCompletionStreamResponse> stream,
+  required Stream<AiStreamChunk> stream,
 }) {
   when(
     () => mock.generate(
@@ -7702,7 +7658,7 @@ void _stubGenerate(
 /// Stubs `CloudInferenceRepository.generateWithImages` to return [stream].
 void _stubGenerateWithImages(
   MockCloudInferenceRepository mock, {
-  required Stream<CreateChatCompletionStreamResponse> stream,
+  required Stream<AiStreamChunk> stream,
 }) {
   when(
     () => mock.generateWithImages(
@@ -7721,7 +7677,7 @@ void _stubGenerateWithImages(
 /// Stubs `CloudInferenceRepository.generateWithAudio` to return [stream].
 void _stubGenerateWithAudio(
   MockCloudInferenceRepository mock, {
-  required Stream<CreateChatCompletionStreamResponse> stream,
+  required Stream<AiStreamChunk> stream,
 }) {
   when(
     () => mock.generateWithAudio(
@@ -7776,55 +7732,48 @@ void _stubCreateAiResponseEntry(MockAiInputRepository mock) {
   ).thenAnswer((_) async => null);
 }
 
-CreateChatCompletionStreamResponse _createStreamChunkWithToolCalls(
-  List<ChatCompletionStreamMessageToolCallChunk> toolCalls,
+AiStreamChunk _createStreamChunkWithToolCalls(
+  List<AiToolCallChunk> toolCalls,
 ) {
-  return CreateChatCompletionStreamResponse(
+  return AiStreamChunk(
     id: 'test-completion-id',
     choices: [
-      ChatCompletionStreamResponseChoice(
+      AiStreamChoice(
         index: 0,
-        delta: ChatCompletionStreamResponseDelta(
+        delta: AiStreamDelta(
           toolCalls: toolCalls,
         ),
       ),
     ],
     created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
     model: 'test-model',
-    object: 'chat.completion.chunk',
   );
 }
 
-ChatCompletionMessageToolCall _createMockMessageToolCall({
+AiToolCall _createMockMessageToolCall({
   required String id,
   required String functionName,
   required String arguments,
 }) {
-  return ChatCompletionMessageToolCall(
+  return AiToolCall(
     id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: functionName,
-      arguments: arguments,
-    ),
+    name: functionName,
+    arguments: arguments,
   );
 }
 
 // Create a mock tool call that mimics the structure the implementation expects
-ChatCompletionStreamMessageToolCallChunk _createMockToolCall({
+AiToolCallChunk _createMockToolCall({
   required int index,
   required String? id,
   required String functionName,
   required String arguments,
 }) {
   // Use the actual constructor with proper types
-  return ChatCompletionStreamMessageToolCallChunk(
+  return AiToolCallChunk(
     index: index,
     id: id,
-    type: ChatCompletionStreamMessageToolCallChunkType.function,
-    function: ChatCompletionStreamMessageFunctionCall(
-      name: functionName,
-      arguments: arguments,
-    ),
+    name: functionName,
+    arguments: arguments,
   );
 }

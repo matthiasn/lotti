@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
 part 'task_summary_tool.freezed.dart';
 part 'task_summary_tool.g.dart';
@@ -8,36 +8,33 @@ part 'task_summary_tool.g.dart';
 class TaskSummaryTool {
   static const String name = 'get_task_summaries';
 
-  static ChatCompletionTool get toolDefinition => const ChatCompletionTool(
-    type: ChatCompletionToolType.function,
-    function: FunctionObject(
-      name: name,
-      description:
-          'Retrieve task summaries for a specified date range (local dates only)',
-      parameters: {
-        'type': 'object',
-        'properties': {
-          'start_date': {
-            'type': 'string',
-            'format': 'date',
-            'description':
-                'Start date in local time, YYYY-MM-DD (no time or timezone).',
-          },
-          'end_date': {
-            'type': 'string',
-            'format': 'date',
-            'description':
-                'End date in local time, YYYY-MM-DD (no time or timezone).',
-          },
-          'limit': {
-            'type': 'integer',
-            'description': 'Maximum number of summaries to return',
-            'default': 100,
-          },
+  static AiTool get toolDefinition => const AiTool(
+    name: name,
+    description:
+        'Retrieve task summaries for a specified date range (local dates only)',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'start_date': {
+          'type': 'string',
+          'format': 'date',
+          'description':
+              'Start date in local time, YYYY-MM-DD (no time or timezone).',
         },
-        'required': ['start_date', 'end_date'],
+        'end_date': {
+          'type': 'string',
+          'format': 'date',
+          'description':
+              'End date in local time, YYYY-MM-DD (no time or timezone).',
+        },
+        'limit': {
+          'type': 'integer',
+          'description': 'Maximum number of summaries to return',
+          'default': 100,
+        },
       },
-    ),
+      'required': ['start_date', 'end_date'],
+    },
   );
 }
 

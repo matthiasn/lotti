@@ -17,12 +17,12 @@ import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -1376,28 +1376,22 @@ void main() {
             }) async {
               if (strategy != null) {
                 final toolCalls = [
-                  ChatCompletionMessageToolCall(
+                  AiToolCall(
                     id: 'call-def-1',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.createTask,
-                      arguments: jsonEncode({
-                        'title': 'Add monitoring',
-                        'description': 'Set up alerts',
-                        'priority': 'HIGH',
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.createTask,
+                    arguments: jsonEncode({
+                      'title': 'Add monitoring',
+                      'description': 'Set up alerts',
+                      'priority': 'HIGH',
+                    }),
                   ),
-                  ChatCompletionMessageToolCall(
+                  AiToolCall(
                     id: 'call-def-2',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.updateProjectStatus,
-                      arguments: jsonEncode({
-                        'status': 'at_risk',
-                        'reason': 'Dependency delayed',
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.updateProjectStatus,
+                    arguments: jsonEncode({
+                      'status': 'at_risk',
+                      'reason': 'Dependency delayed',
+                    }),
                   ),
                 ];
 
@@ -1629,26 +1623,23 @@ void main() {
               }) async {
                 if (strategy != null) {
                   final toolCalls = [
-                    ChatCompletionMessageToolCall(
+                    AiToolCall(
                       id: 'call-rec-1',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: ProjectAgentToolNames.recommendNextSteps,
-                        arguments: jsonEncode({
-                          'steps': [
-                            {
-                              'title': 'Prioritize API',
-                              'rationale': 'Scaling issues',
-                              'priority': 'high',
-                            },
-                            {
-                              'title': 'Write tests',
-                              'rationale': 'Coverage low',
-                              'priority': 'medium',
-                            },
-                          ],
-                        }),
-                      ),
+                      name: ProjectAgentToolNames.recommendNextSteps,
+                      arguments: jsonEncode({
+                        'steps': [
+                          {
+                            'title': 'Prioritize API',
+                            'rationale': 'Scaling issues',
+                            'priority': 'high',
+                          },
+                          {
+                            'title': 'Write tests',
+                            'rationale': 'Coverage low',
+                            'priority': 'medium',
+                          },
+                        ],
+                      }),
                     ),
                   ];
 
@@ -1743,20 +1734,17 @@ void main() {
             }) async {
               if (strategy != null) {
                 final toolCalls = [
-                  ChatCompletionMessageToolCall(
+                  AiToolCall(
                     id: 'call-rpt',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.updateProjectReport,
-                      arguments: jsonEncode({
-                        'markdown': '# Status Report\nAll good.',
-                        'tldr': 'On track.',
-                        'one_liner': 'Steady progress; API v2 next.',
-                        'health_band': 'on_track',
-                        'health_rationale': 'Recent work is landing well.',
-                        'health_confidence': 0.88,
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.updateProjectReport,
+                    arguments: jsonEncode({
+                      'markdown': '# Status Report\nAll good.',
+                      'tldr': 'On track.',
+                      'one_liner': 'Steady progress; API v2 next.',
+                      'health_band': 'on_track',
+                      'health_rationale': 'Recent work is landing well.',
+                      'health_confidence': 0.88,
+                    }),
                   ),
                 ];
 
@@ -1819,15 +1807,12 @@ void main() {
             }) async {
               if (strategy != null) {
                 final toolCalls = [
-                  ChatCompletionMessageToolCall(
+                  AiToolCall(
                     id: 'call-obs',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.recordObservations,
-                      arguments: jsonEncode({
-                        'observations': ['Team morale is high'],
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.recordObservations,
+                    arguments: jsonEncode({
+                      'observations': ['Team morale is high'],
+                    }),
                   ),
                 ];
 
@@ -1875,7 +1860,7 @@ void main() {
 
       test('persists final assistant response as thought', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.assistant(
+          const AiAssistantMessage(
             content: 'Here is my analysis of the project.',
           ),
         ]);
@@ -2051,19 +2036,16 @@ void main() {
             }) async {
               if (strategy != null) {
                 final toolCalls = [
-                  ChatCompletionMessageToolCall(
+                  AiToolCall(
                     id: 'call-rpt2',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.updateProjectReport,
-                      arguments: jsonEncode({
-                        'markdown': 'Updated report.',
-                        'tldr': 'Still waiting on confirmation.',
-                        'health_band': 'watch',
-                        'health_rationale':
-                            'A dependency still needs confirmation.',
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.updateProjectReport,
+                    arguments: jsonEncode({
+                      'markdown': 'Updated report.',
+                      'tldr': 'Still waiting on confirmation.',
+                      'health_band': 'watch',
+                      'health_rationale':
+                          'A dependency still needs confirmation.',
+                    }),
                   ),
                 ];
                 final manager = mockConversationRepository.getConversation(
@@ -2504,16 +2486,13 @@ void main() {
             }) async {
               if (strategy != null) {
                 final toolCalls = [
-                  ChatCompletionMessageToolCall(
+                  AiToolCall(
                     id: 'call-status',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.updateProjectStatus,
-                      arguments: jsonEncode({
-                        'status': 'on_track',
-                        'reason': 'All tasks progressing',
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.updateProjectStatus,
+                    arguments: jsonEncode({
+                      'status': 'on_track',
+                      'reason': 'All tasks progressing',
+                    }),
                   ),
                 ];
 
@@ -3113,13 +3092,10 @@ void main() {
               }) async {
                 if (strategy != null) {
                   final toolCalls = [
-                    ChatCompletionMessageToolCall(
+                    AiToolCall(
                       id: 'call-rec-empty',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: ProjectAgentToolNames.recommendNextSteps,
-                        arguments: jsonEncode({'steps': <dynamic>[]}),
-                      ),
+                      name: ProjectAgentToolNames.recommendNextSteps,
+                      arguments: jsonEncode({'steps': <dynamic>[]}),
                     ),
                   ];
 

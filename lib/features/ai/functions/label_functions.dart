@@ -1,4 +1,4 @@
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
 /// Function definitions for label-related AI operations
 class LabelFunctions {
@@ -19,57 +19,54 @@ class LabelFunctions {
   ///   "result": {"assigned": ["bug", "backend"], "invalid": ["ui"], "skipped": []},
   ///   "message": "Assigned 2 label(s); 1 invalid; 0 skipped"
   /// }
-  static List<ChatCompletionTool> getTools() {
+  static List<AiTool> getTools() {
     return [
-      const ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: assignTaskLabels,
-          description:
-              'Assign one or more existing labels to the current task. Add-only; will not remove existing labels. Prefer `labels` with per-label confidence; `labelIds` is deprecated.',
-          parameters: {
-            'type': 'object',
-            'properties': {
-              // New Phase 2 schema: prefer structured labels with confidence.
-              'labels': {
-                'type': 'array',
-                'description':
-                    'Preferred. Array of objects with {id, confidence}. Omit low-confidence labels. Provide highest-confidence first.',
-                'items': {
-                  'type': 'object',
-                  'properties': {
-                    'id': {
-                      'type': 'string',
-                      'description': 'Label ID to add to the task',
-                    },
-                    'confidence': {
-                      'type': 'string',
-                      'enum': ['low', 'medium', 'high', 'very_high'],
-                      'description':
-                          'Confidence for selecting this label. Low should be omitted.',
-                    },
+      const AiTool(
+        name: assignTaskLabels,
+        description:
+            'Assign one or more existing labels to the current task. Add-only; will not remove existing labels. Prefer `labels` with per-label confidence; `labelIds` is deprecated.',
+        parameters: {
+          'type': 'object',
+          'properties': {
+            // New Phase 2 schema: prefer structured labels with confidence.
+            'labels': {
+              'type': 'array',
+              'description':
+                  'Preferred. Array of objects with {id, confidence}. Omit low-confidence labels. Provide highest-confidence first.',
+              'items': {
+                'type': 'object',
+                'properties': {
+                  'id': {
+                    'type': 'string',
+                    'description': 'Label ID to add to the task',
                   },
-                  'required': ['id'],
+                  'confidence': {
+                    'type': 'string',
+                    'enum': ['low', 'medium', 'high', 'very_high'],
+                    'description':
+                        'Confidence for selecting this label. Low should be omitted.',
+                  },
                 },
-              },
-              'labelIds': {
-                'type': 'array',
-                'description':
-                    '[Deprecated] Array of label IDs to add to the task. Use `labels` instead.',
-                'items': {'type': 'string'},
+                'required': ['id'],
               },
             },
-            // Accept either `labels` or legacy `labelIds`.
-            'oneOf': [
-              {
-                'required': ['labels'],
-              },
-              {
-                'required': ['labelIds'],
-              },
-            ],
+            'labelIds': {
+              'type': 'array',
+              'description':
+                  '[Deprecated] Array of label IDs to add to the task. Use `labels` instead.',
+              'items': {'type': 'string'},
+            },
           },
-        ),
+          // Accept either `labels` or legacy `labelIds`.
+          'oneOf': [
+            {
+              'required': ['labels'],
+            },
+            {
+              'required': ['labelIds'],
+            },
+          ],
+        },
       ),
     ];
   }

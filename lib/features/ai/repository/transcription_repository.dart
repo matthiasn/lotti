@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 export 'transcription_exception.dart';
@@ -30,8 +30,7 @@ class TranscriptionRepository {
   /// Shared transcription template.
   ///
   /// Handles timeout calculation, developer logging, response parsing,
-  /// `CreateChatCompletionStreamResponse` wrapping, and the full error
-  /// catch cascade.
+  /// [AiStreamChunk] wrapping, and the full error catch cascade.
   ///
   /// [providerName] is used for logging and exception diagnostics.
   /// [responseIdPrefix] is prepended to the generated response ID.
@@ -39,7 +38,7 @@ class TranscriptionRepository {
   /// the raw response. It receives the computed timeout and a
   /// pre-formatted timeout error message so it can throw
   /// [TranscriptionException] from its own `onTimeout` callback.
-  Stream<CreateChatCompletionStreamResponse> executeTranscription({
+  Stream<AiStreamChunk> executeTranscription({
     required String providerName,
     required String responseIdPrefix,
     required Future<http.Response> Function(
@@ -113,17 +112,14 @@ class TranscriptionRepository {
             name: providerName,
           );
 
-          return CreateChatCompletionStreamResponse(
+          return AiStreamChunk(
             id: '$responseIdPrefix${_uuid.v4()}',
             choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: text,
-                ),
+              AiStreamChoice(
                 index: 0,
+                delta: AiStreamDelta(content: text),
               ),
             ],
-            object: 'chat.completion.chunk',
             created: 0,
           );
         } on TranscriptionException {

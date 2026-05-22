@@ -1,10 +1,10 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Wrapper that adapts CloudInferenceRepository to work with the conversation system
 ///
@@ -25,15 +25,15 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
   final GeminiThinkingMode? geminiThinkingMode;
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<AiStreamChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice,
   }) {
     // Delegate to the cloud repository
     return cloudRepository.generate(
@@ -52,14 +52,14 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<AiStreamChunk> generateTextWithMessages({
+    required List<AiChatMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -89,15 +89,15 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       geminiThinkingMode: geminiThinkingMode,
     );
 
-    // Pass through the stream but log any tool calls we see
+    // Pass through the stream but log any tool calls we see.
     await for (final chunk in stream) {
-      // Check if this chunk has tool calls that might be malformed
-      if (chunk.choices?.isNotEmpty ?? false) {
-        final delta = chunk.choices!.first.delta;
-        if (delta?.toolCalls != null) {
-          for (final toolCall in delta!.toolCalls!) {
-            if (toolCall.function?.arguments != null &&
-                toolCall.function!.arguments!.contains('}{')) {
+      if (chunk.choices.isNotEmpty) {
+        final delta = chunk.choices.first.delta;
+        final toolCalls = delta.toolCalls;
+        if (toolCalls != null) {
+          for (final toolCall in toolCalls) {
+            final args = toolCall.arguments;
+            if (args != null && args.contains('}{')) {
               developer.log(
                 'WARNING: Detected concatenated JSON in tool call arguments. '
                 'Provider ${provider.inferenceProviderType} may be returning malformed tool calls.',

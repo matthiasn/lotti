@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Voxtral-specific inference operations
 ///
@@ -113,7 +113,7 @@ class VoxtralInferenceRepository {
   /// Throws:
   ///   ArgumentError if required parameters are empty
   ///   VoxtralInferenceException if transcription fails
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<AiStreamChunk> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -211,18 +211,17 @@ class VoxtralInferenceRepository {
           final message = choice['message'] as Map<String, dynamic>?;
           final content = message?['content'] as String?;
           if (content != null && content.isNotEmpty) {
-            yield CreateChatCompletionStreamResponse(
+            yield AiStreamChunk(
               id:
                   json['id'] as String? ??
                   'voxtral-${DateTime.now().millisecondsSinceEpoch}',
               choices: [
-                ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(content: content),
+                AiStreamChoice(
                   index: 0,
-                  finishReason: ChatCompletionFinishReason.stop,
+                  delta: AiStreamDelta(content: content),
+                  finishReason: 'stop',
                 ),
               ],
-              object: 'chat.completion.chunk',
               created:
                   json['created'] as int? ??
                   DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -299,25 +298,17 @@ class VoxtralInferenceRepository {
                     name: 'VoxtralInferenceRepository',
                   );
 
-                  yield CreateChatCompletionStreamResponse(
+                  yield AiStreamChunk(
                     id:
                         json['id'] as String? ??
                         'voxtral-${DateTime.now().millisecondsSinceEpoch}',
                     choices: [
-                      ChatCompletionStreamResponseChoice(
-                        delta: ChatCompletionStreamResponseDelta(
-                          content: content,
-                        ),
+                      AiStreamChoice(
                         index: 0,
-                        finishReason: finishReason != null
-                            ? ChatCompletionFinishReason.values.firstWhere(
-                                (e) => e.name == finishReason,
-                                orElse: () => ChatCompletionFinishReason.stop,
-                              )
-                            : null,
+                        delta: AiStreamDelta(content: content),
+                        finishReason: finishReason,
                       ),
                     ],
-                    object: 'chat.completion.chunk',
                     created:
                         json['created'] as int? ??
                         DateTime.now().millisecondsSinceEpoch ~/ 1000,
