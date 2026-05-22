@@ -816,10 +816,10 @@ void main() {
       });
 
       test(
-        'overrideTranscriptionModelId routes the run to the override '
-        'model + its parent provider instead of the profile slot — the '
-        'popup-menu picker uses this seam to send one voice note to a '
-        'non-default model without mutating the profile',
+        'overrideModelId routes the run to the override model + its '
+        'parent provider instead of the profile slot — the popup-menu '
+        'picker uses this seam to send one voice note to a non-default '
+        'model without mutating the profile',
         () async {
           final audioEntity = makeAudioEntity();
           final audioDir = Directory('${tempDir.path}/audio');
@@ -885,7 +885,7 @@ void main() {
           await runner.runTranscription(
             audioEntryId: 'audio-1',
             automationResult: makeTranscriptionResult(),
-            overrideTranscriptionModelId: 'override-model-id',
+            overrideModelId: 'override-model-id',
           );
 
           // Inference targeted the override model + provider, NOT the
@@ -964,7 +964,7 @@ void main() {
           await runner.runTranscription(
             audioEntryId: 'audio-1',
             automationResult: makeTranscriptionResult(),
-            overrideTranscriptionModelId: 'stale-id',
+            overrideModelId: 'stale-id',
           );
 
           // Inference used the profile slot model (`whisper-1`) — the
@@ -1413,6 +1413,241 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'overrideModelId routes the run to the override model + its '
+        'parent provider instead of the profile slot — the popup-menu '
+        'picker uses this seam to send one photo to a non-default '
+        'model without mutating the profile',
+        () async {
+          final imageEntity = makeImageEntity();
+          final imageDir = Directory('${tempDir.path}/images');
+          await imageDir.create(recursive: true);
+          await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+
+          final overrideProvider =
+              AiConfig.inferenceProvider(
+                    id: 'p-override',
+                    baseUrl: 'https://override.example.com',
+                    name: 'Override Provider',
+                    inferenceProviderType: InferenceProviderType.openAi,
+                    apiKey: 'override-key',
+                    createdAt: DateTime(2024),
+                  )
+                  as AiConfigInferenceProvider;
+          final overrideModel = AiConfig.model(
+            id: 'override-model-id',
+            name: 'Claude Sonnet Vision',
+            providerModelId: 'claude-sonnet',
+            inferenceProviderId: 'p-override',
+            createdAt: DateTime(2024),
+            inputModalities: const [Modality.image, Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          );
+
+          when(
+            () => mockAiConfigRepo.getConfigById('override-model-id'),
+          ).thenAnswer((_) async => overrideModel);
+          when(
+            () => mockAiConfigRepo.getConfigById('p-override'),
+          ).thenAnswer((_) async => overrideProvider);
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('Override analysis'),
+            ]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: makeImageAnalysisResult(),
+            overrideModelId: 'override-model-id',
+          );
+
+          // Inference targeted the override model + provider, NOT the
+          // profile slot's `vision-model` / `p-vision`.
+          verify(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: 'https://override.example.com',
+              apiKey: any(named: 'apiKey'),
+              model: 'claude-sonnet',
+              temperature: null,
+              images: any(named: 'images'),
+              provider: overrideProvider,
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a stale override modelId (not resolvable to an AiConfigModel) '
+        'falls back to the profile slot — stranding the user with an '
+        '"image analysis does nothing" outcome is worse than ignoring '
+        'a deleted-between-picker-and-runner override',
+        () async {
+          final imageEntity = makeImageEntity();
+          final imageDir = Directory('${tempDir.path}/images');
+          await imageDir.create(recursive: true);
+          await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('stale-id'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('Fell back to profile'),
+            ]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: makeImageAnalysisResult(),
+            overrideModelId: 'stale-id',
+          );
+
+          // Inference used the profile slot model (`vision-model`)
+          // routed via the profile slot's provider `p-vision` — the
+          // stale override was ignored. Pinning the provider too
+          // catches a hypothetical regression where the runner
+          // chooses the right model but the wrong provider.
+          verify(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: 'vision-model',
+              temperature: null,
+              images: any(named: 'images'),
+              provider: testInferenceProvider(id: 'p-vision'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'an override modelId whose parent provider does not resolve to '
+        'an AiConfigInferenceProvider falls back to the profile slot — '
+        'a model row pointing at a stale/deleted provider should not '
+        'strand the run, same defensive principle as the missing-model '
+        'fallback',
+        () async {
+          final imageEntity = makeImageEntity();
+          final imageDir = Directory('${tempDir.path}/images');
+          await imageDir.create(recursive: true);
+          await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+
+          final orphanModel = AiConfig.model(
+            id: 'override-model-id',
+            name: 'Orphaned Vision',
+            providerModelId: 'orphan-model',
+            inferenceProviderId: 'p-missing',
+            createdAt: DateTime(2024),
+            inputModalities: const [Modality.image, Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          );
+
+          when(
+            () => mockAiConfigRepo.getConfigById('override-model-id'),
+          ).thenAnswer((_) async => orphanModel);
+          when(
+            () => mockAiConfigRepo.getConfigById('p-missing'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('Fell back to profile'),
+            ]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: makeImageAnalysisResult(),
+            overrideModelId: 'override-model-id',
+          );
+
+          // Same provider-pinning as the stale-override case above:
+          // verifying provider `p-vision` (the profile slot) catches
+          // wrong-provider routing that a model-only check would miss.
+          verify(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: 'vision-model',
+              temperature: null,
+              images: any(named: 'images'),
+              provider: testInferenceProvider(id: 'p-vision'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('runPromptGeneration', () {

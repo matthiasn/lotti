@@ -1234,6 +1234,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiFormNoChanges => 'No unsaved changes';
 
   @override
+  String get aiImageAnalysisPickerDefaultBadge => 'Default';
+
+  @override
+  String get aiImageAnalysisPickerTitle => 'Pick an image analysis model';
+
+  @override
   String get aiInferenceErrorAuthenticationTitle => 'Authentication Failed';
 
   @override

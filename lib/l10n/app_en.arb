@@ -746,6 +746,8 @@
   "aiFormCancel": "Cancel",
   "aiFormFixErrors": "Please fix errors before saving",
   "aiFormNoChanges": "No unsaved changes",
+  "aiImageAnalysisPickerDefaultBadge": "Default",
+  "aiImageAnalysisPickerTitle": "Pick an image analysis model",
   "aiInferenceErrorAuthenticationTitle": "Authentication Failed",
   "aiInferenceErrorConnectionFailedTitle": "Connection Failed",
   "aiInferenceErrorInvalidRequestTitle": "Invalid Request",

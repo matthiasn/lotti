@@ -136,43 +136,74 @@ class SkillInferenceRunner {
   /// back to the profile's transcription slot when the override is
   /// null OR unresolvable. The fallback path logs a warning so a
   /// stale override surfaced in logs, not user-visible stranding.
-  Future<_TranscriptionTarget> _resolveTranscriptionTarget({
+  Future<_InferenceTarget> _resolveTranscriptionTarget({
     required ResolvedProfile profile,
     required String? overrideModelId,
-  }) async {
-    if (overrideModelId == null) {
-      return (
+  }) {
+    return _resolveOverrideTarget(
+      overrideModelId: overrideModelId,
+      slotKind: _OverrideSlotKind.transcription,
+      fallback: () => (
         provider: profile.transcriptionProvider,
         modelId: profile.transcriptionModelId,
-      );
+      ),
+    );
+  }
+
+  /// Resolves the `(provider, modelId)` pair that an image-analysis
+  /// run should target. Same shape as [_resolveTranscriptionTarget]
+  /// but reads the profile's image-recognition slot for the fallback
+  /// path. Override resolution is identical: override must point at a
+  /// real `AiConfigModel` with a resolvable parent
+  /// `AiConfigInferenceProvider`, otherwise we fall back to the
+  /// profile slot with a warning log.
+  Future<_InferenceTarget> _resolveImageAnalysisTarget({
+    required ResolvedProfile profile,
+    required String? overrideModelId,
+  }) {
+    return _resolveOverrideTarget(
+      overrideModelId: overrideModelId,
+      slotKind: _OverrideSlotKind.imageAnalysis,
+      fallback: () => (
+        provider: profile.imageRecognitionProvider,
+        modelId: profile.imageRecognitionModelId,
+      ),
+    );
+  }
+
+  /// Shared override-or-fallback resolver used by both
+  /// [_resolveTranscriptionTarget] and [_resolveImageAnalysisTarget].
+  /// Keeps the override → fallback flow in one place so the warning
+  /// log shape and resolution rules stay aligned across slot kinds.
+  Future<_InferenceTarget> _resolveOverrideTarget({
+    required String? overrideModelId,
+    required _OverrideSlotKind slotKind,
+    required _InferenceTarget Function() fallback,
+  }) async {
+    if (overrideModelId == null) {
+      return fallback();
     }
     final repo = _ref.read(aiConfigRepositoryProvider);
     final modelConfig = await repo.getConfigById(overrideModelId);
     if (modelConfig is! AiConfigModel) {
       developer.log(
-        'Override transcription modelId $overrideModelId did not resolve '
-        'to an AiConfigModel; falling back to profile slot',
+        'Override ${slotKind.label} modelId $overrideModelId did not '
+        'resolve to an AiConfigModel; falling back to profile slot',
         name: _logTag,
       );
-      return (
-        provider: profile.transcriptionProvider,
-        modelId: profile.transcriptionModelId,
-      );
+      return fallback();
     }
     final providerConfig = await repo.getConfigById(
       modelConfig.inferenceProviderId,
     );
     if (providerConfig is! AiConfigInferenceProvider) {
       developer.log(
-        'Override transcription model ${modelConfig.id} has no resolvable '
-        'parent provider ${modelConfig.inferenceProviderId}; falling back '
-        'to profile slot',
+        'Override ${slotKind.label} model ${modelConfig.id} has no '
+        'resolvable parent provider ${modelConfig.inferenceProviderId}; '
+        'falling back to profile slot',
         name: _logTag,
       );
-      return (
-        provider: profile.transcriptionProvider,
-        modelId: profile.transcriptionModelId,
-      );
+      return fallback();
     }
     return (
       provider: providerConfig,
@@ -182,9 +213,9 @@ class SkillInferenceRunner {
 
   /// Run skill-based transcription on an audio entry.
   ///
-  /// When [overrideTranscriptionModelId] is non-null and resolves to a
-  /// valid `AiConfigModel`, the run uses that model and its parent
-  /// provider instead of the profile's transcription slot. This is the
+  /// When [overrideModelId] is non-null and resolves to a valid
+  /// `AiConfigModel`, the run uses that model and its parent provider
+  /// instead of the profile's transcription slot. This is the
   /// per-invocation override path used by the popup-menu picker, so the
   /// user can route a single voice note to a different model without
   /// changing the entire profile. A stale or unresolvable override
@@ -194,7 +225,7 @@ class SkillInferenceRunner {
     required String audioEntryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
-    String? overrideTranscriptionModelId,
+    String? overrideModelId,
   }) async {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
@@ -206,7 +237,7 @@ class SkillInferenceRunner {
     }
     final target = await _resolveTranscriptionTarget(
       profile: profile,
-      overrideModelId: overrideTranscriptionModelId,
+      overrideModelId: overrideModelId,
     );
     final provider = target.provider;
     final modelId = target.modelId;
@@ -332,10 +363,20 @@ class SkillInferenceRunner {
   }
 
   /// Run skill-based image analysis on an image entry.
+  ///
+  /// When [overrideModelId] is non-null and resolves to a valid
+  /// `AiConfigModel`, the run uses that model and its parent provider
+  /// instead of the profile's image-recognition slot. This is the
+  /// per-invocation override path used by the popup-menu picker, so
+  /// the user can route a single photo to a different model without
+  /// changing the entire profile. A stale or unresolvable override
+  /// falls back to the profile slot (with a warning log) — stranding
+  /// the user is worse than ignoring a stale id.
   Future<void> runImageAnalysis({
     required String imageEntryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
+    String? overrideModelId,
   }) async {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
@@ -345,8 +386,12 @@ class SkillInferenceRunner {
         'skill=${skill != null}, profile=${profile != null}',
       );
     }
-    final provider = profile.imageRecognitionProvider;
-    final modelId = profile.imageRecognitionModelId;
+    final target = await _resolveImageAnalysisTarget(
+      profile: profile,
+      overrideModelId: overrideModelId,
+    );
+    final provider = target.provider;
+    final modelId = target.modelId;
     if (provider == null || modelId == null) {
       developer.log(
         'Profile missing image recognition provider/model for $imageEntryId',
@@ -836,15 +881,31 @@ class SkillInferenceRunner {
   }
 }
 
-/// Resolved (provider, modelId) pair returned by
-/// [SkillInferenceRunner._resolveTranscriptionTarget]. Either field may
-/// be null when the override is unresolvable and the profile slot is
-/// also empty — the caller short-circuits with a "missing
+/// Resolved (provider, modelId) pair returned by the per-slot resolver
+/// helpers ([SkillInferenceRunner._resolveTranscriptionTarget],
+/// [SkillInferenceRunner._resolveImageAnalysisTarget]). Either field
+/// may be null when the override is unresolvable and the profile slot
+/// is also empty — the caller short-circuits with a "missing
 /// provider/model" log in that case.
-typedef _TranscriptionTarget = ({
+typedef _InferenceTarget = ({
   AiConfigInferenceProvider? provider,
   String? modelId,
 });
+
+/// Identifier for which profile slot a per-invocation override is
+/// targeting. The [label] is interpolated into warning logs so a
+/// future third slot kind only needs a new enum value, not a new
+/// magic-string literal that could typo-drift across the codebase.
+enum _OverrideSlotKind {
+  transcription('transcription'),
+  imageAnalysis('image analysis')
+  ;
+
+  const _OverrideSlotKind(this.label);
+
+  /// Human-readable form used in developer-log messages.
+  final String label;
+}
 
 @Riverpod(keepAlive: true)
 SkillInferenceRunner skillInferenceRunner(Ref ref) {

@@ -2239,6 +2239,18 @@ abstract class AppLocalizations {
   /// **'No unsaved changes'**
   String get aiFormNoChanges;
 
+  /// No description provided for @aiImageAnalysisPickerDefaultBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get aiImageAnalysisPickerDefaultBadge;
+
+  /// No description provided for @aiImageAnalysisPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick an image analysis model'**
+  String get aiImageAnalysisPickerTitle;
+
   /// No description provided for @aiInferenceErrorAuthenticationTitle.
   ///
   /// In en, this message translates to:

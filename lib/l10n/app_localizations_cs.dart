@@ -1247,6 +1247,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiFormNoChanges => 'Žádné neuložené změny';
 
   @override
+  String get aiImageAnalysisPickerDefaultBadge => 'Výchozí';
+
+  @override
+  String get aiImageAnalysisPickerTitle => 'Vyber model pro analýzu obrázků';
+
+  @override
   String get aiInferenceErrorAuthenticationTitle => 'Autentizace selhala';
 
   @override

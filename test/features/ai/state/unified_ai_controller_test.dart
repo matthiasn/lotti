@@ -1403,7 +1403,7 @@ void main() {
           skillId: 'nonexistent-skill',
           linkedTaskId: 'task-1',
           referenceImages: null,
-          overrideTranscriptionModelId: null,
+          overrideModelId: null,
         )).future,
       );
 
@@ -1463,7 +1463,7 @@ void main() {
             skillId: 'skill-1',
             linkedTaskId: null,
             referenceImages: null,
-            overrideTranscriptionModelId: null,
+            overrideModelId: null,
           )).future,
         );
 
@@ -1507,7 +1507,7 @@ void main() {
           skillId: 'skill-2',
           linkedTaskId: 'task-no-profile',
           referenceImages: null,
-          overrideTranscriptionModelId: null,
+          overrideModelId: null,
         )).future,
       );
 
@@ -1583,7 +1583,7 @@ void main() {
           skillId: 'skill-transcribe',
           linkedTaskId: 'task-1',
           referenceImages: null,
-          overrideTranscriptionModelId: null,
+          overrideModelId: null,
         )).future,
       );
 
@@ -1686,7 +1686,7 @@ void main() {
             skillId: 'skill-transcribe',
             linkedTaskId: null,
             referenceImages: null,
-            overrideTranscriptionModelId: null,
+            overrideModelId: null,
           )).future,
         );
 
@@ -1735,7 +1735,7 @@ void main() {
             skillId: 'skill-cover-art',
             linkedTaskId: null,
             referenceImages: null,
-            overrideTranscriptionModelId: null,
+            overrideModelId: null,
           )).future,
         );
 
@@ -1813,7 +1813,7 @@ void main() {
           skillId: 'skill-image',
           linkedTaskId: 'task-img',
           referenceImages: null,
-          overrideTranscriptionModelId: null,
+          overrideModelId: null,
         )).future,
       );
 
@@ -1825,6 +1825,97 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'threads overrideModelId from TriggerSkillParams to '
+      'SkillInferenceRunner.runImageAnalysis when the skill type is '
+      'imageAnalysis — the popup picker sets this field when the user '
+      'routes one photo to a non-default model, and the trigger must '
+      'forward it to the runner so the per-invocation override '
+      'actually takes effect',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-image',
+                  name: 'Image Analysis',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imageAnalysis,
+                  requiredInputModalities: [Modality.image],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        final thinkingProvider =
+            AiConfig.inferenceProvider(
+                  id: 'anthropic-prov',
+                  name: 'Anthropic',
+                  inferenceProviderType: InferenceProviderType.anthropic,
+                  apiKey: 'key',
+                  baseUrl: 'https://api.anthropic.com',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+        final imageRecognitionProvider =
+            AiConfig.inferenceProvider(
+                  id: 'openai-prov',
+                  name: 'OpenAI',
+                  inferenceProviderType: InferenceProviderType.openAi,
+                  apiKey: 'key',
+                  baseUrl: 'https://api.openai.com',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+
+        final resolvedProfile = ResolvedProfile(
+          thinkingModelId: 'thinking-model',
+          thinkingProvider: thinkingProvider,
+          imageRecognitionModelId: 'image-model',
+          imageRecognitionProvider: imageRecognitionProvider,
+        );
+
+        when(
+          () => mockResolver.resolveForTask('task-img'),
+        ).thenAnswer((_) async => resolvedProfile);
+
+        when(
+          () => mockRunner.runImageAnalysis(
+            imageEntryId: any(named: 'imageEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            overrideModelId: any(named: 'overrideModelId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'image-entry-1',
+            skillId: 'skill-image',
+            linkedTaskId: 'task-img',
+            referenceImages: null,
+            overrideModelId: 'override-vision-model-id',
+          )).future,
+        );
+
+        verify(
+          () => mockRunner.runImageAnalysis(
+            imageEntryId: 'image-entry-1',
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: 'task-img',
+            overrideModelId: 'override-vision-model-id',
+          ),
+        ).called(1);
+      },
+    );
 
     test('successfully routes prompt generation skill to runner', () async {
       final skill =
@@ -1882,7 +1973,7 @@ void main() {
           skillId: 'skill-prompt',
           linkedTaskId: 'task-prompt',
           referenceImages: null,
-          overrideTranscriptionModelId: null,
+          overrideModelId: null,
         )).future,
       );
 
@@ -1955,7 +2046,7 @@ void main() {
           skillId: 'skill-imggen',
           linkedTaskId: 'task-imggen',
           referenceImages: null,
-          overrideTranscriptionModelId: null,
+          overrideModelId: null,
         )).future,
       );
 
@@ -2038,7 +2129,7 @@ void main() {
           skillId: 'skill-imggen2',
           linkedTaskId: 'task-imggen2',
           referenceImages: refImages,
-          overrideTranscriptionModelId: null,
+          overrideModelId: null,
         )).future,
       );
 
@@ -2111,7 +2202,7 @@ void main() {
             skillId: 'skill-img-prompt',
             linkedTaskId: 'task-img-prompt',
             referenceImages: null,
-            overrideTranscriptionModelId: null,
+            overrideModelId: null,
           )).future,
         );
 

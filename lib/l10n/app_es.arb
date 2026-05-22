@@ -561,6 +561,8 @@
   "aiFormCancel": "Cancelar",
   "aiFormFixErrors": "Por favor, corrige los errores antes de guardar",
   "aiFormNoChanges": "No hay cambios sin guardar",
+  "aiImageAnalysisPickerDefaultBadge": "Predeterminado",
+  "aiImageAnalysisPickerTitle": "Elige un modelo de análisis de imágenes",
   "aiInferenceErrorAuthenticationTitle": "Autenticación fallida",
   "aiInferenceErrorConnectionFailedTitle": "Conexión fallida",
   "aiInferenceErrorInvalidRequestTitle": "Solicitud no válida",

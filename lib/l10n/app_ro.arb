@@ -561,6 +561,8 @@
   "aiFormCancel": "Anulează",
   "aiFormFixErrors": "Vă rugăm să corectați erorile înainte de salvare",
   "aiFormNoChanges": "Nu există modificări nesalvate",
+  "aiImageAnalysisPickerDefaultBadge": "Implicit",
+  "aiImageAnalysisPickerTitle": "Alegeți un model pentru analiza imaginilor",
   "aiInferenceErrorAuthenticationTitle": "Autentificare eșuată",
   "aiInferenceErrorConnectionFailedTitle": "Conexiune eșuată",
   "aiInferenceErrorInvalidRequestTitle": "Cerere invalidă",

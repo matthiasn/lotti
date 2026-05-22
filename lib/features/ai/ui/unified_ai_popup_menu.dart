@@ -6,20 +6,96 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
-import 'package:lotti/features/ai/ui/widgets/transcription_model_picker_modal.dart';
+import 'package:lotti/features/ai/ui/widgets/inference_model_picker_modal.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
-
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/modal/index.dart';
+
+/// (modelId, providerId) tuple pulled from a [ResolvedProfile] for one
+/// per-invocation override slot. Both fields are nullable because a
+/// freshly-installed profile may not have populated the slot yet.
+typedef _ProfileSlotValue = ({String? modelId, String? providerId});
+
+/// Per-skill configuration for the model-override popup flow. Each
+/// entry plugs in a modality filter, profile-slot accessor, and the
+/// localised title + default-badge strings used by the picker. Adding
+/// a new override slot is a one-line entry in
+/// [_modelOverrideConfigs] plus a corresponding dispatch branch in
+/// the skill inference runner.
+class _SkillModelOverrideConfig {
+  const _SkillModelOverrideConfig({
+    required this.modality,
+    required this.slotAccessor,
+    required this.titleSelector,
+    required this.defaultBadgeSelector,
+  });
+
+  /// Modality the model must accept to appear in the picker. Filters
+  /// the raw `AiConfigModel` list down to the relevant capability set
+  /// (e.g. `Modality.audio` for transcription, `Modality.image` for
+  /// image analysis).
+  final Modality modality;
+
+  /// Pulls the `(providerModelId, providerId)` pair for the override
+  /// slot out of the resolved profile.
+  final _ProfileSlotValue Function(ResolvedProfile) slotAccessor;
+
+  /// Returns the picker modal title for this slot. Resolved against
+  /// the live [AppLocalizations] at handler time.
+  final String Function(AppLocalizations) titleSelector;
+
+  /// Returns the "(default)" badge label for this slot. Same
+  /// resolution timing as [titleSelector].
+  final String Function(AppLocalizations) defaultBadgeSelector;
+}
+
+_ProfileSlotValue _transcriptionSlot(ResolvedProfile p) => (
+  modelId: p.transcriptionModelId,
+  providerId: p.transcriptionProvider?.id,
+);
+
+_ProfileSlotValue _imageAnalysisSlot(ResolvedProfile p) => (
+  modelId: p.imageRecognitionModelId,
+  providerId: p.imageRecognitionProvider?.id,
+);
+
+/// Skill types that open a model-override picker on tap, keyed by
+/// [SkillType]. Skill types not in this map fall through to the
+/// straight `triggerSkillProvider` call in [UnifiedAiModal.show].
+const _modelOverrideConfigs = <SkillType, _SkillModelOverrideConfig>{
+  SkillType.transcription: _SkillModelOverrideConfig(
+    modality: Modality.audio,
+    slotAccessor: _transcriptionSlot,
+    titleSelector: _transcriptionTitleSelector,
+    defaultBadgeSelector: _transcriptionBadgeSelector,
+  ),
+  SkillType.imageAnalysis: _SkillModelOverrideConfig(
+    modality: Modality.image,
+    slotAccessor: _imageAnalysisSlot,
+    titleSelector: _imageAnalysisTitleSelector,
+    defaultBadgeSelector: _imageAnalysisBadgeSelector,
+  ),
+};
+
+String _transcriptionTitleSelector(AppLocalizations m) =>
+    m.aiTranscriptionPickerTitle;
+String _transcriptionBadgeSelector(AppLocalizations m) =>
+    m.aiTranscriptionPickerDefaultBadge;
+String _imageAnalysisTitleSelector(AppLocalizations m) =>
+    m.aiImageAnalysisPickerTitle;
+String _imageAnalysisBadgeSelector(AppLocalizations m) =>
+    m.aiImageAnalysisPickerDefaultBadge;
 
 /// Unified AI popup menu that shows available skills for the current entity
 class UnifiedAiPopUpMenu extends ConsumerWidget {
@@ -120,18 +196,21 @@ class UnifiedAiModal {
             return;
           }
 
-          // Transcription opens the model-override picker so the user
-          // can route this single voice note to any speech-capable
-          // model (default surfaced first). The picker short-circuits
-          // when only one such model is configured, preserving the
-          // one-tap flow for the common case.
-          if (skill.skillType == SkillType.transcription) {
-            await _handleTranscriptionSkill(
+          // Skill types with a per-invocation model override (today:
+          // transcription + image analysis) open the model-override
+          // picker before firing the trigger. Each skill type plugs
+          // in its own modality filter, profile slot accessor, and
+          // l10n strings via _modelOverrideConfigs — adding a new
+          // override slot is a one-line entry in that map.
+          final overrideConfig = _modelOverrideConfigs[skill.skillType];
+          if (overrideConfig != null) {
+            await _handleSkillWithModelOverride(
               context: context,
               journalEntity: journalEntity,
               linkedTaskId: linkedTaskId,
               skill: skill,
               ref: ref,
+              config: overrideConfig,
             );
             return;
           }
@@ -144,7 +223,7 @@ class UnifiedAiModal {
                 skillId: skill.id,
                 linkedTaskId: linkedTaskId,
                 referenceImages: null,
-                overrideTranscriptionModelId: null,
+                overrideModelId: null,
               )).future,
             ),
           );
@@ -192,27 +271,29 @@ class UnifiedAiModal {
     );
   }
 
-  /// Opens the transcription-model picker, then fires the trigger
-  /// with the user's selection threaded as `overrideTranscriptionModelId`.
+  /// Opens the model-override picker for any skill type that has a
+  /// per-invocation override slot (configured in
+  /// [_modelOverrideConfigs]), then fires the trigger with the user's
+  /// selection threaded as `overrideModelId`.
   ///
   /// Profile resolution mirrors [triggerSkillProvider]'s logic: linked
-  /// task uses the task's profile, standalone audio falls back to the
-  /// entry category's `defaultProfileId`. The resolved profile's
-  /// transcription slot (a wire-level `providerModelId` string) is
-  /// translated to an `AiConfigModel.id` by matching against the
-  /// loaded model list, so the picker can highlight that row as the
-  /// default.
+  /// task uses the task's profile, standalone entries fall back to
+  /// the entry category's `defaultProfileId`. The resolved profile's
+  /// per-slot wire-level `providerModelId` is translated to an
+  /// `AiConfigModel.id` by matching against the loaded model list, so
+  /// the picker can highlight that row as the default.
   ///
   /// When the picker resolves with the same id as the default we
   /// pass `null` as the override — same semantic as "no override" so
   /// the runner reads from the profile slot, and a deleted model
   /// between picker and runner falls back gracefully.
-  static Future<void> _handleTranscriptionSkill({
+  static Future<void> _handleSkillWithModelOverride({
     required BuildContext context,
     required JournalEntity journalEntity,
     required String? linkedTaskId,
     required AiConfigSkill skill,
     required WidgetRef ref,
+    required _SkillModelOverrideConfig config,
   }) async {
     final resolver = ref.read(profileAutomationResolverProvider);
     final resolvedProfile = linkedTaskId != null
@@ -232,9 +313,9 @@ class UnifiedAiModal {
     // on-tap UI gesture.
     final repo = ref.read(aiConfigRepositoryProvider);
     final allConfigs = await repo.getConfigsByType(AiConfigType.model);
-    final speechCapable = allConfigs
+    final modalityCapable = allConfigs
         .whereType<AiConfigModel>()
-        .where((m) => m.inputModalities.contains(Modality.audio))
+        .where((m) => m.inputModalities.contains(config.modality))
         .toList();
 
     // Translate the profile's wire-level providerModelId to the
@@ -243,10 +324,11 @@ class UnifiedAiModal {
     // the picker renders the list without a default row.
     String? defaultModelId;
     if (resolvedProfile != null) {
-      final providerModelId = resolvedProfile.transcriptionModelId;
-      final providerId = resolvedProfile.transcriptionProvider?.id;
+      final slot = config.slotAccessor(resolvedProfile);
+      final providerModelId = slot.modelId;
+      final providerId = slot.providerId;
       if (providerModelId != null && providerId != null) {
-        defaultModelId = speechCapable
+        defaultModelId = modalityCapable
             .where(
               (m) =>
                   m.providerModelId == providerModelId &&
@@ -258,15 +340,22 @@ class UnifiedAiModal {
     }
 
     if (!context.mounted) return;
-    final picked = await TranscriptionModelPickerModal.show(
+    // Cache l10n on the still-mounted context before awaiting the
+    // picker — the surrounding widget may be disposed while the
+    // picker is open, after which `context.messages` would throw.
+    final messages = context.messages;
+    final picked = await InferenceModelPickerModal.show(
       context: context,
       defaultModelId: defaultModelId,
-      speechCapableModels: speechCapable,
+      models: modalityCapable,
+      title: config.titleSelector(messages),
+      defaultBadgeLabel: config.defaultBadgeSelector(messages),
     );
     if (picked == null) return;
-    // The widget could have been disposed while the picker was open
-    // (user navigated away, entry deleted). Reading ref on a
-    // deactivated element throws — bail before the trigger fires.
+    // Second mounted check: the picker `await` can resolve after the
+    // surrounding widget has been deactivated (user navigated away,
+    // entry deleted). Reading `ref` on a deactivated element throws,
+    // so we bail before firing the trigger.
     if (!context.mounted) return;
 
     // Same id as default → no override semantic — the runner reads
@@ -280,7 +369,7 @@ class UnifiedAiModal {
           skillId: skill.id,
           linkedTaskId: linkedTaskId,
           referenceImages: null,
-          overrideTranscriptionModelId: overrideId,
+          overrideModelId: overrideId,
         )).future,
       ),
     );

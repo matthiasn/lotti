@@ -1258,6 +1258,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiFormNoChanges => 'Aucune modification non enregistrée';
 
   @override
+  String get aiImageAnalysisPickerDefaultBadge => 'Par défaut';
+
+  @override
+  String get aiImageAnalysisPickerTitle =>
+      'Choisis un modèle d\'analyse d\'image';
+
+  @override
   String get aiInferenceErrorAuthenticationTitle =>
       'Échec de l\'authentification';
 
