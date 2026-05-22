@@ -72,46 +72,39 @@ class AiInferenceClient {
 
     var parseErrors = 0;
     const maxParseErrors = 5;
-    var buffer = StringBuffer();
 
-    await for (final chunk in streamed.stream.transform(utf8.decoder)) {
-      buffer.write(chunk);
-      final raw = buffer.toString();
-      final lines = raw.split('\n');
-      buffer = StringBuffer();
-      if (!raw.endsWith('\n')) {
-        buffer.write(lines.removeLast());
-      }
+    await for (final line
+        in streamed.stream
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty || !trimmed.startsWith('data:')) continue;
+      // SSE spec allows `data:` with or without a space after the colon.
+      final data = trimmed.substring('data:'.length).trim();
+      if (data == '[DONE]') return;
 
-      for (final line in lines) {
-        final trimmed = line.trim();
-        if (trimmed.isEmpty || !trimmed.startsWith('data: ')) continue;
-        final data = trimmed.substring(6).trim();
-        if (data == '[DONE]') return;
-
-        try {
-          final json = jsonDecode(data) as Map<String, dynamic>;
-          final parsed = aiStreamChunkFromJson(json);
-          if (parsed != null) yield parsed;
-        } on FormatException catch (e, stack) {
-          parseErrors++;
-          developer.log(
-            'Failed to parse SSE chunk '
-            '($parseErrors/$maxParseErrors): $data',
-            name: 'AiInferenceClient',
-            error: e,
+      try {
+        final json = jsonDecode(data) as Map<String, dynamic>;
+        final parsed = aiStreamChunkFromJson(json);
+        if (parsed != null) yield parsed;
+      } on FormatException catch (e, stack) {
+        parseErrors++;
+        developer.log(
+          'Failed to parse SSE chunk '
+          '($parseErrors/$maxParseErrors): $data',
+          name: 'AiInferenceClient',
+          error: e,
+        );
+        if (parseErrors >= maxParseErrors) {
+          _captureException(
+            e,
+            subDomain: 'parse_threshold_exceeded',
+            stack: stack,
           );
-          if (parseErrors >= maxParseErrors) {
-            _captureException(
-              e,
-              subDomain: 'parse_threshold_exceeded',
-              stack: stack,
-            );
-            throw AiInferenceException(
-              'Too many parse errors during streaming',
-              originalError: e,
-            );
-          }
+          throw AiInferenceException(
+            'Too many parse errors during streaming',
+            originalError: e,
+          );
         }
       }
     }
