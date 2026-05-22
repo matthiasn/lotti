@@ -4,8 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1006]
+## [0.9.1007]
 ### Added
+- Active audio recordings now show a prominent desktop sidebar card above the
+  running timer, with a larger speech-weighted dBFS-reactive recording orb,
+  red signal-reactive frame, subtle red shadow, elapsed time, and one-tap stop
+  control so runaway microphone sessions are harder to miss.
 - Audio and image entry Actions menus on desktop can now reveal the backing
   file in Finder, File Explorer, or Files.
 

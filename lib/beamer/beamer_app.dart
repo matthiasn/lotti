@@ -48,18 +48,12 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
+import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:matrix/matrix.dart';
-
-class AppScreenConstants {
-  const AppScreenConstants._();
-
-  static const double navigationTimeIndicatorBottom = 0;
-  static const double navigationAudioIndicatorRight = 100;
-}
 
 /// Check if the app is running inside Flatpak sandbox
 bool _isRunningInFlatpak() {
@@ -71,9 +65,7 @@ bool _isRunningInFlatpak() {
 /// True when the tasks tab is active and the tasks beamer location points
 /// at a `/tasks/<uuid>` task detail. Used by both shells: the mobile shell
 /// hides the bottom nav pill so the page-owned `TaskActionBar` can dock
-/// flush against the home indicator, and the desktop shell hides the
-/// bottom-right floating recording indicator since the action bar already
-/// exposes the same affordance. Pure function of router state, no
+/// flush against the home indicator. Pure function of router state, no
 /// widget-lifecycle race.
 bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
   // Tasks is always the first destination; if any other tab is active
@@ -317,12 +309,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
-        // Listen to the tasks delegate so both shells rebuild when the
+        // Listen to the tasks delegate so the mobile shell rebuilds when the
         // tasks route changes (push to / pop from task details). That's how
-        // we know whether to hide:
-        //   - the mobile bottom nav pill; and
-        //   - the desktop bottom-right floating recording indicator, which
-        //     is redundant once the TaskActionBar is on screen.
+        // we know whether to hide the mobile bottom nav pill.
         // See [_isTaskDetailRoute].
         return ListenableBuilder(
           listenable: navService.tasksDelegate,
@@ -467,16 +456,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                       ),
                   ],
                 ),
-                // Hidden on `/tasks/<uuid>` — the desktop TaskActionBar
-                // already surfaces the recording control there, so the
-                // floating indicator would be redundant. Stays visible on
-                // the tasks list and on every other top-level destination.
-                if (!_isRunningInFlatpak() && !_isTaskDetailRoute(index))
-                  const Positioned(
-                    right: AppScreenConstants.navigationAudioIndicatorRight,
-                    bottom: AppScreenConstants.navigationTimeIndicatorBottom,
-                    child: AudioRecordingIndicator(),
-                  ),
               ],
             ),
           ),
@@ -745,10 +724,10 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 }
 
 /// Composer for the desktop sidebar's `aboveSettings` slot. Stacks the
-/// optional inline Wake Queue (when its config flag is enabled) above
-/// the running-timer panel (when a timer is active), so the running
-/// timer sits closest to the Settings entry below. The separator
-/// between the two is rendered only when both are actually visible.
+/// optional inline Wake Queue (when its config flag is enabled), audio
+/// recording panel, and running-timer panel, so the running timer still sits
+/// closest to the Settings entry below. Separators are rendered only between
+/// sections that are actually visible.
 class _DesktopSidebarAboveSettings extends ConsumerWidget {
   const _DesktopSidebarAboveSettings({required this.showWakeQueue});
 
@@ -759,11 +738,14 @@ class _DesktopSidebarAboveSettings extends ConsumerWidget {
     final tokens = context.designTokens;
     final wakesVisible =
         showWakeQueue && sidebarWakeQueueHasVisibleContent(ref);
+    final audioVisible =
+        !_isRunningInFlatpak() && sidebarAudioRecordingHasVisibleContent(ref);
 
     return StreamBuilder<JournalEntity?>(
       stream: getIt<TimeService>().getStream(),
       builder: (context, snapshot) {
         final hasTimer = snapshot.data != null;
+        final hasBelowWake = audioVisible || hasTimer;
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -778,7 +760,18 @@ class _DesktopSidebarAboveSettings extends ConsumerWidget {
               curve: Curves.easeInOut,
               alignment: Alignment.bottomCenter,
               child: SizedBox(
-                height: (wakesVisible && hasTimer) ? tokens.spacing.step3 : 0,
+                height: (wakesVisible && hasBelowWake)
+                    ? tokens.spacing.step3
+                    : 0,
+              ),
+            ),
+            if (!_isRunningInFlatpak()) const SidebarAudioRecordingSection(),
+            AnimatedSize(
+              duration: SidebarAudioRecordingSection.animationDuration,
+              curve: Curves.easeInOut,
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                height: (audioVisible && hasTimer) ? tokens.spacing.step3 : 0,
               ),
             ),
             const SidebarTimerSection(),

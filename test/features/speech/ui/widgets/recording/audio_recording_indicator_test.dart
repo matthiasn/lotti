@@ -8,6 +8,7 @@ import 'package:lotti/features/speech/repository/audio_recorder_repository.dart'
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_orb.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -126,7 +127,7 @@ void main() {
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byKey(const Key('audio_recording_indicator')), findsNothing);
     });
@@ -142,7 +143,7 @@ void main() {
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byKey(const Key('audio_recording_indicator')), findsNothing);
     });
@@ -160,13 +161,13 @@ void main() {
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(
         find.byKey(const Key('audio_recording_indicator')),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+      expect(find.byType(AudioRecordingOrb), findsOneWidget);
 
       // FittedBox might be scaling the text, so let's find it within the widget tree
       final textFinder = find.descendant(
@@ -190,7 +191,7 @@ void main() {
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(
         find.descendant(
@@ -223,7 +224,7 @@ void main() {
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify the indicator exists
       expect(
@@ -249,7 +250,7 @@ void main() {
       expect(mouseRegion.cursor, SystemMouseCursors.click);
 
       // Verify it has the expected content
-      expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+      expect(find.byType(AudioRecordingOrb), findsOneWidget);
     });
 
     testWidgets('indicator shows correct duration format', (tester) async {
@@ -270,7 +271,7 @@ void main() {
         );
 
         await tester.pumpWidget(makeTestableWidget(state));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // FittedBox might be scaling the text, so let's find it within the widget tree
         final textFinder = find.descendant(
@@ -298,7 +299,7 @@ void main() {
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final indicatorSize = tester.getSize(
         find.byKey(const Key('audio_recording_indicator')),
@@ -332,7 +333,7 @@ void main() {
         );
 
         await tester.pumpWidget(makeTestableWidget(state));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final size = tester.getSize(
           find.byKey(const Key('audio_recording_indicator')),
@@ -379,7 +380,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(state, linkedEntry: mockEntry),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify indicator exists
       expect(
@@ -407,7 +408,7 @@ void main() {
         );
 
         await tester.pumpWidget(makeTestableWidget(state));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify indicator exists
         expect(
@@ -440,7 +441,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show empty widget when exception occurs
       expect(find.byKey(const Key('audio_recording_indicator')), findsNothing);
@@ -458,7 +459,7 @@ void main() {
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final clipRRect = tester.widget<ClipRRect>(
         find.descendant(

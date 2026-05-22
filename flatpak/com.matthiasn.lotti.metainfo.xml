@@ -32,8 +32,9 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1006" date="2026-05-22">
+    <release version="0.9.1007" date="2026-05-22">
       <description>
+          <p>Active audio recordings now show a prominent desktop sidebar card above the running timer, with a larger speech-weighted dBFS-reactive recording orb, red signal-reactive frame, subtle red shadow, elapsed time, and one-tap stop control so runaway microphone sessions are harder to miss.</p>
           <p>Audio and image entry Actions menus on desktop can now reveal the backing file in Finder, File Explorer, or Files.</p>
       </description>
     </release>
