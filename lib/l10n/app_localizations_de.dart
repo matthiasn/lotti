@@ -1252,6 +1252,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiFormNoChanges => 'Keine ungespeicherten Änderungen';
 
   @override
+  String get aiImageAnalysisPickerDefaultBadge => 'Standard';
+
+  @override
+  String get aiImageAnalysisPickerTitle => 'Wähle ein Bildanalysemodell';
+
+  @override
   String get aiInferenceErrorAuthenticationTitle =>
       'Authentifizierung fehlgeschlagen';
 

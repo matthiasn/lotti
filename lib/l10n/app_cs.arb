@@ -401,6 +401,8 @@
   "aiFormCancel": "Zrušit",
   "aiFormFixErrors": "Prosím, opravte chyby před uložením",
   "aiFormNoChanges": "Žádné neuložené změny",
+  "aiImageAnalysisPickerDefaultBadge": "Výchozí",
+  "aiImageAnalysisPickerTitle": "Vyber model pro analýzu obrázků",
   "aiInferenceErrorAuthenticationTitle": "Autentizace selhala",
   "aiInferenceErrorConnectionFailedTitle": "Připojení selhalo",
   "aiInferenceErrorInvalidRequestTitle": "Neplatný požadavek",

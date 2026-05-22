@@ -265,40 +265,43 @@ flowchart TD
 
 The seeded task-context skills (`Transcribe (Task Context)`, `Analyze Image (Task Context)`, `Generate Cover Art`, the coding/design/research prompt generators) are therefore hidden for standalone entries; only their plain counterparts (`Transcribe Audio`, `Analyze Image`) show up. `triggerSkillProvider` also has a defensive guard: a `fullTask` skill triggered without a `linkedTaskId` is captured as an event and aborted — the popup should never offer one in that state, so reaching it is a caller bug.
 
-### Transcription Model Override
+### Per-Invocation Model Overrides
 
-When the user taps a transcription skill in the popup menu (`UnifiedAiPopUpMenu._handleTranscriptionSkill`), the flow inserts a `TranscriptionModelPickerModal` step before firing `triggerSkillProvider`. The picker lists every `AiConfigModel` whose `inputModalities` includes `Modality.audio`, with the profile's transcription slot row surfaced first and badged. The user's choice threads through as the optional `overrideTranscriptionModelId` field on `TriggerSkillParams`, which `SkillInferenceRunner.runTranscription` resolves into a `(provider, modelId)` target pair via `_resolveTranscriptionTarget` — preferring the override when it resolves to a real `AiConfigModel` + parent `AiConfigInferenceProvider`, falling back to the profile slot otherwise.
+Skill types with a per-invocation override slot (today: transcription and image-analysis) open the same `InferenceModelPickerModal` before firing `triggerSkillProvider`, so the user can route a single voice note or photo to any modality-capable model without editing the inference profile. The flow is one parameterised path — the variant table `_modelOverrideConfigs` in `unified_ai_popup_menu.dart` plugs in the per-slot modality filter, profile-slot accessor, and l10n strings. Adding a third per-invocation override slot is a one-line entry in that map plus a corresponding `_resolveOverrideTarget` call on the runner.
 
-Three short-circuits keep the common case one-tap:
+The user's choice threads through as the optional `overrideModelId` field on `TriggerSkillParams`. `SkillInferenceRunner` dispatches on `skill.skillType` and forwards `overrideModelId` to `runTranscription` or `runImageAnalysis`; each one calls its per-slot resolver (`_resolveTranscriptionTarget` / `_resolveImageAnalysisTarget`), which delegates to the shared `_resolveOverrideTarget` helper. Both resolvers return an `_InferenceTarget` record of `(AiConfigInferenceProvider?, String?)` — preferring the override when it resolves to a real `AiConfigModel` + parent `AiConfigInferenceProvider`, falling back to the profile slot (with a warning log keyed by `_OverrideSlotKind`) otherwise.
 
-- `speechCapableModels.isEmpty` — picker is not shown; the trigger is not fired (defensive path, the popup audio gate should prevent reaching here).
-- `speechCapableModels.length == 1` — picker is not shown; the trigger fires immediately with the lone model id.
+Three short-circuits keep the common case one-tap, applied identically across slot kinds:
+
+- `models.isEmpty` — picker is not shown; the trigger is not fired (defensive path, the popup modality gate should prevent reaching here).
+- `models.length == 1` — picker is not shown; the trigger fires immediately with the lone model id.
 - `picked == defaultModelId` — the override is collapsed to `null` at the popup callsite, so the runner reads the profile slot and a model deleted between picker and run still falls back gracefully (instead of trying to route to a stale id).
 
 ```mermaid
 stateDiagram-v2
-  [*] --> SkillTap: tap transcription skill in popup
+  [*] --> SkillTap: tap transcription / image-analysis skill in popup
   SkillTap --> ResolveProfile: resolve profile (task or category)
   ResolveProfile --> LoadModels: read AiConfigModel list via repository
-  LoadModels --> ComputeDefault: map profile.transcriptionModelId + provider id\nto an AiConfigModel.id
-  ComputeDefault --> Empty: speech-capable list empty
-  ComputeDefault --> Single: exactly one speech-capable model
-  ComputeDefault --> Many: 2+ speech-capable models
+  LoadModels --> ComputeDefault: variant.slotAccessor(profile)\n→ AiConfigModel.id
+  ComputeDefault --> Empty: slot-capable list empty
+  ComputeDefault --> Single: exactly one slot-capable model
+  ComputeDefault --> Many: 2+ slot-capable models
   Empty --> [*]: no-op
-  Single --> FireTrigger: overrideTranscriptionModelId = lone id
-  Many --> Picker: TranscriptionModelPickerModal.show
+  Single --> FireTrigger: overrideModelId = lone id
+  Many --> Picker: InferenceModelPickerModal.show
   Picker --> Dismissed: user cancels / dismisses
   Picker --> PickedDefault: tap default-badged row
   Picker --> PickedOther: tap any other row
   Dismissed --> [*]
-  PickedDefault --> FireTrigger: overrideTranscriptionModelId = null
-  PickedOther --> FireTrigger: overrideTranscriptionModelId = picked id
-  FireTrigger --> Runner: SkillInferenceRunner.runTranscription
-  Runner --> ResolveTarget: _resolveTranscriptionTarget(override)
+  PickedDefault --> FireTrigger: overrideModelId = null
+  PickedOther --> FireTrigger: overrideModelId = picked id
+  FireTrigger --> Dispatch: triggerSkillProvider routes by skill.skillType
+  Dispatch --> Runner: runTranscription / runImageAnalysis(overrideModelId)
+  Runner --> ResolveTarget: _resolveOverrideTarget(override)
   ResolveTarget --> OverrideOk: override resolves to AiConfigModel + provider
   ResolveTarget --> FallBack: override null / stale model / missing parent provider
-  OverrideOk --> Inference: generateWithAudio(override model + provider)
-  FallBack --> Inference: generateWithAudio(profile slot)
+  OverrideOk --> Inference: generateWithAudio / generateWithImages\n(override model + provider)
+  FallBack --> Inference: generateWithAudio / generateWithImages\n(profile slot)
   Inference --> [*]
 ```
 

@@ -1259,6 +1259,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiFormNoChanges => 'Nu există modificări nesalvate';
 
   @override
+  String get aiImageAnalysisPickerDefaultBadge => 'Implicit';
+
+  @override
+  String get aiImageAnalysisPickerTitle =>
+      'Alegeți un model pentru analiza imaginilor';
+
+  @override
   String get aiInferenceErrorAuthenticationTitle => 'Autentificare eșuată';
 
   @override

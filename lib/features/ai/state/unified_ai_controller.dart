@@ -438,18 +438,20 @@ final hasAvailableSkillsProvider = FutureProvider.autoDispose
 
 /// Record type for trigger skill parameters.
 ///
-/// `overrideTranscriptionModelId` is consumed only by
-/// [SkillType.transcription]. Non-transcription skills ignore it. The
-/// popup-menu picker sets it when the user chooses a non-default model
-/// for one specific voice note; the trigger forwards it to
-/// [SkillInferenceRunner.runTranscription], which routes the call to
-/// that model + its parent provider instead of the profile slot.
+/// `overrideModelId` is semantically scoped by the skill's `skillType`: the
+/// popup-menu pickers set it when the user chooses a non-default model
+/// for one specific entry, and the dispatch in [triggerSkillProvider]
+/// forwards it to the matching `SkillInferenceRunner` entry point
+/// (only [SkillType.transcription] and [SkillType.imageAnalysis]
+/// honour it today; other skill types ignore it). The runner routes
+/// the call to that model + its parent provider instead of the
+/// profile slot.
 typedef TriggerSkillParams = ({
   String entityId,
   String skillId,
   String? linkedTaskId,
   List<ProcessedReferenceImage>? referenceImages,
-  String? overrideTranscriptionModelId,
+  String? overrideModelId,
 });
 
 /// Provider to trigger a skill-based inference run.
@@ -555,14 +557,14 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 audioEntryId: params.entityId,
                 automationResult: automationResult,
                 linkedTaskId: params.linkedTaskId,
-                overrideTranscriptionModelId:
-                    params.overrideTranscriptionModelId,
+                overrideModelId: params.overrideModelId,
               );
             case SkillType.imageAnalysis:
               await runner.runImageAnalysis(
                 imageEntryId: params.entityId,
                 automationResult: automationResult,
                 linkedTaskId: params.linkedTaskId,
+                overrideModelId: params.overrideModelId,
               );
             case SkillType.promptGeneration:
             case SkillType.imagePromptGeneration:

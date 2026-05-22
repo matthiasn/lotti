@@ -2,38 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Bottom-sheet picker for choosing which model handles one
-/// transcription run, overriding the inference profile's slot for
-/// that single invocation. Default model is rendered first with a
-/// "(default)" badge and a check; alternatives below are tappable
-/// just the same — one tap on any row resolves the modal with that
-/// model's id.
+/// Generic bottom-sheet picker for choosing which model handles one
+/// per-invocation inference run, overriding the inference profile's
+/// slot for that single call. Used today by the transcription and
+/// image-analysis popup paths; future per-slot overrides plug in the
+/// same way by passing the relevant pre-filtered model list and the
+/// localised title + default-badge strings.
 ///
-/// When the user has zero or one speech-capable model configured the
-/// picker is degenerate (no choice to make), so [show] short-circuits
-/// and returns either the lone model id or null without rendering the
-/// modal. This keeps the "1 click for default" promise in the common
-/// single-model setup.
-class TranscriptionModelPickerModal extends StatelessWidget {
-  const TranscriptionModelPickerModal({
+/// Default model is rendered first with the supplied badge and a
+/// check; alternatives below are tappable just the same — one tap on
+/// any row resolves the modal with that model's id.
+///
+/// When the caller passes zero or one model the picker is degenerate
+/// (no choice to make), so [show] short-circuits and returns either
+/// the lone model id or null without rendering the modal. This keeps
+/// the "1 click for default" promise in the common single-model
+/// setup.
+class InferenceModelPickerModal extends StatelessWidget {
+  const InferenceModelPickerModal({
     required this.defaultModelId,
-    required this.speechCapableModels,
+    required this.models,
+    required this.defaultBadgeLabel,
     super.key,
   });
 
   /// The model id the active profile points to for this entry — used
   /// to mark which row is the default. May be `null` if the profile's
-  /// transcription slot is empty or points to a deleted model; in
-  /// that case no row gets the badge.
+  /// slot is empty or points to a deleted model; in that case no row
+  /// gets the badge.
   final String? defaultModelId;
 
-  /// Every model the user has configured whose `inputModalities`
-  /// includes [Modality.audio]. The caller filters; the modal trusts
-  /// the list.
-  final List<AiConfigModel> speechCapableModels;
+  /// Every model the caller wants the user to be able to pick. The
+  /// caller filters by modality + slot; the modal trusts the list.
+  final List<AiConfigModel> models;
+
+  /// Localised label for the "(default)" badge. Passed in rather than
+  /// read from l10n keys so the same picker serves any slot kind that
+  /// has its own badge string.
+  final String defaultBadgeLabel;
 
   /// Opens the picker and resolves with the chosen model's id. Three
   /// shapes for the return value:
@@ -42,43 +50,42 @@ class TranscriptionModelPickerModal extends StatelessWidget {
   ///     tapping the default).
   ///   - `null`             — the user dismissed the sheet (close X,
   ///     swipe, barrier tap, back nav).
-  ///   - short-circuit      — when [speechCapableModels] has 0 or 1
-  ///     entries the modal is not shown; the function returns
-  ///     immediately with the lone model id (or null if empty). This
-  ///     guarantees the popup-menu transcribe flow stays one-tap on
-  ///     setups with a single speech-capable model.
+  ///   - short-circuit      — when [models] has 0 or 1 entries the
+  ///     modal is not shown; the function returns immediately with
+  ///     the lone model id (or null if empty). This guarantees the
+  ///     popup-menu flow stays one-tap on setups with a single
+  ///     slot-capable model.
   static Future<String?> show({
     required BuildContext context,
     required String? defaultModelId,
-    required List<AiConfigModel> speechCapableModels,
+    required List<AiConfigModel> models,
+    required String title,
+    required String defaultBadgeLabel,
   }) async {
-    if (speechCapableModels.isEmpty) return null;
-    if (speechCapableModels.length == 1) {
-      return speechCapableModels.first.id;
-    }
+    if (models.isEmpty) return null;
+    if (models.length == 1) return models.first.id;
     return ModalUtils.showSinglePageModal<String>(
       context: context,
-      title: context.messages.aiTranscriptionPickerTitle,
-      builder: (_) => TranscriptionModelPickerModal(
+      title: title,
+      builder: (_) => InferenceModelPickerModal(
         defaultModelId: defaultModelId,
-        speechCapableModels: speechCapableModels,
+        models: models,
+        defaultBadgeLabel: defaultBadgeLabel,
       ),
     );
   }
 
   /// Splits the list so the default appears first when it exists in
-  /// [speechCapableModels]. When the default is missing (stale id /
-  /// no profile slot) the list renders as-is, with no row marked.
+  /// [models]. When the default is missing (stale id / no profile
+  /// slot) the list renders as-is, with no row marked.
   List<AiConfigModel> _orderedModels() {
     final defaultId = defaultModelId;
-    if (defaultId == null) return speechCapableModels;
-    final defaultModel = speechCapableModels
-        .where((m) => m.id == defaultId)
-        .firstOrNull;
-    if (defaultModel == null) return speechCapableModels;
+    if (defaultId == null) return models;
+    final defaultModel = models.where((m) => m.id == defaultId).firstOrNull;
+    if (defaultModel == null) return models;
     return [
       defaultModel,
-      ...speechCapableModels.where((m) => m.id != defaultId),
+      ...models.where((m) => m.id != defaultId),
     ];
   }
 
@@ -97,6 +104,7 @@ class TranscriptionModelPickerModal extends StatelessWidget {
             _ModelRow(
               model: ordered[i],
               isDefault: ordered[i].id == defaultModelId,
+              defaultBadgeLabel: defaultBadgeLabel,
               onTap: () => Navigator.of(context).pop(ordered[i].id),
             ),
           ],
@@ -110,17 +118,18 @@ class _ModelRow extends StatelessWidget {
   const _ModelRow({
     required this.model,
     required this.isDefault,
+    required this.defaultBadgeLabel,
     required this.onTap,
   });
 
   final AiConfigModel model;
   final bool isDefault;
+  final String defaultBadgeLabel;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final messages = context.messages;
     final radius = BorderRadius.circular(tokens.radii.l);
     final borderColor = isDefault
         ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
@@ -162,9 +171,7 @@ class _ModelRow extends StatelessWidget {
                                 ),
                           ),
                           if (isDefault)
-                            DesignSystemBadge.filled(
-                              label: messages.aiTranscriptionPickerDefaultBadge,
-                            ),
+                            DesignSystemBadge.filled(label: defaultBadgeLabel),
                         ],
                       ),
                       if (model.providerModelId.isNotEmpty) ...[

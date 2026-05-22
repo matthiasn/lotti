@@ -19,7 +19,7 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
-import 'package:lotti/features/ai/ui/widgets/transcription_model_picker_modal.dart';
+import 'package:lotti/features/ai/ui/widgets/inference_model_picker_modal.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -1032,513 +1032,206 @@ void main() {
     );
   });
 
-  group('Transcription Skill Handling — model-override picker', () {
-    testWidgets(
-      'tapping a transcription skill with two speech-capable models '
-      'opens the TranscriptionModelPickerModal — proves the popup '
-      'inserts the picker step before firing the trigger, and proves '
-      'the picker is fed the full speech-capable list (the model '
-      'whose inputModalities do NOT include audio is filtered out '
-      'before the picker sees it)',
-      (tester) async {
-        final now = DateTime(2024, 3, 15, 10);
-        final transcribeSkill =
-            AiConfig.skill(
-                  id: 'skill-transcribe',
-                  name: 'Transcribe Audio',
-                  createdAt: now,
-                  skillType: SkillType.transcription,
-                  requiredInputModalities: [Modality.audio],
-                  systemInstructions: 'Transcribe the audio.',
-                  userInstructions: 'Please transcribe.',
-                  description: 'Skill-based transcription',
-                )
-                as AiConfigSkill;
-
-        // Two speech-capable models + one decoy (text only). The
-        // decoy must NOT appear in the picker.
-        final voxtral = AiConfig.model(
-          id: 'm-voxtral',
-          name: 'Voxtral Local',
-          providerModelId: 'voxtral-mini',
-          inferenceProviderId: 'p-voxtral',
-          createdAt: now,
-          inputModalities: const [Modality.audio, Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        );
-        final mistral = AiConfig.model(
-          id: 'm-mistral',
-          name: 'Mistral Cloud',
-          providerModelId: 'mistral/voxtral',
-          inferenceProviderId: 'p-mistral',
-          createdAt: now,
-          inputModalities: const [Modality.audio, Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        );
-        final textOnlyDecoy = AiConfig.model(
-          id: 'm-text-only',
-          name: 'Gemini Flash (text only)',
-          providerModelId: 'gemini-flash',
-          inferenceProviderId: 'p-gemini',
-          createdAt: now,
-          inputModalities: const [Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        );
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            UnifiedAiPopUpMenu(
-              journalEntity: testAudioEntity,
-              linkedFromId: null,
-            ),
-            overrides: [
-              hasAvailableSkillsProvider((
-                entityId: testAudioEntity.id,
-                linkedFromId: null,
-              )).overrideWith((ref) => Future.value(true)),
-              availableSkillsForEntityProvider((
-                entityId: testAudioEntity.id,
-                linkedFromId: null,
-              )).overrideWith(
-                (ref) => Future.value([transcribeSkill]),
+  // Same dispatch shape covers transcription + image-analysis; the
+  // [_overrideVariants] table varies only the skill type, modality,
+  // entity factory, and profile slot. Adding a third per-invocation
+  // override slot is a new entry in the table — no test bodies copy.
+  group('Per-invocation model override — picker flow', () {
+    for (final variant in _overrideVariants) {
+      group(variant.label, () {
+        testWidgets(
+          'tapping the skill with two slot-capable models opens the '
+          'InferenceModelPickerModal — proves the popup inserts the '
+          'picker step before firing the trigger, and proves the '
+          'picker is fed the slot-capable list (the decoy model whose '
+          'inputModalities do NOT match the slot modality is filtered '
+          'out before the picker sees it)',
+          (tester) async {
+            final fx = _OverrideFixture.twoModelsPlusDecoy(variant);
+            await tester.pumpWidget(
+              buildTestWidget(
+                UnifiedAiPopUpMenu(
+                  journalEntity: fx.entity,
+                  linkedFromId: null,
+                ),
+                overrides: _baseOverrides(
+                  entity: fx.entity,
+                  skill: fx.skill,
+                  models: fx.allModels,
+                  resolver: _NullProfileResolver(),
+                  configs: fx.allModels,
+                ),
               ),
-              // Skip the real profile resolver — it depends on
-              // agent providers + AgentDatabase that aren't set up
-              // in this test surface. A `null` resolved profile
-              // means the picker's default-row badge is absent,
-              // which is fine for this assertion since we only
-              // care about which model rows render.
-              profileAutomationResolverProvider.overrideWithValue(
-                _NullProfileResolver(),
-              ),
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.model,
-              ).overrideWith(
-                () => MockAiConfigByTypeController([
-                  voxtral,
-                  mistral,
-                  textOnlyDecoy,
-                ]),
-              ),
-              aiConfigRepositoryProvider.overrideWithValue(
-                _StubAiConfigRepository([voxtral, mistral, textOnlyDecoy]),
-              ),
-            ],
-          ),
+            );
+            await tester.pumpAndSettle();
+
+            await tester.tap(find.byIcon(Icons.assistant_rounded));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text(variant.skillName));
+            await tester.pumpAndSettle();
+
+            // Picker is mounted and lists both slot-capable models;
+            // the wrong-modality decoy is absent because the popup
+            // filters by `inputModalities.contains(variant.modality)`
+            // before calling the picker.
+            expect(find.byType(InferenceModelPickerModal), findsOneWidget);
+            expect(find.text(fx.modelA.name), findsOneWidget);
+            expect(find.text(fx.modelB.name), findsOneWidget);
+            expect(find.text(fx.decoy.name), findsNothing);
+          },
         );
 
-        await tester.pumpAndSettle();
-
-        // Open the popup
-        await tester.tap(find.byIcon(Icons.assistant_rounded));
-        await tester.pumpAndSettle();
-
-        // Tap the transcription skill — should open the picker
-        // instead of firing the trigger directly.
-        await tester.tap(find.text('Transcribe Audio'));
-        await tester.pumpAndSettle();
-
-        // Picker is mounted and lists both speech-capable models;
-        // the text-only decoy is absent because the popup filters
-        // by `inputModalities.contains(Modality.audio)` before
-        // calling the picker.
-        expect(find.byType(TranscriptionModelPickerModal), findsOneWidget);
-        expect(find.text('Voxtral Local'), findsOneWidget);
-        expect(find.text('Mistral Cloud'), findsOneWidget);
-        expect(find.text('Gemini Flash (text only)'), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'when only one speech-capable model is configured the picker '
-      'short-circuits and the popup fires the trigger immediately — '
-      'preserving the one-tap transcribe flow for users with a single '
-      'audio-capable model. Asserted indirectly by the absence of the '
-      'picker after the skill tap (the modal never mounts because '
-      'TranscriptionModelPickerModal.show short-circuits internally)',
-      (tester) async {
-        final now = DateTime(2024, 3, 15, 10);
-        final transcribeSkill =
-            AiConfig.skill(
-                  id: 'skill-transcribe',
-                  name: 'Transcribe Audio',
-                  createdAt: now,
-                  skillType: SkillType.transcription,
-                  requiredInputModalities: [Modality.audio],
-                  systemInstructions: 'Transcribe the audio.',
-                  userInstructions: 'Please transcribe.',
-                  description: 'Skill-based transcription',
-                )
-                as AiConfigSkill;
-
-        final voxtral = AiConfig.model(
-          id: 'm-voxtral',
-          name: 'Voxtral Local',
-          providerModelId: 'voxtral-mini',
-          inferenceProviderId: 'p-voxtral',
-          createdAt: now,
-          inputModalities: const [Modality.audio, Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        );
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            UnifiedAiPopUpMenu(
-              journalEntity: testAudioEntity,
-              linkedFromId: null,
-            ),
-            overrides: [
-              hasAvailableSkillsProvider((
-                entityId: testAudioEntity.id,
-                linkedFromId: null,
-              )).overrideWith((ref) => Future.value(true)),
-              availableSkillsForEntityProvider((
-                entityId: testAudioEntity.id,
-                linkedFromId: null,
-              )).overrideWith(
-                (ref) => Future.value([transcribeSkill]),
+        testWidgets(
+          'when only one slot-capable model is configured the picker '
+          'short-circuits and the popup fires the trigger immediately '
+          '— preserving the one-tap flow. Asserts both that the modal '
+          'never mounts AND that triggerSkillProvider runs once with '
+          'the lone model id as overrideModelId; the latter catches a '
+          'regression where the short-circuit path silently skips '
+          'dispatch (which the picker-absence check alone would miss)',
+          (tester) async {
+            final fx = _OverrideFixture.singleModel(variant);
+            TriggerSkillParams? capturedParams;
+            await tester.pumpWidget(
+              buildTestWidget(
+                UnifiedAiPopUpMenu(
+                  journalEntity: fx.entity,
+                  linkedFromId: null,
+                ),
+                overrides: [
+                  ..._baseOverrides(
+                    entity: fx.entity,
+                    skill: fx.skill,
+                    models: fx.allModels,
+                    resolver: _NullProfileResolver(),
+                    configs: fx.allModels,
+                  ),
+                  triggerSkillProvider.overrideWith((ref, params) async {
+                    capturedParams = params;
+                  }),
+                ],
               ),
-              // Skip the real profile resolver — it depends on
-              // agent providers + AgentDatabase that aren't set up
-              // in this test surface. A `null` resolved profile
-              // means the picker's default-row badge is absent,
-              // which is fine for this assertion since we only
-              // care about which model rows render.
-              profileAutomationResolverProvider.overrideWithValue(
-                _NullProfileResolver(),
+            );
+            await tester.pumpAndSettle();
+
+            await tester.tap(find.byIcon(Icons.assistant_rounded));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text(variant.skillName));
+            await tester.pumpAndSettle();
+
+            // No picker — short-circuit took the single-model path.
+            // Skills list closed as part of the tap handler.
+            expect(find.byType(InferenceModelPickerModal), findsNothing);
+            expect(find.byType(UnifiedAiSkillsList), findsNothing);
+            // Trigger fired with the lone model id forwarded as the
+            // override — the short-circuit isn't a silent no-op.
+            expect(capturedParams, isNotNull);
+            expect(capturedParams!.entityId, fx.entity.id);
+            expect(capturedParams!.skillId, fx.skill.id);
+            expect(capturedParams!.overrideModelId, fx.modelA.id);
+          },
+        );
+
+        testWidgets(
+          'tapping the default-badged row forwards overrideModelId: '
+          'null to triggerSkillProvider — the override is collapsed '
+          'to null when the user picks the same model the profile '
+          'already points at, so the runner reads the profile slot '
+          'and a model deleted between picker and run still falls '
+          'back gracefully',
+          (tester) async {
+            final fx = _OverrideFixture.twoModelsWithDefault(variant);
+            TriggerSkillParams? capturedParams;
+            await tester.pumpWidget(
+              buildTestWidget(
+                UnifiedAiPopUpMenu(
+                  journalEntity: fx.entity,
+                  linkedFromId: null,
+                ),
+                overrides: [
+                  entryControllerProvider(id: fx.entity.id).overrideWith(
+                    () => FakeEntryController(fx.entity),
+                  ),
+                  ..._baseOverrides(
+                    entity: fx.entity,
+                    skill: fx.skill,
+                    models: fx.allModels,
+                    resolver: _FixedProfileResolver(fx.profile!),
+                    configs: [...fx.allModels, ...fx.providers],
+                  ),
+                  triggerSkillProvider.overrideWith((ref, params) async {
+                    capturedParams = params;
+                  }),
+                ],
               ),
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.model,
-              ).overrideWith(
-                () => MockAiConfigByTypeController([voxtral]),
+            );
+            await tester.pumpAndSettle();
+
+            await tester.tap(find.byIcon(Icons.assistant_rounded));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text(variant.skillName));
+            await tester.pumpAndSettle();
+
+            // Tap the default-badged row (modelA) — the popup should
+            // fire the trigger with overrideModelId: null because the
+            // picked id matches the computed defaultModelId.
+            expect(find.byType(InferenceModelPickerModal), findsOneWidget);
+            await tester.tap(find.text(fx.modelA.name));
+            await tester.pumpAndSettle();
+
+            expect(capturedParams, isNotNull);
+            expect(capturedParams!.entityId, fx.entity.id);
+            expect(capturedParams!.skillId, fx.skill.id);
+            expect(capturedParams!.overrideModelId, isNull);
+          },
+        );
+
+        testWidgets(
+          "tapping a non-default row forwards that row's "
+          'AiConfigModel.id to triggerSkillProvider as overrideModelId '
+          '— proves the override seam threads through the popup to '
+          'the trigger when the user picks a non-profile model',
+          (tester) async {
+            final fx = _OverrideFixture.twoModelsWithDefault(variant);
+            TriggerSkillParams? capturedParams;
+            await tester.pumpWidget(
+              buildTestWidget(
+                UnifiedAiPopUpMenu(
+                  journalEntity: fx.entity,
+                  linkedFromId: null,
+                ),
+                overrides: [
+                  entryControllerProvider(id: fx.entity.id).overrideWith(
+                    () => FakeEntryController(fx.entity),
+                  ),
+                  ..._baseOverrides(
+                    entity: fx.entity,
+                    skill: fx.skill,
+                    models: fx.allModels,
+                    resolver: _FixedProfileResolver(fx.profile!),
+                    configs: [...fx.allModels, ...fx.providers],
+                  ),
+                  triggerSkillProvider.overrideWith((ref, params) async {
+                    capturedParams = params;
+                  }),
+                ],
               ),
-              aiConfigRepositoryProvider.overrideWithValue(
-                _StubAiConfigRepository([voxtral]),
-              ),
-            ],
-          ),
+            );
+            await tester.pumpAndSettle();
+
+            await tester.tap(find.byIcon(Icons.assistant_rounded));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text(variant.skillName));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text(fx.modelB.name));
+            await tester.pumpAndSettle();
+
+            expect(capturedParams, isNotNull);
+            expect(capturedParams!.overrideModelId, fx.modelB.id);
+          },
         );
-
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byIcon(Icons.assistant_rounded));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Transcribe Audio'));
-        await tester.pumpAndSettle();
-
-        // No picker was rendered — the short-circuit took the
-        // single-model path and called the trigger directly.
-        expect(find.byType(TranscriptionModelPickerModal), findsNothing);
-        // The skills list modal closed as part of the tap handler.
-        expect(find.byType(UnifiedAiSkillsList), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'tapping the default-badged row forwards '
-      'overrideTranscriptionModelId: null to triggerSkillProvider — '
-      'the override is collapsed to null when the user picks the same '
-      'model the profile already points at, so the runner reads the '
-      'profile slot and a model deleted between picker and run still '
-      'falls back gracefully',
-      (tester) async {
-        final now = DateTime(2024, 3, 15, 10);
-        final transcribeSkill =
-            AiConfig.skill(
-                  id: 'skill-transcribe',
-                  name: 'Transcribe Audio',
-                  createdAt: now,
-                  skillType: SkillType.transcription,
-                  requiredInputModalities: [Modality.audio],
-                  systemInstructions: 'Transcribe the audio.',
-                  userInstructions: 'Please transcribe.',
-                  description: 'Skill-based transcription',
-                )
-                as AiConfigSkill;
-
-        final voxtralProvider =
-            AiConfig.inferenceProvider(
-                  id: 'p-voxtral',
-                  baseUrl: 'https://voxtral.local',
-                  name: 'Voxtral Local',
-                  inferenceProviderType: InferenceProviderType.openAi,
-                  apiKey: '',
-                  createdAt: now,
-                )
-                as AiConfigInferenceProvider;
-        final mistralProvider =
-            AiConfig.inferenceProvider(
-                  id: 'p-mistral',
-                  baseUrl: 'https://mistral.example.com',
-                  name: 'Mistral Cloud',
-                  inferenceProviderType: InferenceProviderType.openAi,
-                  apiKey: '',
-                  createdAt: now,
-                )
-                as AiConfigInferenceProvider;
-        final voxtral = AiConfig.model(
-          id: 'm-voxtral',
-          name: 'Voxtral Local',
-          providerModelId: 'voxtral-mini',
-          inferenceProviderId: 'p-voxtral',
-          createdAt: now,
-          inputModalities: const [Modality.audio, Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        );
-        final mistral = AiConfig.model(
-          id: 'm-mistral',
-          name: 'Mistral Cloud',
-          providerModelId: 'mistral/voxtral',
-          inferenceProviderId: 'p-mistral',
-          createdAt: now,
-          inputModalities: const [Modality.audio, Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        );
-
-        // Resolved profile points at Voxtral — the popup must
-        // recognise the Voxtral row as the default.
-        final resolvedProfile = ResolvedProfile(
-          thinkingModelId: 'thinking',
-          thinkingProvider: voxtralProvider,
-          transcriptionProvider: voxtralProvider,
-          transcriptionModelId: 'voxtral-mini',
-        );
-
-        // The popup resolves the profile via the entry's categoryId
-        // when there is no linked task. The shared `testAudioEntity`
-        // has no category, which would short-circuit defaultModelId
-        // resolution to null — so use a freshly categorised entity
-        // here.
-        final audioWithCategory = JournalAudio(
-          meta: Metadata(
-            id: 'audio-cat-1',
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now,
-            categoryId: 'cat-1',
-          ),
-          data: AudioData(
-            dateFrom: now,
-            dateTo: now,
-            audioFile: 'test.mp3',
-            audioDirectory: '/test',
-            duration: const Duration(minutes: 1),
-          ),
-        );
-
-        TriggerSkillParams? capturedParams;
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            UnifiedAiPopUpMenu(
-              journalEntity: audioWithCategory,
-              linkedFromId: null,
-            ),
-            overrides: [
-              hasAvailableSkillsProvider((
-                entityId: audioWithCategory.id,
-                linkedFromId: null,
-              )).overrideWith((ref) => Future.value(true)),
-              availableSkillsForEntityProvider((
-                entityId: audioWithCategory.id,
-                linkedFromId: null,
-              )).overrideWith(
-                (ref) => Future.value([transcribeSkill]),
-              ),
-              profileAutomationResolverProvider.overrideWithValue(
-                _FixedProfileResolver(resolvedProfile),
-              ),
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.model,
-              ).overrideWith(
-                () => MockAiConfigByTypeController([voxtral, mistral]),
-              ),
-              aiConfigRepositoryProvider.overrideWithValue(
-                _StubAiConfigRepository([
-                  voxtral,
-                  mistral,
-                  voxtralProvider,
-                  mistralProvider,
-                ]),
-              ),
-              triggerSkillProvider.overrideWith((ref, params) async {
-                capturedParams = params;
-              }),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.assistant_rounded));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Transcribe Audio'));
-        await tester.pumpAndSettle();
-
-        // Picker is open; both rows render. Tap the default-badged
-        // row (Voxtral) — the popup should fire the trigger with
-        // overrideTranscriptionModelId: null because the picked id
-        // matches the computed defaultModelId.
-        expect(find.byType(TranscriptionModelPickerModal), findsOneWidget);
-        await tester.tap(find.text('Voxtral Local'));
-        await tester.pumpAndSettle();
-
-        expect(capturedParams, isNotNull);
-        expect(capturedParams!.entityId, audioWithCategory.id);
-        expect(capturedParams!.skillId, 'skill-transcribe');
-        expect(capturedParams!.overrideTranscriptionModelId, isNull);
-      },
-    );
-
-    testWidgets(
-      "tapping a non-default row forwards that row's AiConfigModel.id "
-      'to triggerSkillProvider as overrideTranscriptionModelId — proves '
-      'the override seam threads through the popup to the trigger when '
-      'the user picks a non-profile model',
-      (tester) async {
-        final now = DateTime(2024, 3, 15, 10);
-        final transcribeSkill =
-            AiConfig.skill(
-                  id: 'skill-transcribe',
-                  name: 'Transcribe Audio',
-                  createdAt: now,
-                  skillType: SkillType.transcription,
-                  requiredInputModalities: [Modality.audio],
-                  systemInstructions: 'Transcribe the audio.',
-                  userInstructions: 'Please transcribe.',
-                  description: 'Skill-based transcription',
-                )
-                as AiConfigSkill;
-
-        final voxtralProvider =
-            AiConfig.inferenceProvider(
-                  id: 'p-voxtral',
-                  baseUrl: 'https://voxtral.local',
-                  name: 'Voxtral Local',
-                  inferenceProviderType: InferenceProviderType.openAi,
-                  apiKey: '',
-                  createdAt: now,
-                )
-                as AiConfigInferenceProvider;
-        final mistralProvider =
-            AiConfig.inferenceProvider(
-                  id: 'p-mistral',
-                  baseUrl: 'https://mistral.example.com',
-                  name: 'Mistral Cloud',
-                  inferenceProviderType: InferenceProviderType.openAi,
-                  apiKey: '',
-                  createdAt: now,
-                )
-                as AiConfigInferenceProvider;
-        final voxtral = AiConfig.model(
-          id: 'm-voxtral',
-          name: 'Voxtral Local',
-          providerModelId: 'voxtral-mini',
-          inferenceProviderId: 'p-voxtral',
-          createdAt: now,
-          inputModalities: const [Modality.audio, Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        );
-        final mistral = AiConfig.model(
-          id: 'm-mistral',
-          name: 'Mistral Cloud',
-          providerModelId: 'mistral/voxtral',
-          inferenceProviderId: 'p-mistral',
-          createdAt: now,
-          inputModalities: const [Modality.audio, Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        );
-
-        final resolvedProfile = ResolvedProfile(
-          thinkingModelId: 'thinking',
-          thinkingProvider: voxtralProvider,
-          transcriptionProvider: voxtralProvider,
-          transcriptionModelId: 'voxtral-mini',
-        );
-
-        final audioWithCategory = JournalAudio(
-          meta: Metadata(
-            id: 'audio-cat-2',
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now,
-            categoryId: 'cat-1',
-          ),
-          data: AudioData(
-            dateFrom: now,
-            dateTo: now,
-            audioFile: 'test.mp3',
-            audioDirectory: '/test',
-            duration: const Duration(minutes: 1),
-          ),
-        );
-
-        TriggerSkillParams? capturedParams;
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            UnifiedAiPopUpMenu(
-              journalEntity: audioWithCategory,
-              linkedFromId: null,
-            ),
-            overrides: [
-              hasAvailableSkillsProvider((
-                entityId: audioWithCategory.id,
-                linkedFromId: null,
-              )).overrideWith((ref) => Future.value(true)),
-              availableSkillsForEntityProvider((
-                entityId: audioWithCategory.id,
-                linkedFromId: null,
-              )).overrideWith(
-                (ref) => Future.value([transcribeSkill]),
-              ),
-              profileAutomationResolverProvider.overrideWithValue(
-                _FixedProfileResolver(resolvedProfile),
-              ),
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.model,
-              ).overrideWith(
-                () => MockAiConfigByTypeController([voxtral, mistral]),
-              ),
-              aiConfigRepositoryProvider.overrideWithValue(
-                _StubAiConfigRepository([
-                  voxtral,
-                  mistral,
-                  voxtralProvider,
-                  mistralProvider,
-                ]),
-              ),
-              triggerSkillProvider.overrideWith((ref, params) async {
-                capturedParams = params;
-              }),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.assistant_rounded));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Transcribe Audio'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Mistral Cloud'));
-        await tester.pumpAndSettle();
-
-        expect(capturedParams, isNotNull);
-        expect(
-          capturedParams!.overrideTranscriptionModelId,
-          'm-mistral',
-        );
-      },
-    );
+      });
+    }
   });
 
   group('resolveLinkedTask', () {
@@ -1714,6 +1407,382 @@ void main() {
   });
 }
 
+// =============================================================
+// Override-picker test harness
+// =============================================================
+
+/// The override-picker flow requires `tester.pumpAndSettle()` rather
+/// than a bounded `pump(duration)` (see test/README.md / AGENTS.md
+/// async rules) because two awaited gates run between taps: the
+/// modal sheet animation AND the async resolution of
+/// `availableSkillsForEntityProvider` / `aiConfigRepositoryProvider`.
+/// A bounded pump doesn't reliably drain the latter; the animations
+/// are deterministic and bounded so the 10s timeout warning does not
+/// apply here.
+
+/// Per-skill data driving the parameterised override-picker tests.
+/// Each variant plugs in everything that differs between the
+/// transcription and image-analysis flows: skill type + name, the
+/// modality the slot consumes, the decoy modality (a model that is
+/// configured but should be filtered OUT of the picker), entity
+/// factory, and the function that writes the variant's slot fields
+/// onto a [ResolvedProfile].
+class _OverrideVariant {
+  const _OverrideVariant({
+    required this.label,
+    required this.skillType,
+    required this.skillName,
+    required this.skillRequiredModality,
+    required this.modelModality,
+    required this.decoyModality,
+    required this.decoyName,
+    required this.modelAName,
+    required this.modelBName,
+    required this.entityFactory,
+    required this.fillSlot,
+  });
+
+  final String label;
+  final SkillType skillType;
+  final String skillName;
+  final Modality skillRequiredModality;
+  final Modality modelModality;
+  final Modality decoyModality;
+  final String decoyName;
+  final String modelAName;
+  final String modelBName;
+  final JournalEntity Function({required String id, String? categoryId})
+  entityFactory;
+  final ResolvedProfile Function({
+    required AiConfigInferenceProvider thinkingProvider,
+    required AiConfigInferenceProvider slotProvider,
+    required String slotProviderModelId,
+  })
+  fillSlot;
+}
+
+JournalEntity _audioEntityFactory({required String id, String? categoryId}) {
+  final t = DateTime(2024, 3, 15, 10);
+  return JournalAudio(
+    meta: Metadata(
+      id: id,
+      createdAt: t,
+      updatedAt: t,
+      dateFrom: t,
+      dateTo: t,
+      categoryId: categoryId,
+    ),
+    data: AudioData(
+      dateFrom: t,
+      dateTo: t,
+      audioFile: 'test.mp3',
+      audioDirectory: '/test',
+      duration: const Duration(minutes: 1),
+    ),
+  );
+}
+
+JournalEntity _imageEntityFactory({required String id, String? categoryId}) {
+  final t = DateTime(2024, 3, 15, 10);
+  return JournalImage(
+    meta: Metadata(
+      id: id,
+      createdAt: t,
+      updatedAt: t,
+      dateFrom: t,
+      dateTo: t,
+      categoryId: categoryId,
+    ),
+    data: ImageData(
+      capturedAt: t,
+      imageId: 'img-$id',
+      imageFile: 'test.jpg',
+      imageDirectory: '/test',
+    ),
+  );
+}
+
+ResolvedProfile _fillTranscriptionSlot({
+  required AiConfigInferenceProvider thinkingProvider,
+  required AiConfigInferenceProvider slotProvider,
+  required String slotProviderModelId,
+}) => ResolvedProfile(
+  thinkingModelId: 'thinking',
+  thinkingProvider: thinkingProvider,
+  transcriptionProvider: slotProvider,
+  transcriptionModelId: slotProviderModelId,
+);
+
+ResolvedProfile _fillImageRecognitionSlot({
+  required AiConfigInferenceProvider thinkingProvider,
+  required AiConfigInferenceProvider slotProvider,
+  required String slotProviderModelId,
+}) => ResolvedProfile(
+  thinkingModelId: 'thinking',
+  thinkingProvider: thinkingProvider,
+  imageRecognitionProvider: slotProvider,
+  imageRecognitionModelId: slotProviderModelId,
+);
+
+const _transcriptionOverrideVariant = _OverrideVariant(
+  label: 'transcription',
+  skillType: SkillType.transcription,
+  skillName: 'Transcribe Audio',
+  skillRequiredModality: Modality.audio,
+  modelModality: Modality.audio,
+  decoyModality: Modality.text,
+  decoyName: 'Gemini Flash (text only)',
+  modelAName: 'Voxtral Local',
+  modelBName: 'Mistral Cloud',
+  entityFactory: _audioEntityFactory,
+  fillSlot: _fillTranscriptionSlot,
+);
+
+const _imageAnalysisOverrideVariant = _OverrideVariant(
+  label: 'image analysis',
+  skillType: SkillType.imageAnalysis,
+  skillName: 'Analyze Image',
+  skillRequiredModality: Modality.image,
+  modelModality: Modality.image,
+  decoyModality: Modality.audio,
+  decoyName: 'Voxtral (audio only)',
+  modelAName: 'GPT-4o Vision',
+  modelBName: 'Claude Sonnet Vision',
+  entityFactory: _imageEntityFactory,
+  fillSlot: _fillImageRecognitionSlot,
+);
+
+const _overrideVariants = <_OverrideVariant>[
+  _transcriptionOverrideVariant,
+  _imageAnalysisOverrideVariant,
+];
+
+/// Fixture bundling the entity, skill, models, providers, and
+/// (optional) resolved profile for one variant of an override-picker
+/// test. The named constructors line up with the three shapes the
+/// parameterised tests need (filter test, single-model short-circuit,
+/// default-row + non-default-row).
+class _OverrideFixture {
+  _OverrideFixture._({
+    required this.entity,
+    required this.skill,
+    required this.modelA,
+    required this.modelB,
+    required this.decoy,
+    required this.providers,
+    required this.profile,
+  });
+
+  factory _OverrideFixture.twoModelsPlusDecoy(_OverrideVariant variant) {
+    final t = DateTime(2024, 3, 15, 10);
+    return _OverrideFixture._(
+      entity: variant.entityFactory(id: 'entity-${variant.label}-filter'),
+      skill: _buildSkill(variant, t),
+      modelA: _buildModel(
+        id: 'm-a',
+        name: variant.modelAName,
+        providerModelId: 'wire-a',
+        providerId: 'p-a',
+        modality: variant.modelModality,
+        t: t,
+      ),
+      modelB: _buildModel(
+        id: 'm-b',
+        name: variant.modelBName,
+        providerModelId: 'wire-b',
+        providerId: 'p-b',
+        modality: variant.modelModality,
+        t: t,
+      ),
+      decoy: _buildModel(
+        id: 'm-decoy',
+        name: variant.decoyName,
+        providerModelId: 'decoy/wire',
+        providerId: 'p-decoy',
+        modality: variant.decoyModality,
+        t: t,
+      ),
+      providers: const <AiConfigInferenceProvider>[],
+      profile: null,
+    );
+  }
+
+  /// Single-model shape: only [modelA] has the slot modality; the
+  /// other two slots on the fixture are unrelated wrong-modality
+  /// decoys that the popup's `inputModalities.contains(...)` filter
+  /// strips out before the picker even sees them. The fixture's
+  /// generic `modelB` / `decoy` field names are reused (rather than
+  /// reshaping the class) so the three shapes share one record
+  /// layout — the field names don't carry semantic meaning in this
+  /// shape, only the modalities do.
+  factory _OverrideFixture.singleModel(_OverrideVariant variant) {
+    final t = DateTime(2024, 3, 15, 10);
+    AiConfigModel wrongModalityDecoy(String idSuffix) => _buildModel(
+      id: 'm-decoy-$idSuffix',
+      name: '__wrong-modality-decoy-${idSuffix}__',
+      providerModelId: 'decoy-$idSuffix/wire',
+      providerId: 'p-decoy-$idSuffix',
+      modality: variant.decoyModality,
+      t: t,
+    );
+    return _OverrideFixture._(
+      entity: variant.entityFactory(id: 'entity-${variant.label}-single'),
+      skill: _buildSkill(variant, t),
+      modelA: _buildModel(
+        id: 'm-only',
+        name: variant.modelAName,
+        providerModelId: 'wire-only',
+        providerId: 'p-only',
+        modality: variant.modelModality,
+        t: t,
+      ),
+      modelB: wrongModalityDecoy('b'),
+      decoy: wrongModalityDecoy('c'),
+      providers: const <AiConfigInferenceProvider>[],
+      profile: null,
+    );
+  }
+
+  factory _OverrideFixture.twoModelsWithDefault(_OverrideVariant variant) {
+    final t = DateTime(2024, 3, 15, 10);
+    final providerA = _buildProvider(id: 'p-a', name: 'Provider A', t: t);
+    final providerB = _buildProvider(id: 'p-b', name: 'Provider B', t: t);
+    final modelA = _buildModel(
+      id: 'm-a',
+      name: variant.modelAName,
+      providerModelId: 'wire-a',
+      providerId: 'p-a',
+      modality: variant.modelModality,
+      t: t,
+    );
+    final modelB = _buildModel(
+      id: 'm-b',
+      name: variant.modelBName,
+      providerModelId: 'wire-b',
+      providerId: 'p-b',
+      modality: variant.modelModality,
+      t: t,
+    );
+    return _OverrideFixture._(
+      entity: variant.entityFactory(
+        id: 'entity-${variant.label}-cat',
+        categoryId: 'cat-1',
+      ),
+      skill: _buildSkill(variant, t),
+      modelA: modelA,
+      modelB: modelB,
+      decoy: _buildModel(
+        id: 'm-decoy',
+        name: '__unused__',
+        providerModelId: 'decoy/wire',
+        providerId: 'p-decoy',
+        modality: variant.decoyModality,
+        t: t,
+      ),
+      providers: [providerA, providerB],
+      // Profile points at modelA via providerA — the popup must
+      // recognise the modelA row as the default.
+      profile: variant.fillSlot(
+        thinkingProvider: providerA,
+        slotProvider: providerA,
+        slotProviderModelId: 'wire-a',
+      ),
+    );
+  }
+
+  final JournalEntity entity;
+  final AiConfigSkill skill;
+  final AiConfigModel modelA;
+  final AiConfigModel modelB;
+  final AiConfigModel decoy;
+  final List<AiConfigInferenceProvider> providers;
+  final ResolvedProfile? profile;
+
+  List<AiConfigModel> get allModels => [modelA, modelB, decoy];
+}
+
+AiConfigSkill _buildSkill(_OverrideVariant variant, DateTime t) =>
+    AiConfig.skill(
+          id: 'skill-${variant.label}',
+          name: variant.skillName,
+          createdAt: t,
+          skillType: variant.skillType,
+          requiredInputModalities: [variant.skillRequiredModality],
+          systemInstructions: 'System',
+          userInstructions: 'User',
+          description: 'Variant test skill',
+        )
+        as AiConfigSkill;
+
+AiConfigModel _buildModel({
+  required String id,
+  required String name,
+  required String providerModelId,
+  required String providerId,
+  required Modality modality,
+  required DateTime t,
+}) {
+  return AiConfig.model(
+        id: id,
+        name: name,
+        providerModelId: providerModelId,
+        inferenceProviderId: providerId,
+        createdAt: t,
+        inputModalities: [modality, Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      )
+      as AiConfigModel;
+}
+
+AiConfigInferenceProvider _buildProvider({
+  required String id,
+  required String name,
+  required DateTime t,
+}) =>
+    AiConfig.inferenceProvider(
+          id: id,
+          baseUrl: 'https://$id.example.com',
+          name: name,
+          inferenceProviderType: InferenceProviderType.openAi,
+          apiKey: '',
+          createdAt: t,
+        )
+        as AiConfigInferenceProvider;
+
+/// Builds the Riverpod override list every parameterised override
+/// test needs: the popup must see a single skill for [entity],
+/// resolve to [resolver]'s profile, and read [models] from the
+/// repository. The default-row tests extend this with an
+/// `entryControllerProvider` override + `triggerSkillProvider`
+/// capture override; those two cannot be folded in here cleanly
+/// because the entry-controller key is per-fixture.
+List<Override> _baseOverrides({
+  required JournalEntity entity,
+  required AiConfigSkill skill,
+  required List<AiConfigModel> models,
+  required ProfileAutomationResolver resolver,
+  required List<AiConfig> configs,
+}) {
+  return [
+    hasAvailableSkillsProvider((
+      entityId: entity.id,
+      linkedFromId: null,
+    )).overrideWith((ref) => Future.value(true)),
+    availableSkillsForEntityProvider((
+      entityId: entity.id,
+      linkedFromId: null,
+    )).overrideWith((ref) => Future.value([skill])),
+    profileAutomationResolverProvider.overrideWithValue(resolver),
+    aiConfigByTypeControllerProvider(
+      configType: AiConfigType.model,
+    ).overrideWith(() => MockAiConfigByTypeController(models)),
+    aiConfigRepositoryProvider.overrideWithValue(
+      _StubAiConfigRepository(configs),
+    ),
+  ];
+}
+
 /// Minimal stub repository so the popup's `getConfigsByType` read
 /// resolves with a known model list. The full Drift-backed
 /// repository would require seeding a temp database, which is
@@ -1743,9 +1812,9 @@ class _StubAiConfigRepository implements AiConfigRepository {
 
 /// Stub resolver returning `null` for every entry. Avoids pulling
 /// agent-database wiring into widget tests that only need to assert
-/// the transcription branch reaches the picker — the model-list
-/// rendering and rest of the chain are exercised by
-/// `transcription_model_picker_modal_test.dart` in isolation.
+/// the override branch reaches the picker — the model-list rendering
+/// and rest of the chain are exercised by
+/// `inference_model_picker_modal_test.dart` in isolation.
 class _NullProfileResolver implements ProfileAutomationResolver {
   @override
   Future<ResolvedProfile?> resolveForTask(String taskId) async => null;
@@ -1760,8 +1829,7 @@ class _NullProfileResolver implements ProfileAutomationResolver {
 /// Stub resolver returning a fixed profile for every lookup. Used by
 /// tests that need the popup to compute a non-null `defaultModelId`
 /// (so the default-badge row is rendered and we can assert that
-/// tapping it produces `overrideTranscriptionModelId: null` at the
-/// trigger seam).
+/// tapping it produces `overrideModelId: null` at the trigger seam).
 class _FixedProfileResolver implements ProfileAutomationResolver {
   _FixedProfileResolver(this._profile);
 

@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1005]
 ### Changed
+- AI popup menu now opens a model-override picker when you tap an
+  Analyze Image skill, mirroring the existing Transcribe flow — the
+  bottom sheet lists every image-capable model you've configured so
+  you can route one specific photo to a different model without
+  editing the inference profile. Single-model setups short-circuit to
+  preserve the one-tap flow; a stale override falls back to the
+  profile slot.
 - Upgraded Flutter to 3.44.0 and aligned the Flatpak Flathub manifest
   template with the repository FVM toolchain pin, so source builds submitted
   to Flathub use the same Flutter SDK as local and CI builds.
