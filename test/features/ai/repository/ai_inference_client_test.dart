@@ -264,5 +264,156 @@ void main() {
       expect(chunks, hasLength(1));
       expect(chunks.single.choices.first.delta.content, 'x');
     });
+
+    test('skips malformed chunks below the parse-error threshold', () async {
+      final httpClient = MockHttpClient();
+      // 4 malformed JSON `data:` lines, followed by one valid event.
+      // The 4 errors are under the threshold (5), so they should be logged
+      // and skipped without throwing.
+      final raw = [
+        for (var i = 0; i < 4; i++) 'data: not-valid-json-$i\n\n',
+        'data: {"id":"1","choices":[{"index":0,"delta":{"content":"ok"}}]}\n\n',
+        'data: [DONE]\n\n',
+      ].join();
+      when(() => httpClient.send(any())).thenAnswer(
+        (_) async => http.StreamedResponse(
+          Stream.fromIterable([utf8.encode(raw)]),
+          200,
+        ),
+      );
+
+      final client = AiInferenceClient(
+        baseUrl: 'https://example.com',
+        apiKey: 'k',
+        httpClient: httpClient,
+      );
+
+      final chunks = await client
+          .chatCompletionsStream(
+            messages: const [AiUserMessage(AiUserTextContent('x'))],
+            model: 'm',
+          )
+          .toList();
+
+      expect(chunks, hasLength(1));
+      expect(chunks.single.choices.first.delta.content, 'ok');
+    });
+
+    test(
+      'throws AiInferenceException once parse errors hit the threshold',
+      () async {
+        final httpClient = MockHttpClient();
+        // 5 malformed `data:` lines — hits the maxParseErrors=5 threshold.
+        final raw = [
+          for (var i = 0; i < 5; i++) 'data: malformed-$i\n\n',
+          'data: [DONE]\n\n',
+        ].join();
+        when(() => httpClient.send(any())).thenAnswer(
+          (_) async => http.StreamedResponse(
+            Stream.fromIterable([utf8.encode(raw)]),
+            200,
+          ),
+        );
+
+        final client = AiInferenceClient(
+          baseUrl: 'https://example.com',
+          apiKey: 'k',
+          httpClient: httpClient,
+        );
+
+        expect(
+          () => client
+              .chatCompletionsStream(
+                messages: const [AiUserMessage(AiUserTextContent('x'))],
+                model: 'm',
+              )
+              .toList(),
+          throwsA(
+            isA<AiInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('Too many parse errors'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('absorbs SSE events without a `data:` prefix (e.g. comments)', () async {
+      final httpClient = MockHttpClient();
+      // SSE allows comment lines starting with `:` and event-type lines like
+      // `event: ping` that we should silently skip.
+      const raw =
+          ': heartbeat comment\n\n'
+          'event: ping\n\n'
+          'data: {"id":"1","choices":[{"index":0,"delta":{"content":"x"}}]}\n\n'
+          'data: [DONE]\n\n';
+      when(() => httpClient.send(any())).thenAnswer(
+        (_) async => http.StreamedResponse(
+          Stream.fromIterable([utf8.encode(raw)]),
+          200,
+        ),
+      );
+
+      final client = AiInferenceClient(
+        baseUrl: 'https://example.com',
+        apiKey: 'k',
+        httpClient: httpClient,
+      );
+
+      final chunks = await client
+          .chatCompletionsStream(
+            messages: const [AiUserMessage(AiUserTextContent('x'))],
+            model: 'm',
+          )
+          .toList();
+
+      expect(chunks, hasLength(1));
+      expect(chunks.single.choices.first.delta.content, 'x');
+    });
+
+    test('accepts `data:` frames without a trailing space', () async {
+      final httpClient = MockHttpClient();
+      // SSE spec allows `data:{...}` (no space after colon). The current
+      // parser must handle both forms.
+      const raw =
+          'data:{"id":"1","choices":[{"index":0,"delta":{"content":"y"}}]}\n\n'
+          'data:[DONE]\n\n';
+      when(() => httpClient.send(any())).thenAnswer(
+        (_) async => http.StreamedResponse(
+          Stream.fromIterable([utf8.encode(raw)]),
+          200,
+        ),
+      );
+
+      final client = AiInferenceClient(
+        baseUrl: 'https://example.com',
+        apiKey: 'k',
+        httpClient: httpClient,
+      );
+
+      final chunks = await client
+          .chatCompletionsStream(
+            messages: const [AiUserMessage(AiUserTextContent('x'))],
+            model: 'm',
+          )
+          .toList();
+
+      expect(chunks, hasLength(1));
+      expect(chunks.single.choices.first.delta.content, 'y');
+    });
+
+    test('close() releases the underlying http client', () {
+      final httpClient = MockHttpClient();
+      when(httpClient.close).thenReturn(null);
+
+      AiInferenceClient(
+        baseUrl: 'https://example.com',
+        apiKey: 'k',
+        httpClient: httpClient,
+      ).close();
+
+      verify(httpClient.close).called(1);
+    });
   });
 }

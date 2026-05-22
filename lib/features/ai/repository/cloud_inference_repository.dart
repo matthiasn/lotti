@@ -234,7 +234,7 @@ class CloudInferenceRepository {
       ],
       model: model,
       temperature: temperature,
-      maxTokens: maxCompletionTokens,
+      maxCompletionTokens: maxCompletionTokens,
       tools: tools,
       toolChoice: _resolveToolChoice(null, tools),
       reasoningEffort: reasoningEffort,

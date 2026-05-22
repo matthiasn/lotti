@@ -716,54 +716,118 @@ void main() {
       expect(allContent, contains('Actual response'));
     });
 
-    test('should handle tool messages correctly', () async {
-      final messages = [
-        const AiToolResultMessage(
-          toolCallId: 'tool-123',
-          content: 'Tool execution result',
-        ),
-      ];
+    test(
+      'should serialize tool messages with tool_name resolved from prior '
+      'assistant tool call',
+      () async {
+        // Ollama matches tool results to calls via the function name
+        // (no tool_call_id), so an AiToolResultMessage must follow an
+        // AiAssistantMessage that emitted the matching toolCallId.
+        final messages = [
+          const AiAssistantMessage(
+            toolCalls: [
+              AiToolCall(
+                id: 'tool-123',
+                name: 'lookup_weather',
+                arguments: '{"city":"Berlin"}',
+              ),
+            ],
+          ),
+          const AiToolResultMessage(
+            toolCallId: 'tool-123',
+            content: 'Tool execution result',
+          ),
+        ];
 
-      final mockResponse = MockStreamedResponse();
-      when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer(
-        (_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}')),
-        ),
-      );
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(utf8.encode('{"response": "test", "done": true}')),
+          ),
+        );
 
-      when(
-        () => mockHttpClient.send(any()),
-      ).thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
-      final provider = AiConfigInferenceProvider(
-        id: 'test-provider',
-        name: 'Test',
-        baseUrl: 'http://localhost:11434',
-        apiKey: '',
-        createdAt: DateTime(2026, 3, 15),
-        inferenceProviderType: InferenceProviderType.ollama,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
 
-      final stream = repository.generateTextWithMessages(
-        messages: messages,
-        model: 'test-model',
-        temperature: 0.7,
-        provider: provider,
-      );
+        final stream = repository.generateTextWithMessages(
+          messages: messages,
+          model: 'test-model',
+          temperature: 0.7,
+          provider: provider,
+        );
 
-      await stream.toList();
+        await stream.toList();
 
-      final captured = verify(() => mockHttpClient.send(captureAny())).captured;
-      final request = captured.first as http.Request;
-      final body = request.body;
-      final jsonBody = jsonDecode(body) as Map<String, dynamic>;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        final jsonBody = jsonDecode(request.body) as Map<String, dynamic>;
 
-      final jsonMessages = jsonBody['messages'] as List<dynamic>;
-      final firstMessage = jsonMessages[0] as Map<String, dynamic>;
-      expect(firstMessage['role'], 'tool');
-      expect(firstMessage['content'], 'Tool execution result');
-    });
+        final jsonMessages = jsonBody['messages'] as List<dynamic>;
+        // [assistant with tool_calls, tool result]
+        expect(jsonMessages, hasLength(2));
+        final toolMsg = jsonMessages[1] as Map<String, dynamic>;
+        expect(toolMsg['role'], 'tool');
+        // The function name was resolved from the prior assistant call.
+        expect(toolMsg['tool_name'], 'lookup_weather');
+        expect(toolMsg['content'], 'Tool execution result');
+      },
+    );
+
+    test(
+      'throws StateError when a tool result is missing its preceding '
+      'assistant tool call',
+      () {
+        // Orphan tool result — no matching AiAssistantMessage in history.
+        // Ollama has no tool_call_id so the serializer can't resolve the
+        // function name; we surface that loudly rather than corrupt history.
+        final messages = [
+          const AiToolResultMessage(
+            toolCallId: 'orphan-call',
+            content: 'result',
+          ),
+        ];
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        expect(
+          () => repository
+              .generateTextWithMessages(
+                messages: messages,
+                model: 'test-model',
+                temperature: 0.7,
+                provider: provider,
+              )
+              .toList(),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('orphan-call'),
+            ),
+          ),
+        );
+      },
+    );
 
     test('should handle messages with null content', () async {
       final messages = [

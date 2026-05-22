@@ -34,8 +34,7 @@ enum AiMessageRole {
   assistant,
   tool,
   function,
-  developer
-  ;
+  developer;
 
   String get wire => name;
 
@@ -171,8 +170,7 @@ final class AiAudioPart extends AiContentPart {
 
 enum AiAudioFormat {
   mp3,
-  wav
-  ;
+  wav;
 
   String get wire => name;
 }

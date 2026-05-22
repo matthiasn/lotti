@@ -128,6 +128,25 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     };
 
     final ollamaMessages = messages.map((msg) {
+      if (msg case AiToolResultMessage(:final toolCallId, :final content)) {
+        // Ollama has no `tool_call_id`; results are matched to calls by
+        // function name. Bailing out loudly here is the right call —
+        // sending the raw `toolCallId` as `tool_name` (or an empty string)
+        // would silently corrupt the history and break follow-up turns.
+        final toolName = toolCallIdToName[toolCallId];
+        if (toolName == null) {
+          throw StateError(
+            'Missing preceding assistant tool call for Ollama tool result: '
+            '$toolCallId',
+          );
+        }
+        return <String, dynamic>{
+          'role': 'tool',
+          'tool_name': toolName,
+          'content': content,
+        };
+      }
+
       return switch (msg) {
         AiSystemMessage(:final content) => <String, dynamic>{
           'role': 'system',
@@ -153,12 +172,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                   )
                   .toList(),
           },
-        AiToolResultMessage(:final toolCallId, :final content) =>
-          <String, dynamic>{
-            'role': 'tool',
-            'tool_name': toolCallIdToName[toolCallId] ?? toolCallId,
-            'content': content,
-          },
+        // AiToolResultMessage handled by the `if case` guard above.
+        AiToolResultMessage() => throw StateError('unreachable'),
       };
     }).toList();
 

@@ -592,7 +592,8 @@ void main() {
     );
 
     test(
-      'generateWithImages with maxCompletionTokens sets maxTokens parameter correctly',
+      'generateWithImages with maxCompletionTokens sets maxCompletionTokens '
+      'parameter correctly',
       () {
         // Arrange
         const maxCompletionTokens = 3000;
@@ -650,15 +651,12 @@ void main() {
           ),
         ).captured;
 
-        final messages = captured[0] as List<AiChatMessage>;
-        final capturedModel = captured[1] as String;
-        final capturedTemperature = captured[2] as double?;
         final capturedMaxTokens = captured[3] as int?;
         final capturedMaxCompletionTokens = captured[4] as int?;
-        final capturedTools = captured[5] as List<AiTool>?;
-        final capturedToolChoice = captured[6] as AiToolChoice?;
-        // Note: generateWithImages uses maxTokens instead of maxCompletionTokens
-        expect(capturedMaxTokens, equals(maxCompletionTokens));
+        // generateWithImages now forwards through `maxCompletionTokens` for
+        // consistency with the other generate* paths.
+        expect(capturedMaxCompletionTokens, equals(maxCompletionTokens));
+        expect(capturedMaxTokens, isNull);
       },
     );
 
