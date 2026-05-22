@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
+
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -27,16 +28,12 @@ void main() {
 
     Future<double> pumpAndMeasure(Duration d) async {
       await tester.pumpWidget(
-        ProviderScope(
+        makeTestableWidgetWithScaffold(
+          const Center(child: AudioRecordingIndicator()),
           overrides: [overrideWithProgress(d)],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: Center(child: AudioRecordingIndicator()),
-            ),
-          ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
       final byKey = find.byKey(const Key('audio_recording_indicator'));
       expect(byKey, findsOneWidget);
       final textFinder = find.descendant(

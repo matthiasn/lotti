@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -36,6 +38,14 @@ import 'package:uuid/uuid.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
 import '../widget_test_utils.dart';
+
+bool _isFlatpakTestHost() {
+  return Platform.isLinux &&
+      ((Platform.environment['FLATPAK_ID']?.isNotEmpty ?? false) ||
+          Platform.environment.containsKey('FLATPAK_SANDBOX') ||
+          (Platform.environment['XDG_RUNTIME_DIR']?.contains('flatpak') ??
+              false));
+}
 
 int calculateClampedIndex({
   required int rawIndex,
@@ -658,14 +668,19 @@ void main() {
         await _pumpAppScreen(tester, navService: mockNavService);
 
         // The legacy bottom-anchored TimeRecordingIndicator must not appear in
-        // the desktop layout; it has been replaced by SidebarTimerSection
-        // which renders inside the desktop sidebar's aboveSettings slot.
+        // the desktop layout; timer and audio recording cards render inside
+        // the desktop sidebar's aboveSettings slot.
         expect(find.byType(TimeRecordingIndicator), findsNothing);
         expect(
           find.byType(SidebarTimerSection),
           findsOneWidget,
           reason:
               'SidebarTimerSection should be wired into the desktop sidebar.',
+        );
+        expect(
+          find.byType(SidebarAudioRecordingSection),
+          _isFlatpakTestHost() ? findsNothing : findsOneWidget,
+          reason: 'Audio section is hidden in Flatpak builds.',
         );
 
         await tester.pumpWidget(const SizedBox.shrink());
@@ -739,14 +754,13 @@ void main() {
 
   group('isTaskDetailRoute', () {
     // Single source of truth for the drives the predicate: this is the
-    // exact same callsite shape used by both shells in beamer_app.dart
-    // (mobile bottom-nav suppression + desktop floating recording
-    // indicator hiding), so unit-testing it covers both behaviors.
+    // exact same callsite shape used by the mobile shell in beamer_app.dart
+    // for bottom-nav suppression.
 
     test('returns false when the active tab is not the tasks tab', () {
       // Even with a task-detail location, any non-tasks tab keeps the
-      // floating indicator visible — the desktop TaskActionBar only
-      // renders inside the tasks-tab pane.
+      // bottom navigation visible — the TaskActionBar only renders inside
+      // the tasks-tab pane.
       final location = TasksLocation(
         RouteInformation(uri: Uri.parse('/tasks/${const Uuid().v4()}')),
       );

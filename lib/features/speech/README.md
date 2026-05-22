@@ -31,7 +31,7 @@ lib/features/speech/
 
 ```mermaid
 flowchart LR
-  User["User"] --> RecordingUI["AudioRecordingModal / AudioRecordingIndicator"]
+  User["User"] --> RecordingUI["AudioRecordingModal / sidebar + mobile indicators"]
   User --> PlaybackUI["AudioPlayerWidget"]
   User --> TranscriptUI["SpeechModalContent"]
   User --> EditorUI["Editor context menu"]
@@ -77,6 +77,8 @@ Standard recording goes through `AudioRecorderRepository`, which wraps the
 
 - Riverpod state for recording UI
 - VU calculation from dBFS samples
+- live dBFS exposure for the modal VU meter, the speech-weighted desktop
+  sidebar orb, and the mobile recording pill
 - linked-entry and category context
 - coordination with app-wide playback
 - persistence through `SpeechRepository`
@@ -121,8 +123,9 @@ stateDiagram-v2
 ```
 
 One implementation detail worth calling out: the state object still has
-`showIndicator`, but the current `AudioRecordingIndicator` widget derives
-visibility from `status == recording && !modalVisible` rather than that field.
+`showIndicator`, but the current desktop `SidebarAudioRecordingSection` and
+mobile `AudioRecordingIndicator` derive visibility from
+`status == recording && !modalVisible` rather than that field.
 
 ### Standard recording flow
 
@@ -130,6 +133,7 @@ visibility from `status == recording && !modalVisible` rather than that field.
 sequenceDiagram
   participant User as "User"
   participant Modal as "AudioRecordingModal"
+  participant Sidebar as "SidebarAudioRecordingSection"
   participant Ctl as "AudioRecorderController"
   participant Repo as "AudioRecorderRepository"
   participant Speech as "SpeechRepository"
@@ -142,6 +146,8 @@ sequenceDiagram
   Ctl->>Repo: startRecording()
   Repo-->>Ctl: AudioNote + amplitude stream
   Ctl->>Ctl: update dBFS, RMS-based VU, progress
+  Ctl-->>Modal: VU meter + elapsed time
+  Ctl-->>Sidebar: dBFS-reactive orb, red frame/shadow + elapsed time
   User->>Modal: tap stop
   Modal->>Ctl: stop()
   Ctl->>Repo: stopRecording()

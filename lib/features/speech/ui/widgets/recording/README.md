@@ -1,6 +1,8 @@
 # Audio Recording UI Components
 
-This directory contains the UI components for audio recording functionality in Lotti. The recording system provides a visual VU meter, recording controls, and status indicators.
+This directory contains the UI components for audio recording functionality in
+Lotti. The recording system provides a visual VU meter, recording controls, and
+status indicators driven by the same live dBFS stream.
 
 ## Components Overview
 
@@ -46,14 +48,40 @@ AudioRecordingModal.show(
 )
 ```
 
-### 3. AudioRecordingIndicator
+### 3. AudioRecordingOrb
 
-A small floating indicator that appears when recording is active and the modal is not visible.
+The `AudioRecordingOrb` is the compact signal visualization used by persistent
+recording surfaces.
 
 **Features:**
-- Shows microphone icon and recording duration
-- Clicking reopens the recording modal
-- Positioned at bottom-right of screen
+- Maps live dBFS into a clamped 0-1 signal intensity with a speech-weighted
+  response curve so normal microphone input remains visually obvious
+- Keeps a slow pulse running so the microphone state remains visible even
+  during silence
+- Expands glow, outer wave, ring, and core radius with louder input
+- Switches to the warning token when the signal reaches the clipping threshold
+
+**Usage:**
+```dart
+AudioRecordingOrb(
+  dBFS: state.dBFS,
+  size: tokens.spacing.step6,
+)
+```
+
+### 4. Persistent Recording Indicators
+
+Persistent indicators appear when recording is active and the modal is not
+visible. They read `AudioRecorderState.dBFS` directly, so the animation follows
+the same audio stream as the VU meter.
+
+**Features:**
+- Desktop: `SidebarAudioRecordingSection` renders a full-width card in the
+  sidebar above `SidebarTimerSection`, with linked task title, live orb,
+  dBFS-reactive red frame/shadow intensity, duration, and a stop button.
+- Mobile: `AudioRecordingIndicator` renders the compact bottom-nav pill with
+  the same live orb and duration.
+- Clicking the non-stop body reopens the recording modal.
 - Auto-hides when modal is visible or recording stops
 
 ## Architecture
@@ -64,6 +92,7 @@ recording/
 ├── analog_vu_meter.dart       # Main VU meter widget
 ├── vu_meter_painter.dart      # Custom painter for VU meter visuals
 ├── vu_meter_constants.dart    # Animation durations and constants
+├── audio_recording_orb.dart   # Compact dBFS-reactive orb visualization
 ├── audio_recording_modal.dart # Recording modal interface
 ├── audio_recording_indicator.dart # Small recording indicator
 └── README.md                  # This file
@@ -177,7 +206,9 @@ The recording system uses:
 2. `AudioRecordingModal` opens showing VU meter
 3. User taps record button to start
 4. VU meter shows real-time audio levels
-5. `AudioRecordingIndicator` appears if user navigates away
+5. Persistent indicators appear if user navigates away: the desktop sidebar
+   card sits above the running timer card; the mobile pill sits in the bottom
+   navigation overlay
 6. User taps stop to end recording
 7. If auto-transcribe enabled, transcription begins
 8. Audio entry is created and saved

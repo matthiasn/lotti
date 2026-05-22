@@ -195,6 +195,16 @@ Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever a t
 - Interactions: tapping the body navigates to the running task (or the timer's journal entry, if not task-linked); tapping the stop button calls `TimeService.stop()`.
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
 
+### SidebarAudioRecordingSection
+Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever an audio recording is active and the recording modal is not visible. It sits above `SidebarTimerSection` and uses the same card radius, padding rhythm, elapsed-time typography, and circular stop affordance.
+
+- Layout: linked task/title fallback over a body row with an emphasized,
+  dBFS-reactive `AudioRecordingOrb`, monospaced HH:MM:SS, and a circular stop
+  button.
+- Signal: reads `AudioRecorderState.dBFS`, which is fed by the `record` package amplitude stream for standard recording and by realtime PCM amplitude calculation for realtime recording. The same speech-weighted signal value drives the orb and the card frame's red border/shadow intensity.
+- Interactions: tapping the body reopens `AudioRecordingModal`; tapping the stop button calls `AudioRecorderController.stop()` or `stopRealtime()` based on the active recording mode.
+- Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
+
 ### TimeRecordingIndicator
 Visual indicator showing whether time recording is currently active. Used on **mobile** only — it sits in the bottom-nav overlay above the navigation bar. On desktop the running timer is rendered by `SidebarTimerSection` instead.
 
