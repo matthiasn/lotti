@@ -9,6 +9,56 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('MediaFileActions', () {
+    test('maps platform flags in priority order', () {
+      expect(
+        MediaFileActions.platformFromFlags(
+          isMacOS: true,
+          isLinux: true,
+          isWindows: true,
+        ),
+        MediaFilePlatform.macos,
+      );
+      expect(
+        MediaFileActions.platformFromFlags(
+          isMacOS: false,
+          isLinux: true,
+          isWindows: true,
+        ),
+        MediaFilePlatform.linux,
+      );
+      expect(
+        MediaFileActions.platformFromFlags(
+          isMacOS: false,
+          isLinux: false,
+          isWindows: true,
+        ),
+        MediaFilePlatform.windows,
+      );
+      expect(
+        MediaFileActions.platformFromFlags(
+          isMacOS: false,
+          isLinux: false,
+          isWindows: false,
+        ),
+        MediaFilePlatform.unsupported,
+      );
+    });
+
+    test('rejects empty paths before dispatching to the platform', () async {
+      final runner = _RecordingProcessRunner();
+      final actions = MediaFileActions(processRunner: runner.call);
+
+      await expectLater(
+        actions.revealInFileManager(
+          '   ',
+          platform: MediaFilePlatform.windows,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      expect(runner.calls, isEmpty);
+    });
+
     test('reveals files on macOS through the native channel', () async {
       const channel = MethodChannel(fileActionsChannelName);
       final calls = <MethodCall>[];
@@ -50,6 +100,16 @@ void main() {
       ]);
     });
 
+    test('throws when revealing files is unsupported', () async {
+      await expectLater(
+        const MediaFileActions().revealInFileManager(
+          '/tmp/audio.m4a',
+          platform: MediaFilePlatform.unsupported,
+        ),
+        throwsA(isA<UnsupportedError>()),
+      );
+    });
+
     test(
       'reveals files on Linux through FileManager1 when available',
       () async {
@@ -77,6 +137,34 @@ void main() {
         ]);
       },
     );
+
+    test('falls back on Linux when FileManager1 throws', () async {
+      final runner = _RecordingProcessRunner(
+        exceptions: [const ProcessException('dbus-send', [], 'missing')],
+      );
+      final actions = MediaFileActions(processRunner: runner.call);
+
+      await actions.revealInFileManager(
+        '/home/test/audio.m4a',
+        platform: MediaFilePlatform.linux,
+      );
+
+      expect(runner.calls, [
+        const _ProcessCall(
+          'dbus-send',
+          [
+            '--session',
+            '--dest=org.freedesktop.FileManager1',
+            '--type=method_call',
+            '/org/freedesktop/FileManager1',
+            'org.freedesktop.FileManager1.ShowItems',
+            'array:string:file:///home/test/audio.m4a',
+            'string:',
+          ],
+        ),
+        const _ProcessCall('xdg-open', ['/home/test']),
+      ]);
+    });
 
     test('falls back to opening the parent folder on Linux', () async {
       final runner = _RecordingProcessRunner(exitCodes: [1, 0]);
@@ -120,9 +208,10 @@ void main() {
 }
 
 class _RecordingProcessRunner {
-  _RecordingProcessRunner({this.exitCodes});
+  _RecordingProcessRunner({this.exitCodes, this.exceptions});
 
   final List<int>? exitCodes;
+  final List<Exception?>? exceptions;
   final calls = <_ProcessCall>[];
 
   Future<ProcessResult> call(
@@ -131,6 +220,13 @@ class _RecordingProcessRunner {
   ) async {
     calls.add(_ProcessCall(executable, List<String>.from(arguments)));
     final index = calls.length - 1;
+    final configuredExceptions = exceptions;
+    if (configuredExceptions != null &&
+        index < configuredExceptions.length &&
+        configuredExceptions[index] != null) {
+      throw configuredExceptions[index]!;
+    }
+
     final configuredExitCodes = exitCodes;
     final exitCode =
         configuredExitCodes != null && index < configuredExitCodes.length

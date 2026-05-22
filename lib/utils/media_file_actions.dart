@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 typedef MediaProcessRunner =
     Future<ProcessResult> Function(String executable, List<String> arguments);
 
+// coverage:ignore-start
 Future<ProcessResult> _runProcess(
   String executable,
   List<String> arguments,
 ) => Process.run(executable, arguments);
+// coverage:ignore-end
 
 @visibleForTesting
 const fileActionsChannelName = 'com.matthiasn.lotti/file_actions';
@@ -32,14 +34,25 @@ class MediaFileActions {
   final MethodChannel methodChannel;
   final MediaProcessRunner processRunner;
 
-  static MediaFilePlatform currentPlatform() {
-    if (Platform.isMacOS) {
+  static MediaFilePlatform currentPlatform() => platformFromFlags(
+    isMacOS: Platform.isMacOS,
+    isLinux: Platform.isLinux,
+    isWindows: Platform.isWindows,
+  );
+
+  @visibleForTesting
+  static MediaFilePlatform platformFromFlags({
+    required bool isMacOS,
+    required bool isLinux,
+    required bool isWindows,
+  }) {
+    if (isMacOS) {
       return MediaFilePlatform.macos;
     }
-    if (Platform.isLinux) {
+    if (isLinux) {
       return MediaFilePlatform.linux;
     }
-    if (Platform.isWindows) {
+    if (isWindows) {
       return MediaFilePlatform.windows;
     }
     return MediaFilePlatform.unsupported;

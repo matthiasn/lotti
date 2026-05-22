@@ -286,7 +286,9 @@ class ModernShowInFileManagerItem extends ConsumerWidget {
         Navigator.of(context).pop();
 
         try {
-          final filePath = await _resolveMediaFilePath(entry);
+          final filePath = entry is JournalImage
+              ? getFullImagePath(entry)
+              : await AudioUtils.getFullAudioPath(entry as JournalAudio);
           final callback = onShowInFileManager;
           if (callback != null) {
             await callback(filePath);
@@ -308,44 +310,28 @@ class ModernShowInFileManagerItem extends ConsumerWidget {
     MediaFilePlatform platform,
   ) {
     final messages = context.messages;
-    switch (platform) {
-      case MediaFilePlatform.macos:
-        return messages.mediaShowInFinderAction;
-      case MediaFilePlatform.windows:
-        return messages.mediaShowInFileExplorerAction;
-      case MediaFilePlatform.linux:
-        return messages.mediaShowInFilesAction;
-      case MediaFilePlatform.unsupported:
-        return messages.mediaShowInFilesAction;
+    if (platform == MediaFilePlatform.macos) {
+      return messages.mediaShowInFinderAction;
     }
+    if (platform == MediaFilePlatform.windows) {
+      return messages.mediaShowInFileExplorerAction;
+    }
+    return messages.mediaShowInFilesAction;
   }
-}
-
-Future<String> _resolveMediaFilePath(JournalEntity entry) async {
-  if (entry is JournalImage) {
-    return getFullImagePath(entry);
-  }
-  if (entry is JournalAudio) {
-    return AudioUtils.getFullAudioPath(entry);
-  }
-  throw UnsupportedError('Entry does not have a media file path');
 }
 
 void _captureMediaFileActionException(
   Object error,
   StackTrace stackTrace,
 ) {
-  if (!getIt.isRegistered<LoggingService>()) {
-    debugPrint('Media file action failed: $error');
-    return;
+  if (getIt.isRegistered<LoggingService>()) {
+    getIt<LoggingService>().captureException(
+      error,
+      domain: 'journal',
+      subDomain: 'show_in_file_manager',
+      stackTrace: stackTrace,
+    );
   }
-
-  getIt<LoggingService>().captureException(
-    error,
-    domain: 'journal',
-    subDomain: 'show_in_file_manager',
-    stackTrace: stackTrace,
-  );
 }
 
 /// Modern styled share action item
