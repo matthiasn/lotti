@@ -35,9 +35,10 @@ void main() {
       expect(AudioRecordingSignalLevel.fromDbfs(12).normalized, 1);
     });
 
-    test('marks only near-full-scale samples as clipping', () {
+    test('marks only samples above clipping threshold as clipping', () {
       expect(AudioRecordingSignalLevel.fromDbfs(-4).isClipping, isFalse);
-      expect(AudioRecordingSignalLevel.fromDbfs(-3).isClipping, isTrue);
+      expect(AudioRecordingSignalLevel.fromDbfs(-3).isClipping, isFalse);
+      expect(AudioRecordingSignalLevel.fromDbfs(-2.9).isClipping, isTrue);
       expect(AudioRecordingSignalLevel.fromDbfs(0).isClipping, isTrue);
     });
 

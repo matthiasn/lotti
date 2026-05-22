@@ -34,7 +34,7 @@ class AudioRecordingSignalLevel {
 
     return AudioRecordingSignalLevel(
       normalized: normalized,
-      isClipping: dBFS >= _clippingDbfs,
+      isClipping: dBFS > _clippingDbfs,
     );
   }
 

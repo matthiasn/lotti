@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +38,14 @@ import 'package:uuid/uuid.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
 import '../widget_test_utils.dart';
+
+bool _isFlatpakTestHost() {
+  return Platform.isLinux &&
+      ((Platform.environment['FLATPAK_ID']?.isNotEmpty ?? false) ||
+          Platform.environment.containsKey('FLATPAK_SANDBOX') ||
+          (Platform.environment['XDG_RUNTIME_DIR']?.contains('flatpak') ??
+              false));
+}
 
 int calculateClampedIndex({
   required int rawIndex,
@@ -670,9 +679,8 @@ void main() {
         );
         expect(
           find.byType(SidebarAudioRecordingSection),
-          findsOneWidget,
-          reason:
-              'SidebarAudioRecordingSection should be wired above the timer.',
+          _isFlatpakTestHost() ? findsNothing : findsOneWidget,
+          reason: 'Audio section is hidden in Flatpak builds.',
         );
 
         await tester.pumpWidget(const SizedBox.shrink());
