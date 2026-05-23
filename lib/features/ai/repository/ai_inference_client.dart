@@ -87,7 +87,10 @@ class AiInferenceClient {
         final json = jsonDecode(data) as Map<String, dynamic>;
         final parsed = aiStreamChunkFromJson(json);
         if (parsed != null) yield parsed;
-      } on FormatException catch (e, stack) {
+      } on Object catch (e, stack) {
+        // Cover both JSON decode failures (FormatException) and shape
+        // mismatches from provider payload drift (TypeError on casts).
+        if (e is! FormatException && e is! TypeError) rethrow;
         parseErrors++;
         developer.log(
           'Failed to parse SSE chunk '

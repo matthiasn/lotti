@@ -131,6 +131,7 @@ class ChatRepository {
       // Accumulate tool calls while streaming content to UI.
       final toolCalls = <AiToolCall>[];
       final toolCallArgBuffers = <String, StringBuffer>{};
+      final assistantContent = StringBuffer();
 
       await for (final chunk in stream) {
         if (chunk.choices.isEmpty) continue;
@@ -138,6 +139,7 @@ class ChatRepository {
 
         final content = delta.content;
         if (content != null && content.isNotEmpty) {
+          assistantContent.write(content);
           yield content;
         }
 
@@ -154,6 +156,10 @@ class ChatRepository {
       // If we have tool calls, process them and then stream the final
       // response.
       if (toolCalls.isNotEmpty) {
+        final streamedText = assistantContent.toString();
+        if (streamedText.isNotEmpty) {
+          messages.add(AiAssistantMessage(content: streamedText));
+        }
         messages.add(AiAssistantMessage(toolCalls: toolCalls));
 
         // Process tool calls (fetch data, etc.)

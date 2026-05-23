@@ -2,7 +2,7 @@ import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
-/// Bridges Lotti's OpenAI tool-calling layer to GenUI's A2UI message protocol.
+/// Bridges Lotti's tool-calling layer to GenUI's A2UI message protocol.
 ///
 /// When the LLM calls the `render_surface` tool, this bridge constructs the
 /// necessary [Component], [UpdateComponents], and [CreateSurface] messages and
@@ -31,14 +31,15 @@ class GenUiBridge {
   /// Whether [name] is the genui bridge tool.
   bool isGenUiTool(String name) => name == toolName;
 
-  /// OpenAI-compatible tool definition for the `render_surface` tool.
+  /// [AiTool] definition for the `render_surface` tool.
   AiTool get toolDefinition => const AiTool(
     name: toolName,
     description:
         'Render rich UI content inline in the chat. Available widget '
-        'types: EvolutionProposal, EvolutionNoteConfirmation, '
-        'MetricsSummary, VersionComparison, CategoryRatings, '
-        'BinaryChoicePrompt, '
+        'types: EvolutionProposal, SoulProposal, EvolutionNoteConfirmation, '
+        'MetricsSummary, VersionComparison, FeedbackClassification, '
+        'FeedbackCategoryBreakdown, SessionProgress, CategoryRatings, '
+        'BinaryChoicePrompt, ABComparison, '
         'HighPriorityFeedback. Each surface needs a unique surfaceId '
         'and a root component type with its data.',
     parameters: {
@@ -52,9 +53,13 @@ class GenUiBridge {
           'type': 'string',
           'enum': [
             'EvolutionProposal',
+            'SoulProposal',
             'EvolutionNoteConfirmation',
             'MetricsSummary',
             'VersionComparison',
+            'FeedbackClassification',
+            'FeedbackCategoryBreakdown',
+            'SessionProgress',
             'CategoryRatings',
             'BinaryChoicePrompt',
             'ABComparison',

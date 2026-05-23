@@ -49,7 +49,8 @@ class TaskFunctions {
         description:
             'Set the time estimate for the current task based on voice transcript. '
             'Call when the user mentions duration (e.g., "30 minutes", "2 hours", '
-            '"half a day", "a week"). Only sets the estimate if not already set.',
+            '"half a day", "a week"). Use to set or update the estimate; '
+            'a no-op when the existing value already matches.',
         parameters: {
           'type': 'object',
           'properties': {
@@ -84,7 +85,8 @@ class TaskFunctions {
             'Set the due date for the current task based on voice transcript. '
             'Current date: $currentDate. Call when the user mentions a deadline '
             '(e.g., "due tomorrow", "by Friday", "needs to be done by January 15th"). '
-            'Only sets the date if not already set.',
+            'Use to set or update the due date; a no-op when the existing '
+            'value already matches.',
         parameters: const {
           'type': 'object',
           'properties': {

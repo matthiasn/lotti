@@ -227,9 +227,14 @@ class ConversationRepository extends _$ConversationRepository {
                   StringBuffer(existing.arguments);
               toolCallArgumentBuffers[existing.id] = buffer;
               buffer.write(tc.arguments ?? '');
+              // Adopt a later-arriving non-empty name: some providers send
+              // arguments deltas before the name is set.
+              final mergedName = (tc.name != null && tc.name!.isNotEmpty)
+                  ? tc.name!
+                  : existing.name;
               toolCalls[existingIndex] = AiToolCall(
                 id: existing.id,
-                name: existing.name,
+                name: mergedName,
                 arguments: buffer.toString(),
               );
             } else if (tc.name != null || tc.arguments != null) {
