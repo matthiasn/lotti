@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Audio and image entry Actions menus on desktop can now reveal the backing
   file in Finder, File Explorer, or Files.
 
+### Changed
+- Agent batch lookups for latest per-agent reports and states now use ranked
+  active-row indexes that avoid SQLite temp sorts during large project-agent
+  wake context builds.
+
 ## [0.9.1005]
 ### Changed
 - AI popup menu now opens a model-override picker when you tap an

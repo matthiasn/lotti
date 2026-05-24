@@ -18,7 +18,12 @@ CREATE INDEX idx_agent_entities_agent_id ON agent_entities(agent_id);
 CREATE INDEX idx_agent_entities_type ON agent_entities(type, agent_id, created_at DESC);
 CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities(agent_id, type, subtype, created_at DESC);
 CREATE INDEX idx_agent_entities_thread ON agent_entities(agent_id, thread_id, created_at DESC);
-CREATE INDEX idx_agent_entities_active_agent_type_created ON agent_entities(agent_id, type, created_at DESC) WHERE deleted_at IS NULL;
+-- Supports `_latestEntitiesByAgentIds`, which ranks each active
+-- agent/type partition by `(created_at DESC, id DESC)`. Without the
+-- `id` tie-breaker in the index, SQLite logs this hot batch path as
+-- `USE TEMP B-TREE FOR LAST TERM OF ORDER BY`.
+CREATE INDEX idx_agent_entities_active_agent_type_created_id ON agent_entities(agent_id, type, created_at DESC, id DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_agent_entities_active_agent_type_sub_created_id ON agent_entities(agent_id, type, subtype, created_at DESC, id DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_agent_entities_active_type_created ON agent_entities(type, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities(type, created_at DESC) WHERE type = 'wakeTokenUsage' AND deleted_at IS NULL;
 -- Expression partial for `getDueScheduledAgentStates`. The query

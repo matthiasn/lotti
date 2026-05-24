@@ -709,8 +709,8 @@ class AiConfigSkill implements AiConfig {
 
 /// User-editable prose instructions for the system role.
 /// Does NOT contain placeholders — the prompt builder wraps these
-/// with the appropriate context based on [skillType] and
-/// [contextPolicy] at runtime.
+/// with the appropriate context based on `skillType` and
+/// `contextPolicy` at runtime.
  final  String systemInstructions;
 /// User-editable prose instructions for the user message.
 /// Same rule: no placeholders, prompt builder handles injection.

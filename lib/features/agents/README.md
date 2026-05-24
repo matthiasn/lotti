@@ -213,6 +213,10 @@ Bulk agent repository lookups keep SQLite's host-variable cap in mind.
 deduplicate inputs and split large `IN (...)` lists into 900-id chunks. This
 keeps linked-task/report context collection on the indexed batch path even when
 sync or wake preparation considers thousands of task, agent, or report ids.
+The latest-per-agent batch reads are backed by active-row indexes that include
+the `(created_at DESC, id DESC)` ranking order for both type-only and
+type-plus-subtype lookups, so the window-function query does not need a temp
+sort for the final order term.
 
 ```mermaid
 flowchart LR

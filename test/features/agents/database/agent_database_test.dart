@@ -117,7 +117,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          9,
+          10,
         );
 
         // Verify the new columns exist by querying them
@@ -233,7 +233,7 @@ void main() {
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        9,
+        10,
       );
 
       // Verify the partial unique index exists.
@@ -486,7 +486,7 @@ void main() {
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        9,
+        10,
       );
 
       // Verify the column exists by selecting it.
@@ -617,7 +617,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          9,
+          10,
         );
 
         final indexes = await db
@@ -754,7 +754,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          9,
+          10,
         );
 
         // Verify wake_run_log soul columns exist and are readable.
@@ -819,7 +819,7 @@ void main() {
       },
     );
 
-    test('v8 to v9 adds active agent read indexes', () async {
+    test('v8 to latest adds active agent read indexes', () async {
       final dbFile = path.join(testDirectory.path, agentDbFileName);
       final rawDb = sqlite3.open(dbFile);
 
@@ -898,12 +898,13 @@ void main() {
       addTearDown(db.close);
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 9);
+      expect(versionResult.first.read<int>('user_version'), 10);
 
       final indexes = await db.customSelect('''
             SELECT name FROM sqlite_master WHERE type = 'index'
             AND name IN (
-              'idx_agent_entities_active_agent_type_created',
+              'idx_agent_entities_active_agent_type_created_id',
+              'idx_agent_entities_active_agent_type_sub_created_id',
               'idx_agent_entities_active_type_created',
               'idx_agent_links_active_to_type'
             )
@@ -913,7 +914,8 @@ void main() {
       expect(
         indexes.map((row) => row.read<String>('name')).toList(),
         [
-          'idx_agent_entities_active_agent_type_created',
+          'idx_agent_entities_active_agent_type_created_id',
+          'idx_agent_entities_active_agent_type_sub_created_id',
           'idx_agent_entities_active_type_created',
           'idx_agent_links_active_to_type',
         ],
@@ -921,6 +923,74 @@ void main() {
 
       await db.close();
     });
+
+    test(
+      'v9 to latest replaces active agent/type index with ranked variants',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute(
+            'CREATE INDEX idx_agent_entities_active_agent_type_created '
+            'ON agent_entities(agent_id, type, created_at DESC) '
+            'WHERE deleted_at IS NULL',
+          )
+          ..execute(
+            'CREATE INDEX idx_agent_entities_active_type_created '
+            'ON agent_entities(type, created_at DESC) '
+            'WHERE deleted_at IS NULL',
+          )
+          ..execute('PRAGMA user_version = 9');
+        rawDb.dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 10);
+
+        final indexes = await db.customSelect('''
+              SELECT name FROM sqlite_master WHERE type = 'index'
+              AND name IN (
+                'idx_agent_entities_active_agent_type_created',
+                'idx_agent_entities_active_agent_type_created_id',
+                'idx_agent_entities_active_agent_type_sub_created_id'
+              )
+              ORDER BY name
+            ''').get();
+
+        expect(
+          indexes.map((row) => row.read<String>('name')).toList(),
+          [
+            'idx_agent_entities_active_agent_type_created_id',
+            'idx_agent_entities_active_agent_type_sub_created_id',
+          ],
+        );
+
+        await db.close();
+      },
+    );
   });
 
   group('AgentDatabase fresh install', () {
@@ -1015,7 +1085,8 @@ void main() {
       final indexes = await db.customSelect('''
             SELECT name FROM sqlite_master WHERE type = 'index'
             AND name IN (
-              'idx_agent_entities_active_agent_type_created',
+              'idx_agent_entities_active_agent_type_created_id',
+              'idx_agent_entities_active_agent_type_sub_created_id',
               'idx_agent_entities_active_type_created',
               'idx_agent_links_active_to_type'
             )
@@ -1024,7 +1095,8 @@ void main() {
       expect(
         indexes.map((row) => row.read<String>('name')).toList(),
         [
-          'idx_agent_entities_active_agent_type_created',
+          'idx_agent_entities_active_agent_type_created_id',
+          'idx_agent_entities_active_agent_type_sub_created_id',
           'idx_agent_entities_active_type_created',
           'idx_agent_links_active_to_type',
         ],
@@ -1071,6 +1143,32 @@ void main() {
           ],
         );
       }
+      for (var agentIndex = 0; agentIndex < 25; agentIndex++) {
+        for (var revision = 0; revision < 4; revision++) {
+          final ts =
+              DateTime(
+                2026,
+                5,
+                24,
+              ).add(Duration(minutes: revision)).millisecondsSinceEpoch ~/
+              1000;
+          await db.customStatement(
+            'INSERT INTO agent_entities '
+            '(id, agent_id, type, subtype, created_at, updated_at, '
+            'serialized, schema_version) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
+            [
+              'report-head-$agentIndex-$revision',
+              'report-agent-$agentIndex',
+              'agentReportHead',
+              'current',
+              ts,
+              ts,
+              '{}',
+            ],
+          );
+        }
+      }
       await db.customStatement('ANALYZE');
 
       final globalTypePlan = await db
@@ -1112,9 +1210,68 @@ void main() {
           .join('\n');
       expect(
         agentTypeDetails,
-        contains('idx_agent_entities_active_agent_type_created'),
+        contains('idx_agent_entities_active_agent_type_created_id'),
       );
       expect(agentTypeDetails, isNot(contains('USE TEMP B-TREE FOR ORDER BY')));
+
+      Future<String> explainLatestByAgentIds({String? subtype}) async {
+        final agentIds = [
+          for (var agentIndex = 0; agentIndex < 25; agentIndex++)
+            'report-agent-$agentIndex',
+        ];
+        final placeholders = List.filled(agentIds.length, '?').join(', ');
+        final subtypePredicate = subtype == null ? '' : 'AND subtype = ? ';
+        final plan = await db
+            .customSelect(
+              '''
+                EXPLAIN QUERY PLAN
+                SELECT id, agent_id, type, subtype, thread_id, created_at,
+                  updated_at, deleted_at, serialized, schema_version
+                FROM (
+                  SELECT agent_entities.*,
+                    ROW_NUMBER() OVER (
+                      PARTITION BY agent_id
+                      ORDER BY created_at DESC, id DESC
+                    ) AS rn
+                  FROM agent_entities
+                  WHERE agent_id IN ($placeholders)
+                    AND type = ?
+                    $subtypePredicate
+                    AND deleted_at IS NULL
+                )
+                WHERE rn = 1
+              ''',
+              variables: [
+                ...agentIds.map(Variable<String>.new),
+                const Variable<String>('agentReportHead'),
+                if (subtype != null) Variable<String>(subtype),
+              ],
+            )
+            .get();
+        return plan.map((r) => r.data.toString()).join('\n');
+      }
+
+      final latestPlanDetails = await explainLatestByAgentIds();
+      expect(
+        latestPlanDetails,
+        contains('idx_agent_entities_active_agent_type_created_id'),
+      );
+      expect(
+        latestPlanDetails,
+        isNot(contains('USE TEMP B-TREE')),
+      );
+
+      final latestSubtypePlanDetails = await explainLatestByAgentIds(
+        subtype: 'current',
+      );
+      expect(
+        latestSubtypePlanDetails,
+        contains('idx_agent_entities_active_agent_type_sub_created_id'),
+      );
+      expect(
+        latestSubtypePlanDetails,
+        isNot(contains('USE TEMP B-TREE')),
+      );
 
       final linkPlan = await db
           .customSelect(
