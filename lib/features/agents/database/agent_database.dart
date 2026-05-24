@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -177,6 +177,31 @@ class AgentDatabase extends _$AgentDatabase {
             'idx_agent_links_active_to_type '
             'ON agent_links(to_id, type) '
             'WHERE deleted_at IS NULL',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 10) {
+          // The v9 active agent/type index still left the windowed
+          // `_latestEntitiesByAgentIds` batch path with `USE TEMP B-TREE FOR
+          // LAST TERM OF ORDER BY` because the query ranks rows by
+          // `(created_at DESC, id DESC)`. These replacement indexes include
+          // the tie-breaker used by both report-head variants captured in the
+          // 2026-05-22..24 desktop slow-query logs.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_agent_entities_active_agent_type_created_id '
+            'ON agent_entities(agent_id, type, created_at DESC, id DESC) '
+            'WHERE deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_agent_entities_active_agent_type_sub_created_id '
+            'ON agent_entities '
+            '(agent_id, type, subtype, created_at DESC, id DESC) '
+            'WHERE deleted_at IS NULL',
+          );
+          await customStatement(
+            'DROP INDEX IF EXISTS idx_agent_entities_active_agent_type_created',
           );
           await customStatement('ANALYZE');
         }

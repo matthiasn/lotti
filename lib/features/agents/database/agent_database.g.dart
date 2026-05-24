@@ -2825,9 +2825,13 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_agent_entities_thread',
     'CREATE INDEX idx_agent_entities_thread ON agent_entities (agent_id, thread_id, created_at DESC)',
   );
-  late final Index idxAgentEntitiesActiveAgentTypeCreated = Index(
-    'idx_agent_entities_active_agent_type_created',
-    'CREATE INDEX idx_agent_entities_active_agent_type_created ON agent_entities (agent_id, type, created_at DESC) WHERE deleted_at IS NULL',
+  late final Index idxAgentEntitiesActiveAgentTypeCreatedId = Index(
+    'idx_agent_entities_active_agent_type_created_id',
+    'CREATE INDEX idx_agent_entities_active_agent_type_created_id ON agent_entities (agent_id, type, created_at DESC, id DESC) WHERE deleted_at IS NULL',
+  );
+  late final Index idxAgentEntitiesActiveAgentTypeSubCreatedId = Index(
+    'idx_agent_entities_active_agent_type_sub_created_id',
+    'CREATE INDEX idx_agent_entities_active_agent_type_sub_created_id ON agent_entities (agent_id, type, subtype, created_at DESC, id DESC) WHERE deleted_at IS NULL',
   );
   late final Index idxAgentEntitiesActiveTypeCreated = Index(
     'idx_agent_entities_active_type_created',
@@ -3498,7 +3502,8 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentEntitiesType,
     idxAgentEntitiesAgentTypeSub,
     idxAgentEntitiesThread,
-    idxAgentEntitiesActiveAgentTypeCreated,
+    idxAgentEntitiesActiveAgentTypeCreatedId,
+    idxAgentEntitiesActiveAgentTypeSubCreatedId,
     idxAgentEntitiesActiveTypeCreated,
     idxAgentEntitiesTokenUsageSince,
     idxAgentEntitiesDueWake,

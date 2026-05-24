@@ -15,8 +15,7 @@ enum NodeCapability {
   mlxAudio,
   ollamaLlm,
   voxtral,
-  whisper
-  ;
+  whisper;
 
   /// The inference-provider type this capability advertises support for.
   /// Used when filtering known nodes for a profile's pinning UI: a profile

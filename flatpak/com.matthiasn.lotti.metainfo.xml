@@ -36,6 +36,7 @@
       <description>
           <p>Active audio recordings now show a prominent desktop sidebar card above the running timer, with a larger speech-weighted dBFS-reactive recording orb, red signal-reactive frame, subtle red shadow, elapsed time, and one-tap stop control so runaway microphone sessions are harder to miss.</p>
           <p>Audio and image entry Actions menus on desktop can now reveal the backing file in Finder, File Explorer, or Files.</p>
+          <p>Agent batch lookups for latest per-agent reports and states now use ranked active-row indexes that avoid SQLite temp sorts during large project-agent wake context builds.</p>
       </description>
     </release>
     <release version="0.9.1005" date="2026-05-22">
