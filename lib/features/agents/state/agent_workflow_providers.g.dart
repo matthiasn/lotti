@@ -227,3 +227,54 @@ final class ProjectAgentWorkflowProvider
 
 String _$projectAgentWorkflowHash() =>
     r'514d729a91fdf599b4e7fc23e7473e1cc3a3c26b';
+
+/// The Daily OS day-agent workflow with all dependencies resolved.
+
+@ProviderFor(dayAgentWorkflow)
+final dayAgentWorkflowProvider = DayAgentWorkflowProvider._();
+
+/// The Daily OS day-agent workflow with all dependencies resolved.
+
+final class DayAgentWorkflowProvider
+    extends
+        $FunctionalProvider<
+          DayAgentWorkflow,
+          DayAgentWorkflow,
+          DayAgentWorkflow
+        >
+    with $Provider<DayAgentWorkflow> {
+  /// The Daily OS day-agent workflow with all dependencies resolved.
+  DayAgentWorkflowProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dayAgentWorkflowProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dayAgentWorkflowHash();
+
+  @$internal
+  @override
+  $ProviderElement<DayAgentWorkflow> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DayAgentWorkflow create(Ref ref) {
+    return dayAgentWorkflow(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DayAgentWorkflow value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DayAgentWorkflow>(value),
+    );
+  }
+}
+
+String _$dayAgentWorkflowHash() => r'79f4e3561a0e6bc22a18932b52922c4b32ac0330';

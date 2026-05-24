@@ -305,6 +305,7 @@
   "agentTemplateGeneralDirectiveHint": "Definuj osobnost, nástroje, cíle a styl interakce agenta...",
   "agentTemplateGeneralDirectiveLabel": "Obecná direktiva",
   "agentTemplateInstanceBreakdownHeading": "Rozpis podle instancí",
+  "agentTemplateKindDayAgent": "Denní agent",
   "agentTemplateKindImprover": "Zlepšovač šablon",
   "agentTemplateKindProjectAgent": "Agent projektu",
   "agentTemplateKindTaskAgent": "Agent úkolů",

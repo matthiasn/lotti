@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 
 void main() {
@@ -20,6 +21,25 @@ void main() {
         final date = DateTime(2026, 1, 14, 15, 30, 45);
         expect(dayPlanId(date), equals('dayplan-2026-01-14'));
       });
+
+      glados.Glados<_GeneratedDayDate>(
+        glados.any.dayDate,
+        glados.ExploreConfig(numRuns: 120),
+      ).test('normalizes any time on the same local day', (generated) {
+        final id = dayPlanId(generated.withTime);
+
+        expect(id, dayPlanId(generated.dayOnly), reason: '$generated');
+        expect(
+          id,
+          matches(RegExp(r'^dayplan-\d{4}-\d{2}-\d{2}$')),
+          reason: '$generated',
+        );
+        expect(
+          DateTime.parse(id.replaceFirst('dayplan-', '')),
+          generated.dayOnly,
+          reason: '$generated',
+        );
+      }, tags: 'glados');
     });
 
     group('DayPlanStatus', () {
@@ -383,6 +403,99 @@ void main() {
 
         expect(data.categoryIds, equals({'cat-1', 'cat-2'}));
       });
+
+      glados.Glados<_GeneratedDayPlanBlocks>(
+        glados.any.dayPlanBlocks,
+        glados.ExploreConfig(numRuns: 140),
+      ).test('derived duration and grouping invariants hold', (generated) {
+        final blocks = generated.toBlocks();
+        final data = DayPlanData(
+          planDate: DateTime(2026, 5, 25),
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: blocks,
+        );
+
+        final expectedCategories = {
+          for (final block in blocks) block.categoryId,
+        };
+        final expectedTotal = blocks.fold(
+          Duration.zero,
+          (total, block) => total + block.duration,
+        );
+
+        expect(data.categoryIds, expectedCategories, reason: '$generated');
+        expect(data.totalPlannedDuration, expectedTotal, reason: '$generated');
+
+        for (final categoryId in expectedCategories) {
+          final categoryBlocks = data.blocksForCategory(categoryId);
+          expect(
+            categoryBlocks.every((block) => block.categoryId == categoryId),
+            isTrue,
+            reason: '$generated',
+          );
+          expect(
+            categoryBlocks.map((block) => block.id),
+            unorderedEquals(
+              blocks
+                  .where((block) => block.categoryId == categoryId)
+                  .map((block) => block.id),
+            ),
+            reason: '$generated',
+          );
+          for (var i = 1; i < categoryBlocks.length; i++) {
+            expect(
+              categoryBlocks[i].startTime.isBefore(
+                categoryBlocks[i - 1].startTime,
+              ),
+              isFalse,
+              reason: '$generated',
+            );
+          }
+        }
+
+        final budgets = data.derivedBudgets;
+        expect(budgets.length, expectedCategories.length, reason: '$generated');
+        for (final budget in budgets) {
+          final expectedDuration = blocks
+              .where((block) => block.categoryId == budget.categoryId)
+              .fold(
+                Duration.zero,
+                (total, block) => total + block.duration,
+              );
+          expect(
+            budget.plannedDuration,
+            expectedDuration,
+            reason: '$generated',
+          );
+        }
+        for (var i = 1; i < budgets.length; i++) {
+          expect(
+            budgets[i].blocks.first.startTime.isBefore(
+              budgets[i - 1].blocks.first.startTime,
+            ),
+            isFalse,
+            reason: '$generated',
+          );
+        }
+      }, tags: 'glados');
+
+      glados.Glados<_GeneratedDayPlanBlocks>(
+        glados.any.dayPlanBlocks,
+        glados.ExploreConfig(numRuns: 120),
+      ).test('round-trips generated day-plan data through JSON', (generated) {
+        final data = DayPlanData(
+          planDate: DateTime(2026, 5, 25),
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: generated.toBlocks(),
+          pinnedTasks: generated.toPinnedTasks(),
+        );
+
+        final decoded = DayPlanData.fromJson(
+          jsonDecode(jsonEncode(data.toJson())) as Map<String, dynamic>,
+        );
+
+        expect(decoded, data, reason: '$generated');
+      }, tags: 'glados');
     });
 
     group('DayPlanReviewReason', () {
@@ -406,4 +519,142 @@ void main() {
       });
     });
   });
+}
+
+class _GeneratedDayDate {
+  const _GeneratedDayDate({
+    required this.yearSlot,
+    required this.monthSlot,
+    required this.daySlot,
+    required this.hourSlot,
+    required this.minuteSlot,
+    required this.secondSlot,
+  });
+
+  final int yearSlot;
+  final int monthSlot;
+  final int daySlot;
+  final int hourSlot;
+  final int minuteSlot;
+  final int secondSlot;
+
+  int get year => 2000 + yearSlot % 50;
+  int get month => 1 + monthSlot % 12;
+  int get day => 1 + daySlot % 28;
+  int get hour => hourSlot % 24;
+  int get minute => minuteSlot % 60;
+  int get second => secondSlot % 60;
+
+  DateTime get dayOnly => DateTime(year, month, day);
+  DateTime get withTime => DateTime(year, month, day, hour, minute, second);
+
+  @override
+  String toString() {
+    return '_GeneratedDayDate('
+        'year: $year, month: $month, day: $day, '
+        'hour: $hour, minute: $minute, second: $second)';
+  }
+}
+
+class _GeneratedDayPlanBlocks {
+  const _GeneratedDayPlanBlocks(this.slots);
+
+  final List<int> slots;
+
+  List<PlannedBlock> toBlocks() {
+    final count = slots.first % slots.length;
+    final base = DateTime(2026, 5, 25);
+    return [
+      for (var i = 0; i < count; i++)
+        PlannedBlock(
+          id: 'block-$i-${slots[i]}',
+          categoryId: 'cat-${slots[i] % 4}',
+          startTime: base.add(Duration(minutes: slots[i] % (24 * 60))),
+          endTime: base
+              .add(Duration(minutes: slots[i] % (24 * 60)))
+              .add(Duration(minutes: 1 + (slots[i] ~/ 4) % 240)),
+          note: slots[i].isEven ? 'note-${slots[i]}' : null,
+        ),
+    ];
+  }
+
+  List<PinnedTaskRef> toPinnedTasks() {
+    final count = slots.length - slots.first % slots.length;
+    return [
+      for (var i = 0; i < count; i++)
+        PinnedTaskRef(
+          taskId: 'task-$i-${slots[i]}',
+          categoryId: 'cat-${slots[i] % 4}',
+          sortOrder: slots[i] % 7,
+        ),
+    ];
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedDayPlanBlocks(slots: $slots)';
+  }
+}
+
+extension _AnyDayPlan on glados.Any {
+  glados.Generator<int> get _slot => glados.IntAnys(this).intInRange(0, 100000);
+
+  glados.Generator<_GeneratedDayDate> get dayDate =>
+      glados.CombinableAny(this).combine6(
+        _slot,
+        _slot,
+        _slot,
+        _slot,
+        _slot,
+        _slot,
+        (
+          int yearSlot,
+          int monthSlot,
+          int daySlot,
+          int hourSlot,
+          int minuteSlot,
+          int secondSlot,
+        ) => _GeneratedDayDate(
+          yearSlot: yearSlot,
+          monthSlot: monthSlot,
+          daySlot: daySlot,
+          hourSlot: hourSlot,
+          minuteSlot: minuteSlot,
+          secondSlot: secondSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedDayPlanBlocks> get dayPlanBlocks =>
+      glados.CombinableAny(this).combine9(
+        _slot,
+        _slot,
+        _slot,
+        _slot,
+        _slot,
+        _slot,
+        _slot,
+        _slot,
+        _slot,
+        (
+          int slot0,
+          int slot1,
+          int slot2,
+          int slot3,
+          int slot4,
+          int slot5,
+          int slot6,
+          int slot7,
+          int slot8,
+        ) => _GeneratedDayPlanBlocks([
+          slot0,
+          slot1,
+          slot2,
+          slot3,
+          slot4,
+          slot5,
+          slot6,
+          slot7,
+          slot8,
+        ]),
+      );
 }

@@ -144,6 +144,25 @@ void main() {
         expect(state.slots.weeklyReviewCount, equals(5));
       });
 
+      test('roundtrips day agent slots', () {
+        final original = AgentDomainEntity.agentState(
+          id: 'state-day-001',
+          agentId: 'agent-day-001',
+          revision: 2,
+          slots: const AgentSlots(activeDayId: 'dayplan-2026-05-25'),
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+          scheduledWakeAt: DateTime(2026, 5, 25, 6, 30),
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final state = roundtripped as AgentStateEntity;
+        expect(state.slots.activeDayId, equals('dayplan-2026-05-25'));
+        expect(state.scheduledWakeAt, equals(DateTime(2026, 5, 25, 6, 30)));
+      });
+
       test('roundtrips with defaults for optional int/map fields', () {
         final original = AgentDomainEntity.agentState(
           id: 'state-002',

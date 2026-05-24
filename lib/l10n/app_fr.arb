@@ -433,6 +433,7 @@
   "agentTemplateGeneralDirectiveHint": "Définis la personnalité, les outils, les objectifs et le style d'interaction de l'agent...",
   "agentTemplateGeneralDirectiveLabel": "Directive générale",
   "agentTemplateInstanceBreakdownHeading": "Détail par instance",
+  "agentTemplateKindDayAgent": "Agent de journée",
   "agentTemplateKindImprover": "Améliorateur de modèle",
   "agentTemplateKindProjectAgent": "Agent de projet",
   "agentTemplateKindTaskAgent": "Agent de tâches",

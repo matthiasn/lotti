@@ -552,6 +552,10 @@
   "@agentTemplateInstanceBreakdownHeading": {
     "description": "Heading for the per-instance breakdown section in agent template stats."
   },
+  "agentTemplateKindDayAgent": "Day Agent",
+  "@agentTemplateKindDayAgent": {
+    "description": "Display name for the Daily OS day-agent template kind."
+  },
   "agentTemplateKindImprover": "Template Improver",
   "@agentTemplateKindImprover": {
     "description": "Display name for the template-improver agent kind."

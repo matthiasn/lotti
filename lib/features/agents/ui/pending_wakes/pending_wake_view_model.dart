@@ -87,7 +87,9 @@ PendingWakeVm _toVm(PendingWakeRecord record, String? rawSubjectTitle) {
 }
 
 String? _subjectEntryId(PendingWakeRecord record) {
-  return record.state.slots.activeTaskId ?? record.state.slots.activeProjectId;
+  return record.state.slots.activeTaskId ??
+      record.state.slots.activeDayId ??
+      record.state.slots.activeProjectId;
 }
 
 /// Localized label for a [PendingWakeType]. Same copy the legacy
@@ -105,6 +107,7 @@ String pendingWakeTypeLabel(AppLocalizations messages, PendingWakeType type) {
 String pendingWakeKindLabel(AppLocalizations messages, String kind) {
   return switch (kind) {
     AgentKinds.taskAgent => messages.agentInstancesKindTaskAgent,
+    AgentKinds.dayAgent => messages.agentTemplateKindDayAgent,
     AgentKinds.projectAgent => messages.agentTemplateKindProjectAgent,
     AgentKinds.templateImprover => messages.agentTemplateKindImprover,
     _ => kind,

@@ -1741,6 +1741,12 @@ abstract class AppLocalizations {
   /// **'Per-Instance Breakdown'**
   String get agentTemplateInstanceBreakdownHeading;
 
+  /// Display name for the Daily OS day-agent template kind.
+  ///
+  /// In en, this message translates to:
+  /// **'Day Agent'**
+  String get agentTemplateKindDayAgent;
+
   /// Display name for the template-improver agent kind.
   ///
   /// In en, this message translates to:

@@ -322,6 +322,7 @@ Map<String, dynamic> _$AgentTemplateEntityToJson(
 
 const _$AgentTemplateKindEnumMap = {
   AgentTemplateKind.taskAgent: 'taskAgent',
+  AgentTemplateKind.dayAgent: 'dayAgent',
   AgentTemplateKind.templateImprover: 'templateImprover',
   AgentTemplateKind.projectAgent: 'projectAgent',
 };

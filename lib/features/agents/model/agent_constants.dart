@@ -6,6 +6,7 @@ abstract final class AgentKinds {
   static const taskAgent = 'task_agent';
   static const templateImprover = 'template_improver';
   static const projectAgent = 'project_agent';
+  static const dayAgent = 'day_agent';
 }
 
 abstract final class AgentLinkTypes {

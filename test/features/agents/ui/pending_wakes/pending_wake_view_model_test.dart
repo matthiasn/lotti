@@ -12,7 +12,7 @@ import '../../test_utils.dart';
 
 enum _GeneratedPendingWakeTypeSlot { pending, scheduled }
 
-enum _GeneratedPendingWakeSubjectSlot { none, task, project, both }
+enum _GeneratedPendingWakeSubjectSlot { none, task, day, project, both }
 
 enum _GeneratedPendingWakeTitleSlot {
   nullTitle,
@@ -25,6 +25,7 @@ enum _GeneratedPendingWakeTitleSlot {
 
 enum _GeneratedPendingWakeKindSlot {
   taskAgent,
+  dayAgent,
   projectAgent,
   templateImprover,
   unknown,
@@ -42,6 +43,7 @@ PendingWakeType _generatedPendingWakeType(
 String _generatedPendingWakeKind(_GeneratedPendingWakeKindSlot slot) {
   return switch (slot) {
     _GeneratedPendingWakeKindSlot.taskAgent => AgentKinds.taskAgent,
+    _GeneratedPendingWakeKindSlot.dayAgent => AgentKinds.dayAgent,
     _GeneratedPendingWakeKindSlot.projectAgent => AgentKinds.projectAgent,
     _GeneratedPendingWakeKindSlot.templateImprover =>
       AgentKinds.templateImprover,
@@ -73,6 +75,9 @@ AgentSlots _generatedPendingWakeSlots(
     _GeneratedPendingWakeSubjectSlot.task => AgentSlots(
       activeTaskId: _taskId(index),
     ),
+    _GeneratedPendingWakeSubjectSlot.day => AgentSlots(
+      activeDayId: _dayId(index),
+    ),
     _GeneratedPendingWakeSubjectSlot.project => AgentSlots(
       activeProjectId: _projectId(index),
     ),
@@ -87,12 +92,16 @@ String? _expectedSubjectId(_GeneratedPendingWakeSubjectSlot slot, int index) {
   return switch (slot) {
     _GeneratedPendingWakeSubjectSlot.none => null,
     _GeneratedPendingWakeSubjectSlot.task => _taskId(index),
+    _GeneratedPendingWakeSubjectSlot.day => _dayId(index),
     _GeneratedPendingWakeSubjectSlot.project => _projectId(index),
     _GeneratedPendingWakeSubjectSlot.both => _taskId(index),
   };
 }
 
 String _taskId(int index) => 'task-$index';
+
+String _dayId(int index) =>
+    'dayplan-2026-05-${index.toString().padLeft(2, '0')}';
 
 String _projectId(int index) => 'project-$index';
 

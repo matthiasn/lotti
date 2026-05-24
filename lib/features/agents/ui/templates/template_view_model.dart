@@ -11,6 +11,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 String agentTemplateKindLabel(AppLocalizations messages, AgentTemplateKind k) {
   return switch (k) {
     AgentTemplateKind.taskAgent => messages.agentTemplateKindTaskAgent,
+    AgentTemplateKind.dayAgent => messages.agentTemplateKindDayAgent,
     AgentTemplateKind.templateImprover => messages.agentTemplateKindImprover,
     AgentTemplateKind.projectAgent => messages.agentTemplateKindProjectAgent,
   };

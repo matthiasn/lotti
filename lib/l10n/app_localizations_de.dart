@@ -977,6 +977,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aufschlüsselung nach Instanz';
 
   @override
+  String get agentTemplateKindDayAgent => 'Tages-Agent';
+
+  @override
   String get agentTemplateKindImprover => 'Vorlagen-Verbesserer';
 
   @override

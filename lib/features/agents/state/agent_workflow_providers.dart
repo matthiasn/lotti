@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -113,6 +114,23 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
+    soulDocumentService: ref.watch(soulDocumentServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+  );
+}
+
+/// The Daily OS day-agent workflow with all dependencies resolved.
+@Riverpod(keepAlive: true)
+DayAgentWorkflow dayAgentWorkflow(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
+  return DayAgentWorkflow(
+    agentRepository: ref.watch(agentRepositoryProvider),
+    conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     soulDocumentService: ref.watch(soulDocumentServiceProvider),

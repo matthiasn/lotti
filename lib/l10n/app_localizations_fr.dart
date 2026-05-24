@@ -979,6 +979,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateInstanceBreakdownHeading => 'Détail par instance';
 
   @override
+  String get agentTemplateKindDayAgent => 'Agent de journée';
+
+  @override
   String get agentTemplateKindImprover => 'Améliorateur de modèle';
 
   @override

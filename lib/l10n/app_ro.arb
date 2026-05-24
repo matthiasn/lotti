@@ -433,6 +433,7 @@
   "agentTemplateGeneralDirectiveHint": "Definiți personalitatea, instrumentele, obiectivele și stilul de interacțiune al agentului...",
   "agentTemplateGeneralDirectiveLabel": "Directivă generală",
   "agentTemplateInstanceBreakdownHeading": "Detaliere pe instanță",
+  "agentTemplateKindDayAgent": "Agent de zi",
   "agentTemplateKindImprover": "Îmbunătățitor de șablon",
   "agentTemplateKindProjectAgent": "Agent de proiect",
   "agentTemplateKindTaskAgent": "Agent de sarcini",
