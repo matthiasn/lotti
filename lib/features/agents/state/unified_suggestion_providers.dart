@@ -129,29 +129,40 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
 List<PendingSuggestion> _keepLatestRunningTimerUpdate(
   List<PendingSuggestion> sortedOpen,
 ) {
-  PendingSuggestion? latestRunningTimerUpdate;
+  final latestByTimerId = <String?, PendingSuggestion>{};
   for (final suggestion in sortedOpen) {
     if (suggestion.item.toolName != TaskAgentToolNames.updateRunningTimer) {
       continue;
     }
-    final current = latestRunningTimerUpdate;
+    final timerId = _runningTimerId(suggestion.item);
+    final current = latestByTimerId[timerId];
     if (current == null ||
         suggestion.changeSet.createdAt.isAfter(current.changeSet.createdAt) ||
         (suggestion.changeSet.createdAt == current.changeSet.createdAt &&
             suggestion.itemIndex > current.itemIndex)) {
-      latestRunningTimerUpdate = suggestion;
+      latestByTimerId[timerId] = suggestion;
     }
   }
 
-  if (latestRunningTimerUpdate == null) return sortedOpen;
+  if (latestByTimerId.isEmpty) return sortedOpen;
 
   final visible = <PendingSuggestion>[];
   for (final suggestion in sortedOpen) {
     if (suggestion.item.toolName == TaskAgentToolNames.updateRunningTimer &&
-        suggestion != latestRunningTimerUpdate) {
+        !identical(
+          suggestion,
+          latestByTimerId[_runningTimerId(suggestion.item)],
+        )) {
       continue;
     }
     visible.add(suggestion);
   }
   return visible;
+}
+
+String? _runningTimerId(ChangeItem item) {
+  final timerId = item.args['timerId'];
+  if (timerId is! String) return null;
+  final trimmed = timerId.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

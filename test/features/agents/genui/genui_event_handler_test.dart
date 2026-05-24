@@ -74,6 +74,31 @@ void main() {
       expect(events.first.$2, 'proposal_rejected');
     });
 
+    test('keeps listening after a proposal callback throws', () async {
+      handler.onProposalAction = (_, _) => throw StateError('callback failed');
+
+      dispatchAction(
+        name: 'proposal_approved',
+        surfaceId: 'proposal-surface',
+      );
+
+      await pumpEventQueue();
+
+      final events = <(String, String)>[];
+      handler.onProposalAction = (surfaceId, action) {
+        events.add((surfaceId, action));
+      };
+
+      dispatchAction(
+        name: 'proposal_rejected',
+        surfaceId: 'proposal-surface',
+      );
+
+      await pumpEventQueue();
+
+      expect(events, [('proposal-surface', 'proposal_rejected')]);
+    });
+
     test('ignores non-proposal events', () async {
       final events = <(String, String)>[];
       handler.onProposalAction = (surfaceId, action) {

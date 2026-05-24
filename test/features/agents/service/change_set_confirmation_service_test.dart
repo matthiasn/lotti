@@ -504,6 +504,59 @@ void main() {
       );
 
       test(
+        'keeps running-timer update retryable for non-stale failures',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateRunningTimer,
+                args: {
+                  'timerId': 'timer-entry-001',
+                  'summary': 'Refined timer text',
+                },
+                humanSummary: 'Update running timer text',
+              ),
+            ],
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Backend temporarily unavailable',
+              errorMessage: 'Backend temporarily unavailable',
+            ),
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            expect(result.errorMessage, 'Backend temporarily unavailable');
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            expect(captured, hasLength(3));
+            expect(
+              (captured[2] as ChangeSetEntity).items.single.status,
+              ChangeItemStatus.pending,
+            );
+            expect(
+              captured.whereType<ChangeDecisionEntity>().map((d) => d.verdict),
+              isNot(contains(ChangeDecisionVerdict.retracted)),
+            );
+          });
+        },
+      );
+
+      test(
         'returns failure when auto-retract status update cannot be persisted',
         () async {
           final changeSet = makeChangeSetWith(

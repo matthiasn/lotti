@@ -260,6 +260,83 @@ void main() {
       },
     );
 
+    testWidgets(
+      'clears cached proposals when the card switches to another task',
+      (tester) async {
+        final taskIdNotifier = ValueNotifier<String>(AgentTestBench.taskId);
+        addTearDown(taskIdNotifier.dispose);
+
+        final firstIdentity = makeTestIdentity(
+          id: 'identity-001',
+          displayName: 'Task Agent One',
+        );
+        final secondIdentity = makeTestIdentity(
+          id: 'identity-002',
+          agentId: 'agent-002',
+          displayName: 'Task Agent Two',
+        );
+        final pending = makePending(
+          id: 'task-one-proposal',
+          toolName: 'set_task_status',
+          humanSummary: 'Set task one to GROOMED',
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            mediaQueryData: desktopMediaQueryData,
+            overrides: [
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(
+                  flagName != enableAiSummaryTtsFlag,
+                ),
+              ),
+              taskAgentProvider.overrideWith((ref, id) async {
+                return id == AgentTestBench.taskId
+                    ? firstIdentity
+                    : secondIdentity;
+              }),
+              agentReportProvider.overrideWith((ref, agentId) async => null),
+              templateForAgentProvider.overrideWith(
+                (ref, agentId) async => null,
+              ),
+              agentStateProvider.overrideWith((ref, agentId) async => null),
+              agentIsRunningProvider.overrideWith(
+                (ref, agentId) => Stream.value(true),
+              ),
+              unifiedSuggestionListProvider.overrideWith((ref, taskId) async {
+                return taskId == AgentTestBench.taskId
+                    ? UnifiedSuggestionList(
+                        open: [pending],
+                        activity: const [],
+                      )
+                    : const UnifiedSuggestionList.empty();
+              }),
+            ],
+            child: ValueListenableBuilder<String>(
+              valueListenable: taskIdNotifier,
+              builder: (context, taskId, _) {
+                return SingleChildScrollView(
+                  child: AiSummaryCard(taskId: taskId),
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.textContaining('Set task one to GROOMED'), findsOneWidget);
+
+        taskIdNotifier.value = 'task-002';
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.textContaining('Set task one to GROOMED'), findsNothing);
+        expect(find.text('Task Agent Two'), findsOneWidget);
+      },
+    );
+
     testWidgets('tap-reject dispatches rejectItem and notifies the agent', (
       tester,
     ) async {

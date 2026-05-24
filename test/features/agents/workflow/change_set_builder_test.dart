@@ -1056,7 +1056,7 @@ void main() {
     });
 
     test(
-      'keeps only the latest running timer update queued in a wake',
+      'keeps only the latest running timer update per timer queued in a wake',
       () async {
         await builder.addItem(
           toolName: TaskAgentToolNames.updateRunningTimer,
@@ -1074,13 +1074,22 @@ void main() {
           },
           humanSummary: 'Update running timer text: "Latest timer text"',
         );
-
-        expect(builder.items, hasLength(1));
-        expect(
-          builder.items.single.toolName,
-          TaskAgentToolNames.updateRunningTimer,
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateRunningTimer,
+          args: const {
+            'timerId': 'timer-2',
+            'summary': 'Other timer text',
+          },
+          humanSummary: 'Update running timer text: "Other timer text"',
         );
-        expect(builder.items.single.args['summary'], 'Latest timer text');
+
+        expect(builder.items, hasLength(2));
+        expect(
+          builder.items.map((item) => item.args['timerId']),
+          ['timer-1', 'timer-2'],
+        );
+        expect(builder.items.first.args['summary'], 'Latest timer text');
+        expect(builder.items.last.args['summary'], 'Other timer text');
       },
     );
   });
@@ -1841,6 +1850,60 @@ void main() {
       final entity = await builder.build(mockSyncService);
       expect(entity, isNotNull);
     });
+
+    test('logs notification failures with sanitized task id', () async {
+      final mockLogger = MockDomainLogger();
+      when(
+        () => mockLogger.error(
+          any(),
+          any(),
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+      when(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: any(named: 'linkedTaskId'),
+          suggestionCount: any(named: 'suggestionCount'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          scheduledFor: any(named: 'scheduledFor'),
+          category: any(named: 'category'),
+          idSeed: any(named: 'idSeed'),
+        ),
+      ).thenThrow(StateError('notify-boom'));
+
+      final loggingBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        domainLogger: mockLogger,
+      );
+
+      await loggingBuilder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 45},
+        humanSummary: 'Set estimate to 45 minutes',
+      );
+
+      final entity = await loggingBuilder.build(mockSyncService);
+
+      expect(entity, isNotNull);
+      final captured = verify(
+        () => mockLogger.error(
+          LogDomains.agentWorkflow,
+          captureAny(),
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'ChangeSetBuilder',
+        ),
+      ).captured;
+      final message = captured.single as String;
+      expect(message, contains('[id:task-0]'));
+      expect(message, isNot(contains('task-001')));
+    });
   });
 
   group('build', () {
@@ -2009,6 +2072,14 @@ void main() {
               },
               humanSummary: 'Update running timer text: "Earlier timer text"',
             ),
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'timerId': 'timer-2',
+                'summary': 'Other timer text',
+              },
+              humanSummary: 'Update running timer text: "Other timer text"',
+            ),
           ],
         );
 
@@ -2024,10 +2095,12 @@ void main() {
               (item) => item.toolName == TaskAgentToolNames.updateRunningTimer,
             )
             .toList();
-        expect(runningTimerItems, hasLength(2));
-        expect(runningTimerItems.first.status, ChangeItemStatus.retracted);
-        expect(runningTimerItems.last.status, ChangeItemStatus.pending);
-        expect(runningTimerItems.last.args['summary'], 'Latest timer text');
+        expect(runningTimerItems, hasLength(3));
+        expect(runningTimerItems[0].status, ChangeItemStatus.retracted);
+        expect(runningTimerItems[1].status, ChangeItemStatus.pending);
+        expect(runningTimerItems[1].args['summary'], 'Other timer text');
+        expect(runningTimerItems[2].status, ChangeItemStatus.pending);
+        expect(runningTimerItems[2].args['summary'], 'Latest timer text');
 
         final captured = verify(
           () => mockSyncService.upsertEntity(captureAny()),
@@ -2045,6 +2118,8 @@ void main() {
 
         final updatedSet = captured.whereType<ChangeSetEntity>().single;
         expect(updatedSet.items.first.status, ChangeItemStatus.retracted);
+        expect(updatedSet.items[1].status, ChangeItemStatus.pending);
+        expect(updatedSet.items[1].args['summary'], 'Other timer text');
         expect(updatedSet.items.last.args['summary'], 'Latest timer text');
       },
     );

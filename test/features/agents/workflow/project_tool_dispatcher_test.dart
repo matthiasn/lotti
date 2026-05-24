@@ -5,6 +5,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -364,6 +365,14 @@ void main() {
       'create_task returns warning when task-agent auto-assignment fails',
       () async {
         final createdTask = makeTestTask(id: taskId, title: 'Write docs');
+        final domainLogger = MockDomainLogger();
+        final loggingDispatcher = ProjectToolDispatcher(
+          projectRepository: mockProjectRepository,
+          persistenceLogic: mockPersistenceLogic,
+          entitiesCacheService: mockEntitiesCacheService,
+          taskAgentService: mockTaskAgentService,
+          domainLogger: domainLogger,
+        );
         final category = CategoryDefinition(
           id: 'cat-001',
           createdAt: DateTime(2024, 3, 15),
@@ -404,8 +413,17 @@ void main() {
             awaitContent: true,
           ),
         ).thenThrow(Exception('template failure'));
+        when(
+          () => domainLogger.error(
+            any(),
+            any(),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
 
-        final result = await dispatcher.dispatch(
+        final result = await loggingDispatcher.dispatch(
           ProjectAgentToolNames.createTask,
           {'title': 'Write docs'},
           projectId,
@@ -420,6 +438,18 @@ void main() {
           result.output,
           contains('Warning: failed to auto-assign a task agent'),
         );
+        final captured = verify(
+          () => domainLogger.error(
+            LogDomains.agentWorkflow,
+            captureAny(),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).captured;
+        final message = captured.single as String;
+        expect(message, contains('[id:task-0]'));
+        expect(message, isNot(contains(taskId)));
       },
     );
 
@@ -722,6 +752,14 @@ void main() {
 
     test('create_task reports rollback failure when rollback throws', () async {
       final createdTask = makeTestTask(id: taskId, title: 'Write docs');
+      final domainLogger = MockDomainLogger();
+      final loggingDispatcher = ProjectToolDispatcher(
+        projectRepository: mockProjectRepository,
+        persistenceLogic: mockPersistenceLogic,
+        entitiesCacheService: mockEntitiesCacheService,
+        taskAgentService: mockTaskAgentService,
+        domainLogger: domainLogger,
+      );
 
       when(
         () => mockProjectRepository.getProjectById(projectId),
@@ -748,8 +786,17 @@ void main() {
           deletedAt: any(named: 'deletedAt'),
         ),
       ).thenThrow(Exception('DB write failed'));
+      when(
+        () => domainLogger.error(
+          any(),
+          any(),
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
 
-      final result = await dispatcher.dispatch(
+      final result = await loggingDispatcher.dispatch(
         ProjectAgentToolNames.createTask,
         {'title': 'Write docs'},
         projectId,
@@ -758,6 +805,18 @@ void main() {
       expect(result.success, isFalse);
       expect(result.output, contains('Rollback failed'));
       expect(result.errorMessage, contains('rollback failed'));
+      final captured = verify(
+        () => domainLogger.error(
+          LogDomains.agentWorkflow,
+          captureAny(),
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).captured;
+      final message = captured.single as String;
+      expect(message, contains('[id:task-0]'));
+      expect(message, isNot(contains(taskId)));
     });
 
     test('create_task skips auto-assign when no taskAgentService', () async {

@@ -153,7 +153,10 @@ class ChangeSetBuilder {
     }
 
     if (toolName == TaskAgentToolNames.updateRunningTimer) {
-      _items.removeWhere(_isRunningTimerUpdate);
+      final timerId = _runningTimerIdFromArgs(args);
+      _items.removeWhere(
+        (item) => _isRunningTimerUpdateForTimer(item, timerId),
+      );
     }
 
     // Check for title-based redundancy on add_checklist_item.
@@ -411,7 +414,7 @@ class ChangeSetBuilder {
         return freshEntity is ChangeSetEntity ? freshEntity : cs;
       }),
     );
-    final proposesRunningTimerUpdate = _items.any(_isRunningTimerUpdate);
+    final proposedRunningTimerIds = _runningTimerIds(_items);
 
     // Extract items from existing change sets that should block a new
     // identical proposal. Confirmed items were applied; retracted items
@@ -424,7 +427,7 @@ class ChangeSetBuilder {
               item.status != ChangeItemStatus.retracted &&
               !(_isRunningTimerUpdate(item) &&
                   item.status == ChangeItemStatus.pending &&
-                  proposesRunningTimerUpdate))
+                  proposedRunningTimerIds.contains(_runningTimerId(item))))
             item,
     ];
 
@@ -435,8 +438,12 @@ class ChangeSetBuilder {
     );
     if (deduped.isEmpty) return null;
 
-    final supersededRunningTimerItems = deduped.any(_isRunningTimerUpdate)
-        ? _locatePendingRunningTimerUpdates(freshExistingSets)
+    final dedupedRunningTimerIds = _runningTimerIds(deduped);
+    final supersededRunningTimerItems = dedupedRunningTimerIds.isNotEmpty
+        ? _locatePendingRunningTimerUpdates(
+            freshExistingSets,
+            dedupedRunningTimerIds,
+          )
         : const <
             ({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})
           >[];
@@ -619,15 +626,39 @@ class ChangeSetBuilder {
   static bool _isRunningTimerUpdate(ChangeItem item) =>
       item.toolName == TaskAgentToolNames.updateRunningTimer;
 
+  static String? _runningTimerId(ChangeItem item) =>
+      _runningTimerIdFromArgs(item.args);
+
+  static String? _runningTimerIdFromArgs(Map<String, dynamic> args) {
+    final timerId = args['timerId'];
+    if (timerId is! String) return null;
+    final trimmed = timerId.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static bool _isRunningTimerUpdateForTimer(
+    ChangeItem item,
+    String? timerId,
+  ) => _isRunningTimerUpdate(item) && _runningTimerId(item) == timerId;
+
+  static Set<String?> _runningTimerIds(Iterable<ChangeItem> items) => {
+    for (final item in items)
+      if (_isRunningTimerUpdate(item)) _runningTimerId(item),
+  };
+
   static List<({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>
-  _locatePendingRunningTimerUpdates(List<ChangeSetEntity> sets) {
+  _locatePendingRunningTimerUpdates(
+    List<ChangeSetEntity> sets,
+    Set<String?> timerIds,
+  ) {
     final matches =
         <({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>[];
     for (final set in sets) {
       for (var i = 0; i < set.items.length; i++) {
         final item = set.items[i];
         if (_isRunningTimerUpdate(item) &&
-            item.status == ChangeItemStatus.pending) {
+            item.status == ChangeItemStatus.pending &&
+            timerIds.contains(_runningTimerId(item))) {
           matches.add((changeSet: set, itemIndex: i, item: item));
         }
       }

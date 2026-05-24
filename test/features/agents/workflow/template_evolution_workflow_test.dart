@@ -165,6 +165,7 @@ void main() {
 
     TemplateEvolutionWorkflow buildSessionWorkflow({
       _TestConversationRepository? convRepo,
+      MockSoulDocumentService? soulDocumentService,
     }) {
       return TemplateEvolutionWorkflow(
         conversationRepository:
@@ -176,6 +177,7 @@ void main() {
         cloudInferenceRepository: mockCloudInference,
         templateService: mockTemplateService,
         syncService: mockSyncService,
+        soulDocumentService: soulDocumentService,
       );
     }
 
@@ -319,6 +321,31 @@ void main() {
       expect(workflow.activeSessions, isEmpty);
       expect(convRepo.deletedIds, isNotEmpty);
     });
+
+    test(
+      'continues when best-effort soul enrichment fails',
+      () async {
+        stubFullContext();
+        final soulService = MockSoulDocumentService();
+        when(
+          () => soulService.resolveActiveSoulForTemplate(any()),
+        ).thenAnswer((_) async => throw StateError('soul lookup failed'));
+
+        final workflow = buildSessionWorkflow(
+          soulDocumentService: soulService,
+        );
+
+        final response = await workflow.startSession(
+          templateId: kTestTemplateId,
+        );
+
+        expect(response, 'I see some patterns in the data.');
+        expect(workflow.activeSessions, hasLength(1));
+        verify(
+          () => soulService.resolveActiveSoulForTemplate(kTestTemplateId),
+        ).called(2);
+      },
+    );
 
     test('returns null when opening assistant content is missing', () async {
       stubFullContext();

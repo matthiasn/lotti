@@ -742,6 +742,14 @@ void main() {
               },
               humanSummary: 'Update running timer text: "Earlier timer text"',
             ),
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'timerId': 'timer-2',
+                'summary': 'Other timer text',
+              },
+              humanSummary: 'Update running timer text: "Other timer text"',
+            ),
           ],
         );
         final newer = makeTestChangeSet(
@@ -791,11 +799,18 @@ void main() {
                   TaskAgentToolNames.updateRunningTimer,
             )
             .toList();
-        expect(runningTimerSuggestions, hasLength(1));
-        expect(runningTimerSuggestions.single.changeSet.id, 'cs-new-running');
         expect(
-          runningTimerSuggestions.single.item.args['summary'],
-          'Latest timer text',
+          runningTimerSuggestions.map((suggestion) {
+            return (
+              suggestion.changeSet.id,
+              suggestion.item.args['timerId'],
+              suggestion.item.args['summary'],
+            );
+          }),
+          [
+            ('cs-new-running', 'timer-1', 'Latest timer text'),
+            ('cs-old-running', 'timer-2', 'Other timer text'),
+          ],
         );
         expect(
           result.open.where((s) => s.item.toolName == 'update_task_priority'),
