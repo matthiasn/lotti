@@ -406,7 +406,7 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
       developer.log(
         'Failed to save soul',
         name: 'AgentSoulDetailPage',
-        error: e,
+        error: e.runtimeType,
         stackTrace: s,
       );
       if (!context.mounted) return;
@@ -444,7 +444,7 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
                 developer.log(
                   'Delete failed',
                   name: 'AgentSoulDetailPage',
-                  error: e,
+                  error: e.runtimeType,
                   stackTrace: s,
                 );
                 if (!mounted || !pageContext.mounted) return;
@@ -634,7 +634,7 @@ class _VersionTile extends ConsumerWidget {
                 developer.log(
                   'Rollback failed',
                   name: 'AgentSoulDetailPage',
-                  error: e,
+                  error: e.runtimeType,
                   stackTrace: s,
                 );
                 if (!context.mounted) return;

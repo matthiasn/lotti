@@ -20,12 +20,18 @@ abstract final class LogDomains {
 /// Lightweight domain-specific logging layer on top of [LoggingService].
 ///
 /// Provides:
-/// - PII-safe sanitization helpers for entity IDs and content bodies.
+/// - PII-safe sanitization helpers for entity IDs.
 /// - Per-domain enabled check (reads from [enabledDomains]).
 /// - Delegates to [LoggingService] for the main file sink.
 /// - Writes an additional **per-domain log file** at
 ///   `{documentsDir}/logs/{domain}-YYYY-MM-DD.log` so each domain's
 ///   telemetry can be reviewed in isolation.
+///
+/// Callers must treat messages as telemetry, not content: never include task
+/// titles, notes, timer summaries, tool argument values, prompt text, model
+/// output, or other user-authored content. Error values are intentionally
+/// logged by type only because arbitrary exception strings can contain the
+/// same content.
 class DomainLogger {
   DomainLogger({required this._loggingService});
 
@@ -68,7 +74,8 @@ class DomainLogger {
   /// Log an error with optional exception and stack trace.
   ///
   /// Always logs regardless of [enabledDomains] — errors should never be
-  /// silently swallowed.
+  /// silently swallowed. The error object is recorded by runtime type only so
+  /// arbitrary exception messages cannot leak user-authored content.
   void error(
     String domain,
     String message, {
@@ -76,7 +83,9 @@ class DomainLogger {
     StackTrace? stackTrace,
     String? subDomain,
   }) {
-    final fullMessage = '$message${error != null ? ': $error' : ''}';
+    final fullMessage =
+        '$message'
+        '${error != null ? ' (errorType=${error.runtimeType})' : ''}';
     _loggingService.captureException(
       fullMessage,
       domain: domain,

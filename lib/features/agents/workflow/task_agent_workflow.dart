@@ -149,9 +149,9 @@ class TaskAgentWorkflow {
       );
     } else {
       developer.log(
-        '$message${error != null ? ': $error' : ''}',
+        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
         name: 'TaskAgentWorkflow',
-        error: error,
+        error: error?.runtimeType,
         stackTrace: stackTrace,
       );
     }

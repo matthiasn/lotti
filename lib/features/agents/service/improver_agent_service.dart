@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Improver-agent-specific lifecycle management.
@@ -172,8 +173,8 @@ class ImproverAgentService {
       );
 
       developer.log(
-        'Created improver agent ${identity.agentId} '
-        'for template $targetTemplateId',
+        'Created improver agent ${DomainLogger.sanitizeId(identity.agentId)} '
+        'for template ${DomainLogger.sanitizeId(targetTemplateId)}',
         name: 'ImproverAgentService',
       );
 
@@ -236,7 +237,8 @@ class ImproverAgentService {
     onPersistedStateChanged?.call(agentId);
 
     developer.log(
-      'Scheduled next ritual for $agentId at $nextWake',
+      'Scheduled next ritual for ${DomainLogger.sanitizeId(agentId)} '
+      'at $nextWake',
       name: 'ImproverAgentService',
     );
   }

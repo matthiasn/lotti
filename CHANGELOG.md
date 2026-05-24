@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Sync now preserves local sequence mappings when recovering burnt vector-clock
   counters, reducing cases where peers can get stuck on unresolvable gaps.
+- Task-agent suggestions no longer disappear wholesale while an agent wake is
+  running, and stale running-timer update proposals are automatically retracted
+  if the timer stops before you accept them.
+- Agent workflow diagnostics no longer write suggestion argument values or raw
+  exception text into runtime log files.
 
 ## [0.9.1005]
 ### Changed

@@ -707,7 +707,14 @@ void main() {
           verify(
             () => mockDomainLogger.log(
               LogDomains.agentWorkflow,
-              any(that: contains('Created task new-task-log')),
+              any(
+                that: allOf(
+                  contains('Created task'),
+                  contains('verify lookup'),
+                  isNot(contains('new-task-log')),
+                  isNot(contains('Logged Task')),
+                ),
+              ),
               subDomain: any(named: 'subDomain'),
             ),
           ).called(1);
@@ -747,8 +754,11 @@ void main() {
             () => mockDomainLogger.error(
               LogDomains.agentWorkflow,
               any(
-                that: contains(
-                  'Failed to link source $sourceTaskId',
+                that: allOf(
+                  contains('Failed to link source'),
+                  isNot(contains(sourceTaskId)),
+                  isNot(contains('new-task-err')),
+                  isNot(contains('Error Task')),
                 ),
               ),
               error: any(named: 'error'),

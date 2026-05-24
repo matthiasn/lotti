@@ -473,8 +473,10 @@ void _wireWakeExecutor(
       }
     } catch (error, stackTrace) {
       developer.log(
-        'Failed to resolve task/project wake notification tokens: $error',
+        'Failed to resolve task/project wake notification tokens '
+        '(errorType=${error.runtimeType})',
         name: 'agentInitialization',
+        error: error.runtimeType,
         stackTrace: stackTrace,
       );
     }
@@ -508,8 +510,10 @@ Future<void> _notifyWakeCompletion(
     templateId = template?.id;
   } catch (error, stackTrace) {
     developer.log(
-      'Failed to resolve template for wake notification: $error',
+      'Failed to resolve template for wake notification '
+      '(errorType=${error.runtimeType})',
       name: 'agentInitialization',
+      error: error.runtimeType,
       stackTrace: stackTrace,
     );
   }

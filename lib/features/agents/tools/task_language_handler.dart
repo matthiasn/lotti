@@ -47,7 +47,7 @@ class TaskLanguageHandler {
     final trimmed = languageCode.trim().toLowerCase();
 
     developer.log(
-      'Processing set_task_language: "$trimmed"',
+      'Processing set_task_language: chars=${trimmed.length}',
       name: 'TaskLanguageHandler',
     );
 
@@ -66,7 +66,10 @@ class TaskLanguageHandler {
       final message =
           'Unsupported language code: "$trimmed". '
           'Must be one of: ${SupportedLanguage.values.map((l) => l.code).join(", ")}';
-      developer.log(message, name: 'TaskLanguageHandler');
+      developer.log(
+        'Rejected unsupported language code',
+        name: 'TaskLanguageHandler',
+      );
       return TaskLanguageResult(
         success: false,
         message: message,
@@ -94,7 +97,10 @@ class TaskLanguageHandler {
       final message =
           'Language was manually set by user to "${task.data.languageCode}". '
           'Agent cannot override user-set language.';
-      developer.log(message, name: 'TaskLanguageHandler');
+      developer.log(
+        'Skipped user-set language',
+        name: 'TaskLanguageHandler',
+      );
       return TaskLanguageResult(
         success: true,
         message: message,
@@ -126,7 +132,7 @@ class TaskLanguageHandler {
 
       final message = 'Task language set to "$trimmed" (${supported.name}).';
       developer.log(
-        'Successfully set task language to "$trimmed"',
+        'Successfully set task language',
         name: 'TaskLanguageHandler',
       );
 
@@ -142,7 +148,7 @@ class TaskLanguageHandler {
       developer.log(
         'Failed to update task language',
         name: 'TaskLanguageHandler',
-        error: e,
+        error: e.runtimeType,
         stackTrace: s,
       );
 

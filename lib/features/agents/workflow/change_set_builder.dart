@@ -550,7 +550,8 @@ class ChangeSetBuilder {
     } catch (e, st) {
       domainLogger?.error(
         LogDomains.agentWorkflow,
-        'Failed to fire change-set notification for task $taskId',
+        'Failed to fire change-set notification for task '
+        '${DomainLogger.sanitizeId(taskId)}',
         error: e,
         stackTrace: st,
         subDomain: 'ChangeSetBuilder',
