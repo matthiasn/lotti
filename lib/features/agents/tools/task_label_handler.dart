@@ -114,7 +114,7 @@ class TaskLabelHandler {
       developer.log(
         'Failed to assign labels',
         name: 'TaskLabelHandler',
-        error: e,
+        error: e.runtimeType,
         stackTrace: s,
       );
 

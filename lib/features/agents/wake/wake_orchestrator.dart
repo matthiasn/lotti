@@ -233,9 +233,9 @@ class WakeOrchestrator {
       );
     } else {
       developer.log(
-        '$message${error != null ? ': $error' : ''}',
+        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
         name: 'WakeOrchestrator',
-        error: error,
+        error: error?.runtimeType,
         stackTrace: stackTrace,
       );
     }
@@ -1181,7 +1181,7 @@ class WakeOrchestrator {
         await _safeUpdateStatus(
           job.runKey,
           WakeRunStatus.failed.name,
-          errorMessage: e.toString(),
+          errorMessage: 'Wake failed (${e.runtimeType})',
         );
       } finally {
         timeoutTimer?.cancel();

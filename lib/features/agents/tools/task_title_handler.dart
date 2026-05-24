@@ -116,7 +116,8 @@ class TaskTitleHandler {
     final trimmed = newTitle.trim();
 
     developer.log(
-      'Processing set_task_title: "${trimmed.isEmpty ? '<empty>' : trimmed}"',
+      'Processing set_task_title: '
+      'isEmpty=${trimmed.isEmpty}, chars=${trimmed.length}',
       name: 'TaskTitleHandler',
     );
 
@@ -174,7 +175,7 @@ class TaskTitleHandler {
 
       final message = 'Task title updated to "$trimmed".';
       developer.log(
-        'Successfully updated task title to "$trimmed"',
+        'Successfully updated task title',
         name: 'TaskTitleHandler',
       );
 
@@ -191,7 +192,7 @@ class TaskTitleHandler {
       developer.log(
         'Failed to update task title',
         name: 'TaskTitleHandler',
-        error: e,
+        error: e.runtimeType,
         stackTrace: s,
       );
 

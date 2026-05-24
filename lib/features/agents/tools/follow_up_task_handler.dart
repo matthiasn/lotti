@@ -137,7 +137,7 @@ class FollowUpTaskHandler {
     final verifyTask = await _journalDb.journalEntityById(newTaskId);
     _domainLogger?.log(
       LogDomains.agentWorkflow,
-      'Created task $newTaskId — verify lookup: '
+      'Created task ${DomainLogger.sanitizeId(newTaskId)} — verify lookup: '
       '${verifyTask?.runtimeType} (found: ${verifyTask != null})',
       subDomain: _sub,
     );
@@ -167,7 +167,8 @@ class FollowUpTaskHandler {
     } catch (e) {
       _domainLogger?.error(
         LogDomains.agentWorkflow,
-        'Failed to link source $sourceTaskId → $newTaskId',
+        'Failed to link source ${DomainLogger.sanitizeId(sourceTaskId)} → '
+        '${DomainLogger.sanitizeId(newTaskId)}',
         error: e,
         subDomain: _sub,
       );
@@ -242,14 +243,18 @@ class FollowUpTaskHandler {
       if (!inherited) {
         _domainLogger?.log(
           LogDomains.agentWorkflow,
-          'No project to inherit from $sourceTaskId for $newTaskId',
+          'No project to inherit from '
+          '${DomainLogger.sanitizeId(sourceTaskId)} for '
+          '${DomainLogger.sanitizeId(newTaskId)}',
           subDomain: _sub,
         );
       }
     } catch (e) {
       _domainLogger?.error(
         LogDomains.agentWorkflow,
-        'Failed to inherit project from $sourceTaskId → $newTaskId',
+        'Failed to inherit project from '
+        '${DomainLogger.sanitizeId(sourceTaskId)} → '
+        '${DomainLogger.sanitizeId(newTaskId)}',
         error: e,
         subDomain: _sub,
       );
@@ -285,7 +290,8 @@ class FollowUpTaskHandler {
     } catch (e) {
       _domainLogger?.error(
         LogDomains.agentWorkflow,
-        'Failed to auto-assign agent for follow-up ${newTask.meta.id}',
+        'Failed to auto-assign agent for follow-up '
+        '${DomainLogger.sanitizeId(newTask.meta.id)}',
         error: e,
         subDomain: _sub,
       );

@@ -166,9 +166,9 @@ class ScheduledWakeManager {
       );
     } else {
       developer.log(
-        message,
+        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
         name: 'ScheduledWakeManager',
-        error: error,
+        error: error?.runtimeType,
         stackTrace: stackTrace,
       );
     }

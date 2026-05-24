@@ -168,7 +168,7 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
       developer.log(
         'AgentControls action failed',
         name: 'AgentControls',
-        error: e,
+        error: e.runtimeType,
         stackTrace: s,
       );
       if (mounted) {

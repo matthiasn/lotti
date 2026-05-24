@@ -91,7 +91,7 @@ Future<void> _createTaskAgent(
     developer.log(
       'Failed to create task agent',
       name: 'AiSummaryCard',
-      error: e,
+      error: e.runtimeType,
       stackTrace: s,
     );
     if (context.mounted) {

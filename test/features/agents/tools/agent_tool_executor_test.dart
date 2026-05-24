@@ -385,7 +385,9 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.output, contains('Error'));
-        expect(result.errorMessage, contains('DB connection lost'));
+        expect(result.output, isNot(contains('DB connection lost')));
+        expect(result.errorMessage, contains('Unexpected tool failure'));
+        expect(result.errorMessage, isNot(contains('DB connection lost')));
         expect(result.policyDenied, isFalse);
       });
 
@@ -408,12 +410,15 @@ void main() {
         final resultMessage = captured[3] as AgentMessageEntity;
         expect(
           resultMessage.metadata.errorMessage,
-          contains('Crash'),
+          allOf(
+            contains('Unexpected tool failure'),
+            isNot(contains('Crash')),
+          ),
         );
 
         final errorPayload = captured[2] as AgentMessagePayloadEntity;
         expect(errorPayload.content['text'], contains('Error'));
-        expect(errorPayload.content['text'], contains('Crash'));
+        expect(errorPayload.content['text'], isNot(contains('Crash')));
       });
     });
 
@@ -505,8 +510,10 @@ void main() {
           // The original error result must be returned, not the audit write
           // error.
           expect(result.success, isFalse);
-          expect(result.output, contains('Handler explosion'));
-          expect(result.errorMessage, contains('Handler explosion'));
+          expect(result.output, contains('Unexpected tool failure'));
+          expect(result.output, isNot(contains('Handler explosion')));
+          expect(result.errorMessage, contains('Unexpected tool failure'));
+          expect(result.errorMessage, isNot(contains('Handler explosion')));
         },
       );
     });

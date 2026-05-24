@@ -471,7 +471,7 @@ class _AgentTemplateDetailPageState
       developer.log(
         'Failed to save template',
         name: 'AgentTemplateDetailPage',
-        error: e,
+        error: e.runtimeType,
         stackTrace: s,
       );
       if (!context.mounted) return;
@@ -515,7 +515,7 @@ class _AgentTemplateDetailPageState
                 developer.log(
                   'Delete failed',
                   name: 'AgentTemplateDetailPage',
-                  error: e,
+                  error: e.runtimeType,
                   stackTrace: s,
                 );
                 if (!mounted || !pageContext.mounted) return;
@@ -678,7 +678,7 @@ class _VersionTile extends ConsumerWidget {
                 developer.log(
                   'Rollback failed',
                   name: 'AgentTemplateDetailPage',
-                  error: e,
+                  error: e.runtimeType,
                   stackTrace: s,
                 );
                 if (!context.mounted) return;

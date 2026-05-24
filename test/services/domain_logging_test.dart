@@ -131,8 +131,8 @@ void main() {
       ).called(1);
     });
 
-    test('includes error object in message', () {
-      final exception = Exception('test error');
+    test('includes error type without raw exception message', () {
+      final exception = Exception('secret user content');
       logger.error(
         LogDomains.agentRuntime,
         'wake failed',
@@ -141,7 +141,13 @@ void main() {
 
       verify(
         () => mockLoggingService.captureException(
-          'wake failed: $exception',
+          any<String>(
+            that: allOf(
+              contains('wake failed'),
+              contains('errorType='),
+              isNot(contains('secret user content')),
+            ),
+          ),
           domain: LogDomains.agentRuntime,
         ),
       ).called(1);
