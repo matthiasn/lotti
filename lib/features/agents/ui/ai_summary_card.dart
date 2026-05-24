@@ -104,16 +104,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   bool _historyOpen = false;
   bool _confirmAllBusy = false;
   bool _cancelledManually = false;
-  UnifiedSuggestionList? _lastVisibleSuggestions;
-
-  @override
-  void didUpdateWidget(covariant _AiSummaryShell oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.taskId != widget.taskId ||
-        oldWidget.identity.agentId != widget.identity.agentId) {
-      _lastVisibleSuggestions = null;
-    }
-  }
 
   int _computeRemainingSeconds(DateTime? nextWakeAt) {
     if (nextWakeAt == null) return 0;
@@ -167,7 +157,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       developer.log(
         'confirmAll failed',
         name: 'AiSummaryCard',
-        error: e.runtimeType,
+        error: e,
         stackTrace: stackTrace,
       );
       if (mounted) {
@@ -195,7 +185,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       developer.log(
         'MLX summary playback failed',
         name: 'AiSummaryCard',
-        error: error.runtimeType,
+        error: error,
         stackTrace: stackTrace,
       );
       if (mounted) {
@@ -217,15 +207,18 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final reportAsync = ref.watch(agentReportProvider(agentId));
     final report = reportAsync.value?.mapOrNull(agentReport: (r) => r);
     final listAsync = ref.watch(unifiedSuggestionListProvider(widget.taskId));
+    // Distinguish "still resolving" from "resolved-and-empty" so the
+    // proposals section doesn't flash "No open proposals" during the
+    // initial fetch. `hasValue` is `true` once the provider has
+    // produced any data (including a deliberate empty list); on the
+    // first frame we render with no list and the section omits the
+    // empty-state placeholder.
+    final list = listAsync.hasValue ? listAsync.value! : null;
 
     final tldr = _resolveTldr(report);
     final additionalReport = _resolveAdditionalReport(report);
 
     final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
-    final list = _resolveVisibleSuggestionList(
-      listAsync,
-      isRunning: isRunning,
-    );
     // Prefer the template displayName (e.g. "Task Laura") over the
     // generic agent kind label so the subtitle reads as the named
     // persona the user picked.
@@ -355,51 +348,5 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final explicitTldr = report.tldr?.trim();
     if (explicitTldr == null || explicitTldr.isEmpty) return null;
     return content;
-  }
-
-  UnifiedSuggestionList? _resolveVisibleSuggestionList(
-    AsyncValue<UnifiedSuggestionList> listAsync, {
-    required bool isRunning,
-  }) {
-    final next = listAsync.hasValue ? listAsync.value : null;
-    if (next == null) {
-      return _lastVisibleSuggestions;
-    }
-
-    final previous = _lastVisibleSuggestions;
-    if (isRunning && previous != null) {
-      final merged = _mergeUnresolvedOpenSuggestions(previous, next);
-      _lastVisibleSuggestions = merged;
-      return merged;
-    }
-
-    _lastVisibleSuggestions = next;
-    return next;
-  }
-
-  UnifiedSuggestionList _mergeUnresolvedOpenSuggestions(
-    UnifiedSuggestionList previous,
-    UnifiedSuggestionList next,
-  ) {
-    if (previous.open.isEmpty) return next;
-
-    final nextOpenFingerprints = {
-      for (final suggestion in next.open) suggestion.fingerprint,
-    };
-    final resolvedFingerprints = {
-      for (final entry in next.activity) entry.fingerprint,
-    };
-    final stillUnresolvedPrevious = previous.open.where((suggestion) {
-      return !nextOpenFingerprints.contains(suggestion.fingerprint) &&
-          !resolvedFingerprints.contains(suggestion.fingerprint);
-    }).toList();
-
-    if (stillUnresolvedPrevious.isEmpty) return next;
-
-    return UnifiedSuggestionList(
-      open: [...next.open, ...stillUnresolvedPrevious],
-      activity: next.activity,
-      agentName: next.agentName ?? previous.agentName,
-    );
   }
 }

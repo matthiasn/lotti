@@ -84,9 +84,9 @@ class ProjectAgentWorkflow {
       );
     } else {
       developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
+        '$message${error != null ? ': $error' : ''}',
         name: 'ProjectAgentWorkflow',
-        error: error?.runtimeType,
+        error: error,
         stackTrace: stackTrace,
       );
     }

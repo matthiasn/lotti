@@ -248,7 +248,7 @@ class SuggestionRetractionService {
     _domainLogger?.log(
       LogDomains.agentWorkflow,
       'Retracting item $itemIndex (${item.toolName}) in change set '
-      '${DomainLogger.sanitizeId(changeSet.id)}',
+      '${changeSet.id}',
       subDomain: _sub,
     );
 
@@ -284,9 +284,8 @@ class SuggestionRetractionService {
       _domainLogger?.log(
         LogDomains.agentWorkflow,
         'Retraction bounds mismatch after re-read: itemIndex=$itemIndex, '
-        'items=${current.items.length}, '
-        'changeSet=${DomainLogger.sanitizeId(changeSet.id)}, '
-        'decision=${DomainLogger.sanitizeId(decision.id)}',
+        'items=${current.items.length}, changeSet=${changeSet.id}, '
+        'decision=${decision.id}',
         subDomain: _sub,
       );
       return;
@@ -301,8 +300,7 @@ class SuggestionRetractionService {
         LogDomains.agentWorkflow,
         'Retraction lost race to user action: itemIndex=$itemIndex, '
         'observedStatus=${current.items[itemIndex].status.name}, '
-        'changeSet=${DomainLogger.sanitizeId(changeSet.id)}, '
-        'decision=${DomainLogger.sanitizeId(decision.id)}',
+        'changeSet=${changeSet.id}, decision=${decision.id}',
         subDomain: _sub,
       );
       return;
@@ -339,7 +337,7 @@ class SuggestionRetractionService {
       _domainLogger?.error(
         LogDomains.agentWorkflow,
         'Post-retraction notification sync failed for change set '
-        '${DomainLogger.sanitizeId(changeSet.id)}',
+        '${changeSet.id}',
         subDomain: _sub,
         error: error,
         stackTrace: stackTrace,

@@ -271,8 +271,7 @@ class ProjectToolDispatcher {
     } catch (error, stackTrace) {
       domainLogger?.error(
         LogDomains.agentWorkflow,
-        'Failed to roll back created task '
-        '${DomainLogger.sanitizeId(task.meta.id)}',
+        'Failed to roll back created task ${task.meta.id}',
         error: error,
         stackTrace: stackTrace,
         subDomain: _sub,
@@ -305,7 +304,7 @@ class ProjectToolDispatcher {
       domainLogger?.error(
         LogDomains.agentWorkflow,
         'Failed to auto-assign task agent for project-created task '
-        '${DomainLogger.sanitizeId(task.meta.id)}',
+        '${task.meta.id}',
         error: error,
         stackTrace: stackTrace,
         subDomain: _sub,

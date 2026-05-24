@@ -12,7 +12,8 @@ import 'package:lotti/classes/journal_entities.dart';
 enum LinkedEntryActivityFilter {
   timer,
   audio,
-  images;
+  images
+  ;
 
   /// Returns the pill kind a [entity] belongs to, or `null` when the entity
   /// is not part of the activity-filter taxonomy and should always render.

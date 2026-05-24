@@ -52,7 +52,7 @@ class GenUiEventHandler {
       developer.log(
         'Failed to handle GenUI event',
         name: 'GenUiEventHandler',
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
     }
@@ -84,10 +84,9 @@ class GenUiEventHandler {
           }
         } catch (e, s) {
           developer.log(
-            'Failed to parse ratings JSON '
-            '(bytes=${utf8.encode(ratingsJson).length})',
+            'Failed to parse ratings JSON: $ratingsJson',
             name: 'GenUiEventHandler',
-            error: e.runtimeType,
+            error: e,
             stackTrace: s,
           );
         }
@@ -103,10 +102,9 @@ class GenUiEventHandler {
           }
         } catch (e, s) {
           developer.log(
-            'Failed to parse AB comparison JSON '
-            '(bytes=${utf8.encode(payloadJson).length})',
+            'Failed to parse AB comparison JSON: $payloadJson',
             name: 'GenUiEventHandler',
-            error: e.runtimeType,
+            error: e,
             stackTrace: s,
           );
         }
@@ -122,10 +120,9 @@ class GenUiEventHandler {
           }
         } catch (e, s) {
           developer.log(
-            'Failed to parse binary choice JSON '
-            '(bytes=${utf8.encode(payloadJson).length})',
+            'Failed to parse binary choice JSON: $payloadJson',
             name: 'GenUiEventHandler',
-            error: e.runtimeType,
+            error: e,
             stackTrace: s,
           );
         }
@@ -134,7 +131,7 @@ class GenUiEventHandler {
       developer.log(
         'Failed to process GenUI interaction',
         name: 'GenUiEventHandler',
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
     }

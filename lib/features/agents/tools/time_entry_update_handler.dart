@@ -145,8 +145,7 @@ class TimeEntryUpdateHandler {
 
     _domainLogger?.log(
       LogDomains.agentWorkflow,
-      'Updated time entry ${DomainLogger.sanitizeId(entryId)} linked to '
-      '${DomainLogger.sanitizeId(sourceTaskId)}',
+      'Updated time entry $entryId linked to $sourceTaskId',
       subDomain: _sub,
     );
 

@@ -4,7 +4,6 @@ import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/services/domain_logging.dart';
 
 /// Resolves the inference provider for a given [modelId].
 ///
@@ -31,8 +30,7 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
 
   if (matchingModels.isEmpty) {
     developer.log(
-      'Requested model not found in configured models '
-      '(modelIdLength=${modelId.length})',
+      'Model $modelId not found in configured models',
       name: logTag,
     );
     return null;
@@ -47,7 +45,7 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
 
     if (provider is! AiConfigInferenceProvider) {
       developer.log(
-        'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
+        'Skipping provider $providerId for model $modelId: '
         'not an inference provider',
         name: logTag,
       );
@@ -56,7 +54,7 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
 
     if (!provider.isUsable) {
       developer.log(
-        'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
+        'Skipping provider $providerId for model $modelId: '
         'API key is not configured',
         name: logTag,
       );
@@ -70,7 +68,7 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
 
     usableFallback ??= provider;
     developer.log(
-      'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
+      'Skipping provider $providerId for model $modelId: '
       'provider type ${provider.inferenceProviderType.name} does not match '
       'known model provider type(s) '
       '${preferredProviderTypes.map((type) => type.name).join(', ')}',
@@ -80,17 +78,16 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
 
   if (usableFallback != null) {
     developer.log(
-      'No provider with a known matching type configured; '
-      'falling back to usable provider '
-      '${DomainLogger.sanitizeId(usableFallback.id)}',
+      'No provider with a known matching type configured for model $modelId; '
+      'falling back to usable provider ${usableFallback.id}',
       name: logTag,
     );
     return usableFallback;
   }
 
   developer.log(
-    'No usable provider configured across '
-    '${matchingModels.length} configured model row(s)',
+    'No usable provider configured for model $modelId '
+    'across ${matchingModels.length} configured model row(s)',
     name: logTag,
   );
   return null;

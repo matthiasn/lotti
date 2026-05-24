@@ -342,7 +342,7 @@ class _ProfileSection extends ConsumerWidget {
                 developer.log(
                   'updateAgentProfile failed',
                   name: 'AgentInternalsBody',
-                  error: e.runtimeType,
+                  error: e,
                   stackTrace: stackTrace,
                 );
                 if (!context.mounted) return;

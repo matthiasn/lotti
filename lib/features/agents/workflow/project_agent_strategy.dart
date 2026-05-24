@@ -72,15 +72,13 @@ class ProjectAgentStrategy extends ConversationStrategy {
       try {
         args = _parseToolArguments(call.function.arguments);
       } catch (e) {
-        final rawBytes = utf8.encode(call.function.arguments).length;
         developer.log(
-          'Failed to parse tool call arguments for $toolName '
-          '(rawBytes=$rawBytes, errorType=${e.runtimeType})',
+          'Failed to parse tool call arguments for $toolName: $e',
           name: 'ProjectAgentStrategy',
         );
         final errorMsg =
             'Error: invalid arguments format — expected a JSON object. '
-            'Detail: ${e.runtimeType}';
+            'Detail: $e';
         manager.addToolResponse(toolCallId: call.id, response: errorMsg);
         await _recordToolResultMessage(
           toolName: toolName,
@@ -361,9 +359,7 @@ class ProjectAgentStrategy extends ConversationStrategy {
       if (decoded is Map<String, dynamic>) return decoded;
     }
 
-    // Do not include [trimmed] in the exception. Tool arguments can contain
-    // user-authored content, and exception strings can be routed to logs.
-    throw const FormatException('Cannot parse tool arguments');
+    throw FormatException('Cannot parse tool arguments: $trimmed');
   }
 
   // ── Message persistence ────────────────────────────────────────────────────
@@ -383,7 +379,7 @@ class ProjectAgentStrategy extends ConversationStrategy {
       );
     } catch (e) {
       developer.log(
-        'Failed to persist assistant message (errorType=${e.runtimeType})',
+        'Failed to persist assistant message: $e',
         name: 'ProjectAgentStrategy',
       );
     }
@@ -410,7 +406,7 @@ class ProjectAgentStrategy extends ConversationStrategy {
       );
     } catch (e) {
       developer.log(
-        'Failed to persist action message (errorType=${e.runtimeType})',
+        'Failed to persist action message: $e',
         name: 'ProjectAgentStrategy',
       );
     }
@@ -438,7 +434,7 @@ class ProjectAgentStrategy extends ConversationStrategy {
       );
     } catch (e) {
       developer.log(
-        'Failed to persist tool result message (errorType=${e.runtimeType})',
+        'Failed to persist tool result message: $e',
         name: 'ProjectAgentStrategy',
       );
     }

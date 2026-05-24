@@ -254,9 +254,9 @@ class ProjectAgentService {
           );
         } else {
           developer.log(
-            '$msg (errorType=${e.runtimeType})',
+            '$msg: $e',
             name: 'ProjectAgentService',
-            error: e.runtimeType,
+            error: e,
             stackTrace: s,
           );
         }

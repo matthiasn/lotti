@@ -666,14 +666,7 @@ void main() {
         verify(
           () => mockDomainLogger.log(
             any(),
-            any(
-              that: allOf(
-                contains('Updated running timer'),
-                isNot(contains(timerId)),
-                isNot(contains(sourceTaskId)),
-                isNot(contains('Logged description')),
-              ),
-            ),
+            any(that: contains('Updated running timer $timerId')),
             subDomain: any(named: 'subDomain'),
           ),
         ).called(1);

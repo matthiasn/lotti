@@ -481,11 +481,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
         clearQueue: true,
       );
     } catch (e) {
-      developer.log(
-        'confirmItem failed',
-        name: 'AiSummaryCard',
-        error: e.runtimeType,
-      );
+      developer.log('confirmItem failed: $e', name: 'AiSummaryCard');
       messenger.showDesignSystemToast(
         tone: DesignSystemToastTone.error,
         title: messages.changeSetConfirmError,
@@ -520,11 +516,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
         clearQueue: true,
       );
     } catch (e) {
-      developer.log(
-        'rejectItem failed',
-        name: 'AiSummaryCard',
-        error: e.runtimeType,
-      );
+      developer.log('rejectItem failed: $e', name: 'AiSummaryCard');
       messenger.showDesignSystemToast(
         tone: DesignSystemToastTone.error,
         title: messages.changeSetConfirmError,

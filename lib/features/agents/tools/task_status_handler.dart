@@ -66,7 +66,7 @@ class TaskStatusHandler {
     final normalized = statusString.trim().toUpperCase();
 
     developer.log(
-      'Processing set_task_status: chars=${normalized.length}',
+      'Processing set_task_status: "$normalized"',
       name: 'TaskStatusHandler',
     );
 
@@ -75,10 +75,7 @@ class TaskStatusHandler {
       final message =
           'Cannot set status to "$normalized": '
           'DONE and REJECTED are user-only statuses.';
-      developer.log(
-        'Rejected terminal status',
-        name: 'TaskStatusHandler',
-      );
+      developer.log(message, name: 'TaskStatusHandler');
       return TaskStatusResult(
         success: false,
         message: message,
@@ -91,10 +88,7 @@ class TaskStatusHandler {
       final message =
           'Unknown status: "$normalized". '
           'Valid statuses: ${allowedStatuses.join(", ")}';
-      developer.log(
-        'Rejected unsupported status',
-        name: 'TaskStatusHandler',
-      );
+      developer.log(message, name: 'TaskStatusHandler');
       return TaskStatusResult(
         success: false,
         message: message,
@@ -107,10 +101,7 @@ class TaskStatusHandler {
         (reason == null || reason.trim().isEmpty)) {
       final message =
           'Status "$normalized" requires a reason. Please provide one.';
-      developer.log(
-        'Rejected status transition with missing reason',
-        name: 'TaskStatusHandler',
-      );
+      developer.log(message, name: 'TaskStatusHandler');
       return TaskStatusResult(
         success: false,
         message: message,
@@ -166,7 +157,7 @@ class TaskStatusHandler {
       final message =
           'Task status changed from "$currentDbString" to "$normalized".';
       developer.log(
-        'Successfully transitioned task status',
+        'Successfully transitioned task status to "$normalized"',
         name: 'TaskStatusHandler',
       );
 
@@ -182,7 +173,7 @@ class TaskStatusHandler {
       developer.log(
         'Failed to update task status',
         name: 'TaskStatusHandler',
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
 

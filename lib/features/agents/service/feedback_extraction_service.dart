@@ -88,9 +88,8 @@ class FeedbackExtractionService {
       };
     } catch (e) {
       developer.log(
-        'Failed to fetch change sets (errorType=${e.runtimeType})',
+        'Failed to fetch change sets: $e',
         name: 'FeedbackExtractionService',
-        error: e.runtimeType,
       );
     }
 
@@ -157,7 +156,7 @@ class FeedbackExtractionService {
           developer.log(
             'Failed to fetch payload $id',
             name: 'FeedbackExtractionService',
-            error: e.runtimeType,
+            error: e,
             stackTrace: s,
           );
         }
@@ -757,7 +756,7 @@ class FeedbackExtractionService {
             developer.log(
               'Feedback extraction failed for template $id',
               name: 'FeedbackExtractionService',
-              error: e.runtimeType,
+              error: e,
               stackTrace: s,
             );
             return null;

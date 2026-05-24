@@ -543,9 +543,7 @@ mutation boundary (where it would otherwise block legitimate renames).
 2. persist the user's decision first
 3. mark the item confirmed
 4. dispatch the tool
-5. revert retryable dispatch failures to `pending`
-6. auto-retract non-retryable `update_running_timer` failures when the
-   active timer changed before the user accepted the proposal
+5. revert the item to `pending` if dispatch fails
 
 It also resolves follow-up-task placeholder IDs across later migration items
 and suppresses rejected label assignments so the same label is not proposed
@@ -558,17 +556,6 @@ it leaves the inbox and syncs that lifecycle state to other devices. When the
 user taps a task-suggestion notification, navigation also publishes a focus
 intent so the open task detail scrolls to this proposal section instead of
 only selecting the task.
-
-Running-timer proposals are intentionally stricter than ordinary metadata
-edits. `update_running_timer` names a specific live timer ID from the wake
-context; if the user stops that timer, starts another task's timer, or the
-active timer snapshot otherwise changes before acceptance, retrying the same
-proposal cannot succeed. The confirmation service therefore records a
-`ChangeDecisionEntity{verdict: retracted, actor: agent, retractionReason}`
-after the failed confirm and moves the item to `retracted` instead of leaving
-it visible as a dead retry button. The next wake sees the retraction reason in
-the proposal ledger and can propose `update_time_entry` for the now-completed
-entry when that is the right follow-up.
 
 ```mermaid
 sequenceDiagram
@@ -589,14 +576,7 @@ sequenceDiagram
   Confirm->>Dispatch: dispatch confirmed tool
   Dispatch->>Journal: apply mutation
   Journal-->>Confirm: ToolExecutionResult
-  alt success
-    Confirm->>Store: finalize item status
-  else stale running timer
-    Confirm->>Store: persist auto-retraction decision
-    Confirm->>Store: mark item retracted
-  else retryable failure
-    Confirm->>Store: revert item to pending
-  end
+  Confirm->>Store: finalize item status
   Confirm->>Inbox: sync seeded task-suggestion notification
 ```
 
@@ -951,14 +931,6 @@ Provider-facing data includes only:
 
 - the prompt payload assembled for that specific wake
 
-Runtime diagnostics are deliberately content-free. `DomainLogger` and direct
-agent `developer.log` calls may record tool names, item indexes, counts, byte
-sizes, status names, sanitized IDs, and exception runtime types. They must not
-record task titles, notes, timer summaries, prompt text, model output, raw tool
-arguments, or arbitrary exception strings. The durable agent message log remains
-the agent memory/audit surface described above; it is not copied into runtime
-log files.
-
 For provider selection and residency details, see [../ai/README.md](../ai/README.md).
 
 ## Planned Improvements
@@ -1019,15 +991,6 @@ agent runtime produces:
   a play button + countdown pill (`m:ss` below one hour, `h:mm:ss` once
   the hour cell is needed) + cancel button (calls `cancelScheduledWake`)
   while one is.
-
-The card keeps the last visible suggestion list in widget state while an
-agent wake is running. If the provider briefly reloads to an empty or partial
-open list without ledger entries resolving the missing fingerprints, the card
-merges those unresolved previous rows back into the rendered list. Explicit
-resolution still wins: confirmed, rejected, and retracted fingerprints in the
-ledger remove the matching row immediately. This avoids the proposals section
-blanking out while the LLM is still reasoning, but still lets real retractions
-and user decisions update the UI.
 
 The card is the only entry point in `task_form.dart`; the legacy
 `AgentSuggestionsPanel` is gone.

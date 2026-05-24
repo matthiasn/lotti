@@ -15,7 +15,6 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -179,15 +178,14 @@ class TaskAgentStrategy extends ConversationStrategy {
       try {
         args = _parseToolArguments(call.function.arguments);
       } catch (e) {
-        final rawBytes = utf8.encode(call.function.arguments).length;
         developer.log(
-          'Failed to parse tool call arguments for $toolName '
-          '(rawBytes=$rawBytes, errorType=${e.runtimeType})',
+          'Failed to parse tool call arguments for $toolName: $e\n'
+          'Raw arguments: ${call.function.arguments}',
           name: 'TaskAgentStrategy',
         );
         final errorMsg =
             'Error: invalid arguments format — expected a JSON object. '
-            'Detail: ${e.runtimeType}';
+            'Detail: $e';
         manager.addToolResponse(toolCallId: call.id, response: errorMsg);
         await _recordToolResultMessage(
           toolName: toolName,
@@ -554,10 +552,9 @@ class TaskAgentStrategy extends ConversationStrategy {
       response = resolver != null ? await resolver(requestedTaskId) : null;
     } catch (error, stackTrace) {
       developer.log(
-        'Failed to resolve related task details for '
-        '${DomainLogger.sanitizeId(requestedTaskId)}',
+        'Failed to resolve related task details for $requestedTaskId',
         name: 'TaskAgentStrategy',
-        error: error.runtimeType,
+        error: error,
         stackTrace: stackTrace,
       );
     }
@@ -790,10 +787,8 @@ class TaskAgentStrategy extends ConversationStrategy {
       }
     }
 
-    // All recovery attempts failed. Do not include [raw] in the exception:
-    // tool arguments may contain user-authored content and exceptions can
-    // travel through runtime logs.
-    throw const FormatException('Could not extract a JSON object');
+    // All recovery attempts failed — throw with the original raw value.
+    throw FormatException('Could not extract a JSON object from: $raw');
   }
 
   // ── Change set helpers ──────────────────────────────────────────────────

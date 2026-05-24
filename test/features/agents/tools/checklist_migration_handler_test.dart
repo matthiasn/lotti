@@ -1251,14 +1251,7 @@ void main() {
         verify(
           () => mockDomainLogger.error(
             LogDomains.agentWorkflow,
-            any(
-              that: allOf(
-                contains('Target task'),
-                contains('not found'),
-                isNot(contains(targetTaskId)),
-                isNot(contains('Buy milk')),
-              ),
-            ),
+            any(that: contains('Target task $targetTaskId not found')),
             subDomain: any(named: 'subDomain'),
             error: any(named: 'error'),
             stackTrace: any(named: 'stackTrace'),

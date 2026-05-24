@@ -206,9 +206,8 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
       }
     } catch (e) {
       developer.log(
-        'confirmAll failed',
+        'confirmAll failed: $e',
         name: 'ChangeSetSummaryCard',
-        error: e.runtimeType,
       );
       if (context.mounted) {
         context.showToast(
@@ -385,9 +384,8 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
       }
     } catch (e) {
       developer.log(
-        'confirmItem failed',
+        'confirmItem failed: $e',
         name: 'ChangeSetSummaryCard',
-        error: e.runtimeType,
       );
       if (context.mounted) {
         context.showToast(
@@ -427,9 +425,8 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
       }
     } catch (e) {
       developer.log(
-        'rejectItem failed',
+        'rejectItem failed: $e',
         name: 'ChangeSetSummaryCard',
-        error: e.runtimeType,
       );
       if (context.mounted) {
         context.showToast(

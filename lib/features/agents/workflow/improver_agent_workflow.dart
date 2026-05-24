@@ -182,7 +182,7 @@ class ImproverAgentWorkflow {
       developer.log(
         'Ritual workflow failed',
         name: _logTag,
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
 
@@ -193,13 +193,13 @@ class ImproverAgentWorkflow {
         developer.log(
           'Failed to schedule next ritual after error',
           name: _logTag,
-          error: scheduleError.runtimeType,
+          error: scheduleError,
         );
       }
 
       return WakeResult(
         success: false,
-        error: 'Ritual workflow failed (${e.runtimeType})',
+        error: 'Ritual workflow failed: $e',
       );
     }
   }

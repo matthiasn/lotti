@@ -42,9 +42,9 @@ class WakeThrottleCoordinator {
       );
     } else {
       developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
+        '$message${error != null ? ': $error' : ''}',
         name: 'WakeThrottleCoordinator',
-        error: error?.runtimeType,
+        error: error,
         stackTrace: stackTrace,
       );
     }

@@ -198,8 +198,7 @@ class TimeEntryHandler {
       } catch (e, _) {
         _domainLogger?.log(
           LogDomains.agentWorkflow,
-          'Time entry ${DomainLogger.sanitizeId(createdId)} persisted but '
-          'timer start failed (errorType=${e.runtimeType})',
+          'Time entry $createdId persisted but timer start failed: $e',
           subDomain: _sub,
         );
         return ToolExecutionResult(
@@ -215,9 +214,9 @@ class TimeEntryHandler {
 
     _domainLogger?.log(
       LogDomains.agentWorkflow,
-      'Created time entry ${DomainLogger.sanitizeId(createdId)} '
+      'Created time entry $createdId '
       '(${isRunningTimer ? "running timer" : "completed session"}) '
-      'linked to ${DomainLogger.sanitizeId(sourceTaskId)}',
+      'linked to $sourceTaskId',
       subDomain: _sub,
     );
 

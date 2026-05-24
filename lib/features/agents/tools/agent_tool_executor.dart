@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Result of a single tool execution.
@@ -196,9 +195,8 @@ class AgentToolExecutor {
     );
 
     developer.log(
-      'Executing tool $toolName for entity '
-      '${DomainLogger.sanitizeId(targetEntityId)} '
-      '(operationId: ${DomainLogger.sanitizeId(operationId)})',
+      'Executing tool $toolName for entity $targetEntityId '
+      '(operationId: $operationId)',
       name: 'AgentToolExecutor',
     );
 
@@ -210,10 +208,7 @@ class AgentToolExecutor {
           : 'Category $categoryId not in allowed set';
 
       developer.log(
-        categoryId == null
-            ? 'Policy denied for $toolName: target has no category'
-            : 'Policy denied for $toolName: category '
-                  '${DomainLogger.sanitizeId(categoryId)} not allowed',
+        'Policy denied for $toolName: $denialReason',
         name: 'AgentToolExecutor',
       );
 
@@ -235,10 +230,9 @@ class AgentToolExecutor {
       } catch (e, s) {
         developer.log(
           'Failed to persist policy-denial audit message for $toolName '
-          '(runKey: ${DomainLogger.sanitizeId(runKey)}, '
-          'operationId: ${DomainLogger.sanitizeId(operationId)})',
+          '(runKey: $runKey, operationId: $operationId)',
           name: 'AgentToolExecutor',
-          error: e.runtimeType,
+          error: e,
           stackTrace: s,
         );
       }
@@ -275,9 +269,7 @@ class AgentToolExecutor {
           if (vc != null) {
             _mutatedEntries[result.mutatedEntityId!] = vc;
             developer.log(
-              'Captured vector clock for '
-              '${DomainLogger.sanitizeId(result.mutatedEntityId!)} '
-              '(entries=${vc.vclock.length})',
+              'Captured vector clock for ${result.mutatedEntityId}: $vc',
               name: 'AgentToolExecutor',
             );
           }
@@ -295,11 +287,10 @@ class AgentToolExecutor {
           }
         } catch (e, s) {
           developer.log(
-            'Failed to capture vector clock for '
-            '${DomainLogger.sanitizeId(result.mutatedEntityId!)} '
+            'Failed to capture vector clock for ${result.mutatedEntityId} '
             '— self-notification suppression may not work for this entity',
             name: 'AgentToolExecutor',
-            error: e.runtimeType,
+            error: e,
             stackTrace: s,
           );
         }
@@ -322,10 +313,9 @@ class AgentToolExecutor {
       } catch (e, s) {
         developer.log(
           'Failed to persist toolResult audit message for $toolName '
-          '(runKey: ${DomainLogger.sanitizeId(runKey)}, '
-          'operationId: ${DomainLogger.sanitizeId(operationId)})',
+          '(runKey: $runKey, operationId: $operationId)',
           name: 'AgentToolExecutor',
-          error: e.runtimeType,
+          error: e,
           stackTrace: s,
         );
       }
@@ -340,15 +330,14 @@ class AgentToolExecutor {
       developer.log(
         'Tool $toolName threw unexpectedly',
         name: 'AgentToolExecutor',
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
 
-      final errorType = e.runtimeType.toString();
       final errorResult = ToolExecutionResult(
         success: false,
-        output: 'Error: Unexpected tool failure ($errorType)',
-        errorMessage: 'Unexpected tool failure ($errorType)',
+        output: 'Error: $e',
+        errorMessage: e.toString(),
       );
 
       // Persist the error audit message. Isolated in its own try/catch so
@@ -360,17 +349,16 @@ class AgentToolExecutor {
             runKey: runKey,
             toolName: toolName,
             operationId: operationId,
-            errorMessage: errorResult.errorMessage,
+            errorMessage: e.toString(),
           ),
-          payloadText: errorResult.output,
+          payloadText: 'Error: $e',
         );
       } catch (auditError, auditStack) {
         developer.log(
           'Failed to persist error toolResult audit message for $toolName '
-          '(runKey: ${DomainLogger.sanitizeId(runKey)}, '
-          'operationId: ${DomainLogger.sanitizeId(operationId)})',
+          '(runKey: $runKey, operationId: $operationId)',
           name: 'AgentToolExecutor',
-          error: auditError.runtimeType,
+          error: auditError,
           stackTrace: auditStack,
         );
       }

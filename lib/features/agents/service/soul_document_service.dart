@@ -9,7 +9,6 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Service for managing soul documents — reusable personality blueprints that
@@ -101,7 +100,7 @@ class SoulDocumentService {
       await syncService.upsertEntity(head);
 
       developer.log(
-        'Created soul ${DomainLogger.sanitizeId(id)}',
+        'Created soul $id (name: $displayName)',
         name: _logTag,
       );
 
@@ -185,8 +184,7 @@ class SoulDocumentService {
       await syncService.upsertEntity(updatedHead);
 
       developer.log(
-        'Created version $nextVersion for soul '
-        '${DomainLogger.sanitizeId(soulId)}',
+        'Created version $nextVersion for soul $soulId',
         name: _logTag,
       );
 
@@ -312,8 +310,7 @@ class SoulDocumentService {
       await syncService.upsertEntity(updatedHead);
 
       developer.log(
-        'Updated soul ${DomainLogger.sanitizeId(soulId)} and created '
-        'version $nextVersion',
+        'Updated soul $soulId and created version $nextVersion',
         name: _logTag,
       );
 
@@ -388,8 +385,7 @@ class SoulDocumentService {
     });
 
     developer.log(
-      'Rolled back soul ${DomainLogger.sanitizeId(soulId)} to version '
-      '${DomainLogger.sanitizeId(versionId)}',
+      'Rolled back soul $soulId to version $versionId',
       name: _logTag,
     );
   }
@@ -437,8 +433,7 @@ class SoulDocumentService {
     });
 
     developer.log(
-      'Assigned soul ${DomainLogger.sanitizeId(soulId)} to template '
-      '${DomainLogger.sanitizeId(templateId)}',
+      'Assigned soul $soulId to template $templateId',
       name: _logTag,
     );
   }
@@ -458,7 +453,7 @@ class SoulDocumentService {
     });
 
     developer.log(
-      'Unassigned soul from template ${DomainLogger.sanitizeId(templateId)}',
+      'Unassigned soul from template $templateId',
       name: _logTag,
     );
   }
@@ -566,10 +561,7 @@ class SoulDocumentService {
     });
 
     if (deleted) {
-      developer.log(
-        'Deleted soul ${DomainLogger.sanitizeId(soulId)}',
-        name: _logTag,
-      );
+      developer.log('Deleted soul $soulId', name: _logTag);
     }
   }
 

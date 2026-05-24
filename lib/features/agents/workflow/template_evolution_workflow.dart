@@ -25,7 +25,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -159,8 +158,7 @@ class TemplateEvolutionWorkflow {
     // Only one active session per template at a time.
     if (getActiveSessionForTemplate(templateId) != null) {
       developer.log(
-        'Session already active for template '
-        '${DomainLogger.sanitizeId(templateId)}',
+        'Session already active for template $templateId',
         name: _logTag,
       );
       return null;
@@ -169,18 +167,14 @@ class TemplateEvolutionWorkflow {
     // Fetch template and active version.
     final template = await svc.getTemplate(templateId);
     if (template == null) {
-      developer.log(
-        'Template ${DomainLogger.sanitizeId(templateId)} not found',
-        name: _logTag,
-      );
+      developer.log('Template $templateId not found', name: _logTag);
       return null;
     }
 
     final currentVersion = await svc.getActiveVersion(templateId);
     if (currentVersion == null) {
       developer.log(
-        'No active version for template '
-        '${DomainLogger.sanitizeId(templateId)}',
+        'No active version for template $templateId',
         name: _logTag,
       );
       return null;
@@ -194,8 +188,7 @@ class TemplateEvolutionWorkflow {
     );
     if (provider == null) {
       developer.log(
-        'Cannot resolve provider for template model '
-        '(modelIdLength=${template.modelId.length})',
+        'Cannot resolve provider for model ${template.modelId}',
         name: _logTag,
       );
       return null;
@@ -271,10 +264,9 @@ class TemplateEvolutionWorkflow {
             }
           } catch (e, s) {
             developer.log(
-              'Soul enrichment failed for template '
-              '${DomainLogger.sanitizeId(templateId)}',
+              'Soul enrichment failed for template $templateId',
               name: _logTag,
-              error: e.runtimeType,
+              error: e,
               stackTrace: s,
             );
           }
@@ -330,10 +322,9 @@ class TemplateEvolutionWorkflow {
               );
         } catch (e, s) {
           developer.log(
-            'Soul resolution for strategy failed for template '
-            '${DomainLogger.sanitizeId(templateId)}',
+            'Soul resolution for strategy failed for template $templateId',
             name: _logTag,
-            error: e.runtimeType,
+            error: e,
             stackTrace: s,
           );
         }
@@ -383,7 +374,7 @@ class TemplateEvolutionWorkflow {
       developer.log(
         'Failed to start session',
         name: _logTag,
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
       await abandonSession(sessionId: sessionId);
@@ -401,10 +392,7 @@ class TemplateEvolutionWorkflow {
   }) async {
     final active = activeSessions[sessionId];
     if (active == null) {
-      developer.log(
-        'No active session ${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
-      );
+      developer.log('No active session $sessionId', name: _logTag);
       return null;
     }
 
@@ -431,10 +419,9 @@ class TemplateEvolutionWorkflow {
       return _extractLastAssistantContent(active.conversationId);
     } catch (e, s) {
       developer.log(
-        'sendMessage failed for session '
-        '${DomainLogger.sanitizeId(sessionId)}',
+        'sendMessage failed for session $sessionId',
         name: _logTag,
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
       return null;
@@ -468,10 +455,7 @@ class TemplateEvolutionWorkflow {
 
     final proposal = active.strategy.latestProposal;
     if (proposal == null) {
-      developer.log(
-        'No proposal to approve for ${DomainLogger.sanitizeId(sessionId)}',
-        name: _logTag,
-      );
+      developer.log('No proposal to approve for $sessionId', name: _logTag);
       return null;
     }
 
@@ -547,9 +531,9 @@ class TemplateEvolutionWorkflow {
       } catch (e, s) {
         developer.log(
           'Failed to auto-abandon stale sessions for template '
-          '${DomainLogger.sanitizeId(active.templateId)}',
+          '${active.templateId}',
           name: _logTag,
-          error: e.runtimeType,
+          error: e,
           stackTrace: s,
         );
       }
@@ -563,27 +547,24 @@ class TemplateEvolutionWorkflow {
         onSessionCompleted?.call(active.templateId, sessionId);
       } catch (e, s) {
         developer.log(
-          'onSessionCompleted failed for '
-          '${DomainLogger.sanitizeId(sessionId)}',
+          'onSessionCompleted failed for $sessionId',
           name: _logTag,
-          error: e.runtimeType,
+          error: e,
           stackTrace: s,
         );
       }
 
       developer.log(
-        'Approved proposal for session '
-        '${DomainLogger.sanitizeId(sessionId)} → version '
-        '${DomainLogger.sanitizeId(newVersion.id)}',
+        'Approved proposal for session $sessionId → version ${newVersion.id}',
         name: _logTag,
       );
 
       return newVersion;
     } catch (e, s) {
       developer.log(
-        'approveProposal failed for ${DomainLogger.sanitizeId(sessionId)}',
+        'approveProposal failed for $sessionId',
         name: _logTag,
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
       return null;
@@ -602,7 +583,7 @@ class TemplateEvolutionWorkflow {
 
     if (hadProposal) {
       developer.log(
-        'Rejected proposal for session ${DomainLogger.sanitizeId(sessionId)}',
+        'Rejected proposal for session $sessionId',
         name: _logTag,
       );
     }
@@ -631,8 +612,7 @@ class TemplateEvolutionWorkflow {
       );
       if (currentSoulVersion == null) {
         developer.log(
-          'No soul assigned to template '
-          '${DomainLogger.sanitizeId(active.templateId)} — '
+          'No soul assigned to template ${active.templateId} — '
           'cannot approve soul proposal',
           name: _logTag,
         );
@@ -668,8 +648,7 @@ class TemplateEvolutionWorkflow {
         ..currentAntiSycophancyPolicy = newVersion.antiSycophancyPolicy;
 
       developer.log(
-        'Approved soul proposal for session '
-        '${DomainLogger.sanitizeId(sessionId)} → '
+        'Approved soul proposal for session $sessionId → '
         'soul version v${newVersion.version}',
         name: _logTag,
       );
@@ -677,10 +656,9 @@ class TemplateEvolutionWorkflow {
       return newVersion;
     } catch (e, s) {
       developer.log(
-        'approveSoulProposal failed for session '
-        '${DomainLogger.sanitizeId(sessionId)}',
+        'approveSoulProposal failed for session $sessionId',
         name: _logTag,
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
       return null;
@@ -697,8 +675,7 @@ class TemplateEvolutionWorkflow {
 
     if (hadProposal) {
       developer.log(
-        'Rejected soul proposal for session '
-        '${DomainLogger.sanitizeId(sessionId)}',
+        'Rejected soul proposal for session $sessionId',
         name: _logTag,
       );
     }
@@ -731,7 +708,7 @@ class TemplateEvolutionWorkflow {
             developer.log(
               'Failed to persist notes during abandon',
               name: _logTag,
-              error: e.runtimeType,
+              error: e,
               stackTrace: s,
             );
           }
@@ -803,7 +780,7 @@ class TemplateEvolutionWorkflow {
     // Only one active session per soul at a time.
     if (getActiveSessionForSoul(soulId) != null) {
       developer.log(
-        'Session already active for soul ${DomainLogger.sanitizeId(soulId)}',
+        'Session already active for soul $soulId',
         name: _logTag,
       );
       return null;
@@ -812,17 +789,14 @@ class TemplateEvolutionWorkflow {
     // Resolve soul document and active version.
     final soul = await soulSvc.getSoul(soulId);
     if (soul == null) {
-      developer.log(
-        'Soul ${DomainLogger.sanitizeId(soulId)} not found',
-        name: _logTag,
-      );
+      developer.log('Soul $soulId not found', name: _logTag);
       return null;
     }
 
     final currentVersion = await soulSvc.getActiveSoulVersion(soulId);
     if (currentVersion == null) {
       developer.log(
-        'No active version for soul ${DomainLogger.sanitizeId(soulId)}',
+        'No active version for soul $soulId',
         name: _logTag,
       );
       return null;
@@ -845,8 +819,7 @@ class TemplateEvolutionWorkflow {
 
     if (modelId == null) {
       developer.log(
-        'No templates using soul ${DomainLogger.sanitizeId(soulId)} — '
-        'cannot determine model',
+        'No templates using soul $soulId — cannot determine model',
         name: _logTag,
       );
       return null;
@@ -859,8 +832,7 @@ class TemplateEvolutionWorkflow {
     );
     if (provider == null) {
       developer.log(
-        'Cannot resolve provider for soul-session model '
-        '(modelIdLength=${modelId.length})',
+        'Cannot resolve provider for model $modelId',
         name: _logTag,
       );
       return null;
@@ -890,10 +862,9 @@ class TemplateEvolutionWorkflow {
           );
         } catch (e, s) {
           developer.log(
-            'Feedback aggregation failed for soul '
-            '${DomainLogger.sanitizeId(soulId)}',
+            'Feedback aggregation failed for soul $soulId',
             name: _logTag,
-            error: e.runtimeType,
+            error: e,
             stackTrace: s,
           );
         }
@@ -988,7 +959,7 @@ class TemplateEvolutionWorkflow {
       developer.log(
         'Failed to start soul session',
         name: _logTag,
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
       await abandonSession(sessionId: sessionId);
@@ -1012,8 +983,7 @@ class TemplateEvolutionWorkflow {
     final proposal = active.strategy.latestSoulProposal;
     if (proposal == null) {
       developer.log(
-        'No soul proposal to approve for '
-        '${DomainLogger.sanitizeId(sessionId)}',
+        'No soul proposal to approve for $sessionId',
         name: _logTag,
       );
       return null;
@@ -1027,7 +997,7 @@ class TemplateEvolutionWorkflow {
       final currentVersion = await soulSvc.getActiveSoulVersion(soulId);
       if (currentVersion == null) {
         developer.log(
-          'No active soul version for ${DomainLogger.sanitizeId(soulId)}',
+          'No active soul version for $soulId',
           name: _logTag,
         );
         return null;
@@ -1105,27 +1075,24 @@ class TemplateEvolutionWorkflow {
         onSessionCompleted?.call(soulId, sessionId);
       } catch (e, s) {
         developer.log(
-          'onSessionCompleted failed for soul session '
-          '${DomainLogger.sanitizeId(sessionId)}',
+          'onSessionCompleted failed for soul session $sessionId',
           name: _logTag,
-          error: e.runtimeType,
+          error: e,
           stackTrace: s,
         );
       }
 
       developer.log(
-        'Completed soul session ${DomainLogger.sanitizeId(sessionId)} → '
-        'version v${newVersion.version}',
+        'Completed soul session $sessionId → version v${newVersion.version}',
         name: _logTag,
       );
 
       return newVersion;
     } catch (e, s) {
       developer.log(
-        'completeSoulSession failed for '
-        '${DomainLogger.sanitizeId(sessionId)}',
+        'completeSoulSession failed for $sessionId',
         name: _logTag,
-        error: e.runtimeType,
+        error: e,
         stackTrace: s,
       );
       return null;
@@ -1158,10 +1125,8 @@ class TemplateEvolutionWorkflow {
           ),
         );
         developer.log(
-          'Auto-abandoned stale session '
-          '${DomainLogger.sanitizeId(session.id)} '
-          '(#${session.sessionNumber}) for template '
-          '${DomainLogger.sanitizeId(templateId)}',
+          'Auto-abandoned stale session ${session.id} '
+          '(#${session.sessionNumber}) for template $templateId',
           name: _logTag,
         );
       }

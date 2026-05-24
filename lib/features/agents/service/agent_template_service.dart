@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Thrown when a template cannot be deleted because active agents reference it.
@@ -153,7 +152,7 @@ class AgentTemplateService {
     });
 
     developer.log(
-      'Created template ${DomainLogger.sanitizeId(tplId)}',
+      'Created template $tplId (name: $displayName)',
       name: 'AgentTemplateService',
     );
 
@@ -211,7 +210,8 @@ class AgentTemplateService {
       }
 
       developer.log(
-        'Updated template ${DomainLogger.sanitizeId(templateId)}',
+        'Updated template $templateId '
+        '(name: ${updated.displayName}, model: ${updated.modelId})',
         name: 'AgentTemplateService',
       );
 
@@ -289,8 +289,7 @@ class AgentTemplateService {
       await syncService.upsertEntity(updatedHead);
 
       developer.log(
-        'Created version $nextVersion for template '
-        '${DomainLogger.sanitizeId(templateId)}',
+        'Created version $nextVersion for template $templateId',
         name: 'AgentTemplateService',
       );
 
@@ -440,7 +439,7 @@ class AgentTemplateService {
     });
 
     developer.log(
-      'Soft-deleted template ${DomainLogger.sanitizeId(templateId)}',
+      'Soft-deleted template $templateId',
       name: 'AgentTemplateService',
     );
   }
@@ -500,8 +499,7 @@ class AgentTemplateService {
     });
 
     developer.log(
-      'Rolled back template ${DomainLogger.sanitizeId(templateId)} '
-      'to version ${DomainLogger.sanitizeId(versionId)}',
+      'Rolled back template $templateId to version $versionId',
       name: 'AgentTemplateService',
     );
   }
@@ -908,8 +906,7 @@ class AgentTemplateService {
       await syncService.upsertEntity(updated);
 
       developer.log(
-        'Seeded directive fields for template '
-        '${DomainLogger.sanitizeId(template.id)} '
+        'Seeded directive fields for template ${template.displayName} '
         '(v${activeVersion.version})',
         name: 'AgentTemplateService',
       );
