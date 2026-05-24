@@ -188,7 +188,8 @@ void main() {
     });
 
     testWidgets(
-      'keeps unresolved proposals visible during running-agent refresh',
+      'keeps unresolved proposals visible during running-agent refresh '
+      'until the agent finishes',
       (tester) async {
         final runningController = StreamController<bool>.broadcast();
         addTearDown(runningController.close);
@@ -203,6 +204,7 @@ void main() {
           open: [pending],
           activity: const [],
         );
+        var currentSuggestions = populated;
 
         await tester.pumpWidget(
           RiverpodWidgetTestBench(
@@ -229,7 +231,7 @@ void main() {
                     false;
                 return isRunning
                     ? const UnifiedSuggestionList.empty()
-                    : populated;
+                    : currentSuggestions;
               }),
             ],
             child: const SingleChildScrollView(
@@ -247,6 +249,14 @@ void main() {
 
         expect(find.textContaining('Set status to GROOMED'), findsOneWidget);
         expect(find.textContaining('No open proposals'), findsNothing);
+
+        currentSuggestions = const UnifiedSuggestionList.empty();
+        runningController.add(false);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.textContaining('Set status to GROOMED'), findsNothing);
+        expect(find.textContaining('No open proposals'), findsOneWidget);
       },
     );
 

@@ -83,7 +83,7 @@ flowchart TD
 ## Settings Surfaces
 
 `Settings > Agents` is the operator-facing entry point for the feature. The
-landing page now exposes three runtime views:
+landing page now exposes four runtime views:
 
 - `Templates`: reusable agent definitions and version heads
 - `Souls`: pluggable personality documents with version history and template
@@ -513,6 +513,8 @@ and tool results.
 
 - explodes batch tools into individually reviewable items
 - deduplicates identical proposals within the same wake
+- keeps only the newest `update_running_timer` proposal, retracting older
+  pending running-timer text updates before persisting the replacement
 - suppresses redundant proposals when they would not change current state
 
 #### Initial-title carve-out
@@ -573,6 +575,13 @@ after the failed confirm and moves the item to `retracted` instead of leaving
 it visible as a dead retry button. The next wake sees the retraction reason in
 the proposal ledger and can propose `update_time_entry` for the now-completed
 entry when that is the right follow-up.
+
+Only one running-timer update may be open for a task. If a later wake proposes
+better timer text, `ChangeSetBuilder` treats it as a superseding replacement:
+older pending `update_running_timer` items are recorded as agent retractions
+and the latest proposal is the only actionable row. `AiSummaryCard` also
+defensively renders only the newest pending running-timer update so historical
+duplicate data does not produce multiple accept buttons.
 
 ```mermaid
 sequenceDiagram

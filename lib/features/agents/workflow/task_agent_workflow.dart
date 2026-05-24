@@ -1263,6 +1263,10 @@ to keep the user-facing suggestion list clean and trustworthy:
 1. **Never duplicate an open proposal.** Before proposing a deferred
    action, scan the Open group in the ledger. If an identical proposal
    is already open, do NOT propose it again.
+   - For `update_running_timer`, keep exactly one open proposal. If you
+     have a better timer description than an existing open
+     `update_running_timer` proposal, retract the old proposal first and
+     then propose the newer text.
 2. **Retract stale open proposals.** If an open proposal is no longer
    relevant — for example the current task state already matches it
    (`priority` is already `P1`), the user made the change manually, or

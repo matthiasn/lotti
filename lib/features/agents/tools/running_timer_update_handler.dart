@@ -6,6 +6,15 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
 
+abstract final class RunningTimerUpdateFailure {
+  static const invalidSummary = 'Missing, empty, or too-long summary';
+  static const invalidTimerId = 'Missing or invalid timerId';
+  static const noActiveTimer = 'No active timer';
+  static const sourceTaskMismatch = 'Timer source task mismatch';
+  static const timerIdMismatch = 'Timer id mismatch';
+  static const unsupportedEntityType = 'Unsupported timer entity type';
+}
+
 /// Updates the entry text of the currently running timer.
 ///
 /// Used by the task agent when an "Active Running Timer" is in scope: instead
@@ -43,7 +52,7 @@ class RunningTimerUpdateHandler {
         output:
             'Error: "summary" must be a non-empty string with at most '
             '500 characters',
-        errorMessage: 'Missing, empty, or too-long summary',
+        errorMessage: RunningTimerUpdateFailure.invalidSummary,
       );
     }
 
@@ -53,7 +62,7 @@ class RunningTimerUpdateHandler {
       return const ToolExecutionResult(
         success: false,
         output: 'Error: "timerId" must be a non-empty string',
-        errorMessage: 'Missing or invalid timerId',
+        errorMessage: RunningTimerUpdateFailure.invalidTimerId,
       );
     }
 
@@ -62,7 +71,7 @@ class RunningTimerUpdateHandler {
       return const ToolExecutionResult(
         success: false,
         output: 'Error: no timer is currently running',
-        errorMessage: 'No active timer',
+        errorMessage: RunningTimerUpdateFailure.noActiveTimer,
       );
     }
 
@@ -77,7 +86,7 @@ class RunningTimerUpdateHandler {
         output:
             'Error: the running timer belongs to a different task and '
             'cannot be updated from this wake',
-        errorMessage: 'Timer source task mismatch',
+        errorMessage: RunningTimerUpdateFailure.sourceTaskMismatch,
       );
     }
 
@@ -87,7 +96,7 @@ class RunningTimerUpdateHandler {
         output:
             'Error: timerId "$timerId" does not match the currently running '
             'timer (${current.meta.id})',
-        errorMessage: 'Timer id mismatch',
+        errorMessage: RunningTimerUpdateFailure.timerIdMismatch,
       );
     }
 
@@ -97,7 +106,7 @@ class RunningTimerUpdateHandler {
         output:
             'Error: running timer entity is not a JournalEntry '
             '(${current.runtimeType})',
-        errorMessage: 'Unsupported timer entity type',
+        errorMessage: RunningTimerUpdateFailure.unsupportedEntityType,
       );
     }
 

@@ -315,7 +315,7 @@ void main() {
       expect(a.hashCode, b.hashCode);
     });
 
-    test('toString includes relevant fields', () {
+    test('toString redacts identifying fields and includes safe fields', () {
       const breakdown = InstanceTokenBreakdown(
         agentId: 'agent-1',
         displayName: 'Agent One',
@@ -331,8 +331,10 @@ void main() {
       );
 
       final str = breakdown.toString();
-      expect(str, contains('agent-1'));
-      expect(str, contains('Agent One'));
+      expect(str, contains('agent: <redacted>'));
+      expect(str, contains('name: <redacted>'));
+      expect(str, isNot(contains('agent-1')));
+      expect(str, isNot(contains('Agent One')));
       expect(str, contains('active'));
       expect(str, contains('175'));
     });

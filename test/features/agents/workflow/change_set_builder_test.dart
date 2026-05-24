@@ -1054,6 +1054,35 @@ void main() {
       expect(builder.items[0].toolName, 'set_task_title');
       expect(builder.items[1].toolName, 'update_task_estimate');
     });
+
+    test(
+      'keeps only the latest running timer update queued in a wake',
+      () async {
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateRunningTimer,
+          args: const {
+            'timerId': 'timer-1',
+            'summary': 'Earlier timer text',
+          },
+          humanSummary: 'Update running timer text: "Earlier timer text"',
+        );
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateRunningTimer,
+          args: const {
+            'timerId': 'timer-1',
+            'summary': 'Latest timer text',
+          },
+          humanSummary: 'Update running timer text: "Latest timer text"',
+        );
+
+        expect(builder.items, hasLength(1));
+        expect(
+          builder.items.single.toolName,
+          TaskAgentToolNames.updateRunningTimer,
+        );
+        expect(builder.items.single.args['summary'], 'Latest timer text');
+      },
+    );
   });
 
   group('addBatchItem', () {
@@ -1956,6 +1985,69 @@ void main() {
         120,
       );
     });
+
+    test(
+      'retracts existing running timer update when newer text is proposed',
+      () async {
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateRunningTimer,
+          args: const {
+            'timerId': 'timer-1',
+            'summary': 'Latest timer text',
+          },
+          humanSummary: 'Update running timer text: "Latest timer text"',
+        );
+
+        final existingSet = makeTestChangeSet(
+          id: 'cs-running',
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'timerId': 'timer-1',
+                'summary': 'Earlier timer text',
+              },
+              humanSummary: 'Update running timer text: "Earlier timer text"',
+            ),
+          ],
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [existingSet],
+        );
+
+        expect(result, isNotNull);
+        expect(result!.id, 'cs-running');
+        final runningTimerItems = result.items
+            .where(
+              (item) => item.toolName == TaskAgentToolNames.updateRunningTimer,
+            )
+            .toList();
+        expect(runningTimerItems, hasLength(2));
+        expect(runningTimerItems.first.status, ChangeItemStatus.retracted);
+        expect(runningTimerItems.last.status, ChangeItemStatus.pending);
+        expect(runningTimerItems.last.args['summary'], 'Latest timer text');
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final decision = captured.whereType<ChangeDecisionEntity>().single;
+        expect(decision.changeSetId, 'cs-running');
+        expect(decision.itemIndex, 0);
+        expect(decision.toolName, TaskAgentToolNames.updateRunningTimer);
+        expect(decision.verdict, ChangeDecisionVerdict.retracted);
+        expect(decision.actor, DecisionActor.agent);
+        expect(
+          decision.retractionReason,
+          'Superseded by a newer running timer update proposal.',
+        );
+
+        final updatedSet = captured.whereType<ChangeSetEntity>().single;
+        expect(updatedSet.items.first.status, ChangeItemStatus.retracted);
+        expect(updatedSet.items.last.args['summary'], 'Latest timer text');
+      },
+    );
 
     test('dedupes with deep map equality in args', () async {
       await builder.addItem(

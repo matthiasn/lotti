@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -149,6 +150,10 @@ class ChangeSetBuilder {
       return 'Already queued — this exact $toolName proposal was already '
           'recorded. Do NOT call this tool again with the same arguments. '
           'Proceed to the next tool or finish your analysis.';
+    }
+
+    if (toolName == TaskAgentToolNames.updateRunningTimer) {
+      _items.removeWhere(_isRunningTimerUpdate);
     }
 
     // Check for title-based redundancy on add_checklist_item.
@@ -400,29 +405,28 @@ class ChangeSetBuilder {
   }) async {
     if (!hasItems) return null;
 
-    final currentExistingSets = await Future.wait(
+    final freshExistingSets = await Future.wait(
       existingPendingSets.map((cs) async {
         final freshEntity = await syncService.repository.getEntity(cs.id);
         return freshEntity is ChangeSetEntity ? freshEntity : cs;
       }),
     );
-    final currentExistingSetsById = {
-      for (final cs in currentExistingSets) cs.id: cs,
-    };
+    final proposesRunningTimerUpdate = _items.any(_isRunningTimerUpdate);
 
     // Extract items from existing change sets that should block a new
     // identical proposal. Confirmed items were applied; retracted items
     // are agent self-corrections that must not block re-proposal after
     // material change.
-    final existingItems = currentExistingSets
-        .expand(
-          (cs) => cs.items.where(
-            (i) =>
-                i.status != ChangeItemStatus.confirmed &&
-                i.status != ChangeItemStatus.retracted,
-          ),
-        )
-        .toList();
+    final existingItems = [
+      for (final cs in freshExistingSets)
+        for (final item in cs.items)
+          if (item.status != ChangeItemStatus.confirmed &&
+              item.status != ChangeItemStatus.retracted &&
+              !(_isRunningTimerUpdate(item) &&
+                  item.status == ChangeItemStatus.pending &&
+                  proposesRunningTimerUpdate))
+            item,
+    ];
 
     final deduped = _deduplicateItems(
       _items,
@@ -430,6 +434,26 @@ class ChangeSetBuilder {
       rejectedFingerprints: rejectedFingerprints,
     );
     if (deduped.isEmpty) return null;
+
+    final supersededRunningTimerItems = deduped.any(_isRunningTimerUpdate)
+        ? _locatePendingRunningTimerUpdates(freshExistingSets)
+        : const <
+            ({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})
+          >[];
+    final currentExistingSets = supersededRunningTimerItems.isEmpty
+        ? freshExistingSets
+        : _markItemsRetracted(
+            freshExistingSets,
+            supersededRunningTimerItems,
+          );
+    final currentExistingSetsById = {
+      for (final cs in currentExistingSets) cs.id: cs,
+    };
+
+    await _recordSupersededRunningTimerRetractions(
+      syncService,
+      supersededRunningTimerItems,
+    );
 
     if (existingPendingSets.isNotEmpty) {
       // Consolidate: pick the newest set as the survivor, collect all
@@ -590,6 +614,82 @@ class ChangeSetBuilder {
       status: ChangeSetStatus.resolved,
       resolvedAt: clock.now(),
     );
+  }
+
+  static bool _isRunningTimerUpdate(ChangeItem item) =>
+      item.toolName == TaskAgentToolNames.updateRunningTimer;
+
+  static List<({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>
+  _locatePendingRunningTimerUpdates(List<ChangeSetEntity> sets) {
+    final matches =
+        <({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>[];
+    for (final set in sets) {
+      for (var i = 0; i < set.items.length; i++) {
+        final item = set.items[i];
+        if (_isRunningTimerUpdate(item) &&
+            item.status == ChangeItemStatus.pending) {
+          matches.add((changeSet: set, itemIndex: i, item: item));
+        }
+      }
+    }
+    return matches;
+  }
+
+  static List<ChangeSetEntity> _markItemsRetracted(
+    List<ChangeSetEntity> sets,
+    List<({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})> matches,
+  ) {
+    final indexesBySetId = <String, Set<int>>{};
+    for (final match in matches) {
+      indexesBySetId
+          .putIfAbsent(match.changeSet.id, () => <int>{})
+          .add(match.itemIndex);
+    }
+
+    return [
+      for (final set in sets)
+        if (!indexesBySetId.containsKey(set.id))
+          set
+        else
+          set.copyWith(
+            items: [
+              for (var i = 0; i < set.items.length; i++)
+                indexesBySetId[set.id]!.contains(i)
+                    ? set.items[i].copyWith(status: ChangeItemStatus.retracted)
+                    : set.items[i],
+            ],
+          ),
+    ];
+  }
+
+  Future<void> _recordSupersededRunningTimerRetractions(
+    AgentSyncService syncService,
+    List<({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})> matches,
+  ) async {
+    if (matches.isEmpty) return;
+
+    final now = clock.now();
+    for (final match in matches) {
+      final decision =
+          AgentDomainEntity.changeDecision(
+                id: _uuid.v4(),
+                agentId: agentId,
+                changeSetId: match.changeSet.id,
+                itemIndex: match.itemIndex,
+                toolName: match.item.toolName,
+                verdict: ChangeDecisionVerdict.retracted,
+                actor: DecisionActor.agent,
+                taskId: taskId,
+                retractionReason:
+                    'Superseded by a newer running timer update proposal.',
+                humanSummary: match.item.humanSummary,
+                args: match.item.args,
+                createdAt: now,
+                vectorClock: const VectorClock({}),
+              )
+              as ChangeDecisionEntity;
+      await syncService.upsertEntity(decision);
+    }
   }
 
   /// Convert batch tool name to a singular form for individual items.

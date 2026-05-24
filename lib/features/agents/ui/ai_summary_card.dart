@@ -105,6 +105,15 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   bool _confirmAllBusy = false;
   bool _cancelledManually = false;
   UnifiedSuggestionList? _lastVisibleSuggestions;
+  ProviderSubscription<AsyncValue<UnifiedSuggestionList>>?
+  _suggestionsSubscription;
+  ProviderSubscription<AsyncValue<bool>>? _runningSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _startSuggestionSubscriptions();
+  }
 
   @override
   void didUpdateWidget(covariant _AiSummaryShell oldWidget) {
@@ -112,7 +121,56 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     if (oldWidget.taskId != widget.taskId ||
         oldWidget.identity.agentId != widget.identity.agentId) {
       _lastVisibleSuggestions = null;
+      _closeSuggestionSubscriptions();
+      _startSuggestionSubscriptions();
     }
+  }
+
+  @override
+  void dispose() {
+    _closeSuggestionSubscriptions();
+    super.dispose();
+  }
+
+  void _startSuggestionSubscriptions() {
+    _syncVisibleSuggestions(notify: false);
+    _suggestionsSubscription = ref
+        .listenManual<AsyncValue<UnifiedSuggestionList>>(
+          unifiedSuggestionListProvider(widget.taskId),
+          (_, _) => _syncVisibleSuggestions(),
+        );
+    _runningSubscription = ref.listenManual<AsyncValue<bool>>(
+      agentIsRunningProvider(widget.identity.agentId),
+      (_, _) => _syncVisibleSuggestions(),
+    );
+  }
+
+  void _closeSuggestionSubscriptions() {
+    _suggestionsSubscription?.close();
+    _runningSubscription?.close();
+    _suggestionsSubscription = null;
+    _runningSubscription = null;
+  }
+
+  void _syncVisibleSuggestions({bool notify = true}) {
+    final listAsync = ref.read(unifiedSuggestionListProvider(widget.taskId));
+    final runningAsync = ref.read(
+      agentIsRunningProvider(widget.identity.agentId),
+    );
+    final isRunning = runningAsync.hasValue && (runningAsync.value ?? false);
+    final next = _resolveVisibleSuggestionList(
+      listAsync,
+      isRunning: isRunning,
+      previous: _lastVisibleSuggestions,
+    );
+    if (next == _lastVisibleSuggestions) return;
+
+    if (!notify || !mounted) {
+      _lastVisibleSuggestions = next;
+      return;
+    }
+
+    setState(() => _lastVisibleSuggestions = next);
   }
 
   int _computeRemainingSeconds(DateTime? nextWakeAt) {
@@ -216,16 +274,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
     final reportAsync = ref.watch(agentReportProvider(agentId));
     final report = reportAsync.value?.mapOrNull(agentReport: (r) => r);
-    final listAsync = ref.watch(unifiedSuggestionListProvider(widget.taskId));
 
     final tldr = _resolveTldr(report);
     final additionalReport = _resolveAdditionalReport(report);
 
     final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
-    final list = _resolveVisibleSuggestionList(
-      listAsync,
-      isRunning: isRunning,
-    );
+    final list = _lastVisibleSuggestions;
     // Prefer the template displayName (e.g. "Task Laura") over the
     // generic agent kind label so the subtitle reads as the named
     // persona the user picked.
@@ -360,20 +414,17 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   UnifiedSuggestionList? _resolveVisibleSuggestionList(
     AsyncValue<UnifiedSuggestionList> listAsync, {
     required bool isRunning,
+    required UnifiedSuggestionList? previous,
   }) {
     final next = listAsync.hasValue ? listAsync.value : null;
     if (next == null) {
-      return _lastVisibleSuggestions;
+      return previous;
     }
 
-    final previous = _lastVisibleSuggestions;
     if (isRunning && previous != null) {
-      final merged = _mergeUnresolvedOpenSuggestions(previous, next);
-      _lastVisibleSuggestions = merged;
-      return merged;
+      return _mergeUnresolvedOpenSuggestions(previous, next);
     }
 
-    _lastVisibleSuggestions = next;
     return next;
   }
 

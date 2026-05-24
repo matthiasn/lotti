@@ -379,6 +379,56 @@ void main() {
       });
 
       test(
+        'returns failure when reverting failed dispatch to pending cannot '
+        'be persisted',
+        () async {
+          final changeSet = makeChangeSetWith();
+          var readCount = 0;
+
+          when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((
+            _,
+          ) async {
+            readCount += 1;
+            if (readCount == 3) {
+              return changeSet.copyWith(items: const []);
+            }
+            return null;
+          });
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Handler failed',
+              errorMessage: 'Handler failed',
+            ),
+          );
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            expect(
+              result.errorMessage,
+              'Failed to update failed confirmation status',
+            );
+            verify(
+              () => mockDomainLogger.error(
+                LogDomains.agentWorkflow,
+                any(that: contains('Failed to revert item 0')),
+                subDomain: any(named: 'subDomain'),
+                error: any(named: 'error'),
+                stackTrace: any(named: 'stackTrace'),
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
         'retracts failed running-timer update when the active timer stopped',
         () async {
           final changeSet = makeChangeSetWith(
@@ -449,6 +499,66 @@ void main() {
               ChangeItemStatus.retracted,
             );
             expect(retractedSet.status, ChangeSetStatus.resolved);
+          });
+        },
+      );
+
+      test(
+        'returns failure when auto-retract status update cannot be persisted',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateRunningTimer,
+                args: {
+                  'timerId': 'timer-1',
+                  'summary': 'Private timer summary',
+                },
+                humanSummary: 'Update running timer text',
+              ),
+            ],
+          );
+          var readCount = 0;
+
+          when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((
+            _,
+          ) async {
+            readCount += 1;
+            if (readCount == 3) {
+              return changeSet.copyWith(items: const []);
+            }
+            return null;
+          });
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Error: no timer is currently running',
+              errorMessage: 'No active timer',
+            ),
+          );
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            expect(
+              result.errorMessage,
+              'Failed to update failed confirmation status',
+            );
+            verify(
+              () => mockDomainLogger.error(
+                LogDomains.agentWorkflow,
+                any(that: contains('Failed to mark item 0')),
+                subDomain: any(named: 'subDomain'),
+                error: any(named: 'error'),
+                stackTrace: any(named: 'stackTrace'),
+              ),
+            ).called(1);
           });
         },
       );

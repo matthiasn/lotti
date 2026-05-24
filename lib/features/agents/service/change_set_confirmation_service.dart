@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -205,15 +206,40 @@ class ChangeSetConfirmationService {
           itemIndex,
           ChangeItemStatus.retracted,
         );
-        if (retractedSet != null) {
-          await _notifyChangeSetResolved(retractedSet);
+        if (retractedSet == null) {
+          _domainLogger?.error(
+            LogDomains.agentWorkflow,
+            'Failed to mark item $itemIndex (${item.toolName}) as retracted '
+            'after dispatch failure',
+            subDomain: _sub,
+          );
+          return const ToolExecutionResult(
+            success: false,
+            output: 'Error: failed to retract stale proposal',
+            errorMessage: 'Failed to update failed confirmation status',
+          );
         }
+
+        await _notifyChangeSetResolved(retractedSet);
       } else {
-        await _updateChangeSetItemStatus(
+        final revertedSet = await _updateChangeSetItemStatus(
           confirmedSet,
           itemIndex,
           ChangeItemStatus.pending,
         );
+        if (revertedSet == null) {
+          _domainLogger?.error(
+            LogDomains.agentWorkflow,
+            'Failed to revert item $itemIndex (${item.toolName}) to pending '
+            'after dispatch failure',
+            subDomain: _sub,
+          );
+          return const ToolExecutionResult(
+            success: false,
+            output: 'Error: failed to revert proposal after dispatch failure',
+            errorMessage: 'Failed to update failed confirmation status',
+          );
+        }
       }
       return result;
     }
@@ -258,19 +284,19 @@ class ChangeSetConfirmationService {
     return result;
   }
 
-  static const _autoRetractableRunningTimerFailures = {
-    'Missing, empty, or too-long summary',
-    'Missing or invalid timerId',
-    'No active timer',
-    'Timer source task mismatch',
-    'Timer id mismatch',
-    'Unsupported timer entity type',
+  static const Set<String> _autoRetractableRunningTimerFailures = {
+    RunningTimerUpdateFailure.invalidSummary,
+    RunningTimerUpdateFailure.invalidTimerId,
+    RunningTimerUpdateFailure.noActiveTimer,
+    RunningTimerUpdateFailure.sourceTaskMismatch,
+    RunningTimerUpdateFailure.timerIdMismatch,
+    RunningTimerUpdateFailure.unsupportedEntityType,
   };
 
   static String _dispatchFailureMessage(String toolName, Object error) {
     if (toolName == TaskAgentToolNames.updateRunningTimer &&
         _looksLikeNoActiveTimerError(error)) {
-      return 'No active timer';
+      return RunningTimerUpdateFailure.noActiveTimer;
     }
     return 'Tool dispatch failed (${error.runtimeType})';
   }
