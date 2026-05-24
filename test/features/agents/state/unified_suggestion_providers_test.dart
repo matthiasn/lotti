@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -720,6 +721,101 @@ void main() {
         // First occurrence wins; iteration order is by pendingSets input
         // order (newer first as supplied by the repository).
         expect(result.open.single.changeSet.id, 'cs-new');
+      },
+    );
+
+    test(
+      'keeps only the latest pending running timer update visible',
+      () async {
+        final agent = makeTestIdentity();
+        final older = makeTestChangeSet(
+          id: 'cs-old-running',
+          agentId: agent.agentId,
+          taskId: 'task-abc',
+          createdAt: DateTime(2026, 4, 18, 9),
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'timerId': 'timer-1',
+                'summary': 'Earlier timer text',
+              },
+              humanSummary: 'Update running timer text: "Earlier timer text"',
+            ),
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'timerId': 'timer-2',
+                'summary': 'Other timer text',
+              },
+              humanSummary: 'Update running timer text: "Other timer text"',
+            ),
+          ],
+        );
+        final newer = makeTestChangeSet(
+          id: 'cs-new-running',
+          agentId: agent.agentId,
+          taskId: 'task-abc',
+          createdAt: DateTime(2026, 4, 18, 10),
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'timerId': 'timer-1',
+                'summary': 'Latest timer text',
+              },
+              humanSummary: 'Update running timer text: "Latest timer text"',
+            ),
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Set priority to P1',
+            ),
+          ],
+        );
+
+        final container = build(
+          agent: agent,
+          ledger: ProposalLedger(
+            open: const [],
+            resolved: const [],
+            pendingSets: [older, newer],
+          ),
+        );
+        final sub = container.listen(
+          unifiedSuggestionListProvider('task-abc'),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        final result = await container.read(
+          unifiedSuggestionListProvider('task-abc').future,
+        );
+
+        final runningTimerSuggestions = result.open
+            .where(
+              (suggestion) =>
+                  suggestion.item.toolName ==
+                  TaskAgentToolNames.updateRunningTimer,
+            )
+            .toList();
+        expect(
+          runningTimerSuggestions.map((suggestion) {
+            return (
+              suggestion.changeSet.id,
+              suggestion.item.args['timerId'],
+              suggestion.item.args['summary'],
+            );
+          }),
+          [
+            ('cs-new-running', 'timer-1', 'Latest timer text'),
+            ('cs-old-running', 'timer-2', 'Other timer text'),
+          ],
+        );
+        expect(
+          result.open.where((s) => s.item.toolName == 'update_task_priority'),
+          hasLength(1),
+        );
       },
     );
 

@@ -102,6 +102,6 @@ class InstanceTokenBreakdown {
 
   @override
   String toString() =>
-      'InstanceTokenBreakdown(agent: $agentId, name: $displayName, '
+      'InstanceTokenBreakdown(agent: <redacted>, name: <redacted>, '
       'lifecycle: $lifecycle, totalTokens: $totalTokens)';
 }

@@ -165,6 +165,7 @@ void main() {
 
     TemplateEvolutionWorkflow buildSessionWorkflow({
       _TestConversationRepository? convRepo,
+      MockSoulDocumentService? soulDocumentService,
     }) {
       return TemplateEvolutionWorkflow(
         conversationRepository:
@@ -176,6 +177,7 @@ void main() {
         cloudInferenceRepository: mockCloudInference,
         templateService: mockTemplateService,
         syncService: mockSyncService,
+        soulDocumentService: soulDocumentService,
       );
     }
 
@@ -320,6 +322,31 @@ void main() {
       expect(convRepo.deletedIds, isNotEmpty);
     });
 
+    test(
+      'continues when best-effort soul enrichment fails',
+      () async {
+        stubFullContext();
+        final soulService = MockSoulDocumentService();
+        when(
+          () => soulService.resolveActiveSoulForTemplate(any()),
+        ).thenAnswer((_) async => throw StateError('soul lookup failed'));
+
+        final workflow = buildSessionWorkflow(
+          soulDocumentService: soulService,
+        );
+
+        final response = await workflow.startSession(
+          templateId: kTestTemplateId,
+        );
+
+        expect(response, 'I see some patterns in the data.');
+        expect(workflow.activeSessions, hasLength(1));
+        verify(
+          () => soulService.resolveActiveSoulForTemplate(kTestTemplateId),
+        ).called(2);
+      },
+    );
+
     test('returns null when opening assistant content is missing', () async {
       stubFullContext();
       final convRepo = _TestConversationRepository();
@@ -423,6 +450,8 @@ void main() {
       );
 
       expect(response, isNull);
+      expect(workflow.activeSessions.containsKey('session-1'), isTrue);
+      expect(convRepo.deletedIds, isEmpty);
     });
 
     test('returns null when provider cannot be resolved', () async {
@@ -3618,6 +3647,32 @@ void main() {
 
       expect(result, isNull);
     });
+
+    test(
+      'does not touch soul services when active session has no proposal',
+      () async {
+        final workflow = buildSoulWorkflow();
+        workflow.activeSessions['manual-soul-session'] = ActiveEvolutionSession(
+          sessionId: 'manual-soul-session',
+          templateId: kTestSoulId,
+          conversationId: 'manual-conversation',
+          strategy: EvolutionStrategy(),
+          modelId: 'models/gemini-3-flash-preview',
+        );
+
+        final result = await workflow.completeSoulSession(
+          sessionId: 'manual-soul-session',
+        );
+
+        expect(result, isNull);
+        expect(
+          workflow.activeSessions.containsKey('manual-soul-session'),
+          isTrue,
+        );
+        verifyNever(() => mockSoulService.getActiveSoulVersion(any()));
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
 
     test('handles createVersion failure gracefully', () async {
       stubSoulContext();

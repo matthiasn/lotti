@@ -2012,5 +2012,26 @@ void main() {
       expect(result.containsKey('template-1'), isTrue);
       expect(result.containsKey('template-2'), isTrue);
     });
+
+    test('skips one template when extraction throws', () async {
+      when(
+        () => mockSoulService.getTemplatesUsingSoul('soul-1'),
+      ).thenAnswer((_) async => ['template-fails', 'template-ok']);
+      stubEmptyData();
+      when(
+        () => mockRepo.getRecentDecisionsForTemplate(
+          'template-fails',
+          since: any(named: 'since'),
+        ),
+      ).thenThrow(Exception('template read failed'));
+
+      final result = await service.extractForSoul(
+        soulId: 'soul-1',
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.keys, ['template-ok']);
+    });
   });
 }

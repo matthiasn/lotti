@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// High-level agent lifecycle management.
@@ -99,7 +100,7 @@ class AgentService {
     });
 
     developer.log(
-      'Created agent $agentId (kind: $kind, name: $displayName)',
+      'Created agent ${DomainLogger.sanitizeId(agentId)} (kind: $kind)',
       name: 'AgentService',
     );
 
@@ -174,7 +175,10 @@ class AgentService {
     final updated = await _updateLifecycle(agentId, AgentLifecycle.dormant);
     if (!updated) return false;
     orchestrator.removeSubscriptions(agentId);
-    developer.log('Paused agent $agentId', name: 'AgentService');
+    developer.log(
+      'Paused agent ${DomainLogger.sanitizeId(agentId)}',
+      name: 'AgentService',
+    );
     return true;
   }
 
@@ -188,7 +192,10 @@ class AgentService {
   Future<bool> resumeAgent(String agentId) async {
     final updated = await _updateLifecycle(agentId, AgentLifecycle.active);
     if (!updated) return false;
-    developer.log('Resumed agent $agentId', name: 'AgentService');
+    developer.log(
+      'Resumed agent ${DomainLogger.sanitizeId(agentId)}',
+      name: 'AgentService',
+    );
     return true;
   }
 
@@ -204,7 +211,10 @@ class AgentService {
     final updated = await _updateLifecycle(agentId, AgentLifecycle.destroyed);
     if (!updated) return false;
     orchestrator.removeSubscriptions(agentId);
-    developer.log('Destroyed agent $agentId', name: 'AgentService');
+    developer.log(
+      'Destroyed agent ${DomainLogger.sanitizeId(agentId)}',
+      name: 'AgentService',
+    );
     return true;
   }
 
@@ -225,7 +235,10 @@ class AgentService {
     }
 
     await repository.hardDeleteAgent(agentId);
-    developer.log('Deleted all data for agent $agentId', name: 'AgentService');
+    developer.log(
+      'Deleted all data for agent ${DomainLogger.sanitizeId(agentId)}',
+      name: 'AgentService',
+    );
   }
 
   /// Returns `true` when the agent was found and its lifecycle was updated,
@@ -238,7 +251,8 @@ class AgentService {
       final identity = await getAgent(agentId);
       if (identity == null) {
         developer.log(
-          'Cannot update lifecycle: agent $agentId not found',
+          'Cannot update lifecycle: agent '
+          '${DomainLogger.sanitizeId(agentId)} not found',
           name: 'AgentService',
         );
         return false;

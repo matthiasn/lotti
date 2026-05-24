@@ -38,6 +38,8 @@
           <p>Audio and image entry Actions menus on desktop can now reveal the backing file in Finder, File Explorer, or Files.</p>
           <p>Agent batch lookups for latest per-agent reports and states now use ranked active-row indexes that avoid SQLite temp sorts during large project-agent wake context builds.</p>
           <p>Sync now preserves local sequence mappings when recovering burnt vector-clock counters, reducing cases where peers can get stuck on unresolvable gaps.</p>
+          <p>Fixed: task-agent suggestions no longer disappear wholesale while an agent wake is running, and stale running-timer update proposals are automatically retracted if the timer stops before you accept them.</p>
+          <p>Fixed: agent workflow diagnostics no longer write suggestion argument values or raw exception text into runtime log files.</p>
       </description>
     </release>
     <release version="0.9.1005" date="2026-05-22">

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -17,6 +18,35 @@ class MockLoggingService extends Mock implements LoggingService {
       ),
     ).thenAnswer((_) async {});
   }
+}
+
+class _GeneratedId {
+  const _GeneratedId({
+    required this.length,
+    required this.seed,
+  });
+
+  final int length;
+  final int seed;
+
+  String get value => String.fromCharCodes(
+    List.generate(length, (index) => 33 + ((seed + index * 31) % 94)),
+  );
+
+  @override
+  String toString() => '_GeneratedId(length: $length, seed: $seed)';
+}
+
+extension _AnyGeneratedId on glados.Any {
+  glados.Generator<_GeneratedId> get generatedId =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 64),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (int length, int seed) => _GeneratedId(
+          length: length,
+          seed: seed,
+        ),
+      );
 }
 
 void main() {
@@ -44,6 +74,23 @@ void main() {
     test('handles exactly 6-character ID', () {
       expect(DomainLogger.sanitizeId('abcdef'), '[id:abcdef]');
     });
+
+    glados.Glados(
+      glados.any.generatedId,
+      glados.ExploreConfig(numRuns: 80),
+    ).test('emits only the first six ID characters', (generated) {
+      final id = generated.value;
+      final sanitized = DomainLogger.sanitizeId(id);
+      final expectedVisibleLength = id.length < 6 ? id.length : 6;
+
+      expect(sanitized, startsWith('[id:'), reason: '$generated');
+      expect(sanitized, endsWith(']'), reason: '$generated');
+      expect(
+        sanitized.substring(4, sanitized.length - 1),
+        id.substring(0, expectedVisibleLength),
+        reason: '$generated',
+      );
+    }, tags: 'glados');
   });
 
   group('DomainLogger.log', () {
@@ -131,8 +178,8 @@ void main() {
       ).called(1);
     });
 
-    test('includes error object in message', () {
-      final exception = Exception('test error');
+    test('includes error type without raw exception message', () {
+      final exception = Exception('secret user content');
       logger.error(
         LogDomains.agentRuntime,
         'wake failed',
@@ -141,7 +188,13 @@ void main() {
 
       verify(
         () => mockLoggingService.captureException(
-          'wake failed: $exception',
+          any<String>(
+            that: allOf(
+              contains('wake failed'),
+              contains('errorType='),
+              isNot(contains('secret user content')),
+            ),
+          ),
           domain: LogDomains.agentRuntime,
         ),
       ).called(1);

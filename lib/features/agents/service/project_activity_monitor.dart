@@ -54,9 +54,9 @@ class ProjectActivityMonitor {
       );
     } else {
       developer.log(
-        '$message${error != null ? ': $error' : ''}',
+        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
         name: 'ProjectActivityMonitor',
-        error: error,
+        error: error?.runtimeType,
         stackTrace: stackTrace,
       );
     }

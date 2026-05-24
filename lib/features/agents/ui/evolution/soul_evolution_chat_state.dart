@@ -109,7 +109,7 @@ class SoulEvolutionChatState extends _$SoulEvolutionChatState {
             developer.log(
               'abandonSession on dispose failed',
               name: _logTag,
-              error: e,
+              error: e.runtimeType,
               stackTrace: s,
             );
           }),
@@ -223,7 +223,7 @@ class SoulEvolutionChatState extends _$SoulEvolutionChatState {
       developer.log(
         'sendMessage failed',
         name: _logTag,
-        error: e,
+        error: e.runtimeType,
         stackTrace: s,
       );
       final current = state.value;
@@ -296,7 +296,7 @@ class SoulEvolutionChatState extends _$SoulEvolutionChatState {
       developer.log(
         'approveSoulProposal failed',
         name: _logTag,
-        error: e,
+        error: e.runtimeType,
         stackTrace: s,
       );
       final current = state.value;
@@ -341,7 +341,7 @@ class SoulEvolutionChatState extends _$SoulEvolutionChatState {
       developer.log(
         'abandonSession failed',
         name: _logTag,
-        error: e,
+        error: e.runtimeType,
         stackTrace: s,
       );
     }

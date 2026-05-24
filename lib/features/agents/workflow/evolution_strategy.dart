@@ -155,7 +155,7 @@ class EvolutionStrategy extends ConversationStrategy {
         } catch (e) {
           manager.addToolResponse(
             toolCallId: call.id,
-            response: 'Error rendering surface: $e',
+            response: 'Error rendering surface (${e.runtimeType})',
           );
         }
         continue;

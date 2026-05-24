@@ -375,9 +375,9 @@ class TaskAgentService {
           );
         } else {
           developer.log(
-            '$msg: $e',
+            '$msg (errorType=${e.runtimeType})',
             name: 'TaskAgentService',
-            error: e,
+            error: e.runtimeType,
             stackTrace: s,
           );
         }

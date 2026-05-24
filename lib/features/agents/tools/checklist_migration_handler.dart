@@ -97,20 +97,20 @@ class ChecklistMigrationHandler {
     // source item, so we never leave an item archived without a valid target.
     _domainLogger?.log(
       LogDomains.agentWorkflow,
-      'Looking up target task: $targetTaskId',
+      'Looking up target task: ${DomainLogger.sanitizeId(targetTaskId)}',
       subDomain: _sub,
     );
     final targetTask = await _journalDb.journalEntityById(targetTaskId);
     _domainLogger?.log(
       LogDomains.agentWorkflow,
       'Target task lookup result: ${targetTask?.runtimeType} '
-      '(id: ${targetTask?.meta.id})',
+      '(id: ${targetTask != null ? DomainLogger.sanitizeId(targetTask.meta.id) : 'none'})',
       subDomain: _sub,
     );
     if (targetTask is! Task) {
       _domainLogger?.error(
         LogDomains.agentWorkflow,
-        'Target task $targetTaskId not found',
+        'Target task ${DomainLogger.sanitizeId(targetTaskId)} not found',
         subDomain: _sub,
       );
       return ToolExecutionResult(

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:genui/genui.dart' as genui;
 import 'package:http/http.dart' as http;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -190,6 +191,8 @@ class MockEvent extends Mock implements Event {
     when(() => originServerTs).thenReturn(DateTime(2026, 4, 20));
   }
 }
+
+class MockSurfaceController extends Mock implements genui.SurfaceController {}
 
 class MockMatrixClient extends Mock implements Client {}
 

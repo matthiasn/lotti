@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -378,6 +379,368 @@ void main() {
         });
       });
 
+      test(
+        'returns failure when reverting failed dispatch to pending cannot '
+        'be persisted',
+        () async {
+          final changeSet = makeChangeSetWith();
+          var readCount = 0;
+
+          when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((
+            _,
+          ) async {
+            readCount += 1;
+            if (readCount == 3) {
+              return changeSet.copyWith(items: const []);
+            }
+            return null;
+          });
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Handler failed',
+              errorMessage: 'Handler failed',
+            ),
+          );
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            expect(
+              result.errorMessage,
+              'Failed to update failed confirmation status',
+            );
+            verify(
+              () => mockDomainLogger.error(
+                LogDomains.agentWorkflow,
+                any(that: contains('Failed to revert item 0')),
+                subDomain: any(named: 'subDomain'),
+                error: any(named: 'error'),
+                stackTrace: any(named: 'stackTrace'),
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'retracts failed running-timer update when the active timer stopped',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateRunningTimer,
+                args: {
+                  'timerId': 'timer-entry-001',
+                  'summary': 'Refined timer text',
+                },
+                humanSummary: 'Update running timer text',
+              ),
+            ],
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Error: no timer is currently running',
+              errorMessage: 'No active timer',
+            ),
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            expect(result.errorMessage, 'No active timer');
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            expect(captured, hasLength(4));
+
+            final confirmedDecision = captured[0] as ChangeDecisionEntity;
+            expect(
+              confirmedDecision.verdict,
+              ChangeDecisionVerdict.confirmed,
+            );
+
+            final confirmedSet = captured[1] as ChangeSetEntity;
+            expect(
+              confirmedSet.items.single.status,
+              ChangeItemStatus.confirmed,
+            );
+
+            final retractionDecision = captured[2] as ChangeDecisionEntity;
+            expect(
+              retractionDecision.verdict,
+              ChangeDecisionVerdict.retracted,
+            );
+            expect(retractionDecision.actor, DecisionActor.agent);
+            expect(
+              retractionDecision.retractionReason,
+              contains('No active timer'),
+            );
+
+            final retractedSet = captured[3] as ChangeSetEntity;
+            expect(
+              retractedSet.items.single.status,
+              ChangeItemStatus.retracted,
+            );
+            expect(retractedSet.status, ChangeSetStatus.resolved);
+          });
+        },
+      );
+
+      test(
+        'keeps running-timer update retryable for non-stale failures',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateRunningTimer,
+                args: {
+                  'timerId': 'timer-entry-001',
+                  'summary': 'Refined timer text',
+                },
+                humanSummary: 'Update running timer text',
+              ),
+            ],
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Backend temporarily unavailable',
+              errorMessage: 'Backend temporarily unavailable',
+            ),
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            expect(result.errorMessage, 'Backend temporarily unavailable');
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            expect(captured, hasLength(3));
+            expect(
+              (captured[2] as ChangeSetEntity).items.single.status,
+              ChangeItemStatus.pending,
+            );
+            expect(
+              captured.whereType<ChangeDecisionEntity>().map((d) => d.verdict),
+              isNot(contains(ChangeDecisionVerdict.retracted)),
+            );
+          });
+        },
+      );
+
+      for (final failure in const [
+        RunningTimerUpdateFailure.invalidSummary,
+        RunningTimerUpdateFailure.invalidTimerId,
+        RunningTimerUpdateFailure.noActiveTimer,
+        RunningTimerUpdateFailure.sourceTaskMismatch,
+        RunningTimerUpdateFailure.timerIdMismatch,
+        RunningTimerUpdateFailure.unsupportedEntityType,
+      ]) {
+        test(
+          'auto-retracts running-timer update for stale failure: $failure',
+          () async {
+            final changeSet = makeChangeSetWith(
+              items: const [
+                ChangeItem(
+                  toolName: TaskAgentToolNames.updateRunningTimer,
+                  args: {
+                    'timerId': 'timer-entry-001',
+                    'summary': 'Refined timer text',
+                  },
+                  humanSummary: 'Update running timer text',
+                ),
+              ],
+            );
+
+            when(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            ).thenAnswer(
+              (_) async => ToolExecutionResult(
+                success: false,
+                output: 'Handler rejected stale running timer update',
+                errorMessage: failure,
+              ),
+            );
+            when(
+              () => mockSyncService.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+
+            await withClock(testClock, () async {
+              final result = await service.confirmItem(changeSet, 0);
+
+              expect(result.success, isFalse);
+              expect(result.errorMessage, failure);
+
+              final captured = verify(
+                () => mockSyncService.upsertEntity(captureAny()),
+              ).captured;
+
+              expect(captured, hasLength(4));
+              expect(
+                (captured[0] as ChangeDecisionEntity).verdict,
+                ChangeDecisionVerdict.confirmed,
+              );
+              expect(
+                (captured[1] as ChangeSetEntity).items.single.status,
+                ChangeItemStatus.confirmed,
+              );
+
+              final retractionDecision = captured[2] as ChangeDecisionEntity;
+              expect(
+                retractionDecision.verdict,
+                ChangeDecisionVerdict.retracted,
+              );
+              expect(retractionDecision.actor, DecisionActor.agent);
+              expect(retractionDecision.retractionReason, contains(failure));
+
+              final retractedSet = captured[3] as ChangeSetEntity;
+              expect(
+                retractedSet.items.single.status,
+                ChangeItemStatus.retracted,
+              );
+              expect(retractedSet.status, ChangeSetStatus.resolved);
+            });
+          },
+        );
+      }
+
+      test(
+        'returns failure when auto-retract status update cannot be persisted',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateRunningTimer,
+                args: {
+                  'timerId': 'timer-1',
+                  'summary': 'Private timer summary',
+                },
+                humanSummary: 'Update running timer text',
+              ),
+            ],
+          );
+          var readCount = 0;
+
+          when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((
+            _,
+          ) async {
+            readCount += 1;
+            if (readCount == 3) {
+              return changeSet.copyWith(items: const []);
+            }
+            return null;
+          });
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Error: no timer is currently running',
+              errorMessage: 'No active timer',
+            ),
+          );
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            expect(
+              result.errorMessage,
+              'Failed to update failed confirmation status',
+            );
+            verify(
+              () => mockDomainLogger.error(
+                LogDomains.agentWorkflow,
+                any(that: contains('Failed to mark item 0')),
+                subDomain: any(named: 'subDomain'),
+                error: any(named: 'error'),
+                stackTrace: any(named: 'stackTrace'),
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'retracts failed running-timer update when dispatch throws',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: TaskAgentToolNames.updateRunningTimer,
+                args: {
+                  'timerId': 'timer-entry-001',
+                  'summary': 'Refined timer text',
+                },
+                humanSummary: 'Update running timer text',
+              ),
+            ],
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenThrow(StateError('No active timer'));
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            expect(result.errorMessage, 'No active timer');
+            expect(result.errorMessage, isNot(contains('StateError')));
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            expect(captured, hasLength(4));
+            expect(
+              (captured[2] as ChangeDecisionEntity).verdict,
+              ChangeDecisionVerdict.retracted,
+            );
+            expect(
+              (captured[3] as ChangeSetEntity).items.single.status,
+              ChangeItemStatus.retracted,
+            );
+          });
+        },
+      );
+
       test('invokes post-confirm callback after successful dispatch', () async {
         final changeSet = makeChangeSetWith(
           items: const [
@@ -580,7 +943,11 @@ void main() {
             expect(result.success, isFalse);
             expect(
               result.errorMessage,
-              contains('failed to persist recommendation'),
+              contains('Post-confirmation handling failed'),
+            );
+            expect(
+              result.errorMessage,
+              isNot(contains('failed to persist recommendation')),
             );
 
             final captured = verify(
@@ -1810,8 +2177,22 @@ void main() {
         });
       });
 
-      test('logs confirming message before dispatch', () async {
-        final changeSet = makeChangeSetWith();
+      test('logs confirming message without tool argument values', () async {
+        const privateSummary =
+            'Astro setup is complete via Claude Code with server-side notes';
+        const timerId = '550a8331-56f3-11f1-abeb-739703ba5291';
+        final changeSet = makeChangeSetWith(
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'summary': privateSummary,
+                'timerId': timerId,
+              },
+              humanSummary: 'Update running timer text',
+            ),
+          ],
+        );
 
         when(
           () => mockToolDispatcher.dispatch(any(), any(), any()),
@@ -1829,13 +2210,20 @@ void main() {
         await withClock(testClock, () async {
           await service.confirmItem(changeSet, 0);
 
-          verify(
-            () => mockDomainLogger.log(
-              LogDomains.agentWorkflow,
-              any(that: contains('Confirming item 0')),
-              subDomain: any(named: 'subDomain'),
-            ),
-          ).called(1);
+          final captured =
+              verify(
+                    () => mockDomainLogger.log(
+                      LogDomains.agentWorkflow,
+                      captureAny(that: contains('Confirming item 0')),
+                      subDomain: any(named: 'subDomain'),
+                    ),
+                  ).captured.single
+                  as String;
+
+          expect(captured, contains('knownArgs=[summary,timerId]'));
+          expect(captured, isNot(contains(privateSummary)));
+          expect(captured, isNot(contains(timerId)));
+          expect(captured, isNot(contains('dispatchArgs')));
         });
       });
 

@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -30,6 +31,12 @@ typedef ChangeSetResolvedCallback =
 /// After each item resolution, the change set's status is updated:
 /// - All items resolved → [ChangeSetStatus.resolved]
 /// - Some items resolved → [ChangeSetStatus.partiallyResolved]
+///
+/// Failed confirmations normally revert to [ChangeItemStatus.pending] so the
+/// user can retry. Stale `update_running_timer` confirmations are the
+/// exception: once the active timer has changed, retrying the same proposal is
+/// invalid, so the service records an agent retraction and removes it from the
+/// open suggestion list.
 ///
 /// For task-split workflows, manages cross-item ID resolution:
 /// when `create_follow_up_task` succeeds, the placeholder→actual mapping
@@ -113,7 +120,8 @@ class ChangeSetConfirmationService {
     _domainLogger?.log(
       LogDomains.agentWorkflow,
       'Confirming item $itemIndex (${item.toolName}) in change set '
-      '${current.id}, dispatchArgs: $dispatchArgs',
+      '${DomainLogger.sanitizeId(current.id)}, '
+      '${_describeArgsForLog(dispatchArgs)}',
       subDomain: _sub,
     );
 
@@ -142,26 +150,97 @@ class ChangeSetConfirmationService {
       );
     }
 
-    // 2. Execute the tool call. If dispatch fails, revert the status back
-    //    to pending so the user can retry.
-    final result = await _toolDispatcher(
-      item.toolName,
-      dispatchArgs,
-      current.taskId,
-    );
+    // 2. Execute the tool call. If dispatch fails, either revert the status
+    //    back to pending so the user can retry, or retract non-retryable stale
+    //    timer proposals that can never succeed after the active timer changed.
+    late final ToolExecutionResult result;
+    var dispatchThrew = false;
+    try {
+      result = await _toolDispatcher(
+        item.toolName,
+        dispatchArgs,
+        current.taskId,
+      );
+    } catch (error, stackTrace) {
+      dispatchThrew = true;
+      _domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'Tool dispatch threw for item $itemIndex (${item.toolName})',
+        subDomain: _sub,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      result = ToolExecutionResult(
+        success: false,
+        output: 'Error: failed to apply ${item.toolName}',
+        errorMessage: _dispatchFailureMessage(item.toolName, error),
+      );
+    }
 
     if (!result.success) {
+      final shouldAutoRetract = _shouldAutoRetractFailedConfirmation(
+        item,
+        result,
+        dispatchThrew: dispatchThrew,
+      );
       _domainLogger?.error(
         LogDomains.agentWorkflow,
         'Tool dispatch failed for item $itemIndex (${item.toolName}): '
-        '${result.errorMessage ?? result.output} — reverting to pending',
+        'failureKind=${_failureKindForLog(result)} — '
+        '${shouldAutoRetract ? 'auto-retracting' : 'reverting to pending'}',
         subDomain: _sub,
       );
-      await _updateChangeSetItemStatus(
-        current,
-        itemIndex,
-        ChangeItemStatus.pending,
-      );
+      if (shouldAutoRetract) {
+        await _persistDecision(
+          changeSet: current,
+          itemIndex: itemIndex,
+          toolName: item.toolName,
+          verdict: ChangeDecisionVerdict.retracted,
+          actor: DecisionActor.agent,
+          retractionReason: _failedConfirmationRetractionReason(result),
+          humanSummary: item.humanSummary,
+          args: item.args,
+        );
+        final retractedSet = await _updateChangeSetItemStatus(
+          confirmedSet,
+          itemIndex,
+          ChangeItemStatus.retracted,
+        );
+        if (retractedSet == null) {
+          _domainLogger?.error(
+            LogDomains.agentWorkflow,
+            'Failed to mark item $itemIndex (${item.toolName}) as retracted '
+            'after dispatch failure',
+            subDomain: _sub,
+          );
+          return const ToolExecutionResult(
+            success: false,
+            output: 'Error: failed to retract stale proposal',
+            errorMessage: 'Failed to update failed confirmation status',
+          );
+        }
+
+        await _notifyChangeSetResolved(retractedSet);
+      } else {
+        final revertedSet = await _updateChangeSetItemStatus(
+          confirmedSet,
+          itemIndex,
+          ChangeItemStatus.pending,
+        );
+        if (revertedSet == null) {
+          _domainLogger?.error(
+            LogDomains.agentWorkflow,
+            'Failed to revert item $itemIndex (${item.toolName}) to pending '
+            'after dispatch failure',
+            subDomain: _sub,
+          );
+          return const ToolExecutionResult(
+            success: false,
+            output: 'Error: failed to revert proposal after dispatch failure',
+            errorMessage: 'Failed to update failed confirmation status',
+          );
+        }
+      }
       return result;
     }
 
@@ -195,7 +274,7 @@ class ChangeSetConfirmationService {
         return ToolExecutionResult(
           success: false,
           output: 'Error: failed to persist confirmed action state',
-          errorMessage: e.toString(),
+          errorMessage: 'Post-confirmation handling failed (${e.runtimeType})',
         );
       }
     }
@@ -203,6 +282,61 @@ class ChangeSetConfirmationService {
     await _notifyChangeSetResolved(confirmedSet);
 
     return result;
+  }
+
+  static const Set<String> _autoRetractableRunningTimerFailures = {
+    RunningTimerUpdateFailure.invalidSummary,
+    RunningTimerUpdateFailure.invalidTimerId,
+    RunningTimerUpdateFailure.noActiveTimer,
+    RunningTimerUpdateFailure.sourceTaskMismatch,
+    RunningTimerUpdateFailure.timerIdMismatch,
+    RunningTimerUpdateFailure.unsupportedEntityType,
+  };
+
+  static String _dispatchFailureMessage(String toolName, Object error) {
+    if (toolName == TaskAgentToolNames.updateRunningTimer &&
+        _looksLikeNoActiveTimerError(error)) {
+      return RunningTimerUpdateFailure.noActiveTimer;
+    }
+    return 'Tool dispatch failed (${error.runtimeType})';
+  }
+
+  static bool _looksLikeNoActiveTimerError(Object error) {
+    final text = error.toString().toLowerCase();
+    return text.contains('no active timer') ||
+        text.contains('no timer is currently running');
+  }
+
+  /// Running-timer proposals are tied to a specific in-memory active timer.
+  /// Once that timer stops, switches task, or changes id, retrying the same
+  /// proposal cannot succeed. Retracting the item records that stale context
+  /// for the next wake and removes the dead action from the user's list.
+  static bool _shouldAutoRetractFailedConfirmation(
+    ChangeItem item,
+    ToolExecutionResult result, {
+    required bool dispatchThrew,
+  }) {
+    if (item.toolName != TaskAgentToolNames.updateRunningTimer) {
+      return false;
+    }
+    if (dispatchThrew) return true;
+
+    final error = result.errorMessage;
+    return error != null &&
+        _autoRetractableRunningTimerFailures.contains(error);
+  }
+
+  static String _failedConfirmationRetractionReason(
+    ToolExecutionResult result,
+  ) {
+    final detail = (result.errorMessage?.trim().isNotEmpty ?? false)
+        ? result.errorMessage!.trim()
+        : result.output.trim();
+    if (detail.isEmpty) {
+      return 'Confirmed update_running_timer proposal failed while applying.';
+    }
+    return 'Confirmed update_running_timer proposal failed while applying: '
+        '$detail';
   }
 
   /// Rejects a single change item at [itemIndex] without dispatching
@@ -237,7 +371,7 @@ class ChangeSetConfirmationService {
     _domainLogger?.log(
       LogDomains.agentWorkflow,
       'Rejecting item $itemIndex (${item.toolName}) in change set '
-      '${current.id}',
+      '${DomainLogger.sanitizeId(current.id)}',
       subDomain: _sub,
     );
 
@@ -401,8 +535,9 @@ class ChangeSetConfirmationService {
       await _syncService.upsertEntity(fresh.copyWith(items: updatedItems));
       _domainLogger?.log(
         LogDomains.agentWorkflow,
-        'Persisted resolved targetTaskId ($actualId) to sibling '
-        'migration items in change set ${fresh.id}',
+        'Persisted resolved targetTaskId '
+        '(${DomainLogger.sanitizeId(actualId)}) to sibling migration items '
+        'in change set ${DomainLogger.sanitizeId(fresh.id)}',
         subDomain: _sub,
       );
     }
@@ -460,7 +595,9 @@ class ChangeSetConfirmationService {
       _resolvedIds[placeholderId] = actualId;
       _domainLogger?.log(
         LogDomains.agentWorkflow,
-        'Captured placeholder resolution: $placeholderId → $actualId',
+        'Captured placeholder resolution: '
+        '${DomainLogger.sanitizeId(placeholderId)} → '
+        '${DomainLogger.sanitizeId(actualId)}',
         subDomain: _sub,
       );
     }
@@ -481,6 +618,7 @@ class ChangeSetConfirmationService {
     required ChangeDecisionVerdict verdict,
     DecisionActor actor = DecisionActor.user,
     String? rejectionReason,
+    String? retractionReason,
     String? humanSummary,
     Map<String, dynamic>? args,
   }) async {
@@ -495,6 +633,7 @@ class ChangeSetConfirmationService {
               actor: actor,
               taskId: changeSet.taskId,
               rejectionReason: rejectionReason,
+              retractionReason: retractionReason,
               humanSummary: humanSummary,
               args: args,
               createdAt: clock.now(),
@@ -550,11 +689,50 @@ class ChangeSetConfirmationService {
       _domainLogger?.error(
         LogDomains.agentWorkflow,
         'Post-resolution notification sync failed for change set '
-        '${fallback.id}',
+        '${DomainLogger.sanitizeId(fallback.id)}',
         subDomain: _sub,
         error: error,
         stackTrace: stackTrace,
       );
     }
+  }
+
+  static const _safeLogArgNames = {
+    '_placeholderTaskId',
+    'dueDate',
+    'endTime',
+    'entryId',
+    'id',
+    'items',
+    'labels',
+    'languageCode',
+    'minutes',
+    'priority',
+    'reason',
+    'startTime',
+    'status',
+    'summary',
+    'targetTaskId',
+    'timerId',
+    'title',
+  };
+
+  static String _describeArgsForLog(Map<String, dynamic> args) {
+    final knownNames =
+        args.keys
+            .where((key) => _safeLogArgNames.contains(key))
+            .cast<String>()
+            .toList()
+          ..sort();
+    final unknownCount = args.length - knownNames.length;
+    return 'argCount=${args.length}, '
+        'knownArgs=[${knownNames.join(',')}], '
+        'unknownArgCount=$unknownCount';
+  }
+
+  static String _failureKindForLog(ToolExecutionResult result) {
+    if (result.policyDenied) return 'policyDenied';
+    if (result.errorMessage != null) return 'toolError';
+    return 'toolFailure';
   }
 }

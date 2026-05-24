@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Well-known feedback source identifiers.
 abstract final class FeedbackSources {
@@ -88,8 +89,9 @@ class FeedbackExtractionService {
       };
     } catch (e) {
       developer.log(
-        'Failed to fetch change sets: $e',
+        'Failed to fetch change sets (errorType=${e.runtimeType})',
         name: 'FeedbackExtractionService',
+        error: e.runtimeType,
       );
     }
 
@@ -154,9 +156,9 @@ class FeedbackExtractionService {
           }
         } catch (e, s) {
           developer.log(
-            'Failed to fetch payload $id',
+            'Failed to fetch payload ${DomainLogger.sanitizeId(id)}',
             name: 'FeedbackExtractionService',
-            error: e,
+            error: e.runtimeType,
             stackTrace: s,
           );
         }
@@ -754,9 +756,10 @@ class FeedbackExtractionService {
             );
           } catch (e, s) {
             developer.log(
-              'Feedback extraction failed for template $id',
+              'Feedback extraction failed for template '
+              '${DomainLogger.sanitizeId(id)}',
               name: 'FeedbackExtractionService',
-              error: e,
+              error: e.runtimeType,
               stackTrace: s,
             );
             return null;

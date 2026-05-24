@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_suggestion_providers.g.dart';
@@ -103,6 +104,7 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
     }
   }
   open.sort((a, b) => b.changeSet.createdAt.compareTo(a.changeSet.createdAt));
+  final visibleOpen = _keepLatestRunningTimerUpdate(open);
 
   // Dedupe the activity strip by fingerprint — the repository ledger
   // deliberately emits one entry per decision event so the LLM prompt
@@ -118,8 +120,49 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
   }
 
   return UnifiedSuggestionList(
-    open: open,
+    open: visibleOpen,
     activity: activity,
     agentName: agent.displayName,
   );
+}
+
+List<PendingSuggestion> _keepLatestRunningTimerUpdate(
+  List<PendingSuggestion> sortedOpen,
+) {
+  final latestByTimerId = <String?, PendingSuggestion>{};
+  for (final suggestion in sortedOpen) {
+    if (suggestion.item.toolName != TaskAgentToolNames.updateRunningTimer) {
+      continue;
+    }
+    final timerId = _runningTimerId(suggestion.item);
+    final current = latestByTimerId[timerId];
+    if (current == null ||
+        suggestion.changeSet.createdAt.isAfter(current.changeSet.createdAt) ||
+        (suggestion.changeSet.createdAt == current.changeSet.createdAt &&
+            suggestion.itemIndex > current.itemIndex)) {
+      latestByTimerId[timerId] = suggestion;
+    }
+  }
+
+  if (latestByTimerId.isEmpty) return sortedOpen;
+
+  final visible = <PendingSuggestion>[];
+  for (final suggestion in sortedOpen) {
+    if (suggestion.item.toolName == TaskAgentToolNames.updateRunningTimer &&
+        !identical(
+          suggestion,
+          latestByTimerId[_runningTimerId(suggestion.item)],
+        )) {
+      continue;
+    }
+    visible.add(suggestion);
+  }
+  return visible;
+}
+
+String? _runningTimerId(ChangeItem item) {
+  final timerId = item.args['timerId'];
+  if (timerId is! String) return null;
+  final trimmed = timerId.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

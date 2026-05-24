@@ -104,6 +104,74 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   bool _historyOpen = false;
   bool _confirmAllBusy = false;
   bool _cancelledManually = false;
+  UnifiedSuggestionList? _lastVisibleSuggestions;
+  ProviderSubscription<AsyncValue<UnifiedSuggestionList>>?
+  _suggestionsSubscription;
+  ProviderSubscription<AsyncValue<bool>>? _runningSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _startSuggestionSubscriptions();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AiSummaryShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.taskId != widget.taskId ||
+        oldWidget.identity.agentId != widget.identity.agentId) {
+      _lastVisibleSuggestions = null;
+      _closeSuggestionSubscriptions();
+      _startSuggestionSubscriptions();
+    }
+  }
+
+  @override
+  void dispose() {
+    _closeSuggestionSubscriptions();
+    super.dispose();
+  }
+
+  void _startSuggestionSubscriptions() {
+    _syncVisibleSuggestions(notify: false);
+    _suggestionsSubscription = ref
+        .listenManual<AsyncValue<UnifiedSuggestionList>>(
+          unifiedSuggestionListProvider(widget.taskId),
+          (_, _) => _syncVisibleSuggestions(),
+        );
+    _runningSubscription = ref.listenManual<AsyncValue<bool>>(
+      agentIsRunningProvider(widget.identity.agentId),
+      (_, _) => _syncVisibleSuggestions(),
+    );
+  }
+
+  void _closeSuggestionSubscriptions() {
+    _suggestionsSubscription?.close();
+    _runningSubscription?.close();
+    _suggestionsSubscription = null;
+    _runningSubscription = null;
+  }
+
+  void _syncVisibleSuggestions({bool notify = true}) {
+    final listAsync = ref.read(unifiedSuggestionListProvider(widget.taskId));
+    final runningAsync = ref.read(
+      agentIsRunningProvider(widget.identity.agentId),
+    );
+    final isRunning = runningAsync.hasValue && (runningAsync.value ?? false);
+    final next = _resolveVisibleSuggestionList(
+      listAsync,
+      isRunning: isRunning,
+      previous: _lastVisibleSuggestions,
+    );
+    if (next == _lastVisibleSuggestions) return;
+
+    if (!notify || !mounted) {
+      _lastVisibleSuggestions = next;
+      return;
+    }
+
+    setState(() => _lastVisibleSuggestions = next);
+  }
 
   int _computeRemainingSeconds(DateTime? nextWakeAt) {
     if (nextWakeAt == null) return 0;
@@ -157,7 +225,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       developer.log(
         'confirmAll failed',
         name: 'AiSummaryCard',
-        error: e,
+        error: e.runtimeType,
         stackTrace: stackTrace,
       );
       if (mounted) {
@@ -185,7 +253,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       developer.log(
         'MLX summary playback failed',
         name: 'AiSummaryCard',
-        error: error,
+        error: error.runtimeType,
         stackTrace: stackTrace,
       );
       if (mounted) {
@@ -206,19 +274,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
     final reportAsync = ref.watch(agentReportProvider(agentId));
     final report = reportAsync.value?.mapOrNull(agentReport: (r) => r);
-    final listAsync = ref.watch(unifiedSuggestionListProvider(widget.taskId));
-    // Distinguish "still resolving" from "resolved-and-empty" so the
-    // proposals section doesn't flash "No open proposals" during the
-    // initial fetch. `hasValue` is `true` once the provider has
-    // produced any data (including a deliberate empty list); on the
-    // first frame we render with no list and the section omits the
-    // empty-state placeholder.
-    final list = listAsync.hasValue ? listAsync.value! : null;
 
     final tldr = _resolveTldr(report);
     final additionalReport = _resolveAdditionalReport(report);
 
     final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
+    final list = _lastVisibleSuggestions;
     // Prefer the template displayName (e.g. "Task Laura") over the
     // generic agent kind label so the subtitle reads as the named
     // persona the user picked.
@@ -348,5 +409,48 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final explicitTldr = report.tldr?.trim();
     if (explicitTldr == null || explicitTldr.isEmpty) return null;
     return content;
+  }
+
+  UnifiedSuggestionList? _resolveVisibleSuggestionList(
+    AsyncValue<UnifiedSuggestionList> listAsync, {
+    required bool isRunning,
+    required UnifiedSuggestionList? previous,
+  }) {
+    final next = listAsync.hasValue ? listAsync.value : null;
+    if (next == null) {
+      return previous;
+    }
+
+    if (isRunning && previous != null) {
+      return _mergeUnresolvedOpenSuggestions(previous, next);
+    }
+
+    return next;
+  }
+
+  UnifiedSuggestionList _mergeUnresolvedOpenSuggestions(
+    UnifiedSuggestionList previous,
+    UnifiedSuggestionList next,
+  ) {
+    if (previous.open.isEmpty) return next;
+
+    final nextOpenFingerprints = {
+      for (final suggestion in next.open) suggestion.fingerprint,
+    };
+    final resolvedFingerprints = {
+      for (final entry in next.activity) entry.fingerprint,
+    };
+    final stillUnresolvedPrevious = previous.open.where((suggestion) {
+      return !nextOpenFingerprints.contains(suggestion.fingerprint) &&
+          !resolvedFingerprints.contains(suggestion.fingerprint);
+    }).toList();
+
+    if (stillUnresolvedPrevious.isEmpty) return next;
+
+    return UnifiedSuggestionList(
+      open: [...next.open, ...stillUnresolvedPrevious],
+      activity: next.activity,
+      agentName: next.agentName ?? previous.agentName,
+    );
   }
 }
