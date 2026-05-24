@@ -81,7 +81,7 @@ class VcReservation {
     if (_finalized) return;
     _finalized = true;
     await _service._markBurnPending(_hostId, _counter);
-    _service._onReleaseBurn(_hostId, _counter);
+    await _service._onReleaseBurn(_hostId, _counter);
   }
 }
 
@@ -89,8 +89,8 @@ class _VcScope {
   final List<VcReservation> reservations = [];
 }
 
-/// Handler invoked synchronously when a reserved counter is released without
-/// a matching write (a "burn"). Implementations typically enqueue a proactive
+/// Async handler invoked when a reserved counter is released without a matching
+/// write (a "burn"). Implementations typically enqueue a proactive
 /// `SyncBackfillResponse(unresolvable=true)` for the given `(hostId, counter)`
 /// so peers close the gap without waiting for the reactive backfill-request
 /// path.
@@ -101,10 +101,11 @@ class _VcScope {
 /// the broadcast must attribute the burnt counter to the host that actually
 /// reserved it.
 ///
-/// The handler MUST NOT throw. Errors are the handler's responsibility to log
-/// and swallow — the VC counter is already persisted and cannot be rewound,
-/// so a handler exception would be uselessly destructive.
-typedef VcBurnHandler = void Function(String hostId, int counter);
+/// The handler is awaited so durable outbox persistence can complete before
+/// [VcReservation.release] returns. Handler errors are caught and logged by
+/// [VectorClockService] — the VC counter is already persisted and cannot be
+/// rewound, so a handler exception must not escape the finalizer.
+typedef VcBurnHandler = Future<void> Function(String hostId, int counter);
 
 class VectorClockService {
   VectorClockService() {
@@ -334,7 +335,7 @@ class VectorClockService {
   /// service's current [_host] if [setNewHost] ran between reserve and
   /// release. The broadcast must attribute the burnt counter to the host
   /// that actually reserved it.
-  void _onReleaseBurn(String hostId, int counter) {
+  Future<void> _onReleaseBurn(String hostId, int counter) async {
     // DomainLogger may not be registered in some test harnesses / bootstrap
     // paths; use the `isRegistered` guard so a release on a minimally-wired
     // service (e.g. unit test seeding the SettingsDb counter) does not crash.
@@ -349,7 +350,7 @@ class VectorClockService {
     final handler = _burnHandler;
     if (handler == null) return;
     try {
-      handler(hostId, counter);
+      await handler(hostId, counter);
     } catch (error, stackTrace) {
       if (getIt.isRegistered<DomainLogger>()) {
         getIt<DomainLogger>().error(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -5,13 +7,20 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../helpers/fallbacks.dart';
+import '../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late SettingsDb settingsDb;
   late VectorClockService service;
+
+  setUpAll(registerAllFallbackValues);
 
   setUp(() async {
     await getIt.reset();
@@ -278,7 +287,9 @@ void main() {
       () async {
         await service.setNextAvailableCounter(20);
         final burnt = <int>[];
-        service.setBurnHandler((_, counter) => burnt.add(counter));
+        service.setBurnHandler((_, counter) async {
+          burnt.add(counter);
+        });
 
         final reservation = await service.reserveNextVectorClock();
         await reservation.release();
@@ -307,7 +318,7 @@ void main() {
 
         await service.setNextAvailableCounter(30);
         final host = await service.getHost();
-        service.setBurnHandler((_, _) {
+        service.setBurnHandler((_, _) async {
           throw StateError('broadcast failed');
         });
 
@@ -330,6 +341,125 @@ void main() {
       },
     );
 
+    test('release awaits the burn handler before completing', () async {
+      await service.setNextAvailableCounter(35);
+      final handlerStarted = Completer<void>();
+      final handlerMayFinish = Completer<void>();
+      final events = <String>[];
+      var releaseCompleted = false;
+      service.setBurnHandler((_, counter) async {
+        events.add('start:$counter');
+        handlerStarted.complete();
+        await handlerMayFinish.future;
+        events.add('finish:$counter');
+      });
+
+      final reservation = await service.reserveNextVectorClock();
+      final releaseFuture = reservation.release().whenComplete(() {
+        releaseCompleted = true;
+      });
+
+      await handlerStarted.future;
+      await Future<void>.value();
+
+      expect(releaseCompleted, isFalse);
+      expect(events, ['start:35']);
+
+      handlerMayFinish.complete();
+      await releaseFuture;
+
+      expect(releaseCompleted, isTrue);
+      expect(events, ['start:35', 'finish:35']);
+
+      service.setBurnHandler(null);
+    });
+
+    test(
+      'reservation ledger write failures are logged without losing the '
+      'persisted counter',
+      () async {
+        final syncDb = MockSyncDatabase();
+        final domainLogger = MockDomainLogger();
+        getIt
+          ..registerSingleton<SyncDatabase>(syncDb)
+          ..registerSingleton<DomainLogger>(domainLogger);
+        _stubDomainLoggerError(domainLogger);
+        when(
+          () => syncDb.recordReservedSequenceCounter(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+          ),
+        ).thenThrow(StateError('ledger failed'));
+
+        await service.setNextAvailableCounter(60);
+        final reservation = await service.reserveNextVectorClock();
+
+        expect(await service.getNextAvailableCounter(), 61);
+        verify(
+          () => domainLogger.error(
+            LogDomains.sync,
+            any<String>(
+              that: contains('VC reservation ledger write failed'),
+            ),
+            error: any<dynamic>(named: 'error'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'vc.reserve.ledger',
+          ),
+        ).called(1);
+
+        await reservation.commit();
+      },
+    );
+
+    test(
+      'burn-pending ledger write failures are logged while the burn handler '
+      'still gets the counter',
+      () async {
+        final syncDb = MockSyncDatabase();
+        final domainLogger = MockDomainLogger();
+        getIt
+          ..registerSingleton<SyncDatabase>(syncDb)
+          ..registerSingleton<DomainLogger>(domainLogger);
+        _stubDomainLoggerError(domainLogger);
+        when(
+          () => syncDb.recordReservedSequenceCounter(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+          ),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => syncDb.markReservedSequenceCounterBurnPending(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+          ),
+        ).thenThrow(StateError('burn ledger failed'));
+
+        await service.setNextAvailableCounter(70);
+        final burnt = <int>[];
+        service.setBurnHandler((_, counter) async {
+          burnt.add(counter);
+        });
+
+        final reservation = await service.reserveNextVectorClock();
+        await reservation.release();
+
+        expect(burnt, [70]);
+        verify(
+          () => domainLogger.error(
+            LogDomains.sync,
+            any<String>(
+              that: contains('VC burn-pending ledger write failed'),
+            ),
+            error: any<dynamic>(named: 'error'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'vc.burn.ledger',
+          ),
+        ).called(1);
+
+        service.setBurnHandler(null);
+      },
+    );
+
     test('commit is idempotent and safe to call before release', () async {
       await service.setNextAvailableCounter(40);
       final reservation = await service.reserveNextVectorClock();
@@ -343,7 +473,9 @@ void main() {
       () async {
         await service.setNextAvailableCounter(50);
         final burnt = <int>[];
-        service.setBurnHandler((_, counter) => burnt.add(counter));
+        service.setBurnHandler((_, counter) async {
+          burnt.add(counter);
+        });
 
         final reservation = await service.reserveNextVectorClock();
         await reservation.commit();
@@ -407,17 +539,18 @@ void main() {
       () async {
         await service.setNextAvailableCounter(200);
         final burnt = <int>[];
-        service.setBurnHandler((_, counter) => burnt.add(counter));
+        service.setBurnHandler((_, counter) async {
+          burnt.add(counter);
+        });
 
-        expect(
-          () => service.withVcScope<void>(() async {
+        await expectLater(
+          service.withVcScope<void>(() async {
             await service.getNextVectorClock();
             await service.getNextVectorClock();
             throw StateError('write rejected');
           }),
           throwsA(isA<StateError>()),
         );
-        await Future<void>.delayed(Duration.zero);
 
         // Both counters burnt — broadcast in reverse (latest first) so
         // the handler's ordering matches the release order.
@@ -439,7 +572,9 @@ void main() {
       () async {
         await service.setNextAvailableCounter(300);
         final burnt = <int>[];
-        service.setBurnHandler((_, counter) => burnt.add(counter));
+        service.setBurnHandler((_, counter) async {
+          burnt.add(counter);
+        });
 
         final applied = await service.withVcScope<bool>(
           () async {
@@ -506,7 +641,9 @@ void main() {
       () async {
         await service.setNextAvailableCounter(600);
         final burnt = <int>[];
-        service.setBurnHandler((_, counter) => burnt.add(counter));
+        service.setBurnHandler((_, counter) async {
+          burnt.add(counter);
+        });
 
         final applied = await service.withVcScope<bool>(
           () async {
@@ -541,7 +678,7 @@ void main() {
       () async {
         await service.setNextAvailableCounter(800);
         final burnt = <({String hostId, int counter})>[];
-        service.setBurnHandler((hostId, counter) {
+        service.setBurnHandler((hostId, counter) async {
           burnt.add((hostId: hostId, counter: counter));
         });
 
@@ -567,8 +704,11 @@ void main() {
       'burn handler exception does not propagate into the scope finalizer '
       '— the counter is already burnt; a handler throw must not cascade',
       () async {
+        final domainLogger = MockDomainLogger();
+        getIt.registerSingleton<DomainLogger>(domainLogger);
+        _stubDomainLoggerError(domainLogger);
         await service.setNextAvailableCounter(700);
-        service.setBurnHandler((_, _) {
+        service.setBurnHandler((_, _) async {
           throw StateError('handler boom');
         });
 
@@ -581,9 +721,32 @@ void main() {
           commitWhen: (applied) => applied,
         );
         expect(applied, isFalse);
+        verify(
+          () => domainLogger.error(
+            LogDomains.sync,
+            any<String>(
+              that: contains('VC burn broadcast handler threw'),
+            ),
+            error: any<dynamic>(named: 'error'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'vc.burn.handler',
+          ),
+        ).called(1);
 
         service.setBurnHandler(null);
       },
     );
   });
+}
+
+void _stubDomainLoggerError(MockDomainLogger domainLogger) {
+  when(
+    () => domainLogger.error(
+      any<String>(),
+      any<String>(),
+      error: any<dynamic>(named: 'error'),
+      stackTrace: any<StackTrace>(named: 'stackTrace'),
+      subDomain: any<String>(named: 'subDomain'),
+    ),
+  ).thenReturn(null);
 }

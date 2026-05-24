@@ -439,6 +439,23 @@ Future<void> registerSingletons() async {
     required String hostId,
     required int counter,
   }) async {
+    final existing = await syncSequenceLogService.getEntryByHostAndCounter(
+      hostId,
+      counter,
+    );
+    final existingStatus = existing?.status;
+    if (existingStatus == SyncSequenceStatus.received.index ||
+        existingStatus == SyncSequenceStatus.backfilled.index ||
+        existingStatus == SyncSequenceStatus.deleted.index) {
+      domainLogger.log(
+        LogDomains.sync,
+        'vc.burn.broadcast.skipBound host=$hostId counter=$counter '
+        'status=$existingStatus',
+        subDomain: 'vc.burn.broadcast',
+      );
+      return;
+    }
+
     await outboxService.enqueueMessage(
       SyncMessage.backfillResponse(
         hostId: hostId,
@@ -458,47 +475,40 @@ Future<void> registerSingletons() async {
   // unresolvable=true so peers close the gap on arrival instead of having to
   // issue a backfill request first. Registered here because the handler has
   // to fire into OutboxService, which is only now available. The handler is
-  // fire-and-forget by design: it must never throw and must never block the
-  // caller — see VectorClockService._onReleaseBurn.
-  vectorClockService.setBurnHandler((hostId, counter) {
-    // Fire-and-forget: schedule the local-log write + broadcast, swallow
-    // failures at the handler boundary. `unawaited` would still surface
-    // errors to the zone; we catch explicitly so a transient sequence-log
-    // or outbox issue doesn't poison the write path that triggered the
-    // burn.
-    //
+  // awaited by VectorClockService so the durable enqueue attempt finishes
+  // before `release()` returns; failures are still swallowed here because the
+  // VC counter is already persisted and cannot be rewound.
+  vectorClockService.setBurnHandler((hostId, counter) async {
     // [hostId] is the host captured at reservation time, not whatever
     // [VectorClockService.getHost] returns now — if setNewHost ran between
     // reserve and release the broadcast would otherwise be attributed to
     // the new host, producing a phantom unresolvable on the new host's
     // counter space and leaving the actual burnt counter on the old host
     // unannounced.
-    Future<void>(() async {
-      try {
-        // Enqueue first. If the outbox write fails, the row remains
-        // `reserved` and startup/backfill can retry; terminalizing first
-        // would make a transient outbox failure silently drop the proactive
-        // repair signal.
-        await enqueueOwnUnresolvableMarker(
-          hostId: hostId,
-          counter: counter,
-        );
-        domainLogger.log(
-          LogDomains.sync,
-          'vc.burn.broadcast host=$hostId counter=$counter',
-          subDomain: 'vc.burn.broadcast',
-        );
-      } catch (error, stackTrace) {
-        domainLogger.error(
-          LogDomains.sync,
-          'vc burn broadcast failed; counter $counter will fall back to '
-          'reactive backfill resolution',
-          error: error,
-          stackTrace: stackTrace,
-          subDomain: 'vc.burn.broadcast',
-        );
-      }
-    });
+    try {
+      // Enqueue first. If the outbox write fails, the row remains
+      // `burnPending` and startup/backfill can retry; terminalizing first
+      // would make a transient outbox failure silently drop the proactive
+      // repair signal.
+      await enqueueOwnUnresolvableMarker(
+        hostId: hostId,
+        counter: counter,
+      );
+      domainLogger.log(
+        LogDomains.sync,
+        'vc.burn.broadcast host=$hostId counter=$counter',
+        subDomain: 'vc.burn.broadcast',
+      );
+    } catch (error, stackTrace) {
+      domainLogger.error(
+        LogDomains.sync,
+        'vc burn broadcast failed; counter $counter will fall back to '
+        'reactive backfill resolution',
+        error: error,
+        stackTrace: stackTrace,
+        subDomain: 'vc.burn.broadcast',
+      );
+    }
   });
 
   // Crash recovery for counters explicitly released in a previous process but
@@ -515,16 +525,30 @@ Future<void> registerSingletons() async {
             .burnPendingCountersForHost(
               hostId: hostId,
             );
+        var reconciled = 0;
         for (final counter in counters) {
-          await enqueueOwnUnresolvableMarker(
-            hostId: hostId,
-            counter: counter,
-          );
+          try {
+            await enqueueOwnUnresolvableMarker(
+              hostId: hostId,
+              counter: counter,
+            );
+            reconciled++;
+          } catch (error, stackTrace) {
+            domainLogger.error(
+              LogDomains.sync,
+              'vc burn reconciliation failed for host=$hostId '
+              'counter=$counter; continuing',
+              error: error,
+              stackTrace: stackTrace,
+              subDomain: 'vc.burn.reconcile',
+            );
+          }
         }
         if (counters.isNotEmpty) {
           domainLogger.log(
             LogDomains.sync,
-            'vc.burn.reconcile host=$hostId count=${counters.length} '
+            'vc.burn.reconcile host=$hostId count=$reconciled '
+            'attempted=${counters.length} '
             'counters=$counters',
             subDomain: 'vc.burn.reconcile',
           );

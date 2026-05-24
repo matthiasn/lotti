@@ -1098,6 +1098,10 @@ class SyncSequenceLogService {
   /// to our own host, if any skip is ever relaxed) will then see an existing
   /// authoritative row and leave it alone.
   ///
+  /// The authoritative-row guard is implemented inside
+  /// [SyncDatabase.recordOwnUnresolvableSequenceCounter] so the check and
+  /// mutation happen in one database transaction.
+  ///
   /// Not wired through [handleBackfillResponse] because that is the handler
   /// for INCOMING responses, and own-host broadcasts never flow through it
   /// on the originator — self-echoes are suppressed in the Matrix pipeline.
@@ -1109,33 +1113,30 @@ class SyncSequenceLogService {
     required int counter,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
-    final now = DateTime.now();
-    await _syncDatabase.recordSequenceEntry(
-      SyncSequenceLogCompanion(
-        hostId: Value(hostId),
-        counter: Value(counter),
-        // Explicitly clear any stale entry_id on an existing row (e.g. one
-        // inserted earlier via a covered-VC hint referring to a different
-        // entity). The unresolvable marker must stand alone — a lingering
-        // entry_id would let later reset/verify paths treat the counter as
-        // if it had a known payload and reopen it.
-        entryId: const Value(null),
-        payloadType: Value(payloadType.index),
-        status: Value(SyncSequenceStatus.unresolvable.index),
-        createdAt: Value(now),
-        updatedAt: Value(now),
-      ),
+    final recorded = await _syncDatabase.recordOwnUnresolvableSequenceCounter(
+      hostId: hostId,
+      counter: counter,
+      payloadType: payloadType,
     );
     _trace(
-      'markOwnCounterUnresolvable hostId=$hostId counter=$counter',
+      recorded
+          ? 'markOwnCounterUnresolvable hostId=$hostId counter=$counter'
+          : 'markOwnCounterUnresolvable skipped hostId=$hostId '
+                'counter=$counter',
       subDomain: 'sequence.ownUnresolvable',
     );
   }
 
-  /// Return own-host reservations left behind without a matching outbound
-  /// payload. A caller must enqueue the durable unresolvable broadcast before
-  /// converting each row via [markOwnCounterUnresolvable]; otherwise a failed
-  /// outbox write would drop the proactive repair signal.
+  /// Return own-host pre-bind crash markers left behind by
+  /// `reserveNextVectorClock`.
+  ///
+  /// Rows returned from [reservedCountersForHost] are diagnostic only and must
+  /// not be automatically converted via [markOwnCounterUnresolvable]. A crash
+  /// can happen after the payload commits but before [recordSentEntry]
+  /// replaces the `reserved` row, so treating plain reservations as
+  /// unresolvable could burn a real payload mapping. Only rows in
+  /// [SyncSequenceStatus.burnPending] carry the "released without payload"
+  /// guarantee and are safe for startup reconciliation.
   Future<List<int>> reservedCountersForHost({
     required String hostId,
   }) async {

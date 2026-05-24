@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   active-row indexes that avoid SQLite temp sorts during large project-agent
   wake context builds.
 
+### Fixed
+- Sync now preserves local sequence mappings when recovering burnt vector-clock
+  counters, reducing cases where peers can get stuck on unresolvable gaps.
+
 ## [0.9.1005]
 ### Changed
 - AI popup menu now opens a model-override picker when you tap an

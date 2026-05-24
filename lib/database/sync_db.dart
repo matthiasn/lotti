@@ -1039,6 +1039,77 @@ class SyncDatabase extends _$SyncDatabase {
     });
   }
 
+  /// Record that this host authoritatively burnt one of its own counters.
+  ///
+  /// The guard lives in the database layer so the authoritative-row check and
+  /// write happen in one transaction. Rows already bound to a payload
+  /// ([SyncSequenceStatus.received], [SyncSequenceStatus.backfilled], or
+  /// [SyncSequenceStatus.deleted]) are left untouched; other rows are converted
+  /// to [SyncSequenceStatus.unresolvable] with `entry_id` explicitly cleared.
+  Future<bool> recordOwnUnresolvableSequenceCounter({
+    required String hostId,
+    required int counter,
+    SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
+    DateTime? now,
+  }) async {
+    final timestamp = now ?? DateTime.now();
+    return transaction(() async {
+      Future<bool> tryUpdateExisting() async {
+        final updated =
+            await (update(syncSequenceLog)..where(
+                  (t) =>
+                      t.hostId.equals(hostId) &
+                      t.counter.equals(counter) &
+                      t.status.isNotIn([
+                        SyncSequenceStatus.received.index,
+                        SyncSequenceStatus.backfilled.index,
+                        SyncSequenceStatus.deleted.index,
+                      ]),
+                ))
+                .write(
+                  SyncSequenceLogCompanion(
+                    entryId: const Value(null),
+                    payloadType: Value(payloadType.index),
+                    status: Value(SyncSequenceStatus.unresolvable.index),
+                    updatedAt: Value(timestamp),
+                  ),
+                );
+        if (updated == 0) return false;
+        await _refreshSequenceWatermark(
+          hostId: hostId,
+          counter: counter,
+          status: SyncSequenceStatus.unresolvable.index,
+        );
+        return true;
+      }
+
+      if (await tryUpdateExisting()) return true;
+
+      final inserted = await into(syncSequenceLog).insertReturningOrNull(
+        SyncSequenceLogCompanion(
+          hostId: Value(hostId),
+          counter: Value(counter),
+          entryId: const Value(null),
+          payloadType: Value(payloadType.index),
+          status: Value(SyncSequenceStatus.unresolvable.index),
+          createdAt: Value(timestamp),
+          updatedAt: Value(timestamp),
+        ),
+        mode: InsertMode.insertOrIgnore,
+      );
+      if (inserted != null) {
+        await _refreshSequenceWatermark(
+          hostId: hostId,
+          counter: counter,
+          status: SyncSequenceStatus.unresolvable.index,
+        );
+        return true;
+      }
+
+      return tryUpdateExisting();
+    });
+  }
+
   /// Record an own-host VC reservation before the counter is handed to a
   /// caller that may write to another database. The insert is intentionally
   /// `OR IGNORE`: a catch-up reservation must never clobber an already-bound
@@ -1075,9 +1146,10 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   /// Return own-host reservations that have not yet been bound to a sync
-  /// payload or explicitly marked unresolvable. Startup reconciliation uses
-  /// this to enqueue durable unresolvable broadcasts before converting the
-  /// rows to terminal status.
+  /// payload or explicitly released. These rows are diagnostic pre-bind
+  /// markers only; startup reconciliation must use
+  /// [burnPendingSequenceCountersForHost] for counters that are safe to
+  /// convert to terminal unresolvable markers.
   Future<List<int>> reservedSequenceCountersForHost({
     required String hostId,
   }) async {
@@ -1105,22 +1177,59 @@ class SyncDatabase extends _$SyncDatabase {
   }) async {
     final timestamp = now ?? DateTime.now();
     await transaction(() async {
-      await into(syncSequenceLog).insertOnConflictUpdate(
-        SyncSequenceLogCompanion(
-          hostId: Value(hostId),
-          counter: Value(counter),
-          entryId: const Value(null),
-          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
-          status: Value(SyncSequenceStatus.burnPending.index),
-          createdAt: Value(timestamp),
-          updatedAt: Value(timestamp),
-        ),
-      );
-      await _refreshSequenceWatermark(
-        hostId: hostId,
-        counter: counter,
-        status: SyncSequenceStatus.burnPending.index,
-      );
+      final existing = await getEntryByHostAndCounter(hostId, counter);
+      if (existing == null) {
+        await into(syncSequenceLog).insert(
+          SyncSequenceLogCompanion(
+            hostId: Value(hostId),
+            counter: Value(counter),
+            entryId: const Value(null),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.burnPending.index),
+            createdAt: Value(timestamp),
+            updatedAt: Value(timestamp),
+          ),
+        );
+        await _refreshSequenceWatermark(
+          hostId: hostId,
+          counter: counter,
+          status: SyncSequenceStatus.burnPending.index,
+        );
+        return;
+      }
+
+      if (existing.status != SyncSequenceStatus.reserved.index &&
+          existing.status != SyncSequenceStatus.burnPending.index) {
+        return;
+      }
+
+      final updated =
+          await (update(syncSequenceLog)..where(
+                (t) =>
+                    t.hostId.equals(hostId) &
+                    t.counter.equals(counter) &
+                    t.status.isIn([
+                      SyncSequenceStatus.reserved.index,
+                      SyncSequenceStatus.burnPending.index,
+                    ]),
+              ))
+              .write(
+                SyncSequenceLogCompanion(
+                  entryId: const Value(null),
+                  payloadType: Value(
+                    SyncSequencePayloadType.journalEntity.index,
+                  ),
+                  status: Value(SyncSequenceStatus.burnPending.index),
+                  updatedAt: Value(timestamp),
+                ),
+              );
+      if (updated != 0) {
+        await _refreshSequenceWatermark(
+          hostId: hostId,
+          counter: counter,
+          status: SyncSequenceStatus.burnPending.index,
+        );
+      }
     });
   }
 
