@@ -2583,6 +2583,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.';
 
   @override
+  String get configFlagDailyOsNextEnabled => 'Použít nové agentní DailyOS';
+
+  @override
+  String get configFlagDailyOsNextEnabledDescription =>
+      'Nahradí stávající rozhraní DailyOS novým hlasově řízeným tokem zachycení a smíření vedeným agentem. Raná ukázka — logika backendu je simulovaná.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Povolit AI streamování pro akce úkolů';
 
@@ -3072,6 +3079,149 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNearLimit => 'Blízko limitu';
+
+  @override
+  String get dailyOsNextCaptureCaptured => 'Rozumím.';
+
+  @override
+  String get dailyOsNextCaptureHeadlineLead => 'Co máš dnes';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTail => 'na mysli?';
+
+  @override
+  String get dailyOsNextCaptureIdleHint =>
+      'Klepni pro mluvení · zachyť to · nebo napiš';
+
+  @override
+  String get dailyOsNextCaptureListening => 'POSLOUCHÁM';
+
+  @override
+  String get dailyOsNextCaptureReconcileCta => 'Sjednotit';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonReset => 'Začít znovu';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStart => 'Začít poslouchat';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStop => 'Zastavit';
+
+  @override
+  String dailyOsNextEstimateMinutes(int minutes) {
+    return '${minutes}m';
+  }
+
+  @override
+  String get dailyOsNextGreetingAfternoon => 'Dobré odpoledne.';
+
+  @override
+  String get dailyOsNextGreetingEvening => 'Dobrý večer.';
+
+  @override
+  String get dailyOsNextGreetingHi => 'Ahoj 👋';
+
+  @override
+  String get dailyOsNextGreetingMorning => 'Dobré ráno.';
+
+  @override
+  String get dailyOsNextReconcileBadgeMatched => 'PROPOJENO';
+
+  @override
+  String get dailyOsNextReconcileBadgeNew => 'NOVÉ';
+
+  @override
+  String get dailyOsNextReconcileBadgeUpdate => 'AKTUALIZACE';
+
+  @override
+  String get dailyOsNextReconcileBuildDayCta => 'Sestavit můj den';
+
+  @override
+  String get dailyOsNextReconcileDecideOverline => 'STOJÍ ZA ROZHODNUTÍ';
+
+  @override
+  String get dailyOsNextReconcileDefaultBehaviorHint =>
+      'Tvá rozhodnutí zde plynou do plánu — žádné rozhodnutí znamená „nech to být“.';
+
+  @override
+  String dailyOsNextReconcileError(String detail) {
+    return 'Něco se pokazilo: $detail';
+  }
+
+  @override
+  String get dailyOsNextReconcileHeardOverline => 'TADY JE, CO JSEM SLYŠEL';
+
+  @override
+  String get dailyOsNextReconcileLowConfidence => 'nízká důvěra';
+
+  @override
+  String get dailyOsNextReconcileReRecord => 'Znovu nahrát';
+
+  @override
+  String get dailyOsNextReconcileVoiceHint => '„Vyhoď faktury“ tu taky funguje';
+
+  @override
+  String get dailyOsNextStateDueToday => 'Splatné dnes';
+
+  @override
+  String dailyOsNextStateInProgress(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Probíhá · $count relací',
+      few: 'Probíhá · $count relace',
+      one: 'Probíhá · 1 relace',
+      zero: 'Probíhá',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Po termínu · $days dní',
+      few: 'Po termínu · $days dny',
+      one: 'Po termínu · 1 den',
+      zero: 'Po termínu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextStateRecurringMissed => 'Opakující · zmeškané';
+
+  @override
+  String get dailyOsNextTriageConfirmDefer => 'Odloženo';
+
+  @override
+  String get dailyOsNextTriageConfirmDone => 'Označeno jako hotové';
+
+  @override
+  String get dailyOsNextTriageConfirmDoNow => 'Hotovo hned';
+
+  @override
+  String get dailyOsNextTriageConfirmDrop => 'Zahozeno';
+
+  @override
+  String get dailyOsNextTriageConfirmToday => 'Přidáno na dnes';
+
+  @override
+  String get dailyOsNextTriageDefer => 'Odložit';
+
+  @override
+  String get dailyOsNextTriageDone => 'Hotovo';
+
+  @override
+  String get dailyOsNextTriageDoNow => 'Udělat teď';
+
+  @override
+  String get dailyOsNextTriageDrop => 'Zahodit';
+
+  @override
+  String get dailyOsNextTriageToday => 'Dnes';
 
   @override
   String get dailyOsNoBudgets => 'Žádné časové rozpočty';

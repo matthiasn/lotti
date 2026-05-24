@@ -1,0 +1,365 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Second screen of the agentic loop — turn the spoken check-in into
+/// editable structure and fold in the existing corpus.
+///
+/// Mirrors `prototype/screens/reconcile.jsx`. Two-column on wide
+/// surfaces, single-column on narrow.
+class ReconcilePage extends ConsumerWidget {
+  const ReconcilePage({required this.captureId, super.key});
+
+  /// The capture submitted from the Capture screen. The controller
+  /// uses it to fetch the parsed items.
+  final CaptureId captureId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final state = ref.watch(reconcileControllerProvider(captureId));
+
+    return Scaffold(
+      backgroundColor: tokens.colors.background.level01,
+      appBar: AppBar(
+        backgroundColor: tokens.colors.background.level01,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: context.messages.dailyOsNextReconcileReRecord,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ),
+      body: SafeArea(
+        child: state.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
+            child: Text(
+              context.messages.dailyOsNextReconcileError(error.toString()),
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          data: (data) => _ReconcileBody(captureId: captureId, data: data),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReconcileBody extends ConsumerWidget {
+  const _ReconcileBody({required this.captureId, required this.data});
+
+  final CaptureId captureId;
+  final ReconcileData data;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final isWide = MediaQuery.sizeOf(context).width >= 720;
+
+    final heardColumn = _HeardColumn(captureId: captureId, items: data.parsed);
+    final decideColumn = _DecideColumn(
+      captureId: captureId,
+      items: data.pending,
+    );
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step6,
+              vertical: tokens.spacing.step5,
+            ),
+            child: isWide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 6, child: heardColumn),
+                      SizedBox(width: tokens.spacing.step6),
+                      Expanded(flex: 5, child: decideColumn),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      heardColumn,
+                      SizedBox(height: tokens.spacing.step6),
+                      decideColumn,
+                    ],
+                  ),
+          ),
+        ),
+        const _ReconcileFooter(),
+      ],
+    );
+  }
+}
+
+class _HeardColumn extends ConsumerWidget {
+  const _HeardColumn({required this.captureId, required this.items});
+
+  final CaptureId captureId;
+  final List<ParsedItem> items;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ColumnHeader(
+          overline: context.messages.dailyOsNextReconcileHeardOverline,
+          count: items.length,
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        for (final item in items) ...[
+          ParsedCard(
+            item: item,
+            onBreakLink: () => ref
+                .read(reconcileControllerProvider(captureId).notifier)
+                .breakLink(item.id),
+          ),
+          SizedBox(height: tokens.spacing.step4),
+        ],
+      ],
+    );
+  }
+}
+
+class _DecideColumn extends ConsumerWidget {
+  const _DecideColumn({required this.captureId, required this.items});
+
+  final CaptureId captureId;
+  final List<PendingItem> items;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final notifier = ref.read(reconcileControllerProvider(captureId).notifier);
+    final decided = ref.watch(
+      reconcileControllerProvider(captureId).select(
+        (asyncValue) => asyncValue.maybeWhen(
+          data: (data) => data.triageDecisions,
+          orElse: () => const <String, TriageResult>{},
+        ),
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ColumnHeader(
+          overline: context.messages.dailyOsNextReconcileDecideOverline,
+          count: items.length,
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        for (final item in items) ...[
+          PendingCard(
+            item: item,
+            decision: decided[item.taskId],
+            onTriage: (action) =>
+                notifier.triage(taskId: item.taskId, action: action),
+          ),
+          SizedBox(height: tokens.spacing.step4),
+        ],
+        SizedBox(height: tokens.spacing.step3),
+        const _DefaultBehaviorHint(),
+      ],
+    );
+  }
+}
+
+class _ColumnHeader extends StatelessWidget {
+  const _ColumnHeader({required this.overline, required this.count});
+
+  final String overline;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      children: [
+        Text(
+          overline,
+          style: tokens.typography.styles.others.overline.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step2,
+            vertical: 2,
+          ),
+          decoration: BoxDecoration(
+            color: tokens.colors.background.level02,
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+          ),
+          child: Text(
+            '$count',
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DefaultBehaviorHint extends StatelessWidget {
+  const _DefaultBehaviorHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DottedBorder(
+      color: tokens.colors.decorative.level02,
+      radius: tokens.radii.m,
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step4),
+        child: Text(
+          context.messages.dailyOsNextReconcileDefaultBehaviorHint,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.text.lowEmphasis,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReconcileFooter extends StatelessWidget {
+  const _ReconcileFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        border: Border(
+          top: BorderSide(color: tokens.colors.decorative.level01),
+        ),
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step6,
+        vertical: tokens.spacing.step4,
+      ),
+      child: Row(
+        children: [
+          TextButton.icon(
+            icon: const Icon(Icons.arrow_back_rounded, size: 16),
+            label: Text(messages.dailyOsNextReconcileReRecord),
+            style: TextButton.styleFrom(
+              foregroundColor: tokens.colors.text.mediumEmphasis,
+            ),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                messages.dailyOsNextReconcileVoiceHint,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: null,
+            style: FilledButton.styleFrom(
+              backgroundColor: tokens.colors.interactive.enabled,
+              foregroundColor: tokens.colors.text.onInteractiveAlert,
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step5,
+                vertical: tokens.spacing.step3,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(tokens.radii.m),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(messages.dailyOsNextReconcileBuildDayCta),
+                SizedBox(width: tokens.spacing.step2),
+                const Icon(Icons.arrow_forward_rounded, size: 16),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Simple dashed border decoration — used for the footer hint card.
+/// Inlined here rather than introducing a dependency on a 3rd-party
+/// package. Strokes follow the design system decorative level.
+class DottedBorder extends StatelessWidget {
+  const DottedBorder({
+    required this.child,
+    required this.color,
+    required this.radius,
+    super.key,
+  });
+
+  final Widget child;
+  final Color color;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _DashedBorderPainter(color: color, radius: radius),
+      child: child,
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0.5, 0.5, size.width - 1, size.height - 1),
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+    const dash = 4.0;
+    const gap = 3.0;
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = (distance + dash).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, next), paint);
+        distance = next + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter old) =>
+      old.color != color || old.radius != radius;
+}

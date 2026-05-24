@@ -1240,6 +1240,8 @@
   "completeHabitSkipButton": "Omitir",
   "completeHabitSuccessButton": "Éxito",
   "configFlagAttemptEmbeddingDescription": "Cuando está habilitado, la aplicación intentará generar incrustaciones para tus entradas para mejorar la búsqueda y las sugerencias de contenido relacionado.",
+  "configFlagDailyOsNextEnabled": "Usar el nuevo DailyOS agéntico",
+  "configFlagDailyOsNextEnabledDescription": "Reemplaza la superficie actual de DailyOS por el nuevo flujo de captura y reconciliación con voz dirigido por agente. Vista previa temprana — la lógica del backend está simulada.",
   "configFlagEnableAiStreaming": "Habilitar streaming de IA para acciones de tareas",
   "configFlagEnableAiStreamingDescription": "Transmitir respuestas de IA para acciones relacionadas con tareas. Desactívelo para almacenar respuestas en búfer y mantener la interfaz más fluida.",
   "configFlagEnableAiSummaryTts": "Reproducción de resúmenes de IA",
@@ -1507,6 +1509,77 @@
   "dailyOsFold": "Contraer",
   "dailyOsInvalidTimeRange": "Rango de tiempo no válido",
   "dailyOsNearLimit": "Cerca del límite",
+  "dailyOsNextCaptureCaptured": "Entendido.",
+  "dailyOsNextCaptureHeadlineLead": "¿Qué tienes en mente",
+  "dailyOsNextCaptureHeadlineTail": "para hoy?",
+  "dailyOsNextCaptureIdleHint": "Toca para hablar · captúralo · o escríbelo",
+  "dailyOsNextCaptureListening": "ESCUCHANDO",
+  "dailyOsNextCaptureReconcileCta": "Reconciliar",
+  "dailyOsNextCaptureVoiceButtonReset": "Empezar de nuevo",
+  "dailyOsNextCaptureVoiceButtonStart": "Empezar a escuchar",
+  "dailyOsNextCaptureVoiceButtonStop": "Detener",
+  "dailyOsNextEstimateMinutes": "{minutes}m",
+  "@dailyOsNextEstimateMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "45"
+      }
+    }
+  },
+  "dailyOsNextGreetingAfternoon": "Buenas tardes.",
+  "dailyOsNextGreetingEvening": "Buenas noches.",
+  "dailyOsNextGreetingHi": "Hola 👋",
+  "dailyOsNextGreetingMorning": "Buenos días.",
+  "dailyOsNextReconcileBadgeMatched": "VINCULADO",
+  "dailyOsNextReconcileBadgeNew": "NUEVO",
+  "dailyOsNextReconcileBadgeUpdate": "ACTUALIZAR",
+  "dailyOsNextReconcileBuildDayCta": "Construir mi día",
+  "dailyOsNextReconcileDecideOverline": "VALE LA PENA DECIDIR",
+  "dailyOsNextReconcileDefaultBehaviorHint": "Tus decisiones aquí alimentan el plan — no decidir significa «déjalo donde está».",
+  "dailyOsNextReconcileError": "Algo salió mal: {detail}",
+  "@dailyOsNextReconcileError": {
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "Red inaccesible"
+      }
+    }
+  },
+  "dailyOsNextReconcileHeardOverline": "ESTO ES LO QUE ESCUCHÉ",
+  "dailyOsNextReconcileLowConfidence": "confianza baja",
+  "dailyOsNextReconcileReRecord": "Volver a grabar",
+  "dailyOsNextReconcileVoiceHint": "«Quita las facturas» también funciona aquí",
+  "dailyOsNextStateDueToday": "Vence hoy",
+  "dailyOsNextStateInProgress": "{count, plural, =0{En curso} =1{En curso · 1 sesión} other{En curso · {count} sesiones}}",
+  "@dailyOsNextStateInProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "dailyOsNextStateOverdue": "{days, plural, =0{Atrasado} =1{Atrasado · 1 día} other{Atrasado · {days} días}}",
+  "@dailyOsNextStateOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateRecurringMissed": "Recurrente · perdido",
+  "dailyOsNextTriageConfirmDefer": "Aplazado",
+  "dailyOsNextTriageConfirmDone": "Marcado como hecho",
+  "dailyOsNextTriageConfirmDoNow": "Hecho ya",
+  "dailyOsNextTriageConfirmDrop": "Descartado",
+  "dailyOsNextTriageConfirmToday": "Añadido a hoy",
+  "dailyOsNextTriageDefer": "Aplazar",
+  "dailyOsNextTriageDone": "Hecho",
+  "dailyOsNextTriageDoNow": "Hacer ahora",
+  "dailyOsNextTriageDrop": "Descartar",
+  "dailyOsNextTriageToday": "Hoy",
   "dailyOsNoBudgets": "Sin presupuestos de tiempo",
   "dailyOsNoBudgetsHint": "Añade presupuestos para rastrear cómo distribuyes tu tiempo entre categorías.",
   "dailyOsNoBudgetWarning": "Sin tiempo planificado",

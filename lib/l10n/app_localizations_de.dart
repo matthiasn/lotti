@@ -2577,6 +2577,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wenn aktiviert, versucht die App, Einbettungen für deine Einträge zu generieren, um die Suche und Vorschläge für verwandte Inhalte zu verbessern.';
 
   @override
+  String get configFlagDailyOsNextEnabled =>
+      'Neue agentische DailyOS-Oberfläche';
+
+  @override
+  String get configFlagDailyOsNextEnabledDescription =>
+      'Ersetze die bisherige DailyOS-Oberfläche durch den neuen sprachgeführten, agentischen Capture- und Reconcile-Ablauf. Frühe Vorschau — die Backend-Logik ist noch gemockt.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'AI-Streaming für Aufgabenaktionen aktivieren';
 
@@ -3073,6 +3081,148 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNearLimit => 'Fast am Limit';
+
+  @override
+  String get dailyOsNextCaptureCaptured => 'Hab\'s.';
+
+  @override
+  String get dailyOsNextCaptureHeadlineLead => 'Was beschäftigt dich';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTail => 'heute?';
+
+  @override
+  String get dailyOsNextCaptureIdleHint =>
+      'Tippen zum Sprechen · fotografieren · oder tippen';
+
+  @override
+  String get dailyOsNextCaptureListening => 'HÖRE ZU';
+
+  @override
+  String get dailyOsNextCaptureReconcileCta => 'Abgleichen';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonReset => 'Von vorne beginnen';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStart => 'Aufnahme starten';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStop => 'Aufnahme stoppen';
+
+  @override
+  String dailyOsNextEstimateMinutes(int minutes) {
+    return '${minutes}m';
+  }
+
+  @override
+  String get dailyOsNextGreetingAfternoon => 'Guten Tag.';
+
+  @override
+  String get dailyOsNextGreetingEvening => 'Guten Abend.';
+
+  @override
+  String get dailyOsNextGreetingHi => 'Hallo 👋';
+
+  @override
+  String get dailyOsNextGreetingMorning => 'Guten Morgen.';
+
+  @override
+  String get dailyOsNextReconcileBadgeMatched => 'VERKNÜPFT';
+
+  @override
+  String get dailyOsNextReconcileBadgeNew => 'NEU';
+
+  @override
+  String get dailyOsNextReconcileBadgeUpdate => 'UPDATE';
+
+  @override
+  String get dailyOsNextReconcileBuildDayCta => 'Tag bauen';
+
+  @override
+  String get dailyOsNextReconcileDecideOverline => 'WERT ZU ENTSCHEIDEN';
+
+  @override
+  String get dailyOsNextReconcileDefaultBehaviorHint =>
+      'Deine Entscheidungen hier fließen in den Plan ein — keine Entscheidung heißt „lass es, wie es ist“.';
+
+  @override
+  String dailyOsNextReconcileError(String detail) {
+    return 'Etwas ist schiefgelaufen: $detail';
+  }
+
+  @override
+  String get dailyOsNextReconcileHeardOverline => 'DAS HABE ICH GEHÖRT';
+
+  @override
+  String get dailyOsNextReconcileLowConfidence => 'geringe Sicherheit';
+
+  @override
+  String get dailyOsNextReconcileReRecord => 'Neu aufnehmen';
+
+  @override
+  String get dailyOsNextReconcileVoiceHint =>
+      '„Streich die Rechnungen“ funktioniert hier auch';
+
+  @override
+  String get dailyOsNextStateDueToday => 'Heute fällig';
+
+  @override
+  String dailyOsNextStateInProgress(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'In Arbeit · $count Sitzungen',
+      one: 'In Arbeit · 1 Sitzung',
+      zero: 'In Arbeit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Überfällig · $days Tage',
+      one: 'Überfällig · 1 Tag',
+      zero: 'Überfällig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextStateRecurringMissed => 'Wiederkehrend · verpasst';
+
+  @override
+  String get dailyOsNextTriageConfirmDefer => 'Verschoben';
+
+  @override
+  String get dailyOsNextTriageConfirmDone => 'Erledigt markiert';
+
+  @override
+  String get dailyOsNextTriageConfirmDoNow => 'Sofort erledigt';
+
+  @override
+  String get dailyOsNextTriageConfirmDrop => 'Verworfen';
+
+  @override
+  String get dailyOsNextTriageConfirmToday => 'Heute hinzugefügt';
+
+  @override
+  String get dailyOsNextTriageDefer => 'Verschieben';
+
+  @override
+  String get dailyOsNextTriageDone => 'Erledigt';
+
+  @override
+  String get dailyOsNextTriageDoNow => 'Jetzt machen';
+
+  @override
+  String get dailyOsNextTriageDrop => 'Verwerfen';
+
+  @override
+  String get dailyOsNextTriageToday => 'Heute';
 
   @override
   String get dailyOsNoBudgets => 'Keine Zeitbudgets';

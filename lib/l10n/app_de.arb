@@ -1240,6 +1240,8 @@
   "completeHabitSkipButton": "Überspringen",
   "completeHabitSuccessButton": "Erfolgreich",
   "configFlagAttemptEmbeddingDescription": "Wenn aktiviert, versucht die App, Einbettungen für deine Einträge zu generieren, um die Suche und Vorschläge für verwandte Inhalte zu verbessern.",
+  "configFlagDailyOsNextEnabled": "Neue agentische DailyOS-Oberfläche",
+  "configFlagDailyOsNextEnabledDescription": "Ersetze die bisherige DailyOS-Oberfläche durch den neuen sprachgeführten, agentischen Capture- und Reconcile-Ablauf. Frühe Vorschau — die Backend-Logik ist noch gemockt.",
   "configFlagEnableAiStreaming": "AI-Streaming für Aufgabenaktionen aktivieren",
   "configFlagEnableAiStreamingDescription": "Streame AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.",
   "configFlagEnableAiSummaryTts": "AI-Zusammenfassung vorlesen",
@@ -1507,6 +1509,77 @@
   "dailyOsFold": "Einklappen",
   "dailyOsInvalidTimeRange": "Ungültiger Zeitbereich",
   "dailyOsNearLimit": "Fast am Limit",
+  "dailyOsNextCaptureCaptured": "Hab's.",
+  "dailyOsNextCaptureHeadlineLead": "Was beschäftigt dich",
+  "dailyOsNextCaptureHeadlineTail": "heute?",
+  "dailyOsNextCaptureIdleHint": "Tippen zum Sprechen · fotografieren · oder tippen",
+  "dailyOsNextCaptureListening": "HÖRE ZU",
+  "dailyOsNextCaptureReconcileCta": "Abgleichen",
+  "dailyOsNextCaptureVoiceButtonReset": "Von vorne beginnen",
+  "dailyOsNextCaptureVoiceButtonStart": "Aufnahme starten",
+  "dailyOsNextCaptureVoiceButtonStop": "Aufnahme stoppen",
+  "dailyOsNextEstimateMinutes": "{minutes}m",
+  "@dailyOsNextEstimateMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "45"
+      }
+    }
+  },
+  "dailyOsNextGreetingAfternoon": "Guten Tag.",
+  "dailyOsNextGreetingEvening": "Guten Abend.",
+  "dailyOsNextGreetingHi": "Hallo 👋",
+  "dailyOsNextGreetingMorning": "Guten Morgen.",
+  "dailyOsNextReconcileBadgeMatched": "VERKNÜPFT",
+  "dailyOsNextReconcileBadgeNew": "NEU",
+  "dailyOsNextReconcileBadgeUpdate": "UPDATE",
+  "dailyOsNextReconcileBuildDayCta": "Tag bauen",
+  "dailyOsNextReconcileDecideOverline": "WERT ZU ENTSCHEIDEN",
+  "dailyOsNextReconcileDefaultBehaviorHint": "Deine Entscheidungen hier fließen in den Plan ein — keine Entscheidung heißt „lass es, wie es ist“.",
+  "dailyOsNextReconcileError": "Etwas ist schiefgelaufen: {detail}",
+  "@dailyOsNextReconcileError": {
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "Netzwerk nicht erreichbar"
+      }
+    }
+  },
+  "dailyOsNextReconcileHeardOverline": "DAS HABE ICH GEHÖRT",
+  "dailyOsNextReconcileLowConfidence": "geringe Sicherheit",
+  "dailyOsNextReconcileReRecord": "Neu aufnehmen",
+  "dailyOsNextReconcileVoiceHint": "„Streich die Rechnungen“ funktioniert hier auch",
+  "dailyOsNextStateDueToday": "Heute fällig",
+  "dailyOsNextStateInProgress": "{count, plural, =0{In Arbeit} =1{In Arbeit · 1 Sitzung} other{In Arbeit · {count} Sitzungen}}",
+  "@dailyOsNextStateInProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "dailyOsNextStateOverdue": "{days, plural, =0{Überfällig} =1{Überfällig · 1 Tag} other{Überfällig · {days} Tage}}",
+  "@dailyOsNextStateOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateRecurringMissed": "Wiederkehrend · verpasst",
+  "dailyOsNextTriageConfirmDefer": "Verschoben",
+  "dailyOsNextTriageConfirmDone": "Erledigt markiert",
+  "dailyOsNextTriageConfirmDoNow": "Sofort erledigt",
+  "dailyOsNextTriageConfirmDrop": "Verworfen",
+  "dailyOsNextTriageConfirmToday": "Heute hinzugefügt",
+  "dailyOsNextTriageDefer": "Verschieben",
+  "dailyOsNextTriageDone": "Erledigt",
+  "dailyOsNextTriageDoNow": "Jetzt machen",
+  "dailyOsNextTriageDrop": "Verwerfen",
+  "dailyOsNextTriageToday": "Heute",
   "dailyOsNoBudgets": "Keine Zeitbudgets",
   "dailyOsNoBudgetsHint": "Füge Budgets hinzu, um zu verfolgen, wie du deine Zeit auf Kategorien verteilst.",
   "dailyOsNoBudgetWarning": "Keine Zeit eingeplant",

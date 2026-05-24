@@ -4399,6 +4399,18 @@ abstract class AppLocalizations {
   /// **'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.'**
   String get configFlagAttemptEmbeddingDescription;
 
+  /// No description provided for @configFlagDailyOsNextEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Use next-gen agentic DailyOS'**
+  String get configFlagDailyOsNextEnabled;
+
+  /// No description provided for @configFlagDailyOsNextEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the current DailyOS surface with the new voice-first, agent-led capture and reconcile flow. Early preview — backend logic is mocked.'**
+  String get configFlagDailyOsNextEnabledDescription;
+
   /// No description provided for @configFlagEnableAiStreaming.
   ///
   /// In en, this message translates to:
@@ -5153,6 +5165,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Near limit'**
   String get dailyOsNearLimit;
+
+  /// No description provided for @dailyOsNextCaptureCaptured.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it.'**
+  String get dailyOsNextCaptureCaptured;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineLead.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s on your mind'**
+  String get dailyOsNextCaptureHeadlineLead;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineTail.
+  ///
+  /// In en, this message translates to:
+  /// **'for today?'**
+  String get dailyOsNextCaptureHeadlineTail;
+
+  /// No description provided for @dailyOsNextCaptureIdleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to talk · snap it · type instead'**
+  String get dailyOsNextCaptureIdleHint;
+
+  /// No description provided for @dailyOsNextCaptureListening.
+  ///
+  /// In en, this message translates to:
+  /// **'LISTENING'**
+  String get dailyOsNextCaptureListening;
+
+  /// No description provided for @dailyOsNextCaptureReconcileCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconcile'**
+  String get dailyOsNextCaptureReconcileCta;
+
+  /// No description provided for @dailyOsNextCaptureVoiceButtonReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Start over'**
+  String get dailyOsNextCaptureVoiceButtonReset;
+
+  /// No description provided for @dailyOsNextCaptureVoiceButtonStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start listening'**
+  String get dailyOsNextCaptureVoiceButtonStart;
+
+  /// No description provided for @dailyOsNextCaptureVoiceButtonStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop listening'**
+  String get dailyOsNextCaptureVoiceButtonStop;
+
+  /// No description provided for @dailyOsNextEstimateMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m'**
+  String dailyOsNextEstimateMinutes(int minutes);
+
+  /// No description provided for @dailyOsNextGreetingAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon.'**
+  String get dailyOsNextGreetingAfternoon;
+
+  /// No description provided for @dailyOsNextGreetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening.'**
+  String get dailyOsNextGreetingEvening;
+
+  /// No description provided for @dailyOsNextGreetingHi.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi 👋'**
+  String get dailyOsNextGreetingHi;
+
+  /// No description provided for @dailyOsNextGreetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning.'**
+  String get dailyOsNextGreetingMorning;
+
+  /// No description provided for @dailyOsNextReconcileBadgeMatched.
+  ///
+  /// In en, this message translates to:
+  /// **'MATCHED'**
+  String get dailyOsNextReconcileBadgeMatched;
+
+  /// No description provided for @dailyOsNextReconcileBadgeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW'**
+  String get dailyOsNextReconcileBadgeNew;
+
+  /// No description provided for @dailyOsNextReconcileBadgeUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'UPDATE'**
+  String get dailyOsNextReconcileBadgeUpdate;
+
+  /// No description provided for @dailyOsNextReconcileBuildDayCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Build my day'**
+  String get dailyOsNextReconcileBuildDayCta;
+
+  /// No description provided for @dailyOsNextReconcileDecideOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'WORTH DECIDING ON'**
+  String get dailyOsNextReconcileDecideOverline;
+
+  /// No description provided for @dailyOsNextReconcileDefaultBehaviorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Decisions here feed into the plan — no decision means \"leave it where it is.\"'**
+  String get dailyOsNextReconcileDefaultBehaviorHint;
+
+  /// No description provided for @dailyOsNextReconcileError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong: {detail}'**
+  String dailyOsNextReconcileError(String detail);
+
+  /// No description provided for @dailyOsNextReconcileHeardOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'HERE\'S WHAT I HEARD'**
+  String get dailyOsNextReconcileHeardOverline;
+
+  /// No description provided for @dailyOsNextReconcileLowConfidence.
+  ///
+  /// In en, this message translates to:
+  /// **'low confidence'**
+  String get dailyOsNextReconcileLowConfidence;
+
+  /// No description provided for @dailyOsNextReconcileReRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-record'**
+  String get dailyOsNextReconcileReRecord;
+
+  /// No description provided for @dailyOsNextReconcileVoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Drop the invoices\" works here too'**
+  String get dailyOsNextReconcileVoiceHint;
+
+  /// No description provided for @dailyOsNextStateDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get dailyOsNextStateDueToday;
+
+  /// No description provided for @dailyOsNextStateInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{In progress} =1{In progress · 1 session} other{In progress · {count} sessions}}'**
+  String dailyOsNextStateInProgress(int count);
+
+  /// No description provided for @dailyOsNextStateOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =0{Overdue} =1{Overdue · 1 day} other{Overdue · {days} days}}'**
+  String dailyOsNextStateOverdue(int days);
+
+  /// No description provided for @dailyOsNextStateRecurringMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring · missed'**
+  String get dailyOsNextStateRecurringMissed;
+
+  /// No description provided for @dailyOsNextTriageConfirmDefer.
+  ///
+  /// In en, this message translates to:
+  /// **'Deferred'**
+  String get dailyOsNextTriageConfirmDefer;
+
+  /// No description provided for @dailyOsNextTriageConfirmDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked done'**
+  String get dailyOsNextTriageConfirmDone;
+
+  /// No description provided for @dailyOsNextTriageConfirmDoNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Done now'**
+  String get dailyOsNextTriageConfirmDoNow;
+
+  /// No description provided for @dailyOsNextTriageConfirmDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropped'**
+  String get dailyOsNextTriageConfirmDrop;
+
+  /// No description provided for @dailyOsNextTriageConfirmToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to today'**
+  String get dailyOsNextTriageConfirmToday;
+
+  /// No description provided for @dailyOsNextTriageDefer.
+  ///
+  /// In en, this message translates to:
+  /// **'Defer'**
+  String get dailyOsNextTriageDefer;
+
+  /// No description provided for @dailyOsNextTriageDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get dailyOsNextTriageDone;
+
+  /// No description provided for @dailyOsNextTriageDoNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Do now'**
+  String get dailyOsNextTriageDoNow;
+
+  /// No description provided for @dailyOsNextTriageDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop'**
+  String get dailyOsNextTriageDrop;
+
+  /// No description provided for @dailyOsNextTriageToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dailyOsNextTriageToday;
 
   /// No description provided for @dailyOsNoBudgets.
   ///

@@ -1240,6 +1240,8 @@
   "completeHabitSkipButton": "Sari peste",
   "completeHabitSuccessButton": "Succes",
   "configFlagAttemptEmbeddingDescription": "Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.",
+  "configFlagDailyOsNextEnabled": "Activează noul DailyOS agentic",
+  "configFlagDailyOsNextEnabledDescription": "Înlocuiește interfața DailyOS actuală cu noul flux vocal de captură și reconciliere coordonat de agent. Previzualizare timpurie — logica de backend este simulată.",
   "configFlagEnableAiStreaming": "Activează streamingul AI pentru acțiunile legate de sarcini",
   "configFlagEnableAiStreamingDescription": "Transmite răspunsurile AI pentru acțiunile legate de sarcini. Dezactivați pentru a stoca răspunsurile în buffer și a menține interfața mai fluidă.",
   "configFlagEnableAiSummaryTts": "Redare rezumate AI",
@@ -1507,6 +1509,77 @@
   "dailyOsFold": "Restrânge",
   "dailyOsInvalidTimeRange": "Interval de timp invalid",
   "dailyOsNearLimit": "Aproape de limită",
+  "dailyOsNextCaptureCaptured": "Am înțeles.",
+  "dailyOsNextCaptureHeadlineLead": "La ce vă gândiți",
+  "dailyOsNextCaptureHeadlineTail": "pentru astăzi?",
+  "dailyOsNextCaptureIdleHint": "Apăsați pentru a vorbi · capturați · sau tastați",
+  "dailyOsNextCaptureListening": "ASCULT",
+  "dailyOsNextCaptureReconcileCta": "Reconciliere",
+  "dailyOsNextCaptureVoiceButtonReset": "Reîncepe",
+  "dailyOsNextCaptureVoiceButtonStart": "Începe ascultarea",
+  "dailyOsNextCaptureVoiceButtonStop": "Oprește ascultarea",
+  "dailyOsNextEstimateMinutes": "{minutes}m",
+  "@dailyOsNextEstimateMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "45"
+      }
+    }
+  },
+  "dailyOsNextGreetingAfternoon": "Bună după-amiaza.",
+  "dailyOsNextGreetingEvening": "Bună seara.",
+  "dailyOsNextGreetingHi": "Salut 👋",
+  "dailyOsNextGreetingMorning": "Bună dimineața.",
+  "dailyOsNextReconcileBadgeMatched": "LEGAT",
+  "dailyOsNextReconcileBadgeNew": "NOU",
+  "dailyOsNextReconcileBadgeUpdate": "ACTUALIZARE",
+  "dailyOsNextReconcileBuildDayCta": "Construiește ziua mea",
+  "dailyOsNextReconcileDecideOverline": "MERITĂ DECIS",
+  "dailyOsNextReconcileDefaultBehaviorHint": "Deciziile dvs. aici alimentează planul — nicio decizie înseamnă „lăsați-l unde este”.",
+  "dailyOsNextReconcileError": "Ceva nu a mers bine: {detail}",
+  "@dailyOsNextReconcileError": {
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "Rețea inaccesibilă"
+      }
+    }
+  },
+  "dailyOsNextReconcileHeardOverline": "IATĂ CE AM AUZIT",
+  "dailyOsNextReconcileLowConfidence": "încredere scăzută",
+  "dailyOsNextReconcileReRecord": "Reînregistrare",
+  "dailyOsNextReconcileVoiceHint": "„Renunță la facturi” funcționează și aici",
+  "dailyOsNextStateDueToday": "Scadent astăzi",
+  "dailyOsNextStateInProgress": "{count, plural, =0{În progres} =1{În progres · 1 sesiune} other{În progres · {count} sesiuni}}",
+  "@dailyOsNextStateInProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "dailyOsNextStateOverdue": "{days, plural, =0{Întârziat} =1{Întârziat · 1 zi} other{Întârziat · {days} zile}}",
+  "@dailyOsNextStateOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateRecurringMissed": "Recurent · ratat",
+  "dailyOsNextTriageConfirmDefer": "Amânat",
+  "dailyOsNextTriageConfirmDone": "Marcat ca finalizat",
+  "dailyOsNextTriageConfirmDoNow": "Făcut imediat",
+  "dailyOsNextTriageConfirmDrop": "Renunțat",
+  "dailyOsNextTriageConfirmToday": "Adăugat la astăzi",
+  "dailyOsNextTriageDefer": "Amână",
+  "dailyOsNextTriageDone": "Finalizat",
+  "dailyOsNextTriageDoNow": "Fă acum",
+  "dailyOsNextTriageDrop": "Renunță",
+  "dailyOsNextTriageToday": "Astăzi",
   "dailyOsNoBudgets": "Fără bugete de timp",
   "dailyOsNoBudgetsHint": "Adăugați bugete pentru a urmări cum vă distribuiți timpul pe categorii.",
   "dailyOsNoBudgetWarning": "Niciun timp planificat",

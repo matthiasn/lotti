@@ -1049,6 +1049,8 @@
   "completeHabitSkipButton": "Přeskočit",
   "completeHabitSuccessButton": "Úspěch",
   "configFlagAttemptEmbeddingDescription": "Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.",
+  "configFlagDailyOsNextEnabled": "Použít nové agentní DailyOS",
+  "configFlagDailyOsNextEnabledDescription": "Nahradí stávající rozhraní DailyOS novým hlasově řízeným tokem zachycení a smíření vedeným agentem. Raná ukázka — logika backendu je simulovaná.",
   "configFlagEnableAiStreaming": "Povolit AI streamování pro akce úkolů",
   "configFlagEnableAiStreamingDescription": "Streamujte AI odpovědi pro akce související s úkoly. Vypněte, pokud chcete odpovědi bufferovat a udržet plynulejší rozhraní.",
   "configFlagEnableAiSummaryTts": "Přehrávání AI souhrnů",
@@ -1316,6 +1318,77 @@
   "dailyOsFold": "Složit",
   "dailyOsInvalidTimeRange": "Neplatný časový rozsah",
   "dailyOsNearLimit": "Blízko limitu",
+  "dailyOsNextCaptureCaptured": "Rozumím.",
+  "dailyOsNextCaptureHeadlineLead": "Co máš dnes",
+  "dailyOsNextCaptureHeadlineTail": "na mysli?",
+  "dailyOsNextCaptureIdleHint": "Klepni pro mluvení · zachyť to · nebo napiš",
+  "dailyOsNextCaptureListening": "POSLOUCHÁM",
+  "dailyOsNextCaptureReconcileCta": "Sjednotit",
+  "dailyOsNextCaptureVoiceButtonReset": "Začít znovu",
+  "dailyOsNextCaptureVoiceButtonStart": "Začít poslouchat",
+  "dailyOsNextCaptureVoiceButtonStop": "Zastavit",
+  "dailyOsNextEstimateMinutes": "{minutes}m",
+  "@dailyOsNextEstimateMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "45"
+      }
+    }
+  },
+  "dailyOsNextGreetingAfternoon": "Dobré odpoledne.",
+  "dailyOsNextGreetingEvening": "Dobrý večer.",
+  "dailyOsNextGreetingHi": "Ahoj 👋",
+  "dailyOsNextGreetingMorning": "Dobré ráno.",
+  "dailyOsNextReconcileBadgeMatched": "PROPOJENO",
+  "dailyOsNextReconcileBadgeNew": "NOVÉ",
+  "dailyOsNextReconcileBadgeUpdate": "AKTUALIZACE",
+  "dailyOsNextReconcileBuildDayCta": "Sestavit můj den",
+  "dailyOsNextReconcileDecideOverline": "STOJÍ ZA ROZHODNUTÍ",
+  "dailyOsNextReconcileDefaultBehaviorHint": "Tvá rozhodnutí zde plynou do plánu — žádné rozhodnutí znamená „nech to být“.",
+  "dailyOsNextReconcileError": "Něco se pokazilo: {detail}",
+  "@dailyOsNextReconcileError": {
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "Síť není dostupná"
+      }
+    }
+  },
+  "dailyOsNextReconcileHeardOverline": "TADY JE, CO JSEM SLYŠEL",
+  "dailyOsNextReconcileLowConfidence": "nízká důvěra",
+  "dailyOsNextReconcileReRecord": "Znovu nahrát",
+  "dailyOsNextReconcileVoiceHint": "„Vyhoď faktury“ tu taky funguje",
+  "dailyOsNextStateDueToday": "Splatné dnes",
+  "dailyOsNextStateInProgress": "{count, plural, =0{Probíhá} =1{Probíhá · 1 relace} few{Probíhá · {count} relace} other{Probíhá · {count} relací}}",
+  "@dailyOsNextStateInProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "dailyOsNextStateOverdue": "{days, plural, =0{Po termínu} =1{Po termínu · 1 den} few{Po termínu · {days} dny} other{Po termínu · {days} dní}}",
+  "@dailyOsNextStateOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateRecurringMissed": "Opakující · zmeškané",
+  "dailyOsNextTriageConfirmDefer": "Odloženo",
+  "dailyOsNextTriageConfirmDone": "Označeno jako hotové",
+  "dailyOsNextTriageConfirmDoNow": "Hotovo hned",
+  "dailyOsNextTriageConfirmDrop": "Zahozeno",
+  "dailyOsNextTriageConfirmToday": "Přidáno na dnes",
+  "dailyOsNextTriageDefer": "Odložit",
+  "dailyOsNextTriageDone": "Hotovo",
+  "dailyOsNextTriageDoNow": "Udělat teď",
+  "dailyOsNextTriageDrop": "Zahodit",
+  "dailyOsNextTriageToday": "Dnes",
   "dailyOsNoBudgets": "Žádné časové rozpočty",
   "dailyOsNoBudgetsHint": "Přidejte rozpočty pro sledování, jak trávíte čas napříč kategoriemi.",
   "dailyOsNoBudgetWarning": "Žádný časový rozpočet",

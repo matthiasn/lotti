@@ -117,6 +117,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: dailyOsNextEnabledFlag,
+    description: 'Use the next-generation agentic DailyOS surface?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableSessionRatingsFlag,
     description: 'Enable session ratings?',
     status: false,

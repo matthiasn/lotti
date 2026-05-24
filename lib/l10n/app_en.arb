@@ -1436,6 +1436,8 @@
   "completeHabitSkipButton": "Skip",
   "completeHabitSuccessButton": "Success",
   "configFlagAttemptEmbeddingDescription": "When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.",
+  "configFlagDailyOsNextEnabled": "Use next-gen agentic DailyOS",
+  "configFlagDailyOsNextEnabledDescription": "Replace the current DailyOS surface with the new voice-first, agent-led capture and reconcile flow. Early preview — backend logic is mocked.",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableAiSummaryTts": "AI summary playback",
@@ -1703,6 +1705,77 @@
   "dailyOsFold": "Fold",
   "dailyOsInvalidTimeRange": "Invalid time range",
   "dailyOsNearLimit": "Near limit",
+  "dailyOsNextCaptureCaptured": "Got it.",
+  "dailyOsNextCaptureHeadlineLead": "What's on your mind",
+  "dailyOsNextCaptureHeadlineTail": "for today?",
+  "dailyOsNextCaptureIdleHint": "Tap to talk · snap it · type instead",
+  "dailyOsNextCaptureListening": "LISTENING",
+  "dailyOsNextCaptureReconcileCta": "Reconcile",
+  "dailyOsNextCaptureVoiceButtonReset": "Start over",
+  "dailyOsNextCaptureVoiceButtonStart": "Start listening",
+  "dailyOsNextCaptureVoiceButtonStop": "Stop listening",
+  "dailyOsNextEstimateMinutes": "{minutes}m",
+  "@dailyOsNextEstimateMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "45"
+      }
+    }
+  },
+  "dailyOsNextGreetingAfternoon": "Good afternoon.",
+  "dailyOsNextGreetingEvening": "Good evening.",
+  "dailyOsNextGreetingHi": "Hi 👋",
+  "dailyOsNextGreetingMorning": "Good morning.",
+  "dailyOsNextReconcileBadgeMatched": "MATCHED",
+  "dailyOsNextReconcileBadgeNew": "NEW",
+  "dailyOsNextReconcileBadgeUpdate": "UPDATE",
+  "dailyOsNextReconcileBuildDayCta": "Build my day",
+  "dailyOsNextReconcileDecideOverline": "WORTH DECIDING ON",
+  "dailyOsNextReconcileDefaultBehaviorHint": "Decisions here feed into the plan — no decision means \"leave it where it is.\"",
+  "dailyOsNextReconcileError": "Something went wrong: {detail}",
+  "@dailyOsNextReconcileError": {
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "Network unreachable"
+      }
+    }
+  },
+  "dailyOsNextReconcileHeardOverline": "HERE'S WHAT I HEARD",
+  "dailyOsNextReconcileLowConfidence": "low confidence",
+  "dailyOsNextReconcileReRecord": "Re-record",
+  "dailyOsNextReconcileVoiceHint": "\"Drop the invoices\" works here too",
+  "dailyOsNextStateDueToday": "Due today",
+  "dailyOsNextStateInProgress": "{count, plural, =0{In progress} =1{In progress · 1 session} other{In progress · {count} sessions}}",
+  "@dailyOsNextStateInProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "dailyOsNextStateOverdue": "{days, plural, =0{Overdue} =1{Overdue · 1 day} other{Overdue · {days} days}}",
+  "@dailyOsNextStateOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateRecurringMissed": "Recurring · missed",
+  "dailyOsNextTriageConfirmDefer": "Deferred",
+  "dailyOsNextTriageConfirmDone": "Marked done",
+  "dailyOsNextTriageConfirmDoNow": "Done now",
+  "dailyOsNextTriageConfirmDrop": "Dropped",
+  "dailyOsNextTriageConfirmToday": "Added to today",
+  "dailyOsNextTriageDefer": "Defer",
+  "dailyOsNextTriageDone": "Done",
+  "dailyOsNextTriageDoNow": "Do now",
+  "dailyOsNextTriageDrop": "Drop",
+  "dailyOsNextTriageToday": "Today",
   "dailyOsNoBudgets": "No time budgets",
   "dailyOsNoBudgetsHint": "Add budgets to track how you spend your time across categories.",
   "dailyOsNoBudgetWarning": "No time budgeted",

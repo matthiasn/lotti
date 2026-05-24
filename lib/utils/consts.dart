@@ -11,6 +11,7 @@ const enableLoggingFlag = 'enable_logging';
 const enableHabitsPageFlag = 'enable_habits_page';
 const enableDashboardsPageFlag = 'enable_dashboards_page';
 const enableDailyOsPageFlag = 'enable_daily_os_page';
+const dailyOsNextEnabledFlag = 'daily_os_next_enabled';
 const enableEventsFlag = 'enable_events';
 const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableSyncActorFlag = 'enable_sync_actor';

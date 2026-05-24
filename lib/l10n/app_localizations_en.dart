@@ -2543,6 +2543,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.';
 
   @override
+  String get configFlagDailyOsNextEnabled => 'Use next-gen agentic DailyOS';
+
+  @override
+  String get configFlagDailyOsNextEnabledDescription =>
+      'Replace the current DailyOS surface with the new voice-first, agent-led capture and reconcile flow. Early preview — backend logic is mocked.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Enable AI streaming for task actions';
 
@@ -3030,6 +3037,148 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNearLimit => 'Near limit';
+
+  @override
+  String get dailyOsNextCaptureCaptured => 'Got it.';
+
+  @override
+  String get dailyOsNextCaptureHeadlineLead => 'What\'s on your mind';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTail => 'for today?';
+
+  @override
+  String get dailyOsNextCaptureIdleHint =>
+      'Tap to talk · snap it · type instead';
+
+  @override
+  String get dailyOsNextCaptureListening => 'LISTENING';
+
+  @override
+  String get dailyOsNextCaptureReconcileCta => 'Reconcile';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonReset => 'Start over';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStart => 'Start listening';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStop => 'Stop listening';
+
+  @override
+  String dailyOsNextEstimateMinutes(int minutes) {
+    return '${minutes}m';
+  }
+
+  @override
+  String get dailyOsNextGreetingAfternoon => 'Good afternoon.';
+
+  @override
+  String get dailyOsNextGreetingEvening => 'Good evening.';
+
+  @override
+  String get dailyOsNextGreetingHi => 'Hi 👋';
+
+  @override
+  String get dailyOsNextGreetingMorning => 'Good morning.';
+
+  @override
+  String get dailyOsNextReconcileBadgeMatched => 'MATCHED';
+
+  @override
+  String get dailyOsNextReconcileBadgeNew => 'NEW';
+
+  @override
+  String get dailyOsNextReconcileBadgeUpdate => 'UPDATE';
+
+  @override
+  String get dailyOsNextReconcileBuildDayCta => 'Build my day';
+
+  @override
+  String get dailyOsNextReconcileDecideOverline => 'WORTH DECIDING ON';
+
+  @override
+  String get dailyOsNextReconcileDefaultBehaviorHint =>
+      'Decisions here feed into the plan — no decision means \"leave it where it is.\"';
+
+  @override
+  String dailyOsNextReconcileError(String detail) {
+    return 'Something went wrong: $detail';
+  }
+
+  @override
+  String get dailyOsNextReconcileHeardOverline => 'HERE\'S WHAT I HEARD';
+
+  @override
+  String get dailyOsNextReconcileLowConfidence => 'low confidence';
+
+  @override
+  String get dailyOsNextReconcileReRecord => 'Re-record';
+
+  @override
+  String get dailyOsNextReconcileVoiceHint =>
+      '\"Drop the invoices\" works here too';
+
+  @override
+  String get dailyOsNextStateDueToday => 'Due today';
+
+  @override
+  String dailyOsNextStateInProgress(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'In progress · $count sessions',
+      one: 'In progress · 1 session',
+      zero: 'In progress',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Overdue · $days days',
+      one: 'Overdue · 1 day',
+      zero: 'Overdue',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextStateRecurringMissed => 'Recurring · missed';
+
+  @override
+  String get dailyOsNextTriageConfirmDefer => 'Deferred';
+
+  @override
+  String get dailyOsNextTriageConfirmDone => 'Marked done';
+
+  @override
+  String get dailyOsNextTriageConfirmDoNow => 'Done now';
+
+  @override
+  String get dailyOsNextTriageConfirmDrop => 'Dropped';
+
+  @override
+  String get dailyOsNextTriageConfirmToday => 'Added to today';
+
+  @override
+  String get dailyOsNextTriageDefer => 'Defer';
+
+  @override
+  String get dailyOsNextTriageDone => 'Done';
+
+  @override
+  String get dailyOsNextTriageDoNow => 'Do now';
+
+  @override
+  String get dailyOsNextTriageDrop => 'Drop';
+
+  @override
+  String get dailyOsNextTriageToday => 'Today';
 
   @override
   String get dailyOsNoBudgets => 'No time budgets';
