@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -555,6 +556,82 @@ void main() {
           });
         },
       );
+
+      for (final failure in const [
+        RunningTimerUpdateFailure.invalidSummary,
+        RunningTimerUpdateFailure.invalidTimerId,
+        RunningTimerUpdateFailure.noActiveTimer,
+        RunningTimerUpdateFailure.sourceTaskMismatch,
+        RunningTimerUpdateFailure.timerIdMismatch,
+        RunningTimerUpdateFailure.unsupportedEntityType,
+      ]) {
+        test(
+          'auto-retracts running-timer update for stale failure: $failure',
+          () async {
+            final changeSet = makeChangeSetWith(
+              items: const [
+                ChangeItem(
+                  toolName: TaskAgentToolNames.updateRunningTimer,
+                  args: {
+                    'timerId': 'timer-entry-001',
+                    'summary': 'Refined timer text',
+                  },
+                  humanSummary: 'Update running timer text',
+                ),
+              ],
+            );
+
+            when(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            ).thenAnswer(
+              (_) async => ToolExecutionResult(
+                success: false,
+                output: 'Handler rejected stale running timer update',
+                errorMessage: failure,
+              ),
+            );
+            when(
+              () => mockSyncService.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+
+            await withClock(testClock, () async {
+              final result = await service.confirmItem(changeSet, 0);
+
+              expect(result.success, isFalse);
+              expect(result.errorMessage, failure);
+
+              final captured = verify(
+                () => mockSyncService.upsertEntity(captureAny()),
+              ).captured;
+
+              expect(captured, hasLength(4));
+              expect(
+                (captured[0] as ChangeDecisionEntity).verdict,
+                ChangeDecisionVerdict.confirmed,
+              );
+              expect(
+                (captured[1] as ChangeSetEntity).items.single.status,
+                ChangeItemStatus.confirmed,
+              );
+
+              final retractionDecision = captured[2] as ChangeDecisionEntity;
+              expect(
+                retractionDecision.verdict,
+                ChangeDecisionVerdict.retracted,
+              );
+              expect(retractionDecision.actor, DecisionActor.agent);
+              expect(retractionDecision.retractionReason, contains(failure));
+
+              final retractedSet = captured[3] as ChangeSetEntity;
+              expect(
+                retractedSet.items.single.status,
+                ChangeItemStatus.retracted,
+              );
+              expect(retractedSet.status, ChangeSetStatus.resolved);
+            });
+          },
+        );
+      }
 
       test(
         'returns failure when auto-retract status update cannot be persisted',

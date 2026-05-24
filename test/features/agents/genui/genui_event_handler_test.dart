@@ -1,8 +1,15 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 void main() {
   late SurfaceController processor;
@@ -97,6 +104,59 @@ void main() {
       await pumpEventQueue();
 
       expect(events, [('proposal-surface', 'proposal_rejected')]);
+    });
+
+    test('keeps listening after a malformed interaction part throws', () async {
+      final submitController = StreamController<ChatMessage>.broadcast();
+      addTearDown(submitController.close);
+
+      final mockProcessor = MockSurfaceController();
+      when(() => mockProcessor.onSubmit).thenAnswer(
+        (_) => submitController.stream,
+      );
+
+      final malformedHandler = GenUiEventHandler(processor: mockProcessor)
+        ..listen();
+      addTearDown(malformedHandler.dispose);
+
+      final events = <(String, String)>[];
+      malformedHandler.onProposalAction = (surfaceId, action) {
+        events.add((surfaceId, action));
+      };
+
+      submitController.add(
+        ChatMessage.user(
+          '',
+          parts: [
+            DataPart(
+              Uint8List.fromList([0xff]),
+              mimeType: UiPartConstants.interactionMimeType,
+            ),
+          ],
+        ),
+      );
+      await pumpEventQueue();
+
+      submitController.add(
+        ChatMessage.user(
+          '',
+          parts: [
+            UiInteractionPart.create(
+              jsonEncode({
+                'version': 'v0.9',
+                'action': UserActionEvent(
+                  name: 'proposal_approved',
+                  sourceComponentId: 'root',
+                  surfaceId: 'proposal-surface',
+                ).toMap(),
+              }),
+            ),
+          ],
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(events, [('proposal-surface', 'proposal_approved')]);
     });
 
     test('ignores non-proposal events', () async {

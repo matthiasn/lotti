@@ -193,6 +193,8 @@ void main() {
       (tester) async {
         final runningController = StreamController<bool>.broadcast();
         addTearDown(runningController.close);
+        final refreshController = StreamController<int>.broadcast();
+        addTearDown(refreshController.close);
 
         final identity = makeTestIdentity();
         final pending = makePending(
@@ -259,6 +261,64 @@ void main() {
         expect(find.textContaining('No open proposals'), findsOneWidget);
       },
     );
+
+    testWidgets('disposes suggestion subscriptions when unmounted', (
+      tester,
+    ) async {
+      final runningController = StreamController<bool>.broadcast();
+      addTearDown(runningController.close);
+
+      final identity = makeTestIdentity();
+      final pending = makePending(
+        id: 'p1',
+        toolName: 'set_task_status',
+        humanSummary: 'Set status to GROOMED',
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: desktopMediaQueryData,
+          overrides: [
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(
+                flagName != enableAiSummaryTtsFlag,
+              ),
+            ),
+            taskAgentProvider.overrideWith((ref, id) async => identity),
+            agentReportProvider.overrideWith((ref, agentId) async => null),
+            templateForAgentProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+            agentIsRunningProvider.overrideWith((ref, agentId) async* {
+              yield false;
+              yield* runningController.stream;
+            }),
+            unifiedSuggestionListProvider.overrideWith((ref, taskId) async {
+              ref.watch(agentIsRunningProvider(identity.agentId));
+              return UnifiedSuggestionList(
+                open: [pending],
+                activity: const [],
+              );
+            }),
+          ],
+          child: const SingleChildScrollView(
+            child: AiSummaryCard(taskId: AgentTestBench.taskId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Set status to GROOMED'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      runningController.add(true);
+      await tester.pump();
+
+      expect(find.textContaining('Set status to GROOMED'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'clears cached proposals when the card switches to another task',
