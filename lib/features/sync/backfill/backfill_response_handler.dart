@@ -131,20 +131,15 @@ class BackfillResponseHandler {
   /// recorded, burnt, or the payload VC regressed below the counter).
   ///
   /// Always called on our own host — the callers in [_processBackfillEntry]
-  /// and [_sendHintOrUnresolvable] gate on `hostId == myHost`. The self-log
-  /// upsert mirrors the broadcast so our own sequence log agrees with what
-  /// peers will write after receiving it (self-echoes are suppressed on the
-  /// Matrix pipeline, so `handleBackfillResponse` never fires for us).
+  /// and [_sendHintOrUnresolvable] gate on `hostId == myHost`. Enqueue the
+  /// outbound marker before terminalizing the local sequence row so a failed
+  /// outbox write leaves a retryable reservation/miss instead of silently
+  /// dropping the proactive repair signal.
   Future<void> _sendUnresolvableResponse({
     required String hostId,
     required int counter,
     SyncSequencePayloadType? payloadType,
   }) async {
-    await _sequenceLogService.markOwnCounterUnresolvable(
-      hostId: hostId,
-      counter: counter,
-      payloadType: payloadType ?? SyncSequencePayloadType.journalEntity,
-    );
     await _outboxService.enqueueMessage(
       SyncMessage.backfillResponse(
         hostId: hostId,
@@ -153,6 +148,11 @@ class BackfillResponseHandler {
         unresolvable: true,
         payloadType: payloadType,
       ),
+    );
+    await _sequenceLogService.markOwnCounterUnresolvable(
+      hostId: hostId,
+      counter: counter,
+      payloadType: payloadType ?? SyncSequencePayloadType.journalEntity,
     );
 
     _trace(

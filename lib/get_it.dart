@@ -435,6 +435,24 @@ Future<void> registerSingletons() async {
     }
   }());
 
+  Future<void> enqueueOwnUnresolvableMarker({
+    required String hostId,
+    required int counter,
+  }) async {
+    await outboxService.enqueueMessage(
+      SyncMessage.backfillResponse(
+        hostId: hostId,
+        counter: counter,
+        deleted: false,
+        unresolvable: true,
+      ),
+    );
+    await syncSequenceLogService.markOwnCounterUnresolvable(
+      hostId: hostId,
+      counter: counter,
+    );
+  }
+
   // Proactive VC burn broadcast: when a reservation releases (write rejected,
   // scope threw, commitWhen=false), enqueue a SyncBackfillResponse with
   // unresolvable=true so peers close the gap on arrival instead of having to
@@ -457,22 +475,13 @@ Future<void> registerSingletons() async {
     // unannounced.
     Future<void>(() async {
       try {
-        // Record in our OWN sequence log first so our local state matches
-        // what peers will see after receiving the broadcast below. We do
-        // NOT route through handleBackfillResponse because self-echoes are
-        // suppressed on the Matrix pipeline — that handler never fires for
-        // our own message on our own side.
-        await syncSequenceLogService.markOwnCounterUnresolvable(
+        // Enqueue first. If the outbox write fails, the row remains
+        // `reserved` and startup/backfill can retry; terminalizing first
+        // would make a transient outbox failure silently drop the proactive
+        // repair signal.
+        await enqueueOwnUnresolvableMarker(
           hostId: hostId,
           counter: counter,
-        );
-        await outboxService.enqueueMessage(
-          SyncMessage.backfillResponse(
-            hostId: hostId,
-            counter: counter,
-            deleted: false,
-            unresolvable: true,
-          ),
         );
         domainLogger.log(
           LogDomains.sync,
@@ -491,6 +500,47 @@ Future<void> registerSingletons() async {
       }
     });
   });
+
+  // Crash recovery for counters explicitly released in a previous process but
+  // not yet broadcast as unresolvable. Plain `reserved` rows are not retried
+  // here: a crash after the payload DB write but before outbox/sequence
+  // logging can leave a real payload behind, so only `burnPending` rows are
+  // authoritative burns.
+  unawaited(
+    Future<void>(() async {
+      try {
+        final hostId = await vectorClockService.getHost();
+        if (hostId == null) return;
+        final counters = await syncSequenceLogService
+            .burnPendingCountersForHost(
+              hostId: hostId,
+            );
+        for (final counter in counters) {
+          await enqueueOwnUnresolvableMarker(
+            hostId: hostId,
+            counter: counter,
+          );
+        }
+        if (counters.isNotEmpty) {
+          domainLogger.log(
+            LogDomains.sync,
+            'vc.burn.reconcile host=$hostId count=${counters.length} '
+            'counters=$counters',
+            subDomain: 'vc.burn.reconcile',
+          );
+        }
+      } catch (error, stackTrace) {
+        domainLogger.error(
+          LogDomains.sync,
+          'vc burn reconciliation failed; burn-pending counters will retry '
+          'on the next startup or reactive backfill',
+          error: error,
+          stackTrace: stackTrace,
+          subDomain: 'vc.burn.reconcile',
+        );
+      }
+    }),
+  );
   final backfillResponseHandler = BackfillResponseHandler(
     journalDb: journalDb,
     sequenceLogService: syncSequenceLogService,

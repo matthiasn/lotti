@@ -59,6 +59,17 @@ enum SyncSequenceStatus {
   /// This happens when a counter was superseded before being recorded
   /// (e.g., rapid edits where intermediate versions were never persisted).
   unresolvable,
+
+  /// Own-host counter was reserved but has not yet been bound to an outbound
+  /// payload. This is a durable crash-recovery marker: if the process exits
+  /// before a later `recordSentEntry` overwrites it, the row stays forensic
+  /// instead of disappearing into an unexplained sequence hole.
+  reserved,
+
+  /// Own-host reservation was explicitly released without a payload, but the
+  /// durable unresolvable broadcast has not completed yet. Startup
+  /// reconciliation retries these rows.
+  burnPending,
 }
 
 bool _isResolvedSequenceStatusIndex(int status) =>
@@ -1026,6 +1037,108 @@ class SyncDatabase extends _$SyncDatabase {
       await _refreshSequenceWatermarkAfterMutation(entry);
       return result;
     });
+  }
+
+  /// Record an own-host VC reservation before the counter is handed to a
+  /// caller that may write to another database. The insert is intentionally
+  /// `OR IGNORE`: a catch-up reservation must never clobber an already-bound
+  /// sequence row if local state has advanced around a previously observed
+  /// counter.
+  Future<int> recordReservedSequenceCounter({
+    required String hostId,
+    required int counter,
+    DateTime? now,
+  }) async {
+    final timestamp = now ?? DateTime.now();
+    return transaction(() async {
+      final inserted = await into(syncSequenceLog).insert(
+        SyncSequenceLogCompanion(
+          hostId: Value(hostId),
+          counter: Value(counter),
+          entryId: const Value(null),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.reserved.index),
+          createdAt: Value(timestamp),
+          updatedAt: Value(timestamp),
+        ),
+        mode: InsertMode.insertOrIgnore,
+      );
+      if (inserted != 0) {
+        await _refreshSequenceWatermark(
+          hostId: hostId,
+          counter: counter,
+          status: SyncSequenceStatus.reserved.index,
+        );
+      }
+      return inserted;
+    });
+  }
+
+  /// Return own-host reservations that have not yet been bound to a sync
+  /// payload or explicitly marked unresolvable. Startup reconciliation uses
+  /// this to enqueue durable unresolvable broadcasts before converting the
+  /// rows to terminal status.
+  Future<List<int>> reservedSequenceCountersForHost({
+    required String hostId,
+  }) async {
+    final rows =
+        await (select(syncSequenceLog)
+              ..where(
+                (t) =>
+                    t.hostId.equals(hostId) &
+                    t.status.equals(SyncSequenceStatus.reserved.index),
+              )
+              ..orderBy([(t) => OrderingTerm(expression: t.counter)]))
+            .get();
+    return [for (final row in rows) row.counter];
+  }
+
+  /// Mark a reservation as an authoritative local burn whose outbound
+  /// unresolvable marker still needs to be durably enqueued. Unlike
+  /// [SyncSequenceStatus.reserved], this status is safe for startup
+  /// reconciliation to retry as `unresolvable`: it is only written when a VC
+  /// reservation is released.
+  Future<void> markReservedSequenceCounterBurnPending({
+    required String hostId,
+    required int counter,
+    DateTime? now,
+  }) async {
+    final timestamp = now ?? DateTime.now();
+    await transaction(() async {
+      await into(syncSequenceLog).insertOnConflictUpdate(
+        SyncSequenceLogCompanion(
+          hostId: Value(hostId),
+          counter: Value(counter),
+          entryId: const Value(null),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.burnPending.index),
+          createdAt: Value(timestamp),
+          updatedAt: Value(timestamp),
+        ),
+      );
+      await _refreshSequenceWatermark(
+        hostId: hostId,
+        counter: counter,
+        status: SyncSequenceStatus.burnPending.index,
+      );
+    });
+  }
+
+  /// Return own-host reservations that were explicitly released but whose
+  /// unresolvable marker still needs a durable outbound enqueue.
+  Future<List<int>> burnPendingSequenceCountersForHost({
+    required String hostId,
+  }) async {
+    final rows =
+        await (select(syncSequenceLog)
+              ..where(
+                (t) =>
+                    t.hostId.equals(hostId) &
+                    t.status.equals(SyncSequenceStatus.burnPending.index),
+              )
+              ..orderBy([(t) => OrderingTerm(expression: t.counter)]))
+            .get();
+    return [for (final row in rows) row.counter];
   }
 
   /// Get the highest contiguous resolved counter for a given host, starting

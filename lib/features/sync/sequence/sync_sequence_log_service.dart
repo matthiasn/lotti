@@ -1132,6 +1132,44 @@ class SyncSequenceLogService {
     );
   }
 
+  /// Return own-host reservations left behind without a matching outbound
+  /// payload. A caller must enqueue the durable unresolvable broadcast before
+  /// converting each row via [markOwnCounterUnresolvable]; otherwise a failed
+  /// outbox write would drop the proactive repair signal.
+  Future<List<int>> reservedCountersForHost({
+    required String hostId,
+  }) async {
+    final counters = await _syncDatabase.reservedSequenceCountersForHost(
+      hostId: hostId,
+    );
+    if (counters.isNotEmpty) {
+      _trace(
+        'reservedCountersForHost hostId=$hostId '
+        'count=${counters.length} counters=$counters',
+        subDomain: 'sequence.reservedCounters',
+      );
+    }
+    return counters;
+  }
+
+  /// Return own-host reservations that were explicitly released without a
+  /// payload, but whose outbound unresolvable marker still needs to be retried.
+  Future<List<int>> burnPendingCountersForHost({
+    required String hostId,
+  }) async {
+    final counters = await _syncDatabase.burnPendingSequenceCountersForHost(
+      hostId: hostId,
+    );
+    if (counters.isNotEmpty) {
+      _trace(
+        'burnPendingCountersForHost hostId=$hostId '
+        'count=${counters.length} counters=$counters',
+        subDomain: 'sequence.burnPendingCounters',
+      );
+    }
+    return counters;
+  }
+
   Future<void> handleBackfillResponse({
     required String hostId,
     required int counter,

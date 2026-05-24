@@ -298,6 +298,46 @@ void main() {
     });
 
     test(
+      'does not terminalize own missing counter when unresolvable enqueue '
+      'fails, leaving the retryable reservation/miss state intact',
+      () async {
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          ],
+          requesterId: requesterId,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+        ).thenAnswer((_) async => null);
+        when(() => mockOutboxService.enqueueMessage(any())).thenThrow(
+          StateError('outbox unavailable'),
+        );
+
+        await handler.handleBackfillRequest(request);
+
+        verify(
+          () => mockOutboxService.enqueueMessage(
+            const SyncMessage.backfillResponse(
+              hostId: aliceHostId,
+              counter: 3,
+              deleted: false,
+              unresolvable: true,
+            ),
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockSequenceService.markOwnCounterUnresolvable(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        );
+      },
+    );
+
+    test(
       'ignores request when entry in log but has no entryId and not our host',
       () async {
         // Request for Bob's counter - entry exists but no entryId

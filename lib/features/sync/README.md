@@ -65,7 +65,7 @@ At runtime, the sync feature owns:
 | `matrix/` | Session management, room discovery/persistence, message sending, read markers, verification, and high-level lifecycle |
 | `matrix/pipeline/` | Attachment ingestion + index, metrics aggregation, and the `sync.limited` Phase-0 diagnostic listener |
 | `queue/` | Persistent inbound queue, per-room worker, `onSync` bridge for catch-up, and pending-decryption holding pen |
-| `sequence/` | Record `(hostId, counter)` coverage, detect gaps, and track missing/requested/backfilled/deleted/unresolvable states |
+| `sequence/` | Record `(hostId, counter)` coverage, detect gaps, and track reserved/burn-pending/missing/requested/backfilled/deleted/unresolvable states |
 | `backfill/` | Send missing-counter requests and answer peer requests with resend, deleted, unresolvable, or covering-payload hints |
 | `state/` and `ui/` | Riverpod controllers and sync-facing settings, stats, diagnostics, provisioning, and maintenance screens |
 | `actor/` | Separate isolate-based sync implementation; present in the repo, but not wired by the default bootstrap path above |
@@ -858,12 +858,21 @@ states such as:
 - `backfilled`
 - `deleted`
 - `unresolvable`
+- `reserved`
+- `burnPending`
 
 Important implementation details:
 
 - gap detection runs for hosts that have been seen online, plus the current
   originating host
 - sent entries from this device are recorded so peers can request them later
+- local vector-clock reservations insert an own-host `reserved` row before the
+  counter is handed to the write path; `recordSentEntry` overwrites that row
+  with `received`
+- only explicitly released reservations become `burnPending`; startup
+  reconciliation retries those as durable `unresolvable` broadcasts, but does
+  not blindly terminalize plain `reserved` rows because a crash may have left a
+  real local payload behind before outbox logging ran
 - later vector clocks do not automatically close gaps; explicit coverage still
   matters
 - verified covering entries are used as hints when an exact payload is no
@@ -876,6 +885,20 @@ Important implementation details:
 `BackfillRequestService` periodically sends bounded batches of missing
 counters, supports manual full historical backfill, and can re-request entries
 that were previously requested but never resolved.
+
+Own-host reservation lifecycle:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Reserved: reserve VC counter
+  Reserved --> Received: recordSentEntry binds payload
+  Reserved --> BurnPending: release without payload
+  BurnPending --> Unresolvable: marker enqueued
+  Missing --> Requested: backfill batch sent
+  Requested --> Backfilled: verified payload arrives
+  Requested --> Deleted: responder confirms purge
+  Requested --> Unresolvable: originator confirms burn
+```
 
 `BackfillResponseHandler` can answer a request with one of four outcomes:
 
