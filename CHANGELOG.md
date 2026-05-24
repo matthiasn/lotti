@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1007]
+## [0.9.1008]
 ### Added
 - Active audio recordings now show a prominent desktop sidebar card above the
   running timer, with a larger speech-weighted dBFS-reactive recording orb,
@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file in Finder, File Explorer, or Files.
 
 ### Changed
+- Tasks navigation no longer shows the global in-progress task count badge in
+  the sidebar or bottom navigation; saved filters remain the focused way to
+  monitor task subsets.
 - Agent batch lookups for latest per-agent reports and states now use ranked
   active-row indexes that avoid SQLite temp sorts during large project-agent
   wake context builds.

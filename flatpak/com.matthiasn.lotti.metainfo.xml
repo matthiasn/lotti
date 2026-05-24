@@ -32,10 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1007" date="2026-05-22">
+    <release version="0.9.1008" date="2026-05-22">
       <description>
           <p>Active audio recordings now show a prominent desktop sidebar card above the running timer, with a larger speech-weighted dBFS-reactive recording orb, red signal-reactive frame, subtle red shadow, elapsed time, and one-tap stop control so runaway microphone sessions are harder to miss.</p>
           <p>Audio and image entry Actions menus on desktop can now reveal the backing file in Finder, File Explorer, or Files.</p>
+          <p>Tasks navigation no longer shows the global in-progress task count badge in the sidebar or bottom navigation; saved filters remain the focused way to monitor task subsets.</p>
           <p>Agent batch lookups for latest per-agent reports and states now use ranked active-row indexes that avoid SQLite temp sorts during large project-agent wake context builds.</p>
           <p>Sync now preserves local sequence mappings when recovering burnt vector-clock counters, reducing cases where peers can get stuck on unresolvable gaps.</p>
           <p>Fixed: task-agent suggestions no longer disappear wholesale while an agent wake is running, and stale running-timer update proposals are automatically retracted if the timer stops before you accept them.</p>
