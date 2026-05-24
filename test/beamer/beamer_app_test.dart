@@ -489,6 +489,42 @@ void main() {
       expect(overlayRow.mainAxisAlignment, MainAxisAlignment.center);
     });
 
+    testWidgets('Tasks bottom-nav item uses plain list icons', (tester) async {
+      final mockNavService = MockNavService();
+
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(0),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+      );
+
+      final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+        find.byType(DesignSystemBottomNavigationBar),
+      );
+      final tasksItem = navBar.items.first;
+      final icon = tasksItem.icon;
+      final activeIcon = tasksItem.activeIcon;
+
+      expect(tasksItem.label, 'Tasks');
+      expect(icon, isA<Icon>());
+      expect((icon as Icon).icon, Icons.list_outlined);
+      expect(activeIcon, isA<Icon>());
+      expect((activeIcon! as Icon).icon, Icons.list_rounded);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
     testWidgets('disables tickers for inactive mobile tabs', (tester) async {
       final mockNavService = MockNavService();
 
@@ -544,6 +580,47 @@ void main() {
 
       expect(find.byType(DesktopNavigationSidebar), findsOneWidget);
       expect(find.byType(DesignSystemBottomNavigationBar), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('Tasks sidebar item has no trailing count badge', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1280, 800)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(0),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(tester, navService: mockNavService);
+
+      final sidebar = tester.widget<DesktopNavigationSidebar>(
+        find.byType(DesktopNavigationSidebar),
+      );
+      final tasksDestination = sidebar.destinations.first;
+      final icon = tasksDestination.iconBuilder(active: false);
+      final activeIcon = tasksDestination.iconBuilder(active: true);
+
+      expect(tasksDestination.label, 'Tasks');
+      expect(tasksDestination.trailingBuilder, isNull);
+      expect(icon, isA<Icon>());
+      expect((icon as Icon).icon, Icons.list_outlined);
+      expect(activeIcon, isA<Icon>());
+      expect((activeIcon as Icon).icon, Icons.list_rounded);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
