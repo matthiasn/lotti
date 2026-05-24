@@ -5999,14 +5999,15 @@ void main() {
 
   group('markOwnCounterUnresolvable', () {
     test(
-      'upserts a row with status=unresolvable and entryId explicitly null '
-      '— clears any stale payload mapping (e.g. from a covered-VC hint) '
-      'so later reset/verify paths do not treat the counter as if it had '
-      'a known payload',
+      'delegates own-counter burns to the database-level guarded write',
       () async {
         when(
-          () => mockDb.recordSequenceEntry(any()),
-        ).thenAnswer((_) async => 1);
+          () => mockDb.recordOwnUnresolvableSequenceCounter(
+            hostId: aliceHostId,
+            counter: 42,
+            payloadType: SyncSequencePayloadType.journalEntity,
+          ),
+        ).thenAnswer((_) async => true);
 
         await service.markOwnCounterUnresolvable(
           hostId: aliceHostId,
@@ -6014,26 +6015,102 @@ void main() {
         );
 
         verify(
-          () => mockDb.recordSequenceEntry(
-            any(
-              that: isA<SyncSequenceLogCompanion>()
-                  .having((c) => c.hostId, 'hostId', const Value(aliceHostId))
-                  .having((c) => c.counter, 'counter', const Value(42))
-                  .having(
-                    (c) => c.entryId,
-                    'entryId',
-                    const Value<String?>(null),
-                  )
-                  .having(
-                    (c) => c.status,
-                    'status',
-                    Value(SyncSequenceStatus.unresolvable.index),
-                  ),
-            ),
+          () => mockDb.recordOwnUnresolvableSequenceCounter(
+            hostId: aliceHostId,
+            counter: 42,
+            payloadType: SyncSequencePayloadType.journalEntity,
           ),
         ).called(1);
       },
     );
+
+    test(
+      'logs skipped when the database-level guard preserves an authoritative '
+      'payload mapping',
+      () async {
+        for (final status in [
+          SyncSequenceStatus.received,
+          SyncSequenceStatus.backfilled,
+          SyncSequenceStatus.deleted,
+        ]) {
+          final counter = 100 + status.index;
+          when(
+            () => mockDb.recordOwnUnresolvableSequenceCounter(
+              hostId: aliceHostId,
+              counter: counter,
+              payloadType: SyncSequencePayloadType.journalEntity,
+            ),
+          ).thenAnswer((_) async => false);
+
+          await service.markOwnCounterUnresolvable(
+            hostId: aliceHostId,
+            counter: counter,
+          );
+        }
+
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(
+              that: contains('markOwnCounterUnresolvable skipped'),
+            ),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.ownUnresolvable',
+          ),
+        ).called(3);
+      },
+    );
+  });
+
+  group('own-host reservation queries', () {
+    test('returns and logs non-empty reserved counters', () async {
+      when(
+        () => mockDb.reservedSequenceCountersForHost(hostId: aliceHostId),
+      ).thenAnswer((_) async => [4, 9]);
+
+      final counters = await service.reservedCountersForHost(
+        hostId: aliceHostId,
+      );
+
+      expect(counters, [4, 9]);
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(
+            that: allOf(
+              contains('reservedCountersForHost hostId=$aliceHostId'),
+              contains('count=2'),
+              contains('counters=[4, 9]'),
+            ),
+          ),
+          domain: LogDomains.sync,
+          subDomain: 'sequence.reservedCounters',
+        ),
+      ).called(1);
+    });
+
+    test('returns and logs non-empty burn-pending counters', () async {
+      when(
+        () => mockDb.burnPendingSequenceCountersForHost(hostId: aliceHostId),
+      ).thenAnswer((_) async => [7, 12]);
+
+      final counters = await service.burnPendingCountersForHost(
+        hostId: aliceHostId,
+      );
+
+      expect(counters, [7, 12]);
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(
+            that: allOf(
+              contains('burnPendingCountersForHost hostId=$aliceHostId'),
+              contains('count=2'),
+              contains('counters=[7, 12]'),
+            ),
+          ),
+          domain: LogDomains.sync,
+          subDomain: 'sequence.burnPendingCounters',
+        ),
+      ).called(1);
+    });
   });
 
   group('_trace routing', () {

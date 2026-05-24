@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -28,6 +29,12 @@ import 'package:meta/meta.dart';
 /// counter — no entity carries it — which IS recoverable.
 ///
 /// Recovery of burnt counters:
+/// - reservation writes an own-host `reserved` sequence row before returning
+///   the counter. If the process crashes before the write path binds the row
+///   through `recordSentEntry`, the marker remains available for diagnostics
+///   and reactive backfill.
+/// - release upgrades that reservation to `burnPending` before broadcasting
+///   so startup can safely retry only counters known to have no payload.
 /// - [release] logs the burn and emits a proactive `unresolvable` broadcast
 ///   (when a handler is registered — see
 ///   [VectorClockService.setBurnHandler]) so receivers mark the counter as
@@ -70,10 +77,11 @@ class VcReservation {
   /// asks the registered burn handler (if any) to broadcast an
   /// `unresolvable` hint to peers so they can resolve the gap immediately
   /// instead of waiting for the next backfill round-trip. Idempotent.
-  void release() {
+  Future<void> release() async {
     if (_finalized) return;
     _finalized = true;
-    _service._onReleaseBurn(_hostId, _counter);
+    await _service._markBurnPending(_hostId, _counter);
+    await _service._onReleaseBurn(_hostId, _counter);
   }
 }
 
@@ -81,8 +89,8 @@ class _VcScope {
   final List<VcReservation> reservations = [];
 }
 
-/// Handler invoked synchronously when a reserved counter is released without
-/// a matching write (a "burn"). Implementations typically enqueue a proactive
+/// Async handler invoked when a reserved counter is released without a matching
+/// write (a "burn"). Implementations typically enqueue a proactive
 /// `SyncBackfillResponse(unresolvable=true)` for the given `(hostId, counter)`
 /// so peers close the gap without waiting for the reactive backfill-request
 /// path.
@@ -93,10 +101,11 @@ class _VcScope {
 /// the broadcast must attribute the burnt counter to the host that actually
 /// reserved it.
 ///
-/// The handler MUST NOT throw. Errors are the handler's responsibility to log
-/// and swallow — the VC counter is already persisted and cannot be rewound,
-/// so a handler exception would be uselessly destructive.
-typedef VcBurnHandler = void Function(String hostId, int counter);
+/// The handler is awaited so durable outbox persistence can complete before
+/// [VcReservation.release] returns. Handler errors are caught and logged by
+/// [VectorClockService] — the VC counter is already persisted and cannot be
+/// rewound, so a handler exception must not escape the finalizer.
+typedef VcBurnHandler = Future<void> Function(String hostId, int counter);
 
 class VectorClockService {
   VectorClockService() {
@@ -239,6 +248,7 @@ class VectorClockService {
         _host,
         this,
       );
+      await _recordReservedCounter(_host, effectiveCounter);
 
       final scope = Zone.current[_zoneKey] as _VcScope?;
       if (scope != null) {
@@ -304,13 +314,13 @@ class VectorClockService {
         }
       } else {
         for (final reservation in scope.reservations.reversed) {
-          reservation.release();
+          await reservation.release();
         }
       }
       return result;
     } catch (_) {
       for (final reservation in scope.reservations.reversed) {
-        reservation.release();
+        await reservation.release();
       }
       rethrow;
     }
@@ -325,21 +335,22 @@ class VectorClockService {
   /// service's current [_host] if [setNewHost] ran between reserve and
   /// release. The broadcast must attribute the burnt counter to the host
   /// that actually reserved it.
-  void _onReleaseBurn(String hostId, int counter) {
+  Future<void> _onReleaseBurn(String hostId, int counter) async {
     // DomainLogger may not be registered in some test harnesses / bootstrap
     // paths; use the `isRegistered` guard so a release on a minimally-wired
     // service (e.g. unit test seeding the SettingsDb counter) does not crash.
     if (getIt.isRegistered<DomainLogger>()) {
       getIt<DomainLogger>().error(
         LogDomains.sync,
-        'VC counter burnt (reservation released; counter already persisted)',
+        'VC counter burnt host=$hostId counter=$counter '
+        '(reservation released; counter already persisted)',
         subDomain: 'vc.burn',
       );
     }
     final handler = _burnHandler;
     if (handler == null) return;
     try {
-      handler(hostId, counter);
+      await handler(hostId, counter);
     } catch (error, stackTrace) {
       if (getIt.isRegistered<DomainLogger>()) {
         getIt<DomainLogger>().error(
@@ -349,6 +360,50 @@ class VectorClockService {
           error: error,
           stackTrace: stackTrace,
           subDomain: 'vc.burn.handler',
+        );
+      }
+    }
+  }
+
+  Future<void> _recordReservedCounter(String hostId, int counter) async {
+    if (!getIt.isRegistered<SyncDatabase>()) return;
+
+    try {
+      await getIt<SyncDatabase>().recordReservedSequenceCounter(
+        hostId: hostId,
+        counter: counter,
+      );
+    } catch (error, stackTrace) {
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomains.sync,
+          'VC reservation ledger write failed host=$hostId counter=$counter; '
+          'counter already persisted and will fall back to reactive backfill',
+          error: error,
+          stackTrace: stackTrace,
+          subDomain: 'vc.reserve.ledger',
+        );
+      }
+    }
+  }
+
+  Future<void> _markBurnPending(String hostId, int counter) async {
+    if (!getIt.isRegistered<SyncDatabase>()) return;
+
+    try {
+      await getIt<SyncDatabase>().markReservedSequenceCounterBurnPending(
+        hostId: hostId,
+        counter: counter,
+      );
+    } catch (error, stackTrace) {
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomains.sync,
+          'VC burn-pending ledger write failed host=$hostId counter=$counter; '
+          'counter already persisted and will fall back to reactive backfill',
+          error: error,
+          stackTrace: stackTrace,
+          subDomain: 'vc.burn.ledger',
         );
       }
     }
