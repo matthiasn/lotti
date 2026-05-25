@@ -1,66 +1,47 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
-/// Decorative live-waveform strip rendered below the voice button
-/// while listening.
+/// Live-waveform strip rendered below the voice button while listening.
 ///
-/// 28 thin teal bars whose heights are derived from a layered-sine
-/// function over time so the strip "breathes" without ever spiking
-/// dramatically. The waveform is **not** a real audio analyzer — the
-/// real-time STT path is mocked for now; this widget exists purely to
-/// signal "we're listening" to the user.
+/// Renders [amplitudes] as a row of thin teal bars. Values are
+/// expected to be normalised to `0.0..1.0` (see
+/// `CaptureController._normaliseDbfs`); the widget itself does no
+/// audio analysis.
 ///
-/// When the real STT pipeline lands, swap the height generator for
-/// the `AudioRecorderState.vu` / `dBFS` stream.
-class LiveWaveform extends StatefulWidget {
+/// When [amplitudes] is empty (or shorter than [barCount]), the
+/// missing trailing slots render as a small idle baseline so the
+/// strip never collapses to nothing while we wait for the first
+/// amplitude sample to land.
+class LiveWaveform extends StatelessWidget {
   const LiveWaveform({
+    required this.amplitudes,
     this.barCount = 28,
     this.width = 240,
     this.height = 28,
     super.key,
   });
 
+  /// Normalised amplitude samples in chronological order. Only the
+  /// most recent [barCount] entries are rendered.
+  final List<double> amplitudes;
+
   final int barCount;
   final double width;
   final double height;
 
   @override
-  State<LiveWaveform> createState() => _LiveWaveformState();
-}
-
-class _LiveWaveformState extends State<LiveWaveform>
-    with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
-  Duration _elapsed = Duration.zero;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = Ticker(_onTick)..start();
-  }
-
-  void _onTick(Duration t) {
-    setState(() => _elapsed = t);
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final teal = context.designTokens.colors.interactive.enabled;
-    return CustomPaint(
-      size: Size(widget.width, widget.height),
-      painter: _WaveformPainter(
-        barCount: widget.barCount,
-        color: teal,
-        elapsedMs: _elapsed.inMilliseconds,
+    return RepaintBoundary(
+      child: CustomPaint(
+        size: Size(width, height),
+        painter: _WaveformPainter(
+          barCount: barCount,
+          color: teal,
+          amplitudes: amplitudes,
+        ),
       ),
     );
   }
@@ -70,12 +51,16 @@ class _WaveformPainter extends CustomPainter {
   _WaveformPainter({
     required this.barCount,
     required this.color,
-    required this.elapsedMs,
+    required this.amplitudes,
   });
+
+  /// Minimum bar height fraction. Keeps every slot visibly present
+  /// even when the source amplitude is near zero.
+  static const _idleFraction = 0.12;
 
   final int barCount;
   final Color color;
-  final int elapsedMs;
+  final List<double> amplitudes;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -85,16 +70,19 @@ class _WaveformPainter extends CustomPainter {
 
     final spacing = size.width / barCount;
     final barWidth = math.max(spacing * 0.45, 1.5);
-    final t = elapsedMs / 1000.0;
+    final sliceStart = math.max(0, amplitudes.length - barCount);
+    final slice = amplitudes.sublist(sliceStart);
 
     for (var i = 0; i < barCount; i++) {
-      // Layered sines staggered by bar index produce a per-bar height
-      // that drifts independently. Range is normalized to [0.18..1.0]
-      // so even the quietest bar stays visibly present.
-      final a = math.sin(t * 2.3 + i * 0.42);
-      final b = math.sin(t * 1.1 + i * 0.18 + 1.7);
-      final mixed = 0.5 + (a * 0.35) + (b * 0.15);
-      final h = size.height * mixed.clamp(0.18, 1.0);
+      // Right-align the live samples so newer values stay on the right
+      // (matches how voice waveforms read in iOS / standard recorders).
+      final ageFromRight = barCount - 1 - i;
+      final sampleIndex = slice.length - 1 - ageFromRight;
+      final value = (sampleIndex >= 0 && sampleIndex < slice.length)
+          ? slice[sampleIndex].clamp(0.0, 1.0)
+          : 0.0;
+      final fraction = math.max(_idleFraction, value);
+      final h = size.height * fraction;
       final x = i * spacing + (spacing - barWidth) / 2;
       final y = (size.height - h) / 2;
       final rect = RRect.fromRectAndRadius(
@@ -107,8 +95,8 @@ class _WaveformPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WaveformPainter old) {
-    return old.elapsedMs != elapsedMs ||
-        old.color != color ||
-        old.barCount != barCount;
+    return old.color != color ||
+        old.barCount != barCount ||
+        !identical(old.amplitudes, amplitudes);
   }
 }

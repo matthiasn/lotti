@@ -14,9 +14,14 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 abstract class DayAgentInterface {
   /// Tool: `submit_capture`. Persist the spoken/typed check-in.
   /// Returns the capture id used by subsequent reconciliation calls.
+  ///
+  /// [audioId] is the optional `JournalAudio.meta.id` of the persisted
+  /// recording. When set it is forwarded as the capture's `audioRef`
+  /// so the agent layer can find the underlying audio.
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    String? audioId,
   });
 
   /// Tool: `parse_capture_to_items`. Tokenize the transcript into

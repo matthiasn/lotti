@@ -68,10 +68,15 @@ class RealtimeTranscriptionService {
 
   /// Resolves a configured real-time model.
   ///
-  /// MLX Qwen3-ASR is preferred when configured because it keeps audio local.
-  /// Mistral remains the fallback for cloud realtime transcription.
+  /// MLX Qwen3-ASR is preferred by default because it keeps audio local.
+  /// Mistral is the fallback for cloud realtime transcription.
+  ///
+  /// Pass [preferMistral] `true` to invert the preference — Mistral first,
+  /// MLX only if no Mistral realtime model is configured. The Daily OS
+  /// Next Capture flow surfaces this preference behind the
+  /// `daily_os_next_realtime_prefer_cloud` config flag.
   Future<({AiConfigInferenceProvider provider, AiConfigModel model})?>
-  resolveRealtimeConfig() async {
+  resolveRealtimeConfig({bool preferMistral = false}) async {
     final aiRepo = _ref.read(aiConfigRepositoryProvider);
     final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
     final providersFuture = aiRepo.getConfigsByType(
@@ -80,41 +85,46 @@ class RealtimeTranscriptionService {
     final models = await modelsFuture;
     final providers = await providersFuture;
 
-    final allProviders = providers.whereType<AiConfigInferenceProvider>();
+    final allProviders = providers
+        .whereType<AiConfigInferenceProvider>()
+        .toList();
 
-    for (final model in models.whereType<AiConfigModel>()) {
-      if (!model.inputModalities.contains(Modality.audio)) continue;
-      if (!_isMlxRealtimeModel(model.providerModelId)) continue;
+    final mlxConfig = _findRealtimeConfig(
+      models: models,
+      providers: allProviders,
+      isModel: _isMlxRealtimeModel,
+      providerType: InferenceProviderType.mlxAudio,
+    );
+    final mistralConfig = _findRealtimeConfig(
+      models: models,
+      providers: allProviders,
+      isModel: MistralRealtimeTranscriptionRepository.isRealtimeModel,
+      providerType: InferenceProviderType.mistral,
+    );
 
-      final provider = allProviders
-          .where(
-            (p) =>
-                p.id == model.inferenceProviderId &&
-                p.inferenceProviderType == InferenceProviderType.mlxAudio,
-          )
-          .firstOrNull;
-
-      if (provider != null) {
-        return (provider: provider, model: model);
-      }
+    if (preferMistral) {
+      return mistralConfig ?? mlxConfig;
     }
+    return mlxConfig ?? mistralConfig;
+  }
 
+  static ({AiConfigInferenceProvider provider, AiConfigModel model})?
+  _findRealtimeConfig({
+    required List<AiConfig> models,
+    required List<AiConfigInferenceProvider> providers,
+    required bool Function(String providerModelId) isModel,
+    required InferenceProviderType providerType,
+  }) {
     for (final model in models.whereType<AiConfigModel>()) {
       if (!model.inputModalities.contains(Modality.audio)) continue;
-      if (!MistralRealtimeTranscriptionRepository.isRealtimeModel(
-        model.providerModelId,
-      )) {
-        continue;
-      }
-
-      final provider = allProviders
+      if (!isModel(model.providerModelId)) continue;
+      final provider = providers
           .where(
             (p) =>
                 p.id == model.inferenceProviderId &&
-                p.inferenceProviderType == InferenceProviderType.mistral,
+                p.inferenceProviderType == providerType,
           )
           .firstOrNull;
-
       if (provider != null) {
         return (provider: provider, model: model);
       }

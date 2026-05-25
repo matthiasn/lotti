@@ -82,9 +82,11 @@ class CapturePage extends ConsumerWidget {
   String _voiceButtonLabel(BuildContext context, CapturePhase phase) {
     switch (phase) {
       case CapturePhase.idle:
+      case CapturePhase.error:
         return context.messages.dailyOsNextCaptureVoiceButtonStart;
       case CapturePhase.listening:
         return context.messages.dailyOsNextCaptureVoiceButtonStop;
+      case CapturePhase.transcribing:
       case CapturePhase.captured:
         return context.messages.dailyOsNextCaptureVoiceButtonReset;
     }
@@ -177,12 +179,44 @@ class _StateRow extends StatelessWidget {
               ),
             ),
             SizedBox(height: tokens.spacing.step3),
-            const LiveWaveform(),
+            LiveWaveform(amplitudes: state.amplitudes),
+            if (state.partialTranscript.isNotEmpty) ...[
+              SizedBox(height: tokens.spacing.step3),
+              _TranscriptText(
+                text: state.partialTranscript,
+                italic: true,
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ],
+          ],
+        );
+      case CapturePhase.transcribing:
+        return Column(
+          children: [
+            Text(
+              messages.dailyOsNextCaptureListening,
+              style: tokens.typography.styles.others.overline.copyWith(
+                color: tokens.colors.interactive.enabled,
+              ),
+            ),
             SizedBox(height: tokens.spacing.step3),
-            _TranscriptText(
-              text: state.transcript,
-              italic: true,
-              color: tokens.colors.text.lowEmphasis,
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  tokens.colors.interactive.enabled,
+                ),
+              ),
+            ),
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              messages.dailyOsNextCaptureIdleHint,
+              textAlign: TextAlign.center,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
             ),
           ],
         );
@@ -202,6 +236,14 @@ class _StateRow extends StatelessWidget {
               color: tokens.colors.text.mediumEmphasis,
             ),
           ],
+        );
+      case CapturePhase.error:
+        return Text(
+          state.errorMessage ?? messages.dailyOsNextCaptureIdleHint,
+          textAlign: TextAlign.center,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.alert.error.defaultColor,
+          ),
         );
     }
   }
@@ -288,6 +330,7 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
       final captureId = await agent.submitCapture(
         transcript: widget.state.transcript,
         capturedAt: DateTime.now(),
+        audioId: widget.state.audioId,
       );
       if (!mounted) return;
       await navigator.push<void>(

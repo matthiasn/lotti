@@ -1,20 +1,46 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
+import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
+import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/repository/speech_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/utils/file_utils.dart';
+import 'package:record/record.dart' as record;
 
-/// Three discrete phases of the Capture screen.
+/// Phases of the Capture screen.
 enum CapturePhase {
   /// Nothing being recorded — soft hints visible.
   idle,
 
-  /// Streaming a transcript. The voice button pulses, the live
-  /// waveform animates, and the transcript fills in word-by-word.
+  /// Mic is open. Amplitudes stream into [CaptureState.amplitudes] and
+  /// drive the live waveform. Realtime mode also streams transcript
+  /// deltas into [CaptureState.partialTranscript].
   listening,
 
-  /// Listening stopped. Transcript is finalised and the
-  /// "Reconcile" affordance is enabled.
+  /// Recording stopped. Awaiting the final transcript + audio
+  /// persistence. Realtime mode usually sits here briefly while
+  /// `transcription.done` is awaited; the batch fallback path stays
+  /// longer while the post-recording transcribe call runs.
+  transcribing,
+
+  /// Final transcript ready and audio persisted. The "Reconcile →" CTA
+  /// is enabled.
   captured,
+
+  /// Microphone, recording, or transcription failed. The user can tap
+  /// the voice button again to retry.
+  error,
 }
 
 /// State held by [CaptureController].
@@ -23,70 +49,161 @@ class CaptureState {
   const CaptureState({
     required this.phase,
     required this.transcript,
+    required this.amplitudes,
+    this.partialTranscript = '',
+    this.audioId,
+    this.errorMessage,
   });
 
-  const CaptureState.idle() : phase = CapturePhase.idle, transcript = '';
+  const CaptureState.idle()
+    : phase = CapturePhase.idle,
+      transcript = '',
+      partialTranscript = '',
+      amplitudes = const <double>[],
+      audioId = null,
+      errorMessage = null;
 
   final CapturePhase phase;
 
-  /// Accumulating transcript text. Italicised while listening,
-  /// solid once captured. Empty when idle.
+  /// The final transcript. Empty until [CapturePhase.captured].
   final String transcript;
+
+  /// Live transcript text from realtime mode. Updated word-by-word as
+  /// the model emits deltas. Cleared once the final [transcript] is
+  /// available. Always empty in the batch-fallback path.
+  final String partialTranscript;
+
+  /// Rolling window of normalised amplitude values (0..1). The
+  /// live-waveform widget renders these as bar heights.
+  final List<double> amplitudes;
+
+  /// `JournalAudio.meta.id` of the persisted recording, or `null` when
+  /// no audio is available yet (e.g. in [CapturePhase.idle]).
+  final String? audioId;
+
+  /// Human-readable failure message; surfaced under the voice button in
+  /// [CapturePhase.error].
+  final String? errorMessage;
 
   CaptureState copyWith({
     CapturePhase? phase,
     String? transcript,
+    String? partialTranscript,
+    List<double>? amplitudes,
+    String? audioId,
+    String? errorMessage,
   }) {
     return CaptureState(
       phase: phase ?? this.phase,
       transcript: transcript ?? this.transcript,
+      partialTranscript: partialTranscript ?? this.partialTranscript,
+      amplitudes: amplitudes ?? this.amplitudes,
+      audioId: audioId ?? this.audioId,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
 
-/// Drives the Capture screen's listening lifecycle.
+/// Drives the Capture screen's recording lifecycle.
 ///
-/// While the real STT pipeline (`features/speech`) is wired in later,
-/// the controller emits a scripted transcript so the UI loop is
-/// demoable end-to-end. The scripted transcript is the same text the
-/// `MockDayAgent` is designed to parse — so a tap-to-talk demo
-/// produces a coherent Reconcile screen with NEW / MATCHED / UPDATE /
-/// low-confidence cards.
+/// Two transcription paths:
+/// * **Realtime (primary)** — when [RealtimeTranscriptionService] can
+///   resolve a config (MLX Qwen3 locally, or Mistral cloud), we stream
+///   PCM frames through a raw `record.AudioRecorder` and let the
+///   service surface transcript deltas live. The audio is converted to
+///   `.m4a` at stop and persisted as a [JournalAudio].
+/// * **Batch (fallback)** — when no realtime model is configured, we
+///   fall back to a file-backed [AudioRecorderRepository] recording
+///   plus a post-recording [AudioTranscriptionService.transcribe]
+///   round-trip.
 ///
-/// Test seam: pass `transcriptChunks` + `chunkInterval` to control
-/// the scripted stream deterministically (no real clock).
+/// Test seam: inject any of the constructor parameters to keep tests
+/// deterministic and off the real mic / cloud.
 class CaptureController extends Notifier<CaptureState> {
   CaptureController({
-    List<String>? transcriptChunks,
-    this.chunkInterval = const Duration(milliseconds: 90),
-  }) : _transcriptChunks =
-           transcriptChunks ?? const _DefaultDemoTranscript().chunks;
+    AudioRecorderRepository? recorder,
+    AudioTranscriptionService? transcriber,
+    RealtimeTranscriptionService? realtimeService,
+    record.AudioRecorder Function()? realtimeRecorderFactory,
+    Future<JournalAudio?> Function(AudioNote)? persistAudio,
+    Directory Function()? docDir,
+    DateTime Function()? now,
+  }) : _recorderOverride = recorder,
+       _transcriberOverride = transcriber,
+       _realtimeServiceOverride = realtimeService,
+       _realtimeRecorderFactory =
+           realtimeRecorderFactory ?? record.AudioRecorder.new,
+       _persistAudioOverride = persistAudio,
+       _docDir = docDir ?? getDocumentsDirectory,
+       _now = now ?? DateTime.now;
 
-  /// Words / phrases emitted in sequence during listening.
-  final List<String> _transcriptChunks;
+  final AudioRecorderRepository? _recorderOverride;
+  final AudioTranscriptionService? _transcriberOverride;
+  final RealtimeTranscriptionService? _realtimeServiceOverride;
+  final record.AudioRecorder Function() _realtimeRecorderFactory;
+  final Future<JournalAudio?> Function(AudioNote)? _persistAudioOverride;
+  final Directory Function() _docDir;
+  final DateTime Function() _now;
 
-  /// Cadence between transcript chunks while listening.
-  final Duration chunkInterval;
+  /// Rolling-window size for the live waveform (~1.6s at 20ms cadence).
+  static const _maxAmplitudeSamples = 80;
 
-  Timer? _streamTimer;
-  int _cursor = 0;
+  /// dBFS floor used to normalise amplitudes into 0..1. Values below
+  /// this clamp to 0; -45 keeps speech visible without amplifying room
+  /// noise into oscillating full-height bars.
+  static const _minDbfs = -45.0;
+
+  late final AudioRecorderRepository _recorder =
+      _recorderOverride ?? AudioRecorderRepository();
+  late final AudioTranscriptionService _transcriber =
+      _transcriberOverride ?? ref.read(audioTranscriptionServiceProvider);
+  late final RealtimeTranscriptionService _realtimeService =
+      _realtimeServiceOverride ??
+      ref.read(realtimeTranscriptionServiceProvider);
+  late final Future<JournalAudio?> Function(AudioNote) _persistAudio =
+      _persistAudioOverride ?? SpeechRepository.createAudioEntry;
+
+  /// Active realtime transcription config — captured at start time so
+  /// the AudioTranscript persisted on the JournalAudio carries the
+  /// provider + model that actually produced the text.
+  ({AiConfigInferenceProvider provider, AiConfigModel model})?
+  _activeRealtimeConfig;
+
+  StreamSubscription<record.Amplitude>? _ampSub;
+  StreamSubscription<double>? _realtimeAmpSub;
+  record.AudioRecorder? _realtimeRecorder;
+
+  // Pre-computed audio path data so we can build the AudioNote after
+  // the realtime service writes the .m4a file.
+  String? _realtimeOutputBasePath;
+  String? _realtimeAudioDirectory;
+  String? _realtimeAudioFile;
+
+  // Batch fallback state.
+  AudioNote? _recordingNote;
+  DateTime? _recordingStartedAt;
+
+  /// Marks whether the current session is using the realtime path.
+  /// `null` outside of a session.
+  bool? _activeIsRealtime;
 
   @override
   CaptureState build() {
-    ref.onDispose(_cancelTimer);
+    ref.onDispose(_cleanupSync);
     return const CaptureState.idle();
   }
 
-  /// Toggle between idle ⇄ listening ⇄ captured.
-  /// - From `idle`: arm listening + start the scripted stream.
-  /// - From `listening`: stop early, finalise the partial transcript.
-  /// - From `captured`: reset back to idle.
-  void toggle() {
+  /// Drives the phase transitions. Voice-button tap triggers this.
+  Future<void> toggle() async {
     switch (state.phase) {
       case CapturePhase.idle:
-        _beginListening();
+      case CapturePhase.error:
+        await _beginListening();
       case CapturePhase.listening:
-        _finishListening();
+        await _finishListening();
+      case CapturePhase.transcribing:
+        // Busy. Ignore presses while transcription is in flight.
+        return;
       case CapturePhase.captured:
         reset();
     }
@@ -94,87 +211,438 @@ class CaptureController extends Notifier<CaptureState> {
 
   /// Manual reset — used by the "Re-record" footer on Reconcile.
   void reset() {
-    _cancelTimer();
-    _cursor = 0;
+    _cleanupSync();
     state = const CaptureState.idle();
   }
 
-  void _beginListening() {
-    _cursor = 0;
+  Future<void> _beginListening() async {
+    // Dev/exploration: prefer Mistral cloud realtime for smoother UX.
+    // Falls back to MLX automatically when Mistral isn't configured.
+    final realtimeConfig = await _realtimeService.resolveRealtimeConfig(
+      preferMistral: true,
+    );
+    _activeRealtimeConfig = realtimeConfig;
+    if (realtimeConfig != null) {
+      await _beginListeningRealtime();
+    } else {
+      await _beginListeningBatch();
+    }
+  }
+
+  Future<void> _beginListeningRealtime() async {
+    final recorder = _realtimeRecorderFactory();
+    final hasPerm = await recorder.hasPermission();
+    if (!hasPerm) {
+      await recorder.dispose();
+      state = const CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: <double>[],
+        errorMessage: 'Microphone permission was denied.',
+      );
+      return;
+    }
+
+    final Stream<Uint8List> pcmStream;
+    try {
+      pcmStream = await recorder.startStream(
+        const record.RecordConfig(
+          encoder: record.AudioEncoder.pcm16bits,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+      );
+    } catch (e) {
+      await recorder.dispose();
+      state = CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: const <double>[],
+        errorMessage: 'Failed to start recording: $e',
+      );
+      return;
+    }
+
+    _realtimeRecorder = recorder;
+    _activeIsRealtime = true;
+    _recordingStartedAt = _now();
     state = const CaptureState(
       phase: CapturePhase.listening,
       transcript: '',
+      amplitudes: <double>[],
     );
-    _streamTimer = Timer.periodic(chunkInterval, (timer) {
-      if (_cursor >= _transcriptChunks.length) {
-        timer.cancel();
-        _finishListening();
-        return;
+
+    _realtimeAmpSub = _realtimeService.amplitudeStream.listen(
+      (dbfs) {
+        if (state.phase != CapturePhase.listening) return;
+        final next = [...state.amplitudes, _normaliseDbfs(dbfs)];
+        final clipped = next.length > _maxAmplitudeSamples
+            ? next.sublist(next.length - _maxAmplitudeSamples)
+            : next;
+        state = state.copyWith(amplitudes: clipped);
+      },
+      onError: (Object _) {
+        // Amplitude stream errors are non-fatal — keep recording.
+      },
+    );
+
+    // Pre-compute the on-disk path so the realtime service writes the
+    // m4a inside `/audio/YYYY-MM-DD/`, matching the layout journal
+    // audio entries use everywhere else.
+    final now = _now();
+    final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(now);
+    final day = DateFormat('yyyy-MM-dd').format(now);
+    _realtimeAudioDirectory = '/audio/$day/';
+    _realtimeAudioFile = '$timestamp.m4a';
+    final docDir = _docDir();
+    final absoluteDir = '${docDir.path}$_realtimeAudioDirectory';
+    await Directory(absoluteDir).create(recursive: true);
+    _realtimeOutputBasePath = '$absoluteDir$timestamp';
+
+    try {
+      await _realtimeService.startRealtimeTranscription(
+        pcmStream: pcmStream,
+        onDelta: _onRealtimeDelta,
+      );
+    } catch (e) {
+      await _cleanupRealtime(disposeRecorder: true);
+      state = CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: const <double>[],
+        errorMessage: 'Failed to start realtime transcription: $e',
+      );
+    }
+  }
+
+  void _onRealtimeDelta(String delta) {
+    if (state.phase != CapturePhase.listening &&
+        state.phase != CapturePhase.transcribing) {
+      return;
+    }
+    state = state.copyWith(
+      partialTranscript: '${state.partialTranscript}$delta',
+    );
+  }
+
+  Future<void> _beginListeningBatch() async {
+    final permitted = await _recorder.hasPermission();
+    if (!permitted) {
+      state = const CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: <double>[],
+        errorMessage: 'Microphone permission was denied.',
+      );
+      return;
+    }
+    final note = await _recorder.startRecording();
+    if (note == null) {
+      state = const CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: <double>[],
+        errorMessage: 'Failed to start recording.',
+      );
+      return;
+    }
+    _recordingNote = note;
+    _recordingStartedAt = _now();
+    _activeIsRealtime = false;
+    state = const CaptureState(
+      phase: CapturePhase.listening,
+      transcript: '',
+      amplitudes: <double>[],
+    );
+    _ampSub = _recorder.amplitudeStream.listen(
+      _onBatchAmplitude,
+      onError: (Object _) {
+        // Amplitude stream errors are non-fatal — keep recording.
+      },
+    );
+  }
+
+  void _onBatchAmplitude(record.Amplitude amp) {
+    if (state.phase != CapturePhase.listening) return;
+    final next = [...state.amplitudes, _normaliseDbfs(amp.current)];
+    final clipped = next.length > _maxAmplitudeSamples
+        ? next.sublist(next.length - _maxAmplitudeSamples)
+        : next;
+    state = state.copyWith(amplitudes: clipped);
+  }
+
+  Future<void> _finishListening() async {
+    if (_activeIsRealtime == true) {
+      await _finishListeningRealtime();
+    } else {
+      await _finishListeningBatch();
+    }
+  }
+
+  Future<void> _finishListeningRealtime() async {
+    final recorder = _realtimeRecorder;
+    final outputBase = _realtimeOutputBasePath;
+    final audioDir = _realtimeAudioDirectory;
+    final audioFile = _realtimeAudioFile;
+    final startedAt = _recordingStartedAt;
+    if (recorder == null ||
+        outputBase == null ||
+        audioDir == null ||
+        audioFile == null) {
+      state = const CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: <double>[],
+        errorMessage: 'No active realtime session.',
+      );
+      return;
+    }
+
+    await _realtimeAmpSub?.cancel();
+    _realtimeAmpSub = null;
+    state = state.copyWith(phase: CapturePhase.transcribing);
+
+    RealtimeStopResult result;
+    try {
+      result = await _realtimeService.stop(
+        stopRecorder: () async {
+          try {
+            await recorder.stop();
+          } catch (_) {}
+        },
+        outputPath: outputBase,
+      );
+    } catch (e) {
+      await _cleanupRealtime(disposeRecorder: true);
+      state = CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: const <double>[],
+        errorMessage: 'Realtime transcription failed: $e',
+      );
+      return;
+    }
+
+    // The service may have written `.wav` if m4a conversion failed.
+    final resolvedAudioFile = result.audioFilePath != null
+        ? result.audioFilePath!.split('/').last
+        : audioFile;
+    final duration = startedAt == null
+        ? Duration.zero
+        : _now().difference(startedAt);
+    final note = AudioNote(
+      createdAt: startedAt ?? _now(),
+      audioFile: resolvedAudioFile,
+      audioDirectory: audioDir,
+      duration: duration,
+    );
+
+    JournalAudio? journalAudio;
+    try {
+      journalAudio = await _persistAudio(note);
+    } catch (_) {
+      // Persistence is best-effort — surface the transcript anyway.
+    }
+
+    final finalTranscript = result.transcript.trim();
+    if (journalAudio != null && finalTranscript.isNotEmpty) {
+      final config = _activeRealtimeConfig;
+      await _attachTranscriptToJournalAudio(
+        journalAudio: journalAudio,
+        transcript: finalTranscript,
+        library: config?.provider.name ?? 'realtime',
+        model: config?.model.providerModelId ?? 'unknown',
+        detectedLanguage: result.detectedLanguage ?? '-',
+      );
+    }
+
+    try {
+      await recorder.dispose();
+    } catch (_) {}
+    _realtimeRecorder = null;
+    _realtimeOutputBasePath = null;
+    _realtimeAudioDirectory = null;
+    _realtimeAudioFile = null;
+    _recordingStartedAt = null;
+    _activeIsRealtime = null;
+    _activeRealtimeConfig = null;
+
+    state = CaptureState(
+      phase: CapturePhase.captured,
+      transcript: finalTranscript,
+      amplitudes: const <double>[],
+      audioId: journalAudio?.meta.id,
+    );
+  }
+
+  Future<void> _finishListeningBatch() async {
+    await _ampSub?.cancel();
+    _ampSub = null;
+    await _recorder.stopRecording();
+    final note = _recordingNote;
+    final startedAt = _recordingStartedAt;
+    if (note == null) {
+      state = const CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: <double>[],
+        errorMessage: 'No audio recorded.',
+      );
+      _recordingStartedAt = null;
+      _activeIsRealtime = null;
+      return;
+    }
+
+    state = state.copyWith(phase: CapturePhase.transcribing);
+
+    final docDir = _docDir();
+    final fullPath = '${docDir.path}${note.audioDirectory}${note.audioFile}';
+    final duration = startedAt == null
+        ? Duration.zero
+        : _now().difference(startedAt);
+    final noteWithDuration = note.copyWith(duration: duration);
+
+    String transcript;
+    try {
+      transcript = (await _transcriber.transcribe(fullPath)).trim();
+    } catch (e) {
+      state = const CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: <double>[],
+        errorMessage: 'Transcription failed.',
+      );
+      _recordingNote = null;
+      _recordingStartedAt = null;
+      _activeIsRealtime = null;
+      return;
+    }
+
+    JournalAudio? journalAudio;
+    try {
+      journalAudio = await _persistAudio(noteWithDuration);
+    } catch (_) {
+      // Persistence is best-effort — surface the transcript anyway.
+    }
+
+    if (journalAudio != null && transcript.isNotEmpty) {
+      await _attachTranscriptToJournalAudio(
+        journalAudio: journalAudio,
+        transcript: transcript,
+        library: 'batch-transcribe',
+        model: 'cloud-inference',
+        detectedLanguage: '-',
+      );
+    }
+
+    _recordingNote = null;
+    _recordingStartedAt = null;
+    _activeIsRealtime = null;
+    _activeRealtimeConfig = null;
+    state = CaptureState(
+      phase: CapturePhase.captured,
+      transcript: transcript,
+      amplitudes: const <double>[],
+      audioId: journalAudio?.meta.id,
+    );
+  }
+
+  /// Persists [transcript] as an [AudioTranscript] on [journalAudio]
+  /// and mirrors the text into [JournalAudio.entryText] so the audio
+  /// entry shows up with searchable content in the journal.
+  Future<void> _attachTranscriptToJournalAudio({
+    required JournalAudio journalAudio,
+    required String transcript,
+    required String library,
+    required String model,
+    required String detectedLanguage,
+  }) async {
+    try {
+      final persistenceLogic = getIt<PersistenceLogic>();
+      final audioTranscript = AudioTranscript(
+        created: _now(),
+        library: library,
+        model: model,
+        detectedLanguage: detectedLanguage,
+        transcript: transcript,
+      );
+      final existing = journalAudio.data.transcripts ?? <AudioTranscript>[];
+      final updated = journalAudio.copyWith(
+        meta: await persistenceLogic.updateMetadata(journalAudio.meta),
+        data: journalAudio.data.copyWith(
+          transcripts: [...existing, audioTranscript],
+        ),
+        entryText: EntryText(plainText: transcript, markdown: transcript),
+      );
+      await persistenceLogic.updateDbEntity(updated);
+    } catch (_) {
+      // Attaching the transcript is best-effort — the capture flow
+      // still proceeds with the in-memory transcript even if the
+      // journal mutation fails.
+    }
+  }
+
+  Future<void> _cleanupRealtime({required bool disposeRecorder}) async {
+    final ampSub = _realtimeAmpSub;
+    _realtimeAmpSub = null;
+    if (ampSub != null) {
+      unawaited(ampSub.cancel());
+    }
+    if (disposeRecorder) {
+      final recorder = _realtimeRecorder;
+      _realtimeRecorder = null;
+      if (recorder != null) {
+        try {
+          await recorder.dispose();
+        } catch (_) {}
       }
-      final next = _transcriptChunks[_cursor++];
-      final current = state.transcript;
-      final joined = current.isEmpty
-          ? next
-          : '$current${_needsLeadingSpace(next) ? ' ' : ''}$next';
-      state = state.copyWith(transcript: joined);
-    });
+    }
+    unawaited(_realtimeService.dispose());
+    _realtimeOutputBasePath = null;
+    _realtimeAudioDirectory = null;
+    _realtimeAudioFile = null;
+    _recordingStartedAt = null;
+    _activeIsRealtime = null;
   }
 
-  void _finishListening() {
-    _cancelTimer();
-    state = state.copyWith(phase: CapturePhase.captured);
+  void _cleanupSync() {
+    final ampSub = _ampSub;
+    _ampSub = null;
+    if (ampSub != null) {
+      unawaited(ampSub.cancel());
+    }
+    final realtimeAmpSub = _realtimeAmpSub;
+    _realtimeAmpSub = null;
+    if (realtimeAmpSub != null) {
+      unawaited(realtimeAmpSub.cancel());
+    }
+    final recorder = _realtimeRecorder;
+    _realtimeRecorder = null;
+    if (recorder != null) {
+      unawaited(
+        () async {
+          try {
+            await recorder.stop();
+          } catch (_) {}
+          try {
+            await recorder.dispose();
+          } catch (_) {}
+        }(),
+      );
+    }
+    _recordingNote = null;
+    _recordingStartedAt = null;
+    _realtimeOutputBasePath = null;
+    _realtimeAudioDirectory = null;
+    _realtimeAudioFile = null;
+    _activeIsRealtime = null;
   }
 
-  void _cancelTimer() {
-    _streamTimer?.cancel();
-    _streamTimer = null;
+  static double _normaliseDbfs(double dbfs) {
+    if (dbfs.isNaN || dbfs.isInfinite) return 0;
+    final clamped = dbfs.clamp(_minDbfs, 0.0);
+    return (clamped - _minDbfs) / -_minDbfs;
   }
-
-  bool _needsLeadingSpace(String next) {
-    // Punctuation chunks (',', '.', '?', etc.) attach without a leading space.
-    if (next.isEmpty) return false;
-    final first = next.codeUnitAt(0);
-    const comma = 0x2C;
-    const period = 0x2E;
-    const question = 0x3F;
-    const exclamation = 0x21;
-    return first != comma &&
-        first != period &&
-        first != question &&
-        first != exclamation;
-  }
-}
-
-class _DefaultDemoTranscript {
-  const _DefaultDemoTranscript();
-
-  List<String> get chunks => const [
-    'Need',
-    'to',
-    'send',
-    'the',
-    'deck',
-    'to',
-    'Sarah',
-    'today',
-    ',',
-    'review',
-    'invoices',
-    'before',
-    'eleven',
-    ',',
-    'did',
-    'my',
-    'run',
-    'already',
-    ',',
-    'and',
-    'call',
-    'mom',
-    'about',
-    'Sunday',
-    '.',
-  ];
 }
 
 /// Creates a fresh controller per route entry so a re-entry into

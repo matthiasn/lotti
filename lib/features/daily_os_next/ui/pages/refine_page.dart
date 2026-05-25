@@ -120,7 +120,13 @@ class _RefinementPanel extends ConsumerWidget {
             _StatusLine(state: state),
             if (state.phase == RefinePhase.listening) ...[
               SizedBox(height: tokens.spacing.step3),
-              const Center(child: LiveWaveform(width: 180, height: 22)),
+              const Center(
+                child: LiveWaveform(
+                  amplitudes: <double>[],
+                  width: 180,
+                  height: 22,
+                ),
+              ),
             ],
             if (state.transcript.isNotEmpty) ...[
               SizedBox(height: tokens.spacing.step3),

@@ -61,6 +61,7 @@ class MockDayAgent implements DayAgentInterface {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    String? audioId,
   }) async {
     await Future<void>.delayed(parseLatency);
     _captureSeq++;

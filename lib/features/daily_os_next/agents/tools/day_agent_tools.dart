@@ -294,20 +294,14 @@ const dayAgentTools = <AgentToolDefinition>[
                 'type': 'string',
                 'minLength': 1,
                 'description':
-                    'Why this block belongs here. Required for ai blocks.',
+                    'Why this block belongs here. REQUIRED whenever type is '
+                    '"ai" — the tool handler rejects ai blocks without a '
+                    'non-empty reason.',
               },
               'note': {'type': 'string'},
             },
             'required': ['title', 'categoryId', 'start', 'end', 'type'],
             'additionalProperties': false,
-            'if': {
-              'properties': {
-                'type': {'const': 'ai'},
-              },
-            },
-            'then': {
-              'required': ['reason'],
-            },
           },
         },
         'energyBands': {

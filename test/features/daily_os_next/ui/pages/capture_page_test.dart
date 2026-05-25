@@ -1,7 +1,12 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
@@ -9,20 +14,27 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:record/record.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 class _RecordingAgent implements DayAgentInterface {
   String? capturedTranscript;
+  String? capturedAudioId;
   int submitCount = 0;
 
   @override
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    String? audioId,
   }) async {
     capturedTranscript = transcript;
+    capturedAudioId = audioId;
     submitCount++;
     return const CaptureId('cap_recorded');
   }
@@ -169,16 +181,12 @@ void main() {
     testWidgets('tapping the voice button arms the listening phase', (
       tester,
     ) async {
+      final harness = _AudioHarness()..arm();
       await tester.pumpWidget(
         _wrap(
           const CapturePage(),
           overrides: [
-            captureControllerProvider.overrideWith(
-              () => CaptureController(
-                transcriptChunks: const ['hello'],
-                chunkInterval: const Duration(milliseconds: 50),
-              ),
-            ),
+            captureControllerProvider.overrideWith(harness.controllerFactory),
           ],
         ),
       );
@@ -186,37 +194,44 @@ void main() {
 
       await tester.tap(find.byType(VoiceButton));
       await tester.pump();
+      await tester.pump();
 
       final context = tester.element(find.byType(CapturePage));
       final messages = context.messages;
       expect(find.text(messages.dailyOsNextCaptureListening), findsOneWidget);
       expect(find.byType(LiveWaveform), findsOneWidget);
+
+      await harness.dispose();
     });
 
     testWidgets(
-      'after capture, the Reconcile CTA submits the transcript and pushes '
-      'Reconcile',
+      'after capture, the Reconcile CTA submits transcript + audioId',
       (tester) async {
         final agent = _RecordingAgent();
+        final harness = _AudioHarness(transcript: 'hi there')..arm();
         await tester.pumpWidget(
           _wrap(
             const CapturePage(),
             overrides: [
               dayAgentProvider.overrideWithValue(agent),
-              captureControllerProvider.overrideWith(
-                () => CaptureController(
-                  transcriptChunks: const ['hi'],
-                  chunkInterval: const Duration(milliseconds: 10),
-                ),
-              ),
+              captureControllerProvider.overrideWith(harness.controllerFactory),
             ],
           ),
         );
         await tester.pump();
 
-        // Start listening; let the scripted transcript finish.
+        // Start listening (async permission + startRecording).
         await tester.tap(find.byType(VoiceButton));
-        await tester.pump(const Duration(milliseconds: 50));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump();
+        // Stop listening — triggers transcribe + persist.
+        await tester.tap(find.byType(VoiceButton));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump();
 
         final context = tester.element(find.byType(CapturePage));
         final messages = context.messages;
@@ -230,8 +245,84 @@ void main() {
         await tester.pump();
 
         expect(agent.submitCount, 1);
-        expect(agent.capturedTranscript, 'hi');
+        expect(agent.capturedTranscript, 'hi there');
+        expect(agent.capturedAudioId, 'audio_001');
+
+        await harness.dispose();
       },
     );
   });
+}
+
+/// Wraps a fake recorder + transcription service so widget tests can
+/// drive the [CaptureController] without touching the mic or cloud.
+class _AudioHarness {
+  _AudioHarness({this.transcript = 'transcript'});
+
+  final String transcript;
+  final MockAudioRecorderRepository recorder = MockAudioRecorderRepository();
+  final MockAudioTranscriptionService transcriber =
+      MockAudioTranscriptionService();
+  final MockRealtimeTranscriptionService realtimeService =
+      MockRealtimeTranscriptionService();
+  final StreamController<Amplitude> ampController =
+      StreamController<Amplitude>.broadcast();
+
+  void arm() {
+    // Page tests pin the batch path; realtime coverage lives in the
+    // controller test.
+    when(
+      () => realtimeService.resolveRealtimeConfig(
+        preferMistral: any(named: 'preferMistral'),
+      ),
+    ).thenAnswer((_) async => null);
+    when(recorder.hasPermission).thenAnswer((_) async => true);
+    when(
+      () => recorder.amplitudeStream,
+    ).thenAnswer((_) => ampController.stream);
+    when(recorder.startRecording).thenAnswer(
+      (_) async => AudioNote(
+        createdAt: DateTime(2026, 5, 26, 9),
+        audioFile: 'capture.m4a',
+        audioDirectory: '/audio/2026-05-26/',
+        duration: Duration.zero,
+      ),
+    );
+    when(recorder.stopRecording).thenAnswer((_) async {});
+    when(
+      () => transcriber.transcribe(
+        any(),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+      ),
+    ).thenAnswer((_) async => transcript);
+  }
+
+  CaptureController controllerFactory() => CaptureController(
+    recorder: recorder,
+    transcriber: transcriber,
+    realtimeService: realtimeService,
+    docDir: Directory.systemTemp.createTempSync,
+    persistAudio: (_) async => JournalAudio(
+      meta: Metadata(
+        id: 'audio_001',
+        createdAt: DateTime(2026, 5, 26, 9),
+        updatedAt: DateTime(2026, 5, 26, 9),
+        dateFrom: DateTime(2026, 5, 26, 9),
+        dateTo: DateTime(2026, 5, 26, 9, 0, 1),
+        vectorClock: const VectorClock(<String, int>{}),
+      ),
+      data: AudioData(
+        dateFrom: DateTime(2026, 5, 26, 9),
+        dateTo: DateTime(2026, 5, 26, 9, 0, 1),
+        audioFile: 'capture.m4a',
+        audioDirectory: '/audio/2026-05-26/',
+        duration: const Duration(seconds: 1),
+      ),
+    ),
+    now: () => DateTime(2026, 5, 26, 9),
+  );
+
+  Future<void> dispose() async {
+    await ampController.close();
+  }
 }

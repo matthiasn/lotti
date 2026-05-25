@@ -65,12 +65,16 @@ class RealDayAgent implements DayAgentInterface {
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
+    String? audioId,
   }) async {
-    final identity = await dayAgentService.createDayAgent(date: capturedAt);
+    final existing = await dayAgentService.getDayAgentForDate(capturedAt);
+    final identity =
+        existing ?? await dayAgentService.createDayAgent(date: capturedAt);
     final capture = await captureService.submitCapture(
       agentId: identity.agentId,
       transcript: transcript,
       capturedAt: capturedAt,
+      audioRef: audioId,
     );
     return CaptureId(capture.id);
   }
