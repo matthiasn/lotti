@@ -113,6 +113,74 @@ void main() {
     );
 
     test(
+      'draftDayPlan returns blocks with mandatory reasons on ai placements',
+      () async {
+        final plan = await agent.draftDayPlan(
+          captureId: const CaptureId('cap'),
+          decidedTaskIds: const ['t_deck_review', 't_onboarding_doc'],
+          dayDate: DateTime(2026, 5, 25),
+        );
+
+        expect(plan.blocks, isNotEmpty);
+        expect(plan.capacityMinutes, 480);
+        expect(plan.scheduledMinutes, greaterThan(0));
+        expect(plan.bands, hasLength(3));
+
+        // Every AI-placed block carries a reason — that's the contract
+        // the WhyChip popover relies on.
+        final aiBlocks = plan.blocks
+            .where((b) => b.type == TimeBlockType.ai)
+            .toList();
+        expect(aiBlocks, isNotEmpty);
+        for (final block in aiBlocks) {
+          expect(
+            block.reason,
+            isNotNull,
+            reason: 'ai block ${block.id} is missing a reason',
+          );
+          expect(block.reason, isNotEmpty);
+        }
+
+        // Calendar blocks survive the day's sort.
+        expect(
+          plan.blocks.any((b) => b.type == TimeBlockType.cal),
+          isTrue,
+        );
+        // At least one buffer placement is present.
+        expect(
+          plan.blocks.any((b) => b.type == TimeBlockType.buffer),
+          isTrue,
+        );
+
+        // Blocks come back sorted by start.
+        for (var i = 1; i < plan.blocks.length; i++) {
+          expect(
+            plan.blocks[i].start.isAfter(plan.blocks[i - 1].start) ||
+                plan.blocks[i].start.isAtSameMomentAs(plan.blocks[i - 1].start),
+            isTrue,
+          );
+        }
+      },
+    );
+
+    test('summarizeRecentPatterns returns 3 cards including a nudge', () async {
+      final cards = await agent.summarizeRecentPatterns(
+        asOf: DateTime(2026, 5, 25),
+      );
+      expect(cards, hasLength(3));
+      expect(
+        cards.any((c) => c.kind == LearningCardKind.nudge),
+        isTrue,
+      );
+      // Standard cards carry bullets; the nudge card does not.
+      final standard = cards.where((c) => c.kind == LearningCardKind.standard);
+      for (final card in standard) {
+        expect(card.bullets, isNotEmpty);
+        expect(card.summary, isNotEmpty);
+      }
+    });
+
+    test(
       'DayAgentInterface is implementable; equality on value objects works',
       () {
         // Compile-time check — Mock is an implementation.
@@ -155,4 +223,44 @@ class _NullAgent implements DayAgentInterface {
     required TriageAction action,
     DateTime? deferTo,
   }) async => TriageResult(taskId: taskId, action: action);
+
+  @override
+  Future<DraftPlan> draftDayPlan({
+    required CaptureId captureId,
+    required List<String> decidedTaskIds,
+    required DateTime dayDate,
+    List<TimeBlock> calendarBlocks = const [],
+  }) async => DraftPlan(
+    dayDate: dayDate,
+    blocks: const [],
+    bands: const [],
+    capacityMinutes: 0,
+    scheduledMinutes: 0,
+  );
+
+  @override
+  Future<List<LearningCard>> summarizeRecentPatterns({
+    required DateTime asOf,
+    int lookbackDays = 7,
+  }) async => const [];
+
+  @override
+  Future<PlanDiff> proposePlanDiff({
+    required DraftPlan currentPlan,
+    required String voiceTranscript,
+  }) async => PlanDiff(
+    id: 'null',
+    transcript: voiceTranscript,
+    changes: const [],
+    updatedPlan: currentPlan,
+  );
+
+  @override
+  Future<DraftPlan> acceptDiff(PlanDiff diff) async => diff.updatedPlan;
+
+  @override
+  Future<DraftPlan> revertDiff({
+    required PlanDiff diff,
+    required DraftPlan originalPlan,
+  }) async => originalPlan;
 }

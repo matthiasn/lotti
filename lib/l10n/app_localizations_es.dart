@@ -3093,6 +3093,40 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNearLimit => 'Cerca del límite';
 
   @override
+  String get dailyOsNextAgendaCapacityComfortable => 'CÓMODO';
+
+  @override
+  String get dailyOsNextAgendaCapacityNearFull => 'CASI LLENO';
+
+  @override
+  String dailyOsNextAgendaCapacityOf(String capacity) {
+    return 'de $capacity';
+  }
+
+  @override
+  String get dailyOsNextAgendaCapacityOver => 'SOBRECARGADO';
+
+  @override
+  String get dailyOsNextAgendaEmpty => 'Nada que hacer hoy.';
+
+  @override
+  String get dailyOsNextAgendaStateDone => 'Hecho';
+
+  @override
+  String get dailyOsNextAgendaStateInProgress => 'En curso';
+
+  @override
+  String get dailyOsNextAgendaStateOpen => 'Abierto';
+
+  @override
+  String get dailyOsNextAgendaStateOverdue => 'Atrasado';
+
+  @override
+  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
+    return '$scheduled de $capacity comprometidos';
+  }
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Entendido.';
 
   @override
@@ -3121,6 +3155,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextCaptureVoiceButtonStop => 'Detener';
 
   @override
+  String get dailyOsNextDayBack => 'Atrás';
+
+  @override
+  String get dailyOsNextDayRefineCta => 'Refinar con voz';
+
+  @override
+  String get dailyOsNextDayRefineFooterHint =>
+      'Habla para reformar el plan — los cambios aparecen como diff antes de aplicarse.';
+
+  @override
+  String get dailyOsNextDayTitle => 'Tu día';
+
+  @override
+  String get dailyOsNextDayWhyChipLabel => 'POR QUÉ';
+
+  @override
+  String get dailyOsNextDraftingNudgeAccept => 'Sí, protege las mañanas';
+
+  @override
+  String get dailyOsNextDraftingNudgeDecline => 'Hoy no';
+
+  @override
+  String get dailyOsNextDraftingReasoningOverline => '✦ RAZONAMIENTO';
+
+  @override
   String dailyOsNextEstimateMinutes(int minutes) {
     return '${minutes}m';
   }
@@ -3136,6 +3195,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingMorning => 'Buenos días.';
+
+  @override
+  String get dailyOsNextPlanViewAgenda => 'Agenda';
+
+  @override
+  String get dailyOsNextPlanViewDay => 'Día';
 
   @override
   String get dailyOsNextReconcileBadgeMatched => 'VINCULADO';
@@ -3173,6 +3238,45 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get dailyOsNextReconcileVoiceHint =>
       '«Quita las facturas» también funciona aquí';
+
+  @override
+  String get dailyOsNextRefineAccept => 'Aceptar';
+
+  @override
+  String get dailyOsNextRefineDiffAdded => 'AÑADIDO';
+
+  @override
+  String get dailyOsNextRefineDiffDropped => 'DESCARTADO';
+
+  @override
+  String get dailyOsNextRefineDiffMoved => 'MOVIDO';
+
+  @override
+  String get dailyOsNextRefineKeepTalking => 'Seguir hablando';
+
+  @override
+  String get dailyOsNextRefineOverline => '🎤 REFINAMIENTO';
+
+  @override
+  String get dailyOsNextRefineRevert => 'Deshacer';
+
+  @override
+  String get dailyOsNextRefineStatusAccepted => 'Confirmado.';
+
+  @override
+  String get dailyOsNextRefineStatusDiffReady => 'Esto es lo que cambió.';
+
+  @override
+  String get dailyOsNextRefineStatusIdle => 'Toca para hablar.';
+
+  @override
+  String get dailyOsNextRefineStatusListening => 'Escuchando…';
+
+  @override
+  String get dailyOsNextRefineStatusThinking => '✦ Reformando el plan…';
+
+  @override
+  String get dailyOsNextRefineTitle => 'Refinar el plan';
 
   @override
   String get dailyOsNextStateDueToday => 'Vence hoy';

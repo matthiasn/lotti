@@ -1318,6 +1318,36 @@
   "dailyOsFold": "Složit",
   "dailyOsInvalidTimeRange": "Neplatný časový rozsah",
   "dailyOsNearLimit": "Blízko limitu",
+  "dailyOsNextAgendaCapacityComfortable": "POHODOVÉ",
+  "dailyOsNextAgendaCapacityNearFull": "TÉMĚŘ PLNÉ",
+  "dailyOsNextAgendaCapacityOf": "z {capacity}",
+  "@dailyOsNextAgendaCapacityOf": {
+    "placeholders": {
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextAgendaCapacityOver": "PŘEPLNĚNO",
+  "dailyOsNextAgendaEmpty": "Dnes není co dělat.",
+  "dailyOsNextAgendaStateDone": "Hotovo",
+  "dailyOsNextAgendaStateInProgress": "Probíhá",
+  "dailyOsNextAgendaStateOpen": "Otevřené",
+  "dailyOsNextAgendaStateOverdue": "Po termínu",
+  "dailyOsNextAgendaSummary": "{scheduled} z {capacity} naplánováno",
+  "@dailyOsNextAgendaSummary": {
+    "placeholders": {
+      "scheduled": {
+        "type": "String",
+        "example": "5h 15m"
+      },
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Rozumím.",
   "dailyOsNextCaptureHeadlineLead": "Co máš dnes",
   "dailyOsNextCaptureHeadlineTail": "na mysli?",
@@ -1327,6 +1357,14 @@
   "dailyOsNextCaptureVoiceButtonReset": "Začít znovu",
   "dailyOsNextCaptureVoiceButtonStart": "Začít poslouchat",
   "dailyOsNextCaptureVoiceButtonStop": "Zastavit",
+  "dailyOsNextDayBack": "Zpět",
+  "dailyOsNextDayRefineCta": "Upravit hlasem",
+  "dailyOsNextDayRefineFooterHint": "Mluv, aby ses k plánu vrátil — změny se zobrazí jako diff, než se uplatní.",
+  "dailyOsNextDayTitle": "Tvůj den",
+  "dailyOsNextDayWhyChipLabel": "PROČ",
+  "dailyOsNextDraftingNudgeAccept": "Ano, chraň ranní hodiny",
+  "dailyOsNextDraftingNudgeDecline": "Dnes ne",
+  "dailyOsNextDraftingReasoningOverline": "✦ ÚVAHA",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
     "placeholders": {
@@ -1340,6 +1378,8 @@
   "dailyOsNextGreetingEvening": "Dobrý večer.",
   "dailyOsNextGreetingHi": "Ahoj 👋",
   "dailyOsNextGreetingMorning": "Dobré ráno.",
+  "dailyOsNextPlanViewAgenda": "Agenda",
+  "dailyOsNextPlanViewDay": "Den",
   "dailyOsNextReconcileBadgeMatched": "PROPOJENO",
   "dailyOsNextReconcileBadgeNew": "NOVÉ",
   "dailyOsNextReconcileBadgeUpdate": "AKTUALIZACE",
@@ -1359,6 +1399,19 @@
   "dailyOsNextReconcileLowConfidence": "nízká důvěra",
   "dailyOsNextReconcileReRecord": "Znovu nahrát",
   "dailyOsNextReconcileVoiceHint": "„Vyhoď faktury“ tu taky funguje",
+  "dailyOsNextRefineAccept": "Přijmout",
+  "dailyOsNextRefineDiffAdded": "PŘIDÁNO",
+  "dailyOsNextRefineDiffDropped": "ODSTRANĚNO",
+  "dailyOsNextRefineDiffMoved": "PŘESUNUTO",
+  "dailyOsNextRefineKeepTalking": "Mluv dál",
+  "dailyOsNextRefineOverline": "🎤 ÚPRAVA",
+  "dailyOsNextRefineRevert": "Vrátit",
+  "dailyOsNextRefineStatusAccepted": "Uzamčeno.",
+  "dailyOsNextRefineStatusDiffReady": "Tady je, co se změnilo.",
+  "dailyOsNextRefineStatusIdle": "Klepni pro mluvení.",
+  "dailyOsNextRefineStatusListening": "Poslouchám…",
+  "dailyOsNextRefineStatusThinking": "✦ Přepracovávám plán…",
+  "dailyOsNextRefineTitle": "Upravit plán",
   "dailyOsNextStateDueToday": "Splatné dnes",
   "dailyOsNextStateInProgress": "{count, plural, =0{Probíhá} =1{Probíhá · 1 relace} few{Probíhá · {count} relace} other{Probíhá · {count} relací}}",
   "@dailyOsNextStateInProgress": {

@@ -3104,6 +3104,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNearLimit => 'Aproape de limită';
 
   @override
+  String get dailyOsNextAgendaCapacityComfortable => 'CONFORTABIL';
+
+  @override
+  String get dailyOsNextAgendaCapacityNearFull => 'APROAPE PLIN';
+
+  @override
+  String dailyOsNextAgendaCapacityOf(String capacity) {
+    return 'din $capacity';
+  }
+
+  @override
+  String get dailyOsNextAgendaCapacityOver => 'PESTE CAPACITATE';
+
+  @override
+  String get dailyOsNextAgendaEmpty => 'Nimic de făcut astăzi.';
+
+  @override
+  String get dailyOsNextAgendaStateDone => 'Finalizat';
+
+  @override
+  String get dailyOsNextAgendaStateInProgress => 'În progres';
+
+  @override
+  String get dailyOsNextAgendaStateOpen => 'Deschis';
+
+  @override
+  String get dailyOsNextAgendaStateOverdue => 'Întârziat';
+
+  @override
+  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
+    return '$scheduled din $capacity angajate';
+  }
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Am înțeles.';
 
   @override
@@ -3132,6 +3166,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureVoiceButtonStop => 'Oprește ascultarea';
 
   @override
+  String get dailyOsNextDayBack => 'Înapoi';
+
+  @override
+  String get dailyOsNextDayRefineCta => 'Reglare prin voce';
+
+  @override
+  String get dailyOsNextDayRefineFooterHint =>
+      'Vorbiți pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.';
+
+  @override
+  String get dailyOsNextDayTitle => 'Ziua dvs.';
+
+  @override
+  String get dailyOsNextDayWhyChipLabel => 'DE CE';
+
+  @override
+  String get dailyOsNextDraftingNudgeAccept => 'Da, protejează dimineața';
+
+  @override
+  String get dailyOsNextDraftingNudgeDecline => 'Nu astăzi';
+
+  @override
+  String get dailyOsNextDraftingReasoningOverline => '✦ RAȚIONAMENT';
+
+  @override
   String dailyOsNextEstimateMinutes(int minutes) {
     return '${minutes}m';
   }
@@ -3147,6 +3206,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingMorning => 'Bună dimineața.';
+
+  @override
+  String get dailyOsNextPlanViewAgenda => 'Agenda';
+
+  @override
+  String get dailyOsNextPlanViewDay => 'Ziua';
 
   @override
   String get dailyOsNextReconcileBadgeMatched => 'LEGAT';
@@ -3184,6 +3249,45 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dailyOsNextReconcileVoiceHint =>
       '„Renunță la facturi” funcționează și aici';
+
+  @override
+  String get dailyOsNextRefineAccept => 'Acceptă';
+
+  @override
+  String get dailyOsNextRefineDiffAdded => 'ADĂUGAT';
+
+  @override
+  String get dailyOsNextRefineDiffDropped => 'RENUNȚAT';
+
+  @override
+  String get dailyOsNextRefineDiffMoved => 'MUTAT';
+
+  @override
+  String get dailyOsNextRefineKeepTalking => 'Continuă să vorbești';
+
+  @override
+  String get dailyOsNextRefineOverline => '🎤 REGLARE';
+
+  @override
+  String get dailyOsNextRefineRevert => 'Anulează';
+
+  @override
+  String get dailyOsNextRefineStatusAccepted => 'Fixat.';
+
+  @override
+  String get dailyOsNextRefineStatusDiffReady => 'Iată ce s-a schimbat.';
+
+  @override
+  String get dailyOsNextRefineStatusIdle => 'Apăsați pentru a vorbi.';
+
+  @override
+  String get dailyOsNextRefineStatusListening => 'Ascult…';
+
+  @override
+  String get dailyOsNextRefineStatusThinking => '✦ Reorganizez planul…';
+
+  @override
+  String get dailyOsNextRefineTitle => 'Reglează planul';
 
   @override
   String get dailyOsNextStateDueToday => 'Scadent astăzi';

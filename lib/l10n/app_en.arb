@@ -1705,6 +1705,36 @@
   "dailyOsFold": "Fold",
   "dailyOsInvalidTimeRange": "Invalid time range",
   "dailyOsNearLimit": "Near limit",
+  "dailyOsNextAgendaCapacityComfortable": "COMFORTABLE",
+  "dailyOsNextAgendaCapacityNearFull": "NEAR FULL",
+  "dailyOsNextAgendaCapacityOf": "of {capacity}",
+  "@dailyOsNextAgendaCapacityOf": {
+    "placeholders": {
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextAgendaCapacityOver": "OVER CAPACITY",
+  "dailyOsNextAgendaEmpty": "Nothing to do today.",
+  "dailyOsNextAgendaStateDone": "Done",
+  "dailyOsNextAgendaStateInProgress": "In progress",
+  "dailyOsNextAgendaStateOpen": "Open",
+  "dailyOsNextAgendaStateOverdue": "Overdue",
+  "dailyOsNextAgendaSummary": "{scheduled} of {capacity} committed",
+  "@dailyOsNextAgendaSummary": {
+    "placeholders": {
+      "scheduled": {
+        "type": "String",
+        "example": "5h 15m"
+      },
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "Got it.",
   "dailyOsNextCaptureHeadlineLead": "What's on your mind",
   "dailyOsNextCaptureHeadlineTail": "for today?",
@@ -1714,6 +1744,14 @@
   "dailyOsNextCaptureVoiceButtonReset": "Start over",
   "dailyOsNextCaptureVoiceButtonStart": "Start listening",
   "dailyOsNextCaptureVoiceButtonStop": "Stop listening",
+  "dailyOsNextDayBack": "Back",
+  "dailyOsNextDayRefineCta": "Refine by voice",
+  "dailyOsNextDayRefineFooterHint": "Talk to reshape the plan — moves, drops, and buffers are shown as a diff before they stick.",
+  "dailyOsNextDayTitle": "Your day",
+  "dailyOsNextDayWhyChipLabel": "WHY",
+  "dailyOsNextDraftingNudgeAccept": "Yes, protect mornings",
+  "dailyOsNextDraftingNudgeDecline": "Not today",
+  "dailyOsNextDraftingReasoningOverline": "✦ REASONING",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
     "placeholders": {
@@ -1727,6 +1765,8 @@
   "dailyOsNextGreetingEvening": "Good evening.",
   "dailyOsNextGreetingHi": "Hi 👋",
   "dailyOsNextGreetingMorning": "Good morning.",
+  "dailyOsNextPlanViewAgenda": "Agenda",
+  "dailyOsNextPlanViewDay": "Day",
   "dailyOsNextReconcileBadgeMatched": "MATCHED",
   "dailyOsNextReconcileBadgeNew": "NEW",
   "dailyOsNextReconcileBadgeUpdate": "UPDATE",
@@ -1746,6 +1786,19 @@
   "dailyOsNextReconcileLowConfidence": "low confidence",
   "dailyOsNextReconcileReRecord": "Re-record",
   "dailyOsNextReconcileVoiceHint": "\"Drop the invoices\" works here too",
+  "dailyOsNextRefineAccept": "Accept",
+  "dailyOsNextRefineDiffAdded": "ADDED",
+  "dailyOsNextRefineDiffDropped": "DROPPED",
+  "dailyOsNextRefineDiffMoved": "MOVED",
+  "dailyOsNextRefineKeepTalking": "Keep talking",
+  "dailyOsNextRefineOverline": "🎤 REFINEMENT",
+  "dailyOsNextRefineRevert": "Revert",
+  "dailyOsNextRefineStatusAccepted": "Locked in.",
+  "dailyOsNextRefineStatusDiffReady": "Here's what changed.",
+  "dailyOsNextRefineStatusIdle": "Tap to talk.",
+  "dailyOsNextRefineStatusListening": "Listening…",
+  "dailyOsNextRefineStatusThinking": "✦ Reworking the plan…",
+  "dailyOsNextRefineTitle": "Refine the plan",
   "dailyOsNextStateDueToday": "Due today",
   "dailyOsNextStateInProgress": "{count, plural, =0{In progress} =1{In progress · 1 session} other{In progress · {count} sessions}}",
   "@dailyOsNextStateInProgress": {

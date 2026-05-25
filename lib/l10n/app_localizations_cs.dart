@@ -3081,6 +3081,40 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNearLimit => 'Blízko limitu';
 
   @override
+  String get dailyOsNextAgendaCapacityComfortable => 'POHODOVÉ';
+
+  @override
+  String get dailyOsNextAgendaCapacityNearFull => 'TÉMĚŘ PLNÉ';
+
+  @override
+  String dailyOsNextAgendaCapacityOf(String capacity) {
+    return 'z $capacity';
+  }
+
+  @override
+  String get dailyOsNextAgendaCapacityOver => 'PŘEPLNĚNO';
+
+  @override
+  String get dailyOsNextAgendaEmpty => 'Dnes není co dělat.';
+
+  @override
+  String get dailyOsNextAgendaStateDone => 'Hotovo';
+
+  @override
+  String get dailyOsNextAgendaStateInProgress => 'Probíhá';
+
+  @override
+  String get dailyOsNextAgendaStateOpen => 'Otevřené';
+
+  @override
+  String get dailyOsNextAgendaStateOverdue => 'Po termínu';
+
+  @override
+  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
+    return '$scheduled z $capacity naplánováno';
+  }
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Rozumím.';
 
   @override
@@ -3109,6 +3143,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureVoiceButtonStop => 'Zastavit';
 
   @override
+  String get dailyOsNextDayBack => 'Zpět';
+
+  @override
+  String get dailyOsNextDayRefineCta => 'Upravit hlasem';
+
+  @override
+  String get dailyOsNextDayRefineFooterHint =>
+      'Mluv, aby ses k plánu vrátil — změny se zobrazí jako diff, než se uplatní.';
+
+  @override
+  String get dailyOsNextDayTitle => 'Tvůj den';
+
+  @override
+  String get dailyOsNextDayWhyChipLabel => 'PROČ';
+
+  @override
+  String get dailyOsNextDraftingNudgeAccept => 'Ano, chraň ranní hodiny';
+
+  @override
+  String get dailyOsNextDraftingNudgeDecline => 'Dnes ne';
+
+  @override
+  String get dailyOsNextDraftingReasoningOverline => '✦ ÚVAHA';
+
+  @override
   String dailyOsNextEstimateMinutes(int minutes) {
     return '${minutes}m';
   }
@@ -3124,6 +3183,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingMorning => 'Dobré ráno.';
+
+  @override
+  String get dailyOsNextPlanViewAgenda => 'Agenda';
+
+  @override
+  String get dailyOsNextPlanViewDay => 'Den';
 
   @override
   String get dailyOsNextReconcileBadgeMatched => 'PROPOJENO';
@@ -3160,6 +3225,45 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileVoiceHint => '„Vyhoď faktury“ tu taky funguje';
+
+  @override
+  String get dailyOsNextRefineAccept => 'Přijmout';
+
+  @override
+  String get dailyOsNextRefineDiffAdded => 'PŘIDÁNO';
+
+  @override
+  String get dailyOsNextRefineDiffDropped => 'ODSTRANĚNO';
+
+  @override
+  String get dailyOsNextRefineDiffMoved => 'PŘESUNUTO';
+
+  @override
+  String get dailyOsNextRefineKeepTalking => 'Mluv dál';
+
+  @override
+  String get dailyOsNextRefineOverline => '🎤 ÚPRAVA';
+
+  @override
+  String get dailyOsNextRefineRevert => 'Vrátit';
+
+  @override
+  String get dailyOsNextRefineStatusAccepted => 'Uzamčeno.';
+
+  @override
+  String get dailyOsNextRefineStatusDiffReady => 'Tady je, co se změnilo.';
+
+  @override
+  String get dailyOsNextRefineStatusIdle => 'Klepni pro mluvení.';
+
+  @override
+  String get dailyOsNextRefineStatusListening => 'Poslouchám…';
+
+  @override
+  String get dailyOsNextRefineStatusThinking => '✦ Přepracovávám plán…';
+
+  @override
+  String get dailyOsNextRefineTitle => 'Upravit plán';
 
   @override
   String get dailyOsNextStateDueToday => 'Splatné dnes';

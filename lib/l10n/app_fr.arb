@@ -1509,6 +1509,36 @@
   "dailyOsFold": "Réduire",
   "dailyOsInvalidTimeRange": "Plage horaire invalide",
   "dailyOsNearLimit": "Proche de la limite",
+  "dailyOsNextAgendaCapacityComfortable": "CONFORTABLE",
+  "dailyOsNextAgendaCapacityNearFull": "PRESQUE PLEIN",
+  "dailyOsNextAgendaCapacityOf": "sur {capacity}",
+  "@dailyOsNextAgendaCapacityOf": {
+    "placeholders": {
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextAgendaCapacityOver": "SURCHARGE",
+  "dailyOsNextAgendaEmpty": "Rien à faire aujourd'hui.",
+  "dailyOsNextAgendaStateDone": "Fait",
+  "dailyOsNextAgendaStateInProgress": "En cours",
+  "dailyOsNextAgendaStateOpen": "Ouvert",
+  "dailyOsNextAgendaStateOverdue": "En retard",
+  "dailyOsNextAgendaSummary": "{scheduled} sur {capacity} engagés",
+  "@dailyOsNextAgendaSummary": {
+    "placeholders": {
+      "scheduled": {
+        "type": "String",
+        "example": "5h 15m"
+      },
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
   "dailyOsNextCaptureCaptured": "C'est noté.",
   "dailyOsNextCaptureHeadlineLead": "Qu'as-tu en tête",
   "dailyOsNextCaptureHeadlineTail": "pour aujourd'hui ?",
@@ -1518,6 +1548,14 @@
   "dailyOsNextCaptureVoiceButtonReset": "Recommencer",
   "dailyOsNextCaptureVoiceButtonStart": "Démarrer l'écoute",
   "dailyOsNextCaptureVoiceButtonStop": "Arrêter l'écoute",
+  "dailyOsNextDayBack": "Retour",
+  "dailyOsNextDayRefineCta": "Affiner à la voix",
+  "dailyOsNextDayRefineFooterHint": "Parle pour réorganiser le plan — les changements apparaissent en diff avant d'être appliqués.",
+  "dailyOsNextDayTitle": "Ta journée",
+  "dailyOsNextDayWhyChipLabel": "POURQUOI",
+  "dailyOsNextDraftingNudgeAccept": "Oui, protège les matinées",
+  "dailyOsNextDraftingNudgeDecline": "Pas aujourd'hui",
+  "dailyOsNextDraftingReasoningOverline": "✦ RAISONNEMENT",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
     "placeholders": {
@@ -1531,6 +1569,8 @@
   "dailyOsNextGreetingEvening": "Bonsoir.",
   "dailyOsNextGreetingHi": "Salut 👋",
   "dailyOsNextGreetingMorning": "Bonjour.",
+  "dailyOsNextPlanViewAgenda": "Agenda",
+  "dailyOsNextPlanViewDay": "Journée",
   "dailyOsNextReconcileBadgeMatched": "LIÉ",
   "dailyOsNextReconcileBadgeNew": "NOUVEAU",
   "dailyOsNextReconcileBadgeUpdate": "MAJ",
@@ -1550,6 +1590,19 @@
   "dailyOsNextReconcileLowConfidence": "confiance faible",
   "dailyOsNextReconcileReRecord": "Réenregistrer",
   "dailyOsNextReconcileVoiceHint": "« Enlève les factures » fonctionne aussi ici",
+  "dailyOsNextRefineAccept": "Accepter",
+  "dailyOsNextRefineDiffAdded": "AJOUTÉ",
+  "dailyOsNextRefineDiffDropped": "RETIRÉ",
+  "dailyOsNextRefineDiffMoved": "DÉPLACÉ",
+  "dailyOsNextRefineKeepTalking": "Continuer à parler",
+  "dailyOsNextRefineOverline": "🎤 AFFINEMENT",
+  "dailyOsNextRefineRevert": "Annuler",
+  "dailyOsNextRefineStatusAccepted": "Verrouillé.",
+  "dailyOsNextRefineStatusDiffReady": "Voilà ce qui a changé.",
+  "dailyOsNextRefineStatusIdle": "Tape pour parler.",
+  "dailyOsNextRefineStatusListening": "À l'écoute…",
+  "dailyOsNextRefineStatusThinking": "✦ Réorganisation en cours…",
+  "dailyOsNextRefineTitle": "Affiner le plan",
   "dailyOsNextStateDueToday": "Pour aujourd'hui",
   "dailyOsNextStateInProgress": "{count, plural, =0{En cours} =1{En cours · 1 session} other{En cours · {count} sessions}}",
   "@dailyOsNextStateInProgress": {

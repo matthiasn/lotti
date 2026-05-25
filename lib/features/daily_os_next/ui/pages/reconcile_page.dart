@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -98,7 +99,7 @@ class _ReconcileBody extends ConsumerWidget {
                   ),
           ),
         ),
-        const _ReconcileFooter(),
+        _ReconcileFooter(captureId: captureId, data: data),
       ],
     );
   }
@@ -240,7 +241,35 @@ class _DefaultBehaviorHint extends StatelessWidget {
 }
 
 class _ReconcileFooter extends StatelessWidget {
-  const _ReconcileFooter();
+  const _ReconcileFooter({required this.captureId, required this.data});
+
+  final CaptureId captureId;
+  final ReconcileData data;
+
+  /// Task ids the user has effectively committed to taking on today —
+  /// matched/update parsed items, plus pending items triaged to
+  /// `today` / `doNow`. Used as the input to `draft_day_plan`.
+  List<String> _committedTaskIds() {
+    final ids = <String>{};
+    for (final item in data.parsed) {
+      if (item.kind == ParsedItemKind.matched ||
+          item.kind == ParsedItemKind.update) {
+        if (item.matchedTaskId != null) ids.add(item.matchedTaskId!);
+      } else {
+        // For NEW items we don't yet have a task id (the mock won't
+        // mint one until the day-agent layer lands). Use the parsed
+        // item id as a stable surrogate so the count is right.
+        ids.add(item.id);
+      }
+    }
+    for (final entry in data.triageDecisions.entries) {
+      final action = entry.value.action;
+      if (action == TriageAction.today || action == TriageAction.doNow) {
+        ids.add(entry.key);
+      }
+    }
+    return ids.toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +308,17 @@ class _ReconcileFooter extends StatelessWidget {
             ),
           ),
           FilledButton(
-            onPressed: null,
+            onPressed: () {
+              Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) => DraftingPage(
+                    captureId: captureId,
+                    decidedTaskIds: _committedTaskIds(),
+                    dayDate: DateTime.now(),
+                  ),
+                ),
+              );
+            },
             style: FilledButton.styleFrom(
               backgroundColor: tokens.colors.interactive.enabled,
               foregroundColor: tokens.colors.text.onInteractiveAlert,

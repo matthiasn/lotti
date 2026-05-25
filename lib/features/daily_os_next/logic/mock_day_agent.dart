@@ -17,12 +17,16 @@ class MockDayAgent implements DayAgentInterface {
     this.parseLatency = const Duration(milliseconds: 220),
     this.pendingLatency = const Duration(milliseconds: 180),
     this.triageLatency = const Duration(milliseconds: 120),
+    this.draftLatency = const Duration(milliseconds: 400),
+    this.summarizeLatency = const Duration(milliseconds: 120),
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
   final Duration parseLatency;
   final Duration pendingLatency;
   final Duration triageLatency;
+  final Duration draftLatency;
+  final Duration summarizeLatency;
   final DateTime Function() _clock;
 
   static const _work = DayAgentCategory(
@@ -189,4 +193,366 @@ class MockDayAgent implements DayAgentInterface {
           : null,
     );
   }
+
+  @override
+  Future<DraftPlan> draftDayPlan({
+    required CaptureId captureId,
+    required List<String> decidedTaskIds,
+    required DateTime dayDate,
+    List<TimeBlock> calendarBlocks = const [],
+  }) async {
+    await Future<void>.delayed(draftLatency);
+    final start = DateTime(dayDate.year, dayDate.month, dayDate.day);
+    DateTime at(int hour, int minute) =>
+        start.add(Duration(hours: hour, minutes: minute));
+
+    final blocks = <TimeBlock>[
+      TimeBlock(
+        id: 'b_deep_work',
+        title: 'Send the leadership deck to Sarah',
+        start: at(8, 30),
+        end: at(10, 30),
+        type: TimeBlockType.ai,
+        state: TimeBlockState.drafted,
+        category: _work,
+        taskId: 't_deck_review',
+        reason:
+            'Your deepest focus runs 8:30–10:30. Pulling this in before '
+            'the 11am ping from Sarah.',
+        sessionIndex: 3,
+        sessionTotal: 4,
+      ),
+      TimeBlock(
+        id: 'b_invoices',
+        title: 'Review outstanding invoices',
+        start: at(10, 45),
+        end: at(11, 30),
+        type: TimeBlockType.ai,
+        state: TimeBlockState.drafted,
+        category: _work,
+        reason:
+            'You said "before eleven" — sliding right after the deck '
+            'with a 15-min buffer.',
+      ),
+      TimeBlock(
+        id: 'b_buffer_lunch',
+        title: 'Buffer',
+        start: at(11, 30),
+        end: at(12, 30),
+        type: TimeBlockType.buffer,
+        state: TimeBlockState.drafted,
+        category: _buffer,
+      ),
+      TimeBlock(
+        id: 'b_team_sync',
+        title: 'Team sync — pricing',
+        start: at(13, 0),
+        end: at(13, 30),
+        type: TimeBlockType.cal,
+        state: TimeBlockState.committed,
+        category: _work,
+      ),
+      TimeBlock(
+        id: 'b_run_review',
+        title: 'Onboarding doc — second wind',
+        start: at(15, 30),
+        end: at(16, 30),
+        type: TimeBlockType.ai,
+        state: TimeBlockState.drafted,
+        category: _work,
+        taskId: 't_onboarding_doc',
+        reason:
+            'You started this on Wednesday and stopped 40m in. Placing it '
+            'in your 3pm second-wind window.',
+      ),
+    ];
+
+    final allBlocks = [...calendarBlocks, ...blocks]
+      ..sort((a, b) => a.start.compareTo(b.start));
+
+    final bands = [
+      EnergyBand(
+        start: at(7, 0),
+        end: at(10, 30),
+        level: EnergyLevel.high,
+        label: 'HIGH ENERGY',
+      ),
+      EnergyBand(
+        start: at(13, 0),
+        end: at(15, 0),
+        level: EnergyLevel.low,
+        label: 'LOW ENERGY',
+      ),
+      EnergyBand(
+        start: at(15, 0),
+        end: at(17, 0),
+        level: EnergyLevel.secondWind,
+        label: 'SECOND WIND',
+      ),
+    ];
+
+    final scheduled = allBlocks
+        .where((b) => b.type != TimeBlockType.buffer)
+        .fold<int>(0, (acc, b) => acc + b.duration.inMinutes);
+
+    return DraftPlan(
+      dayDate: start,
+      blocks: allBlocks,
+      bands: bands,
+      capacityMinutes: 480,
+      scheduledMinutes: scheduled,
+      agendaItems: _agendaFor(allBlocks),
+    );
+  }
+
+  /// Roll the placed blocks up into one [AgendaItem] per task. Blocks
+  /// without a taskId (buffers, calendar events) are not surfaced on
+  /// the Agenda — that screen is intent-first.
+  List<AgendaItem> _agendaFor(List<TimeBlock> blocks) {
+    final byTask = <String, List<TimeBlock>>{};
+    for (final block in blocks) {
+      final id = block.taskId;
+      if (id == null) continue;
+      byTask.putIfAbsent(id, () => <TimeBlock>[]).add(block);
+    }
+
+    AgendaItem buildItem(String taskId, List<TimeBlock> linked) {
+      final outcome = _scriptedOutcome(taskId);
+      final estimate = linked.fold<int>(
+        0,
+        (acc, b) => acc + b.duration.inMinutes,
+      );
+      final state = linked.any((b) => b.state == TimeBlockState.inProgress)
+          ? AgendaItemState.inProgress
+          : AgendaItemState.open;
+      return AgendaItem(
+        id: 'agenda_$taskId',
+        taskId: taskId,
+        title: linked.first.title,
+        category: linked.first.category,
+        linkedBlockIds: linked.map((b) => b.id).toList(),
+        outcome: outcome,
+        totalEstimateMinutes: estimate,
+        progress: _scriptedProgress(taskId),
+        state: state,
+      );
+    }
+
+    return byTask.entries
+        .map((entry) => buildItem(entry.key, entry.value))
+        .toList();
+  }
+
+  String? _scriptedOutcome(String taskId) {
+    switch (taskId) {
+      case 't_deck_review':
+        return 'Deck reviewed by Sarah, sent to leadership.';
+      case 't_onboarding_doc':
+        return 'Onboarding doc back on track — picked up where you left off.';
+      case 't_morning_run':
+        return '5 km logged before the day starts.';
+    }
+    return null;
+  }
+
+  double? _scriptedProgress(String taskId) {
+    switch (taskId) {
+      case 't_onboarding_doc':
+        return 0.4;
+      case 't_deck_review':
+        return 0.6;
+    }
+    return null;
+  }
+
+  int _diffSeq = 0;
+
+  @override
+  Future<PlanDiff> proposePlanDiff({
+    required DraftPlan currentPlan,
+    required String voiceTranscript,
+  }) async {
+    await Future<void>.delayed(draftLatency);
+    _diffSeq++;
+
+    // Find the deep-work block and slide it 30 minutes earlier; drop
+    // the second-wind onboarding block; add a buffer at 4 pm. This is
+    // a scripted reshape — the real agent will derive these from the
+    // transcript.
+    final deck = currentPlan.blocks.firstWhere(
+      (b) => b.id == 'b_deep_work',
+      orElse: () => currentPlan.blocks.first,
+    );
+    final onboarding = currentPlan.blocks.firstWhere(
+      (b) => b.id == 'b_run_review',
+      orElse: () => currentPlan.blocks.last,
+    );
+
+    final movedDeck = TimeBlock(
+      id: deck.id,
+      title: deck.title,
+      start: deck.start.subtract(const Duration(minutes: 30)),
+      end: deck.end.subtract(const Duration(minutes: 30)),
+      type: deck.type,
+      state: deck.state,
+      category: deck.category,
+      taskId: deck.taskId,
+      reason: 'Moved earlier to clear afternoon for the new buffer.',
+      sessionIndex: deck.sessionIndex,
+      sessionTotal: deck.sessionTotal,
+      location: deck.location,
+    );
+
+    final addedBuffer = TimeBlock(
+      id: 'b_buffer_pm',
+      title: 'Buffer',
+      start: onboarding.start.add(const Duration(hours: 1)),
+      end: onboarding.start.add(const Duration(hours: 2)),
+      type: TimeBlockType.buffer,
+      state: TimeBlockState.drafted,
+      category: _buffer,
+    );
+
+    final updatedBlocks =
+        [
+          for (final block in currentPlan.blocks)
+            if (block.id == deck.id)
+              movedDeck
+            else if (block.id == onboarding.id)
+              null
+            else
+              block,
+          addedBuffer,
+        ].whereType<TimeBlock>().toList()..sort(
+          (a, b) => a.start.compareTo(b.start),
+        );
+
+    final scheduled = updatedBlocks
+        .where((b) => b.type != TimeBlockType.buffer)
+        .fold<int>(0, (acc, b) => acc + b.duration.inMinutes);
+
+    final updatedPlan = currentPlan.copyWith(
+      blocks: updatedBlocks,
+      scheduledMinutes: scheduled,
+      agendaItems: _agendaFor(updatedBlocks),
+    );
+
+    return PlanDiff(
+      id: 'diff_$_diffSeq',
+      transcript: voiceTranscript,
+      changes: [
+        PlanDiffChange(
+          id: 'c_moved_deck',
+          kind: PlanDiffChangeKind.moved,
+          title: deck.title,
+          category: deck.category,
+          reason: 'Earlier start matches your high-energy window.',
+          affectedBlockId: deck.id,
+          fromStart: deck.start,
+          fromEnd: deck.end,
+          toStart: movedDeck.start,
+          toEnd: movedDeck.end,
+        ),
+        PlanDiffChange(
+          id: 'c_dropped_onboarding',
+          kind: PlanDiffChangeKind.dropped,
+          title: onboarding.title,
+          category: onboarding.category,
+          reason: 'Dropped per your "skip onboarding" request.',
+          affectedBlockId: onboarding.id,
+          fromStart: onboarding.start,
+          fromEnd: onboarding.end,
+        ),
+        PlanDiffChange(
+          id: 'c_added_buffer',
+          kind: PlanDiffChangeKind.added,
+          title: 'Afternoon buffer',
+          category: _buffer,
+          reason: 'Protects recovery time after lunch.',
+          affectedBlockId: addedBuffer.id,
+          toStart: addedBuffer.start,
+          toEnd: addedBuffer.end,
+        ),
+      ],
+      updatedPlan: updatedPlan,
+    );
+  }
+
+  @override
+  Future<DraftPlan> acceptDiff(PlanDiff diff) async {
+    await Future<void>.delayed(triageLatency);
+    return diff.updatedPlan;
+  }
+
+  @override
+  Future<DraftPlan> revertDiff({
+    required PlanDiff diff,
+    required DraftPlan originalPlan,
+  }) async {
+    await Future<void>.delayed(triageLatency);
+    return originalPlan;
+  }
+
+  @override
+  Future<List<LearningCard>> summarizeRecentPatterns({
+    required DateTime asOf,
+    int lookbackDays = 7,
+  }) async {
+    await Future<void>.delayed(summarizeLatency);
+    return const [
+      LearningCard(
+        id: 'l_yesterday',
+        overline: 'YESTERDAY',
+        summary: 'Strong morning, distracted afternoon.',
+        bullets: [
+          LearningBullet(
+            text: '2h 40m of focus before 11am — your best of the week.',
+            tone: LearningBulletTone.positive,
+          ),
+          LearningBullet(
+            text: 'Three context switches between 2 and 4pm.',
+            tone: LearningBulletTone.warning,
+          ),
+          LearningBullet(
+            text: 'Workout moved to evening (again).',
+            tone: LearningBulletTone.info,
+          ),
+        ],
+      ),
+      LearningCard(
+        id: 'l_week',
+        overline: 'THIS WEEK SO FAR',
+        summary: 'Mornings holding, afternoons slipping.',
+        bullets: [
+          LearningBullet(
+            text: 'Deep work earlier · 3 days running.',
+            tone: LearningBulletTone.positive,
+          ),
+          LearningBullet(
+            text: 'Onboarding doc carried over twice.',
+            tone: LearningBulletTone.warning,
+          ),
+          LearningBullet(
+            text: 'You shipped 4 of the 5 items you committed to.',
+            tone: LearningBulletTone.positive,
+          ),
+        ],
+      ),
+      LearningCard(
+        id: 'l_nudge',
+        overline: 'GENTLE NUDGE',
+        summary:
+            'You pushed deep work later three days running. '
+            'Protect mornings today?',
+        bullets: [],
+        kind: LearningCardKind.nudge,
+      ),
+    ];
+  }
 }
+
+const DayAgentCategory _buffer = DayAgentCategory(
+  id: 'cat_buffer',
+  name: 'Buffer',
+  colorHex: '8E8E8E',
+);

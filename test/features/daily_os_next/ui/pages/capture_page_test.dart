@@ -45,6 +45,46 @@ class _RecordingAgent implements DayAgentInterface {
     required TriageAction action,
     DateTime? deferTo,
   }) async => TriageResult(taskId: taskId, action: action);
+
+  @override
+  Future<DraftPlan> draftDayPlan({
+    required CaptureId captureId,
+    required List<String> decidedTaskIds,
+    required DateTime dayDate,
+    List<TimeBlock> calendarBlocks = const [],
+  }) async => DraftPlan(
+    dayDate: dayDate,
+    blocks: const [],
+    bands: const [],
+    capacityMinutes: 0,
+    scheduledMinutes: 0,
+  );
+
+  @override
+  Future<List<LearningCard>> summarizeRecentPatterns({
+    required DateTime asOf,
+    int lookbackDays = 7,
+  }) async => const [];
+
+  @override
+  Future<PlanDiff> proposePlanDiff({
+    required DraftPlan currentPlan,
+    required String voiceTranscript,
+  }) async => PlanDiff(
+    id: 'rec',
+    transcript: voiceTranscript,
+    changes: const [],
+    updatedPlan: currentPlan,
+  );
+
+  @override
+  Future<DraftPlan> acceptDiff(PlanDiff diff) async => diff.updatedPlan;
+
+  @override
+  Future<DraftPlan> revertDiff({
+    required PlanDiff diff,
+    required DraftPlan originalPlan,
+  }) async => originalPlan;
 }
 
 Widget _wrap(Widget child, {List<Override> overrides = const []}) {

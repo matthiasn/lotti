@@ -41,4 +41,52 @@ abstract class DayAgentInterface {
     required TriageAction action,
     DateTime? deferTo,
   });
+
+  /// Tool: `draft_day_plan`. Compose a day plan from the chosen
+  /// capture items plus today's calendar events (deferred — caller
+  /// passes `calendarBlocks: const []`).
+  ///
+  /// Returns the placed blocks, the day's energy bands, and capacity
+  /// metadata. Every block of [TimeBlockType.ai] carries a verbatim
+  /// `reason` string — surfaced in the WhyChip popover.
+  Future<DraftPlan> draftDayPlan({
+    required CaptureId captureId,
+    required List<String> decidedTaskIds,
+    required DateTime dayDate,
+    List<TimeBlock> calendarBlocks,
+  });
+
+  /// Tool: `summarize_recent_patterns`. Pulls a small set of learning
+  /// cards (yesterday, this-week-so-far, gentle nudge) the Drafting
+  /// screen renders in the right column while the plan is being
+  /// composed.
+  Future<List<LearningCard>> summarizeRecentPatterns({
+    required DateTime asOf,
+    int lookbackDays = 7,
+  });
+
+  /// Tool: `propose_plan_diff`. Re-shape the current plan based on a
+  /// spoken (or typed) refinement request. The returned [PlanDiff]
+  /// carries both the change list and the resulting plan so the UI
+  /// can render the day "with changes applied in place" plus a diff
+  /// row list on the right.
+  ///
+  /// In the real agent layer this is persisted as a
+  /// `ChangeSetEntity` so it survives a refresh; the mock keeps it
+  /// in-memory.
+  Future<PlanDiff> proposePlanDiff({
+    required DraftPlan currentPlan,
+    required String voiceTranscript,
+  });
+
+  /// Tool: `accept_diff`. Commit the proposed [PlanDiff] — the
+  /// returned plan becomes the user's current draft.
+  Future<DraftPlan> acceptDiff(PlanDiff diff);
+
+  /// Tool: `revert_diff`. Discard the proposed [PlanDiff] — the
+  /// caller-provided plan is the one to keep.
+  Future<DraftPlan> revertDiff({
+    required PlanDiff diff,
+    required DraftPlan originalPlan,
+  });
 }
