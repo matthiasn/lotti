@@ -123,6 +123,39 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = AgentReportHeadEntity;
 
+  /// Submitted Daily OS capture transcript.
+  const factory AgentDomainEntity.capture({
+    required String id,
+    required String agentId,
+    required String transcript,
+    required DateTime capturedAt,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    String? audioRef,
+    DateTime? deletedAt,
+  }) = CaptureEntity;
+
+  /// LLM-parsed item extracted from a submitted Daily OS capture.
+  const factory AgentDomainEntity.parsedItem({
+    required String id,
+    required String agentId,
+    required String captureId,
+    required ParsedItemKind kind,
+    required String title,
+    required String categoryId,
+    required ParsedItemConfidence confidence,
+    required double confidenceScore,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    @Default(false) bool lowConfidence,
+    String? spokenPhrase,
+    String? matchedTaskId,
+    int? estimateMinutes,
+    String? timeAnchor,
+    String? proposedUpdate,
+    DateTime? deletedAt,
+  }) = ParsedItemEntity;
+
   /// Agent template — reusable blueprint for agent instances.
   ///
   /// The [agentId] field stores the template's own ID (same as [id]), serving

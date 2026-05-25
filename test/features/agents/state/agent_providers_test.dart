@@ -240,6 +240,59 @@ void main() {
       expect(logger.enabledDomains, contains(LogDomains.agentWorkflow));
       expect(logger.enabledDomains, contains(LogDomains.sync));
     });
+
+    test('uses registered DomainLogger and seeds prewarmed flags', () async {
+      await getIt.reset();
+      final registeredLogger = DomainLogger(loggingService: LoggingService());
+      getIt.registerSingleton<DomainLogger>(registeredLogger);
+      addTearDown(getIt.reset);
+      final runtimeController = StreamController<bool>.broadcast();
+      final workflowController = StreamController<bool>.broadcast();
+      final syncController = StreamController<bool>.broadcast();
+      addTearDown(runtimeController.close);
+      addTearDown(workflowController.close);
+      addTearDown(syncController.close);
+
+      final container = ProviderContainer(
+        overrides: [
+          configFlagProvider(
+            logAgentRuntimeFlag,
+          ).overrideWith((ref) => runtimeController.stream),
+          configFlagProvider(
+            logAgentWorkflowFlag,
+          ).overrideWith((ref) => workflowController.stream),
+          configFlagProvider(
+            logSyncFlag,
+          ).overrideWith((ref) => syncController.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+      final runtimeSub = container.listen(
+        configFlagProvider(logAgentRuntimeFlag),
+        (_, _) {},
+      );
+      final workflowSub = container.listen(
+        configFlagProvider(logAgentWorkflowFlag),
+        (_, _) {},
+      );
+      final syncSub = container.listen(
+        configFlagProvider(logSyncFlag),
+        (_, _) {},
+      );
+      addTearDown(runtimeSub.close);
+      addTearDown(workflowSub.close);
+      addTearDown(syncSub.close);
+
+      runtimeController.add(true);
+      workflowController.add(false);
+      syncController.add(false);
+      await pumpEventQueue();
+
+      final logger = container.read(domainLoggerProvider);
+
+      expect(logger, same(registeredLogger));
+      expect(logger.enabledDomains, contains(LogDomains.agentRuntime));
+    });
   });
 
   group('agentDatabaseProvider', () {
@@ -1896,6 +1949,58 @@ void main() {
     );
 
     test(
+      'wakeExecutor throws when day workflow returns failure',
+      () async {
+        final identity = makeTestIdentity(
+          kind: AgentKinds.dayAgent,
+        );
+
+        when(
+          () => bench.mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => bench.mockDayWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => const WakeResult(
+            success: false,
+            error: 'day workflow failed',
+          ),
+        );
+
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
+
+        await expectLater(
+          capture.executor(
+            kTestAgentId,
+            'run-key-day-fail',
+            {'dayplan-2026-05-25'},
+            'thread-day-fail',
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              'day workflow failed',
+            ),
+          ),
+        );
+
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verifyNever(
+          () => mockNotifications.notifyUiOnly(any()),
+        );
+      },
+    );
+
+    test(
       'wakeExecutor throws when project workflow returns failure',
       () async {
         final identity = makeTestIdentity(
@@ -2492,6 +2597,38 @@ void main() {
         ).called(1);
       },
     );
+
+    test('wires syncEntityWriter to AgentSyncService', () async {
+      final mockRepo = MockAgentRepository();
+      final mockSyncService = MockAgentSyncService();
+      final queue = WakeQueue();
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          wakeQueueProvider.overrideWithValue(queue),
+          wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final orchestrator = container.read(wakeOrchestratorProvider);
+      final entity = makeTestState(
+        id: 'state-sync-writer',
+        agentId: 'agent-sync-writer',
+      );
+
+      await orchestrator.syncEntityWriter!(entity);
+
+      verify(() => mockSyncService.upsertEntity(entity)).called(1);
+    });
 
     group('taskContentChecker', () {
       late MockAgentRepository mockRepo;

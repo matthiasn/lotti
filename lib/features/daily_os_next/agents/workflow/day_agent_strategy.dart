@@ -115,7 +115,7 @@ class DayAgentStrategy extends ConversationStrategy {
         continue;
       }
 
-      if (toolName == DayAgentToolNames.setNextWake) {
+      if (DayAgentToolNames.isWorkflowHandlerTool(toolName)) {
         final result = await executeToolHandler(toolName, args, manager);
         manager.addToolResponse(toolCallId: call.id, response: result.output);
         await _recordToolResultMessage(
@@ -141,8 +141,9 @@ class DayAgentStrategy extends ConversationStrategy {
 
   @override
   String? getContinuationPrompt(ConversationManager manager) {
-    return 'Continue only if you still need to record observations or schedule '
-        'the next wake. Otherwise finish with a brief summary.';
+    return 'Continue only if you still need to record observations, schedule '
+        'the next wake, or finish capture/reconcile tool work. Otherwise '
+        'finish with a brief summary.';
   }
 
   Future<void> _handleRecordObservations(

@@ -28,6 +28,14 @@ void main() {
       expect(AgentLinkTypes.agentProject, equals('agent_project'));
     });
 
+    test('capture reconcile constants have expected values', () {
+      expect(
+        AgentLinkTypes.captureToParsedItem,
+        equals('capture_to_parsed_item'),
+      );
+      expect(AgentLinkTypes.parsedItemToTask, equals('parsed_item_to_task'));
+    });
+
     test('all link type constants are distinct', () {
       final types = [
         AgentLinkTypes.basic,
@@ -36,11 +44,21 @@ void main() {
         AgentLinkTypes.messagePayload,
         AgentLinkTypes.toolEffect,
         AgentLinkTypes.agentTask,
+        AgentLinkTypes.captureToParsedItem,
+        AgentLinkTypes.parsedItemToTask,
         AgentLinkTypes.templateAssignment,
         AgentLinkTypes.improverTarget,
         AgentLinkTypes.agentProject,
+        AgentLinkTypes.soulAssignment,
       ];
       expect(types.toSet().length, equals(types.length));
+    });
+  });
+
+  group('AgentEntityTypes', () {
+    test('capture reconcile constants use the locked type tags', () {
+      expect(AgentEntityTypes.capture, equals('day_capture'));
+      expect(AgentEntityTypes.parsedItem, equals('parsed_capture_item'));
     });
   });
 
@@ -82,6 +100,15 @@ void main() {
         'day_agent',
       );
       expect(result, equals(AgentTemplateKind.dayAgent));
+    });
+  });
+
+  group('ParsedItemKind', () {
+    test('parseEnumByName resolves new_task from snake_case', () {
+      expect(
+        parseEnumByName(ParsedItemKind.values, 'new_task'),
+        ParsedItemKind.newTask,
+      );
     });
   });
 }

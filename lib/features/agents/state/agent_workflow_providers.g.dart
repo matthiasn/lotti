@@ -277,4 +277,4 @@ final class DayAgentWorkflowProvider
   }
 }
 
-String _$dayAgentWorkflowHash() => r'79f4e3561a0e6bc22a18932b52922c4b32ac0330';
+String _$dayAgentWorkflowHash() => r'fa35afbbee61a7d4a00a470117074ee0d38bc606';

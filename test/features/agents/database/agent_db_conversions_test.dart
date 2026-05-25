@@ -6,6 +6,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
@@ -243,6 +244,123 @@ void main() {
       expect(companion.fromId, const Value('msg-001'));
       expect(companion.toId, const Value('payload-001'));
       expect(companion.type, const Value('message_payload'));
+    });
+  });
+
+  group('AgentDbConversions — Daily OS capture reconcile variants', () {
+    test('toEntityCompanion writes capture type and timestamps', () {
+      final entity = AgentDomainEntity.capture(
+        id: 'capture-001',
+        agentId: agentId,
+        transcript: 'Prep demo',
+        capturedAt: DateTime(2026, 2, 21, 8, 15),
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('capture-001'));
+      expect(companion.type, const Value(AgentEntityTypes.capture));
+      expect(companion.subtype, const Value('capture-001'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(createdAt));
+    });
+
+    test('fromEntityRow roundtrips parsedItem variant', () {
+      final entity = AgentDomainEntity.parsedItem(
+        id: 'parsed-001',
+        agentId: agentId,
+        captureId: 'capture-001',
+        kind: ParsedItemKind.matched,
+        title: 'Prep demo',
+        categoryId: 'work',
+        confidence: ParsedItemConfidence.high,
+        confidenceScore: 0.91,
+        createdAt: createdAt,
+        vectorClock: const VectorClock({'node-a': 1}),
+        matchedTaskId: 'task-001',
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'parsed-001',
+        agentId: agentId,
+        type: AgentEntityTypes.parsedItem,
+        subtype: ParsedItemKind.matched.name,
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+
+      expect(result, isA<ParsedItemEntity>());
+      final parsed = result as ParsedItemEntity;
+      expect(parsed.captureId, 'capture-001');
+      expect(parsed.kind, ParsedItemKind.matched);
+      expect(parsed.matchedTaskId, 'task-001');
+    });
+
+    test('toLinkCompanion writes capture reconcile link types', () {
+      final captureLink = model.AgentLink.captureToParsedItem(
+        id: 'link-capture-item',
+        fromId: 'capture-001',
+        toId: 'parsed-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final taskLink = model.AgentLink.parsedItemToTask(
+        id: 'link-item-task',
+        fromId: 'parsed-001',
+        toId: 'task-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final captureCompanion = AgentDbConversions.toLinkCompanion(captureLink);
+      final taskCompanion = AgentDbConversions.toLinkCompanion(taskLink);
+
+      expect(
+        captureCompanion.type,
+        const Value(AgentLinkTypes.captureToParsedItem),
+      );
+      expect(
+        taskCompanion.type,
+        const Value(AgentLinkTypes.parsedItemToTask),
+      );
+    });
+
+    test('fromLinkRow roundtrips capture reconcile links', () {
+      final link = model.AgentLink.parsedItemToTask(
+        id: 'link-item-task',
+        fromId: 'parsed-001',
+        toId: 'task-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      final row = AgentLink(
+        id: 'link-item-task',
+        fromId: 'parsed-001',
+        toId: 'task-001',
+        type: AgentLinkTypes.parsedItemToTask,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromLinkRow(row);
+
+      expect(result, isA<model.ParsedItemToTaskLink>());
+      expect(result.fromId, 'parsed-001');
+      expect(result.toId, 'task-001');
     });
   });
 

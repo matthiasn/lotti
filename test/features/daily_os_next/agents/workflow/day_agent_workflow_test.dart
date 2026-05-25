@@ -12,6 +12,8 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:mocktail/mocktail.dart';
@@ -144,7 +146,10 @@ void main() {
     );
   }
 
-  DayAgentWorkflow workflow({MockSoulDocumentService? soulDocumentService}) {
+  DayAgentWorkflow workflow({
+    MockSoulDocumentService? soulDocumentService,
+    MockDayAgentCaptureService? captureService,
+  }) {
     return DayAgentWorkflow(
       agentRepository: repository,
       conversationRepository: conversationRepository,
@@ -153,18 +158,22 @@ void main() {
       syncService: syncService,
       templateService: templateService,
       soulDocumentService: soulDocumentService,
+      captureService: captureService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
   }
 
-  Future<WakeResult> execute(DayAgentWorkflow sut) {
+  Future<WakeResult> execute(
+    DayAgentWorkflow sut, {
+    Set<String>? triggerTokens,
+  }) {
     return withClock(
       Clock.fixed(now),
       () => sut.execute(
         agentIdentity: identity(),
         runKey: runKey,
-        triggerTokens: {'capture-1', dayId},
+        triggerTokens: triggerTokens ?? {'capture-1', dayId},
         threadId: threadId,
       ),
     );
@@ -353,6 +362,127 @@ void main() {
       },
     );
 
+    test('includes capture context for capture-submitted wakes', () async {
+      final capture =
+          AgentDomainEntity.capture(
+                id: 'capture-1',
+                agentId: agentId,
+                transcript: 'Prep demo and buy milk',
+                capturedAt: DateTime(2026, 5, 25, 7, 45),
+                createdAt: DateTime(2026, 5, 25, 7, 45),
+                vectorClock: null,
+                audioRef: 'audio-1',
+              )
+              as CaptureEntity;
+      final captureService = MockDayAgentCaptureService();
+      when(() => captureService.getCapture('capture-1')).thenAnswer(
+        (_) async => capture,
+      );
+      when(
+        () => captureService.buildTaskCorpusSnapshot(
+          allowedCategoryIds: const <String>{},
+          day: DateTime(2026, 5, 25),
+        ),
+      ).thenAnswer(
+        (_) async => const [
+          {
+            'taskId': 'task-1',
+            'title': 'Prep demo',
+            'status': 'OPEN',
+            'categoryId': 'work',
+            'due': null,
+            'estimateMinutes': 45,
+            'priority': 'P2',
+          },
+        ],
+      );
+
+      final result = await execute(
+        workflow(captureService: captureService),
+        triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+      );
+
+      expect(result.success, isTrue);
+      final userPayload =
+          jsonDecode(conversationRepository.lastUserMessage!)
+              as Map<String, dynamic>;
+      final capturePayload = userPayload['capture'] as Map<String, dynamic>;
+      expect(capturePayload['captureId'], 'capture-1');
+      expect(capturePayload['transcript'], 'Prep demo and buy milk');
+      expect(capturePayload['audioRef'], 'audio-1');
+      expect(capturePayload['taskCorpus'], [
+        {
+          'taskId': 'task-1',
+          'title': 'Prep demo',
+          'status': 'OPEN',
+          'categoryId': 'work',
+          'due': null,
+          'estimateMinutes': 45,
+          'priority': 'P2',
+        },
+      ]);
+    });
+
+    test('delegates capture tools to the configured capture service', () async {
+      final captureService = MockDayAgentCaptureService();
+      when(
+        () => captureService.executeTool(
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          toolName: DayAgentToolNames.matchToCorpus,
+          args: any(named: 'args'),
+        ),
+      ).thenAnswer(
+        (_) async => DayAgentDirectToolResult.success(
+          const {'candidates': <Object?>[]},
+        ),
+      );
+      conversationRepository.toolCalls = [
+        _toolCall(
+          name: DayAgentToolNames.matchToCorpus,
+          args: {'phrase': 'prep demo'},
+        ),
+      ];
+
+      final result = await execute(workflow(captureService: captureService));
+
+      expect(result.success, isTrue);
+      expect(conversationRepository.toolResponses.single, contains('[]'));
+      final args =
+          verify(
+                () => captureService.executeTool(
+                  agentId: agentId,
+                  threadId: threadId,
+                  runKey: runKey,
+                  toolName: DayAgentToolNames.matchToCorpus,
+                  args: captureAny(named: 'args'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(args, {'phrase': 'prep demo'});
+    });
+
+    test(
+      'returns a tool error when capture tools are not configured',
+      () async {
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.matchToCorpus,
+            args: {'phrase': 'prep demo'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          contains('capture/reconcile tools are not configured'),
+        );
+      },
+    );
+
     test(
       'includes the newest 20 observations in chronological order',
       () async {
@@ -439,6 +569,81 @@ void main() {
       },
     );
 
+    test('sorts observations with the same timestamp by stable id', () async {
+      final createdAt = now.subtract(const Duration(minutes: 30));
+      final payloadA =
+          AgentDomainEntity.agentMessagePayload(
+                id: 'payload-a',
+                agentId: agentId,
+                createdAt: createdAt,
+                vectorClock: null,
+                content: const {'text': 'A observation'},
+              )
+              as AgentMessagePayloadEntity;
+      final payloadB =
+          AgentDomainEntity.agentMessagePayload(
+                id: 'payload-b',
+                agentId: agentId,
+                createdAt: createdAt,
+                vectorClock: null,
+                content: const {'text': 'B observation'},
+              )
+              as AgentMessagePayloadEntity;
+      final observationB =
+          AgentDomainEntity.agentMessage(
+                id: 'observation-b',
+                agentId: agentId,
+                threadId: 'observation-thread',
+                kind: AgentMessageKind.observation,
+                createdAt: createdAt,
+                vectorClock: null,
+                contentEntryId: payloadB.id,
+                metadata: const AgentMessageMetadata(runKey: 'old-run'),
+              )
+              as AgentMessageEntity;
+      final observationA =
+          AgentDomainEntity.agentMessage(
+                id: 'observation-a',
+                agentId: agentId,
+                threadId: 'observation-thread',
+                kind: AgentMessageKind.observation,
+                createdAt: createdAt,
+                vectorClock: null,
+                contentEntryId: payloadA.id,
+                metadata: const AgentMessageMetadata(runKey: 'old-run'),
+              )
+              as AgentMessageEntity;
+      when(
+        () => repository.getMessagesByKind(
+          agentId,
+          AgentMessageKind.observation,
+        ),
+      ).thenAnswer((_) async => [observationB, observationA]);
+      when(
+        () => repository.getEntitiesByIds({payloadA.id, payloadB.id}),
+      ).thenAnswer(
+        (_) async => {
+          payloadA.id: payloadA,
+          payloadB.id: payloadB,
+        },
+      );
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      final userPayload =
+          jsonDecode(conversationRepository.lastUserMessage!)
+              as Map<String, dynamic>;
+      final recentObservations =
+          userPayload['recentObservations'] as List<dynamic>;
+      expect(
+        recentObservations.map(
+          (observation) => (observation as Map<String, dynamic>)['text'],
+        ),
+        ['A observation', 'B observation'],
+      );
+    });
+
     test('clears consumed scheduled wakes after a successful wake', () async {
       currentState = state(
         scheduledWakeAt: now.subtract(const Duration(minutes: 1)),
@@ -461,6 +666,41 @@ void main() {
       expect(result.success, isTrue);
       final finalState = upsertedEntities.whereType<AgentStateEntity>().last;
       expect(finalState.scheduledWakeAt, futureWakeAt);
+    });
+
+    test('continues when user message persistence fails', () async {
+      var writeCount = 0;
+      when(() => syncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        writeCount++;
+        final entity =
+            invocation.positionalArguments.single as AgentDomainEntity;
+        if (writeCount == 1) {
+          throw StateError('user payload write failed');
+        }
+        upsertedEntities.add(entity);
+        if (entity is AgentStateEntity) {
+          currentState = entity;
+        }
+      });
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      verify(
+        () => domainLogger.error(
+          any(),
+          'failed to persist day-agent user message',
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+      expect(
+        upsertedEntities.whereType<AgentStateEntity>().last.lastWakeAt,
+        now,
+      );
     });
 
     for (final scenario in const [
@@ -590,6 +830,44 @@ void main() {
         () => domainLogger.error(
           any(),
           'day-agent wake failed',
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    });
+
+    test('logs when failure-count persistence also fails', () async {
+      currentState = state(consecutiveFailureCount: 2);
+      conversationRepository.errorToThrow = Exception('model failed');
+      when(() => syncService.upsertEntity(any())).thenAnswer(
+        (invocation) async {
+          final entity =
+              invocation.positionalArguments.single as AgentDomainEntity;
+          if (entity is AgentStateEntity) {
+            throw StateError('state update failed');
+          }
+          upsertedEntities.add(entity);
+        },
+      );
+
+      final result = await execute(workflow());
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('model failed'));
+      verify(
+        () => domainLogger.error(
+          any(),
+          'day-agent wake failed',
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+      verify(
+        () => domainLogger.error(
+          any(),
+          'failed to update day-agent failure count',
           error: any(named: 'error'),
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),

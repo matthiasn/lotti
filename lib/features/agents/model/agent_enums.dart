@@ -324,6 +324,30 @@ enum AgentMessageKind {
   system,
 }
 
+/// Parsed capture item role in the Daily OS day-agent reconcile flow.
+enum ParsedItemKind {
+  /// The phrase should become a new task or planning input.
+  newTask,
+
+  /// The phrase appears to refer to an existing task.
+  matched,
+
+  /// The phrase proposes an update to an existing task.
+  update,
+}
+
+/// Confidence bucket for a parsed capture item match.
+enum ParsedItemConfidence {
+  /// No reliable corpus match.
+  low,
+
+  /// A possible corpus match that should be shown as low-confidence.
+  medium,
+
+  /// A strong corpus match.
+  high,
+}
+
 /// Safely looks up an enum value by name, returning `null` on mismatch.
 ///
 /// Normalizes the input by trimming whitespace, stripping underscores, and

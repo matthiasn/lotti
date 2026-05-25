@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   control so runaway microphone sessions are harder to miss.
 - Audio and image entry Actions menus on desktop can now reveal the backing
   file in Finder, File Explorer, or Files.
+- Daily OS day-agent capture/reconcile tooling now persists captured text,
+  parses it into task decisions, links it to existing tasks, and applies
+  triage actions through the agent backend.
 
 ### Changed
 - Tasks navigation no longer shows the global in-progress task count badge in
