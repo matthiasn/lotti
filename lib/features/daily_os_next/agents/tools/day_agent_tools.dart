@@ -231,4 +231,101 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.draftDayPlan,
+    description:
+        'Persist a drafted day plan. The model supplies blocks and optional '
+        'energy bands. Every ai block must include a non-empty reason.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'dayId': {'type': 'string'},
+        'dayDate': {
+          'type': 'string',
+          'description': 'ISO-8601 date-time for the local day being drafted.',
+        },
+        'captureId': {'type': 'string'},
+        'decidedTaskIds': {
+          'type': 'array',
+          'items': {'type': 'string'},
+        },
+        'capacityMinutes': {'type': 'integer'},
+        'dayLabel': {'type': 'string'},
+        'blocks': {
+          'type': 'array',
+          'items': {
+            'type': 'object',
+            'properties': {
+              'id': {'type': 'string'},
+              'title': {'type': 'string'},
+              'taskId': {'type': 'string'},
+              'categoryId': {'type': 'string'},
+              'start': {
+                'type': 'string',
+                'description': 'ISO-8601 block start time.',
+              },
+              'end': {
+                'type': 'string',
+                'description': 'ISO-8601 block end time.',
+              },
+              'type': {
+                'type': 'string',
+                'enum': ['ai', 'cal', 'buffer', 'manual'],
+              },
+              'state': {
+                'type': 'string',
+                'enum': [
+                  'drafted',
+                  'committed',
+                  'inProgress',
+                  'completed',
+                  'dropped',
+                ],
+              },
+              'reason': {'type': 'string'},
+              'note': {'type': 'string'},
+            },
+            'required': ['title', 'categoryId', 'start', 'end', 'type'],
+            'additionalProperties': false,
+          },
+        },
+        'energyBands': {
+          'type': 'array',
+          'items': {
+            'type': 'object',
+            'properties': {
+              'start': {'type': 'string'},
+              'end': {'type': 'string'},
+              'level': {
+                'type': 'string',
+                'enum': ['high', 'low', 'secondWind'],
+              },
+              'label': {'type': 'string'},
+            },
+            'required': ['start', 'end', 'level', 'label'],
+            'additionalProperties': false,
+          },
+        },
+      },
+      'required': ['dayId', 'blocks'],
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.summarizeRecentPatterns,
+    description:
+        'Return transient learning-card payloads from recent day-agent '
+        'drafts. Use before or during day-plan drafting.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'asOf': {
+          'type': 'string',
+          'description': 'ISO-8601 date-time anchoring the lookback window.',
+        },
+        'lookbackDays': {'type': 'integer'},
+      },
+      'additionalProperties': false,
+    },
+  ),
 ];

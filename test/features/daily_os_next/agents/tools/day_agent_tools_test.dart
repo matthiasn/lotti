@@ -12,7 +12,7 @@ void main() {
       return parametersFor(name)['required'] as List<dynamic>;
     }
 
-    test('defines every Daily OS phase-2 backend tool once', () {
+    test('defines every Daily OS backend tool once', () {
       final names = dayAgentTools.map((tool) => tool.name).toList();
 
       expect(names.toSet(), hasLength(names.length));
@@ -29,6 +29,8 @@ void main() {
           DayAgentToolNames.surfacePendingDecisions,
           DayAgentToolNames.applyTriage,
           DayAgentToolNames.createTaskFromPhrase,
+          DayAgentToolNames.draftDayPlan,
+          DayAgentToolNames.summarizeRecentPatterns,
         ]),
       );
     });
@@ -73,6 +75,10 @@ void main() {
         requiredFor(DayAgentToolNames.createTaskFromPhrase),
         containsAll(['phrase', 'category']),
       );
+      expect(
+        requiredFor(DayAgentToolNames.draftDayPlan),
+        containsAll(['dayId', 'blocks']),
+      );
     });
 
     test('parse_capture_to_items documents confidence thresholds', () {
@@ -89,6 +95,44 @@ void main() {
       expect(itemSchema['required'], contains('confidenceScore'));
       expect(confidence['minimum'], 0);
       expect(confidence['maximum'], 1);
+    });
+
+    test('draft_day_plan documents block and energy-band schemas', () {
+      final properties =
+          parametersFor(DayAgentToolNames.draftDayPlan)['properties']
+              as Map<String, dynamic>;
+      final blockSchema =
+          (properties['blocks'] as Map<String, dynamic>)['items']
+              as Map<String, dynamic>;
+      final blockProperties = blockSchema['properties'] as Map<String, dynamic>;
+      final energyBandSchema =
+          (properties['energyBands'] as Map<String, dynamic>)['items']
+              as Map<String, dynamic>;
+      final energyBandProperties =
+          energyBandSchema['properties'] as Map<String, dynamic>;
+
+      expect(
+        blockSchema['required'],
+        containsAll(['title', 'categoryId', 'start', 'end', 'type']),
+      );
+      expect(blockSchema['additionalProperties'], isFalse);
+      expect(
+        (blockProperties['type'] as Map<String, dynamic>)['enum'],
+        ['ai', 'cal', 'buffer', 'manual'],
+      );
+      expect(
+        (blockProperties['state'] as Map<String, dynamic>)['enum'],
+        ['drafted', 'committed', 'inProgress', 'completed', 'dropped'],
+      );
+      expect(
+        energyBandSchema['required'],
+        containsAll(['start', 'end', 'level', 'label']),
+      );
+      expect(energyBandSchema['additionalProperties'], isFalse);
+      expect(
+        (energyBandProperties['level'] as Map<String, dynamic>)['enum'],
+        ['high', 'low', 'secondWind'],
+      );
     });
   });
 }

@@ -34,6 +34,7 @@ void main() {
         equals('capture_to_parsed_item'),
       );
       expect(AgentLinkTypes.parsedItemToTask, equals('parsed_item_to_task'));
+      expect(AgentLinkTypes.captureToPlan, equals('capture_to_plan'));
     });
 
     test('all link type constants are distinct', () {
@@ -46,6 +47,7 @@ void main() {
         AgentLinkTypes.agentTask,
         AgentLinkTypes.captureToParsedItem,
         AgentLinkTypes.parsedItemToTask,
+        AgentLinkTypes.captureToPlan,
         AgentLinkTypes.templateAssignment,
         AgentLinkTypes.improverTarget,
         AgentLinkTypes.agentProject,
@@ -59,6 +61,7 @@ void main() {
     test('capture reconcile constants use the locked type tags', () {
       expect(AgentEntityTypes.capture, equals('day_capture'));
       expect(AgentEntityTypes.parsedItem, equals('parsed_capture_item'));
+      expect(AgentEntityTypes.dayPlan, equals('day_plan'));
     });
   });
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 enum _GeneratedReportContentShape {
@@ -303,6 +305,50 @@ void main() {
       expect(parsed.matchedTaskId, 'task-001');
     });
 
+    test('toEntityCompanion writes dayPlan type, subtype, and timestamps', () {
+      final entity = AgentDomainEntity.dayPlan(
+        id: 'day_agent_plan:dayplan-2026-05-25',
+        agentId: agentId,
+        dayId: 'dayplan-2026-05-25',
+        planDate: DateTime(2026, 5, 25),
+        data: DayPlanData(
+          planDate: DateTime(2026, 5, 25),
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-001',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'High-energy focus window.',
+            ),
+          ],
+        ),
+        energyBands: [
+          DayAgentEnergyBand(
+            start: DateTime(2026, 5, 25, 9),
+            end: DateTime(2026, 5, 25, 12),
+            level: DayAgentEnergyLevel.high,
+            label: 'HIGH ENERGY',
+          ),
+        ],
+        capacityMinutes: 360,
+        scheduledMinutes: 60,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('day_agent_plan:dayplan-2026-05-25'));
+      expect(companion.type, const Value(AgentEntityTypes.dayPlan));
+      expect(companion.subtype, const Value('dayplan-2026-05-25'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(updatedAt));
+    });
+
     test('toLinkCompanion writes capture reconcile link types', () {
       final captureLink = model.AgentLink.captureToParsedItem(
         id: 'link-capture-item',
@@ -320,9 +366,18 @@ void main() {
         updatedAt: updatedAt,
         vectorClock: null,
       );
+      final planLink = model.AgentLink.captureToPlan(
+        id: 'link-capture-plan',
+        fromId: 'capture-001',
+        toId: 'day_agent_plan:dayplan-2026-05-25',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
 
       final captureCompanion = AgentDbConversions.toLinkCompanion(captureLink);
       final taskCompanion = AgentDbConversions.toLinkCompanion(taskLink);
+      final planCompanion = AgentDbConversions.toLinkCompanion(planLink);
 
       expect(
         captureCompanion.type,
@@ -331,6 +386,10 @@ void main() {
       expect(
         taskCompanion.type,
         const Value(AgentLinkTypes.parsedItemToTask),
+      );
+      expect(
+        planCompanion.type,
+        const Value(AgentLinkTypes.captureToPlan),
       );
     });
 
@@ -361,6 +420,35 @@ void main() {
       expect(result, isA<model.ParsedItemToTaskLink>());
       expect(result.fromId, 'parsed-001');
       expect(result.toId, 'task-001');
+    });
+
+    test('fromLinkRow roundtrips captureToPlan link', () {
+      final link = model.AgentLink.captureToPlan(
+        id: 'link-capture-plan',
+        fromId: 'capture-001',
+        toId: 'day_agent_plan:dayplan-2026-05-25',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      final row = AgentLink(
+        id: 'link-capture-plan',
+        fromId: 'capture-001',
+        toId: 'day_agent_plan:dayplan-2026-05-25',
+        type: AgentLinkTypes.captureToPlan,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromLinkRow(row);
+
+      expect(result, isA<model.CaptureToPlanLink>());
+      expect(result.fromId, 'capture-001');
+      expect(result.toId, 'day_agent_plan:dayplan-2026-05-25');
     });
   });
 

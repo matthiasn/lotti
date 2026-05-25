@@ -1,7 +1,9 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'agent_domain_entity.freezed.dart';
@@ -155,6 +157,23 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     String? proposedUpdate,
     DateTime? deletedAt,
   }) = ParsedItemEntity;
+
+  /// Drafted Daily OS day plan emitted by the day-agent.
+  const factory AgentDomainEntity.dayPlan({
+    required String id,
+    required String agentId,
+    required String dayId,
+    required DateTime planDate,
+    required DayPlanData data,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    String? captureId,
+    @Default([]) List<DayAgentEnergyBand> energyBands,
+    @Default(480) int capacityMinutes,
+    @Default(0) int scheduledMinutes,
+    DateTime? deletedAt,
+  }) = DayPlanEntity;
 
   /// Agent template — reusable blueprint for agent instances.
   ///

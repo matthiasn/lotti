@@ -163,6 +163,63 @@ void main() {
         expect(fromJson, equals(block));
         expect(fromJson.note, isNull);
       });
+
+      test('roundtrips agent drafting metadata', () {
+        final block = PlannedBlock(
+          id: 'block-1',
+          categoryId: 'category-work',
+          startTime: DateTime(2026, 1, 14, 9),
+          endTime: DateTime(2026, 1, 14, 12),
+          taskId: 'task-123',
+          title: 'Prep demo',
+          type: PlannedBlockType.manual,
+          state: PlannedBlockState.committed,
+          reason: 'High-energy focus window.',
+        );
+
+        final decoded = PlannedBlock.fromJson(
+          jsonDecode(jsonEncode(block.toJson())) as Map<String, dynamic>,
+        );
+
+        expect(decoded, block);
+        expect(decoded.taskId, 'task-123');
+        expect(decoded.title, 'Prep demo');
+        expect(decoded.type, PlannedBlockType.manual);
+        expect(decoded.state, PlannedBlockState.committed);
+        expect(decoded.requiresReason, isFalse);
+      });
+
+      test('defaults legacy blocks to AI draft metadata', () {
+        final block = PlannedBlock(
+          id: 'block-1',
+          categoryId: 'category-work',
+          startTime: DateTime(2026, 1, 14, 9),
+          endTime: DateTime(2026, 1, 14, 12),
+        );
+
+        expect(block.type, PlannedBlockType.ai);
+        expect(block.state, PlannedBlockState.drafted);
+        expect(block.reason, isNull);
+        expect(block.requiresReason, isTrue);
+      });
+
+      test('only AI blocks require a reason', () {
+        for (final type in PlannedBlockType.values) {
+          final block = PlannedBlock(
+            id: 'block-${type.name}',
+            categoryId: 'category-work',
+            startTime: DateTime(2026, 1, 14, 9),
+            endTime: DateTime(2026, 1, 14, 12),
+            type: type,
+          );
+
+          expect(
+            block.requiresReason,
+            type == PlannedBlockType.ai,
+            reason: type.name,
+          );
+        }
+      });
     });
 
     group('PinnedTaskRef', () {

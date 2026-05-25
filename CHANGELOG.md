@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Daily OS day-agent capture/reconcile tooling now persists captured text,
   parses it into task decisions, links it to existing tasks, and applies
   triage actions through the agent backend.
+- Daily OS day-agent backend tooling can now persist drafted day plans with
+  reasoned AI blocks, energy bands, source-capture links, and recent-pattern
+  learning cards for the upcoming Daily OS Next UI.
 
 ### Changed
 - Tasks navigation no longer shows the global in-progress task count badge in

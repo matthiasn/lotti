@@ -90,6 +90,18 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = ParsedItemToTaskLink;
 
+  /// Links a submitted Daily OS capture to its drafted plan.
+  /// [fromId] = capture ID, [toId] = day-plan entity ID.
+  const factory AgentLink.captureToPlan({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = CaptureToPlanLink;
+
   const factory AgentLink.templateAssignment({
     required String id,
     required String fromId,
@@ -183,6 +195,7 @@ extension AgentLinkSoftDelete on AgentLink {
     agentTask: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     captureToParsedItem: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     parsedItemToTask: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    captureToPlan: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     templateAssignment: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     improverTarget: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentProject: (l) => l.copyWith(deletedAt: at, updatedAt: at),

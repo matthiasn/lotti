@@ -14,8 +14,8 @@ not depend on the existing Daily OS UI controllers.
 
 The day-agent layer under `agents/` reuses the shared agent infrastructure from
 `features/agents` and adds only the Daily OS Next runtime surface area. The
-current backend supports the foundation wake plus Capture/Reconcile tool paths;
-the Flutter UI integration is intentionally separate.
+current backend supports the foundation wake, Capture/Reconcile, and draft
+day-plan tool paths; the Flutter UI integration is intentionally separate.
 
 ```mermaid
 flowchart TD
@@ -30,6 +30,11 @@ flowchart TD
   CaptureService --> Entities["agent_entities: capture + parsedItem"]
   CaptureService --> Links["agent_links: capture_to_parsed_item + parsed_item_to_task"]
   CaptureService --> Tasks["JournalDb tasks"]
+  Strategy --> PlanTools["drafting tools"]
+  PlanTools --> PlanService["DayAgentPlanService"]
+  PlanService --> DayPlan["agent_entities: day_plan"]
+  PlanService --> PlanLinks["agent_links: capture_to_plan"]
+  DayPlan --> SharedModel["DayPlanData + PlannedBlock"]
   Schedule --> State
 ```
 
@@ -46,7 +51,8 @@ Runtime behavior:
   observations, and, for `capture_submitted:<captureId>` wakes, the submitted
   capture plus a bounded task corpus snapshot.
 - `DayAgentStrategy` handles private observations itself and delegates
-  `set_next_wake` plus Capture/Reconcile tools through the workflow handler.
+  `set_next_wake`, Capture/Reconcile tools, and draft plan tools through the
+  workflow handler.
 - `DayAgentCaptureService` owns direct Capture/Reconcile mutations:
   `submit_capture`, `parse_capture_to_items`, `match_to_corpus`,
   `link_capture_phrase_to_task`, `break_capture_link`,
@@ -60,9 +66,18 @@ Runtime behavior:
   low-confidence items stay as new capture items.
 - `create_task_from_phrase` writes a pending `ChangeSetEntity` proposal instead
   of directly creating a task.
+- `DayAgentPlanService` owns draft plan persistence:
+  `draft_day_plan` validates model-emitted blocks, requires a non-empty reason
+  for every `PlannedBlockType.ai` block, writes a `DayPlanEntity`, and links it
+  back to the source capture when supplied.
+- `summarize_recent_patterns` returns transient learning-card payloads from
+  recent `DayPlanEntity` rows. It does not persist new state.
+- `PlannedBlock` now carries the agent-facing metadata required by the draft
+  flow: optional task/title, block origin (`ai`, `cal`, `buffer`, `manual`),
+  lifecycle state, and the model's placement reason.
 - Wakes consume any `scheduledWakeAt` timestamp that is no longer in the future
   so app restart does not replay an already-fired scheduled wake.
-- Future Daily OS Next planning, refine, commit, and shutdown tools should be
+- Future Daily OS Next refine, commit, agenda, and shutdown tools should be
   added under this feature without importing `features/daily_os`.
 
 ```mermaid
@@ -75,6 +90,8 @@ stateDiagram-v2
   Linked --> Parsed: break_capture_link
   Parsed --> Proposal: create_task_from_phrase
   Parsed --> TaskMutated: apply_triage
+  Parsed --> DraftedPlan: draft_day_plan
+  DraftedPlan --> PatternCards: summarize_recent_patterns
 ```
 
 ## Testing Strategy
@@ -86,8 +103,9 @@ invariant is easier to state than to cover with examples:
 - Capture/Reconcile confidence threshold classification
 - pending-decision dedupe and sort priority
 - `DayPlanData` derived durations, category grouping, and JSON round-trips
-- future tool validators such as required AI block reasons, positive block
-  durations, non-overlap rules, and commit-state gating
+- draft-plan JSON value objects, required AI block reasons, and positive block
+  durations
+- future tool validators such as non-overlap rules and commit-state gating
 - future diff application/reversion once refine tools produce `ChangeSetEntity`
   proposals
 

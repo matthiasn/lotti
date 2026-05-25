@@ -380,6 +380,52 @@ const _$ParsedItemConfidenceEnumMap = {
   ParsedItemConfidence.high: 'high',
 };
 
+DayPlanEntity _$DayPlanEntityFromJson(Map<String, dynamic> json) =>
+    DayPlanEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      dayId: json['dayId'] as String,
+      planDate: DateTime.parse(json['planDate'] as String),
+      data: DayPlanData.fromJson(json['data'] as Map<String, dynamic>),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      captureId: json['captureId'] as String?,
+      energyBands:
+          (json['energyBands'] as List<dynamic>?)
+              ?.map(
+                (e) => DayAgentEnergyBand.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const [],
+      capacityMinutes: (json['capacityMinutes'] as num?)?.toInt() ?? 480,
+      scheduledMinutes: (json['scheduledMinutes'] as num?)?.toInt() ?? 0,
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$DayPlanEntityToJson(DayPlanEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'dayId': instance.dayId,
+      'planDate': instance.planDate.toIso8601String(),
+      'data': instance.data,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'captureId': instance.captureId,
+      'energyBands': instance.energyBands,
+      'capacityMinutes': instance.capacityMinutes,
+      'scheduledMinutes': instance.scheduledMinutes,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
 AgentTemplateEntity _$AgentTemplateEntityFromJson(Map<String, dynamic> json) =>
     AgentTemplateEntity(
       id: json['id'] as String,

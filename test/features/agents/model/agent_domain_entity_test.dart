@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 void main() {
@@ -509,6 +511,56 @@ void main() {
         expect(item.lowConfidence, isTrue);
         expect(item.confidenceScore, 0.62);
         expect(item.toJson()['runtimeType'], equals('parsedItem'));
+      });
+
+      test('DayPlanEntity roundtrips drafted plan fields', () {
+        final original = AgentDomainEntity.dayPlan(
+          id: 'day_agent_plan:dayplan-2026-05-25',
+          agentId: 'day-agent-001',
+          dayId: 'dayplan-2026-05-25',
+          captureId: 'capture-001',
+          planDate: DateTime(2026, 5, 25),
+          data: DayPlanData(
+            planDate: DateTime(2026, 5, 25),
+            status: const DayPlanStatus.draft(),
+            dayLabel: 'Focused workday',
+            plannedBlocks: [
+              PlannedBlock(
+                id: 'block-001',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 10, 30),
+                taskId: 'task-001',
+                title: 'Prep demo',
+                reason: 'High-energy focus window.',
+              ),
+            ],
+            pinnedTasks: const [
+              PinnedTaskRef(taskId: 'task-001', categoryId: 'work'),
+            ],
+          ),
+          energyBands: [
+            DayAgentEnergyBand(
+              start: DateTime(2026, 5, 25, 9),
+              end: DateTime(2026, 5, 25, 12),
+              level: DayAgentEnergyLevel.high,
+              label: 'HIGH ENERGY',
+            ),
+          ],
+          capacityMinutes: 360,
+          scheduledMinutes: 90,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final plan = roundtripped as DayPlanEntity;
+        expect(plan.toJson()['runtimeType'], equals('dayPlan'));
+        expect(plan.data.plannedBlocks.single.reason, isNotEmpty);
+        expect(plan.energyBands.single.level, DayAgentEnergyLevel.high);
       });
     });
 

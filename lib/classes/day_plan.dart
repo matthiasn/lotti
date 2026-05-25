@@ -23,6 +23,39 @@ enum DayPlanReviewReason {
   manualReset,
 }
 
+/// Origin of a planned block.
+enum PlannedBlockType {
+  /// Agent-drafted block.
+  ai,
+
+  /// Imported calendar event.
+  cal,
+
+  /// Buffer between focus blocks.
+  buffer,
+
+  /// User-placed manual block.
+  manual,
+}
+
+/// Lifecycle state of one planned block.
+enum PlannedBlockState {
+  /// Drafted but not committed by the user.
+  drafted,
+
+  /// Committed as part of the accepted day plan.
+  committed,
+
+  /// Currently active.
+  inProgress,
+
+  /// Completed.
+  completed,
+
+  /// Dropped from the plan.
+  dropped,
+}
+
 /// State machine for day plan status.
 ///
 /// Transitions:
@@ -73,6 +106,22 @@ abstract class PlannedBlock with _$PlannedBlock {
 
     /// Optional note on the block
     String? note,
+
+    /// Optional task this block schedules.
+    String? taskId,
+
+    /// Human-readable title used when no backing task row is available.
+    String? title,
+
+    /// What created this block.
+    @Default(PlannedBlockType.ai) PlannedBlockType type,
+
+    /// Current block lifecycle state.
+    @Default(PlannedBlockState.drafted) PlannedBlockState state,
+
+    /// Why this block belongs at this time. Required for AI blocks at the
+    /// day-agent tool-handler layer.
+    String? reason,
   }) = _PlannedBlock;
 
   factory PlannedBlock.fromJson(Map<String, dynamic> json) =>
@@ -82,6 +131,9 @@ abstract class PlannedBlock with _$PlannedBlock {
 /// Extension for duration calculation on PlannedBlock.
 extension PlannedBlockX on PlannedBlock {
   Duration get duration => endTime.difference(startTime);
+
+  /// Whether the day-agent must provide a non-empty reason for this block.
+  bool get requiresReason => type == PlannedBlockType.ai;
 }
 
 /// A reference to a task pinned to a specific category for the day.
