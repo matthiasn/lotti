@@ -278,27 +278,56 @@ class DayAgentPlanService {
           ),
         ],
       ),
-      DayAgentLearningCard(
-        id: 'gentle_nudge',
-        overline: 'Gentle nudge',
-        summary: averageScheduled > averageCapacity
-            ? 'Your recent drafts run over capacity; protect a buffer before '
-                  'adding more work.'
-            : 'Your recent drafts fit capacity; place demanding work in the '
-                  'highest-energy window.',
-        kind: 'nudge',
-        bullets: [
-          DayAgentLearningBullet(
-            text: averageScheduled > averageCapacity
-                ? 'Leave at least one transition block unassigned.'
-                : 'Keep the plan specific enough to act on.',
-            tone: averageScheduled > averageCapacity
-                ? DayAgentLearningBulletTone.warning
-                : DayAgentLearningBulletTone.positive,
-          ),
-        ],
+      _gentleNudgeCard(
+        plansIsEmpty: plans.isEmpty,
+        averageScheduled: averageScheduled,
+        averageCapacity: averageCapacity,
       ),
     ];
+  }
+
+  static DayAgentLearningCard _gentleNudgeCard({
+    required bool plansIsEmpty,
+    required int averageScheduled,
+    required int averageCapacity,
+  }) {
+    if (plansIsEmpty) {
+      return DayAgentLearningCard(
+        id: 'gentle_nudge',
+        overline: 'Gentle nudge',
+        summary:
+            'No recent drafts to compare against; start small and adjust as '
+            'patterns emerge.',
+        kind: 'nudge',
+        bullets: const [
+          DayAgentLearningBullet(
+            text: 'Treat today as the first data point.',
+            tone: DayAgentLearningBulletTone.info,
+          ),
+        ],
+      );
+    }
+    final overCapacity = averageScheduled > averageCapacity;
+    return DayAgentLearningCard(
+      id: 'gentle_nudge',
+      overline: 'Gentle nudge',
+      summary: overCapacity
+          ? 'Your recent drafts run over capacity; protect a buffer before '
+                'adding more work.'
+          : 'Your recent drafts fit capacity; place demanding work in the '
+                'highest-energy window.',
+      kind: 'nudge',
+      bullets: [
+        DayAgentLearningBullet(
+          text: overCapacity
+              ? 'Leave at least one transition block unassigned.'
+              : 'Keep the plan specific enough to act on.',
+          tone: overCapacity
+              ? DayAgentLearningBulletTone.warning
+              : DayAgentLearningBulletTone.positive,
+        ),
+      ],
+    );
   }
 
   Future<Map<String, Object?>> _draftDayPlanTool(
@@ -510,9 +539,17 @@ class DayAgentPlanService {
     if (raw is! List) {
       throw const DayAgentCaptureException('decidedTaskIds must be an array');
     }
-    return [
-      for (final value in raw) ?_optionalString(value),
-    ];
+    final out = <String>[];
+    for (final value in raw) {
+      final parsed = _optionalString(value);
+      if (parsed == null) {
+        throw const DayAgentCaptureException(
+          'decidedTaskIds must contain non-empty strings',
+        );
+      }
+      out.add(parsed);
+    }
+    return out;
   }
 
   static DateTime _requiredDateTime(Map<String, dynamic> args, String key) {
@@ -540,7 +577,12 @@ class DayAgentPlanService {
 
   static int? _optionalInt(Object? value) {
     if (value is int) return value;
-    if (value is num) return value.toInt();
+    if (value is num) {
+      if (value % 1 != 0) {
+        throw const DayAgentCaptureException('value must be an integer');
+      }
+      return value.toInt();
+    }
     return null;
   }
 

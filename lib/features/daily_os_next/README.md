@@ -44,6 +44,14 @@ Runtime behavior:
   day.
 - `AgentSlots.activeDayId` stores the deterministic day subject ID
   (`dayplan-YYYY-MM-DD`).
+- The `dayplan-YYYY-MM-DD` token is reused in three distinct places. They are
+  intentionally collapsed onto one string so a single date keys the entire
+  day-agent surface, but the storage namespaces keep them from colliding:
+  the legacy Daily OS `DayPlanEntry.id` (journal row), the day-agent identity
+  subject ID surfaced as `AgentSlots.activeDayId`, and `DayPlanEntity.dayId`
+  on the drafted plan. The plan entity itself is stored under
+  `day_agent_plan:<dayId>` so the agent draft never overwrites the journal
+  row, and the `agentId` discriminator separates the identity from the plan.
 - Day-agent lookup is repository-backed by `activeDayId`; the service does not
   hydrate every active day-agent state just to find one calendar day.
 - The shared template service seeds the `Shepherd` day-agent template.
@@ -69,7 +77,12 @@ Runtime behavior:
 - `DayAgentPlanService` owns draft plan persistence:
   `draft_day_plan` validates model-emitted blocks, requires a non-empty reason
   for every `PlannedBlockType.ai` block, writes a `DayPlanEntity`, and links it
-  back to the source capture when supplied.
+  back to the source capture when supplied. `DayPlanEntity.captureId` is the
+  authoritative pointer from a plan to the capture that spawned it (used for
+  inline lookups); the `captureToPlan` `AgentLink` exists for the reverse
+  direction (graph traversal from a capture to every plan it produced) and is
+  written in the same transaction. Treat the field as canonical and the link
+  as derived — do not mutate one without the other.
 - `summarize_recent_patterns` returns transient learning-card payloads from
   recent `DayPlanEntity` rows. It does not persist new state.
 - `PlannedBlock` now carries the agent-facing metadata required by the draft

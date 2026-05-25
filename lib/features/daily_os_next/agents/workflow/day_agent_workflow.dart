@@ -451,25 +451,31 @@ class DayAgentWorkflow {
   }
 
   String _buildSystemPrompt(_TemplateContext? ctx) {
-    final scaffold = '''
+    const captureToolLines =
+        '- `submit_capture`: persist a user capture transcript and enqueue parsing.\n'
+        '- `parse_capture_to_items`: persist capture phrases parsed from the current capture-submitted wake.\n'
+        '- `match_to_corpus`: find existing task candidates for a phrase.\n'
+        '- `link_capture_phrase_to_task`: attach a parsed capture item to a task.\n'
+        "- `break_capture_link`: remove a parsed capture item's task link.\n"
+        '- `surface_pending_decisions`: list overdue, in-progress, missed recurring, and due-today tasks for reconcile.\n'
+        '- `apply_triage`: apply a reconcile action to a task.\n'
+        '- `create_task_from_phrase`: propose a new task via a pending change set.';
+    const planToolLines =
+        '- `draft_day_plan`: persist a drafted day plan with blocks and reasons.\n'
+        '- `summarize_recent_patterns`: return learning cards from recent day drafts.';
+    final toolLines = <String>[
+      '- `record_observations`: private memory for learnings and uncertainty.',
+      '- `set_next_wake`: schedule the next useful pre-warm wake.',
+      if (captureService != null) captureToolLines,
+      if (planService != null) planToolLines,
+    ];
+    final scaffold =
+        '''
 You are a Daily OS day agent. You operate on exactly one local calendar day.
 
 Available tools:
 
-- `record_observations`: private memory for learnings and uncertainty.
-- `set_next_wake`: schedule the next useful pre-warm wake.
-- `submit_capture`: persist a user capture transcript and enqueue parsing.
-- `parse_capture_to_items`: persist capture phrases parsed from the current
-  capture-submitted wake.
-- `match_to_corpus`: find existing task candidates for a phrase.
-- `link_capture_phrase_to_task`: attach a parsed capture item to a task.
-- `break_capture_link`: remove a parsed capture item's task link.
-- `surface_pending_decisions`: list overdue, in-progress, missed recurring,
-  and due-today tasks for reconcile.
-- `apply_triage`: apply a reconcile action to a task.
-- `create_task_from_phrase`: propose a new task via a pending change set.
-- `draft_day_plan`: persist a drafted day plan with blocks and reasons.
-- `summarize_recent_patterns`: return learning cards from recent day drafts.
+${toolLines.join('\n')}
 
 Capture matching rules:
 - Use the embedded task corpus when parsing a submitted capture.
@@ -769,8 +775,18 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     };
   }
 
+  bool _isToolEnabled(String toolName) {
+    if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {
+      return captureService != null;
+    }
+    if (DayAgentToolNames.isPlanTool(toolName)) {
+      return planService != null;
+    }
+    return true;
+  }
+
   List<ChatCompletionTool> _buildToolDefinitions() {
-    return dayAgentTools.map((tool) {
+    return dayAgentTools.where((tool) => _isToolEnabled(tool.name)).map((tool) {
       return ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(

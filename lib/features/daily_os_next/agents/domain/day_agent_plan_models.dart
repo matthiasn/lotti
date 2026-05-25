@@ -126,13 +126,13 @@ class DayAgentLearningBullet {
 @immutable
 class DayAgentLearningCard {
   /// Creates a learning card.
-  const DayAgentLearningCard({
+  DayAgentLearningCard({
     required this.id,
     required this.overline,
     required this.summary,
-    required this.bullets,
+    required List<DayAgentLearningBullet> bullets,
     this.kind = 'standard',
-  });
+  }) : bullets = List.unmodifiable(bullets);
 
   /// Creates a learning card from JSON.
   factory DayAgentLearningCard.fromJson(Map<String, dynamic> json) {

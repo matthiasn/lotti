@@ -111,6 +111,9 @@ abstract class PlannedBlock with _$PlannedBlock {
     String? taskId,
 
     /// Human-readable title used when no backing task row is available.
+    /// Nullable at the model layer for backwards compatibility with legacy
+    /// Daily OS blocks; the day-agent tool handler rejects null/blank titles
+    /// when parsing model-emitted blocks.
     String? title,
 
     /// What created this block.

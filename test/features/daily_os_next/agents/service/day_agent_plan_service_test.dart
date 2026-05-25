@@ -10,6 +10,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../features/agents/test_data/entity_factories.dart';
@@ -358,6 +359,51 @@ void main() {
     );
 
     test(
+      'summarizeRecentPatterns emits a neutral nudge when no plans exist',
+      () async {
+        final cards = await createService().summarizeRecentPatterns(
+          agentId: _agentId,
+          asOf: DateTime(2026, 5, 25),
+        );
+
+        expect(cards, hasLength(3));
+        expect(cards.last.id, 'gentle_nudge');
+        expect(cards.last.summary, contains('No recent drafts'));
+        expect(cards.last.bullets.single.tone, DayAgentLearningBulletTone.info);
+      },
+    );
+
+    test('executeTool rejects fractional integer arguments', () async {
+      final result = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.summarizeRecentPatterns,
+        args: {'lookbackDays': 7.5},
+      );
+
+      expect(result.success, isFalse);
+      expect(result.output, contains('value must be an integer'));
+    });
+
+    test(
+      'executeTool accepts integral doubles for integer arguments',
+      () async {
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.summarizeRecentPatterns,
+            args: {'lookbackDays': 3.0},
+          );
+        });
+
+        expect(result.success, isTrue);
+      },
+    );
+
+    test(
       'summarizeRecentPatterns rejects non-positive lookback windows',
       () async {
         await expectLater(
@@ -370,6 +416,253 @@ void main() {
         );
       },
     );
+
+    test('executeTool surfaces unknown tool names as failures', () async {
+      final result = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: 'not_a_tool',
+        args: const {},
+      );
+
+      expect(result.success, isFalse);
+      expect(result.output, contains('unknown tool'));
+    });
+
+    test('executeTool logs and reports unexpected errors', () async {
+      when(() => agentRepository.getEntity(any())).thenThrow(
+        StateError('boom'),
+      );
+      when(
+        () => domainLogger.error(
+          any(),
+          any(),
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+
+      final result = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.draftDayPlan,
+        args: {
+          'dayId': _dayId,
+          'blocks': [_aiBlock()],
+        },
+      );
+
+      expect(result.success, isFalse);
+      expect(result.output, contains('boom'));
+      verify(
+        () => domainLogger.error(
+          LogDomains.agentWorkflow,
+          'day-agent plan tool failed',
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    test('persistDraftPlan rejects mismatched dayId / planDate', () async {
+      await expectLater(
+        createService().persistDraftPlan(
+          agentId: _agentId,
+          dayId: 'dayplan-2026-05-26',
+          planDate: DateTime(2026, 5, 25),
+          rawBlocks: [_aiBlock()],
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (e) => e.message,
+            'message',
+            contains('dayId must match planDate'),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'persistDraftPlan rejects captures owned by a different agent',
+      () async {
+        agentEntities['capture-other'] = AgentDomainEntity.capture(
+          id: 'capture-other',
+          agentId: 'other-agent',
+          transcript: 'foreign',
+          capturedAt: _now,
+          createdAt: _now,
+          vectorClock: null,
+        );
+        await expectLater(
+          createService().persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            captureId: 'capture-other',
+            rawBlocks: [_aiBlock()],
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+      },
+    );
+
+    test('persistDraftPlan rejects unknown agents', () async {
+      await expectLater(
+        createService().persistDraftPlan(
+          agentId: 'nope',
+          dayId: _dayId,
+          planDate: DateTime(2026, 5, 25),
+          rawBlocks: [_aiBlock()],
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (e) => e.message,
+            'message',
+            contains('agent nope not found'),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'persistDraftPlan sorts equal-start blocks by id and reuses '
+      'existing createdAt',
+      () async {
+        final service = createService();
+        final firstPlan = await withClock(Clock.fixed(_now), () {
+          return service.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: [_aiBlock()],
+          );
+        });
+
+        final later = _now.add(const Duration(hours: 1));
+        final secondPlan = await withClock(Clock.fixed(later), () {
+          return service.persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            rawBlocks: [
+              _aiBlock(id: 'block-b'),
+              _aiBlock(id: 'block-a'),
+            ],
+          );
+        });
+
+        expect(
+          secondPlan.data.plannedBlocks.map((b) => b.id),
+          ['block-a', 'block-b'],
+        );
+        expect(secondPlan.createdAt, firstPlan.createdAt);
+        expect(secondPlan.updatedAt, later);
+      },
+    );
+
+    test(
+      'executeTool runs decidedTaskIds + integer capacity paths end-to-end',
+      () async {
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.draftDayPlan,
+            args: {
+              'dayId': _dayId,
+              'dayDate': DateTime(2026, 5, 25).toIso8601String(),
+              'capacityMinutes': 300,
+              'decidedTaskIds': const ['task-1'],
+              'blocks': [_aiBlock(taskId: 'task-1')],
+            },
+          );
+        });
+
+        expect(result.success, isTrue);
+        expect(upsertedEntities.single, isA<DayPlanEntity>());
+      },
+    );
+
+    test('executeTool rejects blank decidedTaskIds entries', () async {
+      final result = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.draftDayPlan,
+        args: {
+          'dayId': _dayId,
+          'decidedTaskIds': const ['task-1', '   '],
+          'blocks': [_aiBlock()],
+        },
+      );
+
+      expect(result.success, isFalse);
+      expect(result.output, contains('non-empty strings'));
+    });
+
+    test('executeTool rejects non-list blocks payloads', () async {
+      final result = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.draftDayPlan,
+        args: const {
+          'dayId': _dayId,
+          'blocks': 'not-an-array',
+        },
+      );
+
+      expect(result.success, isFalse);
+      expect(result.output, contains('blocks must be an array'));
+    });
+
+    test('executeTool rejects blocks missing required fields', () async {
+      final missingStart = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.draftDayPlan,
+        args: {
+          'dayId': _dayId,
+          'blocks': [
+            {
+              'title': 'No start',
+              'categoryId': 'work',
+              'end': DateTime(2026, 5, 25, 10).toIso8601String(),
+              'type': 'ai',
+              'reason': 'reason',
+            },
+          ],
+        },
+      );
+      expect(missingStart.success, isFalse);
+      expect(missingStart.output, contains('start must be a valid ISO-8601'));
+
+      final missingTitle = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.draftDayPlan,
+        args: {
+          'dayId': _dayId,
+          'blocks': [
+            {
+              'categoryId': 'work',
+              'start': DateTime(2026, 5, 25, 9).toIso8601String(),
+              'end': DateTime(2026, 5, 25, 10).toIso8601String(),
+              'type': 'ai',
+              'reason': 'reason',
+            },
+          ],
+        },
+      );
+      expect(missingTitle.success, isFalse);
+      expect(missingTitle.output, contains('title must not be empty'));
+    });
 
     test('executeTool returns JSON for summarize_recent_patterns', () async {
       final result = await withClock(Clock.fixed(_now), () {

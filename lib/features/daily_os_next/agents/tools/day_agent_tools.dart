@@ -282,11 +282,24 @@ const dayAgentTools = <AgentToolDefinition>[
                   'dropped',
                 ],
               },
-              'reason': {'type': 'string'},
+              'reason': {
+                'type': 'string',
+                'minLength': 1,
+                'description':
+                    'Why this block belongs here. Required for ai blocks.',
+              },
               'note': {'type': 'string'},
             },
             'required': ['title', 'categoryId', 'start', 'end', 'type'],
             'additionalProperties': false,
+            'if': {
+              'properties': {
+                'type': {'const': 'ai'},
+              },
+            },
+            'then': {
+              'required': ['reason'],
+            },
           },
         },
         'energyBands': {

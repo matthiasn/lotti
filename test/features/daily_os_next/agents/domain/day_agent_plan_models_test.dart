@@ -55,11 +55,11 @@ void main() {
 
   group('DayAgentLearningCard', () {
     test('roundtrips through JSON with bullets', () {
-      const card = DayAgentLearningCard(
+      final card = DayAgentLearningCard(
         id: 'week_so_far',
         overline: 'Week so far',
         summary: 'Recent plans averaged 330 scheduled minute(s).',
-        bullets: [
+        bullets: const [
           DayAgentLearningBullet(
             text: 'Average capacity was 420 minute(s).',
             tone: DayAgentLearningBulletTone.info,
@@ -78,6 +78,39 @@ void main() {
       expect(decoded, card);
       expect(decoded.kind, 'standard');
       expect(decoded.hashCode, card.hashCode);
+    });
+
+    test('defensively freezes bullets passed at construction', () {
+      final bullets = <DayAgentLearningBullet>[
+        const DayAgentLearningBullet(
+          text: 'Initial',
+          tone: DayAgentLearningBulletTone.info,
+        ),
+      ];
+      final card = DayAgentLearningCard(
+        id: 'card',
+        overline: 'Overline',
+        summary: 'Summary',
+        bullets: bullets,
+      );
+
+      bullets.add(
+        const DayAgentLearningBullet(
+          text: 'Injected after construction',
+          tone: DayAgentLearningBulletTone.warning,
+        ),
+      );
+
+      expect(card.bullets, hasLength(1));
+      expect(
+        () => card.bullets.add(
+          const DayAgentLearningBullet(
+            text: 'Cannot append',
+            tone: DayAgentLearningBulletTone.warning,
+          ),
+        ),
+        throwsUnsupportedError,
+      );
     });
   });
 }
