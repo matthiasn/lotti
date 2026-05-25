@@ -287,6 +287,99 @@ Map<String, dynamic> _$AgentReportHeadEntityToJson(
   'runtimeType': instance.$type,
 };
 
+CaptureEntity _$CaptureEntityFromJson(Map<String, dynamic> json) =>
+    CaptureEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      transcript: json['transcript'] as String,
+      capturedAt: DateTime.parse(json['capturedAt'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      audioRef: json['audioRef'] as String?,
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$CaptureEntityToJson(CaptureEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'transcript': instance.transcript,
+      'capturedAt': instance.capturedAt.toIso8601String(),
+      'createdAt': instance.createdAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'audioRef': instance.audioRef,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+ParsedItemEntity _$ParsedItemEntityFromJson(Map<String, dynamic> json) =>
+    ParsedItemEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      captureId: json['captureId'] as String,
+      kind: $enumDecode(_$ParsedItemKindEnumMap, json['kind']),
+      title: json['title'] as String,
+      categoryId: json['categoryId'] as String,
+      confidence: $enumDecode(
+        _$ParsedItemConfidenceEnumMap,
+        json['confidence'],
+      ),
+      confidenceScore: (json['confidenceScore'] as num).toDouble(),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      lowConfidence: json['lowConfidence'] as bool? ?? false,
+      spokenPhrase: json['spokenPhrase'] as String?,
+      matchedTaskId: json['matchedTaskId'] as String?,
+      estimateMinutes: (json['estimateMinutes'] as num?)?.toInt(),
+      timeAnchor: json['timeAnchor'] as String?,
+      proposedUpdate: json['proposedUpdate'] as String?,
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$ParsedItemEntityToJson(ParsedItemEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'captureId': instance.captureId,
+      'kind': _$ParsedItemKindEnumMap[instance.kind]!,
+      'title': instance.title,
+      'categoryId': instance.categoryId,
+      'confidence': _$ParsedItemConfidenceEnumMap[instance.confidence]!,
+      'confidenceScore': instance.confidenceScore,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'lowConfidence': instance.lowConfidence,
+      'spokenPhrase': instance.spokenPhrase,
+      'matchedTaskId': instance.matchedTaskId,
+      'estimateMinutes': instance.estimateMinutes,
+      'timeAnchor': instance.timeAnchor,
+      'proposedUpdate': instance.proposedUpdate,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+const _$ParsedItemKindEnumMap = {
+  ParsedItemKind.newTask: 'newTask',
+  ParsedItemKind.matched: 'matched',
+  ParsedItemKind.update: 'update',
+};
+
+const _$ParsedItemConfidenceEnumMap = {
+  ParsedItemConfidence.low: 'low',
+  ParsedItemConfidence.medium: 'medium',
+  ParsedItemConfidence.high: 'high',
+};
+
 AgentTemplateEntity _$AgentTemplateEntityFromJson(Map<String, dynamic> json) =>
     AgentTemplateEntity(
       id: json['id'] as String,

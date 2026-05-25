@@ -24,6 +24,8 @@ enum _GeneratedAgentEnumFamily {
   observationPriority,
   observationCategory,
   agentMessageKind,
+  parsedItemKind,
+  parsedItemConfidence,
 }
 
 enum _GeneratedEnumNameStyle {
@@ -247,6 +249,12 @@ List<Enum> _agentEnumValues(_GeneratedAgentEnumFamily family) {
     ),
     _GeneratedAgentEnumFamily.agentMessageKind => List<Enum>.of(
       AgentMessageKind.values,
+    ),
+    _GeneratedAgentEnumFamily.parsedItemKind => List<Enum>.of(
+      ParsedItemKind.values,
+    ),
+    _GeneratedAgentEnumFamily.parsedItemConfidence => List<Enum>.of(
+      ParsedItemConfidence.values,
     ),
   };
 }

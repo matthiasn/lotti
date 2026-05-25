@@ -12,6 +12,8 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:mocktail/mocktail.dart';
@@ -144,7 +146,10 @@ void main() {
     );
   }
 
-  DayAgentWorkflow workflow({MockSoulDocumentService? soulDocumentService}) {
+  DayAgentWorkflow workflow({
+    MockSoulDocumentService? soulDocumentService,
+    MockDayAgentCaptureService? captureService,
+  }) {
     return DayAgentWorkflow(
       agentRepository: repository,
       conversationRepository: conversationRepository,
@@ -153,18 +158,22 @@ void main() {
       syncService: syncService,
       templateService: templateService,
       soulDocumentService: soulDocumentService,
+      captureService: captureService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
   }
 
-  Future<WakeResult> execute(DayAgentWorkflow sut) {
+  Future<WakeResult> execute(
+    DayAgentWorkflow sut, {
+    Set<String>? triggerTokens,
+  }) {
     return withClock(
       Clock.fixed(now),
       () => sut.execute(
         agentIdentity: identity(),
         runKey: runKey,
-        triggerTokens: {'capture-1', dayId},
+        triggerTokens: triggerTokens ?? {'capture-1', dayId},
         threadId: threadId,
       ),
     );
@@ -350,6 +359,127 @@ void main() {
           'models/day',
         );
         expect(changedTokens, [agentId, agentId, dayId]);
+      },
+    );
+
+    test('includes capture context for capture-submitted wakes', () async {
+      final capture =
+          AgentDomainEntity.capture(
+                id: 'capture-1',
+                agentId: agentId,
+                transcript: 'Prep demo and buy milk',
+                capturedAt: DateTime(2026, 5, 25, 7, 45),
+                createdAt: DateTime(2026, 5, 25, 7, 45),
+                vectorClock: null,
+                audioRef: 'audio-1',
+              )
+              as CaptureEntity;
+      final captureService = MockDayAgentCaptureService();
+      when(() => captureService.getCapture('capture-1')).thenAnswer(
+        (_) async => capture,
+      );
+      when(
+        () => captureService.buildTaskCorpusSnapshot(
+          allowedCategoryIds: const <String>{},
+          day: DateTime(2026, 5, 25),
+        ),
+      ).thenAnswer(
+        (_) async => const [
+          {
+            'taskId': 'task-1',
+            'title': 'Prep demo',
+            'status': 'OPEN',
+            'categoryId': 'work',
+            'due': null,
+            'estimateMinutes': 45,
+            'priority': 'P2',
+          },
+        ],
+      );
+
+      final result = await execute(
+        workflow(captureService: captureService),
+        triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+      );
+
+      expect(result.success, isTrue);
+      final userPayload =
+          jsonDecode(conversationRepository.lastUserMessage!)
+              as Map<String, dynamic>;
+      final capturePayload = userPayload['capture'] as Map<String, dynamic>;
+      expect(capturePayload['captureId'], 'capture-1');
+      expect(capturePayload['transcript'], 'Prep demo and buy milk');
+      expect(capturePayload['audioRef'], 'audio-1');
+      expect(capturePayload['taskCorpus'], [
+        {
+          'taskId': 'task-1',
+          'title': 'Prep demo',
+          'status': 'OPEN',
+          'categoryId': 'work',
+          'due': null,
+          'estimateMinutes': 45,
+          'priority': 'P2',
+        },
+      ]);
+    });
+
+    test('delegates capture tools to the configured capture service', () async {
+      final captureService = MockDayAgentCaptureService();
+      when(
+        () => captureService.executeTool(
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          toolName: DayAgentToolNames.matchToCorpus,
+          args: any(named: 'args'),
+        ),
+      ).thenAnswer(
+        (_) async => DayAgentDirectToolResult.success(
+          const {'candidates': <Object?>[]},
+        ),
+      );
+      conversationRepository.toolCalls = [
+        _toolCall(
+          name: DayAgentToolNames.matchToCorpus,
+          args: {'phrase': 'prep demo'},
+        ),
+      ];
+
+      final result = await execute(workflow(captureService: captureService));
+
+      expect(result.success, isTrue);
+      expect(conversationRepository.toolResponses.single, contains('[]'));
+      final args =
+          verify(
+                () => captureService.executeTool(
+                  agentId: agentId,
+                  threadId: threadId,
+                  runKey: runKey,
+                  toolName: DayAgentToolNames.matchToCorpus,
+                  args: captureAny(named: 'args'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(args, {'phrase': 'prep demo'});
+    });
+
+    test(
+      'returns a tool error when capture tools are not configured',
+      () async {
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.matchToCorpus,
+            args: {'phrase': 'prep demo'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          contains('capture/reconcile tools are not configured'),
+        );
       },
     );
 

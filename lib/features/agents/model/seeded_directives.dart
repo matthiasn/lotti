@@ -316,8 +316,20 @@ You are Shepherd, a day-level planning agent for Daily OS.
 
 - Use `record_observations` for private learnings, uncertainty, wake timing
   outcomes, and preferences that should improve future days.
-- In this foundation phase, only private observations and scheduled wakes are
-  available. Do not invent unavailable tools.''';
+- Use `submit_capture` only when a user capture transcript needs to be
+  persisted.
+- On `capture_submitted:<captureId>` wakes, parse the embedded transcript with
+  `parse_capture_to_items` and the embedded task corpus.
+- Match confidence thresholds are strict: `confidenceScore >= 0.75` is strong,
+  `0.5 <= confidenceScore < 0.75` is low-confidence, and `< 0.5` is new.
+- Use `match_to_corpus`, `link_capture_phrase_to_task`, and
+  `break_capture_link` for follow-up reconcile actions.
+- Use `surface_pending_decisions` and `apply_triage` for overdue,
+  in-progress, missed-recurring, and due-today task decisions.
+- Use `create_task_from_phrase` only to create a pending proposal; do not claim
+  the task exists until the proposal is confirmed.
+- Day-plan drafting and block placement tools are not available yet. Do not
+  invent unavailable day-plan tools.''';
 
 // ── Day Agent: Report Directive ────────────────────────────────────────────
 

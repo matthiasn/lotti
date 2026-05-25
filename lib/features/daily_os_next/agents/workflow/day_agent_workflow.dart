@@ -18,6 +18,9 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -35,6 +38,7 @@ class DayAgentWorkflow {
     required this.syncService,
     required this.templateService,
     required this.domainLogger,
+    this.captureService,
     this.soulDocumentService,
     this.onPersistedStateChanged,
     this.config = const DayAgentConfig(),
@@ -60,6 +64,9 @@ class DayAgentWorkflow {
 
   /// Optional soul resolver.
   final SoulDocumentService? soulDocumentService;
+
+  /// Capture/reconcile backend tool implementation.
+  final DayAgentCaptureService? captureService;
 
   /// Structured logger.
   final DomainLogger domainLogger;
@@ -145,6 +152,11 @@ class DayAgentWorkflow {
 
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
+    final captureContext = await _captureContext(
+      agentIdentity: agentIdentity,
+      planDate: dayDate,
+      triggerTokens: triggerTokens,
+    );
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       dayId: dayId,
@@ -152,6 +164,7 @@ class DayAgentWorkflow {
       triggerTokens: triggerTokens,
       observations: recentObservations,
       observationPayloads: observationPayloads,
+      captureContext: captureContext,
     );
 
     final conversationId = conversationRepository.createConversation(
@@ -176,6 +189,8 @@ class DayAgentWorkflow {
         domainLogger: domainLogger,
         executeToolHandler: (toolName, args, manager) => _executeToolHandler(
           agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
           toolName: toolName,
           args: args,
         ),
@@ -282,9 +297,32 @@ class DayAgentWorkflow {
 
   Future<DayAgentToolResult> _executeToolHandler({
     required String agentId,
+    required String threadId,
+    required String runKey,
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
+    if (toolName != DayAgentToolNames.setNextWake) {
+      final service = captureService;
+      if (service == null) {
+        return const DayAgentToolResult(
+          success: false,
+          output: 'Error: capture/reconcile tools are not configured.',
+        );
+      }
+      final result = await service.executeTool(
+        agentId: agentId,
+        threadId: threadId,
+        runKey: runKey,
+        toolName: toolName,
+        args: args,
+      );
+      return DayAgentToolResult(
+        success: result.success,
+        output: result.output,
+      );
+    }
+
     final rawAt = args['at'];
     final reasonValue = args['reason'];
     final reason = reasonValue is String ? reasonValue.trim() : '';
@@ -383,14 +421,31 @@ class DayAgentWorkflow {
     final scaffold = '''
 You are a Daily OS day agent. You operate on exactly one local calendar day.
 
-Available foundation tools:
+Available tools:
 
 - `record_observations`: private memory for learnings and uncertainty.
 - `set_next_wake`: schedule the next useful pre-warm wake.
+- `submit_capture`: persist a user capture transcript and enqueue parsing.
+- `parse_capture_to_items`: persist capture phrases parsed from the current
+  capture-submitted wake.
+- `match_to_corpus`: find existing task candidates for a phrase.
+- `link_capture_phrase_to_task`: attach a parsed capture item to a task.
+- `break_capture_link`: remove a parsed capture item's task link.
+- `surface_pending_decisions`: list overdue, in-progress, missed recurring,
+  and due-today tasks for reconcile.
+- `apply_triage`: apply a reconcile action to a task.
+- `create_task_from_phrase`: propose a new task via a pending change set.
 
-You cannot mutate day plans yet. Do not claim that you changed tasks, blocks,
-captures, or commitments. Record private observations and schedule one useful
-future wake when warranted.
+Capture matching rules:
+- Use the embedded task corpus when parsing a submitted capture.
+- Emit `parse_capture_to_items` with confidenceScore in [0, 1].
+- confidenceScore >= 0.75 is a strong match.
+- confidenceScore >= 0.5 and < 0.75 is a low-confidence match.
+- confidenceScore < 0.5 should be treated as a new item.
+
+You cannot mutate day plans yet. Do not claim that you changed blocks or
+commitments. Record private observations and schedule one useful future wake
+when warranted.
 
 Planning defaults:
 ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
@@ -473,11 +528,13 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required Set<String> triggerTokens,
     required List<AgentMessageEntity> observations,
     required Map<String, AgentMessagePayloadEntity> observationPayloads,
+    required _CaptureContext? captureContext,
   }) {
     final payload = <String, Object?>{
       'dayId': dayId,
       'planDate': planDate.toIso8601String(),
       'triggerTokens': triggerTokens.toList()..sort(),
+      if (captureContext != null) 'capture': captureContext.toJson(),
       'recentObservations': [
         for (final observation in observations)
           {
@@ -489,6 +546,29 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       ],
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
+  }
+
+  Future<_CaptureContext?> _captureContext({
+    required AgentIdentityEntity agentIdentity,
+    required DateTime planDate,
+    required Set<String> triggerTokens,
+  }) async {
+    final service = captureService;
+    if (service == null) return null;
+
+    final captureId = captureIdFromTriggerTokens(triggerTokens);
+    if (captureId == null) return null;
+
+    final capture = await service.getCapture(captureId);
+    if (capture == null || capture.agentId != agentIdentity.agentId) {
+      return null;
+    }
+
+    final corpus = await service.buildTaskCorpusSnapshot(
+      allowedCategoryIds: agentIdentity.allowedCategoryIds,
+      day: planDate,
+    );
+    return _CaptureContext(capture: capture, taskCorpus: corpus);
   }
 
   Future<void> _persistUserMessage({
@@ -747,4 +827,22 @@ class _TemplateContext {
   final AgentTemplateEntity template;
   final AgentTemplateVersionEntity version;
   final SoulDocumentVersionEntity? soulVersion;
+}
+
+class _CaptureContext {
+  const _CaptureContext({
+    required this.capture,
+    required this.taskCorpus,
+  });
+
+  final CaptureEntity capture;
+  final List<Map<String, Object?>> taskCorpus;
+
+  Map<String, Object?> toJson() => {
+    'captureId': capture.id,
+    'transcript': capture.transcript,
+    'capturedAt': capture.capturedAt.toIso8601String(),
+    'audioRef': capture.audioRef,
+    'taskCorpus': taskCorpus,
+  };
 }

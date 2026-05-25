@@ -787,6 +787,127 @@ void main() {
         expect(results.map((e) => e.meta.id), ['task-blocked']);
       });
 
+      test(
+        'getOpenTasksForDayAgentCorpus returns scoped active tasks',
+        () async {
+          final base = DateTime(2024, 7, 3, 9);
+          final dueOpenTask = buildTaskEntry(
+            id: 'day-agent-open-due',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'status-open-due',
+              createdAt: base,
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            categoryId: 'cat-day-agent',
+            due: DateTime(2024, 7, 4, 12),
+          );
+          final inProgressTask = buildTaskEntry(
+            id: 'day-agent-in-progress',
+            timestamp: base.add(const Duration(minutes: 5)),
+            status: TaskStatus.inProgress(
+              id: 'status-in-progress-corpus',
+              createdAt: base.add(const Duration(minutes: 5)),
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            categoryId: 'cat-day-agent',
+          );
+          final doneTask = buildTaskEntry(
+            id: 'day-agent-done',
+            timestamp: base.add(const Duration(minutes: 10)),
+            status: TaskStatus.done(
+              id: 'status-done-corpus',
+              createdAt: base.add(const Duration(minutes: 10)),
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            categoryId: 'cat-day-agent',
+          );
+          final otherCategoryTask = buildTaskEntry(
+            id: 'day-agent-other-cat',
+            timestamp: base.add(const Duration(minutes: 15)),
+            status: TaskStatus.open(
+              id: 'status-other-corpus',
+              createdAt: base.add(const Duration(minutes: 15)),
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            categoryId: 'cat-other',
+            due: DateTime(2024, 7, 3, 10),
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(dueOpenTask));
+          await db!.upsertJournalDbEntity(toDbEntity(inProgressTask));
+          await db!.upsertJournalDbEntity(toDbEntity(doneTask));
+          await db!.upsertJournalDbEntity(toDbEntity(otherCategoryTask));
+
+          final results = await db!.getOpenTasksForDayAgentCorpus(
+            categoryIds: {'cat-day-agent'},
+          );
+
+          expect(results.map((task) => task.meta.id), [
+            'day-agent-open-due',
+            'day-agent-in-progress',
+          ]);
+        },
+      );
+
+      test('getInProgressTasks filters category and honors limit', () async {
+        final base = DateTime(2024, 7, 4, 9);
+        final older = buildTaskEntry(
+          id: 'day-agent-progress-old',
+          timestamp: base,
+          status: TaskStatus.inProgress(
+            id: 'status-progress-old',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-day-agent',
+        );
+        final newer = buildTaskEntry(
+          id: 'day-agent-progress-new',
+          timestamp: base.add(const Duration(minutes: 5)),
+          status: TaskStatus.inProgress(
+            id: 'status-progress-new',
+            createdAt: base.add(const Duration(minutes: 5)),
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-day-agent',
+        );
+        final otherCategory = buildTaskEntry(
+          id: 'day-agent-progress-other',
+          timestamp: base.add(const Duration(minutes: 10)),
+          status: TaskStatus.inProgress(
+            id: 'status-progress-other',
+            createdAt: base.add(const Duration(minutes: 10)),
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-other',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(older));
+        await db!.upsertJournalDbEntity(toDbEntity(newer));
+        await db!.upsertJournalDbEntity(toDbEntity(otherCategory));
+
+        final results = await db!.getInProgressTasks(
+          categoryIds: {'cat-day-agent'},
+          limit: 1,
+        );
+
+        expect(results.map((task) => task.meta.id), [
+          'day-agent-progress-new',
+        ]);
+      });
+
+      test(
+        'getMissedRecurringTasks is explicit no-op until recurrence exists',
+        () async {
+          final results = await db!.getMissedRecurringTasks(
+            asOf: DateTime(2024, 7, 4),
+          );
+
+          expect(results, isEmpty);
+        },
+      );
+
       test('getTasksSortedByDueDate orders by due date globally', () async {
         final base = DateTime(2024, 7, 10, 8);
         final taskNoDue = buildTaskEntry(

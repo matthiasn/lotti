@@ -224,6 +224,40 @@ void main() {
       ).called(1);
     });
 
+    test('delegates capture/reconcile tools to the workflow handler', () async {
+      final seen = <String, Map<String, dynamic>>{};
+      final sut = strategy(
+        handler: (toolName, args, _) async {
+          seen[toolName] = args;
+          return const DayAgentToolResult(
+            success: true,
+            output: '{"candidates":[]}',
+          );
+        },
+      );
+
+      await sut.processToolCalls(
+        toolCalls: [
+          _toolCall(
+            name: DayAgentToolNames.matchToCorpus,
+            args: {'phrase': 'prep demo'},
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(
+        seen[DayAgentToolNames.matchToCorpus],
+        {'phrase': 'prep demo'},
+      );
+      verify(
+        () => manager.addToolResponse(
+          toolCallId: 'call-1',
+          response: '{"candidates":[]}',
+        ),
+      ).called(1);
+    });
+
     test('unknown tools receive an error response', () async {
       final sut = strategy();
 

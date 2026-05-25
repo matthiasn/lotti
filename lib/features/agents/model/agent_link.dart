@@ -66,6 +66,30 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = AgentTaskLink;
 
+  /// Links a submitted Daily OS capture to one parsed item.
+  /// [fromId] = capture ID, [toId] = parsed item ID.
+  const factory AgentLink.captureToParsedItem({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = CaptureToParsedItemLink;
+
+  /// Links one parsed Daily OS capture item to its matched task.
+  /// [fromId] = parsed item ID, [toId] = task ID.
+  const factory AgentLink.parsedItemToTask({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = ParsedItemToTaskLink;
+
   const factory AgentLink.templateAssignment({
     required String id,
     required String fromId,
@@ -157,6 +181,8 @@ extension AgentLinkSoftDelete on AgentLink {
     messagePayload: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     toolEffect: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentTask: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    captureToParsedItem: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    parsedItemToTask: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     templateAssignment: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     improverTarget: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentProject: (l) => l.copyWith(deletedAt: at, updatedAt: at),

@@ -69,6 +69,17 @@ class DayAgentStrategy extends ConversationStrategy {
   String? _finalResponse;
 
   static const _uuid = Uuid();
+  static const Set<String> _handlerTools = {
+    DayAgentToolNames.setNextWake,
+    DayAgentToolNames.submitCapture,
+    DayAgentToolNames.parseCaptureToItems,
+    DayAgentToolNames.matchToCorpus,
+    DayAgentToolNames.linkCapturePhraseToTask,
+    DayAgentToolNames.breakCaptureLink,
+    DayAgentToolNames.surfacePendingDecisions,
+    DayAgentToolNames.applyTriage,
+    DayAgentToolNames.createTaskFromPhrase,
+  };
 
   /// Returns observations accumulated from `record_observations` calls.
   List<ObservationRecord> extractObservations() =>
@@ -115,7 +126,7 @@ class DayAgentStrategy extends ConversationStrategy {
         continue;
       }
 
-      if (toolName == DayAgentToolNames.setNextWake) {
+      if (_handlerTools.contains(toolName)) {
         final result = await executeToolHandler(toolName, args, manager);
         manager.addToolResponse(toolCallId: call.id, response: result.output);
         await _recordToolResultMessage(
@@ -141,8 +152,9 @@ class DayAgentStrategy extends ConversationStrategy {
 
   @override
   String? getContinuationPrompt(ConversationManager manager) {
-    return 'Continue only if you still need to record observations or schedule '
-        'the next wake. Otherwise finish with a brief summary.';
+    return 'Continue only if you still need to record observations, schedule '
+        'the next wake, or finish capture/reconcile tool work. Otherwise '
+        'finish with a brief summary.';
   }
 
   Future<void> _handleRecordObservations(

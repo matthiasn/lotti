@@ -1189,6 +1189,15 @@ AgentTemplateVersionEntity _targetVersion({
   );
 }
 
+AgentTemplateVersionEntity _currentDayAgentTemplateVersion() {
+  return makeTestTemplateVersion(
+    id: 'day-agent-current-version',
+    agentId: dayAgentTemplateId,
+    generalDirective: dayAgentGeneralDirective,
+    reportDirective: dayAgentReportDirective,
+  );
+}
+
 AgentTemplateVersionEntity _historyVersion({
   required String id,
   int version = 1,
@@ -3060,6 +3069,11 @@ void main() {
       when(
         () => generatedSync.upsertEntity(any()),
       ).thenAnswer((_) async {});
+      when(
+        () => generatedRepository.getActiveTemplateVersion(
+          dayAgentTemplateId,
+        ),
+      ).thenAnswer((_) async => _currentDayAgentTemplateVersion());
 
       for (final (index, definition) in _defaultTemplateDefinitions.indexed) {
         final slot = scenario.slots[index];
@@ -3072,7 +3086,7 @@ void main() {
 
       if (scenario.allPresent) {
         verifyNever(() => generatedSync.upsertEntity(any()));
-        verifyNever(generatedRepository.getAllTemplates);
+        verify(generatedRepository.getAllTemplates).called(1);
         return;
       }
 
@@ -3206,6 +3220,10 @@ void main() {
       when(
         () => mockRepo.getEntity(metaImproverTemplateId),
       ).thenAnswer((_) async => metaImprover);
+      when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
+      ).thenAnswer((_) async => _currentDayAgentTemplateVersion());
 
       await service.seedDefaults();
 
@@ -3254,6 +3272,9 @@ void main() {
         () => mockRepo.getEntity(metaImproverTemplateId),
       ).thenAnswer((_) async => metaImprover);
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
+      ).thenAnswer((_) async => _currentDayAgentTemplateVersion());
 
       await service.seedDefaults();
 
@@ -3299,6 +3320,9 @@ void main() {
         () => mockRepo.getEntity(metaImproverTemplateId),
       ).thenAnswer((_) async => metaImprover);
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
+      ).thenAnswer((_) async => _currentDayAgentTemplateVersion());
 
       await service.seedDefaults();
 
@@ -3348,6 +3372,9 @@ void main() {
         () => mockRepo.getEntity(metaImproverTemplateId),
       ).thenAnswer((_) async => metaImprover);
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
+      ).thenAnswer((_) async => _currentDayAgentTemplateVersion());
 
       await service.seedDefaults();
 

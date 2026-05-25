@@ -2701,6 +2701,107 @@ class JournalDb extends _$JournalDb {
     );
   }
 
+  /// Returns open task-corpus rows for Daily OS day-agent matching.
+  ///
+  /// The day-agent prompt embeds a bounded corpus snapshot, so this query
+  /// intentionally returns only active task states and honors the same private
+  /// visibility gate as user-facing task lists.
+  Future<List<Task>> getOpenTasksForDayAgentCorpus({
+    Set<String> categoryIds = const {},
+    int limit = 200,
+  }) {
+    return _selectTasksByStatusForDayAgent(
+      statuses: const ['OPEN', 'GROOMED', 'IN PROGRESS', 'BLOCKED', 'ON HOLD'],
+      categoryIds: categoryIds,
+      limit: limit,
+    );
+  }
+
+  /// Returns in-progress task rows for Daily OS reconcile decisions.
+  Future<List<Task>> getInProgressTasks({
+    Set<String> categoryIds = const {},
+    int limit = 200,
+  }) {
+    return _selectTasksByStatusForDayAgent(
+      statuses: const ['IN PROGRESS'],
+      categoryIds: categoryIds,
+      limit: limit,
+    );
+  }
+
+  /// Returns missed recurring tasks for Daily OS reconcile decisions.
+  ///
+  /// The current task model does not yet persist recurrence metadata. Returning
+  /// an empty list keeps the phase-2 query contract explicit without inventing
+  /// a recurrence source that cannot be derived from stored task rows.
+  Future<List<Task>> getMissedRecurringTasks({
+    required DateTime asOf,
+    int lookbackDays = 7,
+    Set<String> categoryIds = const {},
+  }) async {
+    return const <Task>[];
+  }
+
+  Future<List<Task>> _selectTasksByStatusForDayAgent({
+    required List<String> statuses,
+    required Set<String> categoryIds,
+    required int limit,
+  }) async {
+    if (statuses.isEmpty || limit <= 0) return const <Task>[];
+
+    final privateStatuses = await _visiblePrivateStatuses();
+    if (privateStatuses.isEmpty) return const <Task>[];
+
+    final variables = <Variable<Object>>[];
+    final buffer = StringBuffer()
+      ..write('SELECT * FROM journal ')
+      ..write("WHERE type = 'Task' ")
+      ..write('AND task = 1 ')
+      ..write('AND deleted = FALSE ')
+      ..write('AND task_status IN (');
+
+    for (var i = 0; i < statuses.length; i++) {
+      if (i > 0) buffer.write(', ');
+      variables.add(Variable<String>(statuses[i]));
+      buffer.write('?${variables.length}');
+    }
+    buffer
+      ..write(') ')
+      ..write('AND private IN (');
+
+    for (var i = 0; i < privateStatuses.length; i++) {
+      if (i > 0) buffer.write(', ');
+      variables.add(Variable<bool>(privateStatuses[i]));
+      buffer.write('?${variables.length}');
+    }
+    buffer.write(') ');
+
+    if (categoryIds.isNotEmpty) {
+      final sortedCategoryIds = categoryIds.toList()..sort();
+      buffer.write('AND category IN (');
+      for (var i = 0; i < sortedCategoryIds.length; i++) {
+        if (i > 0) buffer.write(', ');
+        variables.add(Variable<String>(sortedCategoryIds[i]));
+        buffer.write('?${variables.length}');
+      }
+      buffer.write(') ');
+    }
+
+    variables.add(Variable<int>(limit));
+    buffer
+      ..write('ORDER BY due_at IS NULL ASC, due_at ASC, ')
+      ..write('task_priority_rank ASC, date_from DESC, id ASC ')
+      ..write('LIMIT ?${variables.length}');
+
+    final rows = await customSelect(
+      buffer.toString(),
+      variables: variables,
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow).get();
+
+    return rows.map(fromDbEntity).whereType<Task>().toList(growable: false);
+  }
+
   // Microtask-coalescing state for `_coalesceOpenTasksDueUpTo`.
   //
   // The DailyOS prefetch window fires `getTasksDueOn` / `getTasksDueOnOrBefore`

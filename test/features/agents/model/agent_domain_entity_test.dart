@@ -463,6 +463,55 @@ void main() {
       });
     });
 
+    group('Daily OS capture variants', () {
+      test('CaptureEntity roundtrips all fields', () {
+        final original = AgentDomainEntity.capture(
+          id: 'capture-001',
+          agentId: 'day-agent-001',
+          transcript: 'Prep demo and buy milk',
+          capturedAt: DateTime(2026, 5, 25, 8, 30),
+          createdAt: createdAt,
+          vectorClock: vectorClock,
+          audioRef: 'audio-001',
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<CaptureEntity>());
+        expect(roundtripped.toJson()['runtimeType'], equals('capture'));
+      });
+
+      test('ParsedItemEntity roundtrips optional reconcile fields', () {
+        final original = AgentDomainEntity.parsedItem(
+          id: 'parsed-001',
+          agentId: 'day-agent-001',
+          captureId: 'capture-001',
+          kind: ParsedItemKind.update,
+          title: 'Prep demo',
+          categoryId: 'work',
+          confidence: ParsedItemConfidence.medium,
+          confidenceScore: 0.62,
+          createdAt: createdAt,
+          vectorClock: vectorClock,
+          lowConfidence: true,
+          spokenPhrase: 'demo prep',
+          matchedTaskId: 'task-001',
+          estimateMinutes: 45,
+          timeAnchor: 'today afternoon',
+          proposedUpdate: 'Move later',
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final item = roundtripped as ParsedItemEntity;
+        expect(item.lowConfidence, isTrue);
+        expect(item.confidenceScore, 0.62);
+        expect(item.toJson()['runtimeType'], equals('parsedItem'));
+      });
+    });
+
     group('AgentUnknownEntity fallback (unknown variant)', () {
       test('deserializes unknown runtimeType to AgentUnknownEntity', () {
         final json = <String, dynamic>{

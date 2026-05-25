@@ -64,6 +64,7 @@ import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -584,6 +585,9 @@ class MockProjectRecommendationService extends Mock
 class MockProjectAgentWorkflow extends Mock implements ProjectAgentWorkflow {}
 
 class MockDayAgentService extends Mock implements DayAgentService {}
+
+class MockDayAgentCaptureService extends Mock
+    implements DayAgentCaptureService {}
 
 class MockDayAgentWorkflow extends Mock implements DayAgentWorkflow {}
 

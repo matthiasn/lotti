@@ -339,6 +339,45 @@ void main() {
       });
     });
 
+    group('Daily OS capture reconcile links', () {
+      test('CaptureToParsedItemLink roundtrips all fields', () {
+        final original = AgentLink.captureToParsedItem(
+          id: 'link-capture-item-001',
+          fromId: 'capture-001',
+          toId: 'parsed-001',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<CaptureToParsedItemLink>());
+        expectLinkFieldsMatch(roundtripped, original);
+        expect(roundtripped.toJson()['runtimeType'], 'captureToParsedItem');
+      });
+
+      test('ParsedItemToTaskLink roundtrips all fields', () {
+        final original = AgentLink.parsedItemToTask(
+          id: 'link-item-task-001',
+          fromId: 'parsed-001',
+          toId: 'task-001',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+          deletedAt: DateTime(2026, 2, 20, 18, 30),
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<ParsedItemToTaskLink>());
+        expectLinkFieldsMatch(roundtripped, original);
+        expect(roundtripped.toJson()['runtimeType'], 'parsedItemToTask');
+      });
+    });
+
     group('AgentProjectLink (agentProject variant)', () {
       test('roundtrips all fields', () {
         final original = AgentLink.agentProject(
@@ -573,6 +612,22 @@ void main() {
         ),
         AgentLink.agentTask(
           id: 'l6',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.captureToParsedItem(
+          id: 'l-capture',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.parsedItemToTask(
+          id: 'l-parsed-task',
           fromId: 'a',
           toId: 'b',
           createdAt: createdAt,
