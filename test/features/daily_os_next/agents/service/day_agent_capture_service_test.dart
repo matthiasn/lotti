@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../features/agents/test_data/entity_factories.dart';
@@ -523,6 +524,8 @@ void main() {
 
       expect(updated.matchedTaskId, 'task-1');
       expect(updated.kind, ParsedItemKind.matched);
+      expect(updated.confidence, ParsedItemConfidence.high);
+      expect(updated.lowConfidence, isFalse);
       expect(upsertedLinks.first.deletedAt, isNotNull);
       expect(upsertedLinks.last, isA<ParsedItemToTaskLink>());
     });
@@ -780,6 +783,533 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.output, contains('transcript must not be empty'));
+    });
+
+    test('executeTool reports an error for unknown tool names', () async {
+      final result = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: 'no_such_tool',
+        args: const {},
+      );
+
+      expect(result.success, isFalse);
+      expect(result.output, contains('unknown tool "no_such_tool"'));
+    });
+
+    test(
+      'executeTool wraps unexpected exceptions and logs to DomainLogger',
+      () async {
+        when(() => agentRepository.getEntity(_agentId)).thenThrow(
+          StateError('boom'),
+        );
+
+        final result = await createService().executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.surfacePendingDecisions,
+          args: const {'dayId': 'dayplan-2026-05-25'},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('boom'));
+        verify(
+          () => domainLogger.error(
+            LogDomains.agentWorkflow,
+            'day-agent capture tool failed',
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('executeTool dispatches matchToCorpus', () async {
+      journalEntities['task-1'] = _task(
+        id: 'task-1',
+        title: 'Prep demo',
+        status: _openStatus(),
+      );
+      when(() => fts5Db.watchFullTextMatches('prep')).thenAnswer(
+        (_) => Stream.value(['task-1']),
+      );
+
+      final result = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.matchToCorpus,
+        args: const {'phrase': 'prep'},
+      );
+
+      expect(result.success, isTrue);
+      final decoded = jsonDecode(result.output) as Map<String, dynamic>;
+      final candidates = decoded['candidates'] as List<dynamic>;
+      expect(candidates, hasLength(1));
+      expect(decoded['best'], isNotNull);
+    });
+
+    test(
+      'executeTool dispatches link, break, surface, and apply tools',
+      () async {
+        final parsedItem =
+            AgentDomainEntity.parsedItem(
+                  id: 'parsed-1',
+                  agentId: _agentId,
+                  captureId: 'capture-1',
+                  kind: ParsedItemKind.newTask,
+                  title: 'Prep demo',
+                  categoryId: 'work',
+                  confidence: ParsedItemConfidence.low,
+                  confidenceScore: 0.2,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as ParsedItemEntity;
+        agentEntities[parsedItem.id] = parsedItem;
+        journalEntities['task-1'] = _task(
+          id: 'task-1',
+          title: 'Prep demo',
+          status: _openStatus(),
+        );
+
+        final service = createService();
+
+        final linkResult = await service.executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.linkCapturePhraseToTask,
+          args: const {'captureItemId': 'parsed-1', 'taskId': 'task-1'},
+        );
+        expect(linkResult.success, isTrue);
+        expect(
+          jsonDecode(linkResult.output) as Map<String, dynamic>,
+          containsPair('item', isA<Map<String, dynamic>>()),
+        );
+
+        final breakResult = await service.executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.breakCaptureLink,
+          args: const {'captureItemId': 'parsed-1'},
+        );
+        expect(breakResult.success, isTrue);
+
+        final surfaceResult = await service.executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.surfacePendingDecisions,
+          args: const {'dayId': 'dayplan-2026-05-25'},
+        );
+        expect(surfaceResult.success, isTrue);
+        final surfaceJson =
+            jsonDecode(surfaceResult.output) as Map<String, dynamic>;
+        expect(surfaceJson['items'], isA<List<dynamic>>());
+
+        final triageResult = await withClock(Clock.fixed(_now), () {
+          return service.executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.applyTriage,
+            args: const {'taskId': 'task-1', 'action': 'today'},
+          );
+        });
+        expect(triageResult.success, isTrue);
+        final triageJson =
+            jsonDecode(triageResult.output) as Map<String, dynamic>;
+        expect(triageJson['taskId'], 'task-1');
+        expect(triageJson['due'], isNotNull);
+      },
+    );
+
+    test('getCapture returns null for non-capture entities', () async {
+      final identity = makeTestIdentity(
+        id: 'other-agent',
+        agentId: 'other-agent',
+        kind: AgentKinds.dayAgent,
+      );
+      agentEntities[identity.id] = identity;
+
+      final result = await createService().getCapture('other-agent');
+
+      expect(result, isNull);
+    });
+
+    test('parsedItemsForCapture returns empty when no links exist', () async {
+      final items = await createService().parsedItemsForCapture('capture-x');
+
+      expect(items, isEmpty);
+    });
+
+    test('persistParsedItems rejects when the capture is missing', () async {
+      await expectLater(
+        createService().persistParsedItems(
+          agentId: _agentId,
+          captureId: 'capture-missing',
+          rawItems: const [
+            {
+              'title': 'X',
+              'categoryId': 'work',
+              'confidenceScore': 0.1,
+            },
+          ],
+        ),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test('persistParsedItems rejects when the agent is missing', () async {
+      await expectLater(
+        createService().persistParsedItems(
+          agentId: 'agent-missing',
+          captureId: 'capture-1',
+          rawItems: const [],
+        ),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test(
+      'persistParsedItems demotes invalid matched task to a new item',
+      () async {
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: _agentId,
+                  transcript: 'prep',
+                  capturedAt: _now,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+
+        final items = await createService().persistParsedItems(
+          agentId: _agentId,
+          captureId: capture.id,
+          rawItems: const [
+            {
+              'kind': 'matched',
+              'title': 'Phantom',
+              'categoryId': 'work',
+              'confidenceScore': 0.9,
+              'matchedTaskId': 'task-does-not-exist',
+            },
+          ],
+        );
+
+        expect(items, hasLength(1));
+        expect(items.single.kind, ParsedItemKind.newTask);
+        expect(items.single.matchedTaskId, isNull);
+        expect(items.single.confidence, ParsedItemConfidence.low);
+        expect(items.single.lowConfidence, isTrue);
+      },
+    );
+
+    test('persistParsedItems skips items with a disallowed category', () async {
+      final capture =
+          AgentDomainEntity.capture(
+                id: 'capture-1',
+                agentId: _agentId,
+                transcript: 'prep',
+                capturedAt: _now,
+                createdAt: _now,
+                vectorClock: null,
+              )
+              as CaptureEntity;
+      agentEntities[capture.id] = capture;
+
+      final items = await createService().persistParsedItems(
+        agentId: _agentId,
+        captureId: capture.id,
+        rawItems: const [
+          {
+            'kind': 'newTask',
+            'title': 'Home item',
+            'categoryId': 'home',
+            'confidenceScore': 0.9,
+          },
+          {
+            'kind': 'newTask',
+            'title': 'Work item',
+            'categoryId': 'work',
+            'confidenceScore': 0.1,
+          },
+          'not-a-map',
+        ],
+      );
+
+      expect(items.map((item) => item.title), ['Work item']);
+    });
+
+    test('persistParsedItems rejects an unknown kind value', () async {
+      final capture =
+          AgentDomainEntity.capture(
+                id: 'capture-1',
+                agentId: _agentId,
+                transcript: 'prep',
+                capturedAt: _now,
+                createdAt: _now,
+                vectorClock: null,
+              )
+              as CaptureEntity;
+      agentEntities[capture.id] = capture;
+
+      await expectLater(
+        createService().persistParsedItems(
+          agentId: _agentId,
+          captureId: capture.id,
+          rawItems: const [
+            {
+              'kind': 'bogus',
+              'title': 'X',
+              'categoryId': 'work',
+              'confidenceScore': 0.1,
+            },
+          ],
+        ),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test('persistParsedItems rejects items with an invalid score', () async {
+      final capture =
+          AgentDomainEntity.capture(
+                id: 'capture-1',
+                agentId: _agentId,
+                transcript: 'prep',
+                capturedAt: _now,
+                createdAt: _now,
+                vectorClock: null,
+              )
+              as CaptureEntity;
+      agentEntities[capture.id] = capture;
+
+      await expectLater(
+        createService().persistParsedItems(
+          agentId: _agentId,
+          captureId: capture.id,
+          rawItems: const [
+            {
+              'title': 'X',
+              'categoryId': 'work',
+              'confidenceScore': 1.5,
+            },
+          ],
+        ),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test(
+      'linkCapturePhraseToTask rejects when the parsed item is missing',
+      () async {
+        await expectLater(
+          createService().linkCapturePhraseToTask(
+            captureItemId: 'parsed-missing',
+            taskId: 'task-1',
+          ),
+          throwsA(isA<DayAgentCaptureException>()),
+        );
+      },
+    );
+
+    test('linkCapturePhraseToTask rejects when the task is missing', () async {
+      final parsedItem =
+          AgentDomainEntity.parsedItem(
+                id: 'parsed-1',
+                agentId: _agentId,
+                captureId: 'capture-1',
+                kind: ParsedItemKind.newTask,
+                title: 'Prep demo',
+                categoryId: 'work',
+                confidence: ParsedItemConfidence.low,
+                confidenceScore: 0.2,
+                createdAt: _now,
+                vectorClock: null,
+              )
+              as ParsedItemEntity;
+      agentEntities[parsedItem.id] = parsedItem;
+
+      await expectLater(
+        createService().linkCapturePhraseToTask(
+          captureItemId: 'parsed-1',
+          taskId: 'task-missing',
+        ),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test('breakCaptureLink rejects when the parsed item is missing', () async {
+      await expectLater(
+        createService().breakCaptureLink('parsed-missing'),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test('matchToCorpus rejects empty phrases', () async {
+      await expectLater(
+        createService().matchToCorpus(agentId: _agentId, phrase: '   '),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test('matchToCorpus returns empty when FTS has no results', () async {
+      when(() => fts5Db.watchFullTextMatches('demo')).thenAnswer(
+        (_) => Stream.value(const <String>[]),
+      );
+
+      final matches = await createService().matchToCorpus(
+        agentId: _agentId,
+        phrase: 'demo',
+      );
+
+      expect(matches, isEmpty);
+    });
+
+    test('surfacePendingDecisions rejects invalid dayIds', () async {
+      await expectLater(
+        createService().surfacePendingDecisions(
+          agentId: _agentId,
+          dayId: 'not-a-day',
+        ),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test('applyTriage rejects unknown actions', () async {
+      journalEntities['task-1'] = _task(
+        id: 'task-1',
+        title: 'Prep demo',
+        status: _openStatus(),
+      );
+
+      await expectLater(
+        createService().applyTriage(taskId: 'task-1', action: 'mystery'),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test('applyTriage throws when the task is missing', () async {
+      await expectLater(
+        createService().applyTriage(taskId: 'task-missing', action: 'today'),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+    });
+
+    test('applyTriage today sets due to end of day', () async {
+      journalEntities['task-1'] = _task(
+        id: 'task-1',
+        title: 'Prep demo',
+        status: _openStatus(),
+      );
+
+      final task = await withClock(Clock.fixed(_now), () {
+        return createService().applyTriage(
+          taskId: 'task-1',
+          action: 'today',
+        );
+      });
+
+      final due = task.data.due!;
+      expect(due.year, _now.year);
+      expect(due.month, _now.month);
+      expect(due.day, _now.day);
+      expect(due.hour, 23);
+      expect(due.minute, 59);
+    });
+
+    test('applyTriage today reopens blocked and on-hold tasks', () async {
+      final statuses = <String, TaskStatus>{
+        'task-blocked': TaskStatus.blocked(
+          id: 'status-blocked',
+          createdAt: DateTime(2026, 5, 24),
+          utcOffset: 120,
+          reason: 'waiting',
+        ),
+        'task-on-hold': TaskStatus.onHold(
+          id: 'status-on-hold',
+          createdAt: DateTime(2026, 5, 24),
+          utcOffset: 120,
+          reason: 'parked',
+        ),
+      };
+
+      for (final entry in statuses.entries) {
+        journalEntities[entry.key] =
+            JournalEntity.task(
+                  meta: Metadata(
+                    id: entry.key,
+                    createdAt: DateTime(2026, 5, 24),
+                    updatedAt: DateTime(2026, 5, 24),
+                    dateFrom: DateTime(2026, 5, 24),
+                    dateTo: DateTime(2026, 5, 24, 1),
+                    categoryId: 'work',
+                  ),
+                  data: TaskData(
+                    status: entry.value,
+                    statusHistory: [entry.value],
+                    dateFrom: DateTime(2026, 5, 24),
+                    dateTo: DateTime(2026, 5, 24, 1),
+                    title: 'Blocked',
+                  ),
+                )
+                as Task;
+
+        final task = await withClock(Clock.fixed(_now), () {
+          return createService().applyTriage(
+            taskId: entry.key,
+            action: 'today',
+          );
+        });
+
+        expect(task.data.status, isA<TaskOpen>());
+        expect(task.data.statusHistory, hasLength(2));
+      }
+    });
+
+    test('applyTriage doNow and drop drive status transitions', () async {
+      journalEntities['task-1'] = _task(
+        id: 'task-1',
+        title: 'Prep demo',
+        status: _openStatus(),
+      );
+
+      final service = createService();
+
+      final inProgress = await withClock(Clock.fixed(_now), () {
+        return service.applyTriage(taskId: 'task-1', action: 'do_now');
+      });
+      expect(inProgress.data.status, isA<TaskInProgress>());
+
+      final dropped = await withClock(Clock.fixed(_now), () {
+        return service.applyTriage(taskId: 'task-1', action: 'drop');
+      });
+      expect(dropped.data.status, isA<TaskRejected>());
+    });
+
+    test('applyTriage defer sets due to end of deferTo day', () async {
+      journalEntities['task-1'] = _task(
+        id: 'task-1',
+        title: 'Prep demo',
+        status: _openStatus(),
+      );
+
+      final task = await withClock(Clock.fixed(_now), () {
+        return createService().applyTriage(
+          taskId: 'task-1',
+          action: 'defer',
+          deferTo: DateTime(2026, 6, 1, 10),
+        );
+      });
+
+      expect(task.data.due, DateTime(2026, 6, 1, 23, 59, 59, 999));
     });
   });
 }

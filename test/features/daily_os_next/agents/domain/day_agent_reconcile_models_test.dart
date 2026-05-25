@@ -247,7 +247,7 @@ void _expectTokenRoundTrip() {
 
     test('skips a whitespace-only capture id and returns null', () {
       expect(
-        captureIdFromTriggerTokens({'${dayAgentCaptureSubmittedPrefix}   '}),
+        captureIdFromTriggerTokens({'$dayAgentCaptureSubmittedPrefix   '}),
         isNull,
       );
     });
@@ -258,7 +258,6 @@ void _expectProjections() {
   group('pendingItemFromTask', () {
     test('projects task fields onto a pending item', () {
       final task = _task(
-        id: 'task-1',
         title: 'Prep demo',
         due: DateTime(2026, 5, 25, 17),
       );

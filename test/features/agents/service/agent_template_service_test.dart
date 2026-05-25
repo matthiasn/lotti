@@ -3630,6 +3630,123 @@ void main() {
     });
   });
 
+  group('seedDayAgentCaptureReconcileDirective', () {
+    test('no-ops when the day-agent template is missing', () async {
+      when(
+        () => mockRepo.getEntity(dayAgentTemplateId),
+      ).thenAnswer((_) async => null);
+
+      await service.seedDayAgentCaptureReconcileDirective();
+
+      verifyNever(() => mockRepo.getActiveTemplateVersion(any()));
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test('no-ops when there is no active version', () async {
+      final template = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+      );
+      when(
+        () => mockRepo.getEntity(dayAgentTemplateId),
+      ).thenAnswer((_) async => template);
+      when(
+        () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
+      ).thenAnswer((_) async => null);
+
+      await service.seedDayAgentCaptureReconcileDirective();
+
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test(
+      'no-ops when the active version already has the current directives',
+      () async {
+        final template = makeTestTemplate(
+          id: dayAgentTemplateId,
+          agentId: dayAgentTemplateId,
+          kind: AgentTemplateKind.dayAgent,
+        );
+        final version = makeTestTemplateVersion(
+          id: 'day-agent-v1',
+          agentId: dayAgentTemplateId,
+          generalDirective: dayAgentGeneralDirective,
+          reportDirective: dayAgentReportDirective,
+        );
+        when(
+          () => mockRepo.getEntity(dayAgentTemplateId),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
+        ).thenAnswer((_) async => version);
+
+        await service.seedDayAgentCaptureReconcileDirective();
+
+        verifyNever(() => mockSync.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'creates a new version when the active directives are stale',
+      () async {
+        final template = makeTestTemplate(
+          id: dayAgentTemplateId,
+          agentId: dayAgentTemplateId,
+          kind: AgentTemplateKind.dayAgent,
+        );
+        final staleVersion = makeTestTemplateVersion(
+          id: 'day-agent-v1',
+          agentId: dayAgentTemplateId,
+          directives: 'Legacy scaffold',
+          generalDirective: 'old general directive',
+          reportDirective: 'old report directive',
+        );
+        when(
+          () => mockRepo.getEntity(dayAgentTemplateId),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockRepo.getActiveTemplateVersion(dayAgentTemplateId),
+        ).thenAnswer((_) async => staleVersion);
+        when(
+          () => mockRepo.getTemplateHead(dayAgentTemplateId),
+        ).thenAnswer(
+          (_) async => makeTestTemplateHead(
+            id: 'day-agent-head',
+            agentId: dayAgentTemplateId,
+            versionId: staleVersion.id,
+          ),
+        );
+        when(
+          () => mockRepo.getEntity(staleVersion.id),
+        ).thenAnswer((_) async => staleVersion);
+        when(
+          () => mockRepo.getNextTemplateVersionNumber(dayAgentTemplateId),
+        ).thenAnswer((_) async => 2);
+        when(
+          () => mockRepo.getEntitiesByAgentId(
+            dayAgentTemplateId,
+            type: AgentEntityTypes.agentTemplateVersion,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [staleVersion]);
+
+        await service.seedDayAgentCaptureReconcileDirective();
+
+        final captured = verify(
+          () => mockSync.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        final versions = captured.whereType<AgentTemplateVersionEntity>();
+        final newActive = versions.singleWhere(
+          (v) => v.status == AgentTemplateVersionStatus.active,
+        );
+        expect(newActive.generalDirective, dayAgentGeneralDirective);
+        expect(newActive.reportDirective, dayAgentReportDirective);
+        expect(newActive.directives, 'Legacy scaffold');
+      },
+    );
+  });
+
   group('getVersionHistory', () {
     test('returns versions sorted by version number descending', () async {
       final v1 = makeTestTemplateVersion(id: 'v1');

@@ -34,5 +34,63 @@ void main() {
     test('keeps all wire names distinct', () {
       expect(toolNames.toSet(), hasLength(toolNames.length));
     });
+
+    test('groups workflow-routed tools by implementation owner', () {
+      expect(
+        DayAgentToolNames.foundationHandlerTools,
+        {DayAgentToolNames.setNextWake},
+      );
+      expect(
+        DayAgentToolNames.captureReconcileTools,
+        {
+          DayAgentToolNames.submitCapture,
+          DayAgentToolNames.parseCaptureToItems,
+          DayAgentToolNames.matchToCorpus,
+          DayAgentToolNames.linkCapturePhraseToTask,
+          DayAgentToolNames.breakCaptureLink,
+          DayAgentToolNames.surfacePendingDecisions,
+          DayAgentToolNames.applyTriage,
+          DayAgentToolNames.createTaskFromPhrase,
+        },
+      );
+      expect(
+        DayAgentToolNames.workflowHandlerTools,
+        {
+          DayAgentToolNames.setNextWake,
+          ...DayAgentToolNames.captureReconcileTools,
+        },
+      );
+    });
+
+    test('classifies routed tools consistently', () {
+      expect(
+        DayAgentToolNames.isWorkflowHandlerTool(
+          DayAgentToolNames.recordObservations,
+        ),
+        isFalse,
+      );
+      expect(
+        DayAgentToolNames.isWorkflowHandlerTool(DayAgentToolNames.setNextWake),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isCaptureReconcileTool(
+          DayAgentToolNames.submitCapture,
+        ),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isCaptureReconcileTool(DayAgentToolNames.setNextWake),
+        isFalse,
+      );
+      expect(
+        DayAgentToolNames.isSetNextWakeTool(DayAgentToolNames.setNextWake),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isSetNextWakeTool(DayAgentToolNames.submitCapture),
+        isFalse,
+      );
+    });
   });
 }
