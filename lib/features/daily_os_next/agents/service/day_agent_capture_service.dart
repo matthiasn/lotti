@@ -147,7 +147,7 @@ class DayAgentCaptureService {
 
     orchestrator.enqueueManualWake(
       agentId: agentId,
-      reason: 'capture_submitted',
+      reason: dayAgentCaptureSubmittedReason,
       triggerTokens: {dayAgentCaptureSubmittedToken(capture.id)},
     );
 
@@ -332,9 +332,7 @@ class DayAgentCaptureService {
 
     final now = clock.now();
     final updated = switch (action.trim()) {
-      'today' => entity.copyWith(
-        data: entity.data.copyWith(due: _endOfDay(now)),
-      ),
+      'today' => _withDueToday(entity, now),
       'doNow' || 'do_now' => _withStatus(
         entity,
         TaskStatus.inProgress(
@@ -394,10 +392,8 @@ class DayAgentCaptureService {
       kind: parsedItem.kind == ParsedItemKind.newTask
           ? ParsedItemKind.matched
           : parsedItem.kind,
-      confidence: parsedItem.confidence == ParsedItemConfidence.low
-          ? ParsedItemConfidence.medium
-          : parsedItem.confidence,
-      lowConfidence: true,
+      confidence: ParsedItemConfidence.high,
+      lowConfidence: false,
     );
 
     await syncService.runInTransaction(() async {
@@ -633,9 +629,19 @@ class DayAgentCaptureService {
     final score = _requiredScore(data);
     final classification = classifyParsedItemMatch(score);
     var matchedTaskId = _optionalString(data['matchedTaskId']);
-    var kind =
-        parseEnumByName(ParsedItemKind.values, _optionalString(data['kind'])) ??
-        ParsedItemKind.newTask;
+    final rawKind = _optionalString(data['kind']);
+    final parsedKind = rawKind == null
+        ? null
+        : parseEnumByName(ParsedItemKind.values, rawKind);
+    if (rawKind != null && parsedKind == null) {
+      throw DayAgentCaptureException(
+        'kind must be one of '
+        '${ParsedItemKind.values.map((value) => value.name).join(', ')}',
+      );
+    }
+    var kind = parsedKind ?? ParsedItemKind.newTask;
+    var confidence = classification.confidence;
+    var lowConfidence = classification.lowConfidence;
 
     if (!classification.shouldAutoLink) {
       matchedTaskId = null;
@@ -648,9 +654,14 @@ class DayAgentCaptureService {
       if (matchedTask == null ||
           _isClosedTask(matchedTask) ||
           !_categoryAllowed(matchedTask.meta.categoryId, allowedCategoryIds)) {
-        return null;
+        matchedTaskId = null;
+        matchedTask = null;
+        kind = ParsedItemKind.newTask;
+        confidence = ParsedItemConfidence.low;
+        lowConfidence = true;
+      } else if (kind == ParsedItemKind.newTask) {
+        kind = ParsedItemKind.matched;
       }
-      if (kind == ParsedItemKind.newTask) kind = ParsedItemKind.matched;
     }
 
     final item =
@@ -661,11 +672,11 @@ class DayAgentCaptureService {
               kind: kind,
               title: title,
               categoryId: matchedTask?.meta.categoryId ?? categoryId,
-              confidence: classification.confidence,
+              confidence: confidence,
               confidenceScore: score,
               createdAt: now,
               vectorClock: null,
-              lowConfidence: classification.lowConfidence,
+              lowConfidence: lowConfidence,
               spokenPhrase: _optionalString(data['spokenPhrase']),
               matchedTaskId: matchedTaskId,
               estimateMinutes: _optionalInt(data['estimateMinutes']),
@@ -756,6 +767,24 @@ class DayAgentCaptureService {
     );
   }
 
+  static Task _withDueToday(Task task, DateTime now) {
+    final updated = task.copyWith(
+      data: task.data.copyWith(due: _endOfDay(now)),
+    );
+    final status = task.data.status.toDbString;
+    if (status == 'BLOCKED' || status == 'ON HOLD') {
+      return _withStatus(
+        updated,
+        TaskStatus.open(
+          id: _uuid.v4(),
+          createdAt: now,
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+      );
+    }
+    return updated;
+  }
+
   static Map<String, Object?> _parsedItemJson(ParsedItemEntity item) => {
     'id': item.id,
     'captureId': item.captureId,
@@ -833,7 +862,8 @@ class DayAgentCaptureService {
   }
 
   static bool _isClosedTask(Task task) {
-    return task.data.status is TaskDone || task.data.status is TaskRejected;
+    const closedTaskStatuses = {'DONE', 'REJECTED'};
+    return closedTaskStatuses.contains(task.data.status.toDbString);
   }
 
   static DateTime _endOfDay(DateTime date) {

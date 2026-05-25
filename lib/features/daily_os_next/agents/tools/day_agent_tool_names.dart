@@ -29,4 +29,42 @@ abstract final class DayAgentToolNames {
 
   /// Proposes a new task from a capture phrase.
   static const createTaskFromPhrase = 'create_task_from_phrase';
+
+  /// Foundation tools implemented by the day-agent workflow itself.
+  static const foundationHandlerTools = <String>{
+    setNextWake,
+  };
+
+  /// Capture/reconcile tools delegated to the capture service.
+  static const captureReconcileTools = <String>{
+    submitCapture,
+    parseCaptureToItems,
+    matchToCorpus,
+    linkCapturePhraseToTask,
+    breakCaptureLink,
+    surfacePendingDecisions,
+    applyTriage,
+    createTaskFromPhrase,
+  };
+
+  /// Tools that require workflow-level handling instead of local strategy state.
+  static const workflowHandlerTools = <String>{
+    ...foundationHandlerTools,
+    ...captureReconcileTools,
+  };
+
+  /// Whether [name] should be routed through the workflow handler.
+  static bool isWorkflowHandlerTool(String name) {
+    return workflowHandlerTools.contains(name);
+  }
+
+  /// Whether [name] is handled by the capture/reconcile service.
+  static bool isCaptureReconcileTool(String name) {
+    return captureReconcileTools.contains(name);
+  }
+
+  /// Whether [name] is the foundation wake scheduling tool.
+  static bool isSetNextWakeTool(String name) {
+    return foundationHandlerTools.contains(name);
+  }
 }

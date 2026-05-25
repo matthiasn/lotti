@@ -5,6 +5,9 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 /// Wake trigger token prefix used when a capture should be parsed.
 const dayAgentCaptureSubmittedPrefix = 'capture_submitted:';
 
+/// Wake scheduling reason used when a capture was submitted.
+const dayAgentCaptureSubmittedReason = 'capture_submitted';
+
 /// Minimum score that becomes an auto-linked match.
 const dayAgentHighConfidenceThreshold = 0.75;
 

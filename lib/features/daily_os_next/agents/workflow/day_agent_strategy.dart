@@ -69,17 +69,6 @@ class DayAgentStrategy extends ConversationStrategy {
   String? _finalResponse;
 
   static const _uuid = Uuid();
-  static const Set<String> _handlerTools = {
-    DayAgentToolNames.setNextWake,
-    DayAgentToolNames.submitCapture,
-    DayAgentToolNames.parseCaptureToItems,
-    DayAgentToolNames.matchToCorpus,
-    DayAgentToolNames.linkCapturePhraseToTask,
-    DayAgentToolNames.breakCaptureLink,
-    DayAgentToolNames.surfacePendingDecisions,
-    DayAgentToolNames.applyTriage,
-    DayAgentToolNames.createTaskFromPhrase,
-  };
 
   /// Returns observations accumulated from `record_observations` calls.
   List<ObservationRecord> extractObservations() =>
@@ -126,7 +115,7 @@ class DayAgentStrategy extends ConversationStrategy {
         continue;
       }
 
-      if (_handlerTools.contains(toolName)) {
+      if (DayAgentToolNames.isWorkflowHandlerTool(toolName)) {
         final result = await executeToolHandler(toolName, args, manager);
         manager.addToolResponse(toolCallId: call.id, response: result.output);
         await _recordToolResultMessage(

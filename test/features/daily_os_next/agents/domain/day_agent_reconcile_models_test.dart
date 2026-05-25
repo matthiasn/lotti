@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 
@@ -161,6 +163,8 @@ void main() {
       tags: 'glados',
     );
   });
+
+  _expectMain();
 }
 
 int _rank(DayAgentPendingKind kind) {
@@ -170,4 +174,271 @@ int _rank(DayAgentPendingKind kind) {
     DayAgentPendingKind.missedRecurring => 2,
     DayAgentPendingKind.dueToday => 3,
   };
+}
+
+Task _task({
+  String id = 'task-1',
+  String title = 'Title',
+  String? categoryId = 'cat',
+  DateTime? due,
+}) {
+  final status = TaskStatus.open(
+    id: 'status-$id',
+    createdAt: DateTime(2026, 5, 25, 8),
+    utcOffset: 120,
+  );
+  return JournalEntity.task(
+        meta: Metadata(
+          id: id,
+          createdAt: DateTime(2026, 5, 25, 8),
+          updatedAt: DateTime(2026, 5, 25, 8),
+          dateFrom: DateTime(2026, 5, 25, 8),
+          dateTo: DateTime(2026, 5, 25, 9),
+          categoryId: categoryId,
+        ),
+        data: TaskData(
+          status: status,
+          statusHistory: [status],
+          dateFrom: DateTime(2026, 5, 25, 8),
+          dateTo: DateTime(2026, 5, 25, 9),
+          title: title,
+          due: due,
+        ),
+      )
+      as Task;
+}
+
+void _expectTokenRoundTrip() {
+  group('dayAgentCaptureSubmittedToken', () {
+    test('prefixes the capture id', () {
+      expect(
+        dayAgentCaptureSubmittedToken('capture-abc'),
+        '${dayAgentCaptureSubmittedPrefix}capture-abc',
+      );
+    });
+  });
+
+  group('captureIdFromTriggerTokens', () {
+    test('returns the capture id when a token has the prefix', () {
+      final result = captureIdFromTriggerTokens({
+        'day-token',
+        dayAgentCaptureSubmittedToken('capture-1'),
+      });
+      expect(result, 'capture-1');
+    });
+
+    test('returns null when no token uses the prefix', () {
+      expect(
+        captureIdFromTriggerTokens({'other', 'misc'}),
+        isNull,
+      );
+    });
+
+    test('returns null on an empty trigger-token set', () {
+      expect(captureIdFromTriggerTokens(<String>{}), isNull);
+    });
+
+    test('skips a prefix-only token without a capture id', () {
+      expect(
+        captureIdFromTriggerTokens({dayAgentCaptureSubmittedPrefix}),
+        isNull,
+      );
+    });
+
+    test('skips a whitespace-only capture id and returns null', () {
+      expect(
+        captureIdFromTriggerTokens({'${dayAgentCaptureSubmittedPrefix}   '}),
+        isNull,
+      );
+    });
+  });
+}
+
+void _expectProjections() {
+  group('pendingItemFromTask', () {
+    test('projects task fields onto a pending item', () {
+      final task = _task(
+        id: 'task-1',
+        title: 'Prep demo',
+        due: DateTime(2026, 5, 25, 17),
+      );
+      final item = pendingItemFromTask(task, DayAgentPendingKind.overdue);
+
+      expect(item.taskId, 'task-1');
+      expect(item.title, 'Prep demo');
+      expect(item.kind, DayAgentPendingKind.overdue);
+      expect(item.status, 'OPEN');
+      expect(item.categoryId, 'cat');
+      expect(item.due, DateTime(2026, 5, 25, 17));
+    });
+
+    test('toJson serializes every field including nullable due', () {
+      const item = DayAgentPendingItem(
+        taskId: 'task-1',
+        title: 'Prep demo',
+        kind: DayAgentPendingKind.inProgress,
+        status: 'IN PROGRESS',
+        categoryId: 'cat',
+      );
+
+      expect(item.toJson(), <String, Object?>{
+        'taskId': 'task-1',
+        'title': 'Prep demo',
+        'kind': 'inProgress',
+        'status': 'IN PROGRESS',
+        'categoryId': 'cat',
+        'due': null,
+      });
+    });
+
+    test('toJson encodes due as ISO-8601 when set', () {
+      final item = DayAgentPendingItem(
+        taskId: 'task-1',
+        title: 'Prep demo',
+        kind: DayAgentPendingKind.dueToday,
+        status: 'OPEN',
+        categoryId: null,
+        due: DateTime(2026, 5, 25, 23, 59, 59, 999),
+      );
+
+      expect(
+        item.toJson()['due'],
+        DateTime(2026, 5, 25, 23, 59, 59, 999).toIso8601String(),
+      );
+      expect(item.toJson()['categoryId'], isNull);
+    });
+  });
+
+  group('corpusMatchFromTask', () {
+    test('projects task fields onto a corpus match', () {
+      final task = _task(
+        id: 'task-2',
+        title: 'Review inbox',
+        due: DateTime(2026, 5, 25, 12),
+      );
+      final match = corpusMatchFromTask(task, 0.42);
+
+      expect(match.taskId, 'task-2');
+      expect(match.title, 'Review inbox');
+      expect(match.score, 0.42);
+      expect(match.status, 'OPEN');
+      expect(match.categoryId, 'cat');
+      expect(match.due, DateTime(2026, 5, 25, 12));
+    });
+
+    test('toJson serializes every field', () {
+      final match = corpusMatchFromTask(
+        _task(
+          id: 'task-3',
+          title: 'Sweep',
+          categoryId: null,
+          due: DateTime(2026, 5, 26, 9),
+        ),
+        0.5,
+      );
+
+      expect(match.toJson(), <String, Object?>{
+        'taskId': 'task-3',
+        'title': 'Sweep',
+        'score': 0.5,
+        'status': 'OPEN',
+        'categoryId': null,
+        'due': DateTime(2026, 5, 26, 9).toIso8601String(),
+      });
+    });
+  });
+}
+
+void _expectDedupeAndSortEdges() {
+  group('dedupeAndSortPendingItems extras', () {
+    test('sorts equal-rank items by due ascending', () {
+      final items = dedupeAndSortPendingItems([
+        DayAgentPendingItem(
+          taskId: 'task-late',
+          title: 'Later',
+          kind: DayAgentPendingKind.overdue,
+          status: 'OPEN',
+          categoryId: 'cat',
+          due: DateTime(2026, 5, 20),
+        ),
+        DayAgentPendingItem(
+          taskId: 'task-early',
+          title: 'Earlier',
+          kind: DayAgentPendingKind.overdue,
+          status: 'OPEN',
+          categoryId: 'cat',
+          due: DateTime(2026, 5, 10),
+        ),
+      ]);
+
+      expect(items.map((item) => item.taskId), [
+        'task-early',
+        'task-late',
+      ]);
+    });
+
+    test('prefers items with a due date over null-due', () {
+      final items = dedupeAndSortPendingItems([
+        const DayAgentPendingItem(
+          taskId: 'task-no-due',
+          title: 'Z',
+          kind: DayAgentPendingKind.overdue,
+          status: 'OPEN',
+          categoryId: 'cat',
+        ),
+        DayAgentPendingItem(
+          taskId: 'task-due',
+          title: 'A',
+          kind: DayAgentPendingKind.overdue,
+          status: 'OPEN',
+          categoryId: 'cat',
+          due: DateTime(2026, 5, 20),
+        ),
+      ]);
+
+      expect(items.first.taskId, 'task-due');
+      expect(items.last.taskId, 'task-no-due');
+    });
+
+    test(
+      'breaks ties by lowercased title then taskId when due is missing',
+      () {
+        final items = dedupeAndSortPendingItems([
+          const DayAgentPendingItem(
+            taskId: 'task-bb',
+            title: 'beta',
+            kind: DayAgentPendingKind.dueToday,
+            status: 'OPEN',
+            categoryId: 'cat',
+          ),
+          const DayAgentPendingItem(
+            taskId: 'task-aa',
+            title: 'Alpha',
+            kind: DayAgentPendingKind.dueToday,
+            status: 'OPEN',
+            categoryId: 'cat',
+          ),
+          const DayAgentPendingItem(
+            taskId: 'task-ab',
+            title: 'alpha',
+            kind: DayAgentPendingKind.dueToday,
+            status: 'OPEN',
+            categoryId: 'cat',
+          ),
+        ]);
+
+        expect(items.map((item) => item.taskId), [
+          'task-aa',
+          'task-ab',
+          'task-bb',
+        ]);
+      },
+    );
+  });
+}
+
+void _expectMain() {
+  _expectTokenRoundTrip();
+  _expectProjections();
+  _expectDedupeAndSortEdges();
 }

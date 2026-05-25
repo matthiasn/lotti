@@ -302,7 +302,7 @@ class DayAgentWorkflow {
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
-    if (toolName != DayAgentToolNames.setNextWake) {
+    if (!DayAgentToolNames.isSetNextWakeTool(toolName)) {
       final service = captureService;
       if (service == null) {
         return const DayAgentToolResult(
