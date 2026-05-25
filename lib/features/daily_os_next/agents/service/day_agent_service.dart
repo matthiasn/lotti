@@ -217,26 +217,10 @@ class DayAgentService {
   }
 
   Future<AgentIdentityEntity?> _findDayAgentForDayId(String dayId) async {
-    final candidates =
-        (await agentService.listAgents(
-          lifecycle: AgentLifecycle.active,
-        )).where((agent) => agent.kind == _agentKind).toList()..sort((a, b) {
-          final byCreatedAt = b.createdAt.compareTo(a.createdAt);
-          if (byCreatedAt != 0) return byCreatedAt;
-          return b.agentId.compareTo(a.agentId);
-        });
-
-    if (candidates.isEmpty) return null;
-
-    final statesByAgentId = await repository.getAgentStatesByAgentIds(
-      candidates.map((agent) => agent.agentId).toList(),
+    return repository.getActiveAgentByKindAndActiveDayId(
+      kind: _agentKind,
+      activeDayId: dayId,
     );
-    for (final candidate in candidates) {
-      if (statesByAgentId[candidate.agentId]?.slots.activeDayId == dayId) {
-        return candidate;
-      }
-    }
-    return null;
   }
 
   Future<void> _hydrateThrottleDeadline(String agentId) async {

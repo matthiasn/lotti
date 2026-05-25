@@ -74,6 +74,7 @@ class DayAgentWorkflow {
   static const _uuid = Uuid();
   static const minScheduledWakeLeadTime = Duration(minutes: 15);
   static const maxScheduledWakeWritesPerDay = 4;
+  static const _maxRecentObservationCount = 20;
 
   void _log(String message, {String? subDomain}) {
     domainLogger.log(
@@ -120,7 +121,10 @@ class DayAgentWorkflow {
       agentId,
       AgentMessageKind.observation,
     );
-    final observationPayloads = await _resolveObservationPayloads(observations);
+    final recentObservations = _recentObservations(observations);
+    final observationPayloads = await _resolveObservationPayloads(
+      recentObservations,
+    );
     final templateCtx = await _resolveTemplate(agentId);
 
     final profileResolver = ProfileResolver(
@@ -147,7 +151,7 @@ class DayAgentWorkflow {
       dayId: dayId,
       planDate: dayDate,
       triggerTokens: triggerTokens,
-      observations: observations,
+      observations: recentObservations,
       observationPayloads: observationPayloads,
     );
 
@@ -241,6 +245,7 @@ class DayAgentWorkflow {
             updatedAt: now,
             consecutiveFailureCount: 0,
             wakeCounter: latestState.wakeCounter + 1,
+            scheduledWakeAt: _remainingScheduledWakeAt(latestState, now),
           ),
         );
       });
@@ -260,6 +265,7 @@ class DayAgentWorkflow {
             revision: latestState.revision + 1,
             updatedAt: now,
             consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
+            scheduledWakeAt: _remainingScheduledWakeAt(latestState, now),
           ),
         );
       } catch (stateError, stackTrace) {
@@ -481,7 +487,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       'planDate': planDate.toIso8601String(),
       'triggerTokens': triggerTokens.toList()..sort(),
       'recentObservations': [
-        for (final observation in observations.take(20))
+        for (final observation in observations)
           {
             'createdAt': observation.createdAt.toIso8601String(),
             'text': _extractPayloadText(
@@ -671,6 +677,32 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       if (content != null && content.isNotEmpty) {
         return content;
       }
+    }
+    return null;
+  }
+
+  static List<AgentMessageEntity> _recentObservations(
+    List<AgentMessageEntity> observations,
+  ) {
+    final sorted = observations.toList()
+      ..sort((a, b) {
+        final byCreatedAt = a.createdAt.compareTo(b.createdAt);
+        if (byCreatedAt != 0) return byCreatedAt;
+        return a.id.compareTo(b.id);
+      });
+    if (sorted.length <= _maxRecentObservationCount) {
+      return sorted;
+    }
+    return sorted.sublist(sorted.length - _maxRecentObservationCount);
+  }
+
+  static DateTime? _remainingScheduledWakeAt(
+    AgentStateEntity state,
+    DateTime now,
+  ) {
+    final scheduledWakeAt = state.scheduledWakeAt;
+    if (scheduledWakeAt == null || scheduledWakeAt.isAfter(now)) {
+      return scheduledWakeAt;
     }
     return null;
   }

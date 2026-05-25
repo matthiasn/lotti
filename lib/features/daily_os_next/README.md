@@ -33,9 +33,13 @@ Runtime behavior:
   day.
 - `AgentSlots.activeDayId` stores the deterministic day subject ID
   (`dayplan-YYYY-MM-DD`).
+- Day-agent lookup is repository-backed by `activeDayId`; the service does not
+  hydrate every active day-agent state just to find one calendar day.
 - The shared template service seeds the `Shepherd` day-agent template.
 - `DayAgentWorkflow` runs the foundation wake with only private observations
   and self-scheduled wakes enabled.
+- Wakes consume any `scheduledWakeAt` timestamp that is no longer in the future
+  so app restart does not replay an already-fired scheduled wake.
 - Future Daily OS Next planning, reconcile, refine, commit, and shutdown tools
   should be added under this feature without importing `features/daily_os`.
 

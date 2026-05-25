@@ -184,5 +184,94 @@ void main() {
               as String;
       expect(response, contains('unknown tool'));
     });
+
+    test(
+      'continues tool processing when assistant message persistence fails',
+      () async {
+        var writeCount = 0;
+        when(() => syncService.upsertEntity(any())).thenAnswer((_) async {
+          writeCount++;
+          if (writeCount == 1) {
+            throw StateError('assistant write failed');
+          }
+        });
+        final sut = strategy();
+
+        await sut.processToolCalls(
+          toolCalls: [
+            _toolCall(
+              name: DayAgentToolNames.recordObservations,
+              args: {
+                'observations': ['Keep the wake useful.'],
+              },
+            ),
+          ],
+          manager: manager,
+        );
+
+        expect(sut.extractObservations().single.text, 'Keep the wake useful.');
+        verify(
+          () => manager.addToolResponse(
+            toolCallId: 'call-1',
+            response: 'Recorded 1 observation(s).',
+          ),
+        ).called(1);
+        final errorMessage =
+            verify(
+                  () => domainLogger.error(
+                    any(),
+                    captureAny(),
+                    error: any(named: 'error'),
+                    stackTrace: any(named: 'stackTrace'),
+                    subDomain: any(named: 'subDomain'),
+                  ),
+                ).captured.single
+                as String;
+        expect(errorMessage, contains('assistant/thought'));
+      },
+    );
+
+    test(
+      'continues tool processing when tool-result persistence fails',
+      () async {
+        var writeCount = 0;
+        when(() => syncService.upsertEntity(any())).thenAnswer((_) async {
+          writeCount++;
+          if (writeCount == 4) {
+            throw StateError('tool result write failed');
+          }
+        });
+        final sut = strategy();
+
+        await sut.processToolCalls(
+          toolCalls: [
+            _toolCall(name: 'missing_tool', args: const {}),
+          ],
+          manager: manager,
+        );
+
+        final response =
+            verify(
+                  () => manager.addToolResponse(
+                    toolCallId: 'call-1',
+                    response: captureAny(named: 'response'),
+                  ),
+                ).captured.single
+                as String;
+        expect(response, contains('unknown tool'));
+        final errorMessage =
+            verify(
+                  () => domainLogger.error(
+                    any(),
+                    captureAny(),
+                    error: any(named: 'error'),
+                    stackTrace: any(named: 'stackTrace'),
+                    subDomain: any(named: 'subDomain'),
+                  ),
+                ).captured.single
+                as String;
+        expect(errorMessage, contains('tool-result'));
+      },
+    );
   });
 }

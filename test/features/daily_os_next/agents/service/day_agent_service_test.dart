@@ -103,6 +103,12 @@ void main() {
         dueAt: any(named: 'dueAt'),
       ),
     ).thenReturn(null);
+    when(
+      () => repository.getActiveAgentByKindAndActiveDayId(
+        kind: any(named: 'kind'),
+        activeDayId: any(named: 'activeDayId'),
+      ),
+    ).thenAnswer((_) async => null);
 
     service = DayAgentService(
       agentService: agentService,
@@ -128,9 +134,6 @@ void main() {
         profileId: 'profile-day',
       );
 
-      when(
-        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
-      ).thenAnswer((_) async => []);
       when(
         () => repository.getEntity(dayAgentTemplateId),
       ).thenAnswer((_) async => template);
@@ -197,12 +200,12 @@ void main() {
     test('rejects duplicate active day agent for the same date', () async {
       final existing = identity();
       when(
-        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
-      ).thenAnswer((_) async => [existing]);
-      when(
-        () => repository.getAgentStatesByAgentIds([agentId]),
+        () => repository.getActiveAgentByKindAndActiveDayId(
+          kind: AgentKinds.dayAgent,
+          activeDayId: dayId,
+        ),
       ).thenAnswer(
-        (_) async => {agentId: state(activeDayId: dayId)},
+        (_) async => existing,
       );
 
       await expectLater(
@@ -219,38 +222,29 @@ void main() {
       );
     });
 
-    test('getDayAgentForDate returns newest matching day agent', () async {
-      final older = identity(id: 'older', createdAt: DateTime(2026, 5, 24));
+    test('getDayAgentForDate uses targeted active-day lookup', () async {
       final newer = identity(id: 'newer', createdAt: DateTime(2026, 5, 25));
-      final other = identity(id: 'other', createdAt: DateTime(2026, 5, 26));
       when(
-        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
-      ).thenAnswer((_) async => [older, other, newer]);
-      when(
-        () => repository.getAgentStatesByAgentIds(['other', 'newer', 'older']),
+        () => repository.getActiveAgentByKindAndActiveDayId(
+          kind: AgentKinds.dayAgent,
+          activeDayId: dayId,
+        ),
       ).thenAnswer(
-        (_) async => {
-          'older': state(
-            id: 'state-older',
-            stateAgentId: 'older',
-            activeDayId: dayId,
-          ),
-          'newer': state(
-            id: 'state-newer',
-            stateAgentId: 'newer',
-            activeDayId: dayId,
-          ),
-          'other': state(
-            id: 'state-other',
-            stateAgentId: 'other',
-            activeDayId: 'dayplan-2026-05-26',
-          ),
-        },
+        (_) async => newer,
       );
 
       final result = await service.getDayAgentForDate(testDate);
 
       expect(result?.agentId, 'newer');
+      verify(
+        () => repository.getActiveAgentByKindAndActiveDayId(
+          kind: AgentKinds.dayAgent,
+          activeDayId: dayId,
+        ),
+      ).called(1);
+      verifyNever(
+        () => repository.getAgentStatesByAgentIds(any()),
+      );
     });
 
     test(
@@ -275,6 +269,94 @@ void main() {
           () => orchestrator.restorePendingWake(agentId: agentId, dueAt: dueAt),
         ).called(1);
         verifyNever(() => repository.getAgentState('task-agent'));
+      },
+    );
+
+    test('triggerReanalysis enqueues a manual reanalysis wake', () {
+      service.triggerReanalysis(agentId);
+
+      verify(
+        () => orchestrator.enqueueManualWake(
+          agentId: agentId,
+          reason: WakeReason.reanalysis.name,
+        ),
+      ).called(1);
+      final logMessage =
+          verify(
+                () => domainLogger.log(
+                  any(),
+                  captureAny(),
+                  subDomain: 'lifecycle',
+                  level: any(named: 'level'),
+                ),
+              ).captured.single
+              as String;
+      expect(logMessage, contains('manual day-agent reanalysis'));
+    });
+
+    test('cancelScheduledWake delegates pending wake cancellation', () {
+      service.cancelScheduledWake(agentId);
+
+      verify(() => agentService.cancelPendingWake(agentId)).called(1);
+      final logMessage =
+          verify(
+                () => domainLogger.log(
+                  any(),
+                  captureAny(),
+                  subDomain: 'lifecycle',
+                  level: any(named: 'level'),
+                ),
+              ).captured.single
+              as String;
+      expect(logMessage, contains('scheduled wake cancelled'));
+    });
+
+    test(
+      'restoreSubscriptions logs and continues after a hydrate failure',
+      () async {
+        final dueAt = DateTime(2026, 5, 25, 6, 30);
+        final failingDayAgent = identity(id: 'failing-day-agent');
+        final healthyDayAgent = identity(id: 'healthy-day-agent');
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [failingDayAgent, healthyDayAgent]);
+        when(
+          () => repository.getAgentState('failing-day-agent'),
+        ).thenThrow(StateError('state read failed'));
+        when(
+          () => repository.getAgentState('healthy-day-agent'),
+        ).thenAnswer(
+          (_) async => state(
+            id: 'state-healthy',
+            stateAgentId: 'healthy-day-agent',
+            activeDayId: dayId,
+            nextWakeAt: dueAt,
+          ),
+        );
+
+        await service.restoreSubscriptions();
+
+        verify(
+          () => orchestrator.restorePendingWake(
+            agentId: 'healthy-day-agent',
+            dueAt: dueAt,
+          ),
+        ).called(1);
+        final errorMessage =
+            verify(
+                  () => domainLogger.error(
+                    any(),
+                    captureAny(),
+                    error: any(named: 'error'),
+                    stackTrace: any(named: 'stackTrace'),
+                    subDomain: any(named: 'subDomain'),
+                  ),
+                ).captured.single
+                as String;
+        expect(
+          errorMessage,
+          contains('failed to restore day-agent runtime state'),
+        );
       },
     );
   });

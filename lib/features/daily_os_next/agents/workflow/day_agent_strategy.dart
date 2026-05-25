@@ -243,17 +243,21 @@ class DayAgentStrategy extends ConversationStrategy {
   }
 
   Future<void> _recordAssistantMessage() async {
-    await syncService.upsertEntity(
-      AgentDomainEntity.agentMessage(
-        id: _uuid.v4(),
-        agentId: agentId,
-        threadId: threadId,
-        kind: AgentMessageKind.thought,
-        createdAt: clock.now(),
-        vectorClock: null,
-        metadata: AgentMessageMetadata(runKey: runKey),
-      ),
-    );
+    try {
+      await syncService.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: _uuid.v4(),
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.thought,
+          createdAt: clock.now(),
+          vectorClock: null,
+          metadata: AgentMessageMetadata(runKey: runKey),
+        ),
+      );
+    } catch (e, s) {
+      _logPersistenceError('assistant/thought', e, s);
+    }
   }
 
   Future<void> _recordActionMessage({
@@ -301,20 +305,36 @@ class DayAgentStrategy extends ConversationStrategy {
     required String toolName,
     String? errorMessage,
   }) async {
-    await syncService.upsertEntity(
-      AgentDomainEntity.agentMessage(
-        id: _uuid.v4(),
-        agentId: agentId,
-        threadId: threadId,
-        kind: AgentMessageKind.toolResult,
-        createdAt: clock.now(),
-        vectorClock: null,
-        metadata: AgentMessageMetadata(
-          runKey: runKey,
-          toolName: toolName,
-          errorMessage: errorMessage,
+    try {
+      await syncService.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: _uuid.v4(),
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.toolResult,
+          createdAt: clock.now(),
+          vectorClock: null,
+          metadata: AgentMessageMetadata(
+            runKey: runKey,
+            toolName: toolName,
+            errorMessage: errorMessage,
+          ),
         ),
-      ),
+      );
+    } catch (e, s) {
+      _logPersistenceError('tool-result', e, s);
+    }
+  }
+
+  void _logPersistenceError(String entityKind, Object error, StackTrace stack) {
+    domainLogger.error(
+      LogDomains.agentWorkflow,
+      'failed to record day-agent $entityKind message '
+      'for agent=${DomainLogger.sanitizeId(agentId)}, '
+      'thread=${DomainLogger.sanitizeId(threadId)}, '
+      'run=${DomainLogger.sanitizeId(runKey)}',
+      error: error,
+      stackTrace: stack,
     );
   }
 }

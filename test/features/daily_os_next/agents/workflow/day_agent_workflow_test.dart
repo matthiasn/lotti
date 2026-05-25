@@ -58,6 +58,7 @@ void main() {
     String activeDayId = dayId,
     int consecutiveFailureCount = 0,
     Map<String, int> toolCounterByKey = const {},
+    DateTime? scheduledWakeAt,
   }) {
     return makeTestState(
       id: 'state-$agentId',
@@ -66,6 +67,7 @@ void main() {
       updatedAt: now,
       consecutiveFailureCount: consecutiveFailureCount,
       toolCounterByKey: toolCounterByKey,
+      scheduledWakeAt: scheduledWakeAt,
     );
   }
 
@@ -351,6 +353,116 @@ void main() {
       },
     );
 
+    test(
+      'includes the newest 20 observations in chronological order',
+      () async {
+        final payloadsById = <String, AgentMessagePayloadEntity>{};
+        final observations = <AgentMessageEntity>[
+          for (var index = 0; index < 25; index++)
+            AgentDomainEntity.agentMessage(
+                  id: 'observation-$index',
+                  agentId: agentId,
+                  threadId: 'observation-thread',
+                  kind: AgentMessageKind.observation,
+                  createdAt: now.subtract(Duration(minutes: 25 - index)),
+                  vectorClock: null,
+                  contentEntryId: 'payload-$index',
+                  metadata: AgentMessageMetadata(
+                    runKey: 'observation-run-$index',
+                  ),
+                )
+                as AgentMessageEntity,
+        ];
+        for (var index = 0; index < observations.length; index++) {
+          payloadsById['payload-$index'] =
+              AgentDomainEntity.agentMessagePayload(
+                    id: 'payload-$index',
+                    agentId: agentId,
+                    createdAt: observations[index].createdAt,
+                    vectorClock: null,
+                    content: {'text': 'Observation $index'},
+                  )
+                  as AgentMessagePayloadEntity;
+        }
+        when(
+          () => repository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer((_) async => observations);
+        when(() => repository.getEntitiesByIds(any())).thenAnswer(
+          (invocation) async {
+            final ids =
+                invocation.positionalArguments.single as Iterable<String>;
+            final payloads = <String, AgentDomainEntity>{};
+            for (final id in ids) {
+              final payload = payloadsById[id];
+              if (payload != null) {
+                payloads[id] = payload;
+              }
+            }
+            return payloads;
+          },
+        );
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        final userPayload =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final recentObservations =
+            userPayload['recentObservations'] as List<dynamic>;
+        expect(recentObservations, hasLength(20));
+        expect(
+          recentObservations.first,
+          {
+            'createdAt': '2026-05-25T07:40:00.000',
+            'text': 'Observation 5',
+          },
+        );
+        expect(
+          recentObservations.last,
+          {
+            'createdAt': '2026-05-25T07:59:00.000',
+            'text': 'Observation 24',
+          },
+        );
+        expect(
+          recentObservations,
+          isNot(
+            contains(
+              containsPair('text', 'Observation 4'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('clears consumed scheduled wakes after a successful wake', () async {
+      currentState = state(
+        scheduledWakeAt: now.subtract(const Duration(minutes: 1)),
+      );
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      final finalState = upsertedEntities.whereType<AgentStateEntity>().last;
+      expect(finalState.lastWakeAt, now);
+      expect(finalState.scheduledWakeAt, isNull);
+    });
+
+    test('preserves future scheduled wakes after a successful wake', () async {
+      final futureWakeAt = now.add(const Duration(hours: 1));
+      currentState = state(scheduledWakeAt: futureWakeAt);
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      final finalState = upsertedEntities.whereType<AgentStateEntity>().last;
+      expect(finalState.scheduledWakeAt, futureWakeAt);
+    });
+
     for (final scenario in const [
       _ToolValidationScenario(
         name: 'rejects missing at',
@@ -459,7 +571,10 @@ void main() {
     );
 
     test('bumps failure count when conversation execution throws', () async {
-      currentState = state(consecutiveFailureCount: 2);
+      currentState = state(
+        consecutiveFailureCount: 2,
+        scheduledWakeAt: now.subtract(const Duration(minutes: 1)),
+      );
       conversationRepository.errorToThrow = Exception('model failed');
 
       final result = await execute(workflow());
@@ -469,6 +584,7 @@ void main() {
       final failureState = upsertedEntities.whereType<AgentStateEntity>().last;
       expect(failureState.consecutiveFailureCount, 3);
       expect(failureState.revision, 2);
+      expect(failureState.scheduledWakeAt, isNull);
       expect(conversationRepository.deletedConversationCount, 1);
       verify(
         () => domainLogger.error(

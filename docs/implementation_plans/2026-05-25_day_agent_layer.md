@@ -165,8 +165,8 @@ Single-flight per `(dayId, reason)` via the existing `WakeQueue` dedupe.
 
 ## G. File layout (new)
 
-```
-lib/features/daily_os/agent/
+```text
+lib/features/daily_os_next/agents/
   domain/
     day_agent_kind.dart            // enum const, registration
     day_agent_slots.dart           // AgentSlots extension
@@ -193,7 +193,7 @@ lib/features/daily_os/agent/
     day_agent_providers.dart       // @riverpod accessors used by UI
 ```
 
-Tests mirror the source tree under `test/features/daily_os/agent/...`. One test file per source file.
+Tests mirror the source tree under `test/features/daily_os_next/agents/...`. One test file per source file.
 
 ## H. Phasing (smallest valuable unit first)
 
