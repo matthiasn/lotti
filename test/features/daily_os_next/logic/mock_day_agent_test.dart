@@ -36,10 +36,11 @@ void main() {
       expect(kinds, contains(ParsedItemKind.matched));
       expect(kinds, contains(ParsedItemKind.newTask));
       expect(kinds, contains(ParsedItemKind.update));
-      // The low-confidence variant should be present so the UI can
-      // exercise the warning tag.
+      // The medium-confidence variant should be present so the UI
+      // can exercise the warning tag (medium = parser is uncertain,
+      // low = confidently new and no warning).
       expect(
-        items.any((i) => i.confidence == ParsedItemConfidence.low),
+        items.any((i) => i.confidence == ParsedItemConfidence.medium),
         isTrue,
       );
       // A time-anchor variant should be present so the UI can render
@@ -70,7 +71,7 @@ void main() {
       final reasons = items.map((i) => i.reason).toSet();
       expect(reasons, contains(PendingItemReason.overdue));
       expect(reasons, contains(PendingItemReason.inProgress));
-      expect(reasons, contains(PendingItemReason.recurringMissed));
+      expect(reasons, contains(PendingItemReason.missedRecurring));
 
       final overdue = items.firstWhere(
         (i) => i.reason == PendingItemReason.overdue,

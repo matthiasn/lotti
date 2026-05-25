@@ -7,6 +7,12 @@
 library;
 
 import 'package:flutter/foundation.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+
+// Re-exported so UI consumers can `import 'day_agent_models.dart'` and
+// reach the canonical agent-side enums without a second import.
+export 'package:lotti/features/agents/model/agent_enums.dart'
+    show ParsedItemConfidence, ParsedItemKind;
 
 /// Identifier for a single capture submission (one spoken check-in).
 @immutable
@@ -28,24 +34,10 @@ class CaptureId {
   String toString() => 'CaptureId($value)';
 }
 
-/// How confident the agent is in a parsed item. Used to drive
-/// the warning tint + "low confidence" label on parsed cards.
-enum ParsedItemConfidence {
-  high,
-  low,
-}
-
-/// What kind of corpus reconciliation a parsed item represents.
-enum ParsedItemKind {
-  /// New task — no existing match found.
-  newTask,
-
-  /// Linked to an existing task in the corpus.
-  matched,
-
-  /// Updates state on an existing task (e.g. "I finished the deck").
-  update,
-}
+// `ParsedItemConfidence` (low | medium | high) and `ParsedItemKind`
+// (newTask | matched | update) are the canonical agent-side enums.
+// They live in `lib/features/agents/model/agent_enums.dart` and are
+// re-exported above so the UI sees them via this models file.
 
 /// A category exposed to the day-agent layer. Mirrors the shape of
 /// the real `CategoryDefinition` but stays minimal so the mock does
@@ -133,7 +125,7 @@ class ParsedItem {
 enum PendingItemReason {
   overdue,
   inProgress,
-  recurringMissed,
+  missedRecurring,
   dueToday,
 }
 

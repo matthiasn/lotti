@@ -53,7 +53,7 @@ class ParsedCard extends StatelessWidget {
             _MatchedTaskPill(
               title: item.matchedTaskTitle!,
               taskState: item.matchedTaskState,
-              warning: item.confidence == ParsedItemConfidence.low,
+              warning: item.confidence == ParsedItemConfidence.medium,
               onBreak: onBreakLink,
             ),
           ],
@@ -251,7 +251,7 @@ class _FootRow extends StatelessWidget {
         if (item.estimateMinutes != null)
           _EstimateChip(minutes: item.estimateMinutes!),
         if (item.timeAnchor != null) _TimeAnchorChip(anchor: item.timeAnchor!),
-        if (item.confidence == ParsedItemConfidence.low)
+        if (item.confidence == ParsedItemConfidence.medium)
           const _LowConfidenceTag(),
       ],
     );

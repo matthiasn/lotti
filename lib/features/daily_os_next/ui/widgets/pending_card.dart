@@ -100,7 +100,7 @@ class _StateBadge extends StatelessWidget {
         Icons.adjust_rounded,
         context.messages.dailyOsNextStateInProgress(item.sessionCount ?? 0),
       ),
-      PendingItemReason.recurringMissed => (
+      PendingItemReason.missedRecurring => (
         tokens.colors.alert.info.defaultColor,
         Icons.refresh_rounded,
         context.messages.dailyOsNextStateRecurringMissed,

@@ -97,7 +97,10 @@ class MockDayAgent implements DayAgentInterface {
         kind: ParsedItemKind.newTask,
         title: 'Call mom re: Sunday',
         category: _meals,
-        confidence: ParsedItemConfidence.low,
+        // Medium = parser is uncertain enough to surface the
+        // warning tag on the foot row. Low would mean "confidently
+        // a new task" and would suppress the warning.
+        confidence: ParsedItemConfidence.medium,
         estimateMinutes: 15,
       ),
       ParsedItem(
@@ -158,7 +161,7 @@ class MockDayAgent implements DayAgentInterface {
         taskId: 't_dnd_book',
         title: 'Read 30 pages',
         category: _study,
-        reason: PendingItemReason.recurringMissed,
+        reason: PendingItemReason.missedRecurring,
         note: 'Last skipped Thursday',
       ),
     ];
