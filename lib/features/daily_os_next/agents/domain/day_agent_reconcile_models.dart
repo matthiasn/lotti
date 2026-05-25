@@ -8,6 +8,14 @@ const dayAgentCaptureSubmittedPrefix = 'capture_submitted:';
 /// Wake scheduling reason used when a capture was submitted.
 const dayAgentCaptureSubmittedReason = 'capture_submitted';
 
+/// Wake trigger token prefix used to request a day-plan drafting wake.
+// TODO(day-agent): hoist drafting + capture token helpers into a shared
+// `day_agent_trigger_tokens.dart` once Refine/Commit add more trigger families.
+const dayAgentDraftingPrefix = 'drafting:';
+
+/// Wake scheduling reason used when a draft is requested.
+const dayAgentDraftingReason = 'drafting';
+
 /// Minimum score that becomes an auto-linked match.
 const dayAgentHighConfidenceThreshold = 0.75;
 
@@ -161,6 +169,22 @@ String? captureIdFromTriggerTokens(Set<String> triggerTokens) {
     if (token.startsWith(dayAgentCaptureSubmittedPrefix)) {
       final captureId = token.substring(dayAgentCaptureSubmittedPrefix.length);
       if (captureId.trim().isNotEmpty) return captureId;
+    }
+  }
+  return null;
+}
+
+/// Creates the drafting wake trigger token for [dayId].
+String dayAgentDraftingToken(String dayId) {
+  return '$dayAgentDraftingPrefix$dayId';
+}
+
+/// Extracts the first drafting-target day ID from a trigger-token set.
+String? draftingDayIdFromTriggerTokens(Set<String> triggerTokens) {
+  for (final token in triggerTokens) {
+    if (token.startsWith(dayAgentDraftingPrefix)) {
+      final dayId = token.substring(dayAgentDraftingPrefix.length);
+      if (dayId.trim().isNotEmpty) return dayId;
     }
   }
   return null;

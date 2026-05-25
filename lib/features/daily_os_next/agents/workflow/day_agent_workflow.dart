@@ -162,6 +162,11 @@ class DayAgentWorkflow {
       planDate: dayDate,
       triggerTokens: triggerTokens,
     );
+    final draftingContext = await _draftingContext(
+      agentIdentity: agentIdentity,
+      dayId: dayId,
+      triggerTokens: triggerTokens,
+    );
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       dayId: dayId,
@@ -170,6 +175,7 @@ class DayAgentWorkflow {
       observations: recentObservations,
       observationPayloads: observationPayloads,
       captureContext: captureContext,
+      draftingContext: draftingContext,
     );
 
     final conversationId = conversationRepository.createConversation(
@@ -489,6 +495,10 @@ Drafting rules:
 - Keep blocks inside the local plan day and within the user's capacity.
 - Calendar, buffer, and manual blocks may omit reasons when their purpose is
   self-evident.
+- When this wake's user message carries a `drafting` block (i.e. the trigger
+  tokens include `drafting:<dayId>`), your priority is to call
+  `draft_day_plan` once with the full updated block list — replacing or
+  extending `drafting.baselinePlan` rather than emitting partial diffs.
 - Refine, commit, shutdown, and agenda mutation tools are not available yet.
   Do not claim that you refined, committed, or shut down a day.
 
@@ -576,12 +586,14 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required List<AgentMessageEntity> observations,
     required Map<String, AgentMessagePayloadEntity> observationPayloads,
     required _CaptureContext? captureContext,
+    required _DraftingContext? draftingContext,
   }) {
     final payload = <String, Object?>{
       'dayId': dayId,
       'planDate': planDate.toIso8601String(),
       'triggerTokens': triggerTokens.toList()..sort(),
       if (captureContext != null) 'capture': captureContext.toJson(),
+      if (draftingContext != null) 'drafting': draftingContext.toJson(),
       'recentObservations': [
         for (final observation in observations)
           {
@@ -616,6 +628,22 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       day: planDate,
     );
     return _CaptureContext(capture: capture, taskCorpus: corpus);
+  }
+
+  Future<_DraftingContext?> _draftingContext({
+    required AgentIdentityEntity agentIdentity,
+    required String dayId,
+    required Set<String> triggerTokens,
+  }) async {
+    final service = planService;
+    if (service == null) return null;
+    if (draftingDayIdFromTriggerTokens(triggerTokens) != dayId) return null;
+
+    final baselinePlan = await service.draftPlanForDay(
+      agentId: agentIdentity.agentId,
+      dayId: dayId,
+    );
+    return _DraftingContext(baselinePlan: baselinePlan);
   }
 
   Future<void> _persistUserMessage({
@@ -902,4 +930,44 @@ class _CaptureContext {
     'audioRef': capture.audioRef,
     'taskCorpus': taskCorpus,
   };
+}
+
+class _DraftingContext {
+  const _DraftingContext({this.baselinePlan});
+
+  final DayPlanEntity? baselinePlan;
+
+  Map<String, Object?> toJson() {
+    final plan = baselinePlan;
+    return <String, Object?>{
+      'requested': true,
+      'baselinePlan': plan == null
+          ? null
+          : <String, Object?>{
+              'planId': plan.id,
+              'dayId': plan.dayId,
+              'planDate': plan.planDate.toIso8601String(),
+              'capacityMinutes': plan.capacityMinutes,
+              'scheduledMinutes': plan.scheduledMinutes,
+              'blocks': [
+                for (final block in plan.data.plannedBlocks)
+                  <String, Object?>{
+                    'id': block.id,
+                    'title': block.title,
+                    'taskId': block.taskId,
+                    'categoryId': block.categoryId,
+                    'start': block.startTime.toIso8601String(),
+                    'end': block.endTime.toIso8601String(),
+                    'type': block.type.name,
+                    'state': block.state.name,
+                    'reason': block.reason,
+                    'note': block.note,
+                  },
+              ],
+              'energyBands': [
+                for (final band in plan.energyBands) band.toJson(),
+              ],
+            },
+    };
+  }
 }

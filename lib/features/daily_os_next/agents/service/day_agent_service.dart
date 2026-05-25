@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
@@ -151,6 +152,51 @@ class DayAgentService {
   /// Find the active day agent for [date], if one exists.
   Future<AgentIdentityEntity?> getDayAgentForDate(DateTime date) {
     return _findDayAgentForDayId(dayAgentIdForDate(date));
+  }
+
+  /// Enqueue a drafting wake for the day agent that owns [dayDate].
+  ///
+  /// When [captureId] is provided, the source capture is included as a
+  /// `capture_submitted:<captureId>` trigger token so the workflow loads its
+  /// transcript and parsed items into the drafting prompt.
+  ///
+  /// Returns `false` when no active day agent exists for [dayDate]. Callers
+  /// are expected to either call [createDayAgent] first or surface the
+  /// missing-agent state in the UI.
+  Future<bool> enqueueDraftingWake({
+    required DateTime dayDate,
+    String? captureId,
+  }) async {
+    final agent = await getDayAgentForDate(dayDate);
+    if (agent == null) {
+      domainLogger.log(
+        LogDomains.agentRuntime,
+        'no day agent for '
+        '${DomainLogger.sanitizeId(dayAgentIdForDate(dayDate))}; '
+        'drafting wake not enqueued',
+        subDomain: 'drafting',
+      );
+      return false;
+    }
+    final dayId = dayAgentIdForDate(dayDate);
+    final triggerTokens = <String>{
+      dayAgentDraftingToken(dayId),
+      if (captureId != null && captureId.trim().isNotEmpty)
+        dayAgentCaptureSubmittedToken(captureId.trim()),
+    };
+    domainLogger.log(
+      LogDomains.agentRuntime,
+      'drafting wake enqueued for '
+      '${DomainLogger.sanitizeId(agent.agentId)} / '
+      '${DomainLogger.sanitizeId(dayId)}',
+      subDomain: 'drafting',
+    );
+    orchestrator.enqueueManualWake(
+      agentId: agent.agentId,
+      reason: dayAgentDraftingReason,
+      triggerTokens: triggerTokens,
+    );
+    return true;
   }
 
   /// Trigger a manual wake for [agentId].

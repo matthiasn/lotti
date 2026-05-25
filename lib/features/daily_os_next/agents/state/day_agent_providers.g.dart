@@ -398,7 +398,7 @@ final class PendingDecisionsForDateProvider
 }
 
 String _$pendingDecisionsForDateHash() =>
-    r'c6a78d2a4d386c6765f012ce0ed515e534fc88fb';
+    r'b9f2db1bcf9a7bc5c3f36da00e977cf3e914e963';
 
 /// Pending reconcile decisions for [date].
 
@@ -424,4 +424,116 @@ final class PendingDecisionsForDateFamily extends $Family
 
   @override
   String toString() => r'pendingDecisionsForDateProvider';
+}
+
+/// Currently drafted day plan for [date], if any.
+///
+/// Returns the base [AgentDomainEntity] for codegen compatibility — the
+/// riverpod_generator in this codebase rejects freezed subtypes as return
+/// types. Consumers should unwrap via `mapOrNull(dayPlan: (e) => e)` to
+/// get the typed [DayPlanEntity] view.
+
+@ProviderFor(draftedPlanForDate)
+final draftedPlanForDateProvider = DraftedPlanForDateFamily._();
+
+/// Currently drafted day plan for [date], if any.
+///
+/// Returns the base [AgentDomainEntity] for codegen compatibility — the
+/// riverpod_generator in this codebase rejects freezed subtypes as return
+/// types. Consumers should unwrap via `mapOrNull(dayPlan: (e) => e)` to
+/// get the typed [DayPlanEntity] view.
+
+final class DraftedPlanForDateProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<AgentDomainEntity?>,
+          AgentDomainEntity?,
+          FutureOr<AgentDomainEntity?>
+        >
+    with
+        $FutureModifier<AgentDomainEntity?>,
+        $FutureProvider<AgentDomainEntity?> {
+  /// Currently drafted day plan for [date], if any.
+  ///
+  /// Returns the base [AgentDomainEntity] for codegen compatibility — the
+  /// riverpod_generator in this codebase rejects freezed subtypes as return
+  /// types. Consumers should unwrap via `mapOrNull(dayPlan: (e) => e)` to
+  /// get the typed [DayPlanEntity] view.
+  DraftedPlanForDateProvider._({
+    required DraftedPlanForDateFamily super.from,
+    required DateTime super.argument,
+  }) : super(
+         retry: null,
+         name: r'draftedPlanForDateProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$draftedPlanForDateHash();
+
+  @override
+  String toString() {
+    return r'draftedPlanForDateProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<AgentDomainEntity?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<AgentDomainEntity?> create(Ref ref) {
+    final argument = this.argument as DateTime;
+    return draftedPlanForDate(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DraftedPlanForDateProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$draftedPlanForDateHash() =>
+    r'e5f86020da34f26ee2ff6141cab934292c20226f';
+
+/// Currently drafted day plan for [date], if any.
+///
+/// Returns the base [AgentDomainEntity] for codegen compatibility — the
+/// riverpod_generator in this codebase rejects freezed subtypes as return
+/// types. Consumers should unwrap via `mapOrNull(dayPlan: (e) => e)` to
+/// get the typed [DayPlanEntity] view.
+
+final class DraftedPlanForDateFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<AgentDomainEntity?>, DateTime> {
+  DraftedPlanForDateFamily._()
+    : super(
+        retry: null,
+        name: r'draftedPlanForDateProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Currently drafted day plan for [date], if any.
+  ///
+  /// Returns the base [AgentDomainEntity] for codegen compatibility — the
+  /// riverpod_generator in this codebase rejects freezed subtypes as return
+  /// types. Consumers should unwrap via `mapOrNull(dayPlan: (e) => e)` to
+  /// get the typed [DayPlanEntity] view.
+
+  DraftedPlanForDateProvider call(DateTime date) =>
+      DraftedPlanForDateProvider._(argument: date, from: this);
+
+  @override
+  String toString() => r'draftedPlanForDateProvider';
 }
