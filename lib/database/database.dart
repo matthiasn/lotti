@@ -2751,6 +2751,7 @@ class JournalDb extends _$JournalDb {
 
     final privateStatuses = await _visiblePrivateStatuses();
     if (privateStatuses.isEmpty) return const <Task>[];
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
 
     final variables = <Variable<Object>>[];
     final buffer = StringBuffer()
@@ -2765,16 +2766,17 @@ class JournalDb extends _$JournalDb {
       variables.add(Variable<String>(statuses[i]));
       buffer.write('?${variables.length}');
     }
-    buffer
-      ..write(') ')
-      ..write('AND private IN (');
-
-    for (var i = 0; i < privateStatuses.length; i++) {
-      if (i > 0) buffer.write(', ');
-      variables.add(Variable<bool>(privateStatuses[i]));
-      buffer.write('?${variables.length}');
-    }
     buffer.write(') ');
+
+    if (!matchesAllPrivateStates) {
+      buffer.write('AND private IN (');
+      for (var i = 0; i < privateStatuses.length; i++) {
+        if (i > 0) buffer.write(', ');
+        variables.add(Variable<bool>(privateStatuses[i]));
+        buffer.write('?${variables.length}');
+      }
+      buffer.write(') ');
+    }
 
     if (categoryIds.isNotEmpty) {
       final sortedCategoryIds = categoryIds.toList()..sort();

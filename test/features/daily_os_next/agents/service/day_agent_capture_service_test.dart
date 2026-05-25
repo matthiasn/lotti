@@ -1311,5 +1311,99 @@ void main() {
 
       expect(task.data.due, DateTime(2026, 6, 1, 23, 59, 59, 999));
     });
+
+    test('buildTaskCorpusSnapshot excludes closed tasks', () async {
+      final open = _task(
+        id: 'task-open',
+        title: 'Open',
+        status: _openStatus(),
+        due: DateTime(2026, 5, 25, 12),
+      );
+      final done = _task(
+        id: 'task-done',
+        title: 'Already done',
+        status: _doneStatus(),
+        due: DateTime(2026, 5, 24, 12),
+      );
+      when(() => journalDb.getTasksDueOnOrBefore(any())).thenAnswer(
+        (_) async => [done, open],
+      );
+
+      final snapshot = await createService().buildTaskCorpusSnapshot(
+        allowedCategoryIds: {'work'},
+        day: DateTime(2026, 5, 25, 8),
+      );
+
+      expect(snapshot.map((item) => item['taskId']), ['task-open']);
+    });
+
+    test(
+      'executeTool rejects malformed capturedAt with a tool-response error',
+      () async {
+        final result = await createService().executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.submitCapture,
+          args: const {
+            'transcript': 'prep demo',
+            'capturedAt': 'not-a-date',
+          },
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.output,
+          contains('capturedAt must be a valid ISO-8601 date-time'),
+        );
+      },
+    );
+
+    test(
+      'parsed estimateMinutes ignores fractional numbers from the model',
+      () async {
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: _agentId,
+                  transcript: 'prep',
+                  capturedAt: _now,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+
+        final items = await createService().persistParsedItems(
+          agentId: _agentId,
+          captureId: capture.id,
+          rawItems: const [
+            {
+              'title': 'Fractional minutes',
+              'categoryId': 'work',
+              'confidenceScore': 0.1,
+              'estimateMinutes': 15.9,
+            },
+            {
+              'title': 'Integer minutes',
+              'categoryId': 'work',
+              'confidenceScore': 0.1,
+              'estimateMinutes': 20,
+            },
+            {
+              'title': 'Whole double',
+              'categoryId': 'work',
+              'confidenceScore': 0.1,
+              'estimateMinutes': 30.0,
+            },
+          ],
+        );
+
+        expect(items, hasLength(3));
+        expect(items[0].estimateMinutes, isNull);
+        expect(items[1].estimateMinutes, 20);
+        expect(items[2].estimateMinutes, 30);
+      },
+    );
   });
 }

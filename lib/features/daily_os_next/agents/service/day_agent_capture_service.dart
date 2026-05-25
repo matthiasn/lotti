@@ -198,6 +198,7 @@ class DayAgentCaptureService {
 
     final byId = <String, Task>{};
     for (final task in [...overdueAndToday, ...openTasks]) {
+      if (_isClosedTask(task)) continue;
       if (!_categoryAllowed(task.meta.categoryId, allowedCategoryIds)) {
         continue;
       }
@@ -488,11 +489,17 @@ class DayAgentCaptureService {
     Map<String, dynamic> args,
   ) async {
     final transcript = _requiredString(args, 'transcript');
-    final capturedAt = _optionalDateTime(args['capturedAt']) ?? clock.now();
+    final rawCapturedAt = args['capturedAt'];
+    final parsedCapturedAt = _optionalDateTime(rawCapturedAt);
+    if (rawCapturedAt != null && parsedCapturedAt == null) {
+      throw const DayAgentCaptureException(
+        'capturedAt must be a valid ISO-8601 date-time',
+      );
+    }
     final capture = await submitCapture(
       agentId: agentId,
       transcript: transcript,
-      capturedAt: capturedAt,
+      capturedAt: parsedCapturedAt ?? clock.now(),
       audioRef: _optionalString(args['audioRef']),
     );
     return {'captureId': capture.id};
@@ -827,7 +834,7 @@ class DayAgentCaptureService {
 
   static int? _optionalInt(Object? value) {
     if (value is int) return value;
-    if (value is num) return value.toInt();
+    if (value is num && value.isFinite && value % 1 == 0) return value.toInt();
     return null;
   }
 
