@@ -59,6 +59,15 @@ _PlannedBlock _$PlannedBlockFromJson(Map<String, dynamic> json) =>
       startTime: DateTime.parse(json['startTime'] as String),
       endTime: DateTime.parse(json['endTime'] as String),
       note: json['note'] as String?,
+      taskId: json['taskId'] as String?,
+      title: json['title'] as String?,
+      type:
+          $enumDecodeNullable(_$PlannedBlockTypeEnumMap, json['type']) ??
+          PlannedBlockType.ai,
+      state:
+          $enumDecodeNullable(_$PlannedBlockStateEnumMap, json['state']) ??
+          PlannedBlockState.drafted,
+      reason: json['reason'] as String?,
     );
 
 Map<String, dynamic> _$PlannedBlockToJson(_PlannedBlock instance) =>
@@ -68,7 +77,27 @@ Map<String, dynamic> _$PlannedBlockToJson(_PlannedBlock instance) =>
       'startTime': instance.startTime.toIso8601String(),
       'endTime': instance.endTime.toIso8601String(),
       'note': instance.note,
+      'taskId': instance.taskId,
+      'title': instance.title,
+      'type': _$PlannedBlockTypeEnumMap[instance.type]!,
+      'state': _$PlannedBlockStateEnumMap[instance.state]!,
+      'reason': instance.reason,
     };
+
+const _$PlannedBlockTypeEnumMap = {
+  PlannedBlockType.ai: 'ai',
+  PlannedBlockType.cal: 'cal',
+  PlannedBlockType.buffer: 'buffer',
+  PlannedBlockType.manual: 'manual',
+};
+
+const _$PlannedBlockStateEnumMap = {
+  PlannedBlockState.drafted: 'drafted',
+  PlannedBlockState.committed: 'committed',
+  PlannedBlockState.inProgress: 'inProgress',
+  PlannedBlockState.completed: 'completed',
+  PlannedBlockState.dropped: 'dropped',
+};
 
 _PinnedTaskRef _$PinnedTaskRefFromJson(Map<String, dynamic> json) =>
     _PinnedTaskRef(

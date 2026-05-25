@@ -14,6 +14,8 @@ void main() {
       DayAgentToolNames.surfacePendingDecisions,
       DayAgentToolNames.applyTriage,
       DayAgentToolNames.createTaskFromPhrase,
+      DayAgentToolNames.draftDayPlan,
+      DayAgentToolNames.summarizeRecentPatterns,
     ];
 
     test('uses the wire names expected by the day-agent prompt', () {
@@ -28,6 +30,8 @@ void main() {
         'surface_pending_decisions',
         'apply_triage',
         'create_task_from_phrase',
+        'draft_day_plan',
+        'summarize_recent_patterns',
       ]);
     });
 
@@ -54,10 +58,18 @@ void main() {
         },
       );
       expect(
+        DayAgentToolNames.planTools,
+        {
+          DayAgentToolNames.draftDayPlan,
+          DayAgentToolNames.summarizeRecentPatterns,
+        },
+      );
+      expect(
         DayAgentToolNames.workflowHandlerTools,
         {
           DayAgentToolNames.setNextWake,
           ...DayAgentToolNames.captureReconcileTools,
+          ...DayAgentToolNames.planTools,
         },
       );
     });
@@ -89,6 +101,14 @@ void main() {
       );
       expect(
         DayAgentToolNames.isSetNextWakeTool(DayAgentToolNames.submitCapture),
+        isFalse,
+      );
+      expect(
+        DayAgentToolNames.isPlanTool(DayAgentToolNames.draftDayPlan),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isPlanTool(DayAgentToolNames.submitCapture),
         isFalse,
       );
     });

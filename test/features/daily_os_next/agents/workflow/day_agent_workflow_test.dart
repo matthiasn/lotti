@@ -149,6 +149,7 @@ void main() {
   DayAgentWorkflow workflow({
     MockSoulDocumentService? soulDocumentService,
     MockDayAgentCaptureService? captureService,
+    MockDayAgentPlanService? planService,
   }) {
     return DayAgentWorkflow(
       agentRepository: repository,
@@ -159,6 +160,7 @@ void main() {
       templateService: templateService,
       soulDocumentService: soulDocumentService,
       captureService: captureService,
+      planService: planService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
@@ -482,6 +484,75 @@ void main() {
         );
       },
     );
+
+    test('delegates plan tools to the configured plan service', () async {
+      final planService = MockDayAgentPlanService();
+      when(
+        () => planService.executeTool(
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          toolName: DayAgentToolNames.draftDayPlan,
+          args: any(named: 'args'),
+        ),
+      ).thenAnswer(
+        (_) async => DayAgentDirectToolResult.success(
+          const {'planId': 'day_agent_plan:dayplan-2026-05-25'},
+        ),
+      );
+      conversationRepository.toolCalls = [
+        _toolCall(
+          name: DayAgentToolNames.draftDayPlan,
+          args: {
+            'dayId': dayId,
+            'blocks': <Object?>[],
+          },
+        ),
+      ];
+
+      final result = await execute(workflow(planService: planService));
+
+      expect(result.success, isTrue);
+      expect(
+        conversationRepository.toolResponses.single,
+        contains('day_agent_plan:dayplan-2026-05-25'),
+      );
+      final args =
+          verify(
+                () => planService.executeTool(
+                  agentId: agentId,
+                  threadId: threadId,
+                  runKey: runKey,
+                  toolName: DayAgentToolNames.draftDayPlan,
+                  args: captureAny(named: 'args'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(args, {
+        'dayId': dayId,
+        'blocks': <Object?>[],
+      });
+    });
+
+    test('returns a tool error when plan tools are not configured', () async {
+      conversationRepository.toolCalls = [
+        _toolCall(
+          name: DayAgentToolNames.draftDayPlan,
+          args: {
+            'dayId': dayId,
+            'blocks': <Object?>[],
+          },
+        ),
+      ];
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      expect(
+        conversationRepository.toolResponses.single,
+        contains('day-plan tools are not configured'),
+      );
+    });
 
     test(
       'includes the newest 20 observations in chronological order',

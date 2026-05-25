@@ -1,4 +1,3 @@
-import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -12,7 +11,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -128,16 +127,6 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
 @Riverpod(keepAlive: true)
 DayAgentWorkflow dayAgentWorkflow(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
-  final captureService = DayAgentCaptureService(
-    agentRepository: ref.watch(agentRepositoryProvider),
-    syncService: ref.watch(agentSyncServiceProvider),
-    journalDb: ref.watch(journalDbProvider),
-    journalRepository: ref.watch(journalRepositoryProvider),
-    fts5Db: getIt<Fts5Db>(),
-    orchestrator: ref.watch(wakeOrchestratorProvider),
-    domainLogger: ref.watch(domainLoggerProvider),
-    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
-  );
   return DayAgentWorkflow(
     agentRepository: ref.watch(agentRepositoryProvider),
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
@@ -145,7 +134,8 @@ DayAgentWorkflow dayAgentWorkflow(Ref ref) {
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
-    captureService: captureService,
+    captureService: ref.watch(dayAgentCaptureServiceProvider),
+    planService: ref.watch(dayAgentPlanServiceProvider),
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),

@@ -20,6 +20,7 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
@@ -39,6 +40,7 @@ class DayAgentWorkflow {
     required this.templateService,
     required this.domainLogger,
     this.captureService,
+    this.planService,
     this.soulDocumentService,
     this.onPersistedStateChanged,
     this.config = const DayAgentConfig(),
@@ -67,6 +69,9 @@ class DayAgentWorkflow {
 
   /// Capture/reconcile backend tool implementation.
   final DayAgentCaptureService? captureService;
+
+  /// Day-plan backend tool implementation.
+  final DayAgentPlanService? planService;
 
   /// Structured logger.
   final DomainLogger domainLogger;
@@ -302,7 +307,7 @@ class DayAgentWorkflow {
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
-    if (!DayAgentToolNames.isSetNextWakeTool(toolName)) {
+    if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {
       final service = captureService;
       if (service == null) {
         return const DayAgentToolResult(
@@ -320,6 +325,34 @@ class DayAgentWorkflow {
       return DayAgentToolResult(
         success: result.success,
         output: result.output,
+      );
+    }
+
+    if (DayAgentToolNames.isPlanTool(toolName)) {
+      final service = planService;
+      if (service == null) {
+        return const DayAgentToolResult(
+          success: false,
+          output: 'Error: day-plan tools are not configured.',
+        );
+      }
+      final result = await service.executeTool(
+        agentId: agentId,
+        threadId: threadId,
+        runKey: runKey,
+        toolName: toolName,
+        args: args,
+      );
+      return DayAgentToolResult(
+        success: result.success,
+        output: result.output,
+      );
+    }
+
+    if (!DayAgentToolNames.isSetNextWakeTool(toolName)) {
+      return DayAgentToolResult(
+        success: false,
+        output: 'Error: unknown day-agent tool "$toolName".',
       );
     }
 
@@ -418,23 +451,31 @@ class DayAgentWorkflow {
   }
 
   String _buildSystemPrompt(_TemplateContext? ctx) {
-    final scaffold = '''
+    const captureToolLines =
+        '- `submit_capture`: persist a user capture transcript and enqueue parsing.\n'
+        '- `parse_capture_to_items`: persist capture phrases parsed from the current capture-submitted wake.\n'
+        '- `match_to_corpus`: find existing task candidates for a phrase.\n'
+        '- `link_capture_phrase_to_task`: attach a parsed capture item to a task.\n'
+        "- `break_capture_link`: remove a parsed capture item's task link.\n"
+        '- `surface_pending_decisions`: list overdue, in-progress, missed recurring, and due-today tasks for reconcile.\n'
+        '- `apply_triage`: apply a reconcile action to a task.\n'
+        '- `create_task_from_phrase`: propose a new task via a pending change set.';
+    const planToolLines =
+        '- `draft_day_plan`: persist a drafted day plan with blocks and reasons.\n'
+        '- `summarize_recent_patterns`: return learning cards from recent day drafts.';
+    final toolLines = <String>[
+      '- `record_observations`: private memory for learnings and uncertainty.',
+      '- `set_next_wake`: schedule the next useful pre-warm wake.',
+      if (captureService != null) captureToolLines,
+      if (planService != null) planToolLines,
+    ];
+    final scaffold =
+        '''
 You are a Daily OS day agent. You operate on exactly one local calendar day.
 
 Available tools:
 
-- `record_observations`: private memory for learnings and uncertainty.
-- `set_next_wake`: schedule the next useful pre-warm wake.
-- `submit_capture`: persist a user capture transcript and enqueue parsing.
-- `parse_capture_to_items`: persist capture phrases parsed from the current
-  capture-submitted wake.
-- `match_to_corpus`: find existing task candidates for a phrase.
-- `link_capture_phrase_to_task`: attach a parsed capture item to a task.
-- `break_capture_link`: remove a parsed capture item's task link.
-- `surface_pending_decisions`: list overdue, in-progress, missed recurring,
-  and due-today tasks for reconcile.
-- `apply_triage`: apply a reconcile action to a task.
-- `create_task_from_phrase`: propose a new task via a pending change set.
+${toolLines.join('\n')}
 
 Capture matching rules:
 - Use the embedded task corpus when parsing a submitted capture.
@@ -443,9 +484,15 @@ Capture matching rules:
 - confidenceScore >= 0.5 and < 0.75 is a low-confidence match.
 - confidenceScore < 0.5 should be treated as a new item.
 
-You cannot mutate day plans yet. Do not claim that you changed blocks or
-commitments. Record private observations and schedule one useful future wake
-when warranted.
+Drafting rules:
+- Every `ai` block passed to `draft_day_plan` must include a concrete reason.
+- Keep blocks inside the local plan day and within the user's capacity.
+- Calendar, buffer, and manual blocks may omit reasons when their purpose is
+  self-evident.
+- Refine, commit, shutdown, and agenda mutation tools are not available yet.
+  Do not claim that you refined, committed, or shut down a day.
+
+Record private observations and schedule one useful future wake when warranted.
 
 Planning defaults:
 ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
@@ -728,8 +775,18 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     };
   }
 
+  bool _isToolEnabled(String toolName) {
+    if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {
+      return captureService != null;
+    }
+    if (DayAgentToolNames.isPlanTool(toolName)) {
+      return planService != null;
+    }
+    return true;
+  }
+
   List<ChatCompletionTool> _buildToolDefinitions() {
-    return dayAgentTools.map((tool) {
+    return dayAgentTools.where((tool) => _isToolEnabled(tool.name)).map((tool) {
       return ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(

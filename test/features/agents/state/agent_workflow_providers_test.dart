@@ -5,6 +5,8 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -67,6 +69,21 @@ void main() {
       final workflow = container.read(dayAgentWorkflowProvider);
 
       expect(workflow, isA<DayAgentWorkflow>());
+      expect(workflow.captureService, isA<DayAgentCaptureService>());
+      expect(workflow.planService, isA<DayAgentPlanService>());
+      expect(workflow.captureService?.agentRepository, same(repository));
+      expect(workflow.captureService?.syncService, same(syncService));
+      expect(workflow.captureService?.journalDb, same(journalDb));
+      expect(
+        workflow.captureService?.journalRepository,
+        same(journalRepository),
+      );
+      expect(workflow.captureService?.orchestrator, same(wakeOrchestrator));
+      expect(workflow.captureService?.domainLogger, same(domainLogger));
+      expect(workflow.planService?.agentRepository, same(repository));
+      expect(workflow.planService?.syncService, same(syncService));
+      expect(workflow.planService?.journalDb, same(journalDb));
+      expect(workflow.planService?.domainLogger, same(domainLogger));
       workflow.onPersistedStateChanged?.call('day-agent-001');
       verify(
         () => notifications.notifyUiOnly({

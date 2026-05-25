@@ -376,6 +376,24 @@ void main() {
         expectLinkFieldsMatch(roundtripped, original);
         expect(roundtripped.toJson()['runtimeType'], 'parsedItemToTask');
       });
+
+      test('CaptureToPlanLink roundtrips all fields', () {
+        final original = AgentLink.captureToPlan(
+          id: 'link-capture-plan-001',
+          fromId: 'capture-001',
+          toId: 'day_agent_plan:dayplan-2026-05-25',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<CaptureToPlanLink>());
+        expectLinkFieldsMatch(roundtripped, original);
+        expect(roundtripped.toJson()['runtimeType'], 'captureToPlan');
+      });
     });
 
     group('AgentProjectLink (agentProject variant)', () {
@@ -628,6 +646,14 @@ void main() {
         ),
         AgentLink.parsedItemToTask(
           id: 'l-parsed-task',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.captureToPlan(
+          id: 'l-capture-plan',
           fromId: 'a',
           toId: 'b',
           createdAt: createdAt,

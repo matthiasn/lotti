@@ -30,6 +30,12 @@ abstract final class DayAgentToolNames {
   /// Proposes a new task from a capture phrase.
   static const createTaskFromPhrase = 'create_task_from_phrase';
 
+  /// Persists a drafted day plan emitted by the model.
+  static const draftDayPlan = 'draft_day_plan';
+
+  /// Builds transient learning cards from recent day-agent history.
+  static const summarizeRecentPatterns = 'summarize_recent_patterns';
+
   /// Foundation tools implemented by the day-agent workflow itself.
   static const foundationHandlerTools = <String>{
     setNextWake,
@@ -47,10 +53,17 @@ abstract final class DayAgentToolNames {
     createTaskFromPhrase,
   };
 
+  /// Drafting tools delegated to the plan service.
+  static const planTools = <String>{
+    draftDayPlan,
+    summarizeRecentPatterns,
+  };
+
   /// Tools that require workflow-level handling instead of local strategy state.
   static const workflowHandlerTools = <String>{
     ...foundationHandlerTools,
     ...captureReconcileTools,
+    ...planTools,
   };
 
   /// Whether [name] should be routed through the workflow handler.
@@ -61,6 +74,11 @@ abstract final class DayAgentToolNames {
   /// Whether [name] is handled by the capture/reconcile service.
   static bool isCaptureReconcileTool(String name) {
     return captureReconcileTools.contains(name);
+  }
+
+  /// Whether [name] is handled by the day-plan service.
+  static bool isPlanTool(String name) {
+    return planTools.contains(name);
   }
 
   /// Whether [name] is the foundation wake scheduling tool.

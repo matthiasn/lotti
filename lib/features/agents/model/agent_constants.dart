@@ -18,6 +18,7 @@ abstract final class AgentLinkTypes {
   static const agentTask = 'agent_task';
   static const captureToParsedItem = 'capture_to_parsed_item';
   static const parsedItemToTask = 'parsed_item_to_task';
+  static const captureToPlan = 'capture_to_plan';
   static const templateAssignment = 'template_assignment';
   static const improverTarget = 'improver_target';
   static const agentProject = 'agent_project';
@@ -27,6 +28,7 @@ abstract final class AgentLinkTypes {
 abstract final class AgentEntityTypes {
   static const capture = 'day_capture';
   static const parsedItem = 'parsed_capture_item';
+  static const dayPlan = 'day_plan';
   static const agentState = 'agentState';
   static const agentMessage = 'agentMessage';
   static const agentReport = 'agentReport';
