@@ -87,10 +87,9 @@ void main() {
 
     test('accept transitions to accepted with the updated plan', () async {
       final container = makeContainer();
-      final notifier =
-          container.read(refineControllerProvider(draft).notifier)
-            // Drive listening → thinking → diffReady on real microtasks.
-            ..toggleListening();
+      final notifier = container.read(refineControllerProvider(draft).notifier)
+        // Drive listening → thinking → diffReady on real microtasks.
+        ..toggleListening();
       // Wait for scripted transcript to drain. 17 chunks at 90 ms by
       // default; pump enough cycles.
       for (var i = 0; i < 25; i++) {
@@ -108,9 +107,8 @@ void main() {
 
     test('revert returns to idle with the original plan', () async {
       final container = makeContainer();
-      final notifier =
-          container.read(refineControllerProvider(draft).notifier)
-            ..toggleListening();
+      final notifier = container.read(refineControllerProvider(draft).notifier)
+        ..toggleListening();
       for (var i = 0; i < 25; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 90));
       }

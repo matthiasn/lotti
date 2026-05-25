@@ -549,6 +549,200 @@ class MockDayAgent implements DayAgentInterface {
       ),
     ];
   }
+
+  @override
+  Future<DraftPlan> commitDay(DraftPlan plan) async {
+    await Future<void>.delayed(triageLatency);
+    return plan.copyWith(
+      state: DayState.committed,
+      blocks: [
+        for (final block in plan.blocks)
+          // Drafted blocks read as solid after commit; cal events and
+          // already-committed blocks stay where they are.
+          if (block.state == TimeBlockState.drafted)
+            TimeBlock(
+              id: block.id,
+              title: block.title,
+              start: block.start,
+              end: block.end,
+              type: block.type,
+              state: TimeBlockState.committed,
+              category: block.category,
+              taskId: block.taskId,
+              reason: block.reason,
+              sessionIndex: block.sessionIndex,
+              sessionTotal: block.sessionTotal,
+              location: block.location,
+            )
+          else
+            block,
+      ],
+    );
+  }
+
+  @override
+  Future<
+    ({
+      List<CompletedItem> completed,
+      List<CarryoverItem> carryover,
+      ShutdownMetrics metrics,
+    })
+  >
+  surfaceShutdownData({required DateTime forDate}) async {
+    await Future<void>.delayed(summarizeLatency);
+    return (
+      completed: const [
+        CompletedItem(
+          taskId: 't_deck_review',
+          title: 'Deck review — Q2 leadership update',
+          category: _work,
+          durationMinutes: 95,
+          note: 'Two focus sessions, draft sent to Sarah.',
+        ),
+        CompletedItem(
+          taskId: 't_morning_run',
+          title: 'Morning run · 5km',
+          category: _health,
+          durationMinutes: 28,
+        ),
+      ],
+      carryover: const [
+        CarryoverItem(
+          taskId: 't_onboarding_doc',
+          title: 'Finish the Onboarding doc',
+          category: _work,
+          reason: 'Ran out of time — started, 40m in.',
+          suggestedTarget: '→ tomorrow morning',
+        ),
+        CarryoverItem(
+          taskId: 't_invoices',
+          title: 'Review outstanding invoices',
+          category: _work,
+          reason: 'Skipped — afternoon ran long.',
+          suggestedTarget: '→ tomorrow afternoon',
+        ),
+      ],
+      metrics: const ShutdownMetrics(
+        focusMinutes: 215,
+        flowSessions: 3,
+        contextSwitches: 5,
+        contextSwitchesWeekAvg: 8,
+        energyScore: 7.4,
+        energyDeltaVsWeek: 0.6,
+      ),
+    );
+  }
+
+  @override
+  Future<void> recordReflection({
+    required DateTime forDate,
+    required String text,
+    required ReflectionSource source,
+  }) async {
+    await Future<void>.delayed(triageLatency);
+  }
+
+  @override
+  Future<void> recordCarryoverDecision({
+    required String taskId,
+    required CarryoverAction action,
+    DateTime? when,
+  }) async {
+    await Future<void>.delayed(triageLatency);
+  }
+
+  @override
+  Future<TomorrowNote> generateTomorrowNote({
+    required DateTime forDate,
+  }) async {
+    await Future<void>.delayed(summarizeLatency);
+    return const TomorrowNote(
+      body:
+          "You started the Onboarding doc and stopped 40m in. I'll start "
+          'the draft with it placed in your morning, alongside the '
+          'carryover, and ask if you want to keep that.',
+      maturity: 1,
+    );
+  }
+
+  @override
+  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
+    TaskCorpusState stateFilter = TaskCorpusState.all,
+    String? categoryId,
+    String? query,
+  }) async {
+    await Future<void>.delayed(pendingLatency);
+    const all = <TaskCorpusItem>[
+      TaskCorpusItem(
+        id: 't_deck_review',
+        title: 'Deck review — Q2 leadership update',
+        category: _work,
+        state: TaskCorpusState.inProgress,
+        updatedLabel: 'today',
+      ),
+      TaskCorpusItem(
+        id: 't_onboarding_doc',
+        title: 'Finish the Onboarding doc',
+        category: _work,
+        state: TaskCorpusState.inProgress,
+        updatedLabel: 'yesterday',
+      ),
+      TaskCorpusItem(
+        id: 't_dentist',
+        title: 'Reschedule dentist',
+        category: _health,
+        state: TaskCorpusState.overdue,
+        updatedLabel: '3 days ago',
+      ),
+      TaskCorpusItem(
+        id: 't_invoices',
+        title: 'Review outstanding invoices',
+        category: _work,
+        state: TaskCorpusState.scheduled,
+        updatedLabel: 'today',
+      ),
+      TaskCorpusItem(
+        id: 't_dnd_book',
+        title: 'Read 30 pages',
+        category: _study,
+        state: TaskCorpusState.recurring,
+        updatedLabel: 'May 18',
+      ),
+      TaskCorpusItem(
+        id: 't_sunday_call',
+        title: 'Call mom re: Sunday',
+        category: _meals,
+        state: TaskCorpusState.backlog,
+        updatedLabel: '2 weeks ago',
+      ),
+      TaskCorpusItem(
+        id: 't_morning_run_done',
+        title: 'Morning run · 5km',
+        category: _health,
+        state: TaskCorpusState.done,
+        updatedLabel: 'today',
+      ),
+    ];
+    return [
+      for (final item in all)
+        if (_matchesFilter(item, stateFilter, categoryId, query)) item,
+    ];
+  }
+
+  bool _matchesFilter(
+    TaskCorpusItem item,
+    TaskCorpusState state,
+    String? categoryId,
+    String? query,
+  ) {
+    if (state != TaskCorpusState.all && item.state != state) return false;
+    if (categoryId != null && item.category.id != categoryId) return false;
+    if (query != null && query.trim().isNotEmpty) {
+      final q = query.trim().toLowerCase();
+      if (!item.title.toLowerCase().contains(q)) return false;
+    }
+    return true;
+  }
 }
 
 const DayAgentCategory _buffer = DayAgentCategory(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/tasks_corpus_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -24,32 +25,52 @@ class CapturePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
+      appBar: AppBar(
+        backgroundColor: tokens.colors.background.level01,
+        elevation: 0,
+        toolbarHeight: 48,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.checklist_rounded),
+            tooltip: context.messages.dailyOsNextCaptureOpenTasks,
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(
+                builder: (_) => const TasksCorpusPage(),
+              ),
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step3),
+        ],
+      ),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step5,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const _GreetingBlock(),
-                  SizedBox(height: tokens.spacing.step6),
-                  const _Headline(),
-                  SizedBox(height: tokens.spacing.step8),
-                  VoiceButton(
-                    phase: state.phase,
-                    semanticLabel: _voiceButtonLabel(context, state.phase),
-                    onTap: () =>
-                        ref.read(captureControllerProvider.notifier).toggle(),
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  _StateRow(state: state),
-                  SizedBox(height: tokens.spacing.step6),
-                  _ReconcileCta(state: state),
-                ],
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step5,
+                  vertical: tokens.spacing.step6,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const _GreetingBlock(),
+                    SizedBox(height: tokens.spacing.step6),
+                    const _Headline(),
+                    SizedBox(height: tokens.spacing.step8),
+                    VoiceButton(
+                      phase: state.phase,
+                      semanticLabel: _voiceButtonLabel(context, state.phase),
+                      onTap: () =>
+                          ref.read(captureControllerProvider.notifier).toggle(),
+                    ),
+                    SizedBox(height: tokens.spacing.step5),
+                    _StateRow(state: state),
+                    SizedBox(height: tokens.spacing.step6),
+                    _ReconcileCta(state: state),
+                  ],
+                ),
               ),
             ),
           ),

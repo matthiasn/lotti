@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
@@ -36,6 +38,25 @@ class _DayPageState extends State<DayPage> {
     if (updated != null && mounted) {
       setState(() => _draft = updated);
     }
+  }
+
+  Future<void> _openCommit() async {
+    final committed = await Navigator.of(context).push<DraftPlan>(
+      MaterialPageRoute<DraftPlan>(
+        builder: (_) => CommitPage(draft: _draft),
+      ),
+    );
+    if (committed != null && mounted) {
+      setState(() => _draft = committed);
+    }
+  }
+
+  Future<void> _openShutdown() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => ShutdownPage(forDate: _draft.dayDate),
+      ),
+    );
   }
 
   @override
@@ -78,7 +99,12 @@ class _DayPageState extends State<DayPage> {
                   ? AgendaView(draft: _draft)
                   : DayTimeline(draft: _draft),
             ),
-            _RefineFooter(onRefine: _openRefine),
+            _DayFooter(
+              draft: _draft,
+              onRefine: _openRefine,
+              onCommit: _openCommit,
+              onShutdown: _openShutdown,
+            ),
           ],
         ),
       ),
@@ -86,10 +112,18 @@ class _DayPageState extends State<DayPage> {
   }
 }
 
-class _RefineFooter extends StatelessWidget {
-  const _RefineFooter({required this.onRefine});
+class _DayFooter extends StatelessWidget {
+  const _DayFooter({
+    required this.draft,
+    required this.onRefine,
+    required this.onCommit,
+    required this.onShutdown,
+  });
 
+  final DraftPlan draft;
   final VoidCallback onRefine;
+  final VoidCallback onCommit;
+  final VoidCallback onShutdown;
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +166,45 @@ class _RefineFooter extends StatelessWidget {
               ),
             ),
           ),
+          SizedBox(width: tokens.spacing.step2),
+          if (draft.state == DayState.drafted)
+            FilledButton.icon(
+              onPressed: onCommit,
+              icon: const Icon(Icons.lock_outline_rounded, size: 14),
+              label: Text(context.messages.dailyOsNextDayLockInCta),
+              style: FilledButton.styleFrom(
+                backgroundColor: teal,
+                foregroundColor: tokens.colors.text.onInteractiveAlert,
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step4,
+                  vertical: tokens.spacing.step2,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+                ),
+              ),
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: onShutdown,
+              icon: Icon(
+                Icons.nights_stay_outlined,
+                size: 14,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              label: Text(context.messages.dailyOsNextDayWrapUpCta),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: tokens.colors.text.mediumEmphasis,
+                side: BorderSide(color: tokens.colors.decorative.level01),
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step4,
+                  vertical: tokens.spacing.step2,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+                ),
+              ),
+            ),
         ],
       ),
     );

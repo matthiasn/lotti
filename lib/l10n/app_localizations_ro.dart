@@ -3154,6 +3154,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureListening => 'ASCULT';
 
   @override
+  String get dailyOsNextCaptureOpenTasks => 'Răsfoiește sarcinile';
+
+  @override
   String get dailyOsNextCaptureReconcileCta => 'Reconciliere';
 
   @override
@@ -3166,7 +3169,47 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureVoiceButtonStop => 'Oprește ascultarea';
 
   @override
+  String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
+    return '$scheduled din $capacity angajate. Marjă confortabilă — poți absorbi o surpriză.';
+  }
+
+  @override
+  String get dailyOsNextCommitDraftHeadline => 'Ziua dvs., schiță.';
+
+  @override
+  String get dailyOsNextCommitDraftOverline => 'ASTĂZI';
+
+  @override
+  String get dailyOsNextCommitHeadline => 'Faceți-o a dvs.';
+
+  @override
+  String get dailyOsNextCommitHoldHint => 'ȚINEȚI';
+
+  @override
+  String get dailyOsNextCommitHoldLabel => 'Confirmă astăzi';
+
+  @override
+  String get dailyOsNextCommitLockingIn => 'Se fixează…';
+
+  @override
+  String get dailyOsNextCommitShepherdSubline =>
+      'Vă însoțesc — munca o faceți dvs.';
+
+  @override
+  String get dailyOsNextCommitSubCaption =>
+      'Confirmarea trece ziua din schiță în angajată. Puteți continua să-mi vorbiți — dar structura rămâne.';
+
+  @override
+  String get dailyOsNextCommitTitle => 'Fixați-o';
+
+  @override
+  String get dailyOsNextCommitTodayIsYours => 'Ziua este a dvs.';
+
+  @override
   String get dailyOsNextDayBack => 'Înapoi';
+
+  @override
+  String get dailyOsNextDayLockInCta => 'Fixează';
 
   @override
   String get dailyOsNextDayRefineCta => 'Reglare prin voce';
@@ -3180,6 +3223,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDayWhyChipLabel => 'DE CE';
+
+  @override
+  String get dailyOsNextDayWrapUpCta => 'Încheie';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Da, protejează dimineața';
@@ -3290,6 +3336,79 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Reglează planul';
 
   @override
+  String get dailyOsNextShutdownCarryoverDrop => 'Renunță';
+
+  @override
+  String get dailyOsNextShutdownCarryoverDropped => 'Renunțat';
+
+  @override
+  String get dailyOsNextShutdownCarryoverOverline => 'SE REPORTEAZĂ';
+
+  @override
+  String get dailyOsNextShutdownCarryoverPickDate => 'Alege data';
+
+  @override
+  String get dailyOsNextShutdownCarryoverScheduled => 'Programat';
+
+  @override
+  String get dailyOsNextShutdownCloseDay => 'Închide ziua';
+
+  @override
+  String get dailyOsNextShutdownCompletedOverline => 'CE AȚI FĂCUT';
+
+  @override
+  String get dailyOsNextShutdownMetricEnergy => 'ENERGIE';
+
+  @override
+  String dailyOsNextShutdownMetricEnergyDelta(String delta) {
+    return '$delta vs. săptămână';
+  }
+
+  @override
+  String get dailyOsNextShutdownMetricFlow => 'SESIUNI DE FLOW';
+
+  @override
+  String get dailyOsNextShutdownMetricFocus => 'TIMP DE FOCUS';
+
+  @override
+  String get dailyOsNextShutdownMetricSwitches => 'SCHIMBĂRI DE CONTEXT';
+
+  @override
+  String dailyOsNextShutdownMetricSwitchesAvg(String avg) {
+    return 'media $avg săptămâna aceasta';
+  }
+
+  @override
+  String get dailyOsNextShutdownReflectionOverline => '💬 REFLECȚIE DE O LINIE';
+
+  @override
+  String get dailyOsNextShutdownReflectionPlaceholder =>
+      'ex.: dimineață ascuțită, după-amiază trenantă după o cafea lungă cu Sarah.';
+
+  @override
+  String get dailyOsNextShutdownReflectionPrompt =>
+      'Cum a fost ziua? (Asta alimentează schița de mâine.)';
+
+  @override
+  String get dailyOsNextShutdownReflectionSpeak => 'Spuneți';
+
+  @override
+  String get dailyOsNextShutdownReflectionSubmit => 'Treci peste';
+
+  @override
+  String get dailyOsNextShutdownReflectionThanks =>
+      'Notat — alimentează ziua de mâine.';
+
+  @override
+  String get dailyOsNextShutdownSaveAndClose => 'Salvează și închide';
+
+  @override
+  String get dailyOsNextShutdownTitle => 'Închideți ziua';
+
+  @override
+  String get dailyOsNextShutdownTomorrowOverline => '✦ PENTRU MÂINE';
+
+  @override
   String get dailyOsNextStateDueToday => 'Scadent astăzi';
 
   @override
@@ -3318,6 +3437,44 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextStateRecurringMissed => 'Recurent · ratat';
+
+  @override
+  String get dailyOsNextTasksEmpty => 'Nimic aici încă.';
+
+  @override
+  String get dailyOsNextTasksFilterAll => 'Toate';
+
+  @override
+  String get dailyOsNextTasksFilterBacklog => 'Restanțe';
+
+  @override
+  String get dailyOsNextTasksFilterDone => 'Finalizate';
+
+  @override
+  String get dailyOsNextTasksFilterInProgress => 'În progres';
+
+  @override
+  String get dailyOsNextTasksFilterOverdue => 'Întârziate';
+
+  @override
+  String get dailyOsNextTasksFilterRecurring => 'Recurente';
+
+  @override
+  String get dailyOsNextTasksFilterScheduled => 'Programate';
+
+  @override
+  String get dailyOsNextTasksFooterHint =>
+      'Ritualul de dimineață scoate la suprafață ce contează.';
+
+  @override
+  String get dailyOsNextTasksSearchPlaceholder => 'Caută sarcini';
+
+  @override
+  String get dailyOsNextTasksSubtitle =>
+      'Tot ce Lotti păstrează pentru dvs. Ritualul de dimineață scoate la suprafață ce contează.';
+
+  @override
+  String get dailyOsNextTasksTitle => 'Sarcini';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Amânat';

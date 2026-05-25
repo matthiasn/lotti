@@ -1353,15 +1353,41 @@
   "dailyOsNextCaptureHeadlineTail": "na mysli?",
   "dailyOsNextCaptureIdleHint": "Klepni pro mluvení · zachyť to · nebo napiš",
   "dailyOsNextCaptureListening": "POSLOUCHÁM",
+  "dailyOsNextCaptureOpenTasks": "Procházet úkoly",
   "dailyOsNextCaptureReconcileCta": "Sjednotit",
   "dailyOsNextCaptureVoiceButtonReset": "Začít znovu",
   "dailyOsNextCaptureVoiceButtonStart": "Začít poslouchat",
   "dailyOsNextCaptureVoiceButtonStop": "Zastavit",
+  "dailyOsNextCommitCapacityNote": "{scheduled} z {capacity} naplánováno. Pohodlná rezerva — jedno překvapení den zvládne.",
+  "@dailyOsNextCommitCapacityNote": {
+    "placeholders": {
+      "scheduled": {
+        "type": "String",
+        "example": "5h 15m"
+      },
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextCommitDraftHeadline": "Tvůj den, jako návrh.",
+  "dailyOsNextCommitDraftOverline": "DNES",
+  "dailyOsNextCommitHeadline": "Udělej ho svým.",
+  "dailyOsNextCommitHoldHint": "DRŽ",
+  "dailyOsNextCommitHoldLabel": "Potvrdit dnešek",
+  "dailyOsNextCommitLockingIn": "Zamykám…",
+  "dailyOsNextCommitShepherdSubline": "Já provedu — práci uděláš ty.",
+  "dailyOsNextCommitSubCaption": "Potvrzením přejdeš z návrhu k závazku. Mluvit můžeš dál, ale kostra zůstává.",
+  "dailyOsNextCommitTitle": "Uzamknout",
+  "dailyOsNextCommitTodayIsYours": "Den je tvůj.",
   "dailyOsNextDayBack": "Zpět",
+  "dailyOsNextDayLockInCta": "Uzamknout",
   "dailyOsNextDayRefineCta": "Upravit hlasem",
   "dailyOsNextDayRefineFooterHint": "Mluv, aby ses k plánu vrátil — změny se zobrazí jako diff, než se uplatní.",
   "dailyOsNextDayTitle": "Tvůj den",
   "dailyOsNextDayWhyChipLabel": "PROČ",
+  "dailyOsNextDayWrapUpCta": "Ukončit",
   "dailyOsNextDraftingNudgeAccept": "Ano, chraň ranní hodiny",
   "dailyOsNextDraftingNudgeDecline": "Dnes ne",
   "dailyOsNextDraftingReasoningOverline": "✦ ÚVAHA",
@@ -1412,6 +1438,44 @@
   "dailyOsNextRefineStatusListening": "Poslouchám…",
   "dailyOsNextRefineStatusThinking": "✦ Přepracovávám plán…",
   "dailyOsNextRefineTitle": "Upravit plán",
+  "dailyOsNextShutdownCarryoverDrop": "Zahodit",
+  "dailyOsNextShutdownCarryoverDropped": "Zahozeno",
+  "dailyOsNextShutdownCarryoverOverline": "PŘEVÁDÍ SE",
+  "dailyOsNextShutdownCarryoverPickDate": "Vyber datum",
+  "dailyOsNextShutdownCarryoverScheduled": "Naplánováno",
+  "dailyOsNextShutdownCloseDay": "Uzavřít den",
+  "dailyOsNextShutdownCompletedOverline": "CO JSI UDĚLAL",
+  "dailyOsNextShutdownMetricEnergy": "ENERGIE",
+  "dailyOsNextShutdownMetricEnergyDelta": "{delta} vs. týden",
+  "@dailyOsNextShutdownMetricEnergyDelta": {
+    "placeholders": {
+      "delta": {
+        "type": "String",
+        "example": "⬆ 0.6"
+      }
+    }
+  },
+  "dailyOsNextShutdownMetricFlow": "FLOW RELACE",
+  "dailyOsNextShutdownMetricFocus": "ČAS FOKUSU",
+  "dailyOsNextShutdownMetricSwitches": "PŘEPÍNÁNÍ KONTEXTU",
+  "dailyOsNextShutdownMetricSwitchesAvg": "průměr {avg} tento týden",
+  "@dailyOsNextShutdownMetricSwitchesAvg": {
+    "placeholders": {
+      "avg": {
+        "type": "String",
+        "example": "8.0"
+      }
+    }
+  },
+  "dailyOsNextShutdownReflectionOverline": "💬 JEDNOŘÁDKOVÁ REFLEXE",
+  "dailyOsNextShutdownReflectionPlaceholder": "např.: ráno ostré, odpoledne se táhlo po dlouhém kafi se Sarah.",
+  "dailyOsNextShutdownReflectionPrompt": "Jak dnešek dopadl? (Naplní zítřejší návrh.)",
+  "dailyOsNextShutdownReflectionSpeak": "Řekni to",
+  "dailyOsNextShutdownReflectionSubmit": "Přeskočit",
+  "dailyOsNextShutdownReflectionThanks": "Mám to — krmí zítřek.",
+  "dailyOsNextShutdownSaveAndClose": "Uložit a zavřít",
+  "dailyOsNextShutdownTitle": "Uzavřít den",
+  "dailyOsNextShutdownTomorrowOverline": "✦ NA ZÍTŘEK",
   "dailyOsNextStateDueToday": "Splatné dnes",
   "dailyOsNextStateInProgress": "{count, plural, =0{Probíhá} =1{Probíhá · 1 relace} few{Probíhá · {count} relace} other{Probíhá · {count} relací}}",
   "@dailyOsNextStateInProgress": {
@@ -1432,6 +1496,18 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Opakující · zmeškané",
+  "dailyOsNextTasksEmpty": "Tady zatím nic.",
+  "dailyOsNextTasksFilterAll": "Vše",
+  "dailyOsNextTasksFilterBacklog": "Backlog",
+  "dailyOsNextTasksFilterDone": "Hotovo",
+  "dailyOsNextTasksFilterInProgress": "Probíhá",
+  "dailyOsNextTasksFilterOverdue": "Po termínu",
+  "dailyOsNextTasksFilterRecurring": "Opakující",
+  "dailyOsNextTasksFilterScheduled": "Naplánované",
+  "dailyOsNextTasksFooterHint": "Ranní rituál obvykle vynese to podstatné.",
+  "dailyOsNextTasksSearchPlaceholder": "Hledat úkoly",
+  "dailyOsNextTasksSubtitle": "Vše, co Lotti pro tebe drží. Ranní rituál vyplaví to podstatné.",
+  "dailyOsNextTasksTitle": "Úkoly",
   "dailyOsNextTriageConfirmDefer": "Odloženo",
   "dailyOsNextTriageConfirmDone": "Označeno jako hotové",
   "dailyOsNextTriageConfirmDoNow": "Hotovo hned",

@@ -89,4 +89,53 @@ abstract class DayAgentInterface {
     required PlanDiff diff,
     required DraftPlan originalPlan,
   });
+
+  /// Tool: `commit_day`. Toggles the day's state from drafted to
+  /// committed. Blocks render solid (no dashed outline) once this
+  /// completes; the agent's role shifts to shepherding (no more
+  /// re-proposals unless the user invokes Refine).
+  Future<DraftPlan> commitDay(DraftPlan plan);
+
+  /// Tool: `surface_shutdown_data`. Returns the three lists the
+  /// Shutdown screen needs: what completed today, what carries
+  /// forward, and the metrics card payload. Bundled because they
+  /// share the same lookback window.
+  Future<
+    ({
+      List<CompletedItem> completed,
+      List<CarryoverItem> carryover,
+      ShutdownMetrics metrics,
+    })
+  >
+  surfaceShutdownData({required DateTime forDate});
+
+  /// Tool: `record_reflection`. Persists the user's one-line
+  /// end-of-day reflection. Appended to the Logbook journal entry
+  /// for [forDate] in the real agent layer; here it's a no-op that
+  /// echoes back so the UI can render confirmation.
+  Future<void> recordReflection({
+    required DateTime forDate,
+    required String text,
+    required ReflectionSource source,
+  });
+
+  /// Tool: `record_carryover_decision`. Records what the user chose
+  /// for a carryover item — re-place tomorrow, pick a date, or drop.
+  Future<void> recordCarryoverDecision({
+    required String taskId,
+    required CarryoverAction action,
+    DateTime? when,
+  });
+
+  /// Tool: `generate_tomorrow_note`. Returns the "For tomorrow"
+  /// paragraph the Shutdown screen shows at the bottom right.
+  Future<TomorrowNote> generateTomorrowNote({required DateTime forDate});
+
+  /// Tool: `surface_task_corpus`. Browse the user's task corpus.
+  /// Pure read; no agent involvement per the design.
+  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
+    TaskCorpusState stateFilter = TaskCorpusState.all,
+    String? categoryId,
+    String? query,
+  });
 }

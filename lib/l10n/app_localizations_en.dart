@@ -3089,6 +3089,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextCaptureListening => 'LISTENING';
 
   @override
+  String get dailyOsNextCaptureOpenTasks => 'Browse tasks';
+
+  @override
   String get dailyOsNextCaptureReconcileCta => 'Reconcile';
 
   @override
@@ -3101,7 +3104,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextCaptureVoiceButtonStop => 'Stop listening';
 
   @override
+  String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
+    return '$scheduled of $capacity committed. Comfortable margin — you can absorb one surprise.';
+  }
+
+  @override
+  String get dailyOsNextCommitDraftHeadline => 'Your day, drafted.';
+
+  @override
+  String get dailyOsNextCommitDraftOverline => 'TODAY';
+
+  @override
+  String get dailyOsNextCommitHeadline => 'Make it yours.';
+
+  @override
+  String get dailyOsNextCommitHoldHint => 'HOLD';
+
+  @override
+  String get dailyOsNextCommitHoldLabel => 'Commit today';
+
+  @override
+  String get dailyOsNextCommitLockingIn => 'Locking in…';
+
+  @override
+  String get dailyOsNextCommitShepherdSubline =>
+      'I\'ll shepherd it — you do the work.';
+
+  @override
+  String get dailyOsNextCommitSubCaption =>
+      'Signing off shifts the day from draft to committed. You can still talk to me — but the bones stay put.';
+
+  @override
+  String get dailyOsNextCommitTitle => 'Lock it in';
+
+  @override
+  String get dailyOsNextCommitTodayIsYours => 'Today is yours.';
+
+  @override
   String get dailyOsNextDayBack => 'Back';
+
+  @override
+  String get dailyOsNextDayLockInCta => 'Lock in';
 
   @override
   String get dailyOsNextDayRefineCta => 'Refine by voice';
@@ -3115,6 +3158,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextDayWhyChipLabel => 'WHY';
+
+  @override
+  String get dailyOsNextDayWrapUpCta => 'Wrap up';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Yes, protect mornings';
@@ -3225,6 +3271,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Refine the plan';
 
   @override
+  String get dailyOsNextShutdownCarryoverDrop => 'Drop';
+
+  @override
+  String get dailyOsNextShutdownCarryoverDropped => 'Dropped';
+
+  @override
+  String get dailyOsNextShutdownCarryoverOverline => 'CARRIES FORWARD';
+
+  @override
+  String get dailyOsNextShutdownCarryoverPickDate => 'Pick a date';
+
+  @override
+  String get dailyOsNextShutdownCarryoverScheduled => 'Scheduled';
+
+  @override
+  String get dailyOsNextShutdownCloseDay => 'Close the day';
+
+  @override
+  String get dailyOsNextShutdownCompletedOverline => 'WHAT YOU DID';
+
+  @override
+  String get dailyOsNextShutdownMetricEnergy => 'ENERGY';
+
+  @override
+  String dailyOsNextShutdownMetricEnergyDelta(String delta) {
+    return '$delta vs. week';
+  }
+
+  @override
+  String get dailyOsNextShutdownMetricFlow => 'FLOW SESSIONS';
+
+  @override
+  String get dailyOsNextShutdownMetricFocus => 'FOCUS TIME';
+
+  @override
+  String get dailyOsNextShutdownMetricSwitches => 'CONTEXT SWITCHES';
+
+  @override
+  String dailyOsNextShutdownMetricSwitchesAvg(String avg) {
+    return 'avg $avg this week';
+  }
+
+  @override
+  String get dailyOsNextShutdownReflectionOverline => '💬 ONE-LINE REFLECTION';
+
+  @override
+  String get dailyOsNextShutdownReflectionPlaceholder =>
+      'e.g., morning was sharp, afternoon dragged after coffee with Sarah ran long.';
+
+  @override
+  String get dailyOsNextShutdownReflectionPrompt =>
+      'How did today land? (This feeds tomorrow\'s draft.)';
+
+  @override
+  String get dailyOsNextShutdownReflectionSpeak => 'Speak it';
+
+  @override
+  String get dailyOsNextShutdownReflectionSubmit => 'Skip';
+
+  @override
+  String get dailyOsNextShutdownReflectionThanks =>
+      'Got it — feeding tomorrow.';
+
+  @override
+  String get dailyOsNextShutdownSaveAndClose => 'Save & close';
+
+  @override
+  String get dailyOsNextShutdownTitle => 'Close out the day';
+
+  @override
+  String get dailyOsNextShutdownTomorrowOverline => '✦ FOR TOMORROW';
+
+  @override
   String get dailyOsNextStateDueToday => 'Due today';
 
   @override
@@ -3253,6 +3372,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextStateRecurringMissed => 'Recurring · missed';
+
+  @override
+  String get dailyOsNextTasksEmpty => 'Nothing here yet.';
+
+  @override
+  String get dailyOsNextTasksFilterAll => 'All';
+
+  @override
+  String get dailyOsNextTasksFilterBacklog => 'Backlog';
+
+  @override
+  String get dailyOsNextTasksFilterDone => 'Done';
+
+  @override
+  String get dailyOsNextTasksFilterInProgress => 'In progress';
+
+  @override
+  String get dailyOsNextTasksFilterOverdue => 'Overdue';
+
+  @override
+  String get dailyOsNextTasksFilterRecurring => 'Recurring';
+
+  @override
+  String get dailyOsNextTasksFilterScheduled => 'Scheduled';
+
+  @override
+  String get dailyOsNextTasksFooterHint =>
+      'The morning ritual usually surfaces what matters from here.';
+
+  @override
+  String get dailyOsNextTasksSearchPlaceholder => 'Search tasks';
+
+  @override
+  String get dailyOsNextTasksSubtitle =>
+      'Everything Lotti\'s holding for you. The morning ritual surfaces what matters.';
+
+  @override
+  String get dailyOsNextTasksTitle => 'Tasks';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Deferred';

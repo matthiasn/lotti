@@ -263,4 +263,55 @@ class _NullAgent implements DayAgentInterface {
     required PlanDiff diff,
     required DraftPlan originalPlan,
   }) async => originalPlan;
+
+  @override
+  Future<DraftPlan> commitDay(DraftPlan plan) async =>
+      plan.copyWith(state: DayState.committed);
+
+  @override
+  Future<
+    ({
+      List<CompletedItem> completed,
+      List<CarryoverItem> carryover,
+      ShutdownMetrics metrics,
+    })
+  >
+  surfaceShutdownData({required DateTime forDate}) async => (
+    completed: const <CompletedItem>[],
+    carryover: const <CarryoverItem>[],
+    metrics: const ShutdownMetrics(
+      focusMinutes: 0,
+      flowSessions: 0,
+      contextSwitches: 0,
+      contextSwitchesWeekAvg: 0,
+      energyScore: 0,
+      energyDeltaVsWeek: 0,
+    ),
+  );
+
+  @override
+  Future<void> recordReflection({
+    required DateTime forDate,
+    required String text,
+    required ReflectionSource source,
+  }) async {}
+
+  @override
+  Future<void> recordCarryoverDecision({
+    required String taskId,
+    required CarryoverAction action,
+    DateTime? when,
+  }) async {}
+
+  @override
+  Future<TomorrowNote> generateTomorrowNote({
+    required DateTime forDate,
+  }) async => const TomorrowNote(body: '', maturity: 1);
+
+  @override
+  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
+    TaskCorpusState stateFilter = TaskCorpusState.all,
+    String? categoryId,
+    String? query,
+  }) async => const [];
 }

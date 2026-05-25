@@ -3131,6 +3131,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureListening => 'POSLOUCHÁM';
 
   @override
+  String get dailyOsNextCaptureOpenTasks => 'Procházet úkoly';
+
+  @override
   String get dailyOsNextCaptureReconcileCta => 'Sjednotit';
 
   @override
@@ -3143,7 +3146,47 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureVoiceButtonStop => 'Zastavit';
 
   @override
+  String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
+    return '$scheduled z $capacity naplánováno. Pohodlná rezerva — jedno překvapení den zvládne.';
+  }
+
+  @override
+  String get dailyOsNextCommitDraftHeadline => 'Tvůj den, jako návrh.';
+
+  @override
+  String get dailyOsNextCommitDraftOverline => 'DNES';
+
+  @override
+  String get dailyOsNextCommitHeadline => 'Udělej ho svým.';
+
+  @override
+  String get dailyOsNextCommitHoldHint => 'DRŽ';
+
+  @override
+  String get dailyOsNextCommitHoldLabel => 'Potvrdit dnešek';
+
+  @override
+  String get dailyOsNextCommitLockingIn => 'Zamykám…';
+
+  @override
+  String get dailyOsNextCommitShepherdSubline =>
+      'Já provedu — práci uděláš ty.';
+
+  @override
+  String get dailyOsNextCommitSubCaption =>
+      'Potvrzením přejdeš z návrhu k závazku. Mluvit můžeš dál, ale kostra zůstává.';
+
+  @override
+  String get dailyOsNextCommitTitle => 'Uzamknout';
+
+  @override
+  String get dailyOsNextCommitTodayIsYours => 'Den je tvůj.';
+
+  @override
   String get dailyOsNextDayBack => 'Zpět';
+
+  @override
+  String get dailyOsNextDayLockInCta => 'Uzamknout';
 
   @override
   String get dailyOsNextDayRefineCta => 'Upravit hlasem';
@@ -3157,6 +3200,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextDayWhyChipLabel => 'PROČ';
+
+  @override
+  String get dailyOsNextDayWrapUpCta => 'Ukončit';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Ano, chraň ranní hodiny';
@@ -3266,6 +3312,78 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Upravit plán';
 
   @override
+  String get dailyOsNextShutdownCarryoverDrop => 'Zahodit';
+
+  @override
+  String get dailyOsNextShutdownCarryoverDropped => 'Zahozeno';
+
+  @override
+  String get dailyOsNextShutdownCarryoverOverline => 'PŘEVÁDÍ SE';
+
+  @override
+  String get dailyOsNextShutdownCarryoverPickDate => 'Vyber datum';
+
+  @override
+  String get dailyOsNextShutdownCarryoverScheduled => 'Naplánováno';
+
+  @override
+  String get dailyOsNextShutdownCloseDay => 'Uzavřít den';
+
+  @override
+  String get dailyOsNextShutdownCompletedOverline => 'CO JSI UDĚLAL';
+
+  @override
+  String get dailyOsNextShutdownMetricEnergy => 'ENERGIE';
+
+  @override
+  String dailyOsNextShutdownMetricEnergyDelta(String delta) {
+    return '$delta vs. týden';
+  }
+
+  @override
+  String get dailyOsNextShutdownMetricFlow => 'FLOW RELACE';
+
+  @override
+  String get dailyOsNextShutdownMetricFocus => 'ČAS FOKUSU';
+
+  @override
+  String get dailyOsNextShutdownMetricSwitches => 'PŘEPÍNÁNÍ KONTEXTU';
+
+  @override
+  String dailyOsNextShutdownMetricSwitchesAvg(String avg) {
+    return 'průměr $avg tento týden';
+  }
+
+  @override
+  String get dailyOsNextShutdownReflectionOverline => '💬 JEDNOŘÁDKOVÁ REFLEXE';
+
+  @override
+  String get dailyOsNextShutdownReflectionPlaceholder =>
+      'např.: ráno ostré, odpoledne se táhlo po dlouhém kafi se Sarah.';
+
+  @override
+  String get dailyOsNextShutdownReflectionPrompt =>
+      'Jak dnešek dopadl? (Naplní zítřejší návrh.)';
+
+  @override
+  String get dailyOsNextShutdownReflectionSpeak => 'Řekni to';
+
+  @override
+  String get dailyOsNextShutdownReflectionSubmit => 'Přeskočit';
+
+  @override
+  String get dailyOsNextShutdownReflectionThanks => 'Mám to — krmí zítřek.';
+
+  @override
+  String get dailyOsNextShutdownSaveAndClose => 'Uložit a zavřít';
+
+  @override
+  String get dailyOsNextShutdownTitle => 'Uzavřít den';
+
+  @override
+  String get dailyOsNextShutdownTomorrowOverline => '✦ NA ZÍTŘEK';
+
+  @override
   String get dailyOsNextStateDueToday => 'Splatné dnes';
 
   @override
@@ -3296,6 +3414,44 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextStateRecurringMissed => 'Opakující · zmeškané';
+
+  @override
+  String get dailyOsNextTasksEmpty => 'Tady zatím nic.';
+
+  @override
+  String get dailyOsNextTasksFilterAll => 'Vše';
+
+  @override
+  String get dailyOsNextTasksFilterBacklog => 'Backlog';
+
+  @override
+  String get dailyOsNextTasksFilterDone => 'Hotovo';
+
+  @override
+  String get dailyOsNextTasksFilterInProgress => 'Probíhá';
+
+  @override
+  String get dailyOsNextTasksFilterOverdue => 'Po termínu';
+
+  @override
+  String get dailyOsNextTasksFilterRecurring => 'Opakující';
+
+  @override
+  String get dailyOsNextTasksFilterScheduled => 'Naplánované';
+
+  @override
+  String get dailyOsNextTasksFooterHint =>
+      'Ranní rituál obvykle vynese to podstatné.';
+
+  @override
+  String get dailyOsNextTasksSearchPlaceholder => 'Hledat úkoly';
+
+  @override
+  String get dailyOsNextTasksSubtitle =>
+      'Vše, co Lotti pro tebe drží. Ranní rituál vyplaví to podstatné.';
+
+  @override
+  String get dailyOsNextTasksTitle => 'Úkoly';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Odloženo';

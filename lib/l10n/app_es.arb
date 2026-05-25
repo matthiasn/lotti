@@ -1544,15 +1544,41 @@
   "dailyOsNextCaptureHeadlineTail": "para hoy?",
   "dailyOsNextCaptureIdleHint": "Toca para hablar · captúralo · o escríbelo",
   "dailyOsNextCaptureListening": "ESCUCHANDO",
+  "dailyOsNextCaptureOpenTasks": "Explorar tareas",
   "dailyOsNextCaptureReconcileCta": "Reconciliar",
   "dailyOsNextCaptureVoiceButtonReset": "Empezar de nuevo",
   "dailyOsNextCaptureVoiceButtonStart": "Empezar a escuchar",
   "dailyOsNextCaptureVoiceButtonStop": "Detener",
+  "dailyOsNextCommitCapacityNote": "{scheduled} de {capacity} comprometidos. Margen cómodo — puedes absorber una sorpresa.",
+  "@dailyOsNextCommitCapacityNote": {
+    "placeholders": {
+      "scheduled": {
+        "type": "String",
+        "example": "5h 15m"
+      },
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextCommitDraftHeadline": "Tu día, en borrador.",
+  "dailyOsNextCommitDraftOverline": "HOY",
+  "dailyOsNextCommitHeadline": "Hazlo tuyo.",
+  "dailyOsNextCommitHoldHint": "MANTÉN",
+  "dailyOsNextCommitHoldLabel": "Confirmar hoy",
+  "dailyOsNextCommitLockingIn": "Fijando…",
+  "dailyOsNextCommitShepherdSubline": "Yo lo guío — tú haces el trabajo.",
+  "dailyOsNextCommitSubCaption": "Confirmar pasa el día de borrador a comprometido. Aún puedes hablarme, pero la estructura queda fija.",
+  "dailyOsNextCommitTitle": "Confirmar",
+  "dailyOsNextCommitTodayIsYours": "El día es tuyo.",
   "dailyOsNextDayBack": "Atrás",
+  "dailyOsNextDayLockInCta": "Confirmar",
   "dailyOsNextDayRefineCta": "Refinar con voz",
   "dailyOsNextDayRefineFooterHint": "Habla para reformar el plan — los cambios aparecen como diff antes de aplicarse.",
   "dailyOsNextDayTitle": "Tu día",
   "dailyOsNextDayWhyChipLabel": "POR QUÉ",
+  "dailyOsNextDayWrapUpCta": "Cerrar día",
   "dailyOsNextDraftingNudgeAccept": "Sí, protege las mañanas",
   "dailyOsNextDraftingNudgeDecline": "Hoy no",
   "dailyOsNextDraftingReasoningOverline": "✦ RAZONAMIENTO",
@@ -1603,6 +1629,44 @@
   "dailyOsNextRefineStatusListening": "Escuchando…",
   "dailyOsNextRefineStatusThinking": "✦ Reformando el plan…",
   "dailyOsNextRefineTitle": "Refinar el plan",
+  "dailyOsNextShutdownCarryoverDrop": "Descartar",
+  "dailyOsNextShutdownCarryoverDropped": "Descartado",
+  "dailyOsNextShutdownCarryoverOverline": "PASA A MAÑANA",
+  "dailyOsNextShutdownCarryoverPickDate": "Elegir fecha",
+  "dailyOsNextShutdownCarryoverScheduled": "Programado",
+  "dailyOsNextShutdownCloseDay": "Cerrar el día",
+  "dailyOsNextShutdownCompletedOverline": "LO QUE HICISTE",
+  "dailyOsNextShutdownMetricEnergy": "ENERGÍA",
+  "dailyOsNextShutdownMetricEnergyDelta": "{delta} vs. semana",
+  "@dailyOsNextShutdownMetricEnergyDelta": {
+    "placeholders": {
+      "delta": {
+        "type": "String",
+        "example": "⬆ 0.6"
+      }
+    }
+  },
+  "dailyOsNextShutdownMetricFlow": "SESIONES DE FLUJO",
+  "dailyOsNextShutdownMetricFocus": "TIEMPO DE FOCO",
+  "dailyOsNextShutdownMetricSwitches": "CAMBIOS DE CONTEXTO",
+  "dailyOsNextShutdownMetricSwitchesAvg": "media {avg} esta semana",
+  "@dailyOsNextShutdownMetricSwitchesAvg": {
+    "placeholders": {
+      "avg": {
+        "type": "String",
+        "example": "8.0"
+      }
+    }
+  },
+  "dailyOsNextShutdownReflectionOverline": "💬 REFLEXIÓN DE UNA LÍNEA",
+  "dailyOsNextShutdownReflectionPlaceholder": "p. ej., la mañana fue ágil, la tarde se hizo larga después del café con Sarah.",
+  "dailyOsNextShutdownReflectionPrompt": "¿Cómo aterrizó hoy? (Alimenta el borrador de mañana.)",
+  "dailyOsNextShutdownReflectionSpeak": "Háblalo",
+  "dailyOsNextShutdownReflectionSubmit": "Saltar",
+  "dailyOsNextShutdownReflectionThanks": "Anotado — alimenta el día de mañana.",
+  "dailyOsNextShutdownSaveAndClose": "Guardar y cerrar",
+  "dailyOsNextShutdownTitle": "Cerrar el día",
+  "dailyOsNextShutdownTomorrowOverline": "✦ PARA MAÑANA",
   "dailyOsNextStateDueToday": "Vence hoy",
   "dailyOsNextStateInProgress": "{count, plural, =0{En curso} =1{En curso · 1 sesión} other{En curso · {count} sesiones}}",
   "@dailyOsNextStateInProgress": {
@@ -1623,6 +1687,18 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Recurrente · perdido",
+  "dailyOsNextTasksEmpty": "Aún no hay nada aquí.",
+  "dailyOsNextTasksFilterAll": "Todas",
+  "dailyOsNextTasksFilterBacklog": "Pendientes",
+  "dailyOsNextTasksFilterDone": "Hechas",
+  "dailyOsNextTasksFilterInProgress": "En curso",
+  "dailyOsNextTasksFilterOverdue": "Atrasadas",
+  "dailyOsNextTasksFilterRecurring": "Recurrentes",
+  "dailyOsNextTasksFilterScheduled": "Programadas",
+  "dailyOsNextTasksFooterHint": "El ritual matutino suele traer lo que importa.",
+  "dailyOsNextTasksSearchPlaceholder": "Buscar tareas",
+  "dailyOsNextTasksSubtitle": "Todo lo que Lotti guarda para ti. El ritual matutino lo prioriza.",
+  "dailyOsNextTasksTitle": "Tareas",
   "dailyOsNextTriageConfirmDefer": "Aplazado",
   "dailyOsNextTriageConfirmDone": "Marcado como hecho",
   "dailyOsNextTriageConfirmDoNow": "Hecho ya",
