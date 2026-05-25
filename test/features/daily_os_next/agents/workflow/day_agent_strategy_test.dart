@@ -18,13 +18,14 @@ ChatCompletionMessageToolCall _toolCall({
   required String name,
   required Map<String, dynamic> args,
   String id = 'call-1',
+  String? rawArguments,
 }) {
   return ChatCompletionMessageToolCall(
     id: id,
     type: ChatCompletionMessageToolCallType.function,
     function: ChatCompletionMessageFunctionCall(
       name: name,
-      arguments: jsonEncode(args),
+      arguments: rawArguments ?? jsonEncode(args),
     ),
   );
 }
@@ -124,6 +125,65 @@ void main() {
       expect(response, contains('non-empty array'));
     });
 
+    test('rejects tool arguments that are not a JSON object', () async {
+      final sut = strategy();
+
+      await sut.processToolCalls(
+        toolCalls: [
+          _toolCall(
+            name: DayAgentToolNames.recordObservations,
+            args: const {},
+            rawArguments: '[]',
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(sut.extractObservations(), isEmpty);
+      final response =
+          verify(
+                () => manager.addToolResponse(
+                  toolCallId: 'call-1',
+                  response: captureAny(named: 'response'),
+                ),
+              ).captured.single
+              as String;
+      expect(response, contains('invalid arguments format'));
+      expect(response, contains('FormatException'));
+    });
+
+    test('rejects observation lists without valid text', () async {
+      final sut = strategy();
+
+      await sut.processToolCalls(
+        toolCalls: [
+          _toolCall(
+            name: DayAgentToolNames.recordObservations,
+            args: const {
+              'observations': [
+                '   ',
+                {'text': '  ', 'priority': 'notable'},
+                {'category': 'operational'},
+                42,
+              ],
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(sut.extractObservations(), isEmpty);
+      final response =
+          verify(
+                () => manager.addToolResponse(
+                  toolCallId: 'call-1',
+                  response: captureAny(named: 'response'),
+                ),
+              ).captured.single
+              as String;
+      expect(response, contains('no valid observations'));
+    });
+
     test('delegates set_next_wake to the workflow handler', () async {
       final seen = <String, Map<String, dynamic>>{};
       final sut = strategy(
@@ -185,6 +245,17 @@ void main() {
       expect(response, contains('unknown tool'));
     });
 
+    test('uses the conversation manager continuation policy', () {
+      final sut = strategy();
+      when(() => manager.canContinue()).thenReturn(true);
+
+      expect(sut.shouldContinue(manager), isTrue);
+      expect(
+        sut.getContinuationPrompt(manager),
+        contains('schedule the next wake'),
+      );
+    });
+
     test(
       'continues tool processing when assistant message persistence fails',
       () async {
@@ -228,6 +299,55 @@ void main() {
                 ).captured.single
                 as String;
         expect(errorMessage, contains('assistant/thought'));
+      },
+    );
+
+    test(
+      'continues tool processing when action message persistence fails',
+      () async {
+        var writeCount = 0;
+        when(() => syncService.upsertEntity(any())).thenAnswer((_) async {
+          writeCount++;
+          if (writeCount == 2) {
+            throw StateError('action write failed');
+          }
+        });
+        final sut = strategy();
+
+        await sut.processToolCalls(
+          toolCalls: [
+            _toolCall(
+              name: DayAgentToolNames.recordObservations,
+              args: {
+                'observations': ['Keep action logging best-effort.'],
+              },
+            ),
+          ],
+          manager: manager,
+        );
+
+        expect(
+          sut.extractObservations().single.text,
+          'Keep action logging best-effort.',
+        );
+        verify(
+          () => manager.addToolResponse(
+            toolCallId: 'call-1',
+            response: 'Recorded 1 observation(s).',
+          ),
+        ).called(1);
+        final errorMessage =
+            verify(
+                  () => domainLogger.error(
+                    any(),
+                    captureAny(),
+                    error: any(named: 'error'),
+                    stackTrace: any(named: 'stackTrace'),
+                    subDomain: any(named: 'subDomain'),
+                  ),
+                ).captured.single
+                as String;
+        expect(errorMessage, contains('action message'));
       },
     );
 

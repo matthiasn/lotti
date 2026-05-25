@@ -439,6 +439,81 @@ void main() {
       },
     );
 
+    test('sorts observations with the same timestamp by stable id', () async {
+      final createdAt = now.subtract(const Duration(minutes: 30));
+      final payloadA =
+          AgentDomainEntity.agentMessagePayload(
+                id: 'payload-a',
+                agentId: agentId,
+                createdAt: createdAt,
+                vectorClock: null,
+                content: const {'text': 'A observation'},
+              )
+              as AgentMessagePayloadEntity;
+      final payloadB =
+          AgentDomainEntity.agentMessagePayload(
+                id: 'payload-b',
+                agentId: agentId,
+                createdAt: createdAt,
+                vectorClock: null,
+                content: const {'text': 'B observation'},
+              )
+              as AgentMessagePayloadEntity;
+      final observationB =
+          AgentDomainEntity.agentMessage(
+                id: 'observation-b',
+                agentId: agentId,
+                threadId: 'observation-thread',
+                kind: AgentMessageKind.observation,
+                createdAt: createdAt,
+                vectorClock: null,
+                contentEntryId: payloadB.id,
+                metadata: const AgentMessageMetadata(runKey: 'old-run'),
+              )
+              as AgentMessageEntity;
+      final observationA =
+          AgentDomainEntity.agentMessage(
+                id: 'observation-a',
+                agentId: agentId,
+                threadId: 'observation-thread',
+                kind: AgentMessageKind.observation,
+                createdAt: createdAt,
+                vectorClock: null,
+                contentEntryId: payloadA.id,
+                metadata: const AgentMessageMetadata(runKey: 'old-run'),
+              )
+              as AgentMessageEntity;
+      when(
+        () => repository.getMessagesByKind(
+          agentId,
+          AgentMessageKind.observation,
+        ),
+      ).thenAnswer((_) async => [observationB, observationA]);
+      when(
+        () => repository.getEntitiesByIds({payloadA.id, payloadB.id}),
+      ).thenAnswer(
+        (_) async => {
+          payloadA.id: payloadA,
+          payloadB.id: payloadB,
+        },
+      );
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      final userPayload =
+          jsonDecode(conversationRepository.lastUserMessage!)
+              as Map<String, dynamic>;
+      final recentObservations =
+          userPayload['recentObservations'] as List<dynamic>;
+      expect(
+        recentObservations.map(
+          (observation) => (observation as Map<String, dynamic>)['text'],
+        ),
+        ['A observation', 'B observation'],
+      );
+    });
+
     test('clears consumed scheduled wakes after a successful wake', () async {
       currentState = state(
         scheduledWakeAt: now.subtract(const Duration(minutes: 1)),
@@ -461,6 +536,41 @@ void main() {
       expect(result.success, isTrue);
       final finalState = upsertedEntities.whereType<AgentStateEntity>().last;
       expect(finalState.scheduledWakeAt, futureWakeAt);
+    });
+
+    test('continues when user message persistence fails', () async {
+      var writeCount = 0;
+      when(() => syncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        writeCount++;
+        final entity =
+            invocation.positionalArguments.single as AgentDomainEntity;
+        if (writeCount == 1) {
+          throw StateError('user payload write failed');
+        }
+        upsertedEntities.add(entity);
+        if (entity is AgentStateEntity) {
+          currentState = entity;
+        }
+      });
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      verify(
+        () => domainLogger.error(
+          any(),
+          'failed to persist day-agent user message',
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+      expect(
+        upsertedEntities.whereType<AgentStateEntity>().last.lastWakeAt,
+        now,
+      );
     });
 
     for (final scenario in const [
@@ -590,6 +700,44 @@ void main() {
         () => domainLogger.error(
           any(),
           'day-agent wake failed',
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    });
+
+    test('logs when failure-count persistence also fails', () async {
+      currentState = state(consecutiveFailureCount: 2);
+      conversationRepository.errorToThrow = Exception('model failed');
+      when(() => syncService.upsertEntity(any())).thenAnswer(
+        (invocation) async {
+          final entity =
+              invocation.positionalArguments.single as AgentDomainEntity;
+          if (entity is AgentStateEntity) {
+            throw StateError('state update failed');
+          }
+          upsertedEntities.add(entity);
+        },
+      );
+
+      final result = await execute(workflow());
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('model failed'));
+      verify(
+        () => domainLogger.error(
+          any(),
+          'day-agent wake failed',
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+      verify(
+        () => domainLogger.error(
+          any(),
+          'failed to update day-agent failure count',
           error: any(named: 'error'),
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),

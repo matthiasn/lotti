@@ -222,6 +222,116 @@ void main() {
       );
     });
 
+    test(
+      'rejects a duplicate discovered inside the create transaction',
+      () async {
+        final existing = identity(id: 'race-winner');
+        var lookupCount = 0;
+        when(
+          () => repository.getActiveAgentByKindAndActiveDayId(
+            kind: AgentKinds.dayAgent,
+            activeDayId: dayId,
+          ),
+        ).thenAnswer((_) async {
+          lookupCount++;
+          return lookupCount == 1 ? null : existing;
+        });
+
+        await expectLater(
+          service.createDayAgent(date: testDate),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('race-winner'),
+            ),
+          ),
+        );
+
+        verifyNever(() => repository.getEntity(any()));
+        verifyNever(
+          () => agentService.createAgent(
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+          ),
+        );
+      },
+    );
+
+    test('rejects templates that are not active day-agent templates', () async {
+      final projectTemplate = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.projectAgent,
+      );
+      when(
+        () => repository.getEntity(dayAgentTemplateId),
+      ).thenAnswer((_) async => projectTemplate);
+
+      await expectLater(
+        service.createDayAgent(date: testDate),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('not an active day-agent template'),
+          ),
+        ),
+      );
+
+      verifyNever(
+        () => agentService.createAgent(
+          kind: any(named: 'kind'),
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+        ),
+      );
+    });
+
+    test('throws when the newly created agent has no state entity', () async {
+      final createdIdentity = identity();
+      final template = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+      );
+      when(
+        () => repository.getEntity(dayAgentTemplateId),
+      ).thenAnswer((_) async => template);
+      when(
+        () => agentService.createAgent(
+          kind: any(named: 'kind'),
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        ),
+      ).thenAnswer((_) async => createdIdentity);
+      when(
+        () => repository.getAgentState(agentId),
+      ).thenAnswer((_) async => null);
+
+      await expectLater(
+        service.createDayAgent(date: testDate),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('has no state entity'),
+          ),
+        ),
+      );
+
+      verifyNever(() => syncService.upsertLink(any()));
+      verifyNever(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+        ),
+      );
+    });
+
     test('getDayAgentForDate uses targeted active-day lookup', () async {
       final newer = identity(id: 'newer', createdAt: DateTime(2026, 5, 25));
       when(

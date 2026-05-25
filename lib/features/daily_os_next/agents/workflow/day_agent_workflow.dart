@@ -18,7 +18,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
-import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -286,13 +285,6 @@ class DayAgentWorkflow {
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
-    if (toolName != DayAgentToolNames.setNextWake) {
-      return DayAgentToolResult(
-        success: false,
-        output: 'Error: unknown tool "$toolName".',
-      );
-    }
-
     final rawAt = args['at'];
     final reasonValue = args['reason'];
     final reason = reasonValue is String ? reasonValue.trim() : '';
