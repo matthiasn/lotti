@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -25,7 +23,7 @@ class DayAgentService {
     required this.orchestrator,
     required this.syncService,
     required this.templateService,
-    this.domainLogger,
+    required this.domainLogger,
     this.onPersistedStateChanged,
   });
 
@@ -44,8 +42,8 @@ class DayAgentService {
   /// Template service used to resolve the shared Shepherd template.
   final AgentTemplateService templateService;
 
-  /// Optional structured logger.
-  final DomainLogger? domainLogger;
+  /// Structured logger.
+  final DomainLogger domainLogger;
 
   /// Callback fired when persisted state changes.
   final void Function(String agentId)? onPersistedStateChanged;
@@ -140,7 +138,7 @@ class DayAgentService {
       triggerTokens: {dayId},
     );
 
-    domainLogger?.log(
+    domainLogger.log(
       LogDomains.agentRuntime,
       'created day agent ${DomainLogger.sanitizeId(identity.agentId)} '
       'for ${DomainLogger.sanitizeId(dayId)}',
@@ -157,7 +155,7 @@ class DayAgentService {
 
   /// Trigger a manual wake for [agentId].
   void triggerReanalysis(String agentId) {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomains.agentRuntime,
       'manual day-agent reanalysis triggered for '
       '${DomainLogger.sanitizeId(agentId)}',
@@ -171,7 +169,7 @@ class DayAgentService {
 
   /// Cancel a pending or scheduled wake for [agentId].
   void cancelScheduledWake(String agentId) {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomains.agentRuntime,
       'day-agent scheduled wake cancelled for '
       '${DomainLogger.sanitizeId(agentId)}',
@@ -182,7 +180,7 @@ class DayAgentService {
 
   /// Restore in-memory runtime state for active day agents at app startup.
   Future<void> restoreSubscriptions() async {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomains.agentRuntime,
       'restoring day-agent runtime state...',
       subDomain: 'restore',
@@ -202,25 +200,16 @@ class DayAgentService {
         final msg =
             'failed to restore day-agent runtime state for '
             '${DomainLogger.sanitizeId(agent.agentId)}';
-        if (domainLogger != null) {
-          domainLogger!.error(
-            LogDomains.agentRuntime,
-            msg,
-            error: e,
-            stackTrace: s,
-          );
-        } else {
-          developer.log(
-            '$msg (errorType=${e.runtimeType})',
-            name: 'DayAgentService',
-            error: e.runtimeType,
-            stackTrace: s,
-          );
-        }
+        domainLogger.error(
+          LogDomains.agentRuntime,
+          msg,
+          error: e,
+          stackTrace: s,
+        );
       }
     }
 
-    domainLogger?.log(
+    domainLogger.log(
       LogDomains.agentRuntime,
       'restored $count day agent(s)',
       subDomain: 'restore',

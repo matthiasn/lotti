@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -44,6 +44,7 @@ class DayAgentStrategy extends ConversationStrategy {
     required this.threadId,
     required this.runKey,
     required this.executeToolHandler,
+    required this.domainLogger,
   });
 
   /// Sync-aware write service for persisted conversation messages.
@@ -60,6 +61,9 @@ class DayAgentStrategy extends ConversationStrategy {
 
   /// Handler for tools that mutate shared agent state.
   final DayAgentToolHandler executeToolHandler;
+
+  /// Structured logger.
+  final DomainLogger domainLogger;
 
   final _observations = <ObservationRecord>[];
   String? _finalResponse;
@@ -283,9 +287,10 @@ class DayAgentStrategy extends ConversationStrategy {
         ),
       );
     } catch (e, s) {
-      developer.log(
-        'failed to record day-agent action message',
-        name: 'DayAgentStrategy',
+      domainLogger.error(
+        LogDomains.agentWorkflow,
+        'failed to record day-agent action message '
+        'for ${DomainLogger.sanitizeId(agentId)}',
         error: e,
         stackTrace: s,
       );

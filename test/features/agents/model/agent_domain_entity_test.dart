@@ -105,6 +105,7 @@ void main() {
           consecutiveFailureCount: 2,
           wakeCounter: 14,
           processedCounterByHost: {'host-a': 5, 'host-b': 9},
+          toolCounterByKey: {'day_agent_set_next_wake:2026-02-20': 3},
         );
 
         final roundtripped = roundtrip(original);
@@ -180,6 +181,7 @@ void main() {
         expect(state.consecutiveFailureCount, equals(0));
         expect(state.wakeCounter, equals(0));
         expect(state.processedCounterByHost, isEmpty);
+        expect(state.toolCounterByKey, isEmpty);
       });
 
       test('runtimeType discriminator key is "agentState"', () {

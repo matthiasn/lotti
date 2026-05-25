@@ -21,6 +21,7 @@ void main() {
   late MockWakeOrchestrator orchestrator;
   late MockAgentSyncService syncService;
   late MockAgentTemplateService templateService;
+  late MockDomainLogger domainLogger;
   late DayAgentService service;
   late List<String> changedTokens;
 
@@ -67,8 +68,26 @@ void main() {
     orchestrator = MockWakeOrchestrator();
     syncService = MockAgentSyncService();
     templateService = MockAgentTemplateService();
+    domainLogger = MockDomainLogger();
     changedTokens = [];
 
+    when(
+      () => domainLogger.log(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => domainLogger.error(
+        any(),
+        any(),
+        error: any(named: 'error'),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => syncService.upsertLink(any())).thenAnswer((_) async {});
     when(
@@ -91,6 +110,7 @@ void main() {
       orchestrator: orchestrator,
       syncService: syncService,
       templateService: templateService,
+      domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
   });

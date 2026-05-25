@@ -1,10 +1,8 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
@@ -37,8 +35,8 @@ class DayAgentWorkflow {
     required this.cloudInferenceRepository,
     required this.syncService,
     required this.templateService,
+    required this.domainLogger,
     this.soulDocumentService,
-    this.domainLogger,
     this.onPersistedStateChanged,
     this.config = const DayAgentConfig(),
   });
@@ -64,8 +62,8 @@ class DayAgentWorkflow {
   /// Optional soul resolver.
   final SoulDocumentService? soulDocumentService;
 
-  /// Optional logger.
-  final DomainLogger? domainLogger;
+  /// Structured logger.
+  final DomainLogger domainLogger;
 
   /// Callback fired when persisted state changes.
   final void Function(String agentId)? onPersistedStateChanged;
@@ -78,7 +76,7 @@ class DayAgentWorkflow {
   static const maxScheduledWakeWritesPerDay = 4;
 
   void _log(String message, {String? subDomain}) {
-    domainLogger?.log(
+    domainLogger.log(
       LogDomains.agentWorkflow,
       message,
       subDomain: subDomain,
@@ -86,21 +84,12 @@ class DayAgentWorkflow {
   }
 
   void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    if (domainLogger != null) {
-      domainLogger!.error(
-        LogDomains.agentWorkflow,
-        message,
-        error: error,
-        stackTrace: stackTrace,
-      );
-    } else {
-      developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
-        name: 'DayAgentWorkflow',
-        error: error?.runtimeType,
-        stackTrace: stackTrace,
-      );
-    }
+    domainLogger.error(
+      LogDomains.agentWorkflow,
+      message,
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   /// Execute a full wake cycle for [agentIdentity].
@@ -181,6 +170,7 @@ class DayAgentWorkflow {
         agentId: agentId,
         threadId: threadId,
         runKey: runKey,
+        domainLogger: domainLogger,
         executeToolHandler: (toolName, args, manager) => _executeToolHandler(
           agentId: agentId,
           toolName: toolName,
@@ -334,40 +324,43 @@ class DayAgentWorkflow {
       );
     }
 
-    final state = await agentRepository.getAgentState(agentId);
-    if (state == null) {
-      return const DayAgentToolResult(
-        success: false,
-        output: 'Error: agent state not found.',
-      );
-    }
-
     final wakeCountKey = _scheduledWakeCountKey(now);
-    final currentCount = state.processedCounterByHost[wakeCountKey] ?? 0;
-    if (currentCount >= maxScheduledWakeWritesPerDay) {
-      return const DayAgentToolResult(
-        success: false,
-        output: 'Error: daily scheduled-wake cap reached.',
+    try {
+      await syncService.runInTransaction(() async {
+        final state = await agentRepository.getAgentState(agentId);
+        if (state == null) {
+          throw const _DayAgentToolException('Error: agent state not found.');
+        }
+
+        final currentCount = state.toolCounterByKey[wakeCountKey] ?? 0;
+        if (currentCount >= maxScheduledWakeWritesPerDay) {
+          throw const _DayAgentToolException(
+            'Error: daily scheduled-wake cap reached.',
+          );
+        }
+
+        await syncService.upsertEntity(
+          state.copyWith(
+            revision: state.revision + 1,
+            scheduledWakeAt: scheduledAt,
+            updatedAt: now,
+            toolCounterByKey: _nextToolCounterByKey(
+              state.toolCounterByKey,
+              wakeCountKey,
+              currentCount + 1,
+            ),
+          ),
+        );
+      });
+      onPersistedStateChanged?.call(agentId);
+
+      return DayAgentToolResult(
+        success: true,
+        output: 'Next wake scheduled for ${scheduledAt.toIso8601String()}.',
       );
+    } on _DayAgentToolException catch (e) {
+      return DayAgentToolResult(success: false, output: e.message);
     }
-
-    await syncService.upsertEntity(
-      state.copyWith(
-        revision: state.revision + 1,
-        scheduledWakeAt: scheduledAt,
-        updatedAt: now,
-        processedCounterByHost: {
-          ...state.processedCounterByHost,
-          wakeCountKey: currentCount + 1,
-        },
-      ),
-    );
-    onPersistedStateChanged?.call(agentId);
-
-    return DayAgentToolResult(
-      success: true,
-      output: 'Next wake scheduled for ${scheduledAt.toIso8601String()}.',
-    );
   }
 
   Future<_TemplateContext?> _resolveTemplate(String agentId) async {
@@ -695,9 +688,29 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     return '(no content)';
   }
 
-  static String _scheduledWakeCountKey(DateTime now) {
-    return 'day_agent_set_next_wake:${formatIsoDate(now)}';
+  static Map<String, int> _nextToolCounterByKey(
+    Map<String, int> current,
+    String wakeCountKey,
+    int nextCount,
+  ) {
+    const prefix = 'day_agent_set_next_wake:';
+    return {
+      for (final entry in current.entries)
+        if (!entry.key.startsWith(prefix) || entry.key == wakeCountKey)
+          entry.key: entry.value,
+      wakeCountKey: nextCount,
+    };
   }
+
+  static String _scheduledWakeCountKey(DateTime now) {
+    return 'day_agent_set_next_wake:${now.toIso8601String().substring(0, 10)}';
+  }
+}
+
+class _DayAgentToolException implements Exception {
+  const _DayAgentToolException(this.message);
+
+  final String message;
 }
 
 class _TemplateContext {

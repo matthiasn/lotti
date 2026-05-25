@@ -34,6 +34,7 @@ void main() {
 
   late MockAgentSyncService syncService;
   late MockConversationManager manager;
+  late MockDomainLogger domainLogger;
 
   DayAgentStrategy strategy({
     DayAgentToolHandler? handler,
@@ -43,6 +44,7 @@ void main() {
       agentId: _agentId,
       threadId: _threadId,
       runKey: _runKey,
+      domainLogger: domainLogger,
       executeToolHandler:
           handler ??
           (_, _, _) async => const DayAgentToolResult(
@@ -55,6 +57,7 @@ void main() {
   setUp(() {
     syncService = MockAgentSyncService();
     manager = MockConversationManager();
+    domainLogger = MockDomainLogger();
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
   });
 
