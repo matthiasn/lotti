@@ -11,13 +11,19 @@ import '../../test_utils.dart';
 
 enum _GeneratedTemplateEntitySlot { alpha, beta, gamma, delta, nonTemplate }
 
-enum _GeneratedTemplateKindSlot { taskAgent, projectAgent, templateImprover }
+enum _GeneratedTemplateKindSlot {
+  taskAgent,
+  dayAgent,
+  projectAgent,
+  templateImprover,
+}
 
 enum _GeneratedTemplateVersionSlot { none, first, seventh, wrongEntity }
 
 AgentTemplateKind _generatedTemplateKind(_GeneratedTemplateKindSlot slot) {
   return switch (slot) {
     _GeneratedTemplateKindSlot.taskAgent => AgentTemplateKind.taskAgent,
+    _GeneratedTemplateKindSlot.dayAgent => AgentTemplateKind.dayAgent,
     _GeneratedTemplateKindSlot.projectAgent => AgentTemplateKind.projectAgent,
     _GeneratedTemplateKindSlot.templateImprover =>
       AgentTemplateKind.templateImprover,

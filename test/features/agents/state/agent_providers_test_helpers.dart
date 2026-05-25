@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
@@ -43,8 +44,10 @@ class InitProviderBench {
     required this.mockWorkflow,
     required this.mockImproverWorkflow,
     required this.mockProjectWorkflow,
+    required this.mockDayWorkflow,
     required this.mockTaskAgentService,
     required this.mockProjectAgentService,
+    required this.mockDayAgentService,
     required this.mockTemplateService,
     required this.mockAiConfigRepo,
     required this.mockScheduledWakeManager,
@@ -66,8 +69,10 @@ class InitProviderBench {
       mockWorkflow: MockTaskAgentWorkflow(),
       mockImproverWorkflow: MockImproverAgentWorkflow(),
       mockProjectWorkflow: MockProjectAgentWorkflow(),
+      mockDayWorkflow: MockDayAgentWorkflow(),
       mockTaskAgentService: MockTaskAgentService(),
       mockProjectAgentService: MockProjectAgentService(),
+      mockDayAgentService: MockDayAgentService(),
       mockTemplateService: MockAgentTemplateService(),
       mockAiConfigRepo: MockAiConfigRepository(),
       mockScheduledWakeManager: MockScheduledWakeManager(),
@@ -85,8 +90,10 @@ class InitProviderBench {
   final MockTaskAgentWorkflow mockWorkflow;
   final MockImproverAgentWorkflow mockImproverWorkflow;
   final MockProjectAgentWorkflow mockProjectWorkflow;
+  final MockDayAgentWorkflow mockDayWorkflow;
   final MockTaskAgentService mockTaskAgentService;
   final MockProjectAgentService mockProjectAgentService;
+  final MockDayAgentService mockDayAgentService;
   final MockAgentTemplateService mockTemplateService;
   final MockAiConfigRepository mockAiConfigRepo;
   final MockScheduledWakeManager mockScheduledWakeManager;
@@ -100,6 +107,7 @@ class InitProviderBench {
     when(mockOrchestrator.stop).thenAnswer((_) async {});
     when(mockTaskAgentService.restoreSubscriptions).thenAnswer((_) async {});
     when(mockProjectAgentService.restoreSubscriptions).thenAnswer((_) async {});
+    when(mockDayAgentService.restoreSubscriptions).thenAnswer((_) async {});
     when(mockTemplateService.seedDefaults).thenAnswer((_) async {});
     when(mockSoulDocumentService.seedDefaults).thenAnswer((_) async {});
     when(
@@ -140,10 +148,12 @@ class InitProviderBench {
         taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
         improverAgentWorkflowProvider.overrideWithValue(mockImproverWorkflow),
         projectAgentWorkflowProvider.overrideWithValue(mockProjectWorkflow),
+        dayAgentWorkflowProvider.overrideWithValue(mockDayWorkflow),
         taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
         projectAgentServiceProvider.overrideWithValue(
           mockProjectAgentService,
         ),
+        dayAgentServiceProvider.overrideWithValue(mockDayAgentService),
         projectRepositoryProvider.overrideWithValue(mockProjectRepository),
         agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         soulDocumentServiceProvider.overrideWithValue(

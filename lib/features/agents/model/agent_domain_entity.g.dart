@@ -98,6 +98,11 @@ AgentStateEntity _$AgentStateEntityFromJson(Map<String, dynamic> json) =>
             (k, e) => MapEntry(k, (e as num).toInt()),
           ) ??
           const {},
+      toolCounterByKey:
+          (json['toolCounterByKey'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, (e as num).toInt()),
+          ) ??
+          const {},
       awaitingContent: json['awaitingContent'] as bool? ?? false,
       deletedAt: json['deletedAt'] == null
           ? null
@@ -122,6 +127,7 @@ Map<String, dynamic> _$AgentStateEntityToJson(AgentStateEntity instance) =>
       'consecutiveFailureCount': instance.consecutiveFailureCount,
       'wakeCounter': instance.wakeCounter,
       'processedCounterByHost': instance.processedCounterByHost,
+      'toolCounterByKey': instance.toolCounterByKey,
       'awaitingContent': instance.awaitingContent,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
@@ -322,6 +328,7 @@ Map<String, dynamic> _$AgentTemplateEntityToJson(
 
 const _$AgentTemplateKindEnumMap = {
   AgentTemplateKind.taskAgent: 'taskAgent',
+  AgentTemplateKind.dayAgent: 'dayAgent',
   AgentTemplateKind.templateImprover: 'templateImprover',
   AgentTemplateKind.projectAgent: 'projectAgent',
 };

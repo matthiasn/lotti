@@ -960,6 +960,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateInstanceBreakdownHeading => 'Per-Instance Breakdown';
 
   @override
+  String get agentTemplateKindDayAgent => 'Day Agent';
+
+  @override
   String get agentTemplateKindImprover => 'Template Improver';
 
   @override

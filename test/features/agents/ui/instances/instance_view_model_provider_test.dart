@@ -15,6 +15,7 @@ import '../../test_utils.dart';
 
 enum _GeneratedInstanceKindSlot {
   taskAgent,
+  dayAgent,
   projectAgent,
   templateImprover,
   unknown,
@@ -26,6 +27,7 @@ enum _GeneratedEvolutionStatusSlot { active, completed, abandoned }
 String _generatedInstanceKind(_GeneratedInstanceKindSlot slot) {
   return switch (slot) {
     _GeneratedInstanceKindSlot.taskAgent => AgentKinds.taskAgent,
+    _GeneratedInstanceKindSlot.dayAgent => AgentKinds.dayAgent,
     _GeneratedInstanceKindSlot.projectAgent => AgentKinds.projectAgent,
     _GeneratedInstanceKindSlot.templateImprover => AgentKinds.templateImprover,
     _GeneratedInstanceKindSlot.unknown => 'unknown_kind',
@@ -36,6 +38,7 @@ String _generatedInstanceKind(_GeneratedInstanceKindSlot slot) {
 InstanceType? _expectedInstanceType(_GeneratedInstanceKindSlot slot) {
   return switch (slot) {
     _GeneratedInstanceKindSlot.taskAgent => InstanceType.taskAgent,
+    _GeneratedInstanceKindSlot.dayAgent => InstanceType.dayAgent,
     _GeneratedInstanceKindSlot.projectAgent => InstanceType.projectAgent,
     _GeneratedInstanceKindSlot.templateImprover =>
       InstanceType.templateImprover,

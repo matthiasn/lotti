@@ -224,6 +224,60 @@ class AgentRepository {
     };
   }
 
+  /// Fetch the newest active agent identity of [kind] whose latest state has
+  /// `AgentSlots.activeDayId == activeDayId`.
+  ///
+  /// This keeps the day-agent lookup in SQL instead of loading every active
+  /// day-agent state into Dart and filtering in memory.
+  Future<AgentIdentityEntity?> getActiveAgentByKindAndActiveDayId({
+    required String kind,
+    required String activeDayId,
+  }) async {
+    final rows = await _db
+        .customSelect(
+          r'''
+            SELECT identity.*
+            FROM agent_entities AS identity
+            INNER JOIN (
+              SELECT agent_id, serialized
+              FROM (
+                SELECT state.agent_id, state.serialized,
+                  ROW_NUMBER() OVER (
+                    PARTITION BY state.agent_id
+                    ORDER BY state.created_at DESC, state.id DESC
+                  ) AS rn
+                FROM agent_entities AS state
+                WHERE state.type = ?
+                  AND state.deleted_at IS NULL
+              )
+              WHERE rn = 1
+                AND json_extract(serialized, '$.slots.activeDayId') = ?
+            ) AS latest_state
+              ON latest_state.agent_id = identity.agent_id
+            WHERE identity.type = 'agent'
+              AND identity.subtype = ?
+              AND identity.deleted_at IS NULL
+              AND json_extract(identity.serialized, '$.lifecycle') = ?
+            ORDER BY identity.created_at DESC, identity.agent_id DESC
+            LIMIT 1
+          ''',
+          variables: [
+            Variable.withString(AgentEntityTypes.agentState),
+            Variable.withString(activeDayId),
+            Variable.withString(kind),
+            Variable.withString(AgentLifecycle.active.name),
+          ],
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+    if (rows.isEmpty) return null;
+
+    final entity = AgentDbConversions.fromEntityRow(
+      await _db.agentEntities.mapFromRow(rows.first),
+    );
+    return entity.mapOrNull(agent: (agent) => agent);
+  }
+
   /// Batch-resolve the active [SoulDocumentVersionEntity] for each soul id.
   ///
   /// Mirrors [getActiveSoulDocumentVersion] but avoids the head lookup +

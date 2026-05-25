@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
@@ -367,6 +368,7 @@ Future<void> agentInitialization(Ref ref) async {
   await profileSeeder.upgradeExisting();
   await Future.wait([
     taskAgentService.restoreSubscriptions(),
+    ref.read(dayAgentServiceProvider).restoreSubscriptions(),
     ref.read(projectAgentServiceProvider).restoreSubscriptions(),
   ]);
 }
@@ -423,6 +425,29 @@ void _wireWakeExecutor(
         ref,
         agentId: agentId,
         updateNotifications: updateNotifications,
+      );
+
+      return result.mutatedEntries;
+    }
+
+    if (identity.kind == AgentKinds.dayAgent) {
+      final dayWorkflow = ref.read(dayAgentWorkflowProvider);
+      final result = await dayWorkflow.execute(
+        agentIdentity: identity,
+        runKey: runKey,
+        triggerTokens: triggers,
+        threadId: threadId,
+      );
+
+      if (!result.success) {
+        throw StateError(result.error ?? 'Day agent wake failed');
+      }
+
+      await _notifyWakeCompletion(
+        ref,
+        agentId: agentId,
+        updateNotifications: updateNotifications,
+        extraTokens: triggers,
       );
 
       return result.mutatedEntries;

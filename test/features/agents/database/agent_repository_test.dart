@@ -2521,6 +2521,123 @@ void main() {
       );
     });
 
+    group('getActiveAgentByKindAndActiveDayId', () {
+      AgentIdentityEntity identityForLookup({
+        required String agentId,
+        String kind = AgentKinds.dayAgent,
+        AgentLifecycle lifecycle = AgentLifecycle.active,
+        DateTime? createdAt,
+      }) {
+        final timestamp = createdAt ?? testDate;
+        return makeTestIdentity(
+          id: 'identity-$agentId',
+          agentId: agentId,
+          kind: kind,
+          displayName: agentId,
+          lifecycle: lifecycle,
+          currentStateId: 'state-$agentId',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        );
+      }
+
+      AgentStateEntity stateForLookup({
+        required String agentId,
+        required String activeDayId,
+        DateTime? updatedAt,
+      }) {
+        return makeTestState(
+          id: 'state-$agentId-${updatedAt?.microsecondsSinceEpoch ?? 0}',
+          agentId: agentId,
+          slots: AgentSlots(activeDayId: activeDayId),
+          updatedAt: updatedAt ?? testDate,
+        );
+      }
+
+      test(
+        'returns the newest active agent whose latest state matches',
+        () async {
+          const dayId = 'dayplan-2026-05-25';
+          await repo.upsertEntity(
+            identityForLookup(
+              agentId: 'older-day-agent',
+              createdAt: DateTime(2026, 5, 24),
+            ),
+          );
+          await repo.upsertEntity(
+            stateForLookup(agentId: 'older-day-agent', activeDayId: dayId),
+          );
+          await repo.upsertEntity(
+            identityForLookup(
+              agentId: 'newer-day-agent',
+              createdAt: DateTime(2026, 5, 25),
+            ),
+          );
+          await repo.upsertEntity(
+            stateForLookup(agentId: 'newer-day-agent', activeDayId: dayId),
+          );
+          await repo.upsertEntity(
+            identityForLookup(
+              agentId: 'task-agent',
+              kind: AgentKinds.taskAgent,
+              createdAt: DateTime(2026, 5, 26),
+            ),
+          );
+          await repo.upsertEntity(
+            stateForLookup(agentId: 'task-agent', activeDayId: dayId),
+          );
+          await repo.upsertEntity(
+            identityForLookup(
+              agentId: 'dormant-day-agent',
+              lifecycle: AgentLifecycle.dormant,
+              createdAt: DateTime(2026, 5, 27),
+            ),
+          );
+          await repo.upsertEntity(
+            stateForLookup(agentId: 'dormant-day-agent', activeDayId: dayId),
+          );
+
+          final result = await repo.getActiveAgentByKindAndActiveDayId(
+            kind: AgentKinds.dayAgent,
+            activeDayId: dayId,
+          );
+
+          expect(result?.agentId, 'newer-day-agent');
+        },
+      );
+
+      test(
+        'ignores an older matching state when the latest state moved days',
+        () async {
+          const dayId = 'dayplan-2026-05-25';
+          await repo.upsertEntity(
+            identityForLookup(agentId: 'moved-day-agent'),
+          );
+          await repo.upsertEntity(
+            stateForLookup(
+              agentId: 'moved-day-agent',
+              activeDayId: dayId,
+              updatedAt: DateTime(2026, 5, 24),
+            ),
+          );
+          await repo.upsertEntity(
+            stateForLookup(
+              agentId: 'moved-day-agent',
+              activeDayId: 'dayplan-2026-05-26',
+              updatedAt: DateTime(2026, 5, 25),
+            ),
+          );
+
+          final result = await repo.getActiveAgentByKindAndActiveDayId(
+            kind: AgentKinds.dayAgent,
+            activeDayId: dayId,
+          );
+
+          expect(result, isNull);
+        },
+      );
+    });
+
     group('getMessagesByKind', () {
       test('filters messages by kind correctly', () async {
         await repo.upsertEntity(

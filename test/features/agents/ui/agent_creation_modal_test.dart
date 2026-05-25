@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
@@ -26,15 +28,18 @@ Widget _buildSubject({
   required ValueNotifier<AgentCreationResult?> resultNotifier,
   List<Override>? extraOverrides,
   int templateCount = 2,
+  List<AgentTemplateEntity>? templates,
 }) {
-  final templates = List.generate(
-    templateCount,
-    (i) => makeTestTemplate(
-      id: 'tpl-$i',
-      agentId: 'tpl-$i',
-      displayName: 'Template $i',
-    ),
-  );
+  final resolvedTemplates =
+      templates ??
+      List.generate(
+        templateCount,
+        (i) => makeTestTemplate(
+          id: 'tpl-$i',
+          agentId: 'tpl-$i',
+          displayName: 'Template $i',
+        ),
+      );
 
   return RiverpodWidgetTestBench(
     overrides: [
@@ -48,7 +53,7 @@ Widget _buildSubject({
         onPressed: () async {
           final result = await AgentCreationModal.show(
             context: context,
-            templates: templates,
+            templates: resolvedTemplates,
           );
           resultNotifier.value = result;
         },
@@ -85,6 +90,44 @@ void main() {
     );
     expect(find.text('Template 0'), findsOneWidget);
     expect(find.text('Template 1'), findsOneWidget);
+  });
+
+  testWidgets('day-agent templates use the localized day-agent label', (
+    tester,
+  ) async {
+    final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
+    final templates = [
+      makeTestTemplate(
+        id: 'day-template',
+        agentId: 'day-template',
+        displayName: 'Shepherd',
+        kind: AgentTemplateKind.dayAgent,
+      ),
+      makeTestTemplate(
+        id: 'task-template',
+        agentId: 'task-template',
+        displayName: 'Task Agent',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      _buildSubject(
+        profiles: [testInferenceProfile()],
+        resultNotifier: resultNotifier,
+        templates: templates,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Modal'));
+    await tester.pumpAndSettle();
+
+    final context = tester.element(find.byType(ElevatedButton));
+    expect(find.text('Shepherd'), findsOneWidget);
+    expect(
+      find.text(context.messages.agentTemplateKindDayAgent),
+      findsOneWidget,
+    );
   });
 
   testWidgets('single template auto-skips to profile page', (tester) async {

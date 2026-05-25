@@ -972,6 +972,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTemplateInstanceBreakdownHeading => 'Desglose por instancia';
 
   @override
+  String get agentTemplateKindDayAgent => 'Agente diario';
+
+  @override
   String get agentTemplateKindImprover => 'Mejorador de plantilla';
 
   @override

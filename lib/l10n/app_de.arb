@@ -433,6 +433,7 @@
   "agentTemplateGeneralDirectiveHint": "Definiere die Persönlichkeit, Tools, Ziele und den Interaktionsstil des Agenten...",
   "agentTemplateGeneralDirectiveLabel": "Allgemeine Anweisung",
   "agentTemplateInstanceBreakdownHeading": "Aufschlüsselung nach Instanz",
+  "agentTemplateKindDayAgent": "Tages-Agent",
   "agentTemplateKindImprover": "Vorlagen-Verbesserer",
   "agentTemplateKindProjectAgent": "Projekt-Agent",
   "agentTemplateKindTaskAgent": "Aufgaben-Agent",

@@ -48,6 +48,9 @@ enum AgentTemplateKind {
   /// A task-focused agent template.
   taskAgent,
 
+  /// A day-focused agent template for Daily OS planning.
+  dayAgent,
+
   /// A template-improver agent template (manages one-on-one rituals).
   templateImprover,
 

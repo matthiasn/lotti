@@ -1344,6 +1344,9 @@ void main() {
         verify(
           () => bench.mockTaskAgentService.restoreSubscriptions(),
         ).called(1);
+        verify(
+          () => bench.mockDayAgentService.restoreSubscriptions(),
+        ).called(1);
       },
     );
 
@@ -1822,6 +1825,70 @@ void main() {
           () => bench.mockImproverWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
+            threadId: any(named: 'threadId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'wakeExecutor routes day agent to day workflow',
+      () async {
+        final identity = makeTestIdentity(
+          kind: AgentKinds.dayAgent,
+        );
+        final mutated = <String, VectorClock>{
+          'entry-day': const VectorClock({}),
+        };
+
+        when(
+          () => bench.mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => bench.mockDayWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
+
+        final result = await capture.executor(
+          kTestAgentId,
+          'run-key-day',
+          {'dayplan-2026-05-25'},
+          'thread-day',
+        );
+
+        expect(result, equals(mutated));
+        verify(
+          () => bench.mockDayWorkflow.execute(
+            agentIdentity: identity,
+            runKey: 'run-key-day',
+            triggerTokens: {'dayplan-2026-05-25'},
+            threadId: 'thread-day',
+          ),
+        ).called(1);
+
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notifyUiOnly(
+            {kTestAgentId, 'dayplan-2026-05-25', 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+
+        verifyNever(
+          () => bench.mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
             threadId: any(named: 'threadId'),
           ),
         );
@@ -3425,6 +3492,9 @@ void main() {
       verify(() => bench.mockTemplateService.seedDefaults()).called(1);
       verify(
         () => bench.mockTaskAgentService.restoreSubscriptions(),
+      ).called(1);
+      verify(
+        () => bench.mockDayAgentService.restoreSubscriptions(),
       ).called(1);
     });
   });

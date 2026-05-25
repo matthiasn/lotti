@@ -153,6 +153,7 @@ class _TemplateSelectionPageState extends State<_TemplateSelectionPage> {
     return switch (kind) {
       AgentTemplateKind.taskAgent =>
         context.messages.agentTemplateKindTaskAgent,
+      AgentTemplateKind.dayAgent => context.messages.agentTemplateKindDayAgent,
       AgentTemplateKind.templateImprover =>
         context.messages.agentTemplateKindImprover,
       AgentTemplateKind.projectAgent =>

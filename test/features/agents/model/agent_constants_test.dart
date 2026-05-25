@@ -8,9 +8,14 @@ void main() {
       expect(AgentKinds.projectAgent, equals('project_agent'));
     });
 
+    test('dayAgent constant has expected value', () {
+      expect(AgentKinds.dayAgent, equals('day_agent'));
+    });
+
     test('all kind constants are distinct', () {
       final kinds = [
         AgentKinds.taskAgent,
+        AgentKinds.dayAgent,
         AgentKinds.templateImprover,
         AgentKinds.projectAgent,
       ];
@@ -40,11 +45,15 @@ void main() {
   });
 
   group('AgentTemplateKind', () {
-    test('projectAgent enum value exists', () {
+    test('dayAgent enum value exists', () {
       expect(
         AgentTemplateKind.values,
-        contains(AgentTemplateKind.projectAgent),
+        contains(AgentTemplateKind.dayAgent),
       );
+    });
+
+    test('dayAgent name is "dayAgent"', () {
+      expect(AgentTemplateKind.dayAgent.name, equals('dayAgent'));
     });
 
     test('projectAgent name is "projectAgent"', () {
@@ -65,6 +74,14 @@ void main() {
         'project_agent',
       );
       expect(result, equals(AgentTemplateKind.projectAgent));
+    });
+
+    test('parseEnumByName resolves day_agent from snake_case', () {
+      final result = parseEnumByName(
+        AgentTemplateKind.values,
+        'day_agent',
+      );
+      expect(result, equals(AgentTemplateKind.dayAgent));
     });
   });
 }

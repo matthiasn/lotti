@@ -67,6 +67,7 @@ class EvolutionDataBundle {
 /// Well-known template IDs for seeded defaults.
 const lauraTemplateId = 'template-laura-001';
 const tomTemplateId = 'template-tom-001';
+const dayAgentTemplateId = 'template-day-agent-001';
 const projectTemplateId = 'template-project-001';
 const improverTemplateId = 'template-improver-001';
 const metaImproverTemplateId = 'template-meta-improver-001';
@@ -739,12 +740,14 @@ class AgentTemplateService {
     final [
       laura,
       tom,
+      dayAgent,
       projectTemplate,
       improver,
       metaImprover,
     ] = await Future.wait([
       getTemplate(lauraTemplateId),
       getTemplate(tomTemplateId),
+      getTemplate(dayAgentTemplateId),
       getTemplate(projectTemplateId),
       getTemplate(improverTemplateId),
       getTemplate(metaImproverTemplateId),
@@ -752,6 +755,7 @@ class AgentTemplateService {
 
     if (laura != null &&
         tom != null &&
+        dayAgent != null &&
         projectTemplate != null &&
         improver != null &&
         metaImprover != null) {
@@ -810,6 +814,22 @@ class AgentTemplateService {
       );
     }
 
+    if (dayAgent == null) {
+      await createTemplate(
+        templateId: dayAgentTemplateId,
+        displayName: 'Shepherd',
+        kind: AgentTemplateKind.dayAgent,
+        modelId: kDefaultAgentTemplateModelId,
+        directives:
+            'You are Shepherd, a Daily OS planning agent. You help the user '
+            'shape one realistic day at a time, protect capacity, and learn '
+            'from each day without taking control away from the user.',
+        generalDirective: dayAgentGeneralDirective,
+        reportDirective: dayAgentReportDirective,
+        authoredBy: 'system',
+      );
+    }
+
     if (improver == null) {
       await createTemplate(
         templateId: improverTemplateId,
@@ -852,8 +872,8 @@ class AgentTemplateService {
     }
 
     developer.log(
-      'Seeded default templates (Laura, Tom, Template Improver, '
-      'Meta Improver)',
+      'Seeded default templates (Laura, Tom, Shepherd, Template Improver, '
+      'Meta Improver, Project Analyst)',
       name: 'AgentTemplateService',
     );
 
@@ -886,6 +906,10 @@ class AgentTemplateService {
         AgentTemplateKind.taskAgent => (
           taskAgentGeneralDirective,
           taskAgentReportDirective,
+        ),
+        AgentTemplateKind.dayAgent => (
+          dayAgentGeneralDirective,
+          dayAgentReportDirective,
         ),
         AgentTemplateKind.templateImprover => (
           templateImproverGeneralDirective,

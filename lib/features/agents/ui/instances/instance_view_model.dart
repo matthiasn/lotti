@@ -12,6 +12,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 String instanceTypeLabel(AppLocalizations messages, InstanceType t) {
   return switch (t) {
     InstanceType.taskAgent => messages.agentTemplateKindTaskAgent,
+    InstanceType.dayAgent => messages.agentTemplateKindDayAgent,
     InstanceType.projectAgent => messages.agentTemplateKindProjectAgent,
     InstanceType.templateImprover => messages.agentTemplateKindImprover,
     InstanceType.evolution => messages.agentInstancesKindEvolution,
@@ -36,11 +37,18 @@ String agentLifecycleLabel(AppLocalizations messages, AgentLifecycle s) {
 /// [AgentTemplateKind] so a future kind can be added in one enum and the
 /// instances page picks it up. `evolution` is the synthetic type used for
 /// [EvolutionSessionEntity]s, which don't have a template kind.
-enum InstanceType { taskAgent, projectAgent, templateImprover, evolution }
+enum InstanceType {
+  taskAgent,
+  dayAgent,
+  projectAgent,
+  templateImprover,
+  evolution,
+}
 
 InstanceType? instanceTypeFromAgentKind(String kind) {
   return switch (kind) {
     AgentKinds.taskAgent => InstanceType.taskAgent,
+    AgentKinds.dayAgent => InstanceType.dayAgent,
     AgentKinds.projectAgent => InstanceType.projectAgent,
     AgentKinds.templateImprover => InstanceType.templateImprover,
     _ => null,

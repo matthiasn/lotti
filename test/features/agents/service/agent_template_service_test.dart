@@ -982,6 +982,13 @@ const _defaultTemplateDefinitions = [
     reportDirective: projectAgentReportDirective,
   ),
   _DefaultTemplateDefinition(
+    id: dayAgentTemplateId,
+    displayName: 'Shepherd',
+    kind: AgentTemplateKind.dayAgent,
+    generalDirective: dayAgentGeneralDirective,
+    reportDirective: dayAgentReportDirective,
+  ),
+  _DefaultTemplateDefinition(
     id: improverTemplateId,
     displayName: 'Template Improver',
     kind: AgentTemplateKind.templateImprover,
@@ -1001,6 +1008,7 @@ class _GeneratedSeedDefaultsScenario {
   const _GeneratedSeedDefaultsScenario({
     required this.lauraSlot,
     required this.tomSlot,
+    required this.dayAgentSlot,
     required this.projectSlot,
     required this.improverSlot,
     required this.metaImproverSlot,
@@ -1008,6 +1016,7 @@ class _GeneratedSeedDefaultsScenario {
 
   final _GeneratedDefaultTemplateSlot lauraSlot;
   final _GeneratedDefaultTemplateSlot tomSlot;
+  final _GeneratedDefaultTemplateSlot dayAgentSlot;
   final _GeneratedDefaultTemplateSlot projectSlot;
   final _GeneratedDefaultTemplateSlot improverSlot;
   final _GeneratedDefaultTemplateSlot metaImproverSlot;
@@ -1015,6 +1024,7 @@ class _GeneratedSeedDefaultsScenario {
   List<_GeneratedDefaultTemplateSlot> get slots => [
     lauraSlot,
     tomSlot,
+    dayAgentSlot,
     projectSlot,
     improverSlot,
     metaImproverSlot,
@@ -1035,7 +1045,8 @@ class _GeneratedSeedDefaultsScenario {
   String toString() {
     return '_GeneratedSeedDefaultsScenario('
         'lauraSlot: $lauraSlot, tomSlot: $tomSlot, '
-        'projectSlot: $projectSlot, improverSlot: $improverSlot, '
+        'dayAgentSlot: $dayAgentSlot, projectSlot: $projectSlot, '
+        'improverSlot: $improverSlot, '
         'metaImproverSlot: $metaImproverSlot)';
   }
 }
@@ -1146,6 +1157,10 @@ extension _AgentTemplateKindSeedDirectives on AgentTemplateKind {
       AgentTemplateKind.taskAgent => (
         taskAgentGeneralDirective,
         taskAgentReportDirective,
+      ),
+      AgentTemplateKind.dayAgent => (
+        dayAgentGeneralDirective,
+        dayAgentReportDirective,
       ),
       AgentTemplateKind.templateImprover => (
         templateImproverGeneralDirective,
@@ -1264,7 +1279,8 @@ extension _AnyGeneratedAgentTemplateServiceScenario on glados.Any {
       glados.IntAnys(this).intInRange(0, 30);
 
   glados.Generator<_GeneratedSeedDefaultsScenario> get seedDefaultsScenario =>
-      glados.CombinableAny(this).combine5(
+      glados.CombinableAny(this).combine6(
+        defaultTemplateSlot,
         defaultTemplateSlot,
         defaultTemplateSlot,
         defaultTemplateSlot,
@@ -1273,12 +1289,14 @@ extension _AnyGeneratedAgentTemplateServiceScenario on glados.Any {
         (
           _GeneratedDefaultTemplateSlot lauraSlot,
           _GeneratedDefaultTemplateSlot tomSlot,
+          _GeneratedDefaultTemplateSlot dayAgentSlot,
           _GeneratedDefaultTemplateSlot projectSlot,
           _GeneratedDefaultTemplateSlot improverSlot,
           _GeneratedDefaultTemplateSlot metaImproverSlot,
         ) => _GeneratedSeedDefaultsScenario(
           lauraSlot: lauraSlot,
           tomSlot: tomSlot,
+          dayAgentSlot: dayAgentSlot,
           projectSlot: projectSlot,
           improverSlot: improverSlot,
           metaImproverSlot: metaImproverSlot,
@@ -3123,6 +3141,9 @@ void main() {
         () => mockRepo.getEntity(tomTemplateId),
       ).thenAnswer((_) async => null);
       when(
+        () => mockRepo.getEntity(dayAgentTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
         () => mockRepo.getEntity(projectTemplateId),
       ).thenAnswer((_) async => null);
       when(
@@ -3136,8 +3157,8 @@ void main() {
 
       await service.seedDefaults();
 
-      // 5 templates * 3 entities each = 15 upserts.
-      verify(() => mockSync.upsertEntity(any())).called(15);
+      // 6 templates * 3 entities each = 18 upserts.
+      verify(() => mockSync.upsertEntity(any())).called(18);
     });
 
     test('skips creation when all already seeded', () async {
@@ -3148,6 +3169,11 @@ void main() {
       final tom = makeTestTemplate(
         id: tomTemplateId,
         agentId: tomTemplateId,
+      );
+      final dayAgent = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
       );
       final projectTemplate = makeTestTemplate(
         id: projectTemplateId,
@@ -3168,6 +3194,9 @@ void main() {
       when(
         () => mockRepo.getEntity(tomTemplateId),
       ).thenAnswer((_) async => tom);
+      when(
+        () => mockRepo.getEntity(dayAgentTemplateId),
+      ).thenAnswer((_) async => dayAgent);
       when(
         () => mockRepo.getEntity(projectTemplateId),
       ).thenAnswer((_) async => projectTemplate);
@@ -3192,6 +3221,11 @@ void main() {
         id: improverTemplateId,
         agentId: improverTemplateId,
       );
+      final dayAgent = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+      );
       final projectTemplate = makeTestTemplate(
         id: projectTemplateId,
         agentId: projectTemplateId,
@@ -3207,6 +3241,9 @@ void main() {
       when(
         () => mockRepo.getEntity(tomTemplateId),
       ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(dayAgentTemplateId),
+      ).thenAnswer((_) async => dayAgent);
       when(
         () => mockRepo.getEntity(projectTemplateId),
       ).thenAnswer((_) async => projectTemplate);
@@ -3229,6 +3266,11 @@ void main() {
         id: tomTemplateId,
         agentId: tomTemplateId,
       );
+      final dayAgent = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+      );
       final projectTemplate = makeTestTemplate(
         id: projectTemplateId,
         agentId: projectTemplateId,
@@ -3244,6 +3286,9 @@ void main() {
       when(
         () => mockRepo.getEntity(tomTemplateId),
       ).thenAnswer((_) async => tom);
+      when(
+        () => mockRepo.getEntity(dayAgentTemplateId),
+      ).thenAnswer((_) async => dayAgent);
       when(
         () => mockRepo.getEntity(projectTemplateId),
       ).thenAnswer((_) async => projectTemplate);
@@ -3270,6 +3315,11 @@ void main() {
         id: tomTemplateId,
         agentId: tomTemplateId,
       );
+      final dayAgent = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+      );
       final improver = makeTestTemplate(
         id: improverTemplateId,
         agentId: improverTemplateId,
@@ -3285,6 +3335,9 @@ void main() {
       when(
         () => mockRepo.getEntity(tomTemplateId),
       ).thenAnswer((_) async => tom);
+      when(
+        () => mockRepo.getEntity(dayAgentTemplateId),
+      ).thenAnswer((_) async => dayAgent);
       when(
         () => mockRepo.getEntity(projectTemplateId),
       ).thenAnswer((_) async => null);

@@ -105,6 +105,7 @@ void main() {
           consecutiveFailureCount: 2,
           wakeCounter: 14,
           processedCounterByHost: {'host-a': 5, 'host-b': 9},
+          toolCounterByKey: {'day_agent_set_next_wake:2026-02-20': 3},
         );
 
         final roundtripped = roundtrip(original);
@@ -144,6 +145,25 @@ void main() {
         expect(state.slots.weeklyReviewCount, equals(5));
       });
 
+      test('roundtrips day agent slots', () {
+        final original = AgentDomainEntity.agentState(
+          id: 'state-day-001',
+          agentId: 'agent-day-001',
+          revision: 2,
+          slots: const AgentSlots(activeDayId: 'dayplan-2026-05-25'),
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+          scheduledWakeAt: DateTime(2026, 5, 25, 6, 30),
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final state = roundtripped as AgentStateEntity;
+        expect(state.slots.activeDayId, equals('dayplan-2026-05-25'));
+        expect(state.scheduledWakeAt, equals(DateTime(2026, 5, 25, 6, 30)));
+      });
+
       test('roundtrips with defaults for optional int/map fields', () {
         final original = AgentDomainEntity.agentState(
           id: 'state-002',
@@ -161,6 +181,7 @@ void main() {
         expect(state.consecutiveFailureCount, equals(0));
         expect(state.wakeCounter, equals(0));
         expect(state.processedCounterByHost, isEmpty);
+        expect(state.toolCounterByKey, isEmpty);
       });
 
       test('runtimeType discriminator key is "agentState"', () {

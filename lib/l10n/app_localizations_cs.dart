@@ -968,6 +968,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateInstanceBreakdownHeading => 'Rozpis podle instancí';
 
   @override
+  String get agentTemplateKindDayAgent => 'Denní agent';
+
+  @override
   String get agentTemplateKindImprover => 'Zlepšovač šablon';
 
   @override

@@ -978,6 +978,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateInstanceBreakdownHeading => 'Detaliere pe instanță';
 
   @override
+  String get agentTemplateKindDayAgent => 'Agent de zi';
+
+  @override
   String get agentTemplateKindImprover => 'Îmbunătățitor de șablon';
 
   @override

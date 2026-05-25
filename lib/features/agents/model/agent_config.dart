@@ -28,6 +28,9 @@ abstract class AgentSlots with _$AgentSlots {
     /// The journal-domain task ID this agent is working on.
     String? activeTaskId,
 
+    /// The day-plan ID this agent is working on.
+    String? activeDayId,
+
     /// The project ID this agent is working on.
     String? activeProjectId,
 
