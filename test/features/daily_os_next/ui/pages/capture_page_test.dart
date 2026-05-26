@@ -825,5 +825,3 @@ class _StubCaptureController extends CaptureController {
   @override
   CaptureState build() => _initial;
 }
-
-

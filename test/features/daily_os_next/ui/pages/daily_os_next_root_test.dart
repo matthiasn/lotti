@@ -127,7 +127,9 @@ void main() {
                 captureControllerProvider.overrideWith(
                   () => CaptureController(realtimeService: realtimeService),
                 ),
-                capturesForDateProvider.overrideWith((ref, _) async => const []),
+                capturesForDateProvider.overrideWith(
+                  (ref, _) async => const [],
+                ),
                 currentDraftPlanProvider.overrideWith((ref, _) async => plan),
               ],
             ),

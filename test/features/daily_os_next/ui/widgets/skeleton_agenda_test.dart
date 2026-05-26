@@ -68,19 +68,22 @@ void main() {
       },
     );
 
-    testWidgets('cards share the same gradient + border type across the column', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_wrap(const SkeletonAgenda(cardCount: 3)));
-      await tester.pump();
+    testWidgets(
+      'cards share the same gradient + border type across the column',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(_wrap(const SkeletonAgenda(cardCount: 3)));
+        await tester.pump();
 
-      for (final element in _shimmerCards().evaluate()) {
-        final container = element.widget as Container;
-        final decoration = container.decoration! as BoxDecoration;
-        expect(decoration.gradient, isA<LinearGradient>());
-        expect(decoration.border, isNotNull);
-      }
-    });
+        for (final element in _shimmerCards().evaluate()) {
+          final container = element.widget as Container;
+          final decoration = container.decoration! as BoxDecoration;
+          expect(decoration.gradient, isA<LinearGradient>());
+          expect(decoration.border, isNotNull);
+        }
+      },
+    );
 
     testWidgets('disposing the widget cancels the ticker', (tester) async {
       await tester.pumpWidget(_wrap(const SkeletonAgenda()));
