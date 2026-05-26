@@ -164,11 +164,16 @@ String dayAgentCaptureSubmittedToken(String captureId) {
 }
 
 /// Extracts the first submitted capture ID from a trigger-token set.
+///
+/// The returned ID is trimmed of surrounding whitespace so equality checks
+/// downstream (e.g. against `CaptureEntity.id`) match canonical form.
 String? captureIdFromTriggerTokens(Set<String> triggerTokens) {
   for (final token in triggerTokens) {
     if (token.startsWith(dayAgentCaptureSubmittedPrefix)) {
-      final captureId = token.substring(dayAgentCaptureSubmittedPrefix.length);
-      if (captureId.trim().isNotEmpty) return captureId;
+      final captureId = token
+          .substring(dayAgentCaptureSubmittedPrefix.length)
+          .trim();
+      if (captureId.isNotEmpty) return captureId;
     }
   }
   return null;
@@ -180,11 +185,14 @@ String dayAgentDraftingToken(String dayId) {
 }
 
 /// Extracts the first drafting-target day ID from a trigger-token set.
+///
+/// The returned ID is trimmed of surrounding whitespace so equality checks
+/// downstream (e.g. against `AgentSlots.activeDayId`) match canonical form.
 String? draftingDayIdFromTriggerTokens(Set<String> triggerTokens) {
   for (final token in triggerTokens) {
     if (token.startsWith(dayAgentDraftingPrefix)) {
-      final dayId = token.substring(dayAgentDraftingPrefix.length);
-      if (dayId.trim().isNotEmpty) return dayId;
+      final dayId = token.substring(dayAgentDraftingPrefix.length).trim();
+      if (dayId.isNotEmpty) return dayId;
     }
   }
   return null;

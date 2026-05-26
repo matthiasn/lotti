@@ -251,6 +251,15 @@ void _expectTokenRoundTrip() {
         isNull,
       );
     });
+
+    test('trims surrounding whitespace from the returned capture id', () {
+      expect(
+        captureIdFromTriggerTokens({
+          '$dayAgentCaptureSubmittedPrefix  capture-1  ',
+        }),
+        'capture-1',
+      );
+    });
   });
 
   group('dayAgentDraftingToken', () {
@@ -296,6 +305,15 @@ void _expectTokenRoundTrip() {
       expect(
         draftingDayIdFromTriggerTokens({'$dayAgentDraftingPrefix   '}),
         isNull,
+      );
+    });
+
+    test('trims surrounding whitespace from the returned day id', () {
+      expect(
+        draftingDayIdFromTriggerTokens({
+          '$dayAgentDraftingPrefix  dayplan-2026-05-25  ',
+        }),
+        'dayplan-2026-05-25',
       );
     });
   });
