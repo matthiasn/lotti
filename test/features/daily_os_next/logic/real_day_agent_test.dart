@@ -1255,7 +1255,6 @@ void main() {
           final immediate = await adapter.applyTriage(
             taskId: 't-1',
             action: TriageAction.today,
-            deferTo: _asOf,
           );
           expect(immediate.deferredTo, isNull);
           expect(immediate.action, TriageAction.today);
@@ -1263,7 +1262,6 @@ void main() {
             () => captureService.applyTriage(
               taskId: 't-1',
               action: 'today',
-              deferTo: _asOf,
             ),
           ).called(1);
 
@@ -1274,6 +1272,13 @@ void main() {
           );
           expect(deferred.deferredTo, _asOf);
           expect(deferred.action, TriageAction.defer);
+          verify(
+            () => captureService.applyTriage(
+              taskId: 't-2',
+              action: 'defer',
+              deferTo: _asOf,
+            ),
+          ).called(1);
         },
       );
 

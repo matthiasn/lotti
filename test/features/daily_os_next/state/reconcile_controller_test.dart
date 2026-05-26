@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 void main() {
   group('ReconcileController', () {
@@ -135,6 +139,170 @@ void main() {
           refreshed.triageDecisions['t_dentist']?.action,
           TriageAction.defer,
         );
+      },
+    );
+
+    test(
+      'triage is a no-op before the first build completes (state.value null)',
+      () async {
+        const id = CaptureId('cap_early');
+        final params = paramsFor(id);
+        final slowAgent = _RefreshingDayAgent();
+        final container = makeContainer(
+          override: slowAgent,
+          aliveFor: params,
+        );
+
+        // Invoke triage before the controller's first `build` returns —
+        // the early-return path keeps the call safe and does not call the
+        // agent's applyTriage.
+        await container
+            .read(reconcileControllerProvider(params).notifier)
+            .triage(taskId: 't_unknown', action: TriageAction.today);
+
+        // Now let the build complete so triageDecisions are present.
+        final data = await container.read(
+          reconcileControllerProvider(params).future,
+        );
+        expect(data.triageDecisions, isEmpty);
+      },
+    );
+
+    test(
+      'breakLink is a no-op before the first build completes',
+      () async {
+        const id = CaptureId('cap_break_early');
+        final params = paramsFor(id);
+        final slowAgent = _RefreshingDayAgent();
+        final container = makeContainer(
+          override: slowAgent,
+          aliveFor: params,
+        );
+
+        await container
+            .read(reconcileControllerProvider(params).notifier)
+            .breakLink('parsed-x');
+
+        final data = await container.read(
+          reconcileControllerProvider(params).future,
+        );
+        expect(data.parsed, isEmpty);
+      },
+    );
+
+    test(
+      'ReconcileData.copyWith returns an identical snapshot with no args, '
+      'and replaces only what is supplied',
+      () {
+        const data = ReconcileData(
+          parsed: <ParsedItem>[],
+          pending: <PendingItem>[],
+          triageDecisions: <String, TriageResult>{},
+        );
+        expect(data.copyWith().parsed, data.parsed);
+        expect(data.copyWith().pending, data.pending);
+        expect(data.copyWith().triageDecisions, data.triageDecisions);
+
+        const replacement = TriageResult(
+          taskId: 't',
+          action: TriageAction.today,
+        );
+        final updated = data.copyWith(
+          triageDecisions: {'t': replacement},
+        );
+        expect(updated.triageDecisions, hasLength(1));
+        expect(updated.parsed, data.parsed);
+        expect(updated.pending, data.pending);
+      },
+    );
+
+    test('ReconcileParams equality + hashCode account for capture + day', () {
+      final a = ReconcileParams(
+        captureId: const CaptureId('cap-1'),
+        dayDate: DateTime(2026, 5, 25, 11),
+      );
+      final b = ReconcileParams(
+        captureId: const CaptureId('cap-1'),
+        // Different time-of-day collapses to the same midnight.
+        dayDate: DateTime(2026, 5, 25, 23, 59),
+      );
+      final c = ReconcileParams(
+        captureId: const CaptureId('cap-2'),
+        dayDate: DateTime(2026, 5, 25),
+      );
+      final d = ReconcileParams(
+        captureId: const CaptureId('cap-1'),
+        dayDate: DateTime(2026, 5, 26),
+      );
+
+      expect(a, equals(a));
+      expect(a, equals(b));
+      expect(a.hashCode, b.hashCode);
+      expect(a == c, isFalse);
+      expect(a == d, isFalse);
+      // ignore: unrelated_type_equality_checks
+      expect(a == 'not-params', isFalse);
+    });
+
+    test(
+      'reconcileCaptureUpdateProvider returns an empty stream when no '
+      'UpdateNotifications service is registered',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            maybeUpdateNotificationsProvider.overrideWithValue(null),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final first = container.read(
+          reconcileCaptureUpdateProvider('cap-no-notifs').future,
+        );
+        // The empty stream completes without emitting, so awaiting `first`
+        // throws a StateError. That confirms there is no UpdateNotifications
+        // subscription behind it.
+        await expectLater(first, throwsA(isA<StateError>()));
+      },
+    );
+
+    test(
+      'reconcileCaptureUpdateProvider only forwards events that include the '
+      'capture id',
+      () async {
+        final notifications = MockUpdateNotifications();
+        final controller = StreamController<Set<String>>.broadcast();
+        addTearDown(controller.close);
+        when(
+          () => notifications.updateStream,
+        ).thenAnswer((_) => controller.stream);
+
+        final container = ProviderContainer(
+          overrides: [
+            maybeUpdateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final received = <Set<String>>[];
+        final sub = container.listen(
+          reconcileCaptureUpdateProvider('cap-watch'),
+          (_, next) {
+            next.whenData(received.add);
+          },
+        );
+        addTearDown(sub.close);
+
+        // Force the provider to subscribe before we push events.
+        container.read(reconcileCaptureUpdateProvider('cap-watch'));
+
+        controller
+          ..add({'unrelated'})
+          ..add({'cap-watch', 'extra'});
+        await pumpEventQueue();
+
+        expect(received, [
+          {'cap-watch', 'extra'},
+        ]);
       },
     );
 
