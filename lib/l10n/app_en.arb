@@ -1738,10 +1738,21 @@
   "dailyOsNextCaptureCaptured": "Got it.",
   "dailyOsNextCaptureHeadlineLead": "What's on your mind",
   "dailyOsNextCaptureHeadlineTail": "for today?",
+  "dailyOsNextCaptureHeadlineTailForDate": "for {date}?",
+  "@dailyOsNextCaptureHeadlineTailForDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextCaptureHeadlineTailTomorrow": "for tomorrow?",
+  "dailyOsNextCaptureHeadlineTailYesterday": "for yesterday?",
   "dailyOsNextCaptureIdleHint": "Tap to talk · snap it · type instead",
   "dailyOsNextCaptureListening": "LISTENING",
   "dailyOsNextCaptureOpenTasks": "Browse tasks",
   "dailyOsNextCaptureReconcileCta": "Reconcile",
+  "dailyOsNextCapturesPanelTitle": "Captures",
   "dailyOsNextCaptureTranscriptHint": "Fix anything the transcript got wrong before planning.",
   "dailyOsNextCaptureTranscriptLabel": "Review transcript",
   "dailyOsNextCaptureVoiceButtonReset": "Start over",
@@ -1771,12 +1782,20 @@
   "dailyOsNextCommitTitle": "Lock it in",
   "dailyOsNextCommitTodayIsYours": "Today is yours.",
   "dailyOsNextDayBack": "Back",
+  "dailyOsNextDayDeleteDialogBody": "The drafted blocks for this day will be removed. Captures and their audio recordings stay in your journal.",
+  "dailyOsNextDayDeleteDialogCancel": "Cancel",
+  "dailyOsNextDayDeleteDialogConfirm": "Delete",
+  "dailyOsNextDayDeleteDialogTitle": "Delete this plan?",
   "dailyOsNextDayLockInCta": "Lock in",
+  "dailyOsNextDayMenuDeletePlan": "Delete plan",
+  "dailyOsNextDayMenuInspectAgent": "Inspect agent",
+  "dailyOsNextDayMoreTooltip": "More",
   "dailyOsNextDayRefineCta": "Refine by voice",
   "dailyOsNextDayRefineFooterHint": "Talk to reshape the plan — moves, drops, and buffers are shown as a diff before they stick.",
   "dailyOsNextDayTitle": "Your day",
   "dailyOsNextDayWhyChipLabel": "WHY",
   "dailyOsNextDayWrapUpCta": "Wrap up",
+  "dailyOsNextDraftingHeader": "Drafting your day…",
   "dailyOsNextDraftingNudgeAccept": "Yes, protect mornings",
   "dailyOsNextDraftingNudgeDecline": "Not today",
   "dailyOsNextDraftingReasoningOverline": "✦ REASONING",
@@ -1793,6 +1812,7 @@
   "dailyOsNextGreetingEvening": "Good evening.",
   "dailyOsNextGreetingHi": "Hi 👋",
   "dailyOsNextGreetingMorning": "Good morning.",
+  "dailyOsNextParsedCardBreakLinkTooltip": "Break link",
   "dailyOsNextPlanViewAgenda": "Agenda",
   "dailyOsNextPlanViewDay": "Day",
   "dailyOsNextReconcileBadgeMatched": "MATCHED",
@@ -1898,6 +1918,21 @@
   "dailyOsNextTasksSearchPlaceholder": "Search tasks",
   "dailyOsNextTasksSubtitle": "Everything Lotti's holding for you. The morning ritual surfaces what matters.",
   "dailyOsNextTasksTitle": "Tasks",
+  "dailyOsNextTimelineMeridiemAm": "AM",
+  "dailyOsNextTimelineMeridiemAmShort": "am",
+  "dailyOsNextTimelineMeridiemPm": "PM",
+  "dailyOsNextTimelineMeridiemPmShort": "pm",
+  "dailyOsNextTimelineSessionOf": "Session {index} of {total}",
+  "@dailyOsNextTimelineSessionOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextTriageConfirmDefer": "Deferred",
   "dailyOsNextTriageConfirmDone": "Marked done",
   "dailyOsNextTriageConfirmDoNow": "Done now",

@@ -3124,6 +3124,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTail => 'na mysli?';
 
   @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return 'na $date?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'na zítra?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'na včera?';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Klepni pro mluvení · zachyť to · nebo napiš';
 
@@ -3135,6 +3146,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Sjednotit';
+
+  @override
+  String get dailyOsNextCapturesPanelTitle => 'Záznamy';
 
   @override
   String get dailyOsNextCaptureTranscriptHint =>
@@ -3193,7 +3207,29 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDayBack => 'Zpět';
 
   @override
+  String get dailyOsNextDayDeleteDialogBody =>
+      'Naplánované bloky pro tento den budou odstraněny. Tvoje záznamy a jejich audio nahrávky zůstávají v tvém deníku.';
+
+  @override
+  String get dailyOsNextDayDeleteDialogCancel => 'Zrušit';
+
+  @override
+  String get dailyOsNextDayDeleteDialogConfirm => 'Smazat';
+
+  @override
+  String get dailyOsNextDayDeleteDialogTitle => 'Smazat tento plán?';
+
+  @override
   String get dailyOsNextDayLockInCta => 'Uzamknout';
+
+  @override
+  String get dailyOsNextDayMenuDeletePlan => 'Smazat plán';
+
+  @override
+  String get dailyOsNextDayMenuInspectAgent => 'Prozkoumat agenta';
+
+  @override
+  String get dailyOsNextDayMoreTooltip => 'Více';
 
   @override
   String get dailyOsNextDayRefineCta => 'Upravit hlasem';
@@ -3210,6 +3246,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextDayWrapUpCta => 'Ukončit';
+
+  @override
+  String get dailyOsNextDraftingHeader => 'Připravuji tvůj den…';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Ano, chraň ranní hodiny';
@@ -3236,6 +3275,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingMorning => 'Dobré ráno.';
+
+  @override
+  String get dailyOsNextParsedCardBreakLinkTooltip => 'Odpojit';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -3463,6 +3505,23 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextTasksTitle => 'Úkoly';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAm => 'AM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAmShort => 'am';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPm => 'PM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
+
+  @override
+  String dailyOsNextTimelineSessionOf(int index, int total) {
+    return 'Sezení $index z $total';
+  }
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Odloženo';

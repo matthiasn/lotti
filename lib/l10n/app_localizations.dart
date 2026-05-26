@@ -5244,6 +5244,24 @@ abstract class AppLocalizations {
   /// **'for today?'**
   String get dailyOsNextCaptureHeadlineTail;
 
+  /// No description provided for @dailyOsNextCaptureHeadlineTailForDate.
+  ///
+  /// In en, this message translates to:
+  /// **'for {date}?'**
+  String dailyOsNextCaptureHeadlineTailForDate(String date);
+
+  /// No description provided for @dailyOsNextCaptureHeadlineTailTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'for tomorrow?'**
+  String get dailyOsNextCaptureHeadlineTailTomorrow;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineTailYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'for yesterday?'**
+  String get dailyOsNextCaptureHeadlineTailYesterday;
+
   /// No description provided for @dailyOsNextCaptureIdleHint.
   ///
   /// In en, this message translates to:
@@ -5267,6 +5285,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reconcile'**
   String get dailyOsNextCaptureReconcileCta;
+
+  /// No description provided for @dailyOsNextCapturesPanelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Captures'**
+  String get dailyOsNextCapturesPanelTitle;
 
   /// No description provided for @dailyOsNextCaptureTranscriptHint.
   ///
@@ -5370,11 +5394,53 @@ abstract class AppLocalizations {
   /// **'Back'**
   String get dailyOsNextDayBack;
 
+  /// No description provided for @dailyOsNextDayDeleteDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The drafted blocks for this day will be removed. Captures and their audio recordings stay in your journal.'**
+  String get dailyOsNextDayDeleteDialogBody;
+
+  /// No description provided for @dailyOsNextDayDeleteDialogCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get dailyOsNextDayDeleteDialogCancel;
+
+  /// No description provided for @dailyOsNextDayDeleteDialogConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get dailyOsNextDayDeleteDialogConfirm;
+
+  /// No description provided for @dailyOsNextDayDeleteDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this plan?'**
+  String get dailyOsNextDayDeleteDialogTitle;
+
   /// No description provided for @dailyOsNextDayLockInCta.
   ///
   /// In en, this message translates to:
   /// **'Lock in'**
   String get dailyOsNextDayLockInCta;
+
+  /// No description provided for @dailyOsNextDayMenuDeletePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete plan'**
+  String get dailyOsNextDayMenuDeletePlan;
+
+  /// No description provided for @dailyOsNextDayMenuInspectAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect agent'**
+  String get dailyOsNextDayMenuInspectAgent;
+
+  /// No description provided for @dailyOsNextDayMoreTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get dailyOsNextDayMoreTooltip;
 
   /// No description provided for @dailyOsNextDayRefineCta.
   ///
@@ -5405,6 +5471,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wrap up'**
   String get dailyOsNextDayWrapUpCta;
+
+  /// No description provided for @dailyOsNextDraftingHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafting your day…'**
+  String get dailyOsNextDraftingHeader;
 
   /// No description provided for @dailyOsNextDraftingNudgeAccept.
   ///
@@ -5453,6 +5525,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Good morning.'**
   String get dailyOsNextGreetingMorning;
+
+  /// No description provided for @dailyOsNextParsedCardBreakLinkTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Break link'**
+  String get dailyOsNextParsedCardBreakLinkTooltip;
 
   /// No description provided for @dailyOsNextPlanViewAgenda.
   ///
@@ -5843,6 +5921,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tasks'**
   String get dailyOsNextTasksTitle;
+
+  /// No description provided for @dailyOsNextTimelineMeridiemAm.
+  ///
+  /// In en, this message translates to:
+  /// **'AM'**
+  String get dailyOsNextTimelineMeridiemAm;
+
+  /// No description provided for @dailyOsNextTimelineMeridiemAmShort.
+  ///
+  /// In en, this message translates to:
+  /// **'am'**
+  String get dailyOsNextTimelineMeridiemAmShort;
+
+  /// No description provided for @dailyOsNextTimelineMeridiemPm.
+  ///
+  /// In en, this message translates to:
+  /// **'PM'**
+  String get dailyOsNextTimelineMeridiemPm;
+
+  /// No description provided for @dailyOsNextTimelineMeridiemPmShort.
+  ///
+  /// In en, this message translates to:
+  /// **'pm'**
+  String get dailyOsNextTimelineMeridiemPmShort;
+
+  /// No description provided for @dailyOsNextTimelineSessionOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Session {index} of {total}'**
+  String dailyOsNextTimelineSessionOf(int index, int total);
 
   /// No description provided for @dailyOsNextTriageConfirmDefer.
   ///

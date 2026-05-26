@@ -3147,6 +3147,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTail => 'pentru astăzi?';
 
   @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return 'pentru $date?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'pentru mâine?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'pentru ieri?';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Apăsați pentru a vorbi · capturați · sau tastați';
 
@@ -3158,6 +3169,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Reconciliere';
+
+  @override
+  String get dailyOsNextCapturesPanelTitle => 'Capturi';
 
   @override
   String get dailyOsNextCaptureTranscriptHint =>
@@ -3216,14 +3230,36 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayBack => 'Înapoi';
 
   @override
+  String get dailyOsNextDayDeleteDialogBody =>
+      'Blocurile schițate pentru această zi vor fi eliminate. Capturile dvs. și înregistrările audio rămân în jurnal.';
+
+  @override
+  String get dailyOsNextDayDeleteDialogCancel => 'Anulează';
+
+  @override
+  String get dailyOsNextDayDeleteDialogConfirm => 'Șterge';
+
+  @override
+  String get dailyOsNextDayDeleteDialogTitle => 'Ștergeți acest plan?';
+
+  @override
   String get dailyOsNextDayLockInCta => 'Fixează';
+
+  @override
+  String get dailyOsNextDayMenuDeletePlan => 'Ștergere plan';
+
+  @override
+  String get dailyOsNextDayMenuInspectAgent => 'Inspectare agent';
+
+  @override
+  String get dailyOsNextDayMoreTooltip => 'Mai mult';
 
   @override
   String get dailyOsNextDayRefineCta => 'Reglare prin voce';
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
-      'Vorbiți pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.';
+      'Vorbește pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.';
 
   @override
   String get dailyOsNextDayTitle => 'Ziua dvs.';
@@ -3233,6 +3269,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDayWrapUpCta => 'Încheie';
+
+  @override
+  String get dailyOsNextDraftingHeader => 'Schițez ziua dvs.…';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Da, protejează dimineața';
@@ -3259,6 +3298,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingMorning => 'Bună dimineața.';
+
+  @override
+  String get dailyOsNextParsedCardBreakLinkTooltip => 'Desface legătura';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -3486,6 +3528,23 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextTasksTitle => 'Sarcini';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAm => 'AM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAmShort => 'am';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPm => 'PM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
+
+  @override
+  String dailyOsNextTimelineSessionOf(int index, int total) {
+    return 'Sesiunea $index din $total';
+  }
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Amânat';

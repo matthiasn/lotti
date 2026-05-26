@@ -3139,6 +3139,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTail => 'pour aujourd\'hui ?';
 
   @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return 'pour $date ?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'pour demain ?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'pour hier ?';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Tape pour parler · capture-le · ou écris';
 
@@ -3150,6 +3161,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Réconcilier';
+
+  @override
+  String get dailyOsNextCapturesPanelTitle => 'Captures';
 
   @override
   String get dailyOsNextCaptureTranscriptHint =>
@@ -3208,7 +3222,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextDayBack => 'Retour';
 
   @override
+  String get dailyOsNextDayDeleteDialogBody =>
+      'Les blocs préparés pour cette journée seront supprimés. Tes captures et leurs enregistrements audio restent dans ton journal.';
+
+  @override
+  String get dailyOsNextDayDeleteDialogCancel => 'Annuler';
+
+  @override
+  String get dailyOsNextDayDeleteDialogConfirm => 'Supprimer';
+
+  @override
+  String get dailyOsNextDayDeleteDialogTitle => 'Supprimer ce plan ?';
+
+  @override
   String get dailyOsNextDayLockInCta => 'Verrouiller';
+
+  @override
+  String get dailyOsNextDayMenuDeletePlan => 'Supprimer le plan';
+
+  @override
+  String get dailyOsNextDayMenuInspectAgent => 'Inspecter l\'agent';
+
+  @override
+  String get dailyOsNextDayMoreTooltip => 'Plus';
 
   @override
   String get dailyOsNextDayRefineCta => 'Affiner à la voix';
@@ -3225,6 +3261,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextDayWrapUpCta => 'Clore';
+
+  @override
+  String get dailyOsNextDraftingHeader => 'Préparation de ta journée…';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Oui, protège les matinées';
@@ -3251,6 +3290,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingMorning => 'Bonjour.';
+
+  @override
+  String get dailyOsNextParsedCardBreakLinkTooltip => 'Dissocier';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -3479,6 +3521,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextTasksTitle => 'Tâches';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAm => 'AM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAmShort => 'am';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPm => 'PM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
+
+  @override
+  String dailyOsNextTimelineSessionOf(int index, int total) {
+    return 'Session $index sur $total';
+  }
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Reporté';

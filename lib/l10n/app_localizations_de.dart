@@ -3126,6 +3126,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTail => 'heute?';
 
   @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return 'für $date?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'für morgen?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'für gestern?';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Tippen zum Sprechen · fotografieren · oder tippen';
 
@@ -3137,6 +3148,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Abgleichen';
+
+  @override
+  String get dailyOsNextCapturesPanelTitle => 'Aufnahmen';
 
   @override
   String get dailyOsNextCaptureTranscriptHint =>
@@ -3195,7 +3209,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextDayBack => 'Zurück';
 
   @override
+  String get dailyOsNextDayDeleteDialogBody =>
+      'Die geplanten Blöcke für diesen Tag werden entfernt. Deine Aufnahmen und ihre Audio-Dateien bleiben in deinem Journal.';
+
+  @override
+  String get dailyOsNextDayDeleteDialogCancel => 'Abbrechen';
+
+  @override
+  String get dailyOsNextDayDeleteDialogConfirm => 'Löschen';
+
+  @override
+  String get dailyOsNextDayDeleteDialogTitle => 'Diesen Plan löschen?';
+
+  @override
   String get dailyOsNextDayLockInCta => 'Festmachen';
+
+  @override
+  String get dailyOsNextDayMenuDeletePlan => 'Plan löschen';
+
+  @override
+  String get dailyOsNextDayMenuInspectAgent => 'Agent prüfen';
+
+  @override
+  String get dailyOsNextDayMoreTooltip => 'Mehr';
 
   @override
   String get dailyOsNextDayRefineCta => 'Mit der Stimme anpassen';
@@ -3212,6 +3248,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextDayWrapUpCta => 'Abschließen';
+
+  @override
+  String get dailyOsNextDraftingHeader => 'Plane deinen Tag…';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Ja, Morgen schützen';
@@ -3238,6 +3277,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingMorning => 'Guten Morgen.';
+
+  @override
+  String get dailyOsNextParsedCardBreakLinkTooltip => 'Verknüpfung lösen';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -3465,6 +3507,23 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextTasksTitle => 'Aufgaben';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAm => 'AM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAmShort => 'am';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPm => 'PM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
+
+  @override
+  String dailyOsNextTimelineSessionOf(int index, int total) {
+    return 'Sitzung $index von $total';
+  }
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Verschoben';
