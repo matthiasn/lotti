@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -34,7 +35,7 @@ class ReconcilePage extends ConsumerWidget {
     final tokens = context.designTokens;
     final params = ReconcileParams(
       captureId: captureId,
-      dayDate: dayDate ?? DateTime.now(),
+      dayDate: dayDate ?? clock.now(),
     );
     final state = ref.watch(reconcileControllerProvider(params));
 

@@ -44,7 +44,7 @@ void main() {
           overrides: [dayAgentProvider.overrideWithValue(agent)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Mock returns 2 completed items + 2 carryover items.
       expect(find.text('Deck review — Q2 leadership update'), findsOneWidget);
@@ -69,7 +69,7 @@ void main() {
             overrides: [dayAgentProvider.overrideWithValue(agent)],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 200));
 
         // Mock surfaces "→ tomorrow morning" / "→ tomorrow afternoon"
         // as primary chips.
@@ -78,7 +78,7 @@ void main() {
 
         await tester.ensureVisible(morning);
         await tester.tap(morning);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 200));
 
         // After the decision the label reappears inside the
         // confirmation pill; the original button is gone.

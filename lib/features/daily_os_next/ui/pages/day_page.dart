@@ -93,18 +93,16 @@ class _DayPageState extends ConsumerState<DayPage> {
   /// auto-invalidates on the agent's update stream, so the screen
   /// flips back to Capture for this date without a manual navigate.
   Future<void> _confirmDeletePlan() async {
+    final messages = context.messages;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete this plan?'),
-        content: const Text(
-          'The drafted blocks for this day will be removed. Captures and '
-          'their audio recordings stay in your journal.',
-        ),
+        title: Text(messages.dailyOsNextDayDeleteDialogTitle),
+        content: Text(messages.dailyOsNextDayDeleteDialogBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(messages.dailyOsNextDayDeleteDialogCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -116,7 +114,7 @@ class _DayPageState extends ConsumerState<DayPage> {
                 dialogContext,
               ).colorScheme.onErrorContainer,
             ),
-            child: const Text('Delete'),
+            child: Text(messages.dailyOsNextDayDeleteDialogConfirm),
           ),
         ],
       ),
@@ -167,7 +165,7 @@ class _DayPageState extends ConsumerState<DayPage> {
           ),
           PopupMenuButton<_DayMenuAction>(
             icon: const Icon(Icons.more_vert_rounded),
-            tooltip: 'More',
+            tooltip: context.messages.dailyOsNextDayMoreTooltip,
             onSelected: (action) {
               switch (action) {
                 case _DayMenuAction.inspectAgent:
@@ -176,20 +174,24 @@ class _DayPageState extends ConsumerState<DayPage> {
                   unawaited(_confirmDeletePlan());
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (popupContext) => [
               PopupMenuItem<_DayMenuAction>(
                 value: _DayMenuAction.inspectAgent,
                 child: ListTile(
-                  leading: Icon(Icons.psychology_alt_outlined),
-                  title: Text('Inspect agent'),
+                  leading: const Icon(Icons.psychology_alt_outlined),
+                  title: Text(
+                    popupContext.messages.dailyOsNextDayMenuInspectAgent,
+                  ),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
               PopupMenuItem<_DayMenuAction>(
                 value: _DayMenuAction.deletePlan,
                 child: ListTile(
-                  leading: Icon(Icons.delete_outline_rounded),
-                  title: Text('Delete plan'),
+                  leading: const Icon(Icons.delete_outline_rounded),
+                  title: Text(
+                    popupContext.messages.dailyOsNextDayMenuDeletePlan,
+                  ),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),

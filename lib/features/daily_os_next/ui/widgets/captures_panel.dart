@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Collapsible "Captures" section for the Day surface.
 ///
@@ -109,7 +110,7 @@ class _Header extends StatelessWidget {
             ),
             SizedBox(width: tokens.spacing.step3),
             Text(
-              'Captures',
+              context.messages.dailyOsNextCapturesPanelTitle,
               style: tokens.typography.styles.others.overline.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),

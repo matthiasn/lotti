@@ -1542,10 +1542,21 @@
   "dailyOsNextCaptureCaptured": "C'est noté.",
   "dailyOsNextCaptureHeadlineLead": "Qu'as-tu en tête",
   "dailyOsNextCaptureHeadlineTail": "pour aujourd'hui ?",
+  "dailyOsNextCaptureHeadlineTailForDate": "pour {date} ?",
+  "@dailyOsNextCaptureHeadlineTailForDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextCaptureHeadlineTailTomorrow": "pour demain ?",
+  "dailyOsNextCaptureHeadlineTailYesterday": "pour hier ?",
   "dailyOsNextCaptureIdleHint": "Tape pour parler · capture-le · ou écris",
   "dailyOsNextCaptureListening": "ÉCOUTE",
   "dailyOsNextCaptureOpenTasks": "Parcourir les tâches",
   "dailyOsNextCaptureReconcileCta": "Réconcilier",
+  "dailyOsNextCapturesPanelTitle": "Captures",
   "dailyOsNextCaptureTranscriptHint": "Corrige ce que la transcription a mal compris avant de planifier.",
   "dailyOsNextCaptureTranscriptLabel": "Relis la transcription",
   "dailyOsNextCaptureVoiceButtonReset": "Recommencer",
@@ -1575,12 +1586,20 @@
   "dailyOsNextCommitTitle": "Verrouiller",
   "dailyOsNextCommitTodayIsYours": "La journée est à toi.",
   "dailyOsNextDayBack": "Retour",
+  "dailyOsNextDayDeleteDialogBody": "Les blocs préparés pour cette journée seront supprimés. Tes captures et leurs enregistrements audio restent dans ton journal.",
+  "dailyOsNextDayDeleteDialogCancel": "Annuler",
+  "dailyOsNextDayDeleteDialogConfirm": "Supprimer",
+  "dailyOsNextDayDeleteDialogTitle": "Supprimer ce plan ?",
   "dailyOsNextDayLockInCta": "Verrouiller",
+  "dailyOsNextDayMenuDeletePlan": "Supprimer le plan",
+  "dailyOsNextDayMenuInspectAgent": "Inspecter l'agent",
+  "dailyOsNextDayMoreTooltip": "Plus",
   "dailyOsNextDayRefineCta": "Affiner à la voix",
   "dailyOsNextDayRefineFooterHint": "Parle pour réorganiser le plan — les changements apparaissent en diff avant d'être appliqués.",
   "dailyOsNextDayTitle": "Ta journée",
   "dailyOsNextDayWhyChipLabel": "POURQUOI",
   "dailyOsNextDayWrapUpCta": "Clore",
+  "dailyOsNextDraftingHeader": "Préparation de ta journée…",
   "dailyOsNextDraftingNudgeAccept": "Oui, protège les matinées",
   "dailyOsNextDraftingNudgeDecline": "Pas aujourd'hui",
   "dailyOsNextDraftingReasoningOverline": "✦ RAISONNEMENT",

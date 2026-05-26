@@ -192,7 +192,8 @@ class _CompletedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final hex = item.category.colorHex.replaceFirst('#', '');
-    final color = Color(int.parse(hex, radix: 16) | 0xFF000000);
+    final value = int.tryParse(hex, radix: 16);
+    final color = value != null ? Color(value | 0xFF000000) : Colors.grey;
     final success = tokens.colors.alert.success.defaultColor;
     return Container(
       padding: EdgeInsets.all(tokens.spacing.step4),
@@ -293,7 +294,8 @@ class _CarryoverRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final hex = item.category.colorHex.replaceFirst('#', '');
-    final color = Color(int.parse(hex, radix: 16) | 0xFF000000);
+    final value = int.tryParse(hex, radix: 16);
+    final color = value != null ? Color(value | 0xFF000000) : Colors.grey;
     final decided = decision != null;
     return Opacity(
       opacity: decided ? 0.55 : 1.0,

@@ -286,6 +286,24 @@ void main() {
       },
     );
 
+    testWidgets('error phase surfaces the controller errorMessage', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const CapturePage(),
+          overrides: [
+            captureControllerProvider.overrideWith(_ErrorController.new),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Microphone permission was denied.'), findsOneWidget);
+      expect(find.byType(VoiceButton), findsOneWidget);
+      expect(find.byType(LiveWaveform), findsNothing);
+    });
+
     testWidgets('submits captures against the selected planning date', (
       tester,
     ) async {
@@ -331,6 +349,18 @@ void main() {
       await harness.dispose();
     });
   });
+}
+
+/// Surfaces a fixed error state so the page can be tested independently
+/// of the recording lifecycle.
+class _ErrorController extends CaptureController {
+  @override
+  CaptureState build() => const CaptureState(
+    phase: CapturePhase.error,
+    transcript: '',
+    amplitudes: <double>[],
+    errorMessage: 'Microphone permission was denied.',
+  );
 }
 
 /// Wraps a fake recorder + transcription service so widget tests can

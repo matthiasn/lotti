@@ -42,7 +42,7 @@ void main() {
           overrides: [dayAgentProvider.overrideWithValue(agent)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Mock returns 7 corpus items at default filter.
       expect(find.text('Reschedule dentist'), findsOneWidget);
@@ -65,14 +65,14 @@ void main() {
           overrides: [dayAgentProvider.overrideWithValue(agent)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Tap the Overdue filter pill. There are multiple "Overdue"
       // strings — the pill is the first one in the filter row.
       final overduePill = find.text('Overdue').first;
       await tester.ensureVisible(overduePill);
       await tester.tap(overduePill);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Only the overdue row remains visible (Reschedule dentist).
       expect(find.text('Reschedule dentist'), findsOneWidget);
@@ -96,10 +96,10 @@ void main() {
           overrides: [dayAgentProvider.overrideWithValue(agent)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       await tester.enterText(find.byType(TextField), 'deck');
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(
         find.text('Deck review — Q2 leadership update'),

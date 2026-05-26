@@ -1542,10 +1542,21 @@
   "dailyOsNextCaptureCaptured": "Am înțeles.",
   "dailyOsNextCaptureHeadlineLead": "La ce vă gândiți",
   "dailyOsNextCaptureHeadlineTail": "pentru astăzi?",
+  "dailyOsNextCaptureHeadlineTailForDate": "pentru {date}?",
+  "@dailyOsNextCaptureHeadlineTailForDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextCaptureHeadlineTailTomorrow": "pentru mâine?",
+  "dailyOsNextCaptureHeadlineTailYesterday": "pentru ieri?",
   "dailyOsNextCaptureIdleHint": "Apăsați pentru a vorbi · capturați · sau tastați",
   "dailyOsNextCaptureListening": "ASCULT",
   "dailyOsNextCaptureOpenTasks": "Răsfoiește sarcinile",
   "dailyOsNextCaptureReconcileCta": "Reconciliere",
+  "dailyOsNextCapturesPanelTitle": "Capturi",
   "dailyOsNextCaptureTranscriptHint": "Corectați orice a înțeles greșit transcrierea înainte de planificare.",
   "dailyOsNextCaptureTranscriptLabel": "Verificați transcrierea",
   "dailyOsNextCaptureVoiceButtonReset": "Reîncepe",
@@ -1575,12 +1586,20 @@
   "dailyOsNextCommitTitle": "Fixați-o",
   "dailyOsNextCommitTodayIsYours": "Ziua este a dvs.",
   "dailyOsNextDayBack": "Înapoi",
+  "dailyOsNextDayDeleteDialogBody": "Blocurile schițate pentru această zi vor fi eliminate. Capturile dvs. și înregistrările audio rămân în jurnal.",
+  "dailyOsNextDayDeleteDialogCancel": "Anulați",
+  "dailyOsNextDayDeleteDialogConfirm": "Ștergeți",
+  "dailyOsNextDayDeleteDialogTitle": "Ștergeți acest plan?",
   "dailyOsNextDayLockInCta": "Fixează",
+  "dailyOsNextDayMenuDeletePlan": "Ștergeți planul",
+  "dailyOsNextDayMenuInspectAgent": "Inspectați agentul",
+  "dailyOsNextDayMoreTooltip": "Mai mult",
   "dailyOsNextDayRefineCta": "Reglare prin voce",
   "dailyOsNextDayRefineFooterHint": "Vorbiți pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.",
   "dailyOsNextDayTitle": "Ziua dvs.",
   "dailyOsNextDayWhyChipLabel": "DE CE",
   "dailyOsNextDayWrapUpCta": "Încheie",
+  "dailyOsNextDraftingHeader": "Schițez ziua dvs….",
   "dailyOsNextDraftingNudgeAccept": "Da, protejează dimineața",
   "dailyOsNextDraftingNudgeDecline": "Nu astăzi",
   "dailyOsNextDraftingReasoningOverline": "✦ RAȚIONAMENT",

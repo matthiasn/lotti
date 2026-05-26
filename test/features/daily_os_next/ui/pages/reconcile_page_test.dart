@@ -62,7 +62,7 @@ void main() {
           overrides: [dayAgentProvider.overrideWithValue(agent)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Scripted mock returns 4 parsed + 3 pending items.
       expect(find.byType(ParsedCard), findsNWidgets(4));
@@ -80,7 +80,7 @@ void main() {
           overrides: [dayAgentProvider.overrideWithValue(agent)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       final context = tester.element(find.byType(ReconcilePage));
       final messages = context.messages;
@@ -107,7 +107,7 @@ void main() {
           overrides: [dayAgentProvider.overrideWithValue(agent)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       final context = tester.element(find.byType(ReconcilePage));
       expect(
@@ -130,7 +130,7 @@ void main() {
             overrides: [dayAgentProvider.overrideWithValue(agent)],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 200));
 
         final context = tester.element(find.byType(ReconcilePage));
         final messages = context.messages;
@@ -141,7 +141,7 @@ void main() {
             )
             .first;
         await tester.tap(todayButton);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 200));
 
         expect(
           find.text(messages.dailyOsNextTriageConfirmToday),

@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
@@ -150,8 +151,7 @@ class _Headline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final messages = context.messages;
-    final tail = _resolveTail(messages.dailyOsNextCaptureHeadlineTail);
+    final tail = _resolveTail(context);
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
@@ -159,7 +159,9 @@ class _Headline extends StatelessWidget {
           color: tokens.colors.text.highEmphasis,
         ),
         children: [
-          TextSpan(text: '${messages.dailyOsNextCaptureHeadlineLead} '),
+          TextSpan(
+            text: '${context.messages.dailyOsNextCaptureHeadlineLead} ',
+          ),
           TextSpan(
             text: tail,
             style: TextStyle(color: tokens.colors.text.lowEmphasis),
@@ -169,31 +171,22 @@ class _Headline extends StatelessWidget {
     );
   }
 
-  String _resolveTail(String defaultTail) {
+  String _resolveTail(BuildContext context) {
+    final messages = context.messages;
     final date = forDate;
-    if (date == null) return defaultTail;
+    if (date == null) return messages.dailyOsNextCaptureHeadlineTail;
     final now = clock.now();
     final today = DateTime.utc(now.year, now.month, now.day);
     final picked = DateTime.utc(date.year, date.month, date.day);
-    if (picked.isAtSameMomentAs(today)) return defaultTail;
+    if (picked.isAtSameMomentAs(today)) {
+      return messages.dailyOsNextCaptureHeadlineTail;
+    }
     final delta = picked.difference(today).inDays;
-    if (delta == 1) return 'for tomorrow?';
-    if (delta == -1) return 'for yesterday?';
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return 'for ${months[picked.month - 1]} ${picked.day}?';
+    if (delta == 1) return messages.dailyOsNextCaptureHeadlineTailTomorrow;
+    if (delta == -1) return messages.dailyOsNextCaptureHeadlineTailYesterday;
+    final locale = Localizations.localeOf(context).toString();
+    final formatted = DateFormat.MMMd(locale).format(date);
+    return messages.dailyOsNextCaptureHeadlineTailForDate(formatted);
   }
 }
 
@@ -426,7 +419,7 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
         MaterialPageRoute<void>(
           builder: (_) => ReconcilePage(
             captureId: captureId,
-            dayDate: widget.forDate ?? DateTime.now(),
+            dayDate: widget.forDate ?? clock.now(),
           ),
         ),
       );

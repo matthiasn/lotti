@@ -149,7 +149,8 @@ class _RecapRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final hex = item.category.colorHex.replaceFirst('#', '');
-    final color = Color(int.parse(hex, radix: 16) | 0xFF000000);
+    final value = int.tryParse(hex, radix: 16);
+    final color = value != null ? Color(value | 0xFF000000) : Colors.grey;
     return Container(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,

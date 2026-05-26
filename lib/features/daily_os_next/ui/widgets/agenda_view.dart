@@ -163,7 +163,8 @@ class _CategoryLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final hex = category.colorHex.replaceFirst('#', '');
-    final color = Color(int.parse(hex, radix: 16) | 0xFF000000);
+    final value = int.tryParse(hex, radix: 16);
+    final color = value != null ? Color(value | 0xFF000000) : Colors.grey;
     final h = minutes ~/ 60;
     final m = minutes % 60;
     final duration = m == 0 ? '${h}h' : '${h}h ${m}m';

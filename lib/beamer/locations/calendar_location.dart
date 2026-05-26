@@ -45,13 +45,24 @@ class CalendarLocation extends BeamLocation<BeamState> {
 /// flag flips — pushing/popping inside Capture / Reconcile doesn't
 /// blow away the calendar tab's navigation history.
 @visibleForTesting
-class CalendarRoot extends StatelessWidget {
+class CalendarRoot extends StatefulWidget {
   const CalendarRoot({super.key});
+
+  @override
+  State<CalendarRoot> createState() => _CalendarRootState();
+}
+
+class _CalendarRootState extends State<CalendarRoot> {
+  // Cached once so the StreamBuilder doesn't re-subscribe to a fresh
+  // `watchConfigFlag` query on every rebuild of the tab.
+  late final Stream<bool> _flagStream = getIt<JournalDb>().watchConfigFlag(
+    dailyOsNextEnabledFlag,
+  );
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<bool>(
-      stream: getIt<JournalDb>().watchConfigFlag(dailyOsNextEnabledFlag),
+      stream: _flagStream,
       initialData: false,
       builder: (context, snapshot) {
         final useNext = snapshot.data ?? false;

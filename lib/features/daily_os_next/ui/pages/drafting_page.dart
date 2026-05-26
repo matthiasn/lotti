@@ -184,7 +184,7 @@ class _DraftingHeader extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step3),
         Text(
-          'Drafting your day…',
+          context.messages.dailyOsNextDraftingHeader,
           style: tokens.typography.styles.subtitle.subtitle1.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),

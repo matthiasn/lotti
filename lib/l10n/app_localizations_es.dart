@@ -3136,6 +3136,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTail => 'para hoy?';
 
   @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return '¿para $date?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => '¿para mañana?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => '¿para ayer?';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Toca para hablar · captúralo · o escríbelo';
 
@@ -3147,6 +3158,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Reconciliar';
+
+  @override
+  String get dailyOsNextCapturesPanelTitle => 'Capturas';
 
   @override
   String get dailyOsNextCaptureTranscriptHint =>
@@ -3205,7 +3219,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextDayBack => 'Atrás';
 
   @override
+  String get dailyOsNextDayDeleteDialogBody =>
+      'Los bloques planificados para este día se eliminarán. Tus capturas y sus grabaciones de audio se quedan en tu diario.';
+
+  @override
+  String get dailyOsNextDayDeleteDialogCancel => 'Cancelar';
+
+  @override
+  String get dailyOsNextDayDeleteDialogConfirm => 'Eliminar';
+
+  @override
+  String get dailyOsNextDayDeleteDialogTitle => '¿Eliminar este plan?';
+
+  @override
   String get dailyOsNextDayLockInCta => 'Confirmar';
+
+  @override
+  String get dailyOsNextDayMenuDeletePlan => 'Eliminar plan';
+
+  @override
+  String get dailyOsNextDayMenuInspectAgent => 'Inspeccionar agente';
+
+  @override
+  String get dailyOsNextDayMoreTooltip => 'Más';
 
   @override
   String get dailyOsNextDayRefineCta => 'Refinar con voz';
@@ -3222,6 +3258,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextDayWrapUpCta => 'Cerrar día';
+
+  @override
+  String get dailyOsNextDraftingHeader => 'Preparando tu día…';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Sí, protege las mañanas';

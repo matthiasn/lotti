@@ -3147,6 +3147,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTail => 'pentru astăzi?';
 
   @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return 'pentru $date?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'pentru mâine?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'pentru ieri?';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Apăsați pentru a vorbi · capturați · sau tastați';
 
@@ -3158,6 +3169,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Reconciliere';
+
+  @override
+  String get dailyOsNextCapturesPanelTitle => 'Capturi';
 
   @override
   String get dailyOsNextCaptureTranscriptHint =>
@@ -3216,7 +3230,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayBack => 'Înapoi';
 
   @override
+  String get dailyOsNextDayDeleteDialogBody =>
+      'Blocurile schițate pentru această zi vor fi eliminate. Capturile dvs. și înregistrările audio rămân în jurnal.';
+
+  @override
+  String get dailyOsNextDayDeleteDialogCancel => 'Anulați';
+
+  @override
+  String get dailyOsNextDayDeleteDialogConfirm => 'Ștergeți';
+
+  @override
+  String get dailyOsNextDayDeleteDialogTitle => 'Ștergeți acest plan?';
+
+  @override
   String get dailyOsNextDayLockInCta => 'Fixează';
+
+  @override
+  String get dailyOsNextDayMenuDeletePlan => 'Ștergeți planul';
+
+  @override
+  String get dailyOsNextDayMenuInspectAgent => 'Inspectați agentul';
+
+  @override
+  String get dailyOsNextDayMoreTooltip => 'Mai mult';
 
   @override
   String get dailyOsNextDayRefineCta => 'Reglare prin voce';
@@ -3233,6 +3269,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDayWrapUpCta => 'Încheie';
+
+  @override
+  String get dailyOsNextDraftingHeader => 'Schițez ziua dvs….';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Da, protejează dimineața';

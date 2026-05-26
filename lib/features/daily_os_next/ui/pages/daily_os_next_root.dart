@@ -49,11 +49,23 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   }
 
   Future<void> _pickDate() async {
+    // Anchor the picker window to the current selection (not `_today`)
+    // so the prev/next chevrons can never drift past `firstDate` or
+    // `lastDate` and trip a `showDatePicker` assertion. Day arithmetic
+    // via the `DateTime` constructor stays DST-safe.
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: _today.subtract(const Duration(days: 365)),
-      lastDate: _today.add(const Duration(days: 365)),
+      firstDate: DateTime(
+        _selectedDate.year - 1,
+        _selectedDate.month,
+        _selectedDate.day,
+      ),
+      lastDate: DateTime(
+        _selectedDate.year + 1,
+        _selectedDate.month,
+        _selectedDate.day,
+      ),
     );
     if (picked != null) {
       setState(() {

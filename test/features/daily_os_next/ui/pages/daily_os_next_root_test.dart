@@ -46,12 +46,14 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump();
 
         expect(find.text('Today'), findsOneWidget);
 
         await tester.tap(find.byIcon(Icons.chevron_right_rounded));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump();
 
         expect(find.text('May 27, 2026'), findsOneWidget);
         expect(requestedDates, contains(DateTime(2026, 5, 27)));
