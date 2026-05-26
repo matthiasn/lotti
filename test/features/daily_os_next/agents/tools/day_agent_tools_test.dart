@@ -31,6 +31,9 @@ void main() {
           DayAgentToolNames.createTaskFromPhrase,
           DayAgentToolNames.draftDayPlan,
           DayAgentToolNames.summarizeRecentPatterns,
+          DayAgentToolNames.proposePlanDiff,
+          DayAgentToolNames.acceptDiff,
+          DayAgentToolNames.revertDiff,
         ]),
       );
     });
@@ -152,14 +155,97 @@ void main() {
       );
     });
 
-    test('refine tool schemas are not registered yet', () {
-      // Their `DayAgentToolNames` constants and `planTools` membership
-      // exist so Phase 4 can wire schemas + service handlers atomically.
-      // Until then, the registry stays clean of unhandled tools.
-      final names = dayAgentTools.map((tool) => tool.name).toSet();
-      expect(names, isNot(contains(DayAgentToolNames.proposePlanDiff)));
-      expect(names, isNot(contains(DayAgentToolNames.acceptDiff)));
-      expect(names, isNot(contains(DayAgentToolNames.revertDiff)));
+    test('propose_plan_diff documents change-shape schema', () {
+      final properties =
+          parametersFor(DayAgentToolNames.proposePlanDiff)['properties']
+              as Map<String, dynamic>;
+      final changeSchema =
+          (properties['changes'] as Map<String, dynamic>)['items']
+              as Map<String, dynamic>;
+      final changeProperties =
+          changeSchema['properties'] as Map<String, dynamic>;
+
+      expect(
+        requiredFor(DayAgentToolNames.proposePlanDiff),
+        ['dayId', 'changes'],
+      );
+      expect(
+        (properties['changes'] as Map<String, dynamic>)['minItems'],
+        1,
+      );
+      expect(changeSchema['required'], ['action', 'reason']);
+      expect(changeSchema['additionalProperties'], isFalse);
+      expect(
+        (changeProperties['action'] as Map<String, dynamic>)['enum'],
+        ['moved', 'added', 'dropped'],
+      );
+      expect(
+        (changeProperties['reason'] as Map<String, dynamic>)['minLength'],
+        1,
+      );
+      final toProps =
+          (changeProperties['to'] as Map<String, dynamic>)['properties']
+              as Map<String, dynamic>;
+      expect(toProps.keys, containsAll(['start', 'end', 'reason']));
+    });
+
+    test('propose_plan_diff enforces action-specific required fields', () {
+      final changeSchema =
+          ((parametersFor(DayAgentToolNames.proposePlanDiff)['properties']
+                      as Map<String, dynamic>)['changes']
+                  as Map<String, dynamic>)['items']
+              as Map<String, dynamic>;
+      final allOf = changeSchema['allOf'] as List<dynamic>;
+      expect(allOf, hasLength(2));
+
+      final movedDroppedClause = allOf[0] as Map<String, dynamic>;
+      expect(
+        (((movedDroppedClause['if'] as Map<String, dynamic>)['properties']
+                as Map<String, dynamic>)['action']
+            as Map<String, dynamic>)['enum'],
+        ['moved', 'dropped'],
+      );
+      expect(
+        (movedDroppedClause['then'] as Map<String, dynamic>)['required'],
+        ['blockId', 'from'],
+      );
+
+      final movedAddedClause = allOf[1] as Map<String, dynamic>;
+      expect(
+        (((movedAddedClause['if'] as Map<String, dynamic>)['properties']
+                as Map<String, dynamic>)['action']
+            as Map<String, dynamic>)['enum'],
+        ['moved', 'added'],
+      );
+      expect(
+        (movedAddedClause['then'] as Map<String, dynamic>)['required'],
+        ['to'],
+      );
+    });
+
+    test('accept_diff and revert_diff share the resolution schema', () {
+      for (final name in const [
+        DayAgentToolNames.acceptDiff,
+        DayAgentToolNames.revertDiff,
+      ]) {
+        final params = parametersFor(name);
+        expect(params['required'], ['changeSetId'], reason: name);
+        expect(params['additionalProperties'], isFalse, reason: name);
+        final indices =
+            (params['properties'] as Map<String, dynamic>)['itemIndices']
+                as Map<String, dynamic>;
+        expect(indices['type'], 'array', reason: name);
+        expect(
+          (indices['items'] as Map<String, dynamic>)['type'],
+          'integer',
+          reason: name,
+        );
+        expect(
+          (indices['items'] as Map<String, dynamic>)['minimum'],
+          0,
+          reason: name,
+        );
+      }
     });
   });
 }

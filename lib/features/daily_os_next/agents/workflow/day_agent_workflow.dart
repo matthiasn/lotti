@@ -168,6 +168,11 @@ class DayAgentWorkflow {
       triggerTokens: triggerTokens,
       captureContext: captureContext,
     );
+    final refineContext = await _refineContext(
+      agentIdentity: agentIdentity,
+      dayId: dayId,
+      triggerTokens: triggerTokens,
+    );
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       dayId: dayId,
@@ -177,6 +182,7 @@ class DayAgentWorkflow {
       observationPayloads: observationPayloads,
       captureContext: captureContext,
       draftingContext: draftingContext,
+      refineContext: refineContext,
     );
 
     final conversationId = conversationRepository.createConversation(
@@ -500,8 +506,19 @@ Drafting rules:
   tokens include `drafting:<dayId>`), your priority is to call
   `draft_day_plan` once with the full updated block list — replacing or
   extending `drafting.baselinePlan` rather than emitting partial diffs.
-- Refine, commit, shutdown, and agenda mutation tools are not available yet.
-  Do not claim that you refined, committed, or shut down a day.
+
+Refine rules:
+- When this wake's user message carries a `refine` block (i.e. the trigger
+  tokens include `refine:<dayId>`), your priority is to call
+  `propose_plan_diff` once with the structured changes the user described
+  in the accompanying capture transcript. Reference existing `blockId`s
+  from `refine.baselinePlan.blocks` for `moved` and `dropped` changes;
+  `added` changes carry a fresh `to` block payload. Every change must
+  include a non-empty `reason`.
+- Do not call `accept_diff` or `revert_diff` autonomously — those are the
+  user's verdicts, surfaced through the UI.
+- Commit, shutdown, and agenda mutation tools are not available yet. Do
+  not claim that you committed or shut down a day.
 
 Record private observations and schedule one useful future wake when warranted.
 
@@ -588,6 +605,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required Map<String, AgentMessagePayloadEntity> observationPayloads,
     required _CaptureContext? captureContext,
     required _DraftingContext? draftingContext,
+    required _RefineContext? refineContext,
   }) {
     final payload = <String, Object?>{
       'dayId': dayId,
@@ -595,6 +613,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       'triggerTokens': triggerTokens.toList()..sort(),
       if (captureContext != null) 'capture': captureContext.toJson(),
       if (draftingContext != null) 'drafting': draftingContext.toJson(),
+      if (refineContext != null) 'refine': refineContext.toJson(),
       'recentObservations': [
         for (final observation in observations)
           {
@@ -666,6 +685,22 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     if (capture == null || service == null) return const [];
     final entities = await service.parsedItemsForCapture(capture.id);
     return entities.whereType<ParsedItemEntity>().toList();
+  }
+
+  Future<_RefineContext?> _refineContext({
+    required AgentIdentityEntity agentIdentity,
+    required String dayId,
+    required Set<String> triggerTokens,
+  }) async {
+    final service = planService;
+    if (service == null) return null;
+    if (refineDayIdFromTriggerTokens(triggerTokens) != dayId) return null;
+
+    final baselinePlan = await service.draftPlanForDay(
+      agentId: agentIdentity.agentId,
+      dayId: dayId,
+    );
+    return _RefineContext(baselinePlan: baselinePlan);
   }
 
   Future<void> _persistUserMessage({
@@ -995,6 +1030,46 @@ class _DraftingContext {
               ],
             },
       'decidedTasks': [for (final task in decidedTasks) task.toJson()],
+    };
+  }
+}
+
+class _RefineContext {
+  const _RefineContext({this.baselinePlan});
+
+  final DayPlanEntity? baselinePlan;
+
+  Map<String, Object?> toJson() {
+    final plan = baselinePlan;
+    return <String, Object?>{
+      'requested': true,
+      'baselinePlan': plan == null
+          ? null
+          : <String, Object?>{
+              'planId': plan.id,
+              'dayId': plan.dayId,
+              'planDate': plan.planDate.toIso8601String(),
+              'capacityMinutes': plan.capacityMinutes,
+              'scheduledMinutes': plan.scheduledMinutes,
+              'blocks': [
+                for (final block in plan.data.plannedBlocks)
+                  <String, Object?>{
+                    'id': block.id,
+                    'title': block.title,
+                    'taskId': block.taskId,
+                    'categoryId': block.categoryId,
+                    'start': block.startTime.toIso8601String(),
+                    'end': block.endTime.toIso8601String(),
+                    'type': block.type.name,
+                    'state': block.state.name,
+                    'reason': block.reason,
+                    'note': block.note,
+                  },
+              ],
+              'energyBands': [
+                for (final band in plan.energyBands) band.toJson(),
+              ],
+            },
     };
   }
 }
