@@ -525,6 +525,112 @@ void main() {
     },
   );
 
+  testWidgets(
+    'time-recording state keeps the action row geometry stable',
+    (tester) async {
+      // Outer 420 mirrors the phone layout from the regression report:
+      // Track time, audio, checklist, and more actions visible; image hidden.
+      await tester.binding.setSurfaceSize(const Size(420, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpBar(tester);
+
+      const stableKeys = [
+        TaskActionBar.trackTimeKey,
+        TaskActionBar.audioKey,
+        TaskActionBar.checklistKey,
+        TaskActionBar.moreKey,
+      ];
+      final idleRects = {
+        for (final key in stableKeys) key: tester.getRect(find.byKey(key)),
+      };
+
+      fakeTimeService
+        ..linkedFrom = testTask
+        ..emit(
+          _runningTimerEntry(
+            id: 'timer-1',
+            elapsed: const Duration(seconds: 5),
+          ),
+        );
+      await _settleStream(tester);
+
+      expect(find.text('00:05'), findsOneWidget);
+      for (final key in stableKeys) {
+        expect(
+          tester.getRect(find.byKey(key)),
+          idleRects[key],
+          reason: '$key shifted when time recording became active',
+        );
+      }
+    },
+  );
+
+  testWidgets(
+    'audio-recording state keeps the action row geometry stable',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpBar(tester);
+
+      const stableKeys = [
+        TaskActionBar.trackTimeKey,
+        TaskActionBar.audioKey,
+        TaskActionBar.checklistKey,
+        TaskActionBar.moreKey,
+      ];
+      final idleRects = {
+        for (final key in stableKeys) key: tester.getRect(find.byKey(key)),
+      };
+
+      await pumpBar(
+        tester,
+        recorderState: _recordingRecorderState(linkedId: testTask.meta.id),
+      );
+
+      for (final key in stableKeys) {
+        expect(
+          tester.getRect(find.byKey(key)),
+          idleRects[key],
+          reason: '$key shifted when audio recording became active',
+        );
+      }
+    },
+  );
+
+  testWidgets('action bar foregrounds do not paint glyph shadows', (
+    tester,
+  ) async {
+    await pumpBar(tester);
+
+    final trackIcon = tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(TaskActionBar.trackTimeKey),
+        matching: find.byIcon(Icons.timer_outlined),
+      ),
+    );
+    expect(trackIcon.shadows, isNull);
+
+    final trackLabel = tester.widget<Text>(find.text('Track time'));
+    expect(trackLabel.style?.shadows, isNull);
+
+    for (final key in const [
+      TaskActionBar.audioKey,
+      TaskActionBar.checklistKey,
+      TaskActionBar.imageKey,
+      TaskActionBar.moreKey,
+    ]) {
+      final icon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(key),
+          matching: find.byType(Icon),
+        ),
+      );
+      expect(icon.shadows, isNull, reason: '$key paints a glyph shadow');
+    }
+  });
+
   testWidgets('more tap opens the create-entry modal with task ids', (
     tester,
   ) async {

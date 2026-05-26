@@ -44,6 +44,7 @@
           <p>Fixed: task-agent suggestions no longer disappear wholesale while an agent wake is running, and stale running-timer update proposals are automatically retracted if the timer stops before you accept them.</p>
           <p>Fixed: agent workflow diagnostics no longer write suggestion argument values or raw exception text into runtime log files.</p>
           <p>Fixed: the Create Category modal's colour picker no longer overflows on desktop — the hue slider used to be clipped off the right edge of the modal, leaving the colour ungrabbable.</p>
+          <p>Fixed: the task detail action bar no longer shifts or leaves faint ghost shadows behind the Track time, audio, checklist, and more-action buttons when time recording changes state.</p>
       </description>
     </release>
     <release version="0.9.1005" date="2026-05-22">
