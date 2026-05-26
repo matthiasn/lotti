@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Small tinted chip that shows the category name in the category's
@@ -49,10 +50,5 @@ class CategoryChip extends StatelessWidget {
     );
   }
 
-  Color _parseHex(String hex) {
-    final normalized = hex.replaceFirst('#', '');
-    final value = int.tryParse(normalized, radix: 16);
-    if (value == null) return Colors.grey;
-    return Color(value | 0xFF000000);
-  }
+  Color _parseHex(String hex) => categoryColorFromHex(hex);
 }

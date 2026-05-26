@@ -30,10 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   replaces the cramped capacity donut with a linear meter, uses real audio
   transcription on the refine screen instead of a scripted sample diff, and
   prefers Mistral cloud speech recognition over MLX when both are configured.
-- Gemini-backed speech recognition, Gemini 3 Flash-backed Daily OS day
-  planning, and Gemini 3 Flash-backed task-agent wakes now use low reasoning
-  for faster interactive turnaround while leaving the shared Gemini Flash model
-  configuration unchanged.
+- Gemini-backed speech recognition, Daily OS day planning, and task-agent
+  wakes now respond faster on interactive turnaround.
 - Agent batch lookups for latest per-agent reports and states now use ranked
   active-row indexes that avoid SQLite temp sorts during large project-agent
   wake context builds.

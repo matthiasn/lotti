@@ -3271,7 +3271,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayWrapUpCta => 'Încheie';
 
   @override
-  String get dailyOsNextDraftingHeader => 'Schițez ziua dvs….';
+  String get dailyOsNextDraftingHeader => 'Schițez ziua dvs.…';
 
   @override
   String get dailyOsNextDraftingNudgeAccept => 'Da, protejează dimineața';
@@ -3298,6 +3298,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingMorning => 'Bună dimineața.';
+
+  @override
+  String get dailyOsNextParsedCardBreakLinkTooltip => 'Desfaceți legătura';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -3525,6 +3528,23 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextTasksTitle => 'Sarcini';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAm => 'AM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAmShort => 'am';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPm => 'PM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
+
+  @override
+  String dailyOsNextTimelineSessionOf(int index, int total) {
+    return 'Sesiunea $index din $total';
+  }
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Amânat';

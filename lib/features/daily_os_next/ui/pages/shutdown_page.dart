@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// End-of-day surface. Mirrors `prototype/screens/closing.jsx →
@@ -191,9 +193,7 @@ class _CompletedRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final hex = item.category.colorHex.replaceFirst('#', '');
-    final value = int.tryParse(hex, radix: 16);
-    final color = value != null ? Color(value | 0xFF000000) : Colors.grey;
+    final color = categoryColorFromHex(item.category.colorHex);
     final success = tokens.colors.alert.success.defaultColor;
     return Container(
       padding: EdgeInsets.all(tokens.spacing.step4),
@@ -233,10 +233,7 @@ class _CompletedRow extends StatelessWidget {
           SizedBox(width: tokens.spacing.step3),
           Text(
             '${item.durationMinutes}m',
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-              fontFamily: 'Inconsolata',
-            ),
+            style: monoMetaStyle(tokens, tokens.colors),
           ),
         ],
       ),
@@ -293,9 +290,7 @@ class _CarryoverRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final hex = item.category.colorHex.replaceFirst('#', '');
-    final value = int.tryParse(hex, radix: 16);
-    final color = value != null ? Color(value | 0xFF000000) : Colors.grey;
+    final color = categoryColorFromHex(item.category.colorHex);
     final decided = decision != null;
     return Opacity(
       opacity: decided ? 0.55 : 1.0,
@@ -529,10 +524,11 @@ class _MetricTile extends StatelessWidget {
         SizedBox(height: tokens.spacing.step1),
         Text(
           value,
-          style: tokens.typography.styles.heading.heading3.copyWith(
+          style: monoMetaStyle(
+            tokens,
+            tokens.colors,
+            base: tokens.typography.styles.heading.heading3,
             color: tokens.colors.text.highEmphasis,
-            fontFamily: 'Inconsolata',
-            fontSize: 22,
           ),
         ),
         if (sub != null)

@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Hour-by-hour timeline rendering of a [DraftPlan]. Read-only in
 /// this milestone.
@@ -170,7 +172,7 @@ class _HourRail extends StatelessWidget {
               top: i * 60 * pxPerMinute - 6,
               right: 6,
               child: Text(
-                _formatHour(startHour + i),
+                _formatHour(context, startHour + i),
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.lowEmphasis,
                   fontWeight: FontWeight.w600,
@@ -209,9 +211,12 @@ class _HourRail extends StatelessWidget {
     );
   }
 
-  String _formatHour(int hour24) {
+  String _formatHour(BuildContext context, int hour24) {
     final h = hour24 % 24;
-    final period = h < 12 ? 'AM' : 'PM';
+    final messages = context.messages;
+    final period = h < 12
+        ? messages.dailyOsNextTimelineMeridiemAm
+        : messages.dailyOsNextTimelineMeridiemPm;
     final hour12 = h % 12 == 0 ? 12 : h % 12;
     return '$hour12 $period';
   }
@@ -382,12 +387,8 @@ class DayBlock extends StatelessWidget {
     );
   }
 
-  Color _categoryColor(BuildContext context) {
-    final hex = block.category.colorHex.replaceFirst('#', '');
-    final value = int.tryParse(hex, radix: 16);
-    if (value == null) return Colors.grey;
-    return Color(value | 0xFF000000);
-  }
+  Color _categoryColor(BuildContext context) =>
+      categoryColorFromHex(block.category.colorHex);
 }
 
 class _BlockContent extends StatelessWidget {
@@ -447,7 +448,7 @@ class _BlockContent extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.only(top: tokens.spacing.step1),
                   child: Text(
-                    _subTitle(block),
+                    _subTitle(context, block),
                     style: tokens.typography.styles.others.caption.copyWith(
                       color: tokens.colors.text.lowEmphasis,
                       fontSize: 10,
@@ -463,25 +464,31 @@ class _BlockContent extends StatelessWidget {
     );
   }
 
-  String _subTitle(TimeBlock block) {
-    final parts = <String>[_formatRange(block)];
+  String _subTitle(BuildContext context, TimeBlock block) {
+    final parts = <String>[_formatRange(context, block)];
     if (block.sessionIndex != null && block.sessionTotal != null) {
       parts.add(
-        'Session ${block.sessionIndex} of ${block.sessionTotal}',
+        context.messages.dailyOsNextTimelineSessionOf(
+          block.sessionIndex!,
+          block.sessionTotal!,
+        ),
       );
     }
     if (block.location != null) parts.add(block.location!);
     return parts.join(' · ');
   }
 
-  String _formatRange(TimeBlock block) {
-    return '${_clock(block.start)}–${_clock(block.end)}';
+  String _formatRange(BuildContext context, TimeBlock block) {
+    return '${_clock(context, block.start)}–${_clock(context, block.end)}';
   }
 
-  String _clock(DateTime t) {
+  String _clock(BuildContext context, DateTime t) {
     final h12 = t.hour % 12 == 0 ? 12 : t.hour % 12;
     final m = t.minute.toString().padLeft(2, '0');
-    final period = t.hour < 12 ? 'am' : 'pm';
+    final messages = context.messages;
+    final period = t.hour < 12
+        ? messages.dailyOsNextTimelineMeridiemAmShort
+        : messages.dailyOsNextTimelineMeridiemPmShort;
     return t.minute == 0 ? '$h12$period' : '$h12:$m$period';
   }
 }

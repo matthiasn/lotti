@@ -248,17 +248,25 @@ class _TaskRow extends StatelessWidget {
           SizedBox(width: tokens.spacing.step3),
           CategoryChip(category: item.category),
           SizedBox(width: tokens.spacing.step3),
-          Text(
-            label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: color,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: color,
+              ),
             ),
           ),
           SizedBox(width: tokens.spacing.step3),
-          Text(
-            item.updatedLabel,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
+          Flexible(
+            child: Text(
+              item.updatedLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
             ),
           ),
         ],

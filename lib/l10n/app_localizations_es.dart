@@ -3137,14 +3137,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dailyOsNextCaptureHeadlineTailForDate(String date) {
-    return '¿para $date?';
+    return 'para $date?';
   }
 
   @override
-  String get dailyOsNextCaptureHeadlineTailTomorrow => '¿para mañana?';
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'para mañana?';
 
   @override
-  String get dailyOsNextCaptureHeadlineTailYesterday => '¿para ayer?';
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'para ayer?';
 
   @override
   String get dailyOsNextCaptureIdleHint =>
@@ -3287,6 +3287,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingMorning => 'Buenos días.';
+
+  @override
+  String get dailyOsNextParsedCardBreakLinkTooltip => 'Romper enlace';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
@@ -3515,6 +3518,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextTasksTitle => 'Tareas';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAm => 'AM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAmShort => 'am';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPm => 'PM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
+
+  @override
+  String dailyOsNextTimelineSessionOf(int index, int total) {
+    return 'Sesión $index de $total';
+  }
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Aplazado';

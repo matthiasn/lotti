@@ -5526,6 +5526,12 @@ abstract class AppLocalizations {
   /// **'Good morning.'**
   String get dailyOsNextGreetingMorning;
 
+  /// No description provided for @dailyOsNextParsedCardBreakLinkTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Break link'**
+  String get dailyOsNextParsedCardBreakLinkTooltip;
+
   /// No description provided for @dailyOsNextPlanViewAgenda.
   ///
   /// In en, this message translates to:
@@ -5915,6 +5921,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tasks'**
   String get dailyOsNextTasksTitle;
+
+  /// No description provided for @dailyOsNextTimelineMeridiemAm.
+  ///
+  /// In en, this message translates to:
+  /// **'AM'**
+  String get dailyOsNextTimelineMeridiemAm;
+
+  /// No description provided for @dailyOsNextTimelineMeridiemAmShort.
+  ///
+  /// In en, this message translates to:
+  /// **'am'**
+  String get dailyOsNextTimelineMeridiemAmShort;
+
+  /// No description provided for @dailyOsNextTimelineMeridiemPm.
+  ///
+  /// In en, this message translates to:
+  /// **'PM'**
+  String get dailyOsNextTimelineMeridiemPm;
+
+  /// No description provided for @dailyOsNextTimelineMeridiemPmShort.
+  ///
+  /// In en, this message translates to:
+  /// **'pm'**
+  String get dailyOsNextTimelineMeridiemPmShort;
+
+  /// No description provided for @dailyOsNextTimelineSessionOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Session {index} of {total}'**
+  String dailyOsNextTimelineSessionOf(int index, int total);
 
   /// No description provided for @dailyOsNextTriageConfirmDefer.
   ///

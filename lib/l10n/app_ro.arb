@@ -1599,7 +1599,7 @@
   "dailyOsNextDayTitle": "Ziua dvs.",
   "dailyOsNextDayWhyChipLabel": "DE CE",
   "dailyOsNextDayWrapUpCta": "Încheie",
-  "dailyOsNextDraftingHeader": "Schițez ziua dvs….",
+  "dailyOsNextDraftingHeader": "Schițez ziua dvs.…",
   "dailyOsNextDraftingNudgeAccept": "Da, protejează dimineața",
   "dailyOsNextDraftingNudgeDecline": "Nu astăzi",
   "dailyOsNextDraftingReasoningOverline": "✦ RAȚIONAMENT",
@@ -1616,6 +1616,7 @@
   "dailyOsNextGreetingEvening": "Bună seara.",
   "dailyOsNextGreetingHi": "Salut 👋",
   "dailyOsNextGreetingMorning": "Bună dimineața.",
+  "dailyOsNextParsedCardBreakLinkTooltip": "Desfaceți legătura",
   "dailyOsNextPlanViewAgenda": "Agenda",
   "dailyOsNextPlanViewDay": "Ziua",
   "dailyOsNextReconcileBadgeMatched": "LEGAT",
@@ -1721,6 +1722,21 @@
   "dailyOsNextTasksSearchPlaceholder": "Caută sarcini",
   "dailyOsNextTasksSubtitle": "Tot ce Lotti păstrează pentru dvs. Ritualul de dimineață scoate la suprafață ce contează.",
   "dailyOsNextTasksTitle": "Sarcini",
+  "dailyOsNextTimelineMeridiemAm": "AM",
+  "dailyOsNextTimelineMeridiemAmShort": "am",
+  "dailyOsNextTimelineMeridiemPm": "PM",
+  "dailyOsNextTimelineMeridiemPmShort": "pm",
+  "dailyOsNextTimelineSessionOf": "Sesiunea {index} din {total}",
+  "@dailyOsNextTimelineSessionOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextTriageConfirmDefer": "Amânat",
   "dailyOsNextTriageConfirmDone": "Marcat ca finalizat",
   "dailyOsNextTriageConfirmDoNow": "Făcut imediat",

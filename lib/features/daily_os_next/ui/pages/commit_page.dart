@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
@@ -148,9 +149,7 @@ class _RecapRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final hex = item.category.colorHex.replaceFirst('#', '');
-    final value = int.tryParse(hex, radix: 16);
-    final color = value != null ? Color(value | 0xFF000000) : Colors.grey;
+    final color = categoryColorFromHex(item.category.colorHex);
     return Container(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,

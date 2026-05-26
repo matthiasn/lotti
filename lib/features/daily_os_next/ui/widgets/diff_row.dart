@@ -292,7 +292,7 @@ class _TimeChipsRow extends StatelessWidget {
       children: [
         if (change.fromStart != null && change.fromEnd != null)
           _TimeChip(
-            label: _formatRange(change.fromStart!, change.fromEnd!),
+            label: _formatRange(context, change.fromStart!, change.fromEnd!),
             color: tokens.colors.text.lowEmphasis,
             strikethrough: true,
           ),
@@ -304,21 +304,24 @@ class _TimeChipsRow extends StatelessWidget {
           ),
         if (change.toStart != null && change.toEnd != null)
           _TimeChip(
-            label: _formatRange(change.toStart!, change.toEnd!),
+            label: _formatRange(context, change.toStart!, change.toEnd!),
             color: accent,
           ),
       ],
     );
   }
 
-  String _formatRange(DateTime start, DateTime end) {
-    return '${_clock(start)}–${_clock(end)}';
+  String _formatRange(BuildContext context, DateTime start, DateTime end) {
+    return '${_clock(context, start)}–${_clock(context, end)}';
   }
 
-  String _clock(DateTime t) {
+  String _clock(BuildContext context, DateTime t) {
     final h12 = t.hour % 12 == 0 ? 12 : t.hour % 12;
     final m = t.minute.toString().padLeft(2, '0');
-    final period = t.hour < 12 ? 'am' : 'pm';
+    final messages = context.messages;
+    final period = t.hour < 12
+        ? messages.dailyOsNextTimelineMeridiemAmShort
+        : messages.dailyOsNextTimelineMeridiemPmShort;
     return t.minute == 0 ? '$h12$period' : '$h12:$m$period';
   }
 }

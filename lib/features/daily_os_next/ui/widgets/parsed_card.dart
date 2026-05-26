@@ -190,15 +190,18 @@ class _MatchedTaskPill extends StatelessWidget {
             ),
           ],
           SizedBox(width: tokens.spacing.step2),
-          InkWell(
-            onTap: onBreak,
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            child: Padding(
-              padding: EdgeInsets.all(tokens.spacing.step1),
-              child: Icon(
-                Icons.close_rounded,
-                size: 14,
-                color: tokens.colors.text.mediumEmphasis,
+          Tooltip(
+            message: context.messages.dailyOsNextParsedCardBreakLinkTooltip,
+            child: InkWell(
+              onTap: onBreak,
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              child: Padding(
+                padding: EdgeInsets.all(tokens.spacing.step1),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
               ),
             ),
           ),

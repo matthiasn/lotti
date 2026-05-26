@@ -136,29 +136,37 @@ class _VoiceButtonState extends State<VoiceButton>
                 color: teal,
               ),
             ],
-            GestureDetector(
-              onTap: widget.onTap,
-              child: Container(
-                width: widget.size,
-                height: widget.size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [teal, tealDeep],
-                    stops: const [0.2, 1.0],
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x33000000),
-                      blurRadius: 24,
-                      offset: Offset(0, 12),
+            // Wrap in Material/InkWell instead of `GestureDetector` so
+            // keyboard focus, semantics actions, and ripple feedback
+            // come from the platform's button primitive.
+            Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: widget.onTap,
+                customBorder: const CircleBorder(),
+                child: Container(
+                  width: widget.size,
+                  height: widget.size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [teal, tealDeep],
+                      stops: const [0.2, 1.0],
                     ),
-                  ],
-                ),
-                child: Icon(
-                  glyph,
-                  size: widget.size * 0.38,
-                  color: onTeal,
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x33000000),
+                        blurRadius: 24,
+                        offset: Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    glyph,
+                    size: widget.size * 0.38,
+                    color: onTeal,
+                  ),
                 ),
               ),
             ),

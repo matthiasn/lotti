@@ -49,7 +49,6 @@ class WhyChip extends StatelessWidget {
               context.messages.dailyOsNextDayWhyChipLabel,
               style: tokens.typography.styles.others.overline.copyWith(
                 color: teal,
-                fontSize: 10,
               ),
             ),
           ],

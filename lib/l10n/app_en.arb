@@ -1812,6 +1812,7 @@
   "dailyOsNextGreetingEvening": "Good evening.",
   "dailyOsNextGreetingHi": "Hi 👋",
   "dailyOsNextGreetingMorning": "Good morning.",
+  "dailyOsNextParsedCardBreakLinkTooltip": "Break link",
   "dailyOsNextPlanViewAgenda": "Agenda",
   "dailyOsNextPlanViewDay": "Day",
   "dailyOsNextReconcileBadgeMatched": "MATCHED",
@@ -1917,6 +1918,21 @@
   "dailyOsNextTasksSearchPlaceholder": "Search tasks",
   "dailyOsNextTasksSubtitle": "Everything Lotti's holding for you. The morning ritual surfaces what matters.",
   "dailyOsNextTasksTitle": "Tasks",
+  "dailyOsNextTimelineMeridiemAm": "AM",
+  "dailyOsNextTimelineMeridiemAmShort": "am",
+  "dailyOsNextTimelineMeridiemPm": "PM",
+  "dailyOsNextTimelineMeridiemPmShort": "pm",
+  "dailyOsNextTimelineSessionOf": "Session {index} of {total}",
+  "@dailyOsNextTimelineSessionOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextTriageConfirmDefer": "Deferred",
   "dailyOsNextTriageConfirmDone": "Marked done",
   "dailyOsNextTriageConfirmDoNow": "Done now",

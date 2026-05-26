@@ -3235,6 +3235,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Good morning.';
 
   @override
+  String get dailyOsNextParsedCardBreakLinkTooltip => 'Break link';
+
+  @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';
 
   @override
@@ -3460,6 +3463,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextTasksTitle => 'Tasks';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAm => 'AM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemAmShort => 'am';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPm => 'PM';
+
+  @override
+  String get dailyOsNextTimelineMeridiemPmShort => 'pm';
+
+  @override
+  String dailyOsNextTimelineSessionOf(int index, int total) {
+    return 'Session $index of $total';
+  }
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Deferred';

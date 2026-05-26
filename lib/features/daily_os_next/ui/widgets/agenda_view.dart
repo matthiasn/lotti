@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -162,9 +163,7 @@ class _CategoryLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final hex = category.colorHex.replaceFirst('#', '');
-    final value = int.tryParse(hex, radix: 16);
-    final color = value != null ? Color(value | 0xFF000000) : Colors.grey;
+    final color = categoryColorFromHex(category.colorHex);
     final h = minutes ~/ 60;
     final m = minutes % 60;
     final duration = m == 0 ? '${h}h' : '${h}h ${m}m';

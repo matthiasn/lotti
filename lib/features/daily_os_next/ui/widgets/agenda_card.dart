@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -110,12 +111,7 @@ class AgendaCard extends StatelessWidget {
     );
   }
 
-  Color _categoryColor() {
-    final hex = item.category.colorHex.replaceFirst('#', '');
-    final value = int.tryParse(hex, radix: 16);
-    if (value == null) return Colors.grey;
-    return Color(value | 0xFF000000);
-  }
+  Color _categoryColor() => categoryColorFromHex(item.category.colorHex);
 }
 
 class _NumberedCircle extends StatelessWidget {

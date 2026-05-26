@@ -154,13 +154,11 @@ class _GentleNudgeCard extends StatelessWidget {
           SizedBox(height: tokens.spacing.step4),
           Row(
             children: [
+              // Disabled until the day-agent layer wires the
+              // accept/decline round-trip; a no-op handler would imply
+              // an affordance that does not yet exist.
               FilledButton(
-                onPressed: () {
-                  // Confirming the nudge is a one-tap acknowledgement
-                  // — no agent round-trip until the day-agent layer
-                  // lands. Closing this gap is part of the agent
-                  // layer plan.
-                },
+                onPressed: null,
                 style: FilledButton.styleFrom(
                   backgroundColor: teal,
                   foregroundColor: tokens.colors.text.onInteractiveAlert,
@@ -179,7 +177,7 @@ class _GentleNudgeCard extends StatelessWidget {
               ),
               SizedBox(width: tokens.spacing.step3),
               TextButton(
-                onPressed: () {},
+                onPressed: null,
                 style: TextButton.styleFrom(
                   foregroundColor: tokens.colors.text.mediumEmphasis,
                   padding: EdgeInsets.symmetric(

@@ -1616,6 +1616,7 @@
   "dailyOsNextGreetingEvening": "Bonsoir.",
   "dailyOsNextGreetingHi": "Salut 👋",
   "dailyOsNextGreetingMorning": "Bonjour.",
+  "dailyOsNextParsedCardBreakLinkTooltip": "Dissocier",
   "dailyOsNextPlanViewAgenda": "Agenda",
   "dailyOsNextPlanViewDay": "Journée",
   "dailyOsNextReconcileBadgeMatched": "LIÉ",
@@ -1721,6 +1722,21 @@
   "dailyOsNextTasksSearchPlaceholder": "Rechercher des tâches",
   "dailyOsNextTasksSubtitle": "Tout ce que Lotti garde pour toi. Le rituel du matin met l'essentiel en avant.",
   "dailyOsNextTasksTitle": "Tâches",
+  "dailyOsNextTimelineMeridiemAm": "AM",
+  "dailyOsNextTimelineMeridiemAmShort": "am",
+  "dailyOsNextTimelineMeridiemPm": "PM",
+  "dailyOsNextTimelineMeridiemPmShort": "pm",
+  "dailyOsNextTimelineSessionOf": "Session {index} sur {total}",
+  "@dailyOsNextTimelineSessionOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextTriageConfirmDefer": "Reporté",
   "dailyOsNextTriageConfirmDone": "Marqué comme fait",
   "dailyOsNextTriageConfirmDoNow": "Fait tout de suite",

@@ -1542,7 +1542,7 @@
   "dailyOsNextCaptureCaptured": "Entendido.",
   "dailyOsNextCaptureHeadlineLead": "¿Qué tienes en mente",
   "dailyOsNextCaptureHeadlineTail": "para hoy?",
-  "dailyOsNextCaptureHeadlineTailForDate": "¿para {date}?",
+  "dailyOsNextCaptureHeadlineTailForDate": "para {date}?",
   "@dailyOsNextCaptureHeadlineTailForDate": {
     "placeholders": {
       "date": {
@@ -1550,8 +1550,8 @@
       }
     }
   },
-  "dailyOsNextCaptureHeadlineTailTomorrow": "¿para mañana?",
-  "dailyOsNextCaptureHeadlineTailYesterday": "¿para ayer?",
+  "dailyOsNextCaptureHeadlineTailTomorrow": "para mañana?",
+  "dailyOsNextCaptureHeadlineTailYesterday": "para ayer?",
   "dailyOsNextCaptureIdleHint": "Toca para hablar · captúralo · o escríbelo",
   "dailyOsNextCaptureListening": "ESCUCHANDO",
   "dailyOsNextCaptureOpenTasks": "Explorar tareas",
@@ -1616,6 +1616,7 @@
   "dailyOsNextGreetingEvening": "Buenas noches.",
   "dailyOsNextGreetingHi": "Hola 👋",
   "dailyOsNextGreetingMorning": "Buenos días.",
+  "dailyOsNextParsedCardBreakLinkTooltip": "Romper enlace",
   "dailyOsNextPlanViewAgenda": "Agenda",
   "dailyOsNextPlanViewDay": "Día",
   "dailyOsNextReconcileBadgeMatched": "VINCULADO",
@@ -1721,6 +1722,21 @@
   "dailyOsNextTasksSearchPlaceholder": "Buscar tareas",
   "dailyOsNextTasksSubtitle": "Todo lo que Lotti guarda para ti. El ritual matutino lo prioriza.",
   "dailyOsNextTasksTitle": "Tareas",
+  "dailyOsNextTimelineMeridiemAm": "AM",
+  "dailyOsNextTimelineMeridiemAmShort": "am",
+  "dailyOsNextTimelineMeridiemPm": "PM",
+  "dailyOsNextTimelineMeridiemPmShort": "pm",
+  "dailyOsNextTimelineSessionOf": "Sesión {index} de {total}",
+  "@dailyOsNextTimelineSessionOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextTriageConfirmDefer": "Aplazado",
   "dailyOsNextTriageConfirmDone": "Marcado como hecho",
   "dailyOsNextTriageConfirmDoNow": "Hecho ya",

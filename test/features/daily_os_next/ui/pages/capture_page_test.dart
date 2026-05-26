@@ -247,16 +247,12 @@ void main() {
 
         // Start listening (async permission + startRecording).
         await tester.tap(find.byType(VoiceButton));
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 20)),
-        );
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 20));
         // Stop listening — triggers transcribe + persist.
         await tester.tap(find.byType(VoiceButton));
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 20)),
-        );
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 20));
 
         final context = tester.element(find.byType(CapturePage));
         final messages = context.messages;
@@ -558,15 +554,11 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byType(VoiceButton));
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 20)),
-      );
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
       await tester.tap(find.byType(VoiceButton));
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 20)),
-      );
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 20));
 
       final ctaFinder = find.text(
         tester

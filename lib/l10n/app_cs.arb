@@ -1425,6 +1425,7 @@
   "dailyOsNextGreetingEvening": "Dobrý večer.",
   "dailyOsNextGreetingHi": "Ahoj 👋",
   "dailyOsNextGreetingMorning": "Dobré ráno.",
+  "dailyOsNextParsedCardBreakLinkTooltip": "Odpojit",
   "dailyOsNextPlanViewAgenda": "Agenda",
   "dailyOsNextPlanViewDay": "Den",
   "dailyOsNextReconcileBadgeMatched": "PROPOJENO",
@@ -1530,6 +1531,21 @@
   "dailyOsNextTasksSearchPlaceholder": "Hledat úkoly",
   "dailyOsNextTasksSubtitle": "Vše, co Lotti pro tebe drží. Ranní rituál vyplaví to podstatné.",
   "dailyOsNextTasksTitle": "Úkoly",
+  "dailyOsNextTimelineMeridiemAm": "AM",
+  "dailyOsNextTimelineMeridiemAmShort": "am",
+  "dailyOsNextTimelineMeridiemPm": "PM",
+  "dailyOsNextTimelineMeridiemPmShort": "pm",
+  "dailyOsNextTimelineSessionOf": "Sezení {index} z {total}",
+  "@dailyOsNextTimelineSessionOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextTriageConfirmDefer": "Odloženo",
   "dailyOsNextTriageConfirmDone": "Označeno jako hotové",
   "dailyOsNextTriageConfirmDoNow": "Hotovo hned",
