@@ -112,6 +112,24 @@ void main() {
           isNull,
         );
       });
+
+      test('committed can be serialized and deserialized', () {
+        final status = DayPlanStatus.committed(
+          committedAt: DateTime(2026, 5, 25, 9, 30),
+        );
+
+        final json = jsonEncode(status.toJson());
+        final fromJson = DayPlanStatus.fromJson(
+          jsonDecode(json) as Map<String, dynamic>,
+        );
+
+        expect(fromJson, equals(status));
+        expect(fromJson, isA<DayPlanStatusCommitted>());
+        expect(
+          (fromJson as DayPlanStatusCommitted).committedAt,
+          equals(DateTime(2026, 5, 25, 9, 30)),
+        );
+      });
     });
 
     group('PlannedBlock', () {

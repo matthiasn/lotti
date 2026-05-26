@@ -52,6 +52,20 @@ const _$DayPlanReviewReasonEnumMap = {
   DayPlanReviewReason.manualReset: 'manualReset',
 };
 
+DayPlanStatusCommitted _$DayPlanStatusCommittedFromJson(
+  Map<String, dynamic> json,
+) => DayPlanStatusCommitted(
+  committedAt: DateTime.parse(json['committedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$DayPlanStatusCommittedToJson(
+  DayPlanStatusCommitted instance,
+) => <String, dynamic>{
+  'committedAt': instance.committedAt.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
 _PlannedBlock _$PlannedBlockFromJson(Map<String, dynamic> json) =>
     _PlannedBlock(
       id: json['id'] as String,

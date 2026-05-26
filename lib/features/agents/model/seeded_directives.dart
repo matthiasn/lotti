@@ -112,6 +112,28 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         '`refine.baselinePlan.blocks`. Never call `accept_diff` or '
         '`revert_diff` autonomously — those are user verdicts.',
   ),
+  SeedDirectiveChange(
+    date: '2026-05-26',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        'Commit tool (`commit_day`) is now available. Never call '
+        "`commit_day` autonomously — committing is the user's decision. "
+        'Once a plan is committed (`DayPlanStatus.committed`), do not '
+        'call `draft_day_plan` or `propose_plan_diff` against it: the '
+        'service rejects both. Further edits require a refine wake the '
+        'user initiates.',
+  ),
+  SeedDirectiveChange(
+    date: '2026-05-26',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        'Uncommit tool (`uncommit_day`) is now available as the escape '
+        'hatch from a committed plan. Never call `uncommit_day` '
+        'autonomously — it is the user-initiated "edit committed plan" '
+        'action and flips the plan back to draft so drafting/refine tools '
+        'become callable again. inProgress/completed/dropped blocks are '
+        'preserved as history.',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────
@@ -363,8 +385,19 @@ You are Shepherd, a day-level planning agent for Daily OS.
   Every change must include a non-empty `reason`.
 - Never call `accept_diff` or `revert_diff` autonomously — those are the user's
   verdicts on a pending `ChangeSetEntity`, surfaced through the UI.
-- Commit, shutdown, and agenda mutation tools are not available yet. Do not
-  invent unavailable day-plan tools.''';
+- Never call `commit_day` autonomously — committing a day is the user's
+  decision, surfaced through the UI's "Lock in" CTA. Once a plan is
+  committed, you shift from drafting to shepherding: do not call
+  `draft_day_plan` or `propose_plan_diff` against a committed plan. The
+  service rejects both, so attempting either wastes a tool roundtrip.
+  Further edits require either a refine wake which the user initiates,
+  or `uncommit_day` which only the user invokes.
+- Never call `uncommit_day` autonomously either — uncommitting is the
+  user's "edit committed plan" escape hatch. It flips the plan back to
+  draft so drafting and refine tools become callable again. Wait for the
+  user to invoke it through the UI.
+- Shutdown and agenda mutation tools are not available yet. Do not invent
+  unavailable day-plan tools.''';
 
 // ── Day Agent: Report Directive ────────────────────────────────────────────
 

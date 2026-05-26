@@ -27,6 +27,10 @@ DayPlanStatus _$DayPlanStatusFromJson(
           return DayPlanStatusNeedsReview.fromJson(
             json
           );
+                case 'committed':
+          return DayPlanStatusCommitted.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -85,13 +89,14 @@ extension DayPlanStatusPatterns on DayPlanStatus {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( DayPlanStatusDraft value)?  draft,TResult Function( DayPlanStatusAgreed value)?  agreed,TResult Function( DayPlanStatusNeedsReview value)?  needsReview,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( DayPlanStatusDraft value)?  draft,TResult Function( DayPlanStatusAgreed value)?  agreed,TResult Function( DayPlanStatusNeedsReview value)?  needsReview,TResult Function( DayPlanStatusCommitted value)?  committed,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case DayPlanStatusDraft() when draft != null:
 return draft(_that);case DayPlanStatusAgreed() when agreed != null:
 return agreed(_that);case DayPlanStatusNeedsReview() when needsReview != null:
-return needsReview(_that);case _:
+return needsReview(_that);case DayPlanStatusCommitted() when committed != null:
+return committed(_that);case _:
   return orElse();
 
 }
@@ -109,13 +114,14 @@ return needsReview(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( DayPlanStatusDraft value)  draft,required TResult Function( DayPlanStatusAgreed value)  agreed,required TResult Function( DayPlanStatusNeedsReview value)  needsReview,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( DayPlanStatusDraft value)  draft,required TResult Function( DayPlanStatusAgreed value)  agreed,required TResult Function( DayPlanStatusNeedsReview value)  needsReview,required TResult Function( DayPlanStatusCommitted value)  committed,}){
 final _that = this;
 switch (_that) {
 case DayPlanStatusDraft():
 return draft(_that);case DayPlanStatusAgreed():
 return agreed(_that);case DayPlanStatusNeedsReview():
-return needsReview(_that);}
+return needsReview(_that);case DayPlanStatusCommitted():
+return committed(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -129,13 +135,14 @@ return needsReview(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( DayPlanStatusDraft value)?  draft,TResult? Function( DayPlanStatusAgreed value)?  agreed,TResult? Function( DayPlanStatusNeedsReview value)?  needsReview,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( DayPlanStatusDraft value)?  draft,TResult? Function( DayPlanStatusAgreed value)?  agreed,TResult? Function( DayPlanStatusNeedsReview value)?  needsReview,TResult? Function( DayPlanStatusCommitted value)?  committed,}){
 final _that = this;
 switch (_that) {
 case DayPlanStatusDraft() when draft != null:
 return draft(_that);case DayPlanStatusAgreed() when agreed != null:
 return agreed(_that);case DayPlanStatusNeedsReview() when needsReview != null:
-return needsReview(_that);case _:
+return needsReview(_that);case DayPlanStatusCommitted() when committed != null:
+return committed(_that);case _:
   return null;
 
 }
@@ -152,12 +159,13 @@ return needsReview(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  draft,TResult Function( DateTime agreedAt)?  agreed,TResult Function( DateTime triggeredAt,  DayPlanReviewReason reason,  DateTime? previouslyAgreedAt)?  needsReview,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  draft,TResult Function( DateTime agreedAt)?  agreed,TResult Function( DateTime triggeredAt,  DayPlanReviewReason reason,  DateTime? previouslyAgreedAt)?  needsReview,TResult Function( DateTime committedAt)?  committed,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case DayPlanStatusDraft() when draft != null:
 return draft();case DayPlanStatusAgreed() when agreed != null:
 return agreed(_that.agreedAt);case DayPlanStatusNeedsReview() when needsReview != null:
-return needsReview(_that.triggeredAt,_that.reason,_that.previouslyAgreedAt);case _:
+return needsReview(_that.triggeredAt,_that.reason,_that.previouslyAgreedAt);case DayPlanStatusCommitted() when committed != null:
+return committed(_that.committedAt);case _:
   return orElse();
 
 }
@@ -175,12 +183,13 @@ return needsReview(_that.triggeredAt,_that.reason,_that.previouslyAgreedAt);case
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  draft,required TResult Function( DateTime agreedAt)  agreed,required TResult Function( DateTime triggeredAt,  DayPlanReviewReason reason,  DateTime? previouslyAgreedAt)  needsReview,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  draft,required TResult Function( DateTime agreedAt)  agreed,required TResult Function( DateTime triggeredAt,  DayPlanReviewReason reason,  DateTime? previouslyAgreedAt)  needsReview,required TResult Function( DateTime committedAt)  committed,}) {final _that = this;
 switch (_that) {
 case DayPlanStatusDraft():
 return draft();case DayPlanStatusAgreed():
 return agreed(_that.agreedAt);case DayPlanStatusNeedsReview():
-return needsReview(_that.triggeredAt,_that.reason,_that.previouslyAgreedAt);}
+return needsReview(_that.triggeredAt,_that.reason,_that.previouslyAgreedAt);case DayPlanStatusCommitted():
+return committed(_that.committedAt);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -194,12 +203,13 @@ return needsReview(_that.triggeredAt,_that.reason,_that.previouslyAgreedAt);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  draft,TResult? Function( DateTime agreedAt)?  agreed,TResult? Function( DateTime triggeredAt,  DayPlanReviewReason reason,  DateTime? previouslyAgreedAt)?  needsReview,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  draft,TResult? Function( DateTime agreedAt)?  agreed,TResult? Function( DateTime triggeredAt,  DayPlanReviewReason reason,  DateTime? previouslyAgreedAt)?  needsReview,TResult? Function( DateTime committedAt)?  committed,}) {final _that = this;
 switch (_that) {
 case DayPlanStatusDraft() when draft != null:
 return draft();case DayPlanStatusAgreed() when agreed != null:
 return agreed(_that.agreedAt);case DayPlanStatusNeedsReview() when needsReview != null:
-return needsReview(_that.triggeredAt,_that.reason,_that.previouslyAgreedAt);case _:
+return needsReview(_that.triggeredAt,_that.reason,_that.previouslyAgreedAt);case DayPlanStatusCommitted() when committed != null:
+return committed(_that.committedAt);case _:
   return null;
 
 }
@@ -391,6 +401,79 @@ triggeredAt: null == triggeredAt ? _self.triggeredAt : triggeredAt // ignore: ca
 as DateTime,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
 as DayPlanReviewReason,previouslyAgreedAt: freezed == previouslyAgreedAt ? _self.previouslyAgreedAt : previouslyAgreedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class DayPlanStatusCommitted implements DayPlanStatus {
+  const DayPlanStatusCommitted({required this.committedAt, final  String? $type}): $type = $type ?? 'committed';
+  factory DayPlanStatusCommitted.fromJson(Map<String, dynamic> json) => _$DayPlanStatusCommittedFromJson(json);
+
+ final  DateTime committedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of DayPlanStatus
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DayPlanStatusCommittedCopyWith<DayPlanStatusCommitted> get copyWith => _$DayPlanStatusCommittedCopyWithImpl<DayPlanStatusCommitted>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DayPlanStatusCommittedToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DayPlanStatusCommitted&&(identical(other.committedAt, committedAt) || other.committedAt == committedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,committedAt);
+
+@override
+String toString() {
+  return 'DayPlanStatus.committed(committedAt: $committedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DayPlanStatusCommittedCopyWith<$Res> implements $DayPlanStatusCopyWith<$Res> {
+  factory $DayPlanStatusCommittedCopyWith(DayPlanStatusCommitted value, $Res Function(DayPlanStatusCommitted) _then) = _$DayPlanStatusCommittedCopyWithImpl;
+@useResult
+$Res call({
+ DateTime committedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$DayPlanStatusCommittedCopyWithImpl<$Res>
+    implements $DayPlanStatusCommittedCopyWith<$Res> {
+  _$DayPlanStatusCommittedCopyWithImpl(this._self, this._then);
+
+  final DayPlanStatusCommitted _self;
+  final $Res Function(DayPlanStatusCommitted) _then;
+
+/// Create a copy of DayPlanStatus
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? committedAt = null,}) {
+  return _then(DayPlanStatusCommitted(
+committedAt: null == committedAt ? _self.committedAt : committedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
   ));
 }
 

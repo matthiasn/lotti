@@ -2568,6 +2568,486 @@ void main() {
       );
     });
 
+    group('commitDay', () {
+      const planEntityId = 'day_agent_plan:$_dayId';
+
+      DayPlanEntity seedPlan({
+        DayPlanStatus status = const DayPlanStatus.draft(),
+        List<PlannedBlock>? blocks,
+      }) {
+        final plan =
+            AgentDomainEntity.dayPlan(
+                  id: planEntityId,
+                  agentId: _agentId,
+                  dayId: _dayId,
+                  planDate: DateTime(2026, 5, 25),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 25),
+                    status: status,
+                    plannedBlocks:
+                        blocks ??
+                        [
+                          PlannedBlock(
+                            id: 'block-1',
+                            categoryId: 'work',
+                            startTime: DateTime(2026, 5, 25, 9),
+                            endTime: DateTime(2026, 5, 25, 10),
+                            title: 'Prep demo',
+                            reason: 'Morning focus.',
+                          ),
+                          PlannedBlock(
+                            id: 'block-2',
+                            categoryId: 'life',
+                            startTime: DateTime(2026, 5, 25, 12),
+                            endTime: DateTime(2026, 5, 25, 13),
+                            title: 'Lunch',
+                          ),
+                        ],
+                  ),
+                  capacityMinutes: 360,
+                  scheduledMinutes: 120,
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+        agentEntities[plan.id] = plan;
+        return plan;
+      }
+
+      test(
+        'commitDay flips status + every drafted block, persists, notifies',
+        () async {
+          seedPlan();
+
+          final later = _now.add(const Duration(hours: 2));
+          final committed = await withClock(Clock.fixed(later), () {
+            return createService().commitDay(
+              agentId: _agentId,
+              dayId: _dayId,
+            );
+          });
+
+          expect(committed.data.status, isA<DayPlanStatusCommitted>());
+          expect(
+            (committed.data.status as DayPlanStatusCommitted).committedAt,
+            later,
+          );
+          expect(
+            committed.data.plannedBlocks.map((b) => b.state),
+            everyElement(PlannedBlockState.committed),
+          );
+          expect(committed.updatedAt, later);
+          expect(upsertedEntities.single, committed);
+          expect(
+            notifications,
+            containsAll([_agentId, _dayId, committed.id]),
+          );
+        },
+      );
+
+      test(
+        'commitDay leaves non-drafted block states alone',
+        () async {
+          seedPlan(
+            blocks: [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 10),
+                title: 'In progress',
+                reason: 'Morning focus.',
+                state: PlannedBlockState.inProgress,
+              ),
+              PlannedBlock(
+                id: 'block-2',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 11),
+                endTime: DateTime(2026, 5, 25, 12),
+                title: 'Drafted',
+                reason: 'Focus.',
+              ),
+              PlannedBlock(
+                id: 'block-3',
+                categoryId: 'life',
+                startTime: DateTime(2026, 5, 25, 13),
+                endTime: DateTime(2026, 5, 25, 14),
+                title: 'Completed',
+                state: PlannedBlockState.completed,
+              ),
+              PlannedBlock(
+                id: 'block-4',
+                categoryId: 'life',
+                startTime: DateTime(2026, 5, 25, 15),
+                endTime: DateTime(2026, 5, 25, 16),
+                title: 'Dropped',
+                state: PlannedBlockState.dropped,
+              ),
+            ],
+          );
+
+          final committed = await createService().commitDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          final byId = {
+            for (final b in committed.data.plannedBlocks) b.id: b,
+          };
+          expect(byId['block-1']!.state, PlannedBlockState.inProgress);
+          expect(byId['block-2']!.state, PlannedBlockState.committed);
+          expect(byId['block-3']!.state, PlannedBlockState.completed);
+          expect(byId['block-4']!.state, PlannedBlockState.dropped);
+        },
+      );
+
+      test(
+        'commitDay is idempotent — re-commit returns the live plan without a write',
+        () async {
+          seedPlan(
+            status: DayPlanStatus.committed(
+              committedAt: DateTime(2026, 5, 25, 11),
+            ),
+            blocks: [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 10),
+                title: 'Prep demo',
+                reason: 'Morning focus.',
+                state: PlannedBlockState.committed,
+              ),
+            ],
+          );
+
+          final returned = await createService().commitDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          expect(returned.data.status, isA<DayPlanStatusCommitted>());
+          expect(upsertedEntities, isEmpty);
+          expect(notifications, isEmpty);
+        },
+      );
+
+      test('commitDay rejects when no plan exists', () async {
+        await expectLater(
+          createService().commitDay(agentId: _agentId, dayId: _dayId),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('no draft plan'),
+            ),
+          ),
+        );
+      });
+
+      test(
+        'commitDay rejects plans in legacy non-draft / non-committed states',
+        () async {
+          seedPlan(
+            status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25)),
+          );
+
+          await expectLater(
+            createService().commitDay(agentId: _agentId, dayId: _dayId),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('not in draft state'),
+              ),
+            ),
+          );
+          expect(upsertedEntities, isEmpty);
+        },
+      );
+
+      test(
+        'commitDay rejects when the plan belongs to a different agent',
+        () async {
+          final plan =
+              AgentDomainEntity.dayPlan(
+                    id: planEntityId,
+                    agentId: 'other-agent',
+                    dayId: _dayId,
+                    planDate: DateTime(2026, 5, 25),
+                    data: DayPlanData(
+                      planDate: DateTime(2026, 5, 25),
+                      status: const DayPlanStatus.draft(),
+                    ),
+                    createdAt: _now,
+                    updatedAt: _now,
+                    vectorClock: null,
+                  )
+                  as DayPlanEntity;
+          agentEntities[plan.id] = plan;
+
+          await expectLater(
+            createService().commitDay(agentId: _agentId, dayId: _dayId),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('no draft plan'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('executeTool returns JSON for commit_day', () async {
+        seedPlan();
+        final later = _now.add(const Duration(hours: 1));
+        final result = await withClock(Clock.fixed(later), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.commitDay,
+            args: {'dayId': _dayId},
+          );
+        });
+
+        expect(result.success, isTrue);
+        final data = jsonDecode(result.output) as Map<String, dynamic>;
+        expect(data['planId'], 'day_agent_plan:$_dayId');
+        expect(data['dayId'], _dayId);
+        expect(data['status'], 'committed');
+        expect(data['blockCount'], 2);
+        expect(data['committedAt'], later.toIso8601String());
+      });
+
+      test('executeTool surfaces commit failures as tool errors', () async {
+        // No plan seeded; commit_day should fail.
+        final result = await createService().executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.commitDay,
+          args: {'dayId': _dayId},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('no draft plan'));
+      });
+    });
+
+    group('uncommitDay', () {
+      const planEntityId = 'day_agent_plan:$_dayId';
+
+      DayPlanEntity seedPlan({
+        DayPlanStatus status = const DayPlanStatus.draft(),
+        List<PlannedBlock>? blocks,
+      }) {
+        final plan =
+            AgentDomainEntity.dayPlan(
+                  id: planEntityId,
+                  agentId: _agentId,
+                  dayId: _dayId,
+                  planDate: DateTime(2026, 5, 25),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 25),
+                    status: status,
+                    plannedBlocks:
+                        blocks ??
+                        [
+                          PlannedBlock(
+                            id: 'block-1',
+                            categoryId: 'work',
+                            startTime: DateTime(2026, 5, 25, 9),
+                            endTime: DateTime(2026, 5, 25, 10),
+                            title: 'Prep demo',
+                            reason: 'Morning focus.',
+                            state: PlannedBlockState.committed,
+                          ),
+                        ],
+                  ),
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+        agentEntities[plan.id] = plan;
+        return plan;
+      }
+
+      test(
+        'uncommitDay flips status back to draft and walks committed blocks '
+        'back to drafted',
+        () async {
+          seedPlan(
+            status: DayPlanStatus.committed(
+              committedAt: DateTime(2026, 5, 25, 11),
+            ),
+          );
+
+          final later = _now.add(const Duration(hours: 2));
+          final plan = await withClock(Clock.fixed(later), () {
+            return createService().uncommitDay(
+              agentId: _agentId,
+              dayId: _dayId,
+            );
+          });
+
+          expect(plan.data.status, isA<DayPlanStatusDraft>());
+          expect(
+            plan.data.plannedBlocks.map((b) => b.state),
+            everyElement(PlannedBlockState.drafted),
+          );
+          expect(plan.updatedAt, later);
+          expect(upsertedEntities.single, plan);
+          expect(notifications, containsAll([_agentId, _dayId, plan.id]));
+        },
+      );
+
+      test(
+        'uncommitDay preserves inProgress / completed / dropped blocks',
+        () async {
+          seedPlan(
+            status: DayPlanStatus.committed(
+              committedAt: DateTime(2026, 5, 25, 11),
+            ),
+            blocks: [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 10),
+                title: 'Still committed',
+                reason: 'r',
+                state: PlannedBlockState.committed,
+              ),
+              PlannedBlock(
+                id: 'block-2',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 11),
+                endTime: DateTime(2026, 5, 25, 12),
+                title: 'In progress',
+                state: PlannedBlockState.inProgress,
+              ),
+              PlannedBlock(
+                id: 'block-3',
+                categoryId: 'life',
+                startTime: DateTime(2026, 5, 25, 13),
+                endTime: DateTime(2026, 5, 25, 14),
+                title: 'Completed',
+                state: PlannedBlockState.completed,
+              ),
+              PlannedBlock(
+                id: 'block-4',
+                categoryId: 'life',
+                startTime: DateTime(2026, 5, 25, 15),
+                endTime: DateTime(2026, 5, 25, 16),
+                title: 'Dropped',
+                state: PlannedBlockState.dropped,
+              ),
+            ],
+          );
+
+          final plan = await createService().uncommitDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          final byId = {
+            for (final b in plan.data.plannedBlocks) b.id: b,
+          };
+          expect(byId['block-1']!.state, PlannedBlockState.drafted);
+          expect(byId['block-2']!.state, PlannedBlockState.inProgress);
+          expect(byId['block-3']!.state, PlannedBlockState.completed);
+          expect(byId['block-4']!.state, PlannedBlockState.dropped);
+        },
+      );
+
+      test(
+        'uncommitDay is idempotent on draft plans (no write, no notification)',
+        () async {
+          seedPlan(
+            blocks: [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 10),
+                title: 'Already draft',
+                reason: 'r',
+              ),
+            ],
+          );
+
+          final returned = await createService().uncommitDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          expect(returned.data.status, isA<DayPlanStatusDraft>());
+          expect(upsertedEntities, isEmpty);
+          expect(notifications, isEmpty);
+        },
+      );
+
+      test('uncommitDay rejects when no plan exists', () async {
+        await expectLater(
+          createService().uncommitDay(agentId: _agentId, dayId: _dayId),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('no plan'),
+            ),
+          ),
+        );
+      });
+
+      test(
+        'uncommitDay rejects legacy non-draft / non-committed states',
+        () async {
+          seedPlan(
+            status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25)),
+          );
+
+          await expectLater(
+            createService().uncommitDay(agentId: _agentId, dayId: _dayId),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('not in committed state'),
+              ),
+            ),
+          );
+          expect(upsertedEntities, isEmpty);
+        },
+      );
+
+      test('executeTool returns JSON for uncommit_day', () async {
+        seedPlan(
+          status: DayPlanStatus.committed(
+            committedAt: DateTime(2026, 5, 25, 11),
+          ),
+        );
+
+        final result = await createService().executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.uncommitDay,
+          args: {'dayId': _dayId},
+        );
+
+        expect(result.success, isTrue);
+        final data = jsonDecode(result.output) as Map<String, dynamic>;
+        expect(data['planId'], 'day_agent_plan:$_dayId');
+        expect(data['status'], 'draft');
+        expect(data['blockCount'], 1);
+      });
+    });
+
     group('executeTool dispatch for refine', () {
       DayPlanEntity seedPlan() {
         final plan =
