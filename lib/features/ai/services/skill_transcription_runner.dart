@@ -21,6 +21,7 @@ extension SkillTranscriptionRunner on SkillInferenceRunner {
     required AutomationResult automationResult,
     String? linkedTaskId,
     String? overrideModelId,
+    GeminiThinkingMode? geminiThinkingMode,
   }) async {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
@@ -36,6 +37,10 @@ extension SkillTranscriptionRunner on SkillInferenceRunner {
     );
     final provider = target.provider;
     final modelId = target.modelId;
+    final effectiveThinkingMode = _geminiThinkingModeForTarget(
+      target,
+      geminiThinkingMode,
+    );
     if (provider == null || modelId == null) {
       developer.log(
         'Profile missing transcription provider/model for $audioEntryId',
@@ -97,6 +102,7 @@ extension SkillTranscriptionRunner on SkillInferenceRunner {
           apiKey: provider.apiKey,
           provider: provider,
           systemMessage: promptResult.systemMessage,
+          geminiThinkingMode: effectiveThinkingMode,
           speechDictionaryTerms: speechDictionaryTerms.isNotEmpty
               ? speechDictionaryTerms
               : null,

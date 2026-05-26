@@ -97,30 +97,34 @@ sealed class AiConfig with _$AiConfig {
 
   /// Inference profile — named bundle of model assignments per capability slot.
   ///
-  /// Each slot stores a `providerModelId` string (the same kind of string used
-  /// by `AgentTemplateEntity.modelId`). At runtime, each slot is resolved via
-  /// the existing `resolveInferenceProvider()` chain:
-  /// `providerModelId → AiConfigModel → AiConfigInferenceProvider`.
+  /// Each slot stores an `AiConfigModel.id` for new writes so profiles can
+  /// target a specific saved model row even when multiple rows share the same
+  /// provider-native `providerModelId` but differ in settings.
+  ///
+  /// Legacy profiles may still carry provider-native model ids. Runtime
+  /// resolution first treats a slot as `AiConfigModel.id`, then falls back to
+  /// the legacy `providerModelId → AiConfigModel → AiConfigInferenceProvider`
+  /// chain.
   const factory AiConfig.inferenceProfile({
     required String id,
     required String name,
     required DateTime createdAt,
 
-    /// providerModelId string for agentic thinking (tool calling, reasoning).
+    /// Model config id for agentic thinking (tool calling, reasoning).
     required String thinkingModelId,
 
-    /// providerModelId string for high-end thinking tasks (e.g. coding prompt
+    /// Model config id for high-end thinking tasks (e.g. coding prompt
     /// generation) where quality matters more than speed/cost.
     /// Falls back to the regular thinking model when not set.
     String? thinkingHighEndModelId,
 
-    /// providerModelId string for image recognition / vision tasks.
+    /// Model config id for image recognition / vision tasks.
     String? imageRecognitionModelId,
 
-    /// providerModelId string for audio transcription.
+    /// Model config id for audio transcription.
     String? transcriptionModelId,
 
-    /// providerModelId string for image generation.
+    /// Model config id for image generation.
     String? imageGenerationModelId,
 
     /// Whether this is a system-seeded default (non-deletable).

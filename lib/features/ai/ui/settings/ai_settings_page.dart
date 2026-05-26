@@ -662,15 +662,29 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       );
     }
     final tokens = context.designTokens;
-    final modelNamesById = <String, String>{
-      for (final m in models) m.providerModelId: m.name,
-    };
+    final modelNamesById = <String, String>{};
+    for (final model in models) {
+      modelNamesById[model.id] = model.name;
+      modelNamesById.putIfAbsent(model.providerModelId, () => model.name);
+    }
     final providerTypeByProviderId = <String, InferenceProviderType>{
       for (final p in providers) p.id: p.inferenceProviderType,
     };
-    final providerIdByModelProviderModelId = <String, String>{
-      for (final m in models) m.providerModelId: m.inferenceProviderId,
-    };
+    final providerIdByModelId = <String, String>{};
+    final modelsByProviderModelId = <String, List<AiConfigModel>>{};
+    for (final model in models) {
+      providerIdByModelId[model.id] = model.inferenceProviderId;
+      (modelsByProviderModelId[model.providerModelId] ??= <AiConfigModel>[])
+          .add(model);
+    }
+    for (final entry in modelsByProviderModelId.entries) {
+      if (entry.value.length == 1) {
+        providerIdByModelId.putIfAbsent(
+          entry.key,
+          () => entry.value.single.inferenceProviderId,
+        );
+      }
+    }
     // A profile earns the Active badge iff it's the winning candidate
     // for at least one configured provider — same rule the detail
     // page uses for its "Active profile" section.
@@ -686,7 +700,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         isActive: activeProfileIds.contains(profile.id),
         providerTypeFor: () => _providerTypeForProfile(
           profile,
-          providerIdByModelProviderModelId,
+          providerIdByModelId,
           providerTypeByProviderId,
         ),
         modelLookup: (id) => modelNamesById[id],
@@ -760,8 +774,8 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   }
 
   /// Best-guess provider type for a profile card. The profile schema
-  /// doesn't carry a provider id — it just references models by their
-  /// `providerModelId`. Walk the five skill slots in priority order
+  /// doesn't carry a provider id — it just references model rows. Walk
+  /// the five skill slots in priority order
   /// (thinking → thinking-high-end → image recognition → transcription
   /// → image generation) and pick the first model whose owning provider
   /// we can resolve. Returns null when none of the slots resolve — the
@@ -769,7 +783,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   /// Gemini.
   InferenceProviderType? _providerTypeForProfile(
     AiConfigInferenceProfile profile,
-    Map<String, String> providerIdByModelProviderModelId,
+    Map<String, String> providerIdByModelId,
     Map<String, InferenceProviderType> providerTypeByProviderId,
   ) {
     final candidates = <String?>[
@@ -781,7 +795,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     ];
     for (final candidate in candidates) {
       if (candidate == null) continue;
-      final providerId = providerIdByModelProviderModelId[candidate];
+      final providerId = providerIdByModelId[candidate];
       if (providerId == null) continue;
       final type = providerTypeByProviderId[providerId];
       if (type != null) return type;

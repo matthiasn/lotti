@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -151,6 +152,7 @@ class SkillInferenceRunner {
       fallback: () => (
         provider: profile.transcriptionProvider,
         modelId: profile.transcriptionModelId,
+        model: profile.transcriptionModel,
       ),
     );
   }
@@ -172,6 +174,25 @@ class SkillInferenceRunner {
       fallback: () => (
         provider: profile.imageRecognitionProvider,
         modelId: profile.imageRecognitionModelId,
+        model: profile.imageRecognitionModel,
+      ),
+    );
+  }
+
+  /// Resolves the `(provider, modelId, model)` target used by prompt
+  /// generation. The profile fallback is the high-end thinking slot, falling
+  /// back to the regular thinking slot through [ResolvedProfile].
+  Future<_InferenceTarget> _resolvePromptGenerationTarget({
+    required ResolvedProfile profile,
+    required String? overrideModelId,
+  }) {
+    return _resolveOverrideTarget(
+      overrideModelId: overrideModelId,
+      slotKind: _OverrideSlotKind.promptGeneration,
+      fallback: () => (
+        provider: profile.effectiveHighEndProvider,
+        modelId: profile.effectiveHighEndModelId,
+        model: profile.effectiveHighEndModel,
       ),
     );
   }
@@ -213,7 +234,30 @@ class SkillInferenceRunner {
     return (
       provider: providerConfig,
       modelId: modelConfig.providerModelId,
+      model: modelConfig,
     );
+  }
+
+  /// Resolves the effective Gemini thinking mode for [target].
+  ///
+  /// Returns null unless the target provider is Gemini and the model is a
+  /// Gemini 3 variant. Otherwise the per-invocation [override] wins, then
+  /// the model row's saved default, then [GeminiThinkingMode.low].
+  GeminiThinkingMode? _geminiThinkingModeForTarget(
+    _InferenceTarget target,
+    GeminiThinkingMode? override,
+  ) {
+    final provider = target.provider;
+    if (provider?.inferenceProviderType != InferenceProviderType.gemini) {
+      return null;
+    }
+    final modelId = target.model?.providerModelId ?? target.modelId;
+    if (modelId == null || !GeminiThinkingConfig.isGemini3(modelId)) {
+      return null;
+    }
+    return override ??
+        target.model?.geminiThinkingMode ??
+        GeminiThinkingMode.low;
   }
 
   /// Run skill-based transcription; see [SkillTranscriptionRunner].
@@ -222,11 +266,13 @@ class SkillInferenceRunner {
     required AutomationResult automationResult,
     String? linkedTaskId,
     String? overrideModelId,
+    GeminiThinkingMode? geminiThinkingMode,
   }) => runTranscriptionImpl(
     audioEntryId: audioEntryId,
     automationResult: automationResult,
     linkedTaskId: linkedTaskId,
     overrideModelId: overrideModelId,
+    geminiThinkingMode: geminiThinkingMode,
   );
 
   /// Run skill-based image analysis; see [SkillImageAnalysisRunner].
@@ -235,11 +281,13 @@ class SkillInferenceRunner {
     required AutomationResult automationResult,
     String? linkedTaskId,
     String? overrideModelId,
+    GeminiThinkingMode? geminiThinkingMode,
   }) => runImageAnalysisImpl(
     imageEntryId: imageEntryId,
     automationResult: automationResult,
     linkedTaskId: linkedTaskId,
     overrideModelId: overrideModelId,
+    geminiThinkingMode: geminiThinkingMode,
   );
 
   /// Run skill-based prompt generation; see [SkillPromptGenerationRunner].
@@ -247,10 +295,14 @@ class SkillInferenceRunner {
     required String entryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
+    String? overrideModelId,
+    GeminiThinkingMode? geminiThinkingMode,
   }) => runPromptGenerationImpl(
     entryId: entryId,
     automationResult: automationResult,
     linkedTaskId: linkedTaskId,
+    overrideModelId: overrideModelId,
+    geminiThinkingMode: geminiThinkingMode,
   );
 
   /// Run skill-based image generation; see [SkillImageGenerationRunner].
@@ -367,24 +419,29 @@ class SkillInferenceRunner {
   }
 }
 
-/// Resolved (provider, modelId) pair returned by the per-slot resolver
-/// helpers ([SkillInferenceRunner._resolveTranscriptionTarget],
-/// [SkillInferenceRunner._resolveImageAnalysisTarget]). Either field
-/// may be null when the override is unresolvable and the profile slot
-/// is also empty — the caller short-circuits with a "missing
-/// provider/model" log in that case.
+/// Resolved (provider, modelId, model) tuple returned by the per-slot
+/// resolver helpers ([SkillInferenceRunner._resolveTranscriptionTarget],
+/// [SkillInferenceRunner._resolveImageAnalysisTarget],
+/// [SkillInferenceRunner._resolvePromptGenerationTarget]). Fields may be
+/// null when the override is unresolvable and the profile slot is also
+/// empty — the caller short-circuits with a "missing provider/model" log
+/// in that case. The `model` field carries the resolved `AiConfigModel`
+/// row so per-model settings (e.g. Gemini thinking mode) survive
+/// resolution.
 typedef _InferenceTarget = ({
   AiConfigInferenceProvider? provider,
   String? modelId,
+  AiConfigModel? model,
 });
 
 /// Identifier for which profile slot a per-invocation override is
 /// targeting. The [label] is interpolated into warning logs so a
-/// future third slot kind only needs a new enum value, not a new
+/// future slot kind only needs a new enum value, not a new
 /// magic-string literal that could typo-drift across the codebase.
 enum _OverrideSlotKind {
   transcription('transcription'),
-  imageAnalysis('image analysis');
+  imageAnalysis('image analysis'),
+  promptGeneration('prompt generation');
 
   const _OverrideSlotKind(this.label);
 

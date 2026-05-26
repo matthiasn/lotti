@@ -1401,6 +1401,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProfileSlotModelMissing => 'fehlt';
 
   @override
+  String get aiPromptGenerationPickerTitle =>
+      'Wähle ein Modell für die Prompt-Generierung';
+
+  @override
   String get aiProviderAlibabaDescription =>
       'Alibaba Clouds Qwen-Modellfamilie über die DashScope-API';
 

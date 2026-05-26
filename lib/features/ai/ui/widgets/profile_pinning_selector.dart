@@ -213,8 +213,8 @@ class ProfilePinningSelector extends ConsumerWidget {
     final providersById = {
       for (final provider in providers) provider.id: provider,
     };
-    // Index models by both keys profile slots can carry — `providerModelId`
-    // (the standard) and `id` (legacy / forward-compat). One pass over the
+    // Index models by both keys profile slots can carry — `id`
+    // (the standard) and `providerModelId` (legacy). One pass over the
     // model list builds both maps; the loop below is then O(slots) instead
     // of O(slots × models).
     final modelsByProviderModelId = <String, AiConfigModel>{};
@@ -225,7 +225,7 @@ class ProfilePinningSelector extends ConsumerWidget {
     }
     final types = <InferenceProviderType>{};
     for (final id in referencedModelIds) {
-      final model = modelsByProviderModelId[id] ?? modelsById[id];
+      final model = modelsById[id] ?? modelsByProviderModelId[id];
       if (model == null) continue;
       final provider = providersById[model.inferenceProviderId];
       if (provider == null) continue;

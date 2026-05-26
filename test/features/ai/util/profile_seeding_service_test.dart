@@ -28,6 +28,12 @@ void main() {
 
     // Default: all profiles missing (return null for any ID lookup).
     when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+    when(
+      () => mockRepo.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => const <AiConfig>[]);
+    when(
+      () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+    ).thenAnswer((_) async => const <AiConfig>[]);
     when(() => mockRepo.saveConfig(any())).thenAnswer((_) async {});
   });
 
@@ -357,19 +363,20 @@ void main() {
     test('upgrades default profiles with empty skillAssignments', () async {
       // Existing profile has empty skill assignments but has the model
       // slots required by the template's skill assignments.
-      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
       when(
-        () => mockRepo.getConfigById(profileGeminiFlashId),
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
       ).thenAnswer(
-        (_) async => AiConfig.inferenceProfile(
-          id: profileGeminiFlashId,
-          name: 'Gemini Flash',
-          thinkingModelId: 'models/gemini-3-flash-preview',
-          imageRecognitionModelId: 'models/gemini-3-flash-preview',
-          transcriptionModelId: 'models/gemini-3-flash-preview',
-          isDefault: true,
-          createdAt: DateTime(2026),
-        ),
+        (_) async => [
+          AiConfig.inferenceProfile(
+            id: profileGeminiFlashId,
+            name: 'Gemini Flash',
+            thinkingModelId: 'models/gemini-3-flash-preview',
+            imageRecognitionModelId: 'models/gemini-3-flash-preview',
+            transcriptionModelId: 'models/gemini-3-flash-preview',
+            isDefault: true,
+            createdAt: DateTime(2026),
+          ),
+        ],
       );
 
       await service.upgradeExisting();
@@ -391,20 +398,21 @@ void main() {
     });
 
     test('skips profiles that already have skillAssignments', () async {
-      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
       when(
-        () => mockRepo.getConfigById(profileGeminiFlashId),
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
       ).thenAnswer(
-        (_) async => AiConfig.inferenceProfile(
-          id: profileGeminiFlashId,
-          name: 'Gemini Flash',
-          thinkingModelId: 'models/gemini-3-flash-preview',
-          isDefault: true,
-          skillAssignments: [
-            const SkillAssignment(skillId: 'existing-skill', automate: true),
-          ],
-          createdAt: DateTime(2026),
-        ),
+        (_) async => [
+          AiConfig.inferenceProfile(
+            id: profileGeminiFlashId,
+            name: 'Gemini Flash',
+            thinkingModelId: 'models/gemini-3-flash-preview',
+            isDefault: true,
+            skillAssignments: [
+              const SkillAssignment(skillId: 'existing-skill', automate: true),
+            ],
+            createdAt: DateTime(2026),
+          ),
+        ],
       );
 
       await service.upgradeExisting();
@@ -414,17 +422,18 @@ void main() {
     });
 
     test('skips non-default profiles', () async {
-      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
       when(
-        () => mockRepo.getConfigById(profileGeminiFlashId),
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
       ).thenAnswer(
-        (_) async => AiConfig.inferenceProfile(
-          id: profileGeminiFlashId,
-          name: 'Gemini Flash',
-          thinkingModelId: 'models/gemini-3-flash-preview',
-          createdAt: DateTime(2026),
-          // isDefault defaults to false.
-        ),
+        (_) async => [
+          AiConfig.inferenceProfile(
+            id: profileGeminiFlashId,
+            name: 'Gemini Flash',
+            thinkingModelId: 'models/gemini-3-flash-preview',
+            createdAt: DateTime(2026),
+            // isDefault defaults to false.
+          ),
+        ],
       );
 
       await service.upgradeExisting();
@@ -436,20 +445,21 @@ void main() {
       // Profile has transcription but no image recognition model.
       // Template has both transcription and image analysis skills.
       // Only transcription skill should survive filtering.
-      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
       when(
-        () => mockRepo.getConfigById(profileGeminiFlashId),
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
       ).thenAnswer(
-        (_) async => AiConfig.inferenceProfile(
-          id: profileGeminiFlashId,
-          name: 'Gemini Flash',
-          thinkingModelId: 'models/gemini-3-flash-preview',
-          transcriptionModelId: 'models/gemini-3-flash-preview',
-          // No imageRecognitionModelId — image analysis skill should
-          // be filtered out.
-          isDefault: true,
-          createdAt: DateTime(2026),
-        ),
+        (_) async => [
+          AiConfig.inferenceProfile(
+            id: profileGeminiFlashId,
+            name: 'Gemini Flash',
+            thinkingModelId: 'models/gemini-3-flash-preview',
+            transcriptionModelId: 'models/gemini-3-flash-preview',
+            // No imageRecognitionModelId — image analysis skill should
+            // be filtered out.
+            isDefault: true,
+            createdAt: DateTime(2026),
+          ),
+        ],
       );
 
       await service.upgradeExisting();
@@ -469,8 +479,6 @@ void main() {
     });
 
     test('does nothing when profiles do not exist', () async {
-      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
-
       await service.upgradeExisting();
 
       verifyNever(() => mockRepo.saveConfig(any()));

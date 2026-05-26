@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
@@ -13,18 +14,22 @@ import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
 
 void main() {
   late StreamController<List<AiConfig>> profileStreamController;
   late _FakeInferenceProfileController fakeProfileController;
+  late MockAiConfigRepository mockAiConfigRepository;
 
   setUp(() {
     profileStreamController = StreamController<List<AiConfig>>();
     fakeProfileController = _FakeInferenceProfileController()
       ..streamController = profileStreamController;
+    mockAiConfigRepository = MockAiConfigRepository();
   });
 
   tearDown(() {
@@ -37,9 +42,14 @@ void main() {
     List<AiConfig> providers = const [],
     List<SyncNodeProfile> knownNodes = const [],
   }) {
+    when(
+      () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => models);
+
     return makeTestableWidgetNoScroll(
       InferenceProfileForm(existingProfile: existingProfile),
       overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
         inferenceProfileControllerProvider.overrideWith(() {
           return fakeProfileController;
         }),
@@ -344,7 +354,7 @@ void main() {
       expect(fakeProfileController.savedProfiles.first.name, 'My New Profile');
       expect(
         fakeProfileController.savedProfiles.first.thinkingModelId,
-        'models/flash',
+        'tm-1',
       );
     });
 
@@ -1419,7 +1429,7 @@ void main() {
 
       expect(fakeProfileController.savedProfiles, hasLength(1));
       final saved = fakeProfileController.savedProfiles.first;
-      expect(saved.thinkingHighEndModelId, 'models/gemini-pro');
+      expect(saved.thinkingHighEndModelId, 'tm-2');
     });
 
     testWidgets('preserves existing profile ID when editing', (tester) async {

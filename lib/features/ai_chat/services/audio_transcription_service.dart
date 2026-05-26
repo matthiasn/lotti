@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -112,16 +113,31 @@ class AudioTranscriptionService {
     final audioBase64 = base64Encode(bytes);
 
     final cloud = ref.read(cloudInferenceRepositoryProvider);
-    final stream = cloud.generateWithAudio(
-      _kTranscriptionPrompt,
-      model: model.providerModelId,
-      audioBase64: audioBase64,
-      baseUrl: provider.baseUrl,
-      apiKey: provider.apiKey,
-      provider: provider,
-      maxCompletionTokens: model.maxCompletionTokens,
-      speechDictionaryTerms: speechDictionaryTerms,
-    );
+    final useGeminiThinkingMode =
+        provider.inferenceProviderType == InferenceProviderType.gemini &&
+        GeminiThinkingConfig.isGemini3(model.providerModelId);
+    final stream = useGeminiThinkingMode
+        ? cloud.generateWithAudio(
+            _kTranscriptionPrompt,
+            model: model.providerModelId,
+            audioBase64: audioBase64,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+            maxCompletionTokens: model.maxCompletionTokens,
+            speechDictionaryTerms: speechDictionaryTerms,
+            geminiThinkingMode: model.geminiThinkingMode,
+          )
+        : cloud.generateWithAudio(
+            _kTranscriptionPrompt,
+            model: model.providerModelId,
+            audioBase64: audioBase64,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+            maxCompletionTokens: model.maxCompletionTokens,
+            speechDictionaryTerms: speechDictionaryTerms,
+          );
 
     await for (final chunk in stream) {
       final content = chunk.choices?.firstOrNull?.delta?.content ?? '';

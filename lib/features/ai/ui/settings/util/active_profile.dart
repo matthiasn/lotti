@@ -21,16 +21,19 @@ AiConfigInferenceProfile? pickActiveProfileForProvider({
   required List<AiConfigModel> providerModels,
 }) {
   if (providerModels.isEmpty || profiles.isEmpty) return null;
-  final providerModelIds = providerModels.map((m) => m.providerModelId).toSet();
+  final profileSlotIds = <String>{
+    for (final model in providerModels) model.id,
+    for (final model in providerModels) model.providerModelId,
+  };
 
   AiConfigInferenceProfile? firstTouching;
   for (final p in profiles) {
     final touches =
-        providerModelIds.contains(p.thinkingModelId) ||
-        providerModelIds.contains(p.thinkingHighEndModelId) ||
-        providerModelIds.contains(p.imageRecognitionModelId) ||
-        providerModelIds.contains(p.transcriptionModelId) ||
-        providerModelIds.contains(p.imageGenerationModelId);
+        profileSlotIds.contains(p.thinkingModelId) ||
+        profileSlotIds.contains(p.thinkingHighEndModelId) ||
+        profileSlotIds.contains(p.imageRecognitionModelId) ||
+        profileSlotIds.contains(p.transcriptionModelId) ||
+        profileSlotIds.contains(p.imageGenerationModelId);
 
     if (touches) {
       if (p.isDefault) return p;

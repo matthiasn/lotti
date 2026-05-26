@@ -14,14 +14,16 @@ part 'ai_config_initialization.g.dart';
 @Riverpod(keepAlive: true)
 Future<void> aiConfigInitialization(Ref ref) async {
   final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
-
-  await ProfileSeedingService(
+  final profileService = ProfileSeedingService(
     aiConfigRepository: aiConfigRepo,
-  ).seedDefaults();
+  );
+
+  await profileService.seedDefaults();
 
   final modelService = ModelPrepopulationService(repository: aiConfigRepo);
   try {
     await modelService.backfillNewModels();
+    await profileService.upgradeExisting();
   } catch (error, stackTrace) {
     developer.log(
       'Failed to backfill known models: $error',

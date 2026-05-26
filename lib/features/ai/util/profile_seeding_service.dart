@@ -58,10 +58,12 @@ class ProfileSeedingService {
   /// model) across app restarts.
   Future<void> seedDefaults() async {
     var seededCount = 0;
+    final models = await _fetchModelRows();
 
-    for (final profile in defaultProfiles) {
-      final existing = await _repo.getConfigById(profile.id);
+    for (final template in defaultProfiles) {
+      final existing = await _repo.getConfigById(template.id);
       if (existing != null) continue;
+      final profile = _withResolvedModelConfigIds(template, models);
       await _repo.saveConfig(profile);
       seededCount++;
     }
@@ -71,48 +73,103 @@ class ProfileSeedingService {
     }
   }
 
-  /// Upgrades existing default profiles that have empty `skillAssignments`.
+  /// Upgrades existing profiles without overwriting user-authored choices.
   ///
-  /// This is a one-time backfill on app upgrade that enables automation for
-  /// default profiles. Only touches profiles with `isDefault: true` and
-  /// empty `skillAssignments`.
+  /// This migrates legacy provider-native profile slot values to
+  /// `AiConfigModel.id` when the match is unambiguous, then backfills default
+  /// skill assignments only for default profiles whose assignments are empty.
   Future<void> upgradeExisting() async {
     var upgradedCount = 0;
+    final models = await _fetchModelRows();
+    final templatesById = {
+      for (final template in defaultProfiles) template.id: template,
+    };
+    final configs = await _repo.getConfigsByType(AiConfigType.inferenceProfile);
 
-    for (final template in defaultProfiles) {
-      final existing = await _repo.getConfigById(template.id);
-      if (existing == null) continue;
+    for (final config in configs.whereType<AiConfigInferenceProfile>()) {
+      var upgraded = _withResolvedModelConfigIds(config, models);
+      final template = templatesById[config.id];
 
-      // Only upgrade default profiles with empty skill assignments.
-      if (existing is! AiConfigInferenceProfile) continue;
-      if (!existing.isDefault) continue;
-      if (existing.skillAssignments.isNotEmpty) continue;
+      // Only backfill default skill assignments for default profiles with
+      // empty assignments. Non-empty assignment lists and non-default profiles
+      // are user-authored and must be preserved.
+      if (template != null &&
+          config.isDefault &&
+          config.skillAssignments.isEmpty &&
+          template.skillAssignments.isNotEmpty) {
+        final sanitized = template.skillAssignments.where((a) {
+          final skill = findBuiltInSkill(a.skillId);
+          if (skill == null) return true; // keep unknown skills as-is
+          return _hasSlotForSkillType(upgraded, skill.skillType);
+        }).toList();
 
-      // Apply the template's skill assignments, but only for slots that
-      // are still configured on the existing profile.
-      if (template.skillAssignments.isEmpty) continue;
+        if (sanitized.isNotEmpty) {
+          upgraded = upgraded.copyWith(skillAssignments: sanitized);
+        }
+      }
 
-      final sanitized = template.skillAssignments.where((a) {
-        final skill = findBuiltInSkill(a.skillId);
-        if (skill == null) return true; // keep unknown skills as-is
-        return _hasSlotForSkillType(existing, skill.skillType);
-      }).toList();
-
-      if (sanitized.isEmpty) continue;
-
-      final upgraded = existing.copyWith(
-        skillAssignments: sanitized,
-      );
+      if (upgraded == config) continue;
       await _repo.saveConfig(upgraded);
       upgradedCount++;
     }
 
     if (upgradedCount > 0) {
       developer.log(
-        'Upgraded $upgradedCount default profiles with skill assignments',
+        'Upgraded $upgradedCount inference profiles',
         name: _logTag,
       );
     }
+  }
+
+  Future<List<AiConfigModel>> _fetchModelRows() async {
+    final configs = await _repo.getConfigsByType(AiConfigType.model);
+    return configs.whereType<AiConfigModel>().toList(growable: false);
+  }
+
+  static AiConfigInferenceProfile _withResolvedModelConfigIds(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    return profile.copyWith(
+      thinkingModelId: _resolveModelSlot(profile.thinkingModelId, models),
+      thinkingHighEndModelId: _resolveOptionalModelSlot(
+        profile.thinkingHighEndModelId,
+        models,
+      ),
+      imageRecognitionModelId: _resolveOptionalModelSlot(
+        profile.imageRecognitionModelId,
+        models,
+      ),
+      transcriptionModelId: _resolveOptionalModelSlot(
+        profile.transcriptionModelId,
+        models,
+      ),
+      imageGenerationModelId: _resolveOptionalModelSlot(
+        profile.imageGenerationModelId,
+        models,
+      ),
+    );
+  }
+
+  static String? _resolveOptionalModelSlot(
+    String? slotValue,
+    List<AiConfigModel> models,
+  ) {
+    if (slotValue == null) return null;
+    return _resolveModelSlot(slotValue, models);
+  }
+
+  static String _resolveModelSlot(
+    String slotValue,
+    List<AiConfigModel> models,
+  ) {
+    if (models.any((model) => model.id == slotValue)) return slotValue;
+
+    final matches = models
+        .where((model) => model.providerModelId == slotValue)
+        .toList(growable: false);
+    if (matches.length == 1) return matches.single.id;
+    return slotValue;
   }
 
   /// Returns true when the profile has the model slot required by [skillType].

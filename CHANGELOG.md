@@ -144,6 +144,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   moving it below only on truly constrained widths.
 
 ## [0.9.1010]
+### Added
+- AI popup skill runs can override the Gemini thinking effort for a single
+  invocation after choosing the model, so one saved model row can still be used
+  with different thinking budgets per use case.
+
 ### Changed
 - Daily OS Next now personalizes the greeting from Settings > Advanced > About,
   lets typed capture start from the idle screen, filters processing categories,

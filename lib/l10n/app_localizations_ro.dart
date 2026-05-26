@@ -1407,6 +1407,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProfileSlotModelMissing => 'lipsește';
 
   @override
+  String get aiPromptGenerationPickerTitle =>
+      'Alegeți un model pentru generarea prompturilor';
+
+  @override
   String get aiProviderAlibabaDescription =>
       'Familia de modele Qwen de la Alibaba Cloud prin API-ul DashScope';
 

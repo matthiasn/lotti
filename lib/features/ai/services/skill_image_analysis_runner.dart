@@ -21,6 +21,7 @@ extension SkillImageAnalysisRunner on SkillInferenceRunner {
     required AutomationResult automationResult,
     String? linkedTaskId,
     String? overrideModelId,
+    GeminiThinkingMode? geminiThinkingMode,
   }) async {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
@@ -36,6 +37,10 @@ extension SkillImageAnalysisRunner on SkillInferenceRunner {
     );
     final provider = target.provider;
     final modelId = target.modelId;
+    final effectiveThinkingMode = _geminiThinkingModeForTarget(
+      target,
+      geminiThinkingMode,
+    );
     if (provider == null || modelId == null) {
       developer.log(
         'Profile missing image recognition provider/model for $imageEntryId',
@@ -93,6 +98,7 @@ extension SkillImageAnalysisRunner on SkillInferenceRunner {
           images: images,
           provider: provider,
           systemMessage: promptResult.systemMessage,
+          geminiThinkingMode: effectiveThinkingMode,
         );
 
         // 6. Collect streaming response.

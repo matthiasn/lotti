@@ -1706,6 +1706,140 @@ void main() {
       },
     );
 
+    test(
+      'generateWithImages maps Gemini 3 thinking mode to reasoning effort',
+      () async {
+        final geminiProvider =
+            AiConfig.inferenceProvider(
+                  id: 'gemini-provider',
+                  name: 'Gemini',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  apiKey: 'test-api-key',
+                  createdAt: DateTime(2024, 3, 15),
+                  inferenceProviderType: InferenceProviderType.gemini,
+                )
+                as AiConfigInferenceProvider;
+
+        when(
+          () => mockClient.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        await repository
+            .generateWithImages(
+              prompt,
+              model: 'gemini-3-flash-preview',
+              temperature: null,
+              baseUrl: geminiProvider.baseUrl,
+              apiKey: geminiProvider.apiKey,
+              images: const ['base64-image-data'],
+              provider: geminiProvider,
+              overrideClient: mockClient,
+              geminiThinkingMode: GeminiThinkingMode.high,
+            )
+            .toList();
+
+        final captured = verify(
+          () => mockClient.createChatCompletionStream(
+            request: captureAny(named: 'request'),
+          ),
+        ).captured;
+
+        final request = captured.first as CreateChatCompletionRequest;
+        expect(request.reasoningEffort, ReasoningEffort.high);
+      },
+    );
+
+    test(
+      'generateWithImages skips reasoning effort for pre-Gemini 3 models',
+      () async {
+        final geminiProvider =
+            AiConfig.inferenceProvider(
+                  id: 'gemini-provider',
+                  name: 'Gemini',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  apiKey: 'test-api-key',
+                  createdAt: DateTime(2024, 3, 15),
+                  inferenceProviderType: InferenceProviderType.gemini,
+                )
+                as AiConfigInferenceProvider;
+
+        when(
+          () => mockClient.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        await repository
+            .generateWithImages(
+              prompt,
+              model: 'gemini-2.5-flash',
+              temperature: null,
+              baseUrl: geminiProvider.baseUrl,
+              apiKey: geminiProvider.apiKey,
+              images: const ['base64-image-data'],
+              provider: geminiProvider,
+              overrideClient: mockClient,
+              geminiThinkingMode: GeminiThinkingMode.high,
+            )
+            .toList();
+
+        final captured = verify(
+          () => mockClient.createChatCompletionStream(
+            request: captureAny(named: 'request'),
+          ),
+        ).captured;
+
+        final request = captured.first as CreateChatCompletionRequest;
+        expect(request.reasoningEffort, isNull);
+      },
+    );
+
+    test(
+      'generateWithAudio maps Gemini 3 thinking mode to reasoning effort',
+      () async {
+        final geminiProvider =
+            AiConfig.inferenceProvider(
+                  id: 'gemini-provider',
+                  name: 'Gemini',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  apiKey: 'test-api-key',
+                  createdAt: DateTime(2024, 3, 15),
+                  inferenceProviderType: InferenceProviderType.gemini,
+                )
+                as AiConfigInferenceProvider;
+
+        when(
+          () => mockClient.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        await repository
+            .generateWithAudio(
+              prompt,
+              model: 'models/gemini-3.1-pro-preview',
+              audioBase64: 'base64-audio-data',
+              baseUrl: geminiProvider.baseUrl,
+              apiKey: geminiProvider.apiKey,
+              provider: geminiProvider,
+              overrideClient: mockClient,
+              geminiThinkingMode: GeminiThinkingMode.minimal,
+            )
+            .toList();
+
+        final captured = verify(
+          () => mockClient.createChatCompletionStream(
+            request: captureAny(named: 'request'),
+          ),
+        ).captured;
+
+        final request = captured.first as CreateChatCompletionRequest;
+        expect(request.reasoningEffort, ReasoningEffort.minimal);
+      },
+    );
+
     test('generate with empty tools list does not set toolChoice', () async {
       // Arrange
       final emptyTools = <ChatCompletionTool>[];

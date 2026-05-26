@@ -120,6 +120,91 @@ Future<ResolvedInferenceProvider?> resolveInferenceProviderWithModel({
   return null;
 }
 
+/// Resolves the configured model row and provider for an [AiConfigModel.id].
+///
+/// Profile slots use model config ids for new writes so they can point at a
+/// specific saved model row even when several rows share the same
+/// provider-native `providerModelId` but differ in settings such as reasoning
+/// effort.
+Future<ResolvedInferenceProvider?> resolveInferenceProviderForModelConfigId({
+  required String modelConfigId,
+  required AiConfigRepository aiConfigRepository,
+  String logTag = 'InferenceProviderResolver',
+}) async {
+  final config = await aiConfigRepository.getConfigById(modelConfigId);
+  if (config is! AiConfigModel) {
+    developer.log(
+      'Requested model config not found or wrong type '
+      '(modelConfigIdLength=${modelConfigId.length})',
+      name: logTag,
+    );
+    return null;
+  }
+
+  return _resolveProviderForModel(
+    config,
+    aiConfigRepository: aiConfigRepository,
+    logTag: logTag,
+  );
+}
+
+/// Resolves a profile slot.
+///
+/// New profiles store [modelId] as an [AiConfigModel.id]. Legacy profiles store
+/// the provider-native `providerModelId`, so this falls back to the old lookup
+/// path when direct config-id resolution fails.
+Future<ResolvedInferenceProvider?> resolveInferenceProviderForProfileSlot({
+  required String modelId,
+  required AiConfigRepository aiConfigRepository,
+  String logTag = 'InferenceProviderResolver',
+}) async {
+  final models = await aiConfigRepository.getConfigsByType(AiConfigType.model);
+  for (final config in models.whereType<AiConfigModel>()) {
+    if (config.id == modelId) {
+      return _resolveProviderForModel(
+        config,
+        aiConfigRepository: aiConfigRepository,
+        logTag: logTag,
+      );
+    }
+  }
+
+  return resolveInferenceProviderWithModel(
+    modelId: modelId,
+    aiConfigRepository: aiConfigRepository,
+    logTag: logTag,
+  );
+}
+
+Future<ResolvedInferenceProvider?> _resolveProviderForModel(
+  AiConfigModel model, {
+  required AiConfigRepository aiConfigRepository,
+  required String logTag,
+}) async {
+  final providerId = model.inferenceProviderId;
+  final provider = await aiConfigRepository.getConfigById(providerId);
+
+  if (provider is! AiConfigInferenceProvider) {
+    developer.log(
+      'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
+      'not an inference provider',
+      name: logTag,
+    );
+    return null;
+  }
+
+  if (!provider.isUsable) {
+    developer.log(
+      'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
+      'API key is not configured',
+      name: logTag,
+    );
+    return null;
+  }
+
+  return (model: model, provider: provider);
+}
+
 Set<InferenceProviderType> _providerTypesForKnownModel(String modelId) {
   return {
     for (final entry in knownModelsByProvider.entries)

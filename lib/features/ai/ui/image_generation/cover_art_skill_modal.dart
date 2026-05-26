@@ -106,6 +106,7 @@ class _CoverArtSkillModalState extends ConsumerState<CoverArtSkillModal> {
           linkedTaskId: widget.linkedTaskId,
           referenceImages: referenceImages.isNotEmpty ? referenceImages : null,
           overrideModelId: null,
+          geminiThinkingMode: null,
         )).future,
       ),
     );

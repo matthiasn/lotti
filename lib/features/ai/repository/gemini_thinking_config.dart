@@ -51,7 +51,7 @@ class GeminiThinkingConfig {
   Map<String, dynamic> toJson({String? modelId}) {
     if (modelId != null && isGemini3(modelId)) {
       return <String, dynamic>{
-        'thinkingLevel': _thinkingLevel(),
+        'thinkingLevel': _thinkingLevel(modelId: modelId),
         'includeThoughts': includeThoughts,
       };
     }
@@ -63,14 +63,24 @@ class GeminiThinkingConfig {
 
   /// Maps the numeric [thinkingBudget] to a Gemini 3.x `thinkingLevel` value.
   ///
+  /// Gemini 3 Flash accepts `minimal`, `low`, `medium`, and `high`. Gemini 3
+  /// Pro currently accepts only `low` and `high`, so minimal/low collapse to
+  /// `low` and medium/high collapse to `high` for non-Flash Gemini 3 models.
+  ///
   /// Budget semantics:
   /// -  -1 (auto/dynamic) → `high` (Gemini 3 default, dynamic reasoning)
   /// -   0 (disabled)     → `minimal` (closest Gemini 3 equivalent)
   /// -   1–4095           → `low`
   /// -   4096–8191        → `medium`
   /// -   8192+            → `high`
-  String _thinkingLevel() {
+  String _thinkingLevel({required String modelId}) {
     final mode = thinkingMode ?? _budgetToMode(thinkingBudget);
+    if (!isGemini3Flash(modelId)) {
+      return switch (mode) {
+        GeminiThinkingMode.minimal || GeminiThinkingMode.low => 'low',
+        GeminiThinkingMode.medium || GeminiThinkingMode.high => 'high',
+      };
+    }
     return mode.apiValue;
   }
 
@@ -83,6 +93,11 @@ class GeminiThinkingConfig {
   static bool isGemini3(String modelId) {
     final id = modelId.replaceFirst('models/', '');
     return id.startsWith('gemini-3');
+  }
+
+  static bool isGemini3Flash(String modelId) {
+    final id = modelId.replaceFirst('models/', '').toLowerCase();
+    return id.startsWith('gemini-3') && id.contains('flash');
   }
 }
 

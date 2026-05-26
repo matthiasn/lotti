@@ -39,9 +39,7 @@ class _ModelSlotField extends ConsumerWidget {
 
     final filteredModels = allModels.where(filter).toList();
 
-    final selectedModel = modelId != null
-        ? allModels.where((m) => m.providerModelId == modelId).firstOrNull
-        : null;
+    final selectedModel = _resolveModelSlot(modelId, allModels);
 
     return InkWell(
       onTap: filteredModels.isNotEmpty
@@ -159,6 +157,13 @@ class _SlotModelPickerContentState extends State<_SlotModelPickerContent> {
           providerLabel.toLowerCase().contains(queryLower);
     }).toList();
 
+    // Resolve the slot value with the shared exact-id/unique-provider-id
+    // rule so an ambiguous legacy id never marks multiple rows selected.
+    final resolvedSelectedId = _resolveModelSlot(
+      widget.selectedModelId,
+      widget.models,
+    )?.id;
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -185,8 +190,8 @@ class _SlotModelPickerContentState extends State<_SlotModelPickerContent> {
               _SlotModelPickerRow(
                 model: model,
                 providerLabel: providerNamesById[model.inferenceProviderId],
-                selected: model.providerModelId == widget.selectedModelId,
-                onTap: () => widget.onSelected(model.providerModelId),
+                selected: model.id == resolvedSelectedId,
+                onTap: () => widget.onSelected(model.id),
               ),
         ],
       ),

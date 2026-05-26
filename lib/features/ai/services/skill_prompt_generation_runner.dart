@@ -16,6 +16,8 @@ extension SkillPromptGenerationRunner on SkillInferenceRunner {
     required String entryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
+    String? overrideModelId,
+    GeminiThinkingMode? geminiThinkingMode,
   }) async {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
@@ -25,8 +27,23 @@ extension SkillPromptGenerationRunner on SkillInferenceRunner {
         'skill=${skill != null}, profile=${profile != null}',
       );
     }
-    final provider = profile.effectiveHighEndProvider;
-    final modelId = profile.effectiveHighEndModelId;
+    final target = await _resolvePromptGenerationTarget(
+      profile: profile,
+      overrideModelId: overrideModelId,
+    );
+    final provider = target.provider;
+    final modelId = target.modelId;
+    final effectiveThinkingMode = _geminiThinkingModeForTarget(
+      target,
+      geminiThinkingMode,
+    );
+    if (provider == null || modelId == null) {
+      developer.log(
+        'Profile missing prompt generation provider/model for $entryId',
+        name: _logTag,
+      );
+      return;
+    }
 
     await _withStatusTracking(
       entityId: entryId,
@@ -77,7 +94,7 @@ extension SkillPromptGenerationRunner on SkillInferenceRunner {
           apiKey: provider.apiKey,
           provider: provider,
           systemMessage: promptResult.systemMessage,
-          geminiThinkingMode: profile.effectiveHighEndModel?.geminiThinkingMode,
+          geminiThinkingMode: effectiveThinkingMode,
         );
 
         // 6. Collect streaming response.

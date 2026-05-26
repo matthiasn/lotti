@@ -122,8 +122,8 @@ AiConfigCard(
 
 The model edit form owns user-editable model-row fields: display name,
 provider-native model ID, owning provider, modalities, reasoning/function-call
-flags, max completion tokens, and Gemini thinking mode. The Gemini thinking
-selector is conditional on the selected provider resolving to
+flags, max completion tokens, and the default Gemini thinking mode. The Gemini
+thinking selector is conditional on the selected provider resolving to
 `InferenceProviderType.gemini`; non-Gemini rows keep the stored default value
 but do not render the selector.
 
@@ -309,7 +309,8 @@ logged via `LoggingService` under `AI_CONFIG / DELETE_SERVICE`.
 ### 3. Tabbed Navigation
 - **Providers Tab**: Manage AI inference providers (OpenAI, Anthropic, etc.)
 - **Models Tab**: Manage AI models with advanced filtering options. Gemini
-  model rows also expose the thinking mode used at inference time.
+  model rows also expose the default thinking mode; popup-triggered skills can
+  override that default for one invocation.
 - **Prompts Tab**: Manage AI prompts and templates
 
 ### 4. Direct Navigation

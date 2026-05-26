@@ -7,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/ai/ui/widgets/gemini_thinking_mode_picker_modal.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_model_picker_modal.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -20,10 +22,16 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/modal/index.dart';
 
-/// (modelId, providerId) tuple pulled from a [ResolvedProfile] for one
-/// per-invocation override slot. Both fields are nullable because a
-/// freshly-installed profile may not have populated the slot yet.
-typedef _ProfileSlotValue = ({String? modelId, String? providerId});
+/// (configId, modelId, providerId) tuple pulled from a [ResolvedProfile]
+/// for one per-invocation override slot. `configId` is the resolved
+/// `AiConfigModel.id` row, `modelId` the wire-level `providerModelId`.
+/// All fields are nullable because a freshly-installed profile may not
+/// have populated the slot yet.
+typedef _ProfileSlotValue = ({
+  String? configId,
+  String? modelId,
+  String? providerId,
+});
 
 /// Per-skill configuration for the model-override popup flow. Each
 /// entry plugs in a modality filter, profile-slot accessor, and the
@@ -45,8 +53,8 @@ class _SkillModelOverrideConfig {
   /// image analysis).
   final Modality modality;
 
-  /// Pulls the `(providerModelId, providerId)` pair for the override
-  /// slot out of the resolved profile.
+  /// Pulls the `(configId, providerModelId, providerId)` tuple for the
+  /// override slot out of the resolved profile.
   final _ProfileSlotValue Function(ResolvedProfile) slotAccessor;
 
   /// Returns the picker modal title for this slot. Resolved against
@@ -59,13 +67,21 @@ class _SkillModelOverrideConfig {
 }
 
 _ProfileSlotValue _transcriptionSlot(ResolvedProfile p) => (
+  configId: p.transcriptionModel?.id,
   modelId: p.transcriptionModelId,
   providerId: p.transcriptionProvider?.id,
 );
 
 _ProfileSlotValue _imageAnalysisSlot(ResolvedProfile p) => (
+  configId: p.imageRecognitionModel?.id,
   modelId: p.imageRecognitionModelId,
   providerId: p.imageRecognitionProvider?.id,
+);
+
+_ProfileSlotValue _highEndThinkingSlot(ResolvedProfile p) => (
+  configId: p.effectiveHighEndModel?.id,
+  modelId: p.effectiveHighEndModelId,
+  providerId: p.effectiveHighEndProvider.id,
 );
 
 /// Skill types that open a model-override picker on tap, keyed by
@@ -84,6 +100,18 @@ const _modelOverrideConfigs = <SkillType, _SkillModelOverrideConfig>{
     titleSelector: _imageAnalysisTitleSelector,
     defaultBadgeSelector: _imageAnalysisBadgeSelector,
   ),
+  SkillType.promptGeneration: _SkillModelOverrideConfig(
+    modality: Modality.text,
+    slotAccessor: _highEndThinkingSlot,
+    titleSelector: _promptGenerationTitleSelector,
+    defaultBadgeSelector: _promptGenerationBadgeSelector,
+  ),
+  SkillType.imagePromptGeneration: _SkillModelOverrideConfig(
+    modality: Modality.text,
+    slotAccessor: _highEndThinkingSlot,
+    titleSelector: _promptGenerationTitleSelector,
+    defaultBadgeSelector: _promptGenerationBadgeSelector,
+  ),
 };
 
 String _transcriptionTitleSelector(AppLocalizations m) =>
@@ -94,6 +122,10 @@ String _imageAnalysisTitleSelector(AppLocalizations m) =>
     m.aiImageAnalysisPickerTitle;
 String _imageAnalysisBadgeSelector(AppLocalizations m) =>
     m.aiImageAnalysisPickerDefaultBadge;
+String _promptGenerationTitleSelector(AppLocalizations m) =>
+    m.aiPromptGenerationPickerTitle;
+String _promptGenerationBadgeSelector(AppLocalizations m) =>
+    m.designSystemDefaultLabel;
 
 class UnifiedAiModal {
   static Future<void> show<T>({
@@ -163,6 +195,7 @@ class UnifiedAiModal {
                 linkedTaskId: linkedTaskId,
                 referenceImages: null,
                 overrideModelId: null,
+                geminiThinkingMode: null,
               )).future,
             ),
           );
@@ -218,9 +251,11 @@ class UnifiedAiModal {
   /// Profile resolution mirrors [triggerSkillProvider]'s logic: linked
   /// task uses the task's profile, standalone entries fall back to
   /// the entry category's `defaultProfileId`. The resolved profile's
-  /// per-slot wire-level `providerModelId` is translated to an
-  /// `AiConfigModel.id` by matching against the loaded model list, so
-  /// the picker can highlight that row as the default.
+  /// per-slot `AiConfigModel.id` is matched exactly against the loaded
+  /// model list so the picker can highlight that row as the default;
+  /// the wire-level `(providerModelId, providerId)` pair is only a
+  /// legacy fallback, since several rows can share the same provider
+  /// model while differing in settings such as thinking mode.
   ///
   /// When the picker resolves with the same id as the default we
   /// pass `null` as the override — same semantic as "no override" so
@@ -256,17 +291,35 @@ class UnifiedAiModal {
         .whereType<AiConfigModel>()
         .where((m) => m.inputModalities.contains(config.modality))
         .toList();
+    final providerConfigs = await repo.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
+    final providersById = <String, AiConfigInferenceProvider>{
+      for (final provider
+          in providerConfigs.whereType<AiConfigInferenceProvider>())
+        provider.id: provider,
+    };
 
-    // Translate the profile's wire-level providerModelId to the
-    // AiConfigModel.id so the picker can compare rows. A missing
-    // match (deleted model, empty slot) leaves defaultModelId null;
-    // the picker renders the list without a default row.
+    // Match the profile's resolved AiConfigModel.id exactly, then fall
+    // back to translating the wire-level providerModelId for slots that
+    // resolved without a model row. A missing match (deleted model,
+    // empty slot) leaves defaultModelId null; the picker renders the
+    // list without a default row.
     String? defaultModelId;
     if (resolvedProfile != null) {
       final slot = config.slotAccessor(resolvedProfile);
+      final configId = slot.configId;
+      if (configId != null) {
+        defaultModelId = modalityCapable
+            .where((m) => m.id == configId)
+            .firstOrNull
+            ?.id;
+      }
       final providerModelId = slot.modelId;
       final providerId = slot.providerId;
-      if (providerModelId != null && providerId != null) {
+      if (defaultModelId == null &&
+          providerModelId != null &&
+          providerId != null) {
         defaultModelId = modalityCapable
             .where(
               (m) =>
@@ -297,6 +350,27 @@ class UnifiedAiModal {
     // so we bail before firing the trigger.
     if (!context.mounted) return;
 
+    final selectedModel = modalityCapable.firstWhereOrNull(
+      (model) => model.id == picked,
+    );
+    final selectedProvider = selectedModel != null
+        ? providersById[selectedModel.inferenceProviderId]
+        : null;
+
+    GeminiThinkingMode? geminiThinkingMode;
+    if (selectedProvider?.inferenceProviderType ==
+            InferenceProviderType.gemini &&
+        selectedModel != null &&
+        GeminiThinkingConfig.isGemini3(selectedModel.providerModelId)) {
+      final pickedMode = await GeminiThinkingModePickerModal.show(
+        context: context,
+        selectedMode: selectedModel.geminiThinkingMode,
+      );
+      if (pickedMode == null) return;
+      geminiThinkingMode = pickedMode;
+      if (!context.mounted) return;
+    }
+
     // Same id as default → no override semantic — the runner reads
     // the profile slot. Different id → forward as override.
     final overrideId = picked == defaultModelId ? null : picked;
@@ -309,6 +383,7 @@ class UnifiedAiModal {
           linkedTaskId: linkedTaskId,
           referenceImages: null,
           overrideModelId: overrideId,
+          geminiThinkingMode: geminiThinkingMode,
         )).future,
       ),
     );
