@@ -317,6 +317,116 @@ void _expectTokenRoundTrip() {
       );
     });
   });
+
+  group('dayAgentRefineToken', () {
+    test('prefixes the day id', () {
+      expect(
+        dayAgentRefineToken('dayplan-2026-05-25'),
+        '${dayAgentRefinePrefix}dayplan-2026-05-25',
+      );
+    });
+  });
+
+  group('refineDayIdFromTriggerTokens', () {
+    test('returns the day id when a token has the prefix', () {
+      final result = refineDayIdFromTriggerTokens({
+        dayAgentCaptureSubmittedToken('capture-1'),
+        dayAgentRefineToken('dayplan-2026-05-25'),
+      });
+      expect(result, 'dayplan-2026-05-25');
+    });
+
+    test('returns null when no token uses the refine prefix', () {
+      expect(
+        refineDayIdFromTriggerTokens({
+          dayAgentDraftingToken('dayplan-2026-05-25'),
+          'other',
+        }),
+        isNull,
+      );
+    });
+
+    test('returns null on an empty trigger-token set', () {
+      expect(refineDayIdFromTriggerTokens(<String>{}), isNull);
+    });
+
+    test('skips a prefix-only token without a day id', () {
+      expect(
+        refineDayIdFromTriggerTokens({dayAgentRefinePrefix}),
+        isNull,
+      );
+    });
+
+    test('skips a whitespace-only day id and returns null', () {
+      expect(
+        refineDayIdFromTriggerTokens({'$dayAgentRefinePrefix   '}),
+        isNull,
+      );
+    });
+
+    test('trims surrounding whitespace from the returned day id', () {
+      expect(
+        refineDayIdFromTriggerTokens({
+          '$dayAgentRefinePrefix  dayplan-2026-05-25  ',
+        }),
+        'dayplan-2026-05-25',
+      );
+    });
+  });
+
+  group('dayAgentDecidedTaskToken', () {
+    test('prefixes the task id', () {
+      expect(
+        dayAgentDecidedTaskToken('task-abc'),
+        '${dayAgentDecidedTaskPrefix}task-abc',
+      );
+    });
+  });
+
+  group('decidedTaskIdsFromTriggerTokens', () {
+    test('returns every decided-task id in the set', () {
+      final result = decidedTaskIdsFromTriggerTokens({
+        dayAgentDraftingToken('dayplan-2026-05-25'),
+        dayAgentDecidedTaskToken('task-1'),
+        dayAgentDecidedTaskToken('task-2'),
+        'other',
+      });
+      expect(result, containsAll(['task-1', 'task-2']));
+      expect(result, hasLength(2));
+    });
+
+    test('returns an empty list when no decided-task tokens are present', () {
+      expect(
+        decidedTaskIdsFromTriggerTokens({
+          dayAgentDraftingToken('dayplan-2026-05-25'),
+        }),
+        isEmpty,
+      );
+    });
+
+    test('returns an empty list on an empty trigger-token set', () {
+      expect(decidedTaskIdsFromTriggerTokens(<String>{}), isEmpty);
+    });
+
+    test('skips prefix-only and whitespace-only tokens', () {
+      expect(
+        decidedTaskIdsFromTriggerTokens({
+          dayAgentDecidedTaskPrefix,
+          '$dayAgentDecidedTaskPrefix   ',
+        }),
+        isEmpty,
+      );
+    });
+
+    test('trims surrounding whitespace from each returned task id', () {
+      final result = decidedTaskIdsFromTriggerTokens({
+        '$dayAgentDecidedTaskPrefix  task-1  ',
+        '$dayAgentDecidedTaskPrefix task-2',
+      });
+      expect(result, containsAll(['task-1', 'task-2']));
+      expect(result.every((id) => id.trim() == id), isTrue);
+    });
+  });
 }
 
 void _expectProjections() {

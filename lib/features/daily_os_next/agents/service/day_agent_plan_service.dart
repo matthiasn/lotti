@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
@@ -84,6 +86,69 @@ class DayAgentPlanService {
       return entity;
     }
     return null;
+  }
+
+  /// Hydrate the set of tasks the model should know about when drafting.
+  ///
+  /// Merges two sources, in order:
+  ///   1. [explicitTaskIds] — task ids the UI passed via `decided_task:<id>`
+  ///      trigger tokens. These are "I want this placed today" decisions
+  ///      the user made directly in the drafting flow.
+  ///   2. [parsedItems] — accepted capture-derived matches. A parsed item
+  ///      with a non-null `matchedTaskId` and `deletedAt == null` represents
+  ///      a "yes" the user said during reconcile. `break_capture_link`
+  ///      clears `matchedTaskId` on the entity, so a current-snapshot read
+  ///      of the parsed item is the source of truth.
+  ///
+  /// The merged id set is bulk-resolved through [JournalDb] and filtered to:
+  ///   * tasks that still exist (deleted/missing ids are skipped),
+  ///   * tasks whose `categoryId` is in [allowedCategoryIds] (or unrestricted
+  ///     when the set is empty).
+  ///
+  /// Returns results in insertion order — explicit ids first, then
+  /// parsed-item matches — with duplicates collapsed to the first occurrence.
+  /// Returns an empty list when both inputs are empty.
+  Future<List<DecidedTaskRef>> hydrateDecidedTasks({
+    required Set<String> allowedCategoryIds,
+    List<String> explicitTaskIds = const [],
+    List<ParsedItemEntity> parsedItems = const [],
+  }) async {
+    final seen = <String>{};
+    final orderedIds = <String>[];
+
+    void addCandidate(String? raw) {
+      if (raw == null) return;
+      final id = raw.trim();
+      if (id.isEmpty) return;
+      if (!seen.add(id)) return;
+      orderedIds.add(id);
+    }
+
+    explicitTaskIds.forEach(addCandidate);
+    for (final item in parsedItems) {
+      if (item.deletedAt != null) continue;
+      addCandidate(item.matchedTaskId);
+    }
+
+    if (orderedIds.isEmpty) return const [];
+
+    final entities = await journalDb.journalEntityMapForIds(orderedIds);
+    final out = <DecidedTaskRef>[];
+    for (final id in orderedIds) {
+      final entity = entities[id];
+      if (entity is! Task) continue;
+      if (entity.meta.deletedAt != null) continue;
+      final categoryId = entity.meta.categoryId;
+      if (!_categoryAllowed(categoryId, allowedCategoryIds)) continue;
+      out.add(
+        DecidedTaskRef(
+          id: entity.id,
+          title: entity.data.title,
+          categoryId: categoryId,
+        ),
+      );
+    }
+    return out;
   }
 
   /// Persist a model-emitted draft plan.

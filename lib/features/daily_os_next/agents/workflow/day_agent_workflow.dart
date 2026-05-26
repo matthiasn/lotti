@@ -166,6 +166,7 @@ class DayAgentWorkflow {
       agentIdentity: agentIdentity,
       dayId: dayId,
       triggerTokens: triggerTokens,
+      captureContext: captureContext,
     );
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
@@ -634,6 +635,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required AgentIdentityEntity agentIdentity,
     required String dayId,
     required Set<String> triggerTokens,
+    required _CaptureContext? captureContext,
   }) async {
     final service = planService;
     if (service == null) return null;
@@ -643,7 +645,27 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       agentId: agentIdentity.agentId,
       dayId: dayId,
     );
-    return _DraftingContext(baselinePlan: baselinePlan);
+    final explicitTaskIds = decidedTaskIdsFromTriggerTokens(triggerTokens);
+    final parsedItems = await _parsedItemsForCapture(captureContext);
+    final decidedTasks = await service.hydrateDecidedTasks(
+      allowedCategoryIds: agentIdentity.allowedCategoryIds,
+      explicitTaskIds: explicitTaskIds,
+      parsedItems: parsedItems,
+    );
+    return _DraftingContext(
+      baselinePlan: baselinePlan,
+      decidedTasks: decidedTasks,
+    );
+  }
+
+  Future<List<ParsedItemEntity>> _parsedItemsForCapture(
+    _CaptureContext? captureContext,
+  ) async {
+    final capture = captureContext?.capture;
+    final service = captureService;
+    if (capture == null || service == null) return const [];
+    final entities = await service.parsedItemsForCapture(capture.id);
+    return entities.whereType<ParsedItemEntity>().toList();
   }
 
   Future<void> _persistUserMessage({
@@ -933,9 +955,13 @@ class _CaptureContext {
 }
 
 class _DraftingContext {
-  const _DraftingContext({this.baselinePlan});
+  const _DraftingContext({
+    this.baselinePlan,
+    this.decidedTasks = const [],
+  });
 
   final DayPlanEntity? baselinePlan;
+  final List<DecidedTaskRef> decidedTasks;
 
   Map<String, Object?> toJson() {
     final plan = baselinePlan;
@@ -968,6 +994,7 @@ class _DraftingContext {
                 for (final band in plan.energyBands) band.toJson(),
               ],
             },
+      'decidedTasks': [for (final task in decidedTasks) task.toJson()],
     };
   }
 }

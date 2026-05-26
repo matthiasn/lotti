@@ -437,6 +437,13 @@ void main() {
             dayId: dayId,
           ),
         ).thenAnswer((_) async => null);
+        when(
+          () => planService.hydrateDecidedTasks(
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            explicitTaskIds: any(named: 'explicitTaskIds'),
+            parsedItems: any(named: 'parsedItems'),
+          ),
+        ).thenAnswer((_) async => const []);
 
         final result = await execute(
           workflow(planService: planService),
@@ -450,6 +457,7 @@ void main() {
         final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
         expect(draftingPayload['requested'], isTrue);
         expect(draftingPayload['baselinePlan'], isNull);
+        expect(draftingPayload['decidedTasks'], isEmpty);
         verify(
           () => planService.draftPlanForDay(
             agentId: agentId,
@@ -504,6 +512,13 @@ void main() {
             dayId: dayId,
           ),
         ).thenAnswer((_) async => baselinePlan);
+        when(
+          () => planService.hydrateDecidedTasks(
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            explicitTaskIds: any(named: 'explicitTaskIds'),
+            parsedItems: any(named: 'parsedItems'),
+          ),
+        ).thenAnswer((_) async => const []);
 
         final result = await execute(
           workflow(planService: planService),
@@ -551,6 +566,120 @@ void main() {
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
+        );
+      },
+    );
+
+    test(
+      'surfaces decidedTasks merged from explicit ids and capture parsed items',
+      () async {
+        final planService = MockDayAgentPlanService();
+        final captureService = MockDayAgentCaptureService();
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: agentId,
+                  transcript: 'prep demo + buy milk',
+                  capturedAt: DateTime(2026, 5, 25, 7, 45),
+                  createdAt: DateTime(2026, 5, 25, 7, 45),
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        final parsedItem =
+            AgentDomainEntity.parsedItem(
+                  id: 'parsed-1',
+                  agentId: agentId,
+                  captureId: 'capture-1',
+                  kind: ParsedItemKind.matched,
+                  title: 'Buy milk',
+                  categoryId: 'life',
+                  confidence: ParsedItemConfidence.high,
+                  confidenceScore: 0.9,
+                  matchedTaskId: 'task-milk',
+                  createdAt: DateTime(2026, 5, 25, 7, 50),
+                  vectorClock: null,
+                )
+                as ParsedItemEntity;
+        when(() => captureService.getCapture('capture-1')).thenAnswer(
+          (_) async => capture,
+        );
+        when(
+          () => captureService.buildTaskCorpusSnapshot(
+            allowedCategoryIds: const <String>{},
+            day: DateTime(2026, 5, 25),
+          ),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => captureService.parsedItemsForCapture('capture-1'),
+        ).thenAnswer((_) async => [parsedItem]);
+        when(
+          () => planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => planService.hydrateDecidedTasks(
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            explicitTaskIds: any(named: 'explicitTaskIds'),
+            parsedItems: any(named: 'parsedItems'),
+          ),
+        ).thenAnswer(
+          (_) async => const [
+            DecidedTaskRef(
+              id: 'task-1',
+              title: 'Prep demo',
+              categoryId: 'work',
+            ),
+            DecidedTaskRef(
+              id: 'task-milk',
+              title: 'Buy milk',
+              categoryId: 'life',
+            ),
+          ],
+        );
+
+        final result = await execute(
+          workflow(
+            planService: planService,
+            captureService: captureService,
+          ),
+          triggerTokens: {
+            dayAgentDraftingToken(dayId),
+            dayAgentCaptureSubmittedToken('capture-1'),
+            dayAgentDecidedTaskToken('task-1'),
+            dayId,
+          },
+        );
+
+        expect(result.success, isTrue);
+        final userPayload =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
+        final decidedTasks = draftingPayload['decidedTasks'] as List<dynamic>;
+        expect(decidedTasks, hasLength(2));
+        expect(
+          (decidedTasks[0] as Map<String, dynamic>)['id'],
+          'task-1',
+        );
+        expect(
+          (decidedTasks[1] as Map<String, dynamic>)['title'],
+          'Buy milk',
+        );
+
+        final hydrateCall = verify(
+          () => planService.hydrateDecidedTasks(
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            explicitTaskIds: captureAny(named: 'explicitTaskIds'),
+            parsedItems: captureAny(named: 'parsedItems'),
+          ),
+        ).captured;
+        expect(hydrateCall.first, ['task-1']);
+        final passedParsedItems = hydrateCall.last as List<ParsedItemEntity>;
+        expect(
+          passedParsedItems.single.matchedTaskId,
+          'task-milk',
         );
       },
     );

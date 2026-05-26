@@ -9,12 +9,22 @@ const dayAgentCaptureSubmittedPrefix = 'capture_submitted:';
 const dayAgentCaptureSubmittedReason = 'capture_submitted';
 
 /// Wake trigger token prefix used to request a day-plan drafting wake.
-// TODO(day-agent): hoist drafting + capture token helpers into a shared
-// `day_agent_trigger_tokens.dart` once Refine/Commit add more trigger families.
+// TODO(day-agent): hoist drafting + capture + refine token helpers into a
+// shared `day_agent_trigger_tokens.dart` once Commit adds another family.
 const dayAgentDraftingPrefix = 'drafting:';
 
 /// Wake scheduling reason used when a draft is requested.
 const dayAgentDraftingReason = 'drafting';
+
+/// Wake trigger token prefix used to request a day-plan refine wake.
+const dayAgentRefinePrefix = 'refine:';
+
+/// Wake scheduling reason used when a refine is requested.
+const dayAgentRefineReason = 'refine';
+
+/// Wake trigger token prefix used to advertise a task the UI considers
+/// "decided" (one the user said yes to and wants placed in the day plan).
+const dayAgentDecidedTaskPrefix = 'decided_task:';
 
 /// Minimum score that becomes an auto-linked match.
 const dayAgentHighConfidenceThreshold = 0.75;
@@ -118,6 +128,36 @@ class DayAgentPendingItem {
   };
 }
 
+/// A task the user has decided to place in a day plan.
+///
+/// Emitted by `DayAgentPlanService.hydrateDecidedTasks` and surfaced in the
+/// drafting prompt under `drafting.decidedTasks`. The model is expected to
+/// set `PlannedBlock.taskId` to a value from this set when its `ai`/`manual`
+/// blocks correspond to one of these tasks.
+class DecidedTaskRef {
+  const DecidedTaskRef({
+    required this.id,
+    required this.title,
+    required this.categoryId,
+  });
+
+  /// Journal task ID.
+  final String id;
+
+  /// Task title.
+  final String title;
+
+  /// Task category ID, if any.
+  final String? categoryId;
+
+  /// JSON shape sent to the model in the drafting prompt.
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'title': title,
+    'categoryId': categoryId,
+  };
+}
+
 /// FTS-backed task candidate returned by `match_to_corpus`.
 class DayAgentCorpusMatch {
   const DayAgentCorpusMatch({
@@ -196,6 +236,46 @@ String? draftingDayIdFromTriggerTokens(Set<String> triggerTokens) {
     }
   }
   return null;
+}
+
+/// Creates the refine wake trigger token for [dayId].
+String dayAgentRefineToken(String dayId) {
+  return '$dayAgentRefinePrefix$dayId';
+}
+
+/// Extracts the first refine-target day ID from a trigger-token set.
+///
+/// The returned ID is trimmed of surrounding whitespace so equality checks
+/// downstream match canonical form.
+String? refineDayIdFromTriggerTokens(Set<String> triggerTokens) {
+  for (final token in triggerTokens) {
+    if (token.startsWith(dayAgentRefinePrefix)) {
+      final dayId = token.substring(dayAgentRefinePrefix.length).trim();
+      if (dayId.isNotEmpty) return dayId;
+    }
+  }
+  return null;
+}
+
+/// Creates the decided-task trigger token for [taskId].
+String dayAgentDecidedTaskToken(String taskId) {
+  return '$dayAgentDecidedTaskPrefix$taskId';
+}
+
+/// Extracts every decided-task ID advertised on a trigger-token set.
+///
+/// Returns IDs trimmed of surrounding whitespace, in iteration order of the
+/// input set. Skips prefix-only and whitespace-only tokens. Returns an empty
+/// list when no decided-task tokens are present.
+List<String> decidedTaskIdsFromTriggerTokens(Set<String> triggerTokens) {
+  final out = <String>[];
+  for (final token in triggerTokens) {
+    if (token.startsWith(dayAgentDecidedTaskPrefix)) {
+      final taskId = token.substring(dayAgentDecidedTaskPrefix.length).trim();
+      if (taskId.isNotEmpty) out.add(taskId);
+    }
+  }
+  return out;
 }
 
 /// Converts a task row to a pending-decision projection.

@@ -134,5 +134,32 @@ void main() {
         ['high', 'low', 'secondWind'],
       );
     });
+
+    test('draft_day_plan taskId references drafting.decidedTasks', () {
+      final properties =
+          parametersFor(DayAgentToolNames.draftDayPlan)['properties']
+              as Map<String, dynamic>;
+      final blockProps =
+          ((properties['blocks'] as Map<String, dynamic>)['items']
+                  as Map<String, dynamic>)['properties']
+              as Map<String, dynamic>;
+      final taskIdSchema = blockProps['taskId'] as Map<String, dynamic>;
+
+      expect(taskIdSchema['description'], isA<String>());
+      expect(
+        taskIdSchema['description'] as String,
+        contains('drafting.decidedTasks'),
+      );
+    });
+
+    test('refine tool schemas are not registered yet', () {
+      // Their `DayAgentToolNames` constants and `planTools` membership
+      // exist so Phase 4 can wire schemas + service handlers atomically.
+      // Until then, the registry stays clean of unhandled tools.
+      final names = dayAgentTools.map((tool) => tool.name).toSet();
+      expect(names, isNot(contains(DayAgentToolNames.proposePlanDiff)));
+      expect(names, isNot(contains(DayAgentToolNames.acceptDiff)));
+      expect(names, isNot(contains(DayAgentToolNames.revertDiff)));
+    });
   });
 }

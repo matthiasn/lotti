@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -684,7 +687,211 @@ void main() {
       expect(cards, hasLength(3));
       expect(cards.first, containsPair('id', 'yesterday'));
     });
+
+    group('hydrateDecidedTasks', () {
+      test('returns empty list and skips JournalDb when no inputs', () async {
+        final result = await createService().hydrateDecidedTasks(
+          allowedCategoryIds: const {'work', 'life'},
+        );
+
+        expect(result, isEmpty);
+        verifyNever(() => journalDb.journalEntityMapForIds(any()));
+      });
+
+      test(
+        'merges explicit + parsed-item ids, explicit first, deduped',
+        () async {
+          final task1 = _task(id: 'task-1', title: 'Prep demo');
+          final task2 = _task(id: 'task-2', title: 'Buy milk');
+          final task3 = _task(id: 'task-3', title: 'Send invoice');
+          when(
+            () => journalDb.journalEntityMapForIds(any()),
+          ).thenAnswer(
+            (_) async => {
+              'task-1': task1,
+              'task-2': task2,
+              'task-3': task3,
+            },
+          );
+
+          final result = await createService().hydrateDecidedTasks(
+            allowedCategoryIds: const {'work', 'life'},
+            explicitTaskIds: const ['task-1', 'task-3'],
+            parsedItems: [
+              _parsedItem(matchedTaskId: 'task-3'),
+              _parsedItem(id: 'parsed-2', matchedTaskId: 'task-2'),
+            ],
+          );
+
+          expect(result.map((t) => t.id).toList(), [
+            'task-1',
+            'task-3',
+            'task-2',
+          ]);
+          final captured =
+              verify(
+                    () => journalDb.journalEntityMapForIds(captureAny()),
+                  ).captured.single
+                  as List<String>;
+          expect(captured, ['task-1', 'task-3', 'task-2']);
+        },
+      );
+
+      test(
+        'skips parsed items without matchedTaskId or soft-deleted',
+        () async {
+          final task1 = _task(id: 'task-1', title: 'Prep demo');
+          when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+            (_) async => {'task-1': task1},
+          );
+
+          final result = await createService().hydrateDecidedTasks(
+            allowedCategoryIds: const {'work', 'life'},
+            parsedItems: [
+              _parsedItem(matchedTaskId: 'task-1'),
+              _parsedItem(id: 'parsed-2'),
+              _parsedItem(
+                id: 'parsed-3',
+                matchedTaskId: 'task-2',
+                deletedAt: DateTime(2026, 5, 25, 8),
+              ),
+            ],
+          );
+
+          expect(result.map((t) => t.id).toList(), ['task-1']);
+        },
+      );
+
+      test('filters out tasks outside the agent allowed categories', () async {
+        final task1 = _task(id: 'task-1', title: 'Prep demo');
+        final task2 = _task(
+          id: 'task-2',
+          title: 'Personal errand',
+          categoryId: 'blocked',
+        );
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-1': task1, 'task-2': task2},
+        );
+
+        final result = await createService().hydrateDecidedTasks(
+          allowedCategoryIds: const {'work', 'life'},
+          explicitTaskIds: const ['task-1', 'task-2'],
+        );
+
+        expect(result.map((t) => t.id).toList(), ['task-1']);
+      });
+
+      test('skips ids that resolve to missing or deleted tasks', () async {
+        final task1 = _task(id: 'task-1', title: 'Prep demo');
+        final task2 = _task(id: 'task-2', title: 'Deleted task');
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {
+            'task-1': task1,
+            'task-2': task2.copyWith(
+              meta: task2.meta.copyWith(deletedAt: DateTime(2026, 5, 24)),
+            ),
+          },
+        );
+
+        final result = await createService().hydrateDecidedTasks(
+          allowedCategoryIds: const {'work', 'life'},
+          explicitTaskIds: const ['task-1', 'task-2', 'task-missing'],
+        );
+
+        expect(result.map((t) => t.id).toList(), ['task-1']);
+      });
+
+      test('allows any category when allowedCategoryIds is empty', () async {
+        final task1 = _task(
+          id: 'task-1',
+          title: 'Anywhere',
+          categoryId: 'unscoped',
+        );
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-1': task1},
+        );
+
+        final result = await createService().hydrateDecidedTasks(
+          allowedCategoryIds: const <String>{},
+          explicitTaskIds: const ['task-1'],
+        );
+
+        expect(result.single.id, 'task-1');
+        expect(result.single.categoryId, 'unscoped');
+      });
+
+      test('trims whitespace from explicit ids before lookup', () async {
+        final task1 = _task(id: 'task-1', title: 'Prep demo');
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-1': task1},
+        );
+
+        final result = await createService().hydrateDecidedTasks(
+          allowedCategoryIds: const {'work', 'life'},
+          explicitTaskIds: const ['  task-1  ', '', '   '],
+        );
+
+        expect(result.map((t) => t.id).toList(), ['task-1']);
+        final captured =
+            verify(
+                  () => journalDb.journalEntityMapForIds(captureAny()),
+                ).captured.single
+                as List<String>;
+        expect(captured, ['task-1']);
+      });
+    });
   });
+}
+
+Task _task({
+  required String id,
+  required String title,
+  String? categoryId = 'work',
+}) {
+  return JournalEntity.task(
+        meta: Metadata(
+          id: id,
+          createdAt: DateTime(2026, 5, 20),
+          updatedAt: DateTime(2026, 5, 20),
+          dateFrom: DateTime(2026, 5, 20),
+          dateTo: DateTime(2026, 5, 20, 1),
+          categoryId: categoryId,
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-open',
+            createdAt: DateTime(2026, 5, 20),
+            utcOffset: 120,
+          ),
+          statusHistory: const [],
+          dateFrom: DateTime(2026, 5, 20),
+          dateTo: DateTime(2026, 5, 20, 1),
+          title: title,
+        ),
+      )
+      as Task;
+}
+
+ParsedItemEntity _parsedItem({
+  String id = 'parsed-1',
+  String? matchedTaskId,
+  DateTime? deletedAt,
+}) {
+  return AgentDomainEntity.parsedItem(
+        id: id,
+        agentId: _agentId,
+        captureId: 'capture-001',
+        kind: ParsedItemKind.matched,
+        title: 'Prep demo',
+        categoryId: 'work',
+        confidence: ParsedItemConfidence.high,
+        confidenceScore: 0.9,
+        createdAt: _now,
+        vectorClock: null,
+        matchedTaskId: matchedTaskId,
+        deletedAt: deletedAt,
+      )
+      as ParsedItemEntity;
 }
 
 Map<String, Object?> _aiBlock({

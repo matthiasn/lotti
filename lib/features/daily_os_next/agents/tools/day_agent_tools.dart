@@ -258,7 +258,15 @@ const dayAgentTools = <AgentToolDefinition>[
             'properties': {
               'id': {'type': 'string'},
               'title': {'type': 'string'},
-              'taskId': {'type': 'string'},
+              'taskId': {
+                'type': 'string',
+                'description':
+                    'REQUIRED when the block corresponds to one of the '
+                    'tasks listed under drafting.decidedTasks. Omit only '
+                    'for buffer / calendar blocks that have no backing '
+                    'task, or for manual blocks that do not map to a '
+                    'decided task.',
+              },
               'categoryId': {'type': 'string'},
               'start': {
                 'type': 'string',
@@ -341,4 +349,10 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
+  // Refine tools (`propose_plan_diff`, `accept_diff`, `revert_diff`) are
+  // intentionally NOT registered here yet. Their `DayAgentToolNames`
+  // constants and `planTools` membership exist so Phase 4 can wire
+  // service handlers + schemas atomically. Advertising the schemas
+  // without handlers in `DayAgentPlanService.executeTool` would let the
+  // model call them and receive an "unknown tool" error.
 ];
