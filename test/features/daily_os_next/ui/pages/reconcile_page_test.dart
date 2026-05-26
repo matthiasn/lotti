@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
@@ -155,5 +156,201 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'AppBar back button pops the navigator (re-record from header)',
+      (tester) async {
+        _setWideSurface(tester);
+        final agent = _fastAgent();
+        var popped = false;
+        await tester.pumpWidget(
+          _wrap(
+            Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () async {
+                    await Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ReconcilePage(
+                          captureId: CaptureId('cap_x'),
+                        ),
+                      ),
+                    );
+                    popped = true;
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 200));
+
+        await tester.tap(find.byIcon(Icons.arrow_back_rounded).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(popped, isTrue);
+        expect(find.byType(ReconcilePage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping "Draft my day" pushes DraftingPage with committed task ids',
+      (tester) async {
+        _setWideSurface(tester);
+        final agent = _fastAgent();
+        await tester.pumpWidget(
+          _wrap(
+            const ReconcilePage(captureId: CaptureId('cap_x')),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final messages = tester.element(find.byType(ReconcilePage)).messages;
+        final cta = find.text(messages.dailyOsNextReconcileBuildDayCta);
+        await tester.ensureVisible(cta);
+        await tester.tap(cta);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DraftingPage), findsOneWidget);
+        final pushed = tester.widget<DraftingPage>(find.byType(DraftingPage));
+        expect(pushed.captureId, const CaptureId('cap_x'));
+        expect(pushed.returnToRootOnReady, isTrue);
+        // Mock surfaces 4 parsed items (matched/update/new) — all
+        // contribute to the committed-task set, plus zero triaged-today.
+        expect(pushed.decidedTaskIds, isNotEmpty);
+      },
+    );
+
+    testWidgets(
+      'triaging a pending item to "today" includes it in decidedTaskIds',
+      (tester) async {
+        _setWideSurface(tester);
+        final agent = _fastAgent();
+        await tester.pumpWidget(
+          _wrap(
+            const ReconcilePage(captureId: CaptureId('cap_x')),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final messages = tester.element(find.byType(ReconcilePage)).messages;
+        final todayButton = find
+            .descendant(
+              of: find.byType(PendingCard).first,
+              matching: find.text(messages.dailyOsNextTriageToday),
+            )
+            .first;
+        await tester.tap(todayButton);
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // Now trigger draft → push DraftingPage with the triaged id
+        // included.
+        final cta = find.text(messages.dailyOsNextReconcileBuildDayCta);
+        await tester.ensureVisible(cta);
+        await tester.tap(cta);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DraftingPage), findsOneWidget);
+        final pushed = tester.widget<DraftingPage>(find.byType(DraftingPage));
+        // Parsed surrogates (4) + 1 triaged pending → 5 ids.
+        expect(pushed.decidedTaskIds.length, greaterThanOrEqualTo(5));
+      },
+    );
+
+    testWidgets(
+      'tapping a ParsedCard break-link icon forwards the parsed item id',
+      (tester) async {
+        _setWideSurface(tester);
+        final agent = _BreakLinkRecordingAgent();
+        await tester.pumpWidget(
+          _wrap(
+            const ReconcilePage(captureId: CaptureId('cap_x')),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // The break-link control is an Inkwell wrapping a close icon
+        // inside a Tooltip — match the tooltip and tap.
+        final messages = tester.element(find.byType(ReconcilePage)).messages;
+        final tooltip = find
+            .byTooltip(messages.dailyOsNextParsedCardBreakLinkTooltip)
+            .first;
+        await tester.ensureVisible(tooltip);
+        await tester.tap(tooltip);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        expect(agent.brokenItemIds, isNotEmpty);
+      },
+    );
+
+    testWidgets('narrow layout (< 720) stacks heard + decide vertically', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(600, 1400)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final agent = _fastAgent();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+          child: makeTestableWidget2(
+            const ReconcilePage(captureId: CaptureId('cap_x')),
+            mediaQueryData: const MediaQueryData(size: Size(600, 1400)),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Both sections rendered, just stacked.
+      expect(find.byType(ParsedCard), findsNWidgets(4));
+      expect(find.byType(PendingCard), findsNWidgets(3));
+    });
   });
+}
+
+/// Agent that records breakCaptureLink calls instead of throwing.
+class _BreakLinkRecordingAgent extends MockDayAgent {
+  _BreakLinkRecordingAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  final List<String> brokenItemIds = [];
+
+  @override
+  Future<ParsedItem> breakCaptureLink(String parsedItemId) async {
+    brokenItemIds.add(parsedItemId);
+    // Return an updated parsed item — the controller treats it as the
+    // new state for the row, with the matched-task link removed.
+    return ParsedItem(
+      id: parsedItemId,
+      kind: ParsedItemKind.newTask,
+      title: 'Broken link',
+      category: const DayAgentCategory(
+        id: 'cat',
+        name: 'Work',
+        colorHex: '5ED4B7',
+      ),
+      confidence: ParsedItemConfidence.high,
+    );
+  }
 }
