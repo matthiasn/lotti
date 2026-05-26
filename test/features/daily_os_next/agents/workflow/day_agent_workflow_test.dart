@@ -439,7 +439,6 @@ void main() {
         ).thenAnswer((_) async => null);
         when(
           () => planService.hydrateDecidedTasks(
-            agentId: any(named: 'agentId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             explicitTaskIds: any(named: 'explicitTaskIds'),
             parsedItems: any(named: 'parsedItems'),
@@ -515,7 +514,6 @@ void main() {
         ).thenAnswer((_) async => baselinePlan);
         when(
           () => planService.hydrateDecidedTasks(
-            agentId: any(named: 'agentId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             explicitTaskIds: any(named: 'explicitTaskIds'),
             parsedItems: any(named: 'parsedItems'),
@@ -622,7 +620,6 @@ void main() {
         ).thenAnswer((_) async => null);
         when(
           () => planService.hydrateDecidedTasks(
-            agentId: any(named: 'agentId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             explicitTaskIds: any(named: 'explicitTaskIds'),
             parsedItems: any(named: 'parsedItems'),
@@ -673,7 +670,6 @@ void main() {
 
         final hydrateCall = verify(
           () => planService.hydrateDecidedTasks(
-            agentId: agentId,
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
             explicitTaskIds: captureAny(named: 'explicitTaskIds'),
             parsedItems: captureAny(named: 'parsedItems'),

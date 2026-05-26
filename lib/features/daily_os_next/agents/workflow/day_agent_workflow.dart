@@ -648,7 +648,6 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     final explicitTaskIds = decidedTaskIdsFromTriggerTokens(triggerTokens);
     final parsedItems = await _parsedItemsForCapture(captureContext);
     final decidedTasks = await service.hydrateDecidedTasks(
-      agentId: agentIdentity.agentId,
       allowedCategoryIds: agentIdentity.allowedCategoryIds,
       explicitTaskIds: explicitTaskIds,
       parsedItems: parsedItems,

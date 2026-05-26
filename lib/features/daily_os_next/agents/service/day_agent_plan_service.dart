@@ -109,7 +109,6 @@ class DayAgentPlanService {
   /// parsed-item matches — with duplicates collapsed to the first occurrence.
   /// Returns an empty list when both inputs are empty.
   Future<List<DecidedTaskRef>> hydrateDecidedTasks({
-    required String agentId,
     required Set<String> allowedCategoryIds,
     List<String> explicitTaskIds = const [],
     List<ParsedItemEntity> parsedItems = const [],

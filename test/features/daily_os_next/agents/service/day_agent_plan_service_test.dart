@@ -691,7 +691,6 @@ void main() {
     group('hydrateDecidedTasks', () {
       test('returns empty list and skips JournalDb when no inputs', () async {
         final result = await createService().hydrateDecidedTasks(
-          agentId: _agentId,
           allowedCategoryIds: const {'work', 'life'},
         );
 
@@ -716,7 +715,6 @@ void main() {
           );
 
           final result = await createService().hydrateDecidedTasks(
-            agentId: _agentId,
             allowedCategoryIds: const {'work', 'life'},
             explicitTaskIds: const ['task-1', 'task-3'],
             parsedItems: [
@@ -748,7 +746,6 @@ void main() {
           );
 
           final result = await createService().hydrateDecidedTasks(
-            agentId: _agentId,
             allowedCategoryIds: const {'work', 'life'},
             parsedItems: [
               _parsedItem(matchedTaskId: 'task-1'),
@@ -777,7 +774,6 @@ void main() {
         );
 
         final result = await createService().hydrateDecidedTasks(
-          agentId: _agentId,
           allowedCategoryIds: const {'work', 'life'},
           explicitTaskIds: const ['task-1', 'task-2'],
         );
@@ -798,7 +794,6 @@ void main() {
         );
 
         final result = await createService().hydrateDecidedTasks(
-          agentId: _agentId,
           allowedCategoryIds: const {'work', 'life'},
           explicitTaskIds: const ['task-1', 'task-2', 'task-missing'],
         );
@@ -817,7 +812,6 @@ void main() {
         );
 
         final result = await createService().hydrateDecidedTasks(
-          agentId: _agentId,
           allowedCategoryIds: const <String>{},
           explicitTaskIds: const ['task-1'],
         );
@@ -833,7 +827,6 @@ void main() {
         );
 
         final result = await createService().hydrateDecidedTasks(
-          agentId: _agentId,
           allowedCategoryIds: const {'work', 'life'},
           explicitTaskIds: const ['  task-1  ', '', '   '],
         );
