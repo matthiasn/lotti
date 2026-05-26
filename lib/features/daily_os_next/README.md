@@ -59,7 +59,9 @@ Runtime behavior:
 - The shared template service seeds the `Shepherd` day-agent template.
 - `DayAgentWorkflow` builds the prompt from template directives, recent private
   observations, and, for `capture_submitted:<captureId>` wakes, the submitted
-  capture plus a bounded task corpus snapshot.
+  capture plus a bounded task corpus snapshot. Every wake user message also
+  carries `currentLocalTime` so same-day drafting can distinguish future plan
+  slots from time that has already passed.
 - `DayAgentStrategy` handles private observations itself and delegates
   `set_next_wake`, Capture/Reconcile tools, draft plan tools, and refine
   tools through the workflow handler.
@@ -70,12 +72,29 @@ Runtime behavior:
   `create_task_from_phrase`.
 - `submit_capture` persists a `CaptureEntity` and enqueues a manual wake with a
   `capture_submitted:<captureId>` trigger token.
+- `DailyOsNextRoot` owns the selected local plan date and keeps the date strip
+  visible on Capture and Day surfaces. Capture submissions use that selected
+  date for day-agent routing, Reconcile carries it into pending decisions, and
+  Drafting returns to the root after the plan persists so the date-aware shell
+  remains in control.
+- The Capture voice path asks realtime transcription to prefer Mistral cloud
+  realtime before MLX local realtime, then verifies the final editable
+  transcript against the saved full recording via the batch transcriber when
+  realtime output looks truncated.
+- Agenda and Commit surfaces use a linear capacity meter. UI projections derive
+  scheduled minutes from the non-dropped blocks they render, so stale persisted
+  totals cannot make the capacity meter disagree with the agenda rows.
 - `parse_capture_to_items` persists `ParsedItemEntity` rows and links them to
   the source capture. High-confidence matches (`>= 0.75`) auto-link to tasks,
   medium-confidence matches (`0.5..0.75`) auto-link with `lowConfidence`, and
   low-confidence items stay as new capture items.
-- `create_task_from_phrase` writes a pending `ChangeSetEntity` proposal instead
-  of directly creating a task.
+- `ReconcileController` watches capture-id update notifications, so the
+  "heard" column re-reads parsed items when the asynchronous parsing wake
+  persists them.
+- `create_task_from_phrase` creates a real task from a NEW capture phrase,
+  returns its `taskId`, and links the parsed item when `captureItemId` is
+  supplied. Drafting should use that returned `taskId` on the matching block so
+  Agenda rows can open the backing task.
 - `DayAgentPlanService` owns draft plan persistence:
   `draft_day_plan` validates model-emitted blocks, requires a non-empty reason
   for every `PlannedBlockType.ai` block, writes a `DayPlanEntity`, and links it
@@ -85,6 +104,10 @@ Runtime behavior:
   direction (graph traversal from a capture to every plan it produced) and is
   written in the same transaction. Treat the field as canonical and the link
   as derived — do not mutate one without the other.
+- For today's plan, `draft_day_plan` rejects new drafted `ai` or `manual`
+  blocks whose start is before `currentLocalTime`. It still accepts earlier
+  blocks when their state is `inProgress`, `completed`, or `dropped`, because
+  those represent what actually happened rather than new future planning.
 - `summarize_recent_patterns` returns transient learning-card payloads from
   recent `DayPlanEntity` rows. It does not persist new state.
 - `PlannedBlock` now carries the agent-facing metadata required by the draft
@@ -95,14 +118,30 @@ Runtime behavior:
   `drafting:<dayId>` plus optional `capture_submitted:<id>` and
   `decided_task:<taskId>` tokens; the workflow surfaces the baseline plan and
   hydrated decided tasks under the `drafting` block in the user message JSON.
-- Refine is the post-draft edit surface. `DayAgentService.enqueueRefineWake(
-  {dayDate, transcript})` pre-checks that a draft plan exists, persists the
+- Day-agent wakes that resolve to Gemini 3 Flash use a `thinkingLevel: LOW`
+  override through their `CloudInferenceWrapper` instance. The shared Gemini
+  Flash default remains unchanged; workflows opt into this latency profile
+  explicitly instead of changing the global model default.
+- Drafting wakes must finish by calling `draft_day_plan`. If the model stops
+  after reconcile work or emits prose instead, `DayAgentWorkflow` sends one
+  forced retry with `tool_choice` pinned to `draft_day_plan`; if that still
+  misses the tool, the wake fails instead of letting the UI poll until timeout.
+- Refine is the explicit plan-amendment surface. `DayAgentService.enqueueRefineWake(
+  {dayDate, transcript})` pre-checks that a non-deleted plan exists, persists the
   refine transcript as a `CaptureEntity` (id prefixed `refine_capture:`,
   skipped when the transcript is blank), and fires a manual wake with
   `refine:<dayId>` (and `capture_submitted:<captureId>` when a capture was
   written). The workflow attaches a `refine` block carrying the current
   `baselinePlan` to the user message so the model can reference existing
-  blockIds.
+  blockIds. This is allowed after a plan is agreed/committed because the
+  amendment still lands as a pending diff that the user must accept.
+- The Refine UI uses the same `CaptureController` recording/transcription path
+  as the initial capture screen. It never injects a scripted transcript; when
+  transcription produces no text, the screen returns to idle without proposing
+  a diff. Proposed changes render as independent suggestion cards, matching
+  task-agent approval affordances: each row can be accepted or rejected, then
+  collapses to an applied/rejected confirmation pill while unresolved rows stay
+  actionable.
 - `DayAgentPlanService.proposePlanDiff` persists each model-emitted change as
   a `ChangeItem` (tool name `move_block` / `add_block` / `drop_block`) on a
   new pending `ChangeSetEntity` keyed by the plan id. Optional
@@ -110,15 +149,14 @@ Runtime behavior:
   stashed in the first item's args so the change set is discoverable from a
   refine-transcript capture.
 - `acceptPlanDiff` / `revertPlanDiff` resolve some or all items atomically
-  (default = all pending). Accept mutates the plan in place: it overlays
+  (default = all pending). The Refine controller passes `itemIndices` for
+  per-card decisions. Accept mutates the plan in place: it overlays
   block moves, adds new blocks, drops by id, then re-sorts blocks by start
   time, recomputes `scheduledMinutes`, and rebuilds `pinnedTasks`. Energy
   bands, capacity, and plan status are left intact. Revert leaves the plan
   untouched. Both write `ChangeDecisionEntity` records per resolved item
-  with `actor: user` and `verdict: confirmed | rejected`.
-- Refine is gated to plans in `draft` status. Refine on `agreed` /
-  `committed` plans is rejected with a clear error; Commit ships an
-  uncommit path later.
+  with `actor: user` and `verdict: confirmed | rejected`. Added blocks inherit
+  `committed` state when the amended plan was already agreed/committed.
 - Wakes consume any `scheduledWakeAt` timestamp that is no longer in the future
   so app restart does not replay an already-fired scheduled wake.
 - Future Daily OS Next commit, agenda, and shutdown tools should be added
@@ -132,14 +170,15 @@ stateDiagram-v2
   ParsingWake --> Parsed: parse_capture_to_items
   Parsed --> Linked: link_capture_phrase_to_task
   Linked --> Parsed: break_capture_link
-  Parsed --> Proposal: create_task_from_phrase
+  Parsed --> TaskCreated: create_task_from_phrase
   Parsed --> TaskMutated: apply_triage
   Parsed --> DraftedPlan: draft_day_plan
   DraftedPlan --> PatternCards: summarize_recent_patterns
   DraftedPlan --> RefineCaptured: enqueueRefineWake
   RefineCaptured --> PendingDiff: propose_plan_diff
-  PendingDiff --> DraftedPlan: accept_diff
-  PendingDiff --> DraftedPlan: revert_diff
+  PendingDiff --> PendingDiff: accept_diff(itemIndices)
+  PendingDiff --> PendingDiff: revert_diff(itemIndices)
+  PendingDiff --> DraftedPlan: all items resolved
 ```
 
 ## Testing Strategy

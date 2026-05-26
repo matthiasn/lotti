@@ -23,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tasks navigation no longer shows the global in-progress task count badge in
   the sidebar or bottom navigation; saved filters remain the focused way to
   monitor task subsets.
+- Daily OS Next day planning now lets you edit capture transcripts before
+  reconciliation, creates real tasks from new capture phrases, opens
+  task-backed agenda rows, rejects new same-day draft blocks that start in the
+  past, amends approved plans through per-change tracked diff approvals,
+  replaces the cramped capacity donut with a linear meter, uses real audio
+  transcription on the refine screen instead of a scripted sample diff, and
+  prefers Mistral cloud speech recognition over MLX when both are configured.
+- Gemini-backed speech recognition, Gemini 3 Flash-backed Daily OS day
+  planning, and Gemini 3 Flash-backed task-agent wakes now use low reasoning
+  for faster interactive turnaround while leaving the shared Gemini Flash model
+  configuration unchanged.
 - Agent batch lookups for latest per-agent reports and states now use ranked
   active-row indexes that avoid SQLite temp sorts during large project-agent
   wake context builds.
