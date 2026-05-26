@@ -102,6 +102,11 @@ void main() {
       when(
         () => realtimeService.resolveRealtimeConfig(),
       ).thenAnswer((_) async => null);
+      // `_cleanupSync` disposes the realtime service unconditionally so
+      // route teardown also tears down any active realtime session. The
+      // batch tests still hit it because the dispose call sits before
+      // the realtime/batch branching.
+      when(realtimeService.dispose).thenAnswer((_) async {});
 
       when(recorder.hasPermission).thenAnswer((_) async => true);
       when(
@@ -328,6 +333,7 @@ void main() {
       when(
         () => realtimeService.resolveRealtimeConfig(),
       ).thenAnswer((_) async => realtimeConfig);
+      when(realtimeService.dispose).thenAnswer((_) async {});
       when(
         () => realtimeService.amplitudeStream,
       ).thenAnswer((_) => realtimeAmpController.stream);

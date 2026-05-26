@@ -682,6 +682,11 @@ class CaptureController extends Notifier<CaptureState> {
         }(),
       );
     }
+    // Mirror `_cleanupRealtime`: tear down the active WebSocket / MLX
+    // session so route disposal and `reset()` don't leak the running
+    // transcription. The provider itself is keep-alive, so the service
+    // instance survives — only the in-flight session is torn down.
+    unawaited(_realtimeService.dispose());
     _recordingNote = null;
     _recordingStartedAt = null;
     _realtimeOutputBasePath = null;

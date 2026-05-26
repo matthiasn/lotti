@@ -210,6 +210,8 @@ class MockDayAgent implements DayAgentInterface {
     required List<String> decidedTaskIds,
     required DateTime dayDate,
     List<TimeBlock> calendarBlocks = const [],
+    // ignored: mock returns immediately, has no poll loop to cancel.
+    bool Function()? isCancelled,
   }) async {
     await Future<void>.delayed(draftLatency);
     final start = DateTime(dayDate.year, dayDate.month, dayDate.day);
@@ -381,9 +383,24 @@ class MockDayAgent implements DayAgentInterface {
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
     required String voiceTranscript,
+    // ignored: mock returns immediately, has no poll loop to cancel.
+    bool Function()? isCancelled,
   }) async {
     await Future<void>.delayed(draftLatency);
     _diffSeq++;
+
+    // No blocks → no meaningful scripted reshape; return an empty diff
+    // instead of crashing on `currentPlan.blocks.first`. The Refine
+    // controller treats an empty diff as immediately resolved, so the
+    // UI cleanly bounces back to idle.
+    if (currentPlan.blocks.isEmpty) {
+      return PlanDiff(
+        id: 'diff_$_diffSeq',
+        transcript: voiceTranscript,
+        changes: const [],
+        updatedPlan: currentPlan,
+      );
+    }
 
     // Find the deep-work block and slide it 30 minutes earlier; drop
     // the second-wind onboarding block; add a buffer at 4 pm. This is
@@ -488,6 +505,13 @@ class MockDayAgent implements DayAgentInterface {
     );
   }
 
+  // [itemIndices] is intentionally ignored here. The scripted mock has no
+  // "diff baseline" to splice individual changes against (the real
+  // adapter rebuilds plans from the persisted change set), so it returns
+  // the post-accept plan in full regardless of selection. Tests that
+  // need to assert partial-accept semantics override these methods on a
+  // local subclass (see `_RecordingRefineAgent` in
+  // refine_controller_test.dart).
   @override
   Future<DraftPlan> acceptDiff(
     PlanDiff diff, {

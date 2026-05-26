@@ -67,11 +67,17 @@ abstract class DayAgentInterface {
   /// Returns the placed blocks, the day's energy bands, and capacity
   /// metadata. Every block of [TimeBlockType.ai] carries a verbatim
   /// `reason` string — surfaced in the WhyChip popover.
+  ///
+  /// [isCancelled] lets long-running implementations (the real agent
+  /// polls the DB for up to a minute waiting for the drafting wake to
+  /// land a plan) abort cleanly when the calling controller has been
+  /// disposed. Callers typically wire this to `() => !ref.mounted`.
   Future<DraftPlan> draftDayPlan({
     required CaptureId captureId,
     required List<String> decidedTaskIds,
     required DateTime dayDate,
-    List<TimeBlock> calendarBlocks,
+    List<TimeBlock> calendarBlocks = const [],
+    bool Function()? isCancelled,
   });
 
   /// Tool: `summarize_recent_patterns`. Pulls a small set of learning
@@ -92,9 +98,14 @@ abstract class DayAgentInterface {
   /// In the real agent layer this is persisted as a
   /// `ChangeSetEntity` so it survives a refresh; the mock keeps it
   /// in-memory.
+  ///
+  /// [isCancelled] lets the polling loop in the real adapter exit
+  /// early when the calling controller has been disposed — same shape
+  /// as on [draftDayPlan].
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
     required String voiceTranscript,
+    bool Function()? isCancelled,
   });
 
   /// Tool: `accept_diff`. Commit the proposed [PlanDiff] — the

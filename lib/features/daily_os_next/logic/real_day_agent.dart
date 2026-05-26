@@ -188,6 +188,7 @@ class RealDayAgent implements DayAgentInterface {
     required List<String> decidedTaskIds,
     required DateTime dayDate,
     List<TimeBlock> calendarBlocks = const [],
+    bool Function()? isCancelled,
   }) async {
     final identity = await dayAgentService.getDayAgentForDate(dayDate);
     if (identity is! AgentIdentityEntity) {
@@ -220,7 +221,17 @@ class RealDayAgent implements DayAgentInterface {
 
     final deadline = clock.now().add(_draftTimeout);
     while (clock.now().isBefore(deadline)) {
+      if (isCancelled?.call() ?? false) {
+        throw const DayAgentInteractionException(
+          'draftDayPlan poll cancelled by caller',
+        );
+      }
       await Future<void>.delayed(_draftPollInterval);
+      if (isCancelled?.call() ?? false) {
+        throw const DayAgentInteractionException(
+          'draftDayPlan poll cancelled by caller',
+        );
+      }
       final current = await planService.draftPlanForDay(
         agentId: identity.agentId,
         dayId: dayId,
@@ -265,6 +276,7 @@ class RealDayAgent implements DayAgentInterface {
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
     required String voiceTranscript,
+    bool Function()? isCancelled,
   }) async {
     final identity = await dayAgentService.getDayAgentForDate(
       currentPlan.dayDate,
@@ -294,7 +306,17 @@ class RealDayAgent implements DayAgentInterface {
 
     final deadline = clock.now().add(_refineTimeout);
     while (clock.now().isBefore(deadline)) {
+      if (isCancelled?.call() ?? false) {
+        throw const DayAgentInteractionException(
+          'proposePlanDiff poll cancelled by caller',
+        );
+      }
       await Future<void>.delayed(_refinePollInterval);
+      if (isCancelled?.call() ?? false) {
+        throw const DayAgentInteractionException(
+          'proposePlanDiff poll cancelled by caller',
+        );
+      }
       final diffs = await planService.pendingPlanDiffsForDay(
         agentId: identity.agentId,
         dayId: dayId,
@@ -557,8 +579,15 @@ class RealDayAgent implements DayAgentInterface {
     final bands = [
       for (final band in entity.energyBands) _projectEnergyBand(band),
     ];
+    // Buffers are transitions, not work — counting them as scheduled
+    // workload inflates the capacity meter. Dropped blocks shouldn't
+    // contribute either, since the user explicitly removed them.
     final scheduledMinutes = blocks
-        .where((block) => block.state != TimeBlockState.dropped)
+        .where(
+          (block) =>
+              block.state != TimeBlockState.dropped &&
+              block.type != TimeBlockType.buffer,
+        )
         .fold<int>(0, (sum, block) => sum + block.duration.inMinutes);
     return DraftPlan(
       dayDate: dayDate,

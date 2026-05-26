@@ -84,8 +84,14 @@ class RefineController extends Notifier<RefineState> {
   final DraftPlan originalPlan;
   String _transcriptPrefix = '';
 
+  // Tracks Notifier disposal so the polling loop inside
+  // `RealDayAgent.proposePlanDiff` (up to 60s) cancels the moment the
+  // controller is torn down instead of continuing to query the DB.
+  bool _disposed = false;
+
   @override
   RefineState build() {
+    ref.onDispose(() => _disposed = true);
     return RefineState(
       phase: RefinePhase.idle,
       transcript: '',
@@ -211,6 +217,7 @@ class RefineController extends Notifier<RefineState> {
       diff = await agent.proposePlanDiff(
         currentPlan: baselinePlan,
         voiceTranscript: nextTranscript,
+        isCancelled: () => _disposed,
       );
     } catch (error, stackTrace) {
       FlutterError.reportError(
@@ -232,8 +239,14 @@ class RefineController extends Notifier<RefineState> {
       return;
     }
     if (!ref.mounted) return;
+    // An empty diff has nothing to resolve — `accept()` would short-circuit
+    // and `_allResolved()` would never report done, leaving the screen
+    // stuck on the "Accept / Revert" UI with no rows. Treat it as already
+    // accepted so the controller pops back like a successful refine.
     state = state.copyWith(
-      phase: RefinePhase.diffReady,
+      phase: diff.changes.isEmpty
+          ? RefinePhase.accepted
+          : RefinePhase.diffReady,
       transcript: nextTranscript,
       diff: diff,
       currentPlan: diff.updatedPlan,
@@ -329,7 +342,10 @@ class RefineController extends Notifier<RefineState> {
 
   bool _allResolved(Map<String, PlanDiffChangeDecision> decisions) {
     final diff = state.diff;
-    if (diff == null || diff.changes.isEmpty) return false;
+    if (diff == null) return false;
+    // An empty diff has nothing left to act on — treat it as resolved so
+    // callers don't get stuck waiting for a final accept that never comes.
+    if (diff.changes.isEmpty) return true;
     return diff.changes.every(
       (change) => decisions[change.id] != PlanDiffChangeDecision.pending,
     );

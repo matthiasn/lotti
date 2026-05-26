@@ -93,16 +93,30 @@ class DraftingController extends AsyncNotifier<DraftingState> {
   Future<DraftingState> build() async {
     final agent = ref.read(dayAgentProvider);
 
+    // Track disposal locally so the polling loop in
+    // `RealDayAgent.draftDayPlan` (up to 60s) exits the instant the
+    // controller goes away instead of continuing to query the DB.
+    var disposed = false;
+    ref.onDispose(() => disposed = true);
+
     final learningsFuture = agent.summarizeRecentPatterns(asOf: params.dayDate);
     final draftFuture = agent.draftDayPlan(
       captureId: params.captureId,
       decidedTaskIds: params.decidedTaskIds,
       dayDate: params.dayDate,
+      isCancelled: () => disposed,
     );
 
-    // Wait for learning cards so the right column has content from
-    // the first frame the user sees.
-    final learnings = await learningsFuture;
+    // Learning-card failures shouldn't block the draft — render an
+    // empty card list and keep going. The real adapter already returns
+    // `[]` for the "no day agent" case; this guard covers transient
+    // backend failures (network blip, model error).
+    List<LearningCard> learnings;
+    try {
+      learnings = await learningsFuture;
+    } catch (_) {
+      learnings = const [];
+    }
 
     // The draft resolves lazily — fire-and-forget the listener that
     // flips the phase to ready once it lands.

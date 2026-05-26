@@ -211,6 +211,7 @@ class _RecordingRefineAgent extends MockDayAgent {
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
     required String voiceTranscript,
+    bool Function()? isCancelled,
   }) async {
     final block = currentPlan.blocks.first;
     return PlanDiff(
@@ -279,6 +280,7 @@ class _ThrowingRefineAgent extends MockDayAgent {
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
     required String voiceTranscript,
+    bool Function()? isCancelled,
   }) async {
     throw StateError('refine rejected');
   }
