@@ -540,6 +540,151 @@ void main() {
       },
     );
 
+    testWidgets(
+      'transcribing phase renders the spinner instead of the waveform',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  const CaptureState(
+                    phase: CapturePhase.transcribing,
+                    transcript: '',
+                    amplitudes: [],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextCaptureListening),
+          findsOneWidget,
+        );
+        expect(find.byType(LiveWaveform), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'error phase surfaces the controller errorMessage',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  const CaptureState(
+                    phase: CapturePhase.error,
+                    transcript: '',
+                    amplitudes: [],
+                    errorMessage: 'mic permission denied',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('mic permission denied'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'error phase with null message falls back to the idle hint',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  const CaptureState(
+                    phase: CapturePhase.error,
+                    transcript: '',
+                    amplitudes: [],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextCaptureIdleHint),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'listening phase with a partial transcript shows the live preview text',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  const CaptureState(
+                    phase: CapturePhase.listening,
+                    transcript: '',
+                    amplitudes: [0.2, 0.4, 0.6],
+                    partialTranscript: 'streaming words',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(LiveWaveform), findsOneWidget);
+        expect(find.text('streaming words'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'captured phase with whitespace-only transcript disables the Reconcile CTA',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  const CaptureState(
+                    phase: CapturePhase.captured,
+                    transcript: '   ',
+                    amplitudes: [],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        final button = tester.widget<FilledButton>(
+          find.ancestor(
+            of: find.text(messages.dailyOsNextCaptureReconcileCta),
+            matching: find.byType(FilledButton),
+          ),
+        );
+        expect(button.onPressed, isNull);
+      },
+    );
+
     testWidgets('submits captures against the selected planning date', (
       tester,
     ) async {
@@ -666,3 +811,19 @@ class _AudioHarness {
     await ampController.close();
   }
 }
+
+/// CaptureController override that emits a pre-baked [CaptureState] so
+/// page tests can render phase-specific UI without driving the recorder.
+class _StubCaptureController extends CaptureController {
+  _StubCaptureController(this._initial);
+
+  final CaptureState _initial;
+
+  static CaptureController Function() factory(CaptureState state) =>
+      () => _StubCaptureController(state);
+
+  @override
+  CaptureState build() => _initial;
+}
+
+

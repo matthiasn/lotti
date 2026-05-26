@@ -181,6 +181,47 @@ void main() {
     );
 
     testWidgets(
+      'tapping the date label opens showDatePicker; cancelling keeps selection',
+      (tester) async {
+        final realtimeService = MockRealtimeTranscriptionService();
+        when(
+          realtimeService.resolveRealtimeConfig,
+        ).thenAnswer((_) async => null);
+        when(realtimeService.dispose).thenAnswer((_) async {});
+
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(realtimeService: realtimeService),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.text('Today'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 200));
+          await tester.pump(const Duration(milliseconds: 200));
+
+          final material = MaterialLocalizations.of(
+            tester.element(find.byType(DailyOsNextRoot)),
+          );
+          await tester.tap(find.text(material.cancelButtonLabel));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 200));
+
+          expect(find.text('Today'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets(
       'long-pressing the date label returns selection to today',
       (tester) async {
         final realtimeService = MockRealtimeTranscriptionService();

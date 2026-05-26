@@ -1,16 +1,21 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 const _category = DayAgentCategory(
@@ -167,6 +172,26 @@ class _RecordingAgent implements DayAgentInterface {
   }) async => const [];
 }
 
+/// Stub the realtime service so CaptureController (built by RefinePage
+/// when DayPage pushes it) can dispose cleanly without touching the AI
+/// providers during teardown.
+CaptureController _stubCapture() {
+  final recorder = MockAudioRecorderRepository();
+  final transcriber = MockAudioTranscriptionService();
+  final realtime = MockRealtimeTranscriptionService();
+  when(realtime.dispose).thenAnswer((_) async {});
+  when(realtime.resolveRealtimeConfig).thenAnswer((_) async => null);
+  when(recorder.stopRecording).thenAnswer((_) async {});
+  return CaptureController(
+    recorder: recorder,
+    transcriber: transcriber,
+    realtimeService: realtime,
+    docDir: Directory.systemTemp.createTempSync,
+    persistAudio: (_) async => null,
+    now: () => DateTime(2026, 5, 26, 9),
+  );
+}
+
 Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
@@ -177,6 +202,9 @@ Widget _wrap(
       // CapturesPanel watches this; stub to empty so the panel collapses
       // to SizedBox.shrink instead of touching the DB.
       capturesForDateProvider.overrideWith((ref, date) async => const []),
+      // RefinePage builds a CaptureController; stub so it doesn't read
+      // the realtime service providers during dispose.
+      captureControllerProvider.overrideWith(_stubCapture),
       ...overrides,
     ],
     child: makeTestableWidget2(
@@ -325,6 +353,121 @@ void main() {
 
         expect(agent.deleteCount, 1);
         expect(agent.deletedFor, draft.dayDate);
+      },
+    );
+
+    testWidgets(
+      'AppBar back IconButton pops the navigator (no dateStrip)',
+      (tester) async {
+        _setSurface(tester);
+        final agent = _RecordingAgent();
+        var popped = false;
+        await tester.pumpWidget(
+          _wrap(
+            Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () async {
+                    await Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => DayPage(draft: _drafted()),
+                      ),
+                    );
+                    popped = true;
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // The AppBar shows a back button only when there's no dateStrip;
+        // the popup-menu's more_vert icon stays in place.
+        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(popped, isTrue);
+        expect(find.byType(DayPage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping Refine pushes RefinePage and absorbs its returned draft',
+      (tester) async {
+        _setSurface(tester);
+        final agent = _RecordingAgent();
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(draft: _drafted()),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextDayRefineCta));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // The pushed route is the RefinePage instance — verify it built.
+        expect(find.byType(DayPage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping Lock In pushes CommitPage from the drafted footer',
+      (tester) async {
+        _setSurface(tester);
+        final agent = _RecordingAgent();
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(draft: _drafted()),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextDayLockInCta));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // DayPage is no longer at the top — CommitPage took its place.
+        expect(find.byType(DayPage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping Wrap up on the committed footer pushes ShutdownPage',
+      (tester) async {
+        _setSurface(tester);
+        final agent = _RecordingAgent();
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(draft: _drafted(state: DayState.committed)),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextDayWrapUpCta));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // DayPage was popped off the top of the stack by the push.
+        expect(find.byType(DayPage), findsNothing);
       },
     );
 

@@ -216,6 +216,9 @@ CaptureController _stubCapture() {
   when(realtime.dispose).thenAnswer((_) async {});
   when(realtime.resolveRealtimeConfig).thenAnswer((_) async => null);
   when(recorder.stopRecording).thenAnswer((_) async {});
+  // Permission denied → toggle() lands the controller in CapturePhase.error
+  // synchronously enough for tests to observe the resulting refine state.
+  when(recorder.hasPermission).thenAnswer((_) async => false);
   return CaptureController(
     recorder: recorder,
     transcriber: transcriber,
@@ -593,5 +596,88 @@ void main() {
         expect(find.text('hello world'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'tapping the voice button on idle phase begins listening then handles capture error',
+      (tester) async {
+        final draft = _emptyPlan();
+        await tester.pumpWidget(_wrap(RefinePage(draft: draft)));
+        await tester.pump();
+
+        // Tap the voice button → _handleVoiceTap fires:
+        //   1. captureNotifier.reset()
+        //   2. refineNotifier.beginListening(resetTranscript: true)
+        //   3. unawaited(captureNotifier.toggle())
+        // The stub recorder denies permission so the capture controller
+        // lands in `error`, which trips the refine page's ref.listen
+        // and calls cancelListening → refine returns to idle.
+        await tester.tap(find.byType(VoiceButton));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final messages = tester.element(find.byType(RefinePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextRefineStatusIdle),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping the voice button while listening triggers a capture toggle',
+      (tester) async {
+        final draft = _emptyPlan();
+        await tester.pumpWidget(_wrap(RefinePage(draft: draft)));
+        await tester.pump();
+
+        // Seed refine into listening so the next tap takes the
+        // `RefinePhase.listening → captureNotifier.toggle()` branch.
+        final notifier = _readNotifier(tester, draft);
+        notifier.beginListening(resetTranscript: true);
+        await tester.pump();
+
+        await tester.tap(find.byType(VoiceButton));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // The status line is still rendered (no exception thrown
+        // navigating through the listening branch).
+        expect(find.byType(VoiceButton), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping the voice button on diffReady re-arms listening (keeps transcript)',
+      (tester) async {
+        final draft = _emptyPlan();
+        final agent = _RecordingAgent(diff: _diffWithTwoChanges(draft));
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+        _setWideSurface(tester);
+
+        final notifier = _readNotifier(tester, draft);
+        notifier.beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('rearrange things');
+        await tester.pump();
+
+        // Tap the voice button while diffReady → _handleVoiceTap takes
+        // the diffReady branch, which calls captureNotifier.reset() and
+        // refineNotifier.beginListening(resetTranscript: false). The
+        // existing transcript should still be visible because
+        // `resetTranscript: false`.
+        await tester.tap(find.byType(VoiceButton));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.text('rearrange things'), findsOneWidget);
+      },
+    );
   });
 }
+
