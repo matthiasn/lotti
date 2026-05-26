@@ -3095,6 +3095,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextCaptureReconcileCta => 'Reconcile';
 
   @override
+  String get dailyOsNextCaptureTranscriptHint =>
+      'Fix anything the transcript got wrong before planning.';
+
+  @override
+  String get dailyOsNextCaptureTranscriptLabel => 'Review transcript';
+
+  @override
   String get dailyOsNextCaptureVoiceButtonReset => 'Start over';
 
   @override
@@ -3217,6 +3224,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String dailyOsNextReconcileError(String detail) {
     return 'Something went wrong: $detail';
   }
+
+  @override
+  String get dailyOsNextReconcileHeardEmpty =>
+      'Capture cards will appear here once parsing finishes.';
 
   @override
   String get dailyOsNextReconcileHeardOverline => 'HERE\'S WHAT I HEARD';

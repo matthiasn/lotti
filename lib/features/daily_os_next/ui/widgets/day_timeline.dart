@@ -264,13 +264,10 @@ class _EnergyBandBox extends StatelessWidget {
     final top = band.start.difference(windowStart).inMinutes * pxPerMinute;
     final height = band.end.difference(band.start).inMinutes * pxPerMinute;
 
-    final (color, label) = switch (band.level) {
-      EnergyLevel.high => (tokens.colors.interactive.enabled, band.label),
-      EnergyLevel.low => (tokens.colors.text.lowEmphasis, band.label),
-      EnergyLevel.secondWind => (
-        tokens.colors.alert.info.defaultColor,
-        band.label,
-      ),
+    final color = switch (band.level) {
+      EnergyLevel.high => tokens.colors.interactive.enabled,
+      EnergyLevel.low => tokens.colors.text.lowEmphasis,
+      EnergyLevel.secondWind => tokens.colors.alert.info.defaultColor,
     };
 
     return Positioned(
@@ -279,26 +276,17 @@ class _EnergyBandBox extends StatelessWidget {
       right: 4,
       height: height,
       child: IgnorePointer(
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                color.withValues(alpha: 0.08),
-                color.withValues(alpha: 0.02),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-          ),
-          padding: EdgeInsets.only(
-            left: tokens.spacing.step3,
-            top: tokens.spacing.step1,
-          ),
-          alignment: Alignment.topLeft,
-          child: Text(
-            label,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: color,
-              fontSize: 10,
+        child: Semantics(
+          label: band.label,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withValues(alpha: 0.08),
+                  color.withValues(alpha: 0.02),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(tokens.radii.m),
             ),
           ),
         ),

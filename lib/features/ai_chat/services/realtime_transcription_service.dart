@@ -140,9 +140,10 @@ class RealtimeTranscriptionService {
   Future<void> startRealtimeTranscription({
     required Stream<Uint8List> pcmStream,
     required void Function(String delta) onDelta,
+    ({AiConfigInferenceProvider provider, AiConfigModel model})? config,
   }) async {
-    final config = await resolveRealtimeConfig();
-    if (config == null) {
+    final resolvedConfig = config ?? await resolveRealtimeConfig();
+    if (resolvedConfig == null) {
       throw StateError('No realtime transcription model configured');
     }
 
@@ -152,10 +153,10 @@ class RealtimeTranscriptionService {
     _detectedLanguage = null;
     _lastMlxConfirmedText = '';
 
-    if (config.provider.inferenceProviderType ==
+    if (resolvedConfig.provider.inferenceProviderType ==
         InferenceProviderType.mlxAudio) {
       await _startMlxRealtimeTranscription(
-        config: config,
+        config: resolvedConfig,
         pcmStream: pcmStream,
         onDelta: onDelta,
       );
@@ -163,9 +164,9 @@ class RealtimeTranscriptionService {
     }
 
     await _repository.connect(
-      apiKey: config.provider.apiKey,
-      baseUrl: config.provider.baseUrl,
-      model: config.model.providerModelId,
+      apiKey: resolvedConfig.provider.apiKey,
+      baseUrl: resolvedConfig.provider.baseUrl,
+      model: resolvedConfig.model.providerModelId,
     );
 
     // Subscribe to PCM stream: send to WebSocket + accumulate + compute dBFS
@@ -256,7 +257,7 @@ class RealtimeTranscriptionService {
       // 4. Wait for transcription.done — timeout starts here so the full
       //    budget applies to waiting for the server, not recorder shutdown.
       final done = await doneCompleter.future.timeout(_doneTimeout);
-      transcript = done.text;
+      transcript = _moreCompleteTranscript(done.text, _deltaBuffer.toString());
     } on TimeoutException {
       // Read delta buffer *after* the timeout so any late-arriving deltas
       // (from audio already in-flight when we cancelled the PCM subscription)
@@ -404,7 +405,7 @@ class RealtimeTranscriptionService {
       await _mlxAudioChannel.stopRealtimeTranscription();
 
       final done = await doneCompleter.future.timeout(_doneTimeout);
-      transcript = done.text;
+      transcript = _moreCompleteTranscript(done.text, _deltaBuffer.toString());
     } on TimeoutException {
       transcript = _deltaBuffer.toString();
       usedFallback = true;
@@ -452,6 +453,15 @@ class RealtimeTranscriptionService {
     if (delta.isEmpty) return;
     _deltaBuffer.write(delta);
     onDelta(delta);
+  }
+
+  String _moreCompleteTranscript(String finalText, String accumulatedText) {
+    final trimmedFinal = finalText.trim();
+    final trimmedAccumulated = accumulatedText.trim();
+    if (trimmedAccumulated.length > trimmedFinal.length) {
+      return accumulatedText;
+    }
+    return finalText;
   }
 
   String _confirmedTextDelta({

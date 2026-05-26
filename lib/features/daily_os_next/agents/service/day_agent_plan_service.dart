@@ -686,16 +686,24 @@ class DayAgentPlanService {
       );
     }
 
+    final now = clock.now();
+    final earliestDraftStart = localDay(planDate) == localDay(now) ? now : null;
     final allowedCategoryIds = identity.allowedCategoryIds;
     final decidedTasks = decidedTaskIds.toSet();
+    final allowedExistingTaskIds = await _allowedExistingTaskIds(
+      rawBlocks,
+      allowedCategoryIds,
+    );
     final blocks = <PlannedBlock>[];
     for (final raw in rawBlocks) {
       blocks.add(
         _parsePlannedBlock(
           raw: raw,
           day: planDate,
+          earliestDraftStart: earliestDraftStart,
           allowedCategoryIds: allowedCategoryIds,
           decidedTaskIds: decidedTasks,
+          allowedExistingTaskIds: allowedExistingTaskIds,
         ),
       );
     }
@@ -719,7 +727,6 @@ class DayAgentPlanService {
       (sum, block) => sum + block.duration.inMinutes,
     );
     final pinnedTasks = _pinnedTasksFor(blocks);
-    final now = clock.now();
     final existing = await draftPlanForDay(agentId: agentId, dayId: dayId);
     final plan =
         AgentDomainEntity.dayPlan(
@@ -1067,6 +1074,8 @@ class DayAgentPlanService {
     required DateTime day,
     required Set<String> allowedCategoryIds,
     required Set<String> decidedTaskIds,
+    required Set<String> allowedExistingTaskIds,
+    DateTime? earliestDraftStart,
   }) {
     if (raw is! Map) {
       throw const DayAgentCaptureException('block must be an object');
@@ -1090,11 +1099,22 @@ class DayAgentPlanService {
     if (!end.isAfter(start)) {
       throw const DayAgentCaptureException('block end must be after start');
     }
+    final blockState = state ?? PlannedBlockState.drafted;
     final dayStart = localDay(day);
     final dayEnd = dayStart.add(const Duration(days: 1));
     if (start.isBefore(dayStart) || end.isAfter(dayEnd)) {
       throw const DayAgentCaptureException(
         'blocks must stay within the planDate day',
+      );
+    }
+    if (earliestDraftStart != null &&
+        blockState == PlannedBlockState.drafted &&
+        (blockType == PlannedBlockType.ai ||
+            blockType == PlannedBlockType.manual) &&
+        start.isBefore(earliestDraftStart)) {
+      throw const DayAgentCaptureException(
+        'drafted AI/manual blocks for today must not start before '
+        'current time',
       );
     }
     final reason = _optionalString(data['reason']);
@@ -1106,7 +1126,8 @@ class DayAgentPlanService {
     final taskId = _optionalString(data['taskId']);
     if (taskId != null &&
         decidedTaskIds.isNotEmpty &&
-        !decidedTaskIds.contains(taskId)) {
+        !decidedTaskIds.contains(taskId) &&
+        !allowedExistingTaskIds.contains(taskId)) {
       throw DayAgentCaptureException(
         'taskId $taskId was not included in decidedTaskIds',
       );
@@ -1120,9 +1141,36 @@ class DayAgentPlanService {
       taskId: taskId,
       title: _requiredString(data, 'title'),
       type: blockType,
-      state: state ?? PlannedBlockState.drafted,
+      state: blockState,
       reason: reason,
     );
+  }
+
+  Future<Set<String>> _allowedExistingTaskIds(
+    List<Object?> rawBlocks,
+    Set<String> allowedCategoryIds,
+  ) async {
+    final referenced = <String>{};
+    for (final raw in rawBlocks) {
+      if (raw is! Map) continue;
+      final taskId = _optionalString(raw['taskId']);
+      if (taskId != null) referenced.add(taskId);
+    }
+    if (referenced.isEmpty) return const <String>{};
+
+    final entities = await journalDb.journalEntityMapForIds(
+      referenced.toList(),
+    );
+    return {
+      for (final entry in entities.entries)
+        if (entry.value is Task &&
+            (entry.value as Task).meta.deletedAt == null &&
+            _categoryAllowed(
+              (entry.value as Task).meta.categoryId,
+              allowedCategoryIds,
+            ))
+          entry.key,
+    };
   }
 
   static DayAgentEnergyBand _parseEnergyBand({

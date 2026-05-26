@@ -73,7 +73,7 @@ Widget _wrap(Widget child) {
 
 void main() {
   group('DayTimeline', () {
-    testWidgets('renders each block from the draft and an energy band label', (
+    testWidgets('renders each block from the draft without band label text', (
       tester,
     ) async {
       tester.view
@@ -95,8 +95,7 @@ void main() {
       expect(find.text('Deep work'), findsOneWidget);
       expect(find.text('Buffer'), findsOneWidget);
       expect(find.text('Team sync'), findsOneWidget);
-      // Energy band overline.
-      expect(find.text('HIGH ENERGY'), findsOneWidget);
+      expect(find.text('HIGH ENERGY'), findsNothing);
     });
 
     testWidgets('AI blocks render a WhyChip; cal and buffer blocks do not', (

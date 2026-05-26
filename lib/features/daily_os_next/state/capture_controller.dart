@@ -215,6 +215,12 @@ class CaptureController extends Notifier<CaptureState> {
     state = const CaptureState.idle();
   }
 
+  /// Edits the final transcript before it is handed to Reconcile.
+  void updateTranscript(String transcript) {
+    if (state.phase != CapturePhase.captured) return;
+    state = state.copyWith(transcript: transcript);
+  }
+
   Future<void> _beginListening() async {
     // Dev/exploration: prefer Mistral cloud realtime for smoother UX.
     // Falls back to MLX automatically when Mistral isn't configured.
@@ -303,6 +309,7 @@ class CaptureController extends Notifier<CaptureState> {
       await _realtimeService.startRealtimeTranscription(
         pcmStream: pcmStream,
         onDelta: _onRealtimeDelta,
+        config: _activeRealtimeConfig,
       );
     } catch (e) {
       await _cleanupRealtime(disposeRecorder: true);
@@ -444,7 +451,11 @@ class CaptureController extends Notifier<CaptureState> {
       // Persistence is best-effort — surface the transcript anyway.
     }
 
-    final finalTranscript = result.transcript.trim();
+    final realtimeTranscript = result.transcript.trim();
+    final finalTranscript = await _resolveRealtimeFinalTranscript(
+      result: result,
+      realtimeTranscript: realtimeTranscript,
+    );
     if (journalAudio != null && finalTranscript.isNotEmpty) {
       final config = _activeRealtimeConfig;
       await _attachTranscriptToJournalAudio(
@@ -473,6 +484,38 @@ class CaptureController extends Notifier<CaptureState> {
       amplitudes: const <double>[],
       audioId: journalAudio?.meta.id,
     );
+  }
+
+  Future<String> _resolveRealtimeFinalTranscript({
+    required RealtimeStopResult result,
+    required String realtimeTranscript,
+  }) async {
+    final audioFilePath = result.audioFilePath;
+    if (audioFilePath == null || audioFilePath.isEmpty) {
+      return realtimeTranscript;
+    }
+
+    try {
+      final batchTranscript = (await _transcriber.transcribe(
+        audioFilePath,
+      )).trim();
+      if (batchTranscript.isEmpty) return realtimeTranscript;
+      if (realtimeTranscript.isEmpty || result.usedTranscriptFallback) {
+        return batchTranscript;
+      }
+
+      // Realtime `done` can occasionally be shorter than the spoken capture.
+      // Keep realtime when it agrees, but let full-file transcription repair
+      // obvious truncation before the user reaches the editable transcript.
+      if (batchTranscript.length > realtimeTranscript.length + 8) {
+        return batchTranscript;
+      }
+    } catch (_) {
+      // Final verification is best-effort. Realtime still gives the user an
+      // editable transcript if the batch transcriber is unavailable.
+    }
+
+    return realtimeTranscript;
   }
 
   Future<void> _finishListeningBatch() async {

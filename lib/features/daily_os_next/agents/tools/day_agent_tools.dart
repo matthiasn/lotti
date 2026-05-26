@@ -216,8 +216,8 @@ const dayAgentTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: DayAgentToolNames.createTaskFromPhrase,
     description:
-        'Propose a new task from a capture phrase. This creates a pending '
-        'change set; it does not directly create the task.',
+        'Create a real task from a capture phrase and return the new taskId. '
+        'When captureItemId is supplied, the parsed item is linked to it.',
     parameters: {
       'type': 'object',
       'properties': {

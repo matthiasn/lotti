@@ -14,16 +14,29 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// Mirrors `prototype/screens/reconcile.jsx`. Two-column on wide
 /// surfaces, single-column on narrow.
 class ReconcilePage extends ConsumerWidget {
-  const ReconcilePage({required this.captureId, super.key});
+  const ReconcilePage({
+    required this.captureId,
+    this.dayDate,
+    super.key,
+  });
 
   /// The capture submitted from the Capture screen. The controller
   /// uses it to fetch the parsed items.
   final CaptureId captureId;
 
+  /// The local calendar day being planned. Defaults to today for
+  /// direct preview/tests, but production capture flows pass the
+  /// route-level selected date.
+  final DateTime? dayDate;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final state = ref.watch(reconcileControllerProvider(captureId));
+    final params = ReconcileParams(
+      captureId: captureId,
+      dayDate: dayDate ?? DateTime.now(),
+    );
+    final state = ref.watch(reconcileControllerProvider(params));
 
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
@@ -48,7 +61,7 @@ class ReconcilePage extends ConsumerWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          data: (data) => _ReconcileBody(captureId: captureId, data: data),
+          data: (data) => _ReconcileBody(params: params, data: data),
         ),
       ),
     );
@@ -56,9 +69,9 @@ class ReconcilePage extends ConsumerWidget {
 }
 
 class _ReconcileBody extends ConsumerWidget {
-  const _ReconcileBody({required this.captureId, required this.data});
+  const _ReconcileBody({required this.params, required this.data});
 
-  final CaptureId captureId;
+  final ReconcileParams params;
   final ReconcileData data;
 
   @override
@@ -66,9 +79,9 @@ class _ReconcileBody extends ConsumerWidget {
     final tokens = context.designTokens;
     final isWide = MediaQuery.sizeOf(context).width >= 720;
 
-    final heardColumn = _HeardColumn(captureId: captureId, items: data.parsed);
+    final heardColumn = _HeardColumn(params: params, items: data.parsed);
     final decideColumn = _DecideColumn(
-      captureId: captureId,
+      params: params,
       items: data.pending,
     );
 
@@ -99,16 +112,16 @@ class _ReconcileBody extends ConsumerWidget {
                   ),
           ),
         ),
-        _ReconcileFooter(captureId: captureId, data: data),
+        _ReconcileFooter(params: params, data: data),
       ],
     );
   }
 }
 
 class _HeardColumn extends ConsumerWidget {
-  const _HeardColumn({required this.captureId, required this.items});
+  const _HeardColumn({required this.params, required this.items});
 
-  final CaptureId captureId;
+  final ReconcileParams params;
   final List<ParsedItem> items;
 
   @override
@@ -122,11 +135,26 @@ class _HeardColumn extends ConsumerWidget {
           count: items.length,
         ),
         SizedBox(height: tokens.spacing.step4),
+        if (items.isEmpty)
+          DottedBorder(
+            color: tokens.colors.decorative.level02,
+            radius: tokens.radii.m,
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.step4),
+              child: Text(
+                context.messages.dailyOsNextReconcileHeardEmpty,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
         for (final item in items) ...[
           ParsedCard(
             item: item,
             onBreakLink: () => ref
-                .read(reconcileControllerProvider(captureId).notifier)
+                .read(reconcileControllerProvider(params).notifier)
                 .breakLink(item.id),
           ),
           SizedBox(height: tokens.spacing.step4),
@@ -137,17 +165,17 @@ class _HeardColumn extends ConsumerWidget {
 }
 
 class _DecideColumn extends ConsumerWidget {
-  const _DecideColumn({required this.captureId, required this.items});
+  const _DecideColumn({required this.params, required this.items});
 
-  final CaptureId captureId;
+  final ReconcileParams params;
   final List<PendingItem> items;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final notifier = ref.read(reconcileControllerProvider(captureId).notifier);
+    final notifier = ref.read(reconcileControllerProvider(params).notifier);
     final decided = ref.watch(
-      reconcileControllerProvider(captureId).select(
+      reconcileControllerProvider(params).select(
         (asyncValue) => asyncValue.maybeWhen(
           data: (data) => data.triageDecisions,
           orElse: () => const <String, TriageResult>{},
@@ -241,9 +269,9 @@ class _DefaultBehaviorHint extends StatelessWidget {
 }
 
 class _ReconcileFooter extends StatelessWidget {
-  const _ReconcileFooter({required this.captureId, required this.data});
+  const _ReconcileFooter({required this.params, required this.data});
 
-  final CaptureId captureId;
+  final ReconcileParams params;
   final ReconcileData data;
 
   /// Task ids the user has effectively committed to taking on today —
@@ -312,9 +340,10 @@ class _ReconcileFooter extends StatelessWidget {
               Navigator.of(context).push<void>(
                 MaterialPageRoute<void>(
                   builder: (_) => DraftingPage(
-                    captureId: captureId,
+                    captureId: params.captureId,
                     decidedTaskIds: _committedTaskIds(),
-                    dayDate: DateTime.now(),
+                    dayDate: params.dayDate,
+                    returnToRootOnReady: true,
                   ),
                 ),
               );
@@ -345,7 +374,7 @@ class _ReconcileFooter extends StatelessWidget {
   }
 }
 
-/// Simple dashed border decoration — used for the footer hint card.
+/// Simple dashed border decoration — used for secondary hint cards.
 /// Inlined here rather than introducing a dependency on a 3rd-party
 /// package. Strokes follow the design system decorative level.
 class DottedBorder extends StatelessWidget {

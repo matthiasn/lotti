@@ -25,6 +25,7 @@ import '../../../../widget_test_utils.dart';
 class _RecordingAgent implements DayAgentInterface {
   String? capturedTranscript;
   String? capturedAudioId;
+  DateTime? capturedAt;
   int submitCount = 0;
 
   @override
@@ -35,6 +36,7 @@ class _RecordingAgent implements DayAgentInterface {
   }) async {
     capturedTranscript = transcript;
     capturedAudioId = audioId;
+    this.capturedAt = capturedAt;
     submitCount++;
     return const CaptureId('cap_recorded');
   }
@@ -211,7 +213,7 @@ void main() {
     });
 
     testWidgets(
-      'after capture, the Reconcile CTA submits transcript + audioId',
+      'after capture, the Reconcile CTA submits edited transcript + audioId',
       (tester) async {
         final agent = _RecordingAgent();
         final harness = _AudioHarness(transcript: 'hi there')..arm();
@@ -242,6 +244,16 @@ void main() {
         final context = tester.element(find.byType(CapturePage));
         final messages = context.messages;
         expect(find.text(messages.dailyOsNextCaptureCaptured), findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextCaptureTranscriptLabel),
+          findsOneWidget,
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('daily_os_capture_transcript_editor')),
+          'complete client animation',
+        );
+        await tester.pump();
 
         final ctaFinder = find.text(messages.dailyOsNextCaptureReconcileCta);
         expect(ctaFinder, findsOneWidget);
@@ -251,12 +263,57 @@ void main() {
         await tester.pump();
 
         expect(agent.submitCount, 1);
-        expect(agent.capturedTranscript, 'hi there');
+        expect(agent.capturedTranscript, 'complete client animation');
         expect(agent.capturedAudioId, 'audio_001');
 
         await harness.dispose();
       },
     );
+
+    testWidgets('submits captures against the selected planning date', (
+      tester,
+    ) async {
+      final agent = _RecordingAgent();
+      final harness = _AudioHarness(transcript: 'plan tomorrow')..arm();
+      await tester.pumpWidget(
+        _wrap(
+          CapturePage(forDate: DateTime(2026, 5, 27)),
+          overrides: [
+            dayAgentProvider.overrideWithValue(agent),
+            captureControllerProvider.overrideWith(harness.controllerFactory),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(VoiceButton));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump();
+      await tester.tap(find.byType(VoiceButton));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump();
+
+      final ctaFinder = find.text(
+        tester
+            .element(find.byType(CapturePage))
+            .messages
+            .dailyOsNextCaptureReconcileCta,
+      );
+      await tester.ensureVisible(ctaFinder);
+      await tester.tap(ctaFinder, warnIfMissed: false);
+      await tester.pump();
+
+      expect(agent.submitCount, 1);
+      expect(agent.capturedAt?.year, 2026);
+      expect(agent.capturedAt?.month, 5);
+      expect(agent.capturedAt?.day, 27);
+
+      await harness.dispose();
+    });
   });
 }
 

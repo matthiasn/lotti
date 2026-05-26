@@ -3137,6 +3137,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureReconcileCta => 'Sjednotit';
 
   @override
+  String get dailyOsNextCaptureTranscriptHint =>
+      'Oprav cokoli, co přepis spletl, než začne plánování.';
+
+  @override
+  String get dailyOsNextCaptureTranscriptLabel => 'Zkontroluj přepis';
+
+  @override
   String get dailyOsNextCaptureVoiceButtonReset => 'Začít znovu';
 
   @override
@@ -3259,6 +3266,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String dailyOsNextReconcileError(String detail) {
     return 'Něco se pokazilo: $detail';
   }
+
+  @override
+  String get dailyOsNextReconcileHeardEmpty =>
+      'Karty ze záznamu se tu objeví, jakmile skončí parsování.';
 
   @override
   String get dailyOsNextReconcileHeardOverline => 'TADY JE, CO JSEM SLYŠEL';

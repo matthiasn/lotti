@@ -1546,6 +1546,8 @@
   "dailyOsNextCaptureListening": "HÖRE ZU",
   "dailyOsNextCaptureOpenTasks": "Aufgaben durchsuchen",
   "dailyOsNextCaptureReconcileCta": "Abgleichen",
+  "dailyOsNextCaptureTranscriptHint": "Korrigiere alles, was der Text falsch erkannt hat, bevor du planst.",
+  "dailyOsNextCaptureTranscriptLabel": "Transkript prüfen",
   "dailyOsNextCaptureVoiceButtonReset": "Von vorne beginnen",
   "dailyOsNextCaptureVoiceButtonStart": "Aufnahme starten",
   "dailyOsNextCaptureVoiceButtonStop": "Aufnahme stoppen",
@@ -1612,6 +1614,7 @@
       }
     }
   },
+  "dailyOsNextReconcileHeardEmpty": "Erfasste Karten erscheinen hier, sobald das Parsen fertig ist.",
   "dailyOsNextReconcileHeardOverline": "DAS HABE ICH GEHÖRT",
   "dailyOsNextReconcileLowConfidence": "geringe Sicherheit",
   "dailyOsNextReconcileReRecord": "Neu aufnehmen",

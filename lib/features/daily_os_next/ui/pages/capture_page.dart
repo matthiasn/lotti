@@ -276,11 +276,7 @@ class _StateRow extends StatelessWidget {
               ),
             ),
             SizedBox(height: tokens.spacing.step3),
-            _TranscriptText(
-              text: state.transcript,
-              italic: false,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
+            _TranscriptEditor(transcript: state.transcript),
           ],
         );
       case CapturePhase.error:
@@ -292,6 +288,44 @@ class _StateRow extends StatelessWidget {
           ),
         );
     }
+  }
+}
+
+class _TranscriptEditor extends ConsumerWidget {
+  const _TranscriptEditor({required this.transcript});
+
+  final String transcript;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    return TextFormField(
+      key: const Key('daily_os_capture_transcript_editor'),
+      initialValue: transcript,
+      minLines: 3,
+      maxLines: 5,
+      textInputAction: TextInputAction.newline,
+      style: tokens.typography.styles.body.bodyMedium.copyWith(
+        color: tokens.colors.text.highEmphasis,
+      ),
+      decoration: InputDecoration(
+        labelText: context.messages.dailyOsNextCaptureTranscriptLabel,
+        hintText: context.messages.dailyOsNextCaptureTranscriptHint,
+        alignLabelWithHint: true,
+        filled: true,
+        fillColor: tokens.colors.background.level02,
+        contentPadding: EdgeInsets.all(tokens.spacing.step4),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          borderSide: BorderSide(color: tokens.colors.decorative.level01),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          borderSide: BorderSide(color: tokens.colors.interactive.enabled),
+        ),
+      ),
+      onChanged: ref.read(captureControllerProvider.notifier).updateTranscript,
+    );
   }
 }
 
@@ -342,8 +376,9 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
       // layout does not jump when the CTA appears.
       return SizedBox(height: tokens.spacing.step9);
     }
+    final hasTranscript = widget.state.transcript.trim().isNotEmpty;
     return FilledButton(
-      onPressed: _submitting ? null : _onSubmit,
+      onPressed: _submitting || !hasTranscript ? null : _onSubmit,
       style: FilledButton.styleFrom(
         backgroundColor: tokens.colors.interactive.enabled,
         foregroundColor: tokens.colors.text.onInteractiveAlert,
@@ -370,23 +405,28 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
   }
 
   Future<void> _onSubmit() async {
+    final transcript = widget.state.transcript.trim();
+    if (transcript.isEmpty) return;
     setState(() => _submitting = true);
     final agent = ref.read(dayAgentProvider);
     final navigator = Navigator.of(context);
     try {
       final captureId = await agent.submitCapture(
-        transcript: widget.state.transcript,
+        transcript: transcript,
         // `capturedAt` routes the capture to the day-agent for that
         // day. When the route-level root mounts CapturePage for a
         // non-today selected date, pass that date so the resulting
         // plan lands on the chosen day instead of today.
-        capturedAt: widget.forDate ?? DateTime.now(),
+        capturedAt: _capturedAtForSelectedDate(widget.forDate),
         audioId: widget.state.audioId,
       );
       if (!mounted) return;
       await navigator.push<void>(
         MaterialPageRoute<void>(
-          builder: (_) => ReconcilePage(captureId: captureId),
+          builder: (_) => ReconcilePage(
+            captureId: captureId,
+            dayDate: widget.forDate ?? DateTime.now(),
+          ),
         ),
       );
       if (mounted) {
@@ -395,5 +435,20 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  DateTime _capturedAtForSelectedDate(DateTime? selectedDate) {
+    final now = DateTime.now();
+    if (selectedDate == null) return now;
+    return DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      now.hour,
+      now.minute,
+      now.second,
+      now.millisecond,
+      now.microsecond,
+    );
   }
 }

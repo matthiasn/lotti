@@ -1355,6 +1355,8 @@
   "dailyOsNextCaptureListening": "POSLOUCHÁM",
   "dailyOsNextCaptureOpenTasks": "Procházet úkoly",
   "dailyOsNextCaptureReconcileCta": "Sjednotit",
+  "dailyOsNextCaptureTranscriptHint": "Oprav cokoli, co přepis spletl, než začne plánování.",
+  "dailyOsNextCaptureTranscriptLabel": "Zkontroluj přepis",
   "dailyOsNextCaptureVoiceButtonReset": "Začít znovu",
   "dailyOsNextCaptureVoiceButtonStart": "Začít poslouchat",
   "dailyOsNextCaptureVoiceButtonStop": "Zastavit",
@@ -1421,6 +1423,7 @@
       }
     }
   },
+  "dailyOsNextReconcileHeardEmpty": "Karty ze záznamu se tu objeví, jakmile skončí parsování.",
   "dailyOsNextReconcileHeardOverline": "TADY JE, CO JSEM SLYŠEL",
   "dailyOsNextReconcileLowConfidence": "nízká důvěra",
   "dailyOsNextReconcileReRecord": "Znovu nahrát",

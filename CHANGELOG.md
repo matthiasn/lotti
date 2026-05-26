@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tasks navigation no longer shows the global in-progress task count badge in
   the sidebar or bottom navigation; saved filters remain the focused way to
   monitor task subsets.
+- Daily OS Next day planning now lets you edit capture transcripts before
+  reconciliation, creates real tasks from new capture phrases, opens
+  task-backed agenda rows, and rejects new same-day draft blocks that start in
+  the past.
 - Agent batch lookups for latest per-agent reports and states now use ranked
   active-row indexes that avoid SQLite temp sorts during large project-agent
   wake context builds.

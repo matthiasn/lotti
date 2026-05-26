@@ -89,5 +89,32 @@ void main() {
 
       expect(find.byType(WhyChip), findsNothing);
     });
+
+    testWidgets('invokes onTap when the card is tapped', (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        _wrap(
+          Material(
+            child: AgendaCard(
+              index: 1,
+              item: const AgendaItem(
+                id: 'a1',
+                title: 'Open task',
+                category: _category,
+                linkedBlockIds: ['b1'],
+                taskId: 'task-1',
+              ),
+              onTap: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Open task'));
+      await tester.pump();
+
+      expect(tapped, isTrue);
+    });
   });
 }

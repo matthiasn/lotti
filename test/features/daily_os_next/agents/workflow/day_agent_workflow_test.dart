@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
@@ -183,6 +184,48 @@ void main() {
     );
   }
 
+  void stubDraftingPlanContext(MockDayAgentPlanService planService) {
+    when(
+      () => planService.draftPlanForDay(
+        agentId: agentId,
+        dayId: dayId,
+      ),
+    ).thenAnswer((_) async => null);
+    when(
+      () => planService.hydrateDecidedTasks(
+        allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        explicitTaskIds: any(named: 'explicitTaskIds'),
+        parsedItems: any(named: 'parsedItems'),
+      ),
+    ).thenAnswer((_) async => const []);
+  }
+
+  void stubSuccessfulDraftToolCall(MockDayAgentPlanService planService) {
+    when(
+      () => planService.executeTool(
+        agentId: agentId,
+        threadId: threadId,
+        runKey: runKey,
+        toolName: DayAgentToolNames.draftDayPlan,
+        args: any(named: 'args'),
+      ),
+    ).thenAnswer(
+      (_) async => DayAgentDirectToolResult.success(
+        const {'planId': 'day_agent_plan:dayplan-2026-05-25'},
+      ),
+    );
+    conversationRepository.toolCalls = [
+      _toolCall(
+        id: 'draft-call',
+        name: DayAgentToolNames.draftDayPlan,
+        args: {
+          'dayId': dayId,
+          'blocks': <Object?>[],
+        },
+      ),
+    ];
+  }
+
   setUp(() {
     repository = MockAgentRepository();
     aiConfigRepository = MockAiConfigRepository();
@@ -317,12 +360,17 @@ void main() {
           conversationRepository.lastSystemMessage,
           contains('Report day-agent directive.'),
         );
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('currentLocalTime'),
+        );
 
         final userPayload =
             jsonDecode(conversationRepository.lastUserMessage!)
                 as Map<String, dynamic>;
         expect(userPayload['dayId'], dayId);
         expect(userPayload['planDate'], '2026-05-25T00:00:00.000');
+        expect(userPayload['currentLocalTime'], '2026-05-25T08:00:00.000');
         expect(userPayload['triggerTokens'], ['capture-1', dayId]);
         expect(
           userPayload['recentObservations'],
@@ -363,6 +411,44 @@ void main() {
           'models/day',
         );
         expect(changedTokens, [agentId, agentId, dayId]);
+      },
+    );
+
+    test(
+      'propagates the resolved model geminiThinkingMode to the wrapper',
+      () async {
+        when(
+          () => aiConfigRepository.getConfigById('profile-day'),
+        ).thenAnswer(
+          (_) async => testInferenceProfile(
+            id: 'profile-day',
+          ),
+        );
+        when(
+          () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            testAiModel(
+              id: 'gemini-flash',
+              inferenceProviderId: 'provider-day',
+            ),
+          ],
+        );
+        conversationRepository.finalResponse = 'Day-agent wake completed.';
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.sendMessageCalls.single.model,
+          'models/gemini-3-flash-preview',
+        );
+        final inferenceRepo =
+            conversationRepository.sendMessageCalls.single.inferenceRepo;
+        expect(inferenceRepo, isA<CloudInferenceWrapper>());
+        final wrapper = inferenceRepo as CloudInferenceWrapper;
+        // testAiModel defaults to AiConfigModel.geminiThinkingMode == low.
+        expect(wrapper.geminiThinkingMode, GeminiThinkingMode.low);
       },
     );
 
@@ -444,6 +530,7 @@ void main() {
             parsedItems: any(named: 'parsedItems'),
           ),
         ).thenAnswer((_) async => const []);
+        stubSuccessfulDraftToolCall(planService);
 
         final result = await execute(
           workflow(planService: planService),
@@ -519,6 +606,7 @@ void main() {
             parsedItems: any(named: 'parsedItems'),
           ),
         ).thenAnswer((_) async => const []);
+        stubSuccessfulDraftToolCall(planService);
 
         final result = await execute(
           workflow(planService: planService),
@@ -638,6 +726,7 @@ void main() {
             ),
           ],
         );
+        stubSuccessfulDraftToolCall(planService);
 
         final result = await execute(
           workflow(
@@ -683,6 +772,207 @@ void main() {
         );
       },
     );
+
+    group('drafting wake final plan enforcement', () {
+      test(
+        'forces draft_day_plan when a drafting wake stops without drafting',
+        () async {
+          final planService = MockDayAgentPlanService();
+          stubDraftingPlanContext(planService);
+          when(
+            () => planService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(
+              const {'planId': 'day_agent_plan:dayplan-2026-05-25'},
+            ),
+          );
+          conversationRepository
+            ..toolCallsByInvocation = [
+              const <ChatCompletionMessageToolCall>[],
+              [
+                _toolCall(
+                  id: 'draft-call',
+                  name: DayAgentToolNames.draftDayPlan,
+                  args: {
+                    'dayId': dayId,
+                    'blocks': <Object?>[],
+                  },
+                ),
+              ],
+            ]
+            ..usageByInvocation = const [
+              InferenceUsage(inputTokens: 10, outputTokens: 5),
+              InferenceUsage(inputTokens: 3, outputTokens: 2),
+            ];
+
+          final result = await execute(
+            workflow(planService: planService),
+            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+          );
+
+          expect(result.success, isTrue);
+          expect(conversationRepository.sendMessageCalls, hasLength(2));
+          expect(
+            conversationRepository.sendMessageCalls.first.toolChoice,
+            isNull,
+          );
+
+          final retryCall = conversationRepository.sendMessageCalls[1];
+          expect(
+            retryCall.message,
+            contains('You did not call `draft_day_plan`'),
+          );
+          expect(
+            retryCall.tools.map((tool) => tool.function.name),
+            [DayAgentToolNames.draftDayPlan],
+          );
+          retryCall.toolChoice!.map(
+            mode: (_) => fail('Expected named tool choice, got mode.'),
+            tool: (named) {
+              expect(named.value.function.name, DayAgentToolNames.draftDayPlan);
+            },
+          );
+          verify(
+            () => planService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+            ),
+          ).called(1);
+
+          final usage = upsertedEntities
+              .whereType<WakeTokenUsageEntity>()
+              .single;
+          expect(usage.inputTokens, 13);
+          expect(usage.outputTokens, 7);
+        },
+      );
+
+      test(
+        'does not force draft_day_plan on reconcile-only capture wakes',
+        () async {
+          final planService = MockDayAgentPlanService();
+          conversationRepository.toolCallsByInvocation = [
+            const <ChatCompletionMessageToolCall>[],
+          ];
+
+          final result = await execute(
+            workflow(planService: planService),
+            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+          );
+
+          expect(result.success, isTrue);
+          expect(conversationRepository.sendMessageCalls, hasLength(1));
+          expect(
+            conversationRepository.sendMessageCalls.single.toolChoice,
+            isNull,
+          );
+          verifyNever(
+            () => planService.draftPlanForDay(
+              agentId: any(named: 'agentId'),
+              dayId: any(named: 'dayId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'fails the wake when the forced draft_day_plan call is rejected',
+        () async {
+          final planService = MockDayAgentPlanService();
+          stubDraftingPlanContext(planService);
+          when(
+            () => planService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.failure(
+              'draft_day_plan requires at least one block',
+            ),
+          );
+          conversationRepository.toolCallsByInvocation = [
+            const <ChatCompletionMessageToolCall>[],
+            [
+              _toolCall(
+                id: 'draft-call',
+                name: DayAgentToolNames.draftDayPlan,
+                args: {
+                  'dayId': dayId,
+                  'blocks': <Object?>[],
+                },
+              ),
+            ],
+          ];
+
+          final result = await execute(
+            workflow(planService: planService),
+            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('draft_day_plan'));
+          verify(
+            () => planService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'fails the wake when the forced retry still omits draft_day_plan',
+        () async {
+          final planService = MockDayAgentPlanService();
+          stubDraftingPlanContext(planService);
+          conversationRepository.toolCallsByInvocation = [
+            const <ChatCompletionMessageToolCall>[],
+            const <ChatCompletionMessageToolCall>[],
+          ];
+
+          final result = await execute(
+            workflow(planService: planService),
+            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('draft_day_plan'));
+          expect(conversationRepository.sendMessageCalls, hasLength(2));
+          expect(
+            conversationRepository.sendMessageCalls[1].toolChoice,
+            isNotNull,
+          );
+          final failureState = upsertedEntities
+              .whereType<AgentStateEntity>()
+              .last;
+          expect(failureState.consecutiveFailureCount, 1);
+          verifyNever(
+            () => planService.executeTool(
+              agentId: any(named: 'agentId'),
+              threadId: any(named: 'threadId'),
+              runKey: any(named: 'runKey'),
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+            ),
+          );
+        },
+      );
+    });
 
     test(
       'surfaces the baseline plan for refine-token wakes',
@@ -1418,6 +1708,18 @@ class _ConversationHarness extends ConversationRepository {
   String? lastSystemMessage;
   String? lastUserMessage;
   List<ChatCompletionTool> lastTools = const [];
+  final sendMessageCalls =
+      <
+        ({
+          InferenceRepositoryInterface inferenceRepo,
+          String message,
+          String model,
+          ChatCompletionToolChoiceOption? toolChoice,
+          List<ChatCompletionTool> tools,
+        })
+      >[];
+  List<List<ChatCompletionMessageToolCall>> toolCallsByInvocation = const [];
+  List<InferenceUsage?> usageByInvocation = const [];
   final toolResponses = <String>[];
 
   @override
@@ -1457,10 +1759,26 @@ class _ConversationHarness extends ConversationRepository {
 
     lastUserMessage = message;
     lastTools = tools ?? const [];
+    sendMessageCalls.add(
+      (
+        inferenceRepo: inferenceRepo,
+        message: message,
+        model: model,
+        toolChoice: toolChoice,
+        tools: tools ?? const <ChatCompletionTool>[],
+      ),
+    );
+    final invocationIndex = sendMessageCalls.length - 1;
     final manager = _managers[conversationId]!..addUserMessage(message);
-    if (toolCalls.isNotEmpty) {
-      manager.addAssistantMessage(toolCalls: toolCalls);
-      await strategy!.processToolCalls(toolCalls: toolCalls, manager: manager);
+    final selectedToolCalls = invocationIndex < toolCallsByInvocation.length
+        ? toolCallsByInvocation[invocationIndex]
+        : toolCalls;
+    if (selectedToolCalls.isNotEmpty) {
+      manager.addAssistantMessage(toolCalls: selectedToolCalls);
+      await strategy!.processToolCalls(
+        toolCalls: selectedToolCalls,
+        manager: manager,
+      );
       toolResponses
         ..clear()
         ..addAll(
@@ -1474,6 +1792,9 @@ class _ConversationHarness extends ConversationRepository {
     }
     if (finalResponse != null) {
       manager.addAssistantMessage(content: finalResponse);
+    }
+    if (invocationIndex < usageByInvocation.length) {
+      return usageByInvocation[invocationIndex];
     }
     return usage;
   }

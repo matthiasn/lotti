@@ -980,6 +980,33 @@ void main() {
       expect(result.usedTranscriptFallback, isFalse);
     });
 
+    test('keeps accumulated deltas when done text is shorter', () async {
+      final bench = await _TestBench.create();
+      addTearDown(bench.dispose);
+
+      await bench.startTranscription();
+      await bench.sendPcm(_pcmSilence(64));
+      bench.channel
+        ..simulateServerMessage({
+          'type': 'transcription.text.delta',
+          'text': 'Complete client animation ',
+        })
+        ..simulateServerMessage({
+          'type': 'transcription.text.delta',
+          'text': 'and commission work',
+        });
+      await Future<void>.delayed(Duration.zero);
+
+      bench.scheduleDone('Complete client animation');
+
+      final result = await bench.stop();
+      expect(
+        result.transcript,
+        'Complete client animation and commission work',
+      );
+      expect(result.usedTranscriptFallback, isFalse);
+    });
+
     test('falls back to accumulated deltas on timeout', () async {
       final bench = await _TestBench.create(
         doneTimeout: const Duration(milliseconds: 50),

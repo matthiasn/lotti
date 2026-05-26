@@ -1546,6 +1546,8 @@
   "dailyOsNextCaptureListening": "ESCUCHANDO",
   "dailyOsNextCaptureOpenTasks": "Explorar tareas",
   "dailyOsNextCaptureReconcileCta": "Reconciliar",
+  "dailyOsNextCaptureTranscriptHint": "Corrige lo que la transcripción haya entendido mal antes de planificar.",
+  "dailyOsNextCaptureTranscriptLabel": "Revisa la transcripción",
   "dailyOsNextCaptureVoiceButtonReset": "Empezar de nuevo",
   "dailyOsNextCaptureVoiceButtonStart": "Empezar a escuchar",
   "dailyOsNextCaptureVoiceButtonStop": "Detener",
@@ -1612,6 +1614,7 @@
       }
     }
   },
+  "dailyOsNextReconcileHeardEmpty": "Las tarjetas de la captura aparecerán aquí cuando termine el análisis.",
   "dailyOsNextReconcileHeardOverline": "ESTO ES LO QUE ESCUCHÉ",
   "dailyOsNextReconcileLowConfidence": "confianza baja",
   "dailyOsNextReconcileReRecord": "Volver a grabar",

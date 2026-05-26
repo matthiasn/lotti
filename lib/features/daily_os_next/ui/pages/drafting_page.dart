@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/learning_cards.dart';
@@ -13,19 +14,22 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// stream + skeleton agenda on the left, learning cards on the right.
 ///
 /// When the controller flips to [DraftingPhase.ready], the screen
-/// auto-pushes the [DayPage] and replaces itself in the navigator so
-/// the back button from Day returns to Reconcile, not Drafting.
+/// either returns to the route-level root (preferred in the full app,
+/// preserving the date picker) or auto-pushes [DayPage] for standalone
+/// preview usage.
 class DraftingPage extends ConsumerStatefulWidget {
   const DraftingPage({
     required this.captureId,
     required this.decidedTaskIds,
     required this.dayDate,
+    this.returnToRootOnReady = false,
     super.key,
   });
 
   final CaptureId captureId;
   final List<String> decidedTaskIds;
   final DateTime dayDate;
+  final bool returnToRootOnReady;
 
   @override
   ConsumerState<DraftingPage> createState() => _DraftingPageState();
@@ -53,6 +57,19 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
         _advanced = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
+          if (widget.returnToRootOnReady) {
+            ref.invalidate(
+              currentDraftPlanProvider(
+                DateTime(
+                  widget.dayDate.year,
+                  widget.dayDate.month,
+                  widget.dayDate.day,
+                ),
+              ),
+            );
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            return;
+          }
           Navigator.of(context).pushReplacement<void, void>(
             MaterialPageRoute<void>(
               builder: (_) => DayPage(draft: value.draft!),

@@ -15,6 +15,7 @@ class AgendaCard extends StatelessWidget {
     required this.index,
     required this.item,
     this.whyReason,
+    this.onTap,
     super.key,
   });
 
@@ -25,15 +26,19 @@ class AgendaCard extends StatelessWidget {
   /// in the WhyChip. Null when no AI placement backs the item.
   final String? whyReason;
 
+  /// Opens the backing task when `item.taskId` is available.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final category = _categoryColor();
     final progress = item.progress;
-    return Container(
+    final borderRadius = BorderRadius.circular(tokens.radii.l);
+    final card = Container(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.l),
+        borderRadius: borderRadius,
         border: Border(
           left: BorderSide(color: category, width: 3),
         ),
@@ -91,6 +96,16 @@ class AgendaCard extends StatelessWidget {
             _ProgressBar(progress: progress, color: category),
           ],
         ],
+      ),
+    );
+    final callback = onTap;
+    if (callback == null) return card;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: callback,
+        borderRadius: borderRadius,
+        child: card,
       ),
     );
   }

@@ -306,19 +306,24 @@ void main() {
 
   group('CaptureController (realtime path)', () {
     late MockRealtimeTranscriptionService realtimeService;
+    late MockAudioTranscriptionService transcriber;
     late _FakeRealtimeRecorder fakeRecorder;
     late StreamController<double> realtimeAmpController;
     late StreamController<Uint8List> pcmController;
     late List<AudioNote> persistedNotes;
     late void Function(String delta)? capturedOnDelta;
+    late ({AiConfigInferenceProvider provider, AiConfigModel model})
+    realtimeConfig;
 
     setUp(() {
       realtimeService = MockRealtimeTranscriptionService();
+      transcriber = MockAudioTranscriptionService();
       fakeRecorder = _FakeRealtimeRecorder();
       realtimeAmpController = StreamController<double>.broadcast();
       pcmController = StreamController<Uint8List>.broadcast();
       persistedNotes = <AudioNote>[];
       capturedOnDelta = null;
+      realtimeConfig = (provider: _FakeProvider(), model: _FakeModel());
 
       fakeRecorder.pcmStream = pcmController.stream;
 
@@ -326,9 +331,7 @@ void main() {
         () => realtimeService.resolveRealtimeConfig(
           preferMistral: any(named: 'preferMistral'),
         ),
-      ).thenAnswer((_) async {
-        return (provider: _FakeProvider(), model: _FakeModel());
-      });
+      ).thenAnswer((_) async => realtimeConfig);
       when(
         () => realtimeService.amplitudeStream,
       ).thenAnswer((_) => realtimeAmpController.stream);
@@ -336,6 +339,7 @@ void main() {
         () => realtimeService.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
           onDelta: any(named: 'onDelta'),
+          config: any(named: 'config'),
         ),
       ).thenAnswer((invocation) async {
         capturedOnDelta =
@@ -356,6 +360,12 @@ void main() {
           audioFilePath: '$outputPath.m4a',
         );
       });
+      when(
+        () => transcriber.transcribe(
+          any(),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        ),
+      ).thenAnswer((_) async => 'hello realtime');
       when(realtimeService.dispose).thenAnswer((_) async {});
     });
 
@@ -375,6 +385,7 @@ void main() {
           captureControllerProvider.overrideWith(
             () => CaptureController(
               realtimeService: realtimeService,
+              transcriber: transcriber,
               realtimeRecorderFactory: () => fakeRecorder,
               persistAudio: persistAudio,
               docDir: Directory.systemTemp.createTempSync,
@@ -408,6 +419,7 @@ void main() {
           () => realtimeService.startRealtimeTranscription(
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            config: realtimeConfig,
           ),
         ).called(1);
 
@@ -448,6 +460,48 @@ void main() {
     );
 
     test(
+      'uses full-file transcription when realtime final text is truncated',
+      () async {
+        when(
+          () => realtimeService.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer((invocation) async {
+          final stopRecorder =
+              invocation.namedArguments[#stopRecorder]
+                  as Future<void> Function();
+          final outputPath = invocation.namedArguments[#outputPath] as String;
+          await stopRecorder();
+          return RealtimeStopResult(
+            transcript: 'plan client animation',
+            audioFilePath: '$outputPath.m4a',
+          );
+        });
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer(
+          (_) async => 'plan client animation and commission work for tomorrow',
+        );
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier);
+        await notifier.toggle();
+        await notifier.toggle();
+
+        final state = container.read(captureControllerProvider);
+        expect(
+          state.transcript,
+          'plan client animation and commission work for tomorrow',
+        );
+      },
+    );
+
+    test(
       'toggle without microphone permission lands in error and never '
       'starts the realtime WebSocket',
       () async {
@@ -465,6 +519,7 @@ void main() {
           () => realtimeService.startRealtimeTranscription(
             pcmStream: any(named: 'pcmStream'),
             onDelta: any(named: 'onDelta'),
+            config: any(named: 'config'),
           ),
         );
       },

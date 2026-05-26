@@ -36,6 +36,19 @@ MockDayAgent _fastAgent() => MockDayAgent(
   clock: () => DateTime(2026, 5, 25, 9),
 );
 
+class _EmptyParsedAgent extends MockDayAgent {
+  _EmptyParsedAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [];
+}
+
 void main() {
   group('ReconcilePage', () {
     testWidgets('renders parsed and pending cards from the day agent', (
@@ -81,6 +94,28 @@ void main() {
       );
       expect(find.text('4'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
+    });
+
+    testWidgets('explains the empty heard column while parsing catches up', (
+      tester,
+    ) async {
+      _setWideSurface(tester);
+      final agent = _EmptyParsedAgent();
+      await tester.pumpWidget(
+        _wrap(
+          const ReconcilePage(captureId: CaptureId('cap_x')),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ReconcilePage));
+      expect(
+        find.text(context.messages.dailyOsNextReconcileHeardEmpty),
+        findsOneWidget,
+      );
+      expect(find.byType(ParsedCard), findsNothing);
+      expect(find.byType(PendingCard), findsNWidgets(3));
     });
 
     testWidgets(

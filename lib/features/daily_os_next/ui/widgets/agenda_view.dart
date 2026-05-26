@@ -4,6 +4,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 
 /// Intent-first projection of the [DraftPlan]. One [AgendaCard] per
 /// task, top stat strip with capacity donut + summary + category mix.
@@ -27,6 +28,7 @@ class AgendaView extends StatelessWidget {
               index: index + 1,
               item: item,
               whyReason: _whyReasonFor(item),
+              onTap: _taskTapFor(item),
             ),
             SizedBox(height: tokens.spacing.step4),
           ],
@@ -47,6 +49,12 @@ class AgendaView extends StatelessWidget {
       }
     }
     return null;
+  }
+
+  VoidCallback? _taskTapFor(AgendaItem item) {
+    final taskId = item.taskId;
+    if (taskId == null || taskId.isEmpty) return null;
+    return () => beamToNamed('/tasks/$taskId');
   }
 }
 

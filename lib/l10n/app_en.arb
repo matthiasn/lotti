@@ -1742,6 +1742,8 @@
   "dailyOsNextCaptureListening": "LISTENING",
   "dailyOsNextCaptureOpenTasks": "Browse tasks",
   "dailyOsNextCaptureReconcileCta": "Reconcile",
+  "dailyOsNextCaptureTranscriptHint": "Fix anything the transcript got wrong before planning.",
+  "dailyOsNextCaptureTranscriptLabel": "Review transcript",
   "dailyOsNextCaptureVoiceButtonReset": "Start over",
   "dailyOsNextCaptureVoiceButtonStart": "Start listening",
   "dailyOsNextCaptureVoiceButtonStop": "Stop listening",
@@ -1808,6 +1810,7 @@
       }
     }
   },
+  "dailyOsNextReconcileHeardEmpty": "Capture cards will appear here once parsing finishes.",
   "dailyOsNextReconcileHeardOverline": "HERE'S WHAT I HEARD",
   "dailyOsNextReconcileLowConfidence": "low confidence",
   "dailyOsNextReconcileReRecord": "Re-record",

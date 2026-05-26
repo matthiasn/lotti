@@ -3139,6 +3139,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextCaptureReconcileCta => 'Abgleichen';
 
   @override
+  String get dailyOsNextCaptureTranscriptHint =>
+      'Korrigiere alles, was der Text falsch erkannt hat, bevor du planst.';
+
+  @override
+  String get dailyOsNextCaptureTranscriptLabel => 'Transkript prüfen';
+
+  @override
   String get dailyOsNextCaptureVoiceButtonReset => 'Von vorne beginnen';
 
   @override
@@ -3261,6 +3268,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String dailyOsNextReconcileError(String detail) {
     return 'Etwas ist schiefgelaufen: $detail';
   }
+
+  @override
+  String get dailyOsNextReconcileHeardEmpty =>
+      'Erfasste Karten erscheinen hier, sobald das Parsen fertig ist.';
 
   @override
   String get dailyOsNextReconcileHeardOverline => 'DAS HABE ICH GEHÖRT';

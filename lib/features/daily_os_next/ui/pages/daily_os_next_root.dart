@@ -1,16 +1,19 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Entry point for the Daily OS Next surface.
 ///
 /// Routes between [CapturePage] (no drafted plan yet) and [DayPage]
 /// (plan exists) based on the currently selected date. Surfaces a
-/// small date picker on the Day path so the user can jump to past
-/// days they already drafted plans for.
+/// small date picker on both paths so the user can choose the day
+/// before recording the planning capture.
 class DailyOsNextRoot extends ConsumerStatefulWidget {
   const DailyOsNextRoot({super.key});
 
@@ -24,12 +27,12 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
+    final now = clock.now();
     _selectedDate = DateTime(now.year, now.month, now.day);
   }
 
   DateTime get _today {
-    final now = DateTime.now();
+    final now = clock.now();
     return DateTime(now.year, now.month, now.day);
   }
 
@@ -87,8 +90,8 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
         // chosen day's day-agent.
         return CapturePage(
           key: ValueKey('capture-${_selectedDate.toIso8601String()}'),
-          forDate: _isToday ? null : _selectedDate,
-          dateStrip: _isToday ? null : strip,
+          forDate: _selectedDate,
+          dateStrip: strip,
         );
       },
     );
@@ -123,12 +126,14 @@ class _DateStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final messages = context.messages;
+    final material = MaterialLocalizations.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           icon: const Icon(Icons.chevron_left_rounded),
-          tooltip: 'Previous day',
+          tooltip: material.previousPageTooltip,
           onPressed: onPrev,
         ),
         InkWell(
@@ -141,7 +146,12 @@ class _DateStrip extends StatelessWidget {
               vertical: tokens.spacing.step2,
             ),
             child: Text(
-              _formatDate(selected, isToday: isToday),
+              _formatDate(
+                context,
+                selected,
+                isToday: isToday,
+                todayLabel: messages.dailyOsTodayButton,
+              ),
               style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                 color: tokens.colors.text.highEmphasis,
               ),
@@ -150,30 +160,22 @@ class _DateStrip extends StatelessWidget {
         ),
         IconButton(
           icon: const Icon(Icons.chevron_right_rounded),
-          tooltip: 'Next day',
+          tooltip: material.nextPageTooltip,
           onPressed: onNext,
         ),
       ],
     );
   }
 
-  String _formatDate(DateTime date, {required bool isToday}) {
-    if (isToday) return 'Today';
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  String _formatDate(
+    BuildContext context,
+    DateTime date, {
+    required bool isToday,
+    required String todayLabel,
+  }) {
+    if (isToday) return todayLabel;
+    final locale = Localizations.localeOf(context).toString();
+    return DateFormat.yMMMd(locale).format(date);
   }
 }
 

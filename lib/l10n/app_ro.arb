@@ -1546,6 +1546,8 @@
   "dailyOsNextCaptureListening": "ASCULT",
   "dailyOsNextCaptureOpenTasks": "Răsfoiește sarcinile",
   "dailyOsNextCaptureReconcileCta": "Reconciliere",
+  "dailyOsNextCaptureTranscriptHint": "Corectați orice a înțeles greșit transcrierea înainte de planificare.",
+  "dailyOsNextCaptureTranscriptLabel": "Verificați transcrierea",
   "dailyOsNextCaptureVoiceButtonReset": "Reîncepe",
   "dailyOsNextCaptureVoiceButtonStart": "Începe ascultarea",
   "dailyOsNextCaptureVoiceButtonStop": "Oprește ascultarea",
@@ -1612,6 +1614,7 @@
       }
     }
   },
+  "dailyOsNextReconcileHeardEmpty": "Cardurile capturii vor apărea aici după finalizarea parsării.",
   "dailyOsNextReconcileHeardOverline": "IATĂ CE AM AUZIT",
   "dailyOsNextReconcileLowConfidence": "încredere scăzută",
   "dailyOsNextReconcileReRecord": "Reînregistrare",

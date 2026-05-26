@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -38,9 +39,37 @@ class ReconcileData {
 }
 
 final reconcileControllerProvider = AsyncNotifierProvider.autoDispose
-    .family<ReconcileController, ReconcileData, CaptureId>(
+    .family<ReconcileController, ReconcileData, ReconcileParams>(
       ReconcileController.new,
     );
+
+@immutable
+class ReconcileParams {
+  ReconcileParams({
+    required this.captureId,
+    required DateTime dayDate,
+  }) : dayDate = DateTime(dayDate.year, dayDate.month, dayDate.day);
+
+  final CaptureId captureId;
+  final DateTime dayDate;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReconcileParams &&
+          captureId == other.captureId &&
+          dayDate == other.dayDate;
+
+  @override
+  int get hashCode => Object.hash(captureId, dayDate);
+}
+
+final reconcileCaptureUpdateProvider = StreamProvider.autoDispose
+    .family<Set<String>, String>((ref, captureId) {
+      final notifications = ref.watch(maybeUpdateNotificationsProvider);
+      if (notifications == null) return const Stream<Set<String>>.empty();
+      return notifications.updateStream.where((ids) => ids.contains(captureId));
+    });
 
 /// Backs the Reconcile screen.
 ///
@@ -50,22 +79,27 @@ final reconcileControllerProvider = AsyncNotifierProvider.autoDispose
 /// [DayAgentInterface] so the path matches what the real agent layer
 /// will use later.
 class ReconcileController extends AsyncNotifier<ReconcileData> {
-  ReconcileController(this.captureId);
+  ReconcileController(this.params);
 
-  final CaptureId captureId;
+  final ReconcileParams params;
   late DayAgentInterface _agent;
 
   @override
   Future<ReconcileData> build() async {
     _agent = ref.watch(dayAgentProvider);
-    final parsedFuture = _agent.parseCaptureToItems(captureId);
-    final pendingFuture = _agent.surfacePendingDecisions();
+    ref.watch(reconcileCaptureUpdateProvider(params.captureId.value));
+    final triageDecisions =
+        state.value?.triageDecisions ?? const <String, TriageResult>{};
+    final parsedFuture = _agent.parseCaptureToItems(params.captureId);
+    final pendingFuture = _agent.surfacePendingDecisions(
+      forDate: params.dayDate,
+    );
     final parsed = await parsedFuture;
     final pending = await pendingFuture;
     return ReconcileData(
       parsed: parsed,
       pending: pending,
-      triageDecisions: const {},
+      triageDecisions: triageDecisions,
     );
   }
 

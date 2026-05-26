@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -177,6 +178,7 @@ class DayAgentWorkflow {
     final userMessage = _buildUserMessage(
       dayId: dayId,
       planDate: dayDate,
+      now: now,
       triggerTokens: triggerTokens,
       observations: recentObservations,
       observationPayloads: observationPayloads,
@@ -216,6 +218,7 @@ class DayAgentWorkflow {
 
       final inferenceRepo = CloudInferenceWrapper(
         cloudRepository: cloudInferenceRepository,
+        geminiThinkingMode: resolvedProfile.thinkingModel?.geminiThinkingMode,
       );
 
       if (templateCtx != null) {
@@ -229,16 +232,39 @@ class DayAgentWorkflow {
         );
       }
 
-      final usage = await conversationRepository.sendMessage(
+      final tools = _buildToolDefinitions();
+      var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
         model: modelId,
         provider: provider,
         inferenceRepo: inferenceRepo,
-        tools: _buildToolDefinitions(),
+        tools: tools,
         temperature: 0.3,
         strategy: strategy,
       );
+
+      if (_requiresDraftDayPlan(
+        dayId: dayId,
+        triggerTokens: triggerTokens,
+      )) {
+        if (!strategy.didPersistDraftDayPlan) {
+          final retryUsage = await _forceDraftDayPlanIfMissing(
+            conversationId: conversationId,
+            modelId: modelId,
+            provider: provider,
+            inferenceRepo: inferenceRepo,
+            tools: tools,
+            strategy: strategy,
+          );
+          if (retryUsage != null) {
+            usage = usage == null ? retryUsage : usage.merge(retryUsage);
+          }
+        }
+        if (!strategy.didPersistDraftDayPlan) {
+          throw const _MissingDraftDayPlanException();
+        }
+      }
 
       await _persistTokenUsage(
         usage: usage,
@@ -472,7 +498,7 @@ class DayAgentWorkflow {
         "- `break_capture_link`: remove a parsed capture item's task link.\n"
         '- `surface_pending_decisions`: list overdue, in-progress, missed recurring, and due-today tasks for reconcile.\n'
         '- `apply_triage`: apply a reconcile action to a task.\n'
-        '- `create_task_from_phrase`: propose a new task via a pending change set.';
+        '- `create_task_from_phrase`: create a real task from a new capture phrase.';
     const planToolLines =
         '- `draft_day_plan`: persist a drafted day plan with blocks and reasons.\n'
         '- `summarize_recent_patterns`: return learning cards from recent day drafts.';
@@ -500,12 +526,19 @@ Capture matching rules:
 Drafting rules:
 - Every `ai` block passed to `draft_day_plan` must include a concrete reason.
 - Keep blocks inside the local plan day and within the user's capacity.
+- The user message includes `currentLocalTime`. When `planDate` is the same
+  local day, do not create new drafted `ai` or `manual` blocks that start
+  before `currentLocalTime`. Preserve already-started baseline blocks only
+  when they represent existing in-progress, completed, or dropped history.
 - Calendar, buffer, and manual blocks may omit reasons when their purpose is
   self-evident.
 - When this wake's user message carries a `drafting` block (i.e. the trigger
   tokens include `drafting:<dayId>`), your priority is to call
   `draft_day_plan` once with the full updated block list — replacing or
   extending `drafting.baselinePlan` rather than emitting partial diffs.
+- On `drafting:<dayId>` wakes, `draft_day_plan` MUST be the final tool call.
+  Do not end the wake with plain text. Process reconcile decisions first, then
+  emit the full plan through `draft_day_plan`.
 
 Refine rules:
 - When this wake's user message carries a `refine` block (i.e. the trigger
@@ -600,6 +633,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
   String _buildUserMessage({
     required String dayId,
     required DateTime planDate,
+    required DateTime now,
     required Set<String> triggerTokens,
     required List<AgentMessageEntity> observations,
     required Map<String, AgentMessagePayloadEntity> observationPayloads,
@@ -610,6 +644,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     final payload = <String, Object?>{
       'dayId': dayId,
       'planDate': planDate.toIso8601String(),
+      'currentLocalTime': now.toIso8601String(),
       'triggerTokens': triggerTokens.toList()..sort(),
       if (captureContext != null) 'capture': captureContext.toJson(),
       if (draftingContext != null) 'drafting': draftingContext.toJson(),
@@ -870,6 +905,55 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     return true;
   }
 
+  bool _requiresDraftDayPlan({
+    required String dayId,
+    required Set<String> triggerTokens,
+  }) {
+    return planService != null &&
+        draftingDayIdFromTriggerTokens(triggerTokens) == dayId;
+  }
+
+  Future<InferenceUsage?> _forceDraftDayPlanIfMissing({
+    required String conversationId,
+    required String modelId,
+    required AiConfigInferenceProvider provider,
+    required CloudInferenceWrapper inferenceRepo,
+    required List<ChatCompletionTool> tools,
+    required DayAgentStrategy strategy,
+  }) {
+    _log(
+      'drafting wake missed draft_day_plan — retrying with forced tool choice',
+      subDomain: 'execute',
+    );
+    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
+      ChatCompletionNamedToolChoice(
+        type: ChatCompletionNamedToolChoiceType.function,
+        function: ChatCompletionFunctionCallOption(
+          name: DayAgentToolNames.draftDayPlan,
+        ),
+      ),
+    );
+    final draftOnlyTools = tools
+        .where((tool) => tool.function.name == DayAgentToolNames.draftDayPlan)
+        .toList(growable: false);
+
+    return conversationRepository.sendMessage(
+      conversationId: conversationId,
+      message:
+          'You did not call `draft_day_plan` before stopping. Call it now '
+          'with the full block list for this day. This is the mandatory '
+          'final step of a drafting wake. Do not respond with plain text or '
+          'call any other tool.',
+      model: modelId,
+      provider: provider,
+      inferenceRepo: inferenceRepo,
+      tools: draftOnlyTools,
+      toolChoice: forcedToolChoice,
+      temperature: 0.3,
+      strategy: strategy,
+    );
+  }
+
   List<ChatCompletionTool> _buildToolDefinitions() {
     return dayAgentTools.where((tool) => _isToolEnabled(tool.name)).map((tool) {
       return ChatCompletionTool(
@@ -957,6 +1041,15 @@ class _DayAgentToolException implements Exception {
   const _DayAgentToolException(this.message);
 
   final String message;
+}
+
+class _MissingDraftDayPlanException implements Exception {
+  const _MissingDraftDayPlanException();
+
+  @override
+  String toString() {
+    return 'Drafting wake did not persist draft_day_plan after forced retry.';
+  }
 }
 
 class _TemplateContext {

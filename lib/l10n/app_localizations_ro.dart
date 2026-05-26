@@ -3160,6 +3160,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureReconcileCta => 'Reconciliere';
 
   @override
+  String get dailyOsNextCaptureTranscriptHint =>
+      'Corectați orice a înțeles greșit transcrierea înainte de planificare.';
+
+  @override
+  String get dailyOsNextCaptureTranscriptLabel => 'Verificați transcrierea';
+
+  @override
   String get dailyOsNextCaptureVoiceButtonReset => 'Reîncepe';
 
   @override
@@ -3282,6 +3289,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String dailyOsNextReconcileError(String detail) {
     return 'Ceva nu a mers bine: $detail';
   }
+
+  @override
+  String get dailyOsNextReconcileHeardEmpty =>
+      'Cardurile capturii vor apărea aici după finalizarea parsării.';
 
   @override
   String get dailyOsNextReconcileHeardOverline => 'IATĂ CE AM AUZIT';

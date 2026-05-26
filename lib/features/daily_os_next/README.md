@@ -59,7 +59,9 @@ Runtime behavior:
 - The shared template service seeds the `Shepherd` day-agent template.
 - `DayAgentWorkflow` builds the prompt from template directives, recent private
   observations, and, for `capture_submitted:<captureId>` wakes, the submitted
-  capture plus a bounded task corpus snapshot.
+  capture plus a bounded task corpus snapshot. Every wake user message also
+  carries `currentLocalTime` so same-day drafting can distinguish future plan
+  slots from time that has already passed.
 - `DayAgentStrategy` handles private observations itself and delegates
   `set_next_wake`, Capture/Reconcile tools, draft plan tools, and refine
   tools through the workflow handler.
@@ -70,12 +72,25 @@ Runtime behavior:
   `create_task_from_phrase`.
 - `submit_capture` persists a `CaptureEntity` and enqueues a manual wake with a
   `capture_submitted:<captureId>` trigger token.
+- `DailyOsNextRoot` owns the selected local plan date and keeps the date strip
+  visible on Capture and Day surfaces. Capture submissions use that selected
+  date for day-agent routing, Reconcile carries it into pending decisions, and
+  Drafting returns to the root after the plan persists so the date-aware shell
+  remains in control.
+- The Capture voice path uses realtime transcription for live feedback, then
+  verifies the final editable transcript against the saved full recording via
+  the batch transcriber when realtime output looks truncated.
 - `parse_capture_to_items` persists `ParsedItemEntity` rows and links them to
   the source capture. High-confidence matches (`>= 0.75`) auto-link to tasks,
   medium-confidence matches (`0.5..0.75`) auto-link with `lowConfidence`, and
   low-confidence items stay as new capture items.
-- `create_task_from_phrase` writes a pending `ChangeSetEntity` proposal instead
-  of directly creating a task.
+- `ReconcileController` watches capture-id update notifications, so the
+  "heard" column re-reads parsed items when the asynchronous parsing wake
+  persists them.
+- `create_task_from_phrase` creates a real task from a NEW capture phrase,
+  returns its `taskId`, and links the parsed item when `captureItemId` is
+  supplied. Drafting should use that returned `taskId` on the matching block so
+  Agenda rows can open the backing task.
 - `DayAgentPlanService` owns draft plan persistence:
   `draft_day_plan` validates model-emitted blocks, requires a non-empty reason
   for every `PlannedBlockType.ai` block, writes a `DayPlanEntity`, and links it
@@ -85,6 +100,10 @@ Runtime behavior:
   direction (graph traversal from a capture to every plan it produced) and is
   written in the same transaction. Treat the field as canonical and the link
   as derived — do not mutate one without the other.
+- For today's plan, `draft_day_plan` rejects new drafted `ai` or `manual`
+  blocks whose start is before `currentLocalTime`. It still accepts earlier
+  blocks when their state is `inProgress`, `completed`, or `dropped`, because
+  those represent what actually happened rather than new future planning.
 - `summarize_recent_patterns` returns transient learning-card payloads from
   recent `DayPlanEntity` rows. It does not persist new state.
 - `PlannedBlock` now carries the agent-facing metadata required by the draft
@@ -95,6 +114,14 @@ Runtime behavior:
   `drafting:<dayId>` plus optional `capture_submitted:<id>` and
   `decided_task:<taskId>` tokens; the workflow surfaces the baseline plan and
   hydrated decided tasks under the `drafting` block in the user message JSON.
+- Day-agent wakes that resolve to Gemini 3 Flash use a `thinkingLevel: LOW`
+  override through their `CloudInferenceWrapper` instance. The shared Gemini
+  Flash default remains unchanged, so task agents and manual prompts keep their
+  normal reasoning configuration.
+- Drafting wakes must finish by calling `draft_day_plan`. If the model stops
+  after reconcile work or emits prose instead, `DayAgentWorkflow` sends one
+  forced retry with `tool_choice` pinned to `draft_day_plan`; if that still
+  misses the tool, the wake fails instead of letting the UI poll until timeout.
 - Refine is the post-draft edit surface. `DayAgentService.enqueueRefineWake(
   {dayDate, transcript})` pre-checks that a draft plan exists, persists the
   refine transcript as a `CaptureEntity` (id prefixed `refine_capture:`,
@@ -132,7 +159,7 @@ stateDiagram-v2
   ParsingWake --> Parsed: parse_capture_to_items
   Parsed --> Linked: link_capture_phrase_to_task
   Linked --> Parsed: break_capture_link
-  Parsed --> Proposal: create_task_from_phrase
+  Parsed --> TaskCreated: create_task_from_phrase
   Parsed --> TaskMutated: apply_triage
   Parsed --> DraftedPlan: draft_day_plan
   DraftedPlan --> PatternCards: summarize_recent_patterns

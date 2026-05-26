@@ -5268,6 +5268,18 @@ abstract class AppLocalizations {
   /// **'Reconcile'**
   String get dailyOsNextCaptureReconcileCta;
 
+  /// No description provided for @dailyOsNextCaptureTranscriptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix anything the transcript got wrong before planning.'**
+  String get dailyOsNextCaptureTranscriptHint;
+
+  /// No description provided for @dailyOsNextCaptureTranscriptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Review transcript'**
+  String get dailyOsNextCaptureTranscriptLabel;
+
   /// No description provided for @dailyOsNextCaptureVoiceButtonReset.
   ///
   /// In en, this message translates to:
@@ -5495,6 +5507,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong: {detail}'**
   String dailyOsNextReconcileError(String detail);
+
+  /// No description provided for @dailyOsNextReconcileHeardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture cards will appear here once parsing finishes.'**
+  String get dailyOsNextReconcileHeardEmpty;
 
   /// No description provided for @dailyOsNextReconcileHeardOverline.
   ///

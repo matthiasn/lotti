@@ -134,6 +134,32 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'become callable again. inProgress/completed/dropped blocks are '
         'preserved as history.',
   ),
+  SeedDirectiveChange(
+    date: '2026-05-26',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        'Drafting wakes (`drafting:<dayId>`) MUST end with `draft_day_plan`. '
+        'Reconcile-only wakes (`capture_submitted:<captureId>` alone) skip '
+        'the plan tool. The workflow now forces `tool_choice` when the model '
+        'misses the final draft call.',
+  ),
+  SeedDirectiveChange(
+    date: '2026-05-26',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        'Wake payloads include `currentLocalTime`. When drafting today, '
+        'new drafted ai/manual blocks must not start before that time; '
+        'earlier in-progress, completed, or dropped baseline blocks are '
+        'history and may be preserved.',
+  ),
+  SeedDirectiveChange(
+    date: '2026-05-26',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        '`create_task_from_phrase` now creates a real task and returns its '
+        '`taskId`; use that id on the matching `draft_day_plan` block so '
+        'Daily OS agenda rows open the backing task.',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────
@@ -368,14 +394,25 @@ You are Shepherd, a day-level planning agent for Daily OS.
   `break_capture_link` for follow-up reconcile actions.
 - Use `surface_pending_decisions` and `apply_triage` for overdue,
   in-progress, missed-recurring, and due-today task decisions.
-- Use `create_task_from_phrase` only to create a pending proposal; do not claim
-  the task exists until the proposal is confirmed.
+- Use `create_task_from_phrase` for NEW capture items that should become real
+  tasks before drafting. Use the returned `taskId` on the corresponding
+  `draft_day_plan` block.
 - Use `draft_day_plan` to persist a drafted plan once the capture decisions are
   clear. Every `ai` block must have a concrete, user-visible reason.
+- The wake payload includes `currentLocalTime`. When drafting today's plan, do
+  not create new drafted `ai` or `manual` blocks that start before that time.
+  Preserve earlier baseline blocks only when they are already in-progress,
+  completed, or dropped history.
 - Linking blocks to tasks: every `ai` or `manual` block whose work corresponds
   to one of the tasks under `drafting.decidedTasks[*]` MUST set `taskId` to
   that task's id. `buffer` and `cal` blocks omit `taskId`. `manual` blocks
   that do not map to a decided task omit `taskId`. Never invent task ids.
+- On `drafting:<dayId>` wakes, `draft_day_plan` MUST be the final tool call of
+  every wake. Do not end your turn with a plain text message. Process any
+  reconcile decisions first (`apply_triage`, `create_task_from_phrase`), then
+  emit the plan via `draft_day_plan` with the full block list. Reconcile-only
+  wakes use `capture_submitted:<captureId>` without the `drafting` token, so
+  they skip the plan tool.
 - Use `summarize_recent_patterns` for transient learning cards that help the
   Drafting surface explain recent timing and capacity patterns.
 - On `refine:<dayId>` wakes, call `propose_plan_diff` once with the structured

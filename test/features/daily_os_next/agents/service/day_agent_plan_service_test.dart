@@ -94,6 +94,9 @@ void main() {
             entity,
       ];
     });
+    when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+      (_) async => const <String, JournalEntity>{},
+    );
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       final entity = invocation.positionalArguments.single as AgentDomainEntity;
       upsertedEntities.add(entity);
@@ -209,6 +212,32 @@ void main() {
       );
     });
 
+    test(
+      'persistDraftPlan allows task IDs created during the drafting wake',
+      () async {
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-2': _task(id: 'task-2', title: 'Buy milk')},
+        );
+
+        final plan = await withClock(Clock.fixed(_now), () {
+          return createService().persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            decidedTaskIds: const ['task-1'],
+            rawBlocks: [
+              {
+                ..._aiBlock(taskId: 'task-2'),
+                'title': 'Buy milk',
+              },
+            ],
+          );
+        });
+
+        expect(plan.data.plannedBlocks.single.taskId, 'task-2');
+      },
+    );
+
     test('persistDraftPlan rejects categories outside agent scope', () async {
       await expectLater(
         createService().persistDraftPlan(
@@ -247,6 +276,64 @@ void main() {
       expect(plan.data.pinnedTasks, hasLength(1));
       expect(plan.data.pinnedTasks.single.taskId, 'task-1');
     });
+
+    test(
+      'persistDraftPlan rejects new drafted blocks that start earlier today',
+      () async {
+        await expectLater(
+          withClock(Clock.fixed(DateTime(2026, 5, 25, 10)), () {
+            return createService().persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: [
+                _aiBlock(
+                  start: DateTime(2026, 5, 25, 9),
+                  end: DateTime(2026, 5, 25, 10),
+                ),
+              ],
+            );
+          }),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must not start before current time'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'persistDraftPlan allows already-started in-progress history',
+      () async {
+        final plan = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 10)),
+          () {
+            return createService().persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: [
+                {
+                  ..._aiBlock(
+                    start: DateTime(2026, 5, 25, 9),
+                    end: DateTime(2026, 5, 25, 11),
+                  ),
+                  'state': 'inProgress',
+                },
+              ],
+            );
+          },
+        );
+
+        expect(
+          plan.data.plannedBlocks.single.state,
+          PlannedBlockState.inProgress,
+        );
+      },
+    );
 
     test(
       'persistDraftPlan rejects energy bands outside the plan day',
@@ -552,8 +639,16 @@ void main() {
             dayId: _dayId,
             planDate: DateTime(2026, 5, 25),
             rawBlocks: [
-              _aiBlock(id: 'block-b'),
-              _aiBlock(id: 'block-a'),
+              _aiBlock(
+                id: 'block-b',
+                start: DateTime(2026, 5, 25, 11),
+                end: DateTime(2026, 5, 25, 12),
+              ),
+              _aiBlock(
+                id: 'block-a',
+                start: DateTime(2026, 5, 25, 11),
+                end: DateTime(2026, 5, 25, 12),
+              ),
             ],
           );
         });
