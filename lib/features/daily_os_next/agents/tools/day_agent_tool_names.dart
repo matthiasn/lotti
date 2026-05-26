@@ -36,6 +36,15 @@ abstract final class DayAgentToolNames {
   /// Builds transient learning cards from recent day-agent history.
   static const summarizeRecentPatterns = 'summarize_recent_patterns';
 
+  /// Proposes a structured plan diff (`moved`/`added`/`dropped` blocks).
+  static const proposePlanDiff = 'propose_plan_diff';
+
+  /// Applies a proposed plan diff to the live plan entity.
+  static const acceptDiff = 'accept_diff';
+
+  /// Retracts a proposed plan diff without mutating the plan entity.
+  static const revertDiff = 'revert_diff';
+
   /// Foundation tools implemented by the day-agent workflow itself.
   static const foundationHandlerTools = <String>{
     setNextWake,
@@ -53,10 +62,13 @@ abstract final class DayAgentToolNames {
     createTaskFromPhrase,
   };
 
-  /// Drafting tools delegated to the plan service.
+  /// Plan-mutation tools delegated to the plan service (draft + refine).
   static const planTools = <String>{
     draftDayPlan,
     summarizeRecentPatterns,
+    proposePlanDiff,
+    acceptDiff,
+    revertDiff,
   };
 
   /// Tools that require workflow-level handling instead of local strategy state.

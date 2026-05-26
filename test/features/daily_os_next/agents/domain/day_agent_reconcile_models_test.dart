@@ -317,6 +317,62 @@ void _expectTokenRoundTrip() {
       );
     });
   });
+
+  group('dayAgentRefineToken', () {
+    test('prefixes the day id', () {
+      expect(
+        dayAgentRefineToken('dayplan-2026-05-25'),
+        '${dayAgentRefinePrefix}dayplan-2026-05-25',
+      );
+    });
+  });
+
+  group('refineDayIdFromTriggerTokens', () {
+    test('returns the day id when a token has the prefix', () {
+      final result = refineDayIdFromTriggerTokens({
+        dayAgentCaptureSubmittedToken('capture-1'),
+        dayAgentRefineToken('dayplan-2026-05-25'),
+      });
+      expect(result, 'dayplan-2026-05-25');
+    });
+
+    test('returns null when no token uses the refine prefix', () {
+      expect(
+        refineDayIdFromTriggerTokens({
+          dayAgentDraftingToken('dayplan-2026-05-25'),
+          'other',
+        }),
+        isNull,
+      );
+    });
+
+    test('returns null on an empty trigger-token set', () {
+      expect(refineDayIdFromTriggerTokens(<String>{}), isNull);
+    });
+
+    test('skips a prefix-only token without a day id', () {
+      expect(
+        refineDayIdFromTriggerTokens({dayAgentRefinePrefix}),
+        isNull,
+      );
+    });
+
+    test('skips a whitespace-only day id and returns null', () {
+      expect(
+        refineDayIdFromTriggerTokens({'$dayAgentRefinePrefix   '}),
+        isNull,
+      );
+    });
+
+    test('trims surrounding whitespace from the returned day id', () {
+      expect(
+        refineDayIdFromTriggerTokens({
+          '$dayAgentRefinePrefix  dayplan-2026-05-25  ',
+        }),
+        'dayplan-2026-05-25',
+      );
+    });
+  });
 }
 
 void _expectProjections() {

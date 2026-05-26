@@ -16,6 +16,9 @@ void main() {
       DayAgentToolNames.createTaskFromPhrase,
       DayAgentToolNames.draftDayPlan,
       DayAgentToolNames.summarizeRecentPatterns,
+      DayAgentToolNames.proposePlanDiff,
+      DayAgentToolNames.acceptDiff,
+      DayAgentToolNames.revertDiff,
     ];
 
     test('uses the wire names expected by the day-agent prompt', () {
@@ -32,6 +35,9 @@ void main() {
         'create_task_from_phrase',
         'draft_day_plan',
         'summarize_recent_patterns',
+        'propose_plan_diff',
+        'accept_diff',
+        'revert_diff',
       ]);
     });
 
@@ -62,6 +68,9 @@ void main() {
         {
           DayAgentToolNames.draftDayPlan,
           DayAgentToolNames.summarizeRecentPatterns,
+          DayAgentToolNames.proposePlanDiff,
+          DayAgentToolNames.acceptDiff,
+          DayAgentToolNames.revertDiff,
         },
       );
       expect(
@@ -105,6 +114,18 @@ void main() {
       );
       expect(
         DayAgentToolNames.isPlanTool(DayAgentToolNames.draftDayPlan),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isPlanTool(DayAgentToolNames.proposePlanDiff),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isPlanTool(DayAgentToolNames.acceptDiff),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isPlanTool(DayAgentToolNames.revertDiff),
         isTrue,
       );
       expect(

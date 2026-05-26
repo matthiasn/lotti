@@ -31,6 +31,9 @@ void main() {
           DayAgentToolNames.createTaskFromPhrase,
           DayAgentToolNames.draftDayPlan,
           DayAgentToolNames.summarizeRecentPatterns,
+          DayAgentToolNames.proposePlanDiff,
+          DayAgentToolNames.acceptDiff,
+          DayAgentToolNames.revertDiff,
         ]),
       );
     });
@@ -133,6 +136,65 @@ void main() {
         (energyBandProperties['level'] as Map<String, dynamic>)['enum'],
         ['high', 'low', 'secondWind'],
       );
+    });
+
+    test('propose_plan_diff documents change-shape schema', () {
+      final properties =
+          parametersFor(DayAgentToolNames.proposePlanDiff)['properties']
+              as Map<String, dynamic>;
+      final changeSchema =
+          (properties['changes'] as Map<String, dynamic>)['items']
+              as Map<String, dynamic>;
+      final changeProperties =
+          changeSchema['properties'] as Map<String, dynamic>;
+
+      expect(
+        requiredFor(DayAgentToolNames.proposePlanDiff),
+        ['dayId', 'changes'],
+      );
+      expect(
+        (properties['changes'] as Map<String, dynamic>)['minItems'],
+        1,
+      );
+      expect(changeSchema['required'], ['action', 'reason']);
+      expect(changeSchema['additionalProperties'], isFalse);
+      expect(
+        (changeProperties['action'] as Map<String, dynamic>)['enum'],
+        ['moved', 'added', 'dropped'],
+      );
+      expect(
+        (changeProperties['reason'] as Map<String, dynamic>)['minLength'],
+        1,
+      );
+      final toProps =
+          (changeProperties['to'] as Map<String, dynamic>)['properties']
+              as Map<String, dynamic>;
+      expect(toProps.keys, containsAll(['start', 'end', 'reason']));
+    });
+
+    test('accept_diff and revert_diff share the resolution schema', () {
+      for (final name in const [
+        DayAgentToolNames.acceptDiff,
+        DayAgentToolNames.revertDiff,
+      ]) {
+        final params = parametersFor(name);
+        expect(params['required'], ['changeSetId'], reason: name);
+        expect(params['additionalProperties'], isFalse, reason: name);
+        final indices =
+            (params['properties'] as Map<String, dynamic>)['itemIndices']
+                as Map<String, dynamic>;
+        expect(indices['type'], 'array', reason: name);
+        expect(
+          (indices['items'] as Map<String, dynamic>)['type'],
+          'integer',
+          reason: name,
+        );
+        expect(
+          (indices['items'] as Map<String, dynamic>)['minimum'],
+          0,
+          reason: name,
+        );
+      }
     });
   });
 }

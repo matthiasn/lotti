@@ -9,12 +9,18 @@ const dayAgentCaptureSubmittedPrefix = 'capture_submitted:';
 const dayAgentCaptureSubmittedReason = 'capture_submitted';
 
 /// Wake trigger token prefix used to request a day-plan drafting wake.
-// TODO(day-agent): hoist drafting + capture token helpers into a shared
-// `day_agent_trigger_tokens.dart` once Refine/Commit add more trigger families.
+// TODO(day-agent): hoist drafting + capture + refine token helpers into a
+// shared `day_agent_trigger_tokens.dart` once Commit adds another family.
 const dayAgentDraftingPrefix = 'drafting:';
 
 /// Wake scheduling reason used when a draft is requested.
 const dayAgentDraftingReason = 'drafting';
+
+/// Wake trigger token prefix used to request a day-plan refine wake.
+const dayAgentRefinePrefix = 'refine:';
+
+/// Wake scheduling reason used when a refine is requested.
+const dayAgentRefineReason = 'refine';
 
 /// Minimum score that becomes an auto-linked match.
 const dayAgentHighConfidenceThreshold = 0.75;
@@ -192,6 +198,25 @@ String? draftingDayIdFromTriggerTokens(Set<String> triggerTokens) {
   for (final token in triggerTokens) {
     if (token.startsWith(dayAgentDraftingPrefix)) {
       final dayId = token.substring(dayAgentDraftingPrefix.length).trim();
+      if (dayId.isNotEmpty) return dayId;
+    }
+  }
+  return null;
+}
+
+/// Creates the refine wake trigger token for [dayId].
+String dayAgentRefineToken(String dayId) {
+  return '$dayAgentRefinePrefix$dayId';
+}
+
+/// Extracts the first refine-target day ID from a trigger-token set.
+///
+/// The returned ID is trimmed of surrounding whitespace so equality checks
+/// downstream match canonical form.
+String? refineDayIdFromTriggerTokens(Set<String> triggerTokens) {
+  for (final token in triggerTokens) {
+    if (token.startsWith(dayAgentRefinePrefix)) {
+      final dayId = token.substring(dayAgentRefinePrefix.length).trim();
       if (dayId.isNotEmpty) return dayId;
     }
   }
