@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -11,6 +13,30 @@ void navigateBackFromAgent(BuildContext context) {
   } else {
     Navigator.of(context).pop();
   }
+}
+
+/// Settings sub-route for a single agent's instance detail page.
+///
+/// Kept here so any feature can deep-link to the existing agent detail
+/// UI without depending on the sidebar wake queue file.
+String agentInstanceRoute(String agentId) =>
+    '/settings/agents/instances/$agentId';
+
+/// Navigates from anywhere to the agent detail page for [agentId].
+///
+/// Mirrors the sidebar wake-queue navigation flow: switch to the
+/// Settings tab via [NavService.setIndex] (not `tapIndex`, which would
+/// re-root the delegate), beam the Settings delegate to the target
+/// route, and persist the named route so reload returns to the same
+/// page.
+void navigateToAgentInstance(String agentId) {
+  final navService = getIt<NavService>();
+  final route = agentInstanceRoute(agentId);
+  if (navService.index != navService.settingsIndex) {
+    navService.setIndex(navService.settingsIndex);
+  }
+  navService.settingsDelegate.beamToNamed(route);
+  unawaited(navService.persistNamedRoute(route));
 }
 
 /// Standard back button used across agent UI pages.

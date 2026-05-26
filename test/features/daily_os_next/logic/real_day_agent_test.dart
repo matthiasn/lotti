@@ -241,6 +241,7 @@ void main() {
           () => dayAgentService.enqueueDraftingWake(
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
+            decidedTaskIds: any(named: 'decidedTaskIds'),
           ),
         ).thenAnswer((_) async => true);
         when(
@@ -274,6 +275,7 @@ void main() {
           () => dayAgentService.enqueueDraftingWake(
             dayDate: _asOf,
             captureId: 'cap_1',
+            decidedTaskIds: ['t_1'],
           ),
         ).called(1);
       },
@@ -299,6 +301,7 @@ void main() {
           () => dayAgentService.enqueueDraftingWake(
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
+            decidedTaskIds: any(named: 'decidedTaskIds'),
           ),
         );
       },
@@ -325,6 +328,7 @@ void main() {
           () => dayAgentService.enqueueDraftingWake(
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
+            decidedTaskIds: any(named: 'decidedTaskIds'),
           ),
         ).thenAnswer((_) async => false);
 

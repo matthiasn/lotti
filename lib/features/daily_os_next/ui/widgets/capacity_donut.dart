@@ -54,17 +54,17 @@ class CapacityDonut extends StatelessWidget {
                 _formatHours(scheduledMinutes),
                 style: tokens.typography.styles.heading.heading3.copyWith(
                   color: color,
-                  fontSize: 22,
-                  height: 1,
+                  height: 1.1,
                 ),
               ),
+              SizedBox(height: tokens.spacing.step1),
               Text(
                 context.messages.dailyOsNextAgendaCapacityOf(
                   _formatHours(capacityMinutes),
                 ),
-                style: tokens.typography.styles.others.overline.copyWith(
+                style: tokens.typography.styles.body.bodySmall.copyWith(
                   color: tokens.colors.text.lowEmphasis,
-                  fontSize: 9,
+                  height: 1,
                 ),
               ),
             ],
@@ -98,45 +98,61 @@ class _DonutPainter extends CustomPainter {
     const stroke = 10.0;
     final radius = math.min(size.width, size.height) / 2 - stroke / 2;
     final center = Offset(size.width / 2, size.height / 2);
+    final rect = Rect.fromCircle(center: center, radius: radius);
 
+    // Track: dim full ring so the donut always reads as a donut even
+    // before any progress is drawn.
     final track = Paint()
       ..color = backgroundColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke;
     canvas.drawCircle(center, radius, track);
 
-    final fill = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
+    if (ratio <= 0) return;
 
-    final clamped = ratio.clamp(0.0, 1.0);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      clamped * 2 * math.pi,
-      false,
-      fill,
-    );
-
-    // Over-amount draws as a partially overlapping second ring at
-    // 0.5 alpha so over-capacity is unmistakable.
-    if (ratio > 1.0) {
-      final over = (ratio - 1.0).clamp(0.0, 1.0);
-      final overPaint = Paint()
-        ..color = color.withValues(alpha: 0.5)
+    if (ratio <= 1.0) {
+      // Normal case: draw a single solid arc at full alpha showing
+      // capacity utilisation.
+      final fill = Paint()
+        ..color = color
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
         ..strokeCap = StrokeCap.round;
       canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
+        rect,
         -math.pi / 2,
-        over * 2 * math.pi,
+        ratio * 2 * math.pi,
         false,
-        overPaint,
+        fill,
       );
+      return;
     }
+
+    // Over-capacity case: muted full ring shows "capacity is used up"
+    // and a bright outer halo shows the spillover. Drawing the halo
+    // on a slightly larger radius makes the over-amount unmistakable
+    // instead of blending into the base ring.
+    final mutedFill = Paint()
+      ..color = color.withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    canvas.drawCircle(center, radius, mutedFill);
+
+    final over = (ratio - 1.0).clamp(0.0, 1.0);
+    final overRadius = radius + stroke / 2 + 3;
+    final overRect = Rect.fromCircle(center: center, radius: overRadius);
+    final overPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+      overRect,
+      -math.pi / 2,
+      over * 2 * math.pi,
+      false,
+      overPaint,
+    );
   }
 
   @override

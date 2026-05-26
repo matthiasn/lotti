@@ -1,5 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
@@ -45,4 +49,52 @@ final currentDraftPlanProvider = FutureProvider.autoDispose
       // Re-runs whenever entities under this day-agent change.
       ref.watch(agentUpdateStreamProvider(dayAgentIdForDate(date)));
       return agent.currentPlanForDate(date);
+    });
+
+/// One row in the Captures panel — a persisted capture paired with the
+/// `JournalAudio` it references (if any). Audio may be `null` when the
+/// capture was typed instead of spoken or when the journal entry has
+/// been deleted out from under the capture.
+@immutable
+class CaptureWithAudio {
+  const CaptureWithAudio({required this.capture, this.audio});
+
+  final CaptureEntity capture;
+  final JournalAudio? audio;
+}
+
+/// Captures persisted under the day-agent for the given date, newest
+/// first. Each entry is paired with the linked `JournalAudio` so the
+/// UI can drop the existing `AudioPlayerWidget` straight in.
+// ignore: specify_nonobvious_property_types
+final capturesForDateProvider = FutureProvider.autoDispose
+    .family<List<CaptureWithAudio>, DateTime>((ref, date) async {
+      final dayAgentService = ref.watch(dayAgentServiceProvider);
+      final journalDb = ref.watch(journalDbProvider);
+      final agentRepository = ref.watch(agentRepositoryProvider);
+      ref.watch(agentUpdateStreamProvider(dayAgentIdForDate(date)));
+
+      final agent = await dayAgentService.getDayAgentForDate(date);
+      if (agent == null) return const <CaptureWithAudio>[];
+      final rows = await agentRepository.getEntitiesByAgentId(
+        agent.agentId,
+        type: AgentEntityTypes.capture,
+      );
+      final captures = rows
+          .whereType<CaptureEntity>()
+          .where((c) => c.deletedAt == null)
+          .toList();
+      final out = <CaptureWithAudio>[];
+      for (final capture in captures) {
+        JournalAudio? audio;
+        final audioRef = capture.audioRef;
+        if (audioRef != null && audioRef.isNotEmpty) {
+          final entity = await journalDb.journalEntityById(audioRef);
+          if (entity is JournalAudio && entity.meta.deletedAt == null) {
+            audio = entity;
+          }
+        }
+        out.add(CaptureWithAudio(capture: capture, audio: audio));
+      }
+      return out;
     });

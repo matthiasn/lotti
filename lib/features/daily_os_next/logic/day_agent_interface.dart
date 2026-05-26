@@ -29,6 +29,14 @@ abstract class DayAgentInterface {
   /// already exists, instead of forcing the user back through Capture.
   Future<DraftPlan?> currentPlanForDate(DateTime date);
 
+  /// Soft-deletes the persisted day plan for [date]. Captures and
+  /// their audio entries remain — only the plan and its inbound
+  /// `captureToPlan` links go.
+  ///
+  /// Returns `true` when a plan was found and removed, `false` when
+  /// no plan existed or the agent did not exist for this date.
+  Future<bool> deletePlanForDate(DateTime date);
+
   /// Tool: `parse_capture_to_items`. Tokenize the transcript into
   /// editable structured items, each tagged with NEW / MATCHED /
   /// UPDATE and a confidence level.

@@ -1,13 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
+    as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+
+enum _DayMenuAction { inspectAgent, deletePlan }
 
 /// Hosts the two read-only projections of the [DraftPlan] — Agenda
 /// (intent) and Day (mechanics) — with a pill toggle at the top.
@@ -16,7 +26,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// "what today is about" view; Day is the "when does it happen"
 /// projection a tap away. A footer pill opens the Refine screen for
 /// voice-driven plan changes.
-class DayPage extends StatefulWidget {
+class DayPage extends ConsumerStatefulWidget {
   const DayPage({required this.draft, this.dateStrip, super.key});
 
   final DraftPlan draft;
@@ -28,10 +38,10 @@ class DayPage extends StatefulWidget {
   final Widget? dateStrip;
 
   @override
-  State<DayPage> createState() => _DayPageState();
+  ConsumerState<DayPage> createState() => _DayPageState();
 }
 
-class _DayPageState extends State<DayPage> {
+class _DayPageState extends ConsumerState<DayPage> {
   PlanView _view = PlanView.agenda;
   late DraftPlan _draft = widget.draft;
 
@@ -63,6 +73,57 @@ class _DayPageState extends State<DayPage> {
         builder: (_) => ShutdownPage(forDate: _draft.dayDate),
       ),
     );
+  }
+
+  /// Resolves the day-agent identity for the current day and beams the
+  /// Settings stack onto the existing agent detail page so the user can
+  /// inspect the wake history, conversation log, observations, and
+  /// token usage that produced this plan.
+  Future<void> _openAgentInternals() async {
+    final identity = await ref.read(
+      agent_providers.dayAgentProvider(_draft.dayDate).future,
+    );
+    if (!mounted || identity == null) return;
+    navigateToAgentInstance(identity.agentId);
+  }
+
+  /// Confirms intent then soft-deletes the persisted `DayPlanEntity`
+  /// for this day via `DayAgentInterface.deletePlanForDate`. The
+  /// route-level root watches `currentDraftPlanProvider`, which
+  /// auto-invalidates on the agent's update stream, so the screen
+  /// flips back to Capture for this date without a manual navigate.
+  Future<void> _confirmDeletePlan() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this plan?'),
+        content: const Text(
+          'The drafted blocks for this day will be removed. Captures and '
+          'their audio recordings stay in your journal.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.errorContainer,
+              foregroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.onErrorContainer,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final agent = ref.read(dayAgentProvider);
+    await agent.deletePlanForDate(_draft.dayDate);
   }
 
   @override
@@ -104,11 +165,43 @@ class _DayPageState extends State<DayPage> {
               onChanged: (next) => setState(() => _view = next),
             ),
           ),
+          PopupMenuButton<_DayMenuAction>(
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'More',
+            onSelected: (action) {
+              switch (action) {
+                case _DayMenuAction.inspectAgent:
+                  unawaited(_openAgentInternals());
+                case _DayMenuAction.deletePlan:
+                  unawaited(_confirmDeletePlan());
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem<_DayMenuAction>(
+                value: _DayMenuAction.inspectAgent,
+                child: ListTile(
+                  leading: Icon(Icons.psychology_alt_outlined),
+                  title: Text('Inspect agent'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem<_DayMenuAction>(
+                value: _DayMenuAction.deletePlan,
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline_rounded),
+                  title: Text('Delete plan'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(width: tokens.spacing.step2),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
+            CapturesPanel(date: _draft.dayDate),
             Expanded(
               child: _view == PlanView.agenda
                   ? AgendaView(draft: _draft)

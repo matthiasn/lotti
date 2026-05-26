@@ -43,6 +43,9 @@ class _RecordingAgent implements DayAgentInterface {
   Future<DraftPlan?> currentPlanForDate(DateTime date) async => null;
 
   @override
+  Future<bool> deletePlanForDate(DateTime date) async => true;
+
+  @override
   Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [];
 
   @override

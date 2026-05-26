@@ -93,6 +93,16 @@ class RealDayAgent implements DayAgentInterface {
   }
 
   @override
+  Future<bool> deletePlanForDate(DateTime date) async {
+    final identity = await dayAgentService.getDayAgentForDate(date);
+    if (identity is! AgentIdentityEntity) return false;
+    return planService.deletePlanForDay(
+      agentId: identity.agentId,
+      dayId: dayAgentIdForDate(date),
+    );
+  }
+
+  @override
   Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async {
     final entities = await captureService.parsedItemsForCapture(id.value);
     final out = <ParsedItem>[];
@@ -192,6 +202,10 @@ class RealDayAgent implements DayAgentInterface {
     final enqueued = await dayAgentService.enqueueDraftingWake(
       dayDate: dayDate,
       captureId: captureId.value,
+      // PR #3212: the workflow turns these into `decided_task:<id>`
+      // trigger tokens and surfaces the hydrated tasks in the drafting
+      // prompt so the model can attach `taskId` to each placed block.
+      decidedTaskIds: decidedTaskIds,
     );
     if (!enqueued) {
       return mockFallback.draftDayPlan(

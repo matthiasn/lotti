@@ -3446,6 +3446,158 @@ void main() {
         },
       );
     });
+
+    group('deletePlanForDay', () {
+      const planEntityId = 'day_agent_plan:$_dayId';
+
+      DayPlanEntity seedPlan({DateTime? deletedAt}) {
+        final plan =
+            AgentDomainEntity.dayPlan(
+                  id: planEntityId,
+                  agentId: _agentId,
+                  dayId: _dayId,
+                  planDate: DateTime(2026, 5, 25),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 25),
+                    status: const DayPlanStatus.draft(),
+                  ),
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                  deletedAt: deletedAt,
+                )
+                as DayPlanEntity;
+        agentEntities[plan.id] = plan;
+        return plan;
+      }
+
+      AgentLink captureLink({String captureId = 'capture-001'}) {
+        return AgentLink.captureToPlan(
+          id: 'capture_to_plan:$captureId:$planEntityId',
+          fromId: captureId,
+          toId: planEntityId,
+          createdAt: _now,
+          updatedAt: _now,
+          vectorClock: null,
+        );
+      }
+
+      test('returns false when no plan exists for this day', () async {
+        when(
+          () => agentRepository.getLinksTo(
+            any(),
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((_) async => const <AgentLink>[]);
+
+        final removed = await createService().deletePlanForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(removed, isFalse);
+        expect(upsertedEntities, isEmpty);
+        expect(notifications, isEmpty);
+      });
+
+      test(
+        'returns false when the plan belongs to a different agent',
+        () async {
+          seedPlan();
+          agentEntities[planEntityId] =
+              (agentEntities[planEntityId]! as DayPlanEntity).copyWith(
+                agentId: 'other-agent',
+              );
+          when(
+            () => agentRepository.getLinksTo(
+              any(),
+              type: any(named: 'type'),
+            ),
+          ).thenAnswer((_) async => const <AgentLink>[]);
+
+          final removed = await createService().deletePlanForDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          expect(removed, isFalse);
+          expect(upsertedEntities, isEmpty);
+        },
+      );
+
+      test(
+        'soft-deletes the plan + inbound capture links and fires notifications',
+        () async {
+          final plan = seedPlan();
+          final link = captureLink(captureId: 'capture-live-001');
+          when(
+            () => agentRepository.getLinksTo(
+              any(),
+              type: any(named: 'type'),
+            ),
+          ).thenAnswer((_) async => [link]);
+
+          final removed = await withClock(Clock.fixed(_now), () {
+            return createService().deletePlanForDay(
+              agentId: _agentId,
+              dayId: _dayId,
+            );
+          });
+
+          expect(removed, isTrue);
+          expect(upsertedEntities, hasLength(1));
+          final upserted = upsertedEntities.single as DayPlanEntity;
+          expect(upserted.id, plan.id);
+          expect(upserted.deletedAt, _now);
+          expect(upsertedLinks, hasLength(1));
+          expect(upsertedLinks.single.deletedAt, _now);
+          expect(notifications, containsAll([_agentId, _dayId, plan.id]));
+        },
+      );
+
+      test('is idempotent when called on an already-deleted plan', () async {
+        seedPlan(deletedAt: _now);
+        when(
+          () => agentRepository.getLinksTo(
+            any(),
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((_) async => const <AgentLink>[]);
+
+        final removed = await createService().deletePlanForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(removed, isFalse);
+        expect(upsertedEntities, isEmpty);
+      });
+
+      test('skips inbound links that are already soft-deleted', () async {
+        seedPlan();
+        final liveLink = captureLink(captureId: 'capture-live');
+        final deletedLink = captureLink(
+          captureId: 'capture-dead',
+        ).copyWith(deletedAt: _now);
+        when(
+          () => agentRepository.getLinksTo(
+            any(),
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((_) async => [liveLink, deletedLink]);
+
+        final removed = await withClock(Clock.fixed(_now), () {
+          return createService().deletePlanForDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+        });
+
+        expect(removed, isTrue);
+        expect(upsertedLinks, hasLength(1));
+        expect(upsertedLinks.single.fromId, 'capture-live');
+      });
+    });
   });
 }
 

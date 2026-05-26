@@ -111,6 +111,45 @@ class DayAgentPlanService {
     return null;
   }
 
+  /// Soft-deletes the persisted [DayPlanEntity] for [dayId] (when one
+  /// exists) and every `captureToPlan` link pointing at it. The agent
+  /// identity and source captures stay intact — they predate the plan
+  /// and belong to the journal-side record of the day.
+  ///
+  /// Returns `true` when a plan was found and soft-deleted, `false`
+  /// otherwise (no plan, foreign owner, or already-deleted). Idempotent
+  /// so a double-fire from the UI is safe.
+  Future<bool> deletePlanForDay({
+    required String agentId,
+    required String dayId,
+  }) async {
+    final entity = await agentRepository.getEntity(dayAgentPlanEntityId(dayId));
+    if (entity is! DayPlanEntity) return false;
+    if (entity.agentId != agentId) return false;
+    if (entity.deletedAt != null) return false;
+
+    final now = clock.now();
+    final softDeleted = entity.copyWith(deletedAt: now, updatedAt: now);
+    final inboundLinks = await agentRepository.getLinksTo(
+      entity.id,
+      type: AgentLinkTypes.captureToPlan,
+    );
+
+    await syncService.runInTransaction(() async {
+      await syncService.upsertEntity(softDeleted);
+      for (final link in inboundLinks) {
+        if (link.deletedAt != null) continue;
+        await syncService.upsertLink(link.softDeleted(now));
+      }
+    });
+
+    onPersistedStateChanged
+      ?..call(agentId)
+      ..call(dayId)
+      ..call(entity.id);
+    return true;
+  }
+
   /// Hydrate the set of tasks the model should know about when drafting.
   ///
   /// Merges two sources, in order:
