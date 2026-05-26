@@ -12,6 +12,7 @@ class WidgetTestBench extends StatelessWidget {
     this.overrides = const [],
     this.theme,
     this.mediaQueryData,
+    this.surfaceConstraints,
     super.key,
   });
 
@@ -20,9 +21,20 @@ class WidgetTestBench extends StatelessWidget {
   final ThemeData? theme;
   final MediaQueryData? mediaQueryData;
 
+  /// Override the inner ConstrainedBox that wraps [child]. Defaults to
+  /// `BoxConstraints(minHeight: 800, minWidth: 800)` so most widget tests
+  /// render at a comfortable desktop size. Pass a tight width (e.g.
+  /// `BoxConstraints.tightFor(width: 360)`) when testing responsive
+  /// behaviour at narrow widths — typical use-case is reproducing a
+  /// modal overflow at the actual width WoltModalSheet uses on desktop.
+  final BoxConstraints? surfaceConstraints;
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = mediaQueryData ?? phoneMediaQueryData;
+    final constraints =
+        surfaceConstraints ??
+        const BoxConstraints(minHeight: 800, minWidth: 800);
 
     return ProviderScope(
       overrides: overrides,
@@ -39,10 +51,7 @@ class WidgetTestBench extends StatelessWidget {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: 800,
-                minWidth: 800,
-              ),
+              constraints: constraints,
               child: child,
             ),
           ),

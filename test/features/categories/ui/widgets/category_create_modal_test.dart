@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -184,6 +187,176 @@ void main() {
       );
       expect(createdCategories, isEmpty);
       expect(find.textContaining('Category name is required'), findsOneWidget);
+    },
+  );
+
+  // Regression: at the narrow widths WoltModalSheet uses on desktop,
+  // `flutter_colorpicker.ColorPicker` picked its landscape Row branch
+  // (square + 260-px hard-coded slider) and overflowed the modal.
+  // `portraitOnly: true` + a LayoutBuilder in CategoryCreateModal
+  // forces the portrait branch and sizes `colorPickerWidth` to fit.
+  //
+  // Built on the shared `WidgetTestBench` (with the new
+  // `surfaceConstraints` knob) instead of a bespoke MaterialApp +
+  // ProviderScope wrapper — per AGENTS.md, tests should not duplicate
+  // the standard testable wrapper.
+  Widget createModalAtWidth(double width) {
+    return WidgetTestBench(
+      overrides: [
+        categoryRepositoryProvider.overrideWithValue(mockRepository),
+      ],
+      surfaceConstraints: BoxConstraints.tightFor(width: width),
+      child: CategoryCreateModal(
+        initialName: 'Narrow',
+        onCategoryCreated: (_) {},
+      ),
+    );
+  }
+
+  testWidgets(
+    'color picker does not overflow when the modal width is 360 px '
+    '(regression for the create-category modal)',
+    (tester) async {
+      await tester.pumpWidget(createModalAtWidth(360));
+      await tester.pump();
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason:
+            'flutter_colorpicker.ColorPicker overflowed its parent at 360 '
+            'px. CategoryCreateModal must keep `portraitOnly: true` AND '
+            'wrap the picker in a LayoutBuilder that clamps '
+            '`colorPickerWidth`. Reverting either re-introduces the bug.',
+      );
+
+      // The saturation square (ColorPickerArea) is the load-bearing
+      // dimension: in the portrait branch the slider derives its
+      // width from it. Asserting on the area's actual width — rather
+      // than on the outer ColorPicker, which always inherits parent
+      // constraints — is what proves the LayoutBuilder did its job.
+      final areaSize = tester.getSize(find.byType(ColorPickerArea));
+      expect(
+        areaSize.width,
+        lessThanOrEqualTo(CategoryIconConstants.colorPickerMaxSquareWidth),
+      );
+      // And it must fit inside the modal interior (modal padding eats
+      // 16 px each side).
+      expect(areaSize.width, lessThanOrEqualTo(360 - 32));
+    },
+  );
+
+  testWidgets(
+    'color picker clamps to the design-system max on a wide modal',
+    (tester) async {
+      await tester.pumpWidget(createModalAtWidth(720));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+
+      // On a wide modal the clamp ceiling should kick in: the
+      // saturation square stays at `colorPickerMaxSquareWidth` rather
+      // than growing to fill the available width and looking
+      // disproportionately large.
+      final areaSize = tester.getSize(find.byType(ColorPickerArea));
+      expect(
+        areaSize.width,
+        equals(CategoryIconConstants.colorPickerMaxSquareWidth),
+      );
+    },
+  );
+
+  // The clamp math behind colorPickerWidth lives in
+  // `pickerSquareWidthFor` and is unit-tested below — exercising the
+  // ultra-narrow case (the gap gemini-code-assist flagged on PR
+  // #3215) through the full modal isn't reliable because at modal
+  // widths < ~230 px the Cancel/Save Row overflows for unrelated
+  // reasons and masks the picker behaviour we actually care about.
+  group('pickerSquareWidthFor', () {
+    test('clamps to the design-system max on wide surfaces', () {
+      expect(
+        pickerSquareWidthFor(720),
+        equals(CategoryIconConstants.colorPickerMaxSquareWidth),
+      );
+      // Exactly at the ceiling stays at the ceiling.
+      expect(
+        pickerSquareWidthFor(
+          CategoryIconConstants.colorPickerMaxSquareWidth,
+        ),
+        equals(CategoryIconConstants.colorPickerMaxSquareWidth),
+      );
+    });
+
+    test('passes the available width through on tight surfaces', () {
+      // A value below the ceiling is returned unchanged — no preferred
+      // minimum is enforced. This is the property that prevents the
+      // picker from overflowing on extremely narrow surfaces (the
+      // case the PR-review bot flagged).
+      expect(pickerSquareWidthFor(180), equals(180));
+      expect(pickerSquareWidthFor(50), equals(50));
+      expect(pickerSquareWidthFor(0), equals(0));
+    });
+  });
+
+  testWidgets(
+    'dragging the saturation square flows the new color into the save call',
+    (tester) async {
+      // Capture whatever colour the modal hands to the repository when
+      // Save is tapped. The default _pickerColor is Colors.red; a drag
+      // on the saturation square fires `onColorChanged` (the closure
+      // patched into the ColorPicker by CategoryCreateModal), which
+      // calls setState with the new colour. If the closure never
+      // executes — e.g. someone removes the LayoutBuilder + ColorPicker
+      // setup or drops `setState` — the saved colour would still be
+      // red and this test would fail.
+      String? capturedColor;
+      when(
+        () => mockRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          icon: any(named: 'icon'),
+        ),
+      ).thenAnswer((invocation) async {
+        final color =
+            invocation.namedArguments[const Symbol('color')] as String;
+        capturedColor = color;
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        return CategoryDefinition(
+          id: 'test-id',
+          name: invocation.namedArguments[const Symbol('name')] as String,
+          color: color,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+          private: false,
+          active: true,
+        );
+      });
+
+      await tester.pumpWidget(createTestWidget(onCategoryCreated: (_) {}));
+      await tester.pumpAndSettle();
+
+      // Drag inside the saturation square. The package wires this up
+      // through a RawGestureDetector with a pan recognizer, so a
+      // synthesized drag fires `onPanDown` → `onPanUpdate` → the
+      // package's `onColorChanging` → our `onColorChanged`.
+      final area = find.byType(ColorPickerArea);
+      final rect = tester.getRect(area);
+      await tester.dragFrom(
+        rect.center,
+        Offset(rect.width / 4, -rect.height / 4),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      // The saved colour must differ from the default red because the
+      // drag perturbed both saturation and value. Comparing against
+      // `colorToCssHex(Colors.red)` rather than a hard-coded string
+      // keeps the test in sync with whichever format the util emits.
+      expect(capturedColor, isNotNull);
+      expect(capturedColor, isNot(equals(colorToCssHex(Colors.red))));
     },
   );
 

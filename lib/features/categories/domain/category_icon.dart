@@ -74,6 +74,15 @@ class CategoryIconConstants {
   /// Small border radius for color picker
   static const double colorPickerBorderRadius = 10;
 
+  /// Upper clamp on the `flutter_colorpicker` saturation/value square
+  /// — matches the package's own default (`colorPickerWidth = 300`) so
+  /// wide modals don't get a disproportionately huge picker. There is
+  /// no lower clamp on purpose: with `portraitOnly: true` the whole
+  /// picker is exactly this wide, so enforcing a minimum bigger than
+  /// the available width would just re-introduce horizontal overflow
+  /// on extremely narrow surfaces (split-views, narrow test rigs).
+  static const double colorPickerMaxSquareWidth = 300;
+
   /// Standard section spacing
   static const double sectionSpacing = 16;
 
