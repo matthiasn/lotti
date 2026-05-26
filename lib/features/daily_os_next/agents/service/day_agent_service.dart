@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -239,10 +240,10 @@ class DayAgentService {
     }
     final dayId = dayAgentIdForDate(dayDate);
     final plan = await repository.getEntity(dayAgentPlanEntityId(dayId));
-    if (plan is! AgentDomainEntity ||
-        plan is! DayPlanEntity ||
+    if (plan is! DayPlanEntity ||
         plan.deletedAt != null ||
-        plan.agentId != agent.agentId) {
+        plan.agentId != agent.agentId ||
+        plan.data.status is! DayPlanStatusDraft) {
       domainLogger.log(
         LogDomains.agentRuntime,
         'no draft plan for '

@@ -316,7 +316,7 @@ class DayAgentPlanService {
     required List<int>? itemIndices,
     required bool apply,
   }) async {
-    await _requireIdentity(agentId);
+    final identity = await _requireIdentity(agentId);
     final loaded = await agentRepository.getEntity(changeSetId);
     if (loaded is! ChangeSetEntity ||
         loaded.deletedAt != null ||
@@ -353,13 +353,17 @@ class DayAgentPlanService {
 
     if (apply) {
       // Pre-validate every pending selected change against the current
-      // plan before mutating anything (atomic all-or-nothing).
-      final blocksById = <String, PlannedBlock>{
-        for (final block in plan.data.plannedBlocks) block.id: block,
-      };
-      for (final entry in pendingByIndex.entries) {
-        _validateApplicable(entry.value, blocksById);
-      }
+      // plan before mutating anything (atomic all-or-nothing). The sweep
+      // is order-aware (drops/moves earlier in the batch affect later
+      // items) and re-runs the propose-time invariants against the
+      // *resolving* agent's allowed categories so a synced ChangeItem
+      // cannot smuggle an unauthorized category or out-of-day timestamp
+      // past the apply path.
+      _validateApplicableBatch(
+        pendingByIndex.entries,
+        plan,
+        identity.allowedCategoryIds,
+      );
     }
 
     final now = clock.now();
@@ -1277,25 +1281,141 @@ class DayAgentPlanService {
     }
   }
 
-  static void _validateApplicable(
-    ChangeItem item,
-    Map<String, PlannedBlock> blocksById,
+  /// Order-aware validation across a batch of pending items.
+  ///
+  /// Walks the items in resolution order against a simulated block set so
+  /// that one item's effect (e.g. dropping a block) is visible to later
+  /// items in the same batch. Also re-runs the propose-time invariants
+  /// against the resolving agent's [allowedCategoryIds]:
+  ///   * `add_block` carries a full new block — validate shape, parseable
+  ///     timestamps, `end > start`, in-day bounds, allowed category.
+  ///   * `move_block` may carry partial overrides — validate any provided
+  ///     timestamps (parseable + in-day), the effective end > effective
+  ///     start (using the live block as fallback), and any category
+  ///     override against [allowedCategoryIds].
+  ///   * `drop_block` only needs the blockId still to exist in the
+  ///     simulated set.
+  static void _validateApplicableBatch(
+    Iterable<MapEntry<int, ChangeItem>> entries,
+    DayPlanEntity plan,
+    Set<String> allowedCategoryIds,
   ) {
-    switch (item.toolName) {
-      case 'move_block':
-      case 'drop_block':
-        final blockId = item.args['blockId'] as String?;
-        if (blockId == null || !blocksById.containsKey(blockId)) {
-          throw DayAgentCaptureException(
-            'cannot apply ${item.toolName}: blockId $blockId no longer exists',
-          );
-        }
-      case 'add_block':
-        break;
-      default:
+    final simulatedIds = <String>{
+      for (final block in plan.data.plannedBlocks) block.id,
+    };
+    final blocksById = <String, PlannedBlock>{
+      for (final block in plan.data.plannedBlocks) block.id: block,
+    };
+    final dayStart = localDay(plan.planDate);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    void assertInDay(DateTime t, int idx, String label) {
+      if (t.isBefore(dayStart) || t.isAfter(dayEnd)) {
         throw DayAgentCaptureException(
-          'cannot apply unknown change tool "${item.toolName}"',
+          'cannot apply change at index $idx: $label is outside the plan day',
         );
+      }
+    }
+
+    void assertAllowedCategory(String categoryId, int idx) {
+      if (allowedCategoryIds.isEmpty) return;
+      if (!allowedCategoryIds.contains(categoryId)) {
+        throw DayAgentCaptureException(
+          'cannot apply change at index $idx: categoryId $categoryId is '
+          'not allowed for this agent',
+        );
+      }
+    }
+
+    DateTime? parseDate(Object? raw, int idx, String label) {
+      if (raw == null) return null;
+      if (raw is! String) {
+        throw DayAgentCaptureException(
+          'cannot apply change at index $idx: $label must be a string',
+        );
+      }
+      final parsed = DateTime.tryParse(raw);
+      if (parsed == null) {
+        throw DayAgentCaptureException(
+          'cannot apply change at index $idx: $label is not a valid '
+          'ISO-8601 date-time',
+        );
+      }
+      return parsed;
+    }
+
+    for (final entry in entries) {
+      final idx = entry.key;
+      final item = entry.value;
+      switch (item.toolName) {
+        case 'move_block':
+          final blockId = item.args['blockId'] as String?;
+          if (blockId == null || !simulatedIds.contains(blockId)) {
+            throw DayAgentCaptureException(
+              'cannot apply move_block at index $idx: blockId $blockId not '
+              'in plan (possibly dropped earlier in this batch)',
+            );
+          }
+          final live = blocksById[blockId]!;
+          final newStart = parseDate(item.args['toStart'], idx, 'toStart');
+          final newEnd = parseDate(item.args['toEnd'], idx, 'toEnd');
+          final effStart = newStart ?? live.startTime;
+          final effEnd = newEnd ?? live.endTime;
+          if (!effEnd.isAfter(effStart)) {
+            throw DayAgentCaptureException(
+              'cannot apply move_block at index $idx: effective end must '
+              'be after effective start',
+            );
+          }
+          assertInDay(effStart, idx, 'effective start');
+          assertInDay(effEnd, idx, 'effective end');
+          final newCategoryId = item.args['categoryId'];
+          if (newCategoryId is String && newCategoryId.isNotEmpty) {
+            assertAllowedCategory(newCategoryId, idx);
+          }
+        case 'drop_block':
+          final blockId = item.args['blockId'] as String?;
+          if (blockId == null || !simulatedIds.contains(blockId)) {
+            throw DayAgentCaptureException(
+              'cannot apply drop_block at index $idx: blockId $blockId not '
+              'in plan (possibly dropped earlier in this batch)',
+            );
+          }
+          simulatedIds.remove(blockId);
+        case 'add_block':
+          final categoryId = item.args['categoryId'];
+          if (categoryId is! String || categoryId.isEmpty) {
+            throw DayAgentCaptureException(
+              'cannot apply add_block at index $idx: categoryId must be a '
+              'non-empty string',
+            );
+          }
+          assertAllowedCategory(categoryId, idx);
+          final start = parseDate(item.args['toStart'], idx, 'toStart');
+          final end = parseDate(item.args['toEnd'], idx, 'toEnd');
+          if (start == null) {
+            throw DayAgentCaptureException(
+              'cannot apply add_block at index $idx: toStart is required',
+            );
+          }
+          if (end == null) {
+            throw DayAgentCaptureException(
+              'cannot apply add_block at index $idx: toEnd is required',
+            );
+          }
+          if (!end.isAfter(start)) {
+            throw DayAgentCaptureException(
+              'cannot apply add_block at index $idx: toEnd must be after '
+              'toStart',
+            );
+          }
+          assertInDay(start, idx, 'toStart');
+          assertInDay(end, idx, 'toEnd');
+        default:
+          throw DayAgentCaptureException(
+            'cannot apply unknown change tool "${item.toolName}"',
+          );
+      }
     }
   }
 
@@ -1303,13 +1423,28 @@ class DayAgentPlanService {
     ChangeItem item,
     List<PlannedBlock> blocks,
   ) {
+    // Defensive: `_validateApplicableBatch` runs immediately before this
+    // and rejects every malformed item, so the assertions below should be
+    // unreachable in normal flow. They exist so an accidental future
+    // bypass surfaces a clean `DayAgentCaptureException` instead of a
+    // bare `RangeError` / `TypeError`.
     final out = List<PlannedBlock>.of(blocks);
     final args = item.args;
     switch (item.toolName) {
       case 'move_block':
         final blockId = args['blockId'] as String;
         final index = out.indexWhere((b) => b.id == blockId);
+        if (index == -1) {
+          throw DayAgentCaptureException(
+            'cannot apply move_block: blockId $blockId not found in plan',
+          );
+        }
         final block = out[index];
+        // NB: `args['reason']` is the change-level rationale (why the user
+        // wants this edit); the per-block reason override travels under
+        // `args['blockReason']` per `_DiffChange.toArgs()`. Mixing them
+        // would overwrite the block's placement reason with the diff
+        // motivation.
         out[index] = block.copyWith(
           startTime: _argDate(args, 'toStart') ?? block.startTime,
           endTime: _argDate(args, 'toEnd') ?? block.endTime,
@@ -1319,8 +1454,8 @@ class DayAgentPlanService {
               ? args['taskId'] as String?
               : block.taskId,
           type: _argType(args) ?? block.type,
-          reason: args.containsKey('reason')
-              ? args['reason'] as String?
+          reason: args.containsKey('blockReason')
+              ? args['blockReason'] as String?
               : block.reason,
         );
       case 'add_block':
@@ -1333,12 +1468,18 @@ class DayAgentPlanService {
             title: args['title'] as String?,
             taskId: args['taskId'] as String?,
             type: _argType(args) ?? PlannedBlockType.ai,
-            reason: args['reason'] as String?,
+            reason: args['blockReason'] as String?,
           ),
         );
       case 'drop_block':
         final blockId = args['blockId'] as String;
+        final before = out.length;
         out.removeWhere((b) => b.id == blockId);
+        if (out.length == before) {
+          throw DayAgentCaptureException(
+            'cannot apply drop_block: blockId $blockId not found in plan',
+          );
+        }
     }
     return out;
   }

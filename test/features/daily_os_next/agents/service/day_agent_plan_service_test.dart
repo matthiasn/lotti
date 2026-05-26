@@ -1185,6 +1185,177 @@ void main() {
           ),
         );
       });
+
+      test('rejects an unknown action name', () async {
+        seedPlan();
+        await expectLater(
+          createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [
+              {
+                ...movedChange(),
+                'action': 'reshuffled',
+              },
+            ],
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('moved, added, or dropped'),
+            ),
+          ),
+        );
+      });
+
+      test('rejects dropped with an unknown blockId', () async {
+        seedPlan();
+        await expectLater(
+          createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [droppedChange(blockId: 'ghost-block')],
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('dropped change references unknown blockId'),
+            ),
+          ),
+        );
+      });
+
+      test('rejects a snapshot whose end is not after its start', () async {
+        seedPlan();
+        await expectLater(
+          createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [
+              movedChange(
+                toStart: DateTime(2026, 5, 25, 12),
+                toEnd: DateTime(2026, 5, 25, 11),
+              ),
+            ],
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must be after'),
+            ),
+          ),
+        );
+      });
+
+      test('rejects a snapshot with an invalid block type', () async {
+        seedPlan();
+        await expectLater(
+          createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [
+              {
+                ...movedChange(),
+                'to': {
+                  'start': DateTime(2026, 5, 25, 11).toIso8601String(),
+                  'end': DateTime(2026, 5, 25, 12).toIso8601String(),
+                  'type': 'lunch',
+                },
+              },
+            ],
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must be ai, cal, buffer, or manual'),
+            ),
+          ),
+        );
+      });
+
+      test('rejects a non-object snapshot', () async {
+        seedPlan();
+        await expectLater(
+          createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [
+              {
+                ...movedChange(),
+                'to': 'not-an-object',
+              },
+            ],
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('`to` must be an object'),
+            ),
+          ),
+        );
+      });
+
+      test('formats a drop summary using the live block fallback', () async {
+        seedPlan();
+        final changeSet = await withClock(Clock.fixed(_now), () {
+          return createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [droppedChange()],
+          );
+        });
+        expect(
+          changeSet.items.single.humanSummary,
+          startsWith('Drop "Prep demo"'),
+        );
+      });
+
+      test(
+        'encodes from-snapshot categoryId into ChangeItem args when supplied',
+        () async {
+          seedPlan();
+          final changeSet = await createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: [
+              {
+                'action': 'dropped',
+                'blockId': 'block-1',
+                'reason': 'capture category snapshot',
+                'from': {
+                  'start': DateTime(2026, 5, 25, 9).toIso8601String(),
+                  'end': DateTime(2026, 5, 25, 10).toIso8601String(),
+                  'title': 'Prep demo',
+                  'categoryId': 'work',
+                },
+              },
+            ],
+          );
+          expect(
+            changeSet.items.single.args['fromCategoryId'],
+            'work',
+          );
+        },
+      );
     });
 
     group('acceptPlanDiff / revertPlanDiff', () {
@@ -1568,6 +1739,833 @@ void main() {
         expect(updatedPlan.data.plannedBlocks, isEmpty);
         expect(updatedPlan.scheduledMinutes, 0);
       });
+
+      test(
+        'acceptPlanDiff rejects a move that targets a block dropped earlier '
+        'in the same batch',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [dropBlockItem(), moveBlockItem()],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('possibly dropped earlier'),
+              ),
+            ),
+          );
+          expect(upsertedEntities.whereType<DayPlanEntity>(), isEmpty);
+          expect(upsertedEntities.whereType<ChangeSetEntity>(), isEmpty);
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects add_block items with malformed args',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              const ChangeItem(
+                toolName: 'add_block',
+                humanSummary: 'Add malformed',
+                args: <String, dynamic>{
+                  'action': 'added',
+                  'reason': 'Bad data.',
+                  // categoryId missing entirely
+                  'toStart': '2026-05-25T13:00:00.000',
+                  'toEnd': '2026-05-25T13:30:00.000',
+                },
+              ),
+            ],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('categoryId must be a non-empty string'),
+              ),
+            ),
+          );
+          expect(upsertedEntities.whereType<DayPlanEntity>(), isEmpty);
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects add_block whose categoryId is not allowed',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              ChangeItem(
+                toolName: 'add_block',
+                humanSummary: 'Add foreign-category block',
+                args: <String, dynamic>{
+                  'action': 'added',
+                  'reason': 'Test.',
+                  'categoryId': 'forbidden',
+                  'toStart': DateTime(
+                    2026,
+                    5,
+                    25,
+                    13,
+                  ).toIso8601String(),
+                  'toEnd': DateTime(2026, 5, 25, 14).toIso8601String(),
+                  'title': 'Test',
+                },
+              ),
+            ],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('not allowed for this agent'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects move_block whose effective times invert',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              ChangeItem(
+                toolName: 'move_block',
+                humanSummary: 'Move "Prep demo"',
+                args: <String, dynamic>{
+                  'action': 'moved',
+                  'reason': 'Bad times.',
+                  'blockId': 'block-1',
+                  // Only toStart provided; live block's end is 10:00. New
+                  // start at 11:00 would put end before start.
+                  'toStart': DateTime(2026, 5, 25, 11).toIso8601String(),
+                },
+              ),
+            ],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('effective end must be after effective start'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects move_block whose toStart is outside the day',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              ChangeItem(
+                toolName: 'move_block',
+                humanSummary: 'Move "Prep demo"',
+                args: <String, dynamic>{
+                  'action': 'moved',
+                  'reason': 'Out-of-day.',
+                  'blockId': 'block-1',
+                  'toStart': DateTime(2026, 5, 26, 9).toIso8601String(),
+                  'toEnd': DateTime(2026, 5, 26, 10).toIso8601String(),
+                },
+              ),
+            ],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('outside the plan day'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects move_block whose categoryId override is foreign',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              ChangeItem(
+                toolName: 'move_block',
+                humanSummary: 'Move with foreign category',
+                args: <String, dynamic>{
+                  'action': 'moved',
+                  'reason': 'Cross-device sync attack.',
+                  'blockId': 'block-1',
+                  'categoryId': 'forbidden',
+                  'toStart': DateTime(
+                    2026,
+                    5,
+                    25,
+                    11,
+                  ).toIso8601String(),
+                  'toEnd': DateTime(2026, 5, 25, 12).toIso8601String(),
+                },
+              ),
+            ],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('not allowed for this agent'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects unknown tool names on persisted items',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              const ChangeItem(
+                toolName: 'mystery_block_op',
+                humanSummary: 'Unknown',
+                args: <String, dynamic>{'action': 'whatever'},
+              ),
+            ],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('unknown change tool'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects when the plan vanished between propose and '
+        'accept',
+        () async {
+          final changeSet =
+              AgentDomainEntity.changeSet(
+                    id: 'plan_diff:vanished',
+                    agentId: _agentId,
+                    taskId: planEntityId,
+                    threadId: _threadId,
+                    runKey: _runKey,
+                    status: ChangeSetStatus.pending,
+                    items: [
+                      const ChangeItem(
+                        toolName: 'add_block',
+                        humanSummary: 'orphaned',
+                        args: <String, dynamic>{
+                          'action': 'added',
+                          'reason': "doesn't matter",
+                          'categoryId': 'work',
+                          'title': 'Test',
+                          'toStart': '2026-05-25T13:00:00.000',
+                          'toEnd': '2026-05-25T14:00:00.000',
+                        },
+                      ),
+                    ],
+                    createdAt: _now,
+                    vectorClock: null,
+                  )
+                  as ChangeSetEntity;
+          agentEntities[changeSet.id] = changeSet;
+          // Note: no plan seeded for the day.
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('no longer exists'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects out-of-range itemIndices',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(items: [moveBlockItem()]);
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+              itemIndices: const [5],
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('out of range'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects move_block with a non-string toStart',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              const ChangeItem(
+                toolName: 'move_block',
+                humanSummary: 'bad type',
+                args: <String, dynamic>{
+                  'action': 'moved',
+                  'reason': 'r',
+                  'blockId': 'block-1',
+                  'toStart': 123,
+                },
+              ),
+            ],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('toStart must be a string'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects move_block with an unparseable toStart',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              const ChangeItem(
+                toolName: 'move_block',
+                humanSummary: 'unparseable',
+                args: <String, dynamic>{
+                  'action': 'moved',
+                  'reason': 'r',
+                  'blockId': 'block-1',
+                  'toStart': 'not-a-date',
+                },
+              ),
+            ],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('toStart is not a valid ISO-8601'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff applies move_block that only changes the end time',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              taskId: 'task-1',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              ChangeItem(
+                toolName: 'move_block',
+                humanSummary: 'extend',
+                args: <String, dynamic>{
+                  'action': 'moved',
+                  'reason': 'Extend.',
+                  'blockId': 'block-1',
+                  'toEnd': DateTime(
+                    2026,
+                    5,
+                    25,
+                    11,
+                  ).toIso8601String(),
+                },
+              ),
+            ],
+          );
+
+          await createService().acceptPlanDiff(
+            agentId: _agentId,
+            changeSetId: changeSet.id,
+          );
+
+          final updatedPlan = upsertedEntities
+              .whereType<DayPlanEntity>()
+              .single;
+          expect(
+            updatedPlan.data.plannedBlocks.single.endTime,
+            DateTime(2026, 5, 25, 11),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects move targeting a block not in the plan',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [moveBlockItem(blockId: 'block-ghost')],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('not in plan'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects add_block missing toStart / toEnd / inverted',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+
+          Future<void> expectFailure({
+            required Map<String, dynamic> args,
+            required String messageFragment,
+          }) async {
+            final changeSet = seedChangeSet(
+              items: [
+                ChangeItem(
+                  toolName: 'add_block',
+                  humanSummary: 'malformed',
+                  args: args,
+                ),
+              ],
+            );
+            await expectLater(
+              createService().acceptPlanDiff(
+                agentId: _agentId,
+                changeSetId: changeSet.id,
+              ),
+              throwsA(
+                isA<DayAgentCaptureException>().having(
+                  (e) => e.message,
+                  'message',
+                  contains(messageFragment),
+                ),
+              ),
+            );
+            // Re-seed for the next iteration so each sub-case sees a fresh
+            // pending change set.
+            upsertedEntities.clear();
+          }
+
+          await expectFailure(
+            args: const <String, dynamic>{
+              'action': 'added',
+              'reason': 'r',
+              'categoryId': 'life',
+              'title': 'A',
+              'toEnd': '2026-05-25T14:00:00.000',
+            },
+            messageFragment: 'toStart is required',
+          );
+          await expectFailure(
+            args: const <String, dynamic>{
+              'action': 'added',
+              'reason': 'r',
+              'categoryId': 'life',
+              'title': 'A',
+              'toStart': '2026-05-25T14:00:00.000',
+            },
+            messageFragment: 'toEnd is required',
+          );
+          await expectFailure(
+            args: const <String, dynamic>{
+              'action': 'added',
+              'reason': 'r',
+              'categoryId': 'life',
+              'title': 'A',
+              'toStart': '2026-05-25T15:00:00.000',
+              'toEnd': '2026-05-25T14:00:00.000',
+            },
+            messageFragment: 'toEnd must be after toStart',
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff applies move_block clearing taskId and overriding '
+        'the per-block reason via blockReason (separate from change reason)',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              taskId: 'task-1',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              const ChangeItem(
+                toolName: 'move_block',
+                humanSummary: 'clear meta',
+                args: <String, dynamic>{
+                  'action': 'moved',
+                  // change-level rationale; must NOT clobber block.reason
+                  'reason': 'No longer tied.',
+                  'blockId': 'block-1',
+                  'taskId': null,
+                  // explicit per-block reason override (separate key)
+                  'blockReason': 'Shift to demo prep.',
+                  // categoryId not supplied — should retain 'work'
+                },
+              ),
+            ],
+          );
+
+          await createService().acceptPlanDiff(
+            agentId: _agentId,
+            changeSetId: changeSet.id,
+          );
+
+          final updated = upsertedEntities
+              .whereType<DayPlanEntity>()
+              .single
+              .data
+              .plannedBlocks
+              .single;
+          expect(updated.taskId, isNull);
+          expect(updated.reason, 'Shift to demo prep.');
+          // categoryId retained from live block
+          expect(updated.categoryId, 'work');
+        },
+      );
+
+      test(
+        'acceptPlanDiff rejects a drop targeting a block already dropped '
+        'earlier in the same batch',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [dropBlockItem(), dropBlockItem()],
+          );
+
+          await expectLater(
+            createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            ),
+            throwsA(
+              isA<DayAgentCaptureException>().having(
+                (e) => e.message,
+                'message',
+                contains('drop_block at index 1'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff sorts blocks deterministically when an added block '
+        'shares a start time with an existing one',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          // Use a deterministic id prefix; add_block always generates
+          // `block_<uuid>`, so the new block sorts AFTER 'block-1' by id
+          // when start times tie.
+          final changeSet = seedChangeSet(
+            items: [
+              ChangeItem(
+                toolName: 'add_block',
+                humanSummary: 'Add overlap',
+                args: <String, dynamic>{
+                  'action': 'added',
+                  'reason': 'Test tiebreaker.',
+                  'categoryId': 'work',
+                  'title': 'Other',
+                  'toStart': DateTime(
+                    2026,
+                    5,
+                    25,
+                    9,
+                  ).toIso8601String(),
+                  'toEnd': DateTime(
+                    2026,
+                    5,
+                    25,
+                    9,
+                    30,
+                  ).toIso8601String(),
+                },
+              ),
+            ],
+          );
+
+          await createService().acceptPlanDiff(
+            agentId: _agentId,
+            changeSetId: changeSet.id,
+          );
+
+          final blocks = upsertedEntities
+              .whereType<DayPlanEntity>()
+              .single
+              .data
+              .plannedBlocks;
+          expect(blocks, hasLength(2));
+          expect(blocks.first.startTime, DateTime(2026, 5, 25, 9));
+          expect(blocks.last.startTime, DateTime(2026, 5, 25, 9));
+          // block-1 sorts first when ids are compared lexicographically
+          // against `block_<uuid>`, so the live block stays at index 0.
+          expect(blocks.first.id, 'block-1');
+        },
+      );
+
+      test(
+        'revertPlanDiff with mixed pending and resolved items emits a '
+        'pendingCount that excludes already-resolved entries',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              reason: 'Morning focus.',
+            ),
+          ]);
+          final changeSet = seedChangeSet(
+            items: [
+              moveBlockItem().copyWith(status: ChangeItemStatus.deferred),
+              addBlockItem(),
+            ],
+          );
+
+          final updated = await createService().revertPlanDiff(
+            agentId: _agentId,
+            changeSetId: changeSet.id,
+            itemIndices: const [1],
+          );
+
+          // The deferred item stays deferred; the add_block flips to rejected.
+          expect(updated.items[0].status, ChangeItemStatus.deferred);
+          expect(updated.items[1].status, ChangeItemStatus.rejected);
+        },
+      );
     });
 
     group('executeTool dispatch for refine', () {
@@ -1741,6 +2739,230 @@ void main() {
               jsonDecode(revertResult.output) as Map<String, dynamic>;
           expect(revertData['status'], 'resolved');
           expect(revertData['rejectedCount'], 1);
+        },
+      );
+
+      test(
+        'executeTool parses itemIndices including integral doubles',
+        () async {
+          final plan = seedPlan();
+          final changeSet =
+              AgentDomainEntity.changeSet(
+                    id: 'plan_diff:indices-1',
+                    agentId: _agentId,
+                    taskId: plan.id,
+                    threadId: _threadId,
+                    runKey: _runKey,
+                    status: ChangeSetStatus.pending,
+                    items: [
+                      const ChangeItem(
+                        toolName: 'add_block',
+                        humanSummary: 'a',
+                        args: <String, dynamic>{
+                          'action': 'added',
+                          'reason': 'r',
+                          'categoryId': 'life',
+                          'title': 'A',
+                          'toStart': '2026-05-25T14:00:00.000',
+                          'toEnd': '2026-05-25T14:30:00.000',
+                        },
+                      ),
+                      const ChangeItem(
+                        toolName: 'add_block',
+                        humanSummary: 'b',
+                        args: <String, dynamic>{
+                          'action': 'added',
+                          'reason': 'r',
+                          'categoryId': 'life',
+                          'title': 'B',
+                          'toStart': '2026-05-25T15:00:00.000',
+                          'toEnd': '2026-05-25T15:30:00.000',
+                        },
+                      ),
+                    ],
+                    createdAt: _now,
+                    vectorClock: null,
+                  )
+                  as ChangeSetEntity;
+          agentEntities[changeSet.id] = changeSet;
+
+          final result = await createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.acceptDiff,
+            args: {
+              'changeSetId': changeSet.id,
+              // Integral double mixed with int — both should parse as ints.
+              'itemIndices': const [0, 1.0],
+            },
+          );
+          expect(result.success, isTrue);
+          final data = jsonDecode(result.output) as Map<String, dynamic>;
+          expect(data['confirmedCount'], 2);
+        },
+      );
+
+      test('executeTool rejects non-list itemIndices', () async {
+        final plan = seedPlan();
+        final changeSet =
+            AgentDomainEntity.changeSet(
+                  id: 'plan_diff:indices-2',
+                  agentId: _agentId,
+                  taskId: plan.id,
+                  threadId: _threadId,
+                  runKey: _runKey,
+                  status: ChangeSetStatus.pending,
+                  items: const [
+                    ChangeItem(
+                      toolName: 'add_block',
+                      humanSummary: 'a',
+                      args: <String, dynamic>{
+                        'action': 'added',
+                        'reason': 'r',
+                        'categoryId': 'life',
+                        'title': 'A',
+                        'toStart': '2026-05-25T14:00:00.000',
+                        'toEnd': '2026-05-25T14:30:00.000',
+                      },
+                    ),
+                  ],
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as ChangeSetEntity;
+        agentEntities[changeSet.id] = changeSet;
+
+        final result = await createService().executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.acceptDiff,
+          args: {
+            'changeSetId': changeSet.id,
+            'itemIndices': 'not-a-list',
+          },
+        );
+        expect(result.success, isFalse);
+        expect(result.output, contains('itemIndices must be an array'));
+      });
+
+      test(
+        'executeTool resolution summary counts deferred + retained pending',
+        () async {
+          final plan = seedPlan();
+          // Seed a change set that includes a pending item, a deferred
+          // item, and a retracted item. Accepting only index 0 leaves
+          // the rest in their original (non-pending) states; the
+          // _resolutionSummary walks all statuses.
+          final changeSet =
+              AgentDomainEntity.changeSet(
+                    id: 'plan_diff:summary-1',
+                    agentId: _agentId,
+                    taskId: plan.id,
+                    threadId: _threadId,
+                    runKey: _runKey,
+                    status: ChangeSetStatus.partiallyResolved,
+                    items: const [
+                      ChangeItem(
+                        toolName: 'add_block',
+                        humanSummary: 'pending one',
+                        args: <String, dynamic>{
+                          'action': 'added',
+                          'reason': 'r',
+                          'categoryId': 'work',
+                          'title': 'P',
+                          'toStart': '2026-05-25T14:00:00.000',
+                          'toEnd': '2026-05-25T14:30:00.000',
+                        },
+                      ),
+                      ChangeItem(
+                        toolName: 'add_block',
+                        humanSummary: 'deferred',
+                        args: <String, dynamic>{'reason': 'r'},
+                        status: ChangeItemStatus.deferred,
+                      ),
+                      ChangeItem(
+                        toolName: 'add_block',
+                        humanSummary: 'retracted',
+                        args: <String, dynamic>{'reason': 'r'},
+                        status: ChangeItemStatus.retracted,
+                      ),
+                    ],
+                    createdAt: _now,
+                    vectorClock: null,
+                  )
+                  as ChangeSetEntity;
+          agentEntities[changeSet.id] = changeSet;
+
+          // Accept nothing (itemIndices: []) so the pending one stays
+          // pending; deferred/retracted are untouched by design.
+          final result = await createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.acceptDiff,
+            args: {
+              'changeSetId': changeSet.id,
+              'itemIndices': const <int>[],
+            },
+          );
+          expect(result.success, isTrue);
+          final data = jsonDecode(result.output) as Map<String, dynamic>;
+          expect(data['pendingCount'], 1);
+          expect(data['confirmedCount'], 0);
+          expect(data['rejectedCount'], 0);
+          expect(data['status'], 'partiallyResolved');
+        },
+      );
+
+      test(
+        'executeTool rejects fractional itemIndices entries',
+        () async {
+          final plan = seedPlan();
+          final changeSet =
+              AgentDomainEntity.changeSet(
+                    id: 'plan_diff:indices-3',
+                    agentId: _agentId,
+                    taskId: plan.id,
+                    threadId: _threadId,
+                    runKey: _runKey,
+                    status: ChangeSetStatus.pending,
+                    items: const [
+                      ChangeItem(
+                        toolName: 'add_block',
+                        humanSummary: 'a',
+                        args: <String, dynamic>{
+                          'action': 'added',
+                          'reason': 'r',
+                          'categoryId': 'life',
+                          'title': 'A',
+                          'toStart': '2026-05-25T14:00:00.000',
+                          'toEnd': '2026-05-25T14:30:00.000',
+                        },
+                      ),
+                    ],
+                    createdAt: _now,
+                    vectorClock: null,
+                  )
+                  as ChangeSetEntity;
+          agentEntities[changeSet.id] = changeSet;
+
+          final result = await createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.acceptDiff,
+            args: {
+              'changeSetId': changeSet.id,
+              'itemIndices': const [0.5],
+            },
+          );
+          expect(result.success, isFalse);
+          expect(
+            result.output,
+            contains('itemIndices entries must be integers'),
+          );
         },
       );
     });

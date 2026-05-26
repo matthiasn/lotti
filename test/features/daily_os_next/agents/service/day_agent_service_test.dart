@@ -606,6 +606,7 @@ void main() {
       DayPlanEntity seedPlan({
         String planAgentId = agentId,
         DateTime? deletedAt,
+        DayPlanStatus status = const DayPlanStatus.draft(),
       }) {
         return AgentDomainEntity.dayPlan(
               id: dayAgentPlanEntityId(dayId),
@@ -614,7 +615,7 @@ void main() {
               planDate: DateTime(2026, 5, 25),
               data: DayPlanData(
                 planDate: DateTime(2026, 5, 25),
-                status: const DayPlanStatus.draft(),
+                status: status,
               ),
               createdAt: now,
               updatedAt: now,
@@ -795,6 +796,35 @@ void main() {
 
         expect(result, isFalse);
         verifyNever(() => syncService.upsertEntity(any()));
+      });
+
+      test('returns false when the plan is not in draft state', () async {
+        when(
+          () => repository.getActiveAgentByKindAndActiveDayId(
+            kind: AgentKinds.dayAgent,
+            activeDayId: dayId,
+          ),
+        ).thenAnswer((_) async => identity());
+        stubPlanLookup(
+          seedPlan(
+            status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25)),
+          ),
+        );
+
+        final result = await service.enqueueRefineWake(
+          dayDate: testDate,
+          transcript: 'something',
+        );
+
+        expect(result, isFalse);
+        verifyNever(() => syncService.upsertEntity(any()));
+        verifyNever(
+          () => orchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        );
       });
     });
 
