@@ -321,6 +321,7 @@ void main() {
         expect(request.model.toString(), contains(model));
         expect(request.messages.length, 1);
         expect(request.messages.first.role, ChatCompletionMessageRole.user);
+        expect(request.reasoningEffort, isNull);
         expect(request.stream, isTrue);
 
         // Verify audio content parameters by checking the string representation
@@ -329,6 +330,57 @@ void main() {
         expect(requestString.contains(audioBase64), isTrue);
         // Default audioFormat is mp3
         expect(requestString.contains('mp3'), isTrue);
+      },
+    );
+
+    test(
+      'generateWithAudio sets low reasoning effort for Gemini provider',
+      () {
+        const audioBase64 = 'audio-base64-string';
+        final geminiProvider = testProvider.copyWith(
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        when(
+          () => mockClient.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-id',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: 'Test audio response',
+                  ),
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+            ),
+          ]),
+        );
+
+        repository.generateWithAudio(
+          prompt,
+          model: 'models/gemini-3-flash-preview',
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          audioBase64: audioBase64,
+          provider: geminiProvider,
+          overrideClient: mockClient,
+        );
+
+        final captured = verify(
+          () => mockClient.createChatCompletionStream(
+            request: captureAny(named: 'request'),
+          ),
+        ).captured;
+
+        final request = captured.first as CreateChatCompletionRequest;
+        expect(request.reasoningEffort, ReasoningEffort.low);
       },
     );
 

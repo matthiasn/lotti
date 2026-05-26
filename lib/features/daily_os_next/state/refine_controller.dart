@@ -1,0 +1,350 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+
+/// Discrete phases the Refine screen passes through.
+enum RefinePhase {
+  /// Initial state — the screen shows the current plan unchanged
+  /// with the voice button armed.
+  idle,
+
+  /// User tapped the voice button; transcript streams in.
+  listening,
+
+  /// Transcript captured; the agent is producing a `PlanDiff`.
+  thinking,
+
+  /// Diff returned; the timeline shows the proposed plan with pings,
+  /// the right column shows the diff rows + Revert / Keep talking /
+  /// Accept buttons.
+  diffReady,
+
+  /// User resolved every diff item; the controller hands the resulting plan
+  /// back to the caller and pops the screen.
+  accepted,
+}
+
+@immutable
+class RefineState {
+  const RefineState({
+    required this.phase,
+    required this.transcript,
+    required this.currentPlan,
+    this.decisions = const {},
+    this.resolvingChangeId,
+    this.diff,
+  });
+
+  final RefinePhase phase;
+  final String transcript;
+  final DraftPlan currentPlan;
+  final PlanDiff? diff;
+  final Map<String, PlanDiffChangeDecision> decisions;
+  final String? resolvingChangeId;
+
+  RefineState copyWith({
+    RefinePhase? phase,
+    String? transcript,
+    DraftPlan? currentPlan,
+    PlanDiff? diff,
+    Map<String, PlanDiffChangeDecision>? decisions,
+    String? resolvingChangeId,
+    bool clearDiff = false,
+    bool clearResolvingChangeId = false,
+  }) {
+    return RefineState(
+      phase: phase ?? this.phase,
+      transcript: transcript ?? this.transcript,
+      currentPlan: currentPlan ?? this.currentPlan,
+      diff: clearDiff ? null : (diff ?? this.diff),
+      decisions: decisions ?? this.decisions,
+      resolvingChangeId: clearResolvingChangeId
+          ? null
+          : (resolvingChangeId ?? this.resolvingChangeId),
+    );
+  }
+
+  PlanDiffChangeDecision decisionFor(PlanDiffChange change) =>
+      decisions[change.id] ?? PlanDiffChangeDecision.pending;
+}
+
+/// Drives the Refine screen.
+///
+/// Voice capture is owned by `CaptureController`; this controller only tracks
+/// the refine state and submits the captured transcript to the day agent.
+///
+/// `acceptChange` / `rejectChange` resolve individual diff rows via
+/// `acceptDiff` / `revertDiff`; `revert` rejects the whole pending diff and
+/// returns to `idle` (so the user can try again); `keepTalking` re-enters
+/// `listening` with the existing transcript still attached.
+class RefineController extends Notifier<RefineState> {
+  RefineController(this.originalPlan);
+
+  final DraftPlan originalPlan;
+  String _transcriptPrefix = '';
+
+  @override
+  RefineState build() {
+    return RefineState(
+      phase: RefinePhase.idle,
+      transcript: '',
+      currentPlan: originalPlan,
+    );
+  }
+
+  void toggleListening() {
+    switch (state.phase) {
+      case RefinePhase.idle:
+      case RefinePhase.diffReady:
+        beginListening(resetTranscript: state.phase == RefinePhase.idle);
+      case RefinePhase.listening:
+        // CaptureController stops the microphone and calls finishWithTranscript.
+        break;
+      case RefinePhase.thinking:
+      case RefinePhase.accepted:
+        // No-op — we're mid-flight.
+        break;
+    }
+  }
+
+  /// User tapped "Keep talking" — re-arms listening without
+  /// discarding the existing transcript so the agent has context.
+  void keepTalking() {
+    if (state.phase == RefinePhase.diffReady) {
+      beginListening(resetTranscript: false);
+    }
+  }
+
+  Future<void> accept() async {
+    final diff = state.diff;
+    if (diff == null) return;
+    final agent = ref.read(dayAgentProvider);
+    final itemIndices = _indicesForDecision(PlanDiffChangeDecision.pending);
+    if (itemIndices.isEmpty) return;
+    final next = await agent.acceptDiff(diff, itemIndices: itemIndices);
+    if (!ref.mounted) return;
+    state = state.copyWith(
+      phase: RefinePhase.accepted,
+      currentPlan: next,
+      decisions: _resolveMany(
+        itemIndices,
+        PlanDiffChangeDecision.accepted,
+      ),
+    );
+  }
+
+  Future<void> acceptChange(String changeId) async {
+    await _resolveChange(
+      changeId: changeId,
+      decision: PlanDiffChangeDecision.accepted,
+    );
+  }
+
+  Future<void> rejectChange(String changeId) async {
+    await _resolveChange(
+      changeId: changeId,
+      decision: PlanDiffChangeDecision.rejected,
+    );
+  }
+
+  Future<void> revert() async {
+    final diff = state.diff;
+    if (diff == null) return;
+    final agent = ref.read(dayAgentProvider);
+    final itemIndices = _indicesForDecision(PlanDiffChangeDecision.pending);
+    final restored = await agent.revertDiff(
+      diff: diff,
+      originalPlan: originalPlan,
+      itemIndices: itemIndices.isEmpty ? null : itemIndices,
+    );
+    if (!ref.mounted) return;
+    state = state.copyWith(
+      phase: RefinePhase.idle,
+      currentPlan: restored,
+      clearDiff: true,
+      decisions: const {},
+      clearResolvingChangeId: true,
+    );
+  }
+
+  void beginListening({required bool resetTranscript}) {
+    _transcriptPrefix = resetTranscript ? '' : state.transcript.trim();
+    state = state.copyWith(
+      phase: RefinePhase.listening,
+      transcript: _transcriptPrefix,
+      clearDiff: true,
+      decisions: const {},
+      clearResolvingChangeId: true,
+    );
+  }
+
+  void updateActiveTranscript(String transcript) {
+    if (state.phase != RefinePhase.listening) return;
+    state = state.copyWith(
+      transcript: _joinTranscript(_transcriptPrefix, transcript),
+    );
+  }
+
+  void cancelListening() {
+    if (state.phase != RefinePhase.listening) return;
+    _transcriptPrefix = '';
+    state = state.copyWith(
+      phase: state.diff == null ? RefinePhase.idle : RefinePhase.diffReady,
+    );
+  }
+
+  Future<void> finishWithTranscript(String transcript) async {
+    final nextTranscript = _joinTranscript(_transcriptPrefix, transcript);
+    _transcriptPrefix = '';
+    if (nextTranscript.isEmpty) {
+      state = state.copyWith(
+        phase: state.diff == null ? RefinePhase.idle : RefinePhase.diffReady,
+      );
+      return;
+    }
+    final baselinePlan = state.currentPlan;
+    state = state.copyWith(phase: RefinePhase.thinking);
+    final agent = ref.read(dayAgentProvider);
+    final PlanDiff diff;
+    try {
+      diff = await agent.proposePlanDiff(
+        currentPlan: baselinePlan,
+        voiceTranscript: nextTranscript,
+      );
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription('while proposing a plan refinement'),
+        ),
+      );
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        phase: RefinePhase.idle,
+        transcript: nextTranscript,
+        clearDiff: true,
+        decisions: const {},
+        clearResolvingChangeId: true,
+      );
+      return;
+    }
+    if (!ref.mounted) return;
+    state = state.copyWith(
+      phase: RefinePhase.diffReady,
+      transcript: nextTranscript,
+      diff: diff,
+      currentPlan: diff.updatedPlan,
+      decisions: {
+        for (final change in diff.changes)
+          change.id: PlanDiffChangeDecision.pending,
+      },
+      clearResolvingChangeId: true,
+    );
+  }
+
+  Future<void> _resolveChange({
+    required String changeId,
+    required PlanDiffChangeDecision decision,
+  }) async {
+    final diff = state.diff;
+    if (diff == null || state.resolvingChangeId != null) return;
+    final itemIndex = diff.changes.indexWhere(
+      (change) => change.id == changeId,
+    );
+    if (itemIndex < 0) return;
+    if (state.decisionFor(diff.changes[itemIndex]) !=
+        PlanDiffChangeDecision.pending) {
+      return;
+    }
+
+    final baselinePlan = state.currentPlan;
+    state = state.copyWith(resolvingChangeId: changeId);
+    final agent = ref.read(dayAgentProvider);
+    final DraftPlan next;
+    try {
+      switch (decision) {
+        case PlanDiffChangeDecision.accepted:
+          next = await agent.acceptDiff(diff, itemIndices: [itemIndex]);
+        case PlanDiffChangeDecision.rejected:
+          next = await agent.revertDiff(
+            diff: diff,
+            originalPlan: baselinePlan,
+            itemIndices: [itemIndex],
+          );
+        case PlanDiffChangeDecision.pending:
+          return;
+      }
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription('while resolving a plan refinement item'),
+        ),
+      );
+      if (!ref.mounted) return;
+      state = state.copyWith(clearResolvingChangeId: true);
+      return;
+    }
+    if (!ref.mounted) return;
+    final decisions = _resolveMany([itemIndex], decision);
+    state = state.copyWith(
+      phase: _allResolved(decisions)
+          ? RefinePhase.accepted
+          : RefinePhase.diffReady,
+      currentPlan: next,
+      decisions: decisions,
+      clearResolvingChangeId: true,
+    );
+  }
+
+  List<int> _indicesForDecision(PlanDiffChangeDecision decision) {
+    final diff = state.diff;
+    if (diff == null) return const [];
+    final indices = <int>[];
+    for (var i = 0; i < diff.changes.length; i++) {
+      if (state.decisionFor(diff.changes[i]) == decision) indices.add(i);
+    }
+    return indices;
+  }
+
+  Map<String, PlanDiffChangeDecision> _resolveMany(
+    List<int> itemIndices,
+    PlanDiffChangeDecision decision,
+  ) {
+    final diff = state.diff;
+    if (diff == null) return state.decisions;
+    final next = Map<String, PlanDiffChangeDecision>.of(state.decisions);
+    for (final index in itemIndices) {
+      if (index >= 0 && index < diff.changes.length) {
+        next[diff.changes[index].id] = decision;
+      }
+    }
+    return Map.unmodifiable(next);
+  }
+
+  bool _allResolved(Map<String, PlanDiffChangeDecision> decisions) {
+    final diff = state.diff;
+    if (diff == null || diff.changes.isEmpty) return false;
+    return diff.changes.every(
+      (change) => decisions[change.id] != PlanDiffChangeDecision.pending,
+    );
+  }
+
+  String _joinTranscript(String prefix, String transcript) {
+    final cleanPrefix = prefix.trim();
+    final cleanTranscript = transcript.trim();
+    if (cleanPrefix.isEmpty) return cleanTranscript;
+    if (cleanTranscript.isEmpty) return cleanPrefix;
+    if (cleanPrefix.endsWith(cleanTranscript)) return cleanPrefix;
+    return '$cleanPrefix $cleanTranscript';
+  }
+}
+
+// ignore: specify_nonobvious_property_types
+final refineControllerProvider = NotifierProvider.autoDispose
+    .family<RefineController, RefineState, DraftPlan>(RefineController.new);

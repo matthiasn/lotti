@@ -94,6 +94,9 @@ void main() {
             entity,
       ];
     });
+    when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+      (_) async => const <String, JournalEntity>{},
+    );
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       final entity = invocation.positionalArguments.single as AgentDomainEntity;
       upsertedEntities.add(entity);
@@ -209,6 +212,32 @@ void main() {
       );
     });
 
+    test(
+      'persistDraftPlan allows task IDs created during the drafting wake',
+      () async {
+        when(() => journalDb.journalEntityMapForIds(any())).thenAnswer(
+          (_) async => {'task-2': _task(id: 'task-2', title: 'Buy milk')},
+        );
+
+        final plan = await withClock(Clock.fixed(_now), () {
+          return createService().persistDraftPlan(
+            agentId: _agentId,
+            dayId: _dayId,
+            planDate: DateTime(2026, 5, 25),
+            decidedTaskIds: const ['task-1'],
+            rawBlocks: [
+              {
+                ..._aiBlock(taskId: 'task-2'),
+                'title': 'Buy milk',
+              },
+            ],
+          );
+        });
+
+        expect(plan.data.plannedBlocks.single.taskId, 'task-2');
+      },
+    );
+
     test('persistDraftPlan rejects categories outside agent scope', () async {
       await expectLater(
         createService().persistDraftPlan(
@@ -247,6 +276,64 @@ void main() {
       expect(plan.data.pinnedTasks, hasLength(1));
       expect(plan.data.pinnedTasks.single.taskId, 'task-1');
     });
+
+    test(
+      'persistDraftPlan rejects new drafted blocks that start earlier today',
+      () async {
+        await expectLater(
+          withClock(Clock.fixed(DateTime(2026, 5, 25, 10)), () {
+            return createService().persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: [
+                _aiBlock(
+                  start: DateTime(2026, 5, 25, 9),
+                  end: DateTime(2026, 5, 25, 10),
+                ),
+              ],
+            );
+          }),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must not start before current time'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'persistDraftPlan allows already-started in-progress history',
+      () async {
+        final plan = await withClock(
+          Clock.fixed(DateTime(2026, 5, 25, 10)),
+          () {
+            return createService().persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: [
+                {
+                  ..._aiBlock(
+                    start: DateTime(2026, 5, 25, 9),
+                    end: DateTime(2026, 5, 25, 11),
+                  ),
+                  'state': 'inProgress',
+                },
+              ],
+            );
+          },
+        );
+
+        expect(
+          plan.data.plannedBlocks.single.state,
+          PlannedBlockState.inProgress,
+        );
+      },
+    );
 
     test(
       'persistDraftPlan rejects energy bands outside the plan day',
@@ -552,8 +639,16 @@ void main() {
             dayId: _dayId,
             planDate: DateTime(2026, 5, 25),
             rawBlocks: [
-              _aiBlock(id: 'block-b'),
-              _aiBlock(id: 'block-a'),
+              _aiBlock(
+                id: 'block-b',
+                start: DateTime(2026, 5, 25, 11),
+                end: DateTime(2026, 5, 25, 12),
+              ),
+              _aiBlock(
+                id: 'block-a',
+                start: DateTime(2026, 5, 25, 11),
+                end: DateTime(2026, 5, 25, 12),
+              ),
             ],
           );
         });
@@ -986,34 +1081,37 @@ void main() {
             isA<DayAgentCaptureException>().having(
               (e) => e.message,
               'message',
-              contains('no draft plan'),
+              contains('no plan'),
             ),
           ),
         );
       });
 
-      test('rejects when the plan is not in draft state', () async {
-        // `committed` status is Phase 5 work; use the legacy `agreed`
-        // variant as a non-draft proxy until Commit lands.
-        seedPlan(
-          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25)),
-        );
-        await expectLater(
-          createService().proposePlanDiff(
+      test('persists a ChangeSetEntity against approved plans', () async {
+        final statuses = <DayPlanStatus>[
+          DayPlanStatus.committed(committedAt: DateTime(2026, 5, 25, 11)),
+          DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25, 10)),
+        ];
+
+        for (final status in statuses) {
+          seedPlan(status: status);
+
+          final changeSet = await createService().proposePlanDiff(
             agentId: _agentId,
             threadId: _threadId,
             runKey: _runKey,
             dayId: _dayId,
             rawChanges: [movedChange()],
-          ),
-          throwsA(
-            isA<DayAgentCaptureException>().having(
-              (e) => e.message,
-              'message',
-              contains('not in draft state'),
-            ),
-          ),
-        );
+          );
+
+          expect(changeSet.status, ChangeSetStatus.pending);
+          expect(changeSet.items.single.toolName, 'move_block');
+          expect(
+            upsertedEntities.whereType<ChangeSetEntity>().last,
+            changeSet,
+          );
+          expect(notifications, containsAll([_agentId, changeSet.id]));
+        }
       });
 
       test('rejects when baselinePlanId is stale', () async {
@@ -1361,7 +1459,10 @@ void main() {
     group('acceptPlanDiff / revertPlanDiff', () {
       const planEntityId = 'day_agent_plan:$_dayId';
 
-      DayPlanEntity seedPlan(List<PlannedBlock> blocks) {
+      DayPlanEntity seedPlan(
+        List<PlannedBlock> blocks, {
+        DayPlanStatus status = const DayPlanStatus.draft(),
+      }) {
         final scheduled = blocks.fold<int>(
           0,
           (sum, b) => sum + b.duration.inMinutes,
@@ -1374,7 +1475,7 @@ void main() {
                   planDate: DateTime(2026, 5, 25),
                   data: DayPlanData(
                     planDate: DateTime(2026, 5, 25),
-                    status: const DayPlanStatus.draft(),
+                    status: status,
                     plannedBlocks: blocks,
                   ),
                   capacityMinutes: 360,
@@ -1520,6 +1621,51 @@ void main() {
           expect(
             notifications,
             containsAll([_agentId, changeSet.id, _dayId, planEntityId]),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff amends a committed plan as a tracked change',
+        () async {
+          seedPlan(
+            [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 10),
+                title: 'Prep demo',
+                reason: 'Morning focus.',
+                state: PlannedBlockState.committed,
+              ),
+            ],
+            status: DayPlanStatus.committed(
+              committedAt: DateTime(2026, 5, 25, 11),
+            ),
+          );
+          final changeSet = seedChangeSet(items: [addBlockItem()]);
+
+          final updated = await withClock(Clock.fixed(_now), () {
+            return createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            );
+          });
+
+          expect(updated.status, ChangeSetStatus.resolved);
+          expect(updated.items.single.status, ChangeItemStatus.confirmed);
+          final updatedPlan = upsertedEntities
+              .whereType<DayPlanEntity>()
+              .single;
+          expect(updatedPlan.data.status, isA<DayPlanStatusCommitted>());
+          final addedBlock = updatedPlan.data.plannedBlocks.singleWhere(
+            (block) => block.title == 'Walk',
+          );
+          expect(addedBlock.state, PlannedBlockState.committed);
+          expect(
+            upsertedEntities.whereType<ChangeDecisionEntity>().single.verdict,
+            ChangeDecisionVerdict.confirmed,
           );
         },
       );
@@ -3445,6 +3591,158 @@ void main() {
           );
         },
       );
+    });
+
+    group('deletePlanForDay', () {
+      const planEntityId = 'day_agent_plan:$_dayId';
+
+      DayPlanEntity seedPlan({DateTime? deletedAt}) {
+        final plan =
+            AgentDomainEntity.dayPlan(
+                  id: planEntityId,
+                  agentId: _agentId,
+                  dayId: _dayId,
+                  planDate: DateTime(2026, 5, 25),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 25),
+                    status: const DayPlanStatus.draft(),
+                  ),
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                  deletedAt: deletedAt,
+                )
+                as DayPlanEntity;
+        agentEntities[plan.id] = plan;
+        return plan;
+      }
+
+      AgentLink captureLink({String captureId = 'capture-001'}) {
+        return AgentLink.captureToPlan(
+          id: 'capture_to_plan:$captureId:$planEntityId',
+          fromId: captureId,
+          toId: planEntityId,
+          createdAt: _now,
+          updatedAt: _now,
+          vectorClock: null,
+        );
+      }
+
+      test('returns false when no plan exists for this day', () async {
+        when(
+          () => agentRepository.getLinksTo(
+            any(),
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((_) async => const <AgentLink>[]);
+
+        final removed = await createService().deletePlanForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(removed, isFalse);
+        expect(upsertedEntities, isEmpty);
+        expect(notifications, isEmpty);
+      });
+
+      test(
+        'returns false when the plan belongs to a different agent',
+        () async {
+          seedPlan();
+          agentEntities[planEntityId] =
+              (agentEntities[planEntityId]! as DayPlanEntity).copyWith(
+                agentId: 'other-agent',
+              );
+          when(
+            () => agentRepository.getLinksTo(
+              any(),
+              type: any(named: 'type'),
+            ),
+          ).thenAnswer((_) async => const <AgentLink>[]);
+
+          final removed = await createService().deletePlanForDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          expect(removed, isFalse);
+          expect(upsertedEntities, isEmpty);
+        },
+      );
+
+      test(
+        'soft-deletes the plan + inbound capture links and fires notifications',
+        () async {
+          final plan = seedPlan();
+          final link = captureLink(captureId: 'capture-live-001');
+          when(
+            () => agentRepository.getLinksTo(
+              any(),
+              type: any(named: 'type'),
+            ),
+          ).thenAnswer((_) async => [link]);
+
+          final removed = await withClock(Clock.fixed(_now), () {
+            return createService().deletePlanForDay(
+              agentId: _agentId,
+              dayId: _dayId,
+            );
+          });
+
+          expect(removed, isTrue);
+          expect(upsertedEntities, hasLength(1));
+          final upserted = upsertedEntities.single as DayPlanEntity;
+          expect(upserted.id, plan.id);
+          expect(upserted.deletedAt, _now);
+          expect(upsertedLinks, hasLength(1));
+          expect(upsertedLinks.single.deletedAt, _now);
+          expect(notifications, containsAll([_agentId, _dayId, plan.id]));
+        },
+      );
+
+      test('is idempotent when called on an already-deleted plan', () async {
+        seedPlan(deletedAt: _now);
+        when(
+          () => agentRepository.getLinksTo(
+            any(),
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((_) async => const <AgentLink>[]);
+
+        final removed = await createService().deletePlanForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(removed, isFalse);
+        expect(upsertedEntities, isEmpty);
+      });
+
+      test('skips inbound links that are already soft-deleted', () async {
+        seedPlan();
+        final liveLink = captureLink(captureId: 'capture-live');
+        final deletedLink = captureLink(
+          captureId: 'capture-dead',
+        ).copyWith(deletedAt: _now);
+        when(
+          () => agentRepository.getLinksTo(
+            any(),
+            type: any(named: 'type'),
+          ),
+        ).thenAnswer((_) async => [liveLink, deletedLink]);
+
+        final removed = await withClock(Clock.fixed(_now), () {
+          return createService().deletePlanForDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+        });
+
+        expect(removed, isTrue);
+        expect(upsertedLinks, hasLength(1));
+        expect(upsertedLinks.single.fromId, 'capture-live');
+      });
     });
   });
 }

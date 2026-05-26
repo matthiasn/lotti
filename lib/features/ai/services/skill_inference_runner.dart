@@ -899,8 +899,7 @@ typedef _InferenceTarget = ({
 /// magic-string literal that could typo-drift across the codebase.
 enum _OverrideSlotKind {
   transcription('transcription'),
-  imageAnalysis('image analysis')
-  ;
+  imageAnalysis('image analysis');
 
   const _OverrideSlotKind(this.label);
 

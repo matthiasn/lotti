@@ -111,6 +111,75 @@ class DayAgentPlanService {
     return null;
   }
 
+  /// Pending plan-diff change sets for [agentId]'s plan on [dayId],
+  /// newest-first. Used by the UI to surface the most recent refine
+  /// proposal after a refine wake completes.
+  ///
+  /// Returns an empty list when the plan does not exist or has no
+  /// pending diffs. Filters out resolved/deleted change sets so the
+  /// UI never sees stale rows.
+  Future<List<ChangeSetEntity>> pendingPlanDiffsForDay({
+    required String agentId,
+    required String dayId,
+  }) async {
+    final planId = dayAgentPlanEntityId(dayId);
+    final entities = await agentRepository.getEntitiesByAgentId(
+      agentId,
+      type: 'changeSet',
+    );
+    final diffs =
+        entities
+            .whereType<ChangeSetEntity>()
+            .where(
+              (cs) =>
+                  cs.taskId == planId &&
+                  cs.deletedAt == null &&
+                  cs.status == ChangeSetStatus.pending,
+            )
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return diffs;
+  }
+
+  /// Soft-deletes the persisted [DayPlanEntity] for [dayId] (when one
+  /// exists) and every `captureToPlan` link pointing at it. The agent
+  /// identity and source captures stay intact — they predate the plan
+  /// and belong to the journal-side record of the day.
+  ///
+  /// Returns `true` when a plan was found and soft-deleted, `false`
+  /// otherwise (no plan, foreign owner, or already-deleted). Idempotent
+  /// so a double-fire from the UI is safe.
+  Future<bool> deletePlanForDay({
+    required String agentId,
+    required String dayId,
+  }) async {
+    final entity = await agentRepository.getEntity(dayAgentPlanEntityId(dayId));
+    if (entity is! DayPlanEntity) return false;
+    if (entity.agentId != agentId) return false;
+    if (entity.deletedAt != null) return false;
+
+    final now = clock.now();
+    final softDeleted = entity.copyWith(deletedAt: now, updatedAt: now);
+    final inboundLinks = await agentRepository.getLinksTo(
+      entity.id,
+      type: AgentLinkTypes.captureToPlan,
+    );
+
+    await syncService.runInTransaction(() async {
+      await syncService.upsertEntity(softDeleted);
+      for (final link in inboundLinks) {
+        if (link.deletedAt != null) continue;
+        await syncService.upsertLink(link.softDeleted(now));
+      }
+    });
+
+    onPersistedStateChanged
+      ?..call(agentId)
+      ..call(dayId)
+      ..call(entity.id);
+    return true;
+  }
+
   /// Hydrate the set of tasks the model should know about when drafting.
   ///
   /// Merges two sources, in order:
@@ -174,7 +243,7 @@ class DayAgentPlanService {
     return out;
   }
 
-  /// Persist a structured plan diff against the current draft for [dayId].
+  /// Persist a structured plan diff against the current plan for [dayId].
   ///
   /// Each entry in [rawChanges] becomes a `ChangeItem` on a new
   /// [ChangeSetEntity] (tool name `move_block` / `add_block` / `drop_block`).
@@ -187,8 +256,6 @@ class DayAgentPlanService {
   /// Throws [DayAgentCaptureException] when:
   ///   * the agent does not exist,
   ///   * no plan exists for [dayId] (call `draft_day_plan` first),
-  ///   * the plan is `committed` (refine is gated until Commit ships an
-  ///     uncommit path),
   ///   * [baselinePlanId] is supplied and does not match the live plan id,
   ///   * [rawChanges] is empty, or
   ///   * any change is malformed (missing fields for the action,
@@ -206,13 +273,7 @@ class DayAgentPlanService {
     final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
     if (plan == null) {
       throw DayAgentCaptureException(
-        'no draft plan for $dayId; call draft_day_plan first',
-      );
-    }
-    if (plan.data.status is! DayPlanStatusDraft) {
-      throw const DayAgentCaptureException(
-        'plan is not in draft state; refine is gated until Commit ships an '
-        'uncommit path',
+        'no plan for $dayId; call draft_day_plan first',
       );
     }
     if (baselinePlanId != null && baselinePlanId != plan.id) {
@@ -455,12 +516,6 @@ class DayAgentPlanService {
         'plan ${changeSet.taskId} no longer exists',
       );
     }
-    if (plan.data.status is! DayPlanStatusDraft) {
-      throw const DayAgentCaptureException(
-        'plan is not in draft state; refine resolution is blocked',
-      );
-    }
-
     final selected = _selectIndices(
       itemIndices: itemIndices,
       itemCount: changeSet.items.length,
@@ -498,12 +553,17 @@ class DayAgentPlanService {
     final newItemStatus = apply
         ? ChangeItemStatus.confirmed
         : ChangeItemStatus.rejected;
+    final addedBlockState = _stateForAcceptedAddedBlock(plan.data.status);
 
     for (final entry in pendingByIndex.entries) {
       final index = entry.key;
       final item = entry.value;
       if (apply) {
-        mutatedBlocks = _applyItem(item, mutatedBlocks);
+        mutatedBlocks = _applyItem(
+          item,
+          mutatedBlocks,
+          addedBlockState: addedBlockState,
+        );
       }
       updatedItems[index] = item.copyWith(status: newItemStatus);
       decisions.add(
@@ -617,16 +677,24 @@ class DayAgentPlanService {
       );
     }
 
+    final now = clock.now();
+    final earliestDraftStart = localDay(planDate) == localDay(now) ? now : null;
     final allowedCategoryIds = identity.allowedCategoryIds;
     final decidedTasks = decidedTaskIds.toSet();
+    final allowedExistingTaskIds = await _allowedExistingTaskIds(
+      rawBlocks,
+      allowedCategoryIds,
+    );
     final blocks = <PlannedBlock>[];
     for (final raw in rawBlocks) {
       blocks.add(
         _parsePlannedBlock(
           raw: raw,
           day: planDate,
+          earliestDraftStart: earliestDraftStart,
           allowedCategoryIds: allowedCategoryIds,
           decidedTaskIds: decidedTasks,
+          allowedExistingTaskIds: allowedExistingTaskIds,
         ),
       );
     }
@@ -650,7 +718,6 @@ class DayAgentPlanService {
       (sum, block) => sum + block.duration.inMinutes,
     );
     final pinnedTasks = _pinnedTasksFor(blocks);
-    final now = clock.now();
     final existing = await draftPlanForDay(agentId: agentId, dayId: dayId);
     final plan =
         AgentDomainEntity.dayPlan(
@@ -998,6 +1065,8 @@ class DayAgentPlanService {
     required DateTime day,
     required Set<String> allowedCategoryIds,
     required Set<String> decidedTaskIds,
+    required Set<String> allowedExistingTaskIds,
+    DateTime? earliestDraftStart,
   }) {
     if (raw is! Map) {
       throw const DayAgentCaptureException('block must be an object');
@@ -1021,11 +1090,22 @@ class DayAgentPlanService {
     if (!end.isAfter(start)) {
       throw const DayAgentCaptureException('block end must be after start');
     }
+    final blockState = state ?? PlannedBlockState.drafted;
     final dayStart = localDay(day);
     final dayEnd = dayStart.add(const Duration(days: 1));
     if (start.isBefore(dayStart) || end.isAfter(dayEnd)) {
       throw const DayAgentCaptureException(
         'blocks must stay within the planDate day',
+      );
+    }
+    if (earliestDraftStart != null &&
+        blockState == PlannedBlockState.drafted &&
+        (blockType == PlannedBlockType.ai ||
+            blockType == PlannedBlockType.manual) &&
+        start.isBefore(earliestDraftStart)) {
+      throw const DayAgentCaptureException(
+        'drafted AI/manual blocks for today must not start before '
+        'current time',
       );
     }
     final reason = _optionalString(data['reason']);
@@ -1037,7 +1117,8 @@ class DayAgentPlanService {
     final taskId = _optionalString(data['taskId']);
     if (taskId != null &&
         decidedTaskIds.isNotEmpty &&
-        !decidedTaskIds.contains(taskId)) {
+        !decidedTaskIds.contains(taskId) &&
+        !allowedExistingTaskIds.contains(taskId)) {
       throw DayAgentCaptureException(
         'taskId $taskId was not included in decidedTaskIds',
       );
@@ -1051,9 +1132,36 @@ class DayAgentPlanService {
       taskId: taskId,
       title: _requiredString(data, 'title'),
       type: blockType,
-      state: state ?? PlannedBlockState.drafted,
+      state: blockState,
       reason: reason,
     );
+  }
+
+  Future<Set<String>> _allowedExistingTaskIds(
+    List<Object?> rawBlocks,
+    Set<String> allowedCategoryIds,
+  ) async {
+    final referenced = <String>{};
+    for (final raw in rawBlocks) {
+      if (raw is! Map) continue;
+      final taskId = _optionalString(raw['taskId']);
+      if (taskId != null) referenced.add(taskId);
+    }
+    if (referenced.isEmpty) return const <String>{};
+
+    final entities = await journalDb.journalEntityMapForIds(
+      referenced.toList(),
+    );
+    return {
+      for (final entry in entities.entries)
+        if (entry.value is Task &&
+            (entry.value as Task).meta.deletedAt == null &&
+            _categoryAllowed(
+              (entry.value as Task).meta.categoryId,
+              allowedCategoryIds,
+            ))
+          entry.key,
+    };
   }
 
   static DayAgentEnergyBand _parseEnergyBand({
@@ -1580,8 +1688,9 @@ class DayAgentPlanService {
 
   static List<PlannedBlock> _applyItem(
     ChangeItem item,
-    List<PlannedBlock> blocks,
-  ) {
+    List<PlannedBlock> blocks, {
+    required PlannedBlockState addedBlockState,
+  }) {
     // Defensive: `_validateApplicableBatch` runs immediately before this
     // and rejects every malformed item, so the assertions below should be
     // unreachable in normal flow. They exist so an accidental future
@@ -1627,6 +1736,7 @@ class DayAgentPlanService {
             title: args['title'] as String?,
             taskId: args['taskId'] as String?,
             type: _argType(args) ?? PlannedBlockType.ai,
+            state: addedBlockState,
             reason: args['blockReason'] as String?,
           ),
         );
@@ -1641,6 +1751,16 @@ class DayAgentPlanService {
         }
     }
     return out;
+  }
+
+  static PlannedBlockState _stateForAcceptedAddedBlock(
+    DayPlanStatus planStatus,
+  ) {
+    return planStatus.maybeMap(
+      agreed: (_) => PlannedBlockState.committed,
+      committed: (_) => PlannedBlockState.committed,
+      orElse: () => PlannedBlockState.drafted,
+    );
   }
 
   static DateTime? _argDate(Map<String, dynamic> args, String key) {

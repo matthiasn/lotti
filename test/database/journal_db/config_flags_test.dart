@@ -59,6 +59,7 @@ void main() {
         enableDashboardsPageFlag: false,
         enableEventsFlag: false,
         enableDailyOsPageFlag: false,
+        dailyOsNextEnabledFlag: false,
         enableSessionRatingsFlag: false,
         enableSyncActorFlag: false,
         enableProjectsFlag: false,
