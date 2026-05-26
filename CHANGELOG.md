@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the hue slider used to be clipped off the right edge of the modal, leaving
   the colour ungrabbable. The picker now fits inside the modal width on every
   platform, with the saturation square clamped to the design-system size.
+- The task detail action bar no longer shifts or leaves faint ghost shadows
+  behind the Track time, audio, checklist, and more-action buttons when time
+  recording changes state.
 
 ## [0.9.1005]
 ### Changed

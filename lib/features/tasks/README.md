@@ -194,6 +194,12 @@ Checklist content is modeled separately through checklist entities and linked ch
   checklist (both stay reachable via the "..." menu). The thresholds
   are exposed as `TaskActionBar.minWidthForImageButton` and
   `TaskActionBar.minWidthForChecklistButton`.
+  The Track time pill reserves the localized idle-label width while a
+  timer is active, so toggling time recording does not recenter the
+  trailing audio, checklist, image, or more-action affordances. The chip
+  foregrounds rely on the glass fill and hairline border for contrast
+  rather than glyph shadows, avoiding stale-looking shadow silhouettes
+  when the row repaints over blurred content.
   The page sets `Scaffold.extendBody: true` so body content paints
   behind the bar — that's what the `BackdropFilter` blurs. The mobile
   shell hides its bottom nav pill whenever the active beamer route is

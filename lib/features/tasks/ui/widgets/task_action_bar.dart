@@ -82,6 +82,14 @@ class TaskActionBar extends ConsumerStatefulWidget {
   @visibleForTesting
   static const double iconSize = 20;
 
+  /// Stop control size inside the Track time pill.
+  @visibleForTesting
+  static const double pillStopButtonSize = 32;
+
+  /// Stop glyph size inside the Track time pill's stop control.
+  @visibleForTesting
+  static const double pillStopIconSize = 18;
+
   /// Minimum [LayoutBuilder] inner width at which the checklist
   /// affordance is included. Checklist is dropped second (after image)
   /// when the row would otherwise overflow.
@@ -102,11 +110,10 @@ class TaskActionBar extends ConsumerStatefulWidget {
 /// Shared "glass chip" styling values used by both [_TrackTimePill] (idle
 /// state) and [_RoundActionButton] (when no caller override is supplied).
 ///
-/// These exist as file-level constants so the alpha bumps and shadow
-/// stack stay in sync across the action bar — no `surface.*` token
-/// covers "chip on glass over arbitrary underlying content", so the
-/// values are intentionally hard-coded here rather than fragmenting
-/// across widgets.
+/// These exist as file-level constants so the alpha bumps stay in sync
+/// across the action bar — no `surface.*` token covers "chip on glass
+/// over arbitrary underlying content", so the values are intentionally
+/// hard-coded here rather than fragmenting across widgets.
 
 /// Alpha applied to the chip fill on top of `surface.focusPressed`. Sits
 /// above any `surface.*` token so the chip silhouette stays opaque
@@ -118,16 +125,6 @@ const double _glassFillAlpha = 0.4;
 /// `foregroundDecoration` so it doesn't widen the chip and trip the
 /// action-row layout thresholds.
 const double _glassBorderAlpha = 0.3;
-
-/// Stacked icon/text shadows: a sharp inner shadow for crisp edge
-/// legibility against bright backgrounds, plus a soft outer halo for
-/// gentle separation from darker backgrounds. Skipped when the chip
-/// has its own solid fill (recording red, tracking red) — those carry
-/// their own contrast.
-const List<Shadow> _glassForegroundShadows = <Shadow>[
-  Shadow(color: Color(0xB3000000), blurRadius: 2),
-  Shadow(color: Color(0x4D000000), blurRadius: 8),
-];
 
 class _TaskActionBarState extends ConsumerState<TaskActionBar> {
   final TimeService _timeService = getIt<TimeService>();
@@ -414,11 +411,8 @@ class _TrackTimePill extends StatelessWidget {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
     // Idle pill is translucent and floats over a backdrop-blurred glass
-    // strip. Boosted alpha + hairline outline + stacked foreground
-    // shadows keep contrast over bright underlying content without
-    // losing the glass aesthetic. See `_glassFillAlpha` /
-    // `_glassBorderAlpha` / `_glassForegroundShadows` for the rationale
-    // behind the hard-coded values.
+    // strip. Boosted alpha + hairline outline keep contrast over bright
+    // underlying content without losing the glass aesthetic.
     final fillColor = isTracking
         ? tokens.colors.alert.error.defaultColor
         : tokens.colors.surface.focusPressed.withValues(
@@ -431,9 +425,22 @@ class _TrackTimePill extends StatelessWidget {
         ? Colors.white
         : tokens.colors.text.highEmphasis;
     final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
-    final foregroundShadows = isTracking
-        ? const <Shadow>[]
-        : _glassForegroundShadows;
+    final textStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
+      color: foreground,
+      // Tabular figures + slashed zero + cv02/03/04 (open 4/6/9),
+      // matching the sidebar timer pill so elapsed digits don't shift
+      // width as they tick.
+      fontFeatures: numericBadgeFontFeatures,
+    );
+    final idleContentWidth =
+        TaskActionBar.iconSize +
+        spacing.step2 +
+        _measureSingleLineTextWidth(
+          context,
+          idleSemanticLabel,
+          textStyle,
+        ) +
+        spacing.step3;
 
     return Semantics(
       button: true,
@@ -466,42 +473,77 @@ class _TrackTimePill extends StatelessWidget {
                       ),
                     ),
                   ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isTracking)
-                  _PillStopButton(
-                    onStop: onStop,
-                    semanticLabel: stopSemanticLabel,
-                  )
-                else
-                  Icon(
-                    Icons.timer_outlined,
-                    size: TaskActionBar.iconSize,
-                    color: foreground,
-                    shadows: foregroundShadows,
-                  ),
-                SizedBox(width: spacing.step2),
-                Padding(
-                  padding: EdgeInsets.only(right: spacing.step3),
-                  child: Text(
-                    label,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: foreground,
-                      // Tabular figures + slashed zero + cv02/03/04
-                      // (open 4/6/9), matching the sidebar timer pill so
-                      // the elapsed digits don't shift width as they
-                      // tick.
-                      fontFeatures: numericBadgeFontFeatures,
-                      shadows: foregroundShadows,
-                    ),
-                  ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: idleContentWidth),
+              child: Center(
+                widthFactor: 1,
+                child: _TrackTimePillContent(
+                  icon: isTracking
+                      ? _PillStopButton(
+                          onStop: onStop,
+                          semanticLabel: stopSemanticLabel,
+                        )
+                      : Icon(
+                          Icons.timer_outlined,
+                          size: TaskActionBar.iconSize,
+                          color: foreground,
+                        ),
+                  label: label,
+                  textStyle: textStyle,
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+double _measureSingleLineTextWidth(
+  BuildContext context,
+  String text,
+  TextStyle style,
+) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
+}
+
+class _TrackTimePillContent extends StatelessWidget {
+  const _TrackTimePillContent({
+    required this.icon,
+    required this.label,
+    required this.textStyle,
+  });
+
+  final Widget icon;
+  final String label;
+  final TextStyle textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        icon,
+        SizedBox(width: spacing.step2),
+        Padding(
+          padding: EdgeInsets.only(right: spacing.step3),
+          child: Text(
+            label,
+            style: textStyle,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -532,12 +574,11 @@ class _PillStopButton extends StatelessWidget {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onStop,
-          child: const SizedBox(
-            width: 32,
-            height: 32,
+          child: const SizedBox.square(
+            dimension: TaskActionBar.pillStopButtonSize,
             child: Icon(
               Icons.stop_rounded,
-              size: 18,
+              size: TaskActionBar.pillStopIconSize,
               color: Colors.white,
             ),
           ),
@@ -573,11 +614,10 @@ class _RoundActionButton extends StatelessWidget {
     final tokens = context.designTokens;
     // Round buttons sit on a translucent glass strip; when no caller
     // override is supplied the chip uses the shared "glass chip"
-    // styling (`_glassFillAlpha`, `_glassBorderAlpha`,
-    // `_glassForegroundShadows`) so the silhouette and glyph stay
-    // visible regardless of what's behind the bar. Caller overrides
-    // (e.g. recording = solid red) skip these crutches because they
-    // already carry their own contrast.
+    // styling (`_glassFillAlpha`, `_glassBorderAlpha`) so the
+    // silhouette and glyph stay visible regardless of what's behind the
+    // bar. Caller overrides (e.g. recording = solid red) already carry
+    // their own contrast.
     final isTranslucent = backgroundColor == null;
     final defaultFill = tokens.colors.surface.focusPressed.withValues(
       alpha: _glassFillAlpha,
@@ -616,7 +656,6 @@ class _RoundActionButton extends StatelessWidget {
               icon,
               size: TaskActionBar.iconSize,
               color: iconColor ?? tokens.colors.text.highEmphasis,
-              shadows: isTranslucent ? _glassForegroundShadows : null,
             ),
           ),
         ),
