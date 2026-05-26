@@ -693,9 +693,16 @@ class RealDayAgent implements DayAgentInterface {
   }
 
   DayState _projectDayState(DayPlanStatus status) {
-    // `committed` is the new variant from PR #3214; `agreed` is the
-    // legacy variant from the old daily_os feature kept for back-compat.
-    // Both map to the UI's [DayState.committed].
+    // `DayPlanEntity` rows are shared with the old `daily_os` feature,
+    // which writes `agreed` when the user signs off on a plan (see
+    // `unified_daily_os_data_controller.dart`). The new `daily_os_next`
+    // surface uses `committed` for the same lifecycle step (PR #3214).
+    // Both mean "user has signed off" — collapse them into
+    // [DayState.committed] so a plan a user agreed to in the old surface
+    // still reads as committed when opened in the new one. This is
+    // shared persisted shape, NOT a dependency on old-code behaviour:
+    // keep the `agreed` branch until the old daily_os feature is
+    // removed and any remaining `agreed` rows have been migrated.
     return status.maybeMap(
       committed: (_) => DayState.committed,
       agreed: (_) => DayState.committed,

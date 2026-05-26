@@ -2598,6 +2598,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.';
 
   @override
+  String get configFlagDailyOsNextEnabled => 'Activează noul DailyOS agentic';
+
+  @override
+  String get configFlagDailyOsNextEnabledDescription =>
+      'Înlocuiește interfața DailyOS actuală cu noul flux vocal de captură și reconciliere coordonat de agent. Previzualizare timpurie — logica de backend este simulată.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Activează streamingul AI pentru acțiunile legate de sarcini';
 
@@ -3095,6 +3102,420 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNearLimit => 'Aproape de limită';
+
+  @override
+  String get dailyOsNextAgendaCapacityComfortable => 'CONFORTABIL';
+
+  @override
+  String get dailyOsNextAgendaCapacityNearFull => 'APROAPE PLIN';
+
+  @override
+  String dailyOsNextAgendaCapacityOf(String capacity) {
+    return 'din $capacity';
+  }
+
+  @override
+  String get dailyOsNextAgendaCapacityOver => 'PESTE CAPACITATE';
+
+  @override
+  String get dailyOsNextAgendaEmpty => 'Nimic de făcut astăzi.';
+
+  @override
+  String get dailyOsNextAgendaStateDone => 'Finalizat';
+
+  @override
+  String get dailyOsNextAgendaStateInProgress => 'În progres';
+
+  @override
+  String get dailyOsNextAgendaStateOpen => 'Deschis';
+
+  @override
+  String get dailyOsNextAgendaStateOverdue => 'Întârziat';
+
+  @override
+  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
+    return '$scheduled din $capacity angajate';
+  }
+
+  @override
+  String get dailyOsNextCaptureCaptured => 'Am înțeles.';
+
+  @override
+  String get dailyOsNextCaptureHeadlineLead => 'La ce vă gândiți';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTail => 'pentru astăzi?';
+
+  @override
+  String get dailyOsNextCaptureIdleHint =>
+      'Apăsați pentru a vorbi · capturați · sau tastați';
+
+  @override
+  String get dailyOsNextCaptureListening => 'ASCULT';
+
+  @override
+  String get dailyOsNextCaptureOpenTasks => 'Răsfoiește sarcinile';
+
+  @override
+  String get dailyOsNextCaptureReconcileCta => 'Reconciliere';
+
+  @override
+  String get dailyOsNextCaptureTranscriptHint =>
+      'Corectați orice a înțeles greșit transcrierea înainte de planificare.';
+
+  @override
+  String get dailyOsNextCaptureTranscriptLabel => 'Verificați transcrierea';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonReset => 'Reîncepe';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStart => 'Începe ascultarea';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStop => 'Oprește ascultarea';
+
+  @override
+  String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
+    return '$scheduled din $capacity angajate. Marjă confortabilă — poți absorbi o surpriză.';
+  }
+
+  @override
+  String get dailyOsNextCommitDraftHeadline => 'Ziua dvs., schiță.';
+
+  @override
+  String get dailyOsNextCommitDraftOverline => 'ASTĂZI';
+
+  @override
+  String get dailyOsNextCommitHeadline => 'Faceți-o a dvs.';
+
+  @override
+  String get dailyOsNextCommitHoldHint => 'ȚINEȚI';
+
+  @override
+  String get dailyOsNextCommitHoldLabel => 'Confirmă astăzi';
+
+  @override
+  String get dailyOsNextCommitLockingIn => 'Se fixează…';
+
+  @override
+  String get dailyOsNextCommitShepherdSubline =>
+      'Vă însoțesc — munca o faceți dvs.';
+
+  @override
+  String get dailyOsNextCommitSubCaption =>
+      'Confirmarea trece ziua din schiță în angajată. Puteți continua să-mi vorbiți — dar structura rămâne.';
+
+  @override
+  String get dailyOsNextCommitTitle => 'Fixați-o';
+
+  @override
+  String get dailyOsNextCommitTodayIsYours => 'Ziua este a dvs.';
+
+  @override
+  String get dailyOsNextDayBack => 'Înapoi';
+
+  @override
+  String get dailyOsNextDayLockInCta => 'Fixează';
+
+  @override
+  String get dailyOsNextDayRefineCta => 'Reglare prin voce';
+
+  @override
+  String get dailyOsNextDayRefineFooterHint =>
+      'Vorbiți pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.';
+
+  @override
+  String get dailyOsNextDayTitle => 'Ziua dvs.';
+
+  @override
+  String get dailyOsNextDayWhyChipLabel => 'DE CE';
+
+  @override
+  String get dailyOsNextDayWrapUpCta => 'Încheie';
+
+  @override
+  String get dailyOsNextDraftingNudgeAccept => 'Da, protejează dimineața';
+
+  @override
+  String get dailyOsNextDraftingNudgeDecline => 'Nu astăzi';
+
+  @override
+  String get dailyOsNextDraftingReasoningOverline => '✦ RAȚIONAMENT';
+
+  @override
+  String dailyOsNextEstimateMinutes(int minutes) {
+    return '${minutes}m';
+  }
+
+  @override
+  String get dailyOsNextGreetingAfternoon => 'Bună după-amiaza.';
+
+  @override
+  String get dailyOsNextGreetingEvening => 'Bună seara.';
+
+  @override
+  String get dailyOsNextGreetingHi => 'Salut 👋';
+
+  @override
+  String get dailyOsNextGreetingMorning => 'Bună dimineața.';
+
+  @override
+  String get dailyOsNextPlanViewAgenda => 'Agenda';
+
+  @override
+  String get dailyOsNextPlanViewDay => 'Ziua';
+
+  @override
+  String get dailyOsNextReconcileBadgeMatched => 'LEGAT';
+
+  @override
+  String get dailyOsNextReconcileBadgeNew => 'NOU';
+
+  @override
+  String get dailyOsNextReconcileBadgeUpdate => 'ACTUALIZARE';
+
+  @override
+  String get dailyOsNextReconcileBuildDayCta => 'Construiește ziua mea';
+
+  @override
+  String get dailyOsNextReconcileDecideOverline => 'MERITĂ DECIS';
+
+  @override
+  String get dailyOsNextReconcileDefaultBehaviorHint =>
+      'Deciziile dvs. aici alimentează planul — nicio decizie înseamnă „lăsați-l unde este”.';
+
+  @override
+  String dailyOsNextReconcileError(String detail) {
+    return 'Ceva nu a mers bine: $detail';
+  }
+
+  @override
+  String get dailyOsNextReconcileHeardEmpty =>
+      'Cardurile capturii vor apărea aici după finalizarea parsării.';
+
+  @override
+  String get dailyOsNextReconcileHeardOverline => 'IATĂ CE AM AUZIT';
+
+  @override
+  String get dailyOsNextReconcileLowConfidence => 'încredere scăzută';
+
+  @override
+  String get dailyOsNextReconcileReRecord => 'Reînregistrare';
+
+  @override
+  String get dailyOsNextReconcileVoiceHint =>
+      '„Renunță la facturi” funcționează și aici';
+
+  @override
+  String get dailyOsNextRefineAccept => 'Acceptă';
+
+  @override
+  String get dailyOsNextRefineDiffAdded => 'ADĂUGAT';
+
+  @override
+  String get dailyOsNextRefineDiffDropped => 'RENUNȚAT';
+
+  @override
+  String get dailyOsNextRefineDiffMoved => 'MUTAT';
+
+  @override
+  String get dailyOsNextRefineKeepTalking => 'Continuă să vorbești';
+
+  @override
+  String get dailyOsNextRefineOverline => '🎤 REGLARE';
+
+  @override
+  String get dailyOsNextRefineRevert => 'Anulează';
+
+  @override
+  String get dailyOsNextRefineStatusAccepted => 'Fixat.';
+
+  @override
+  String get dailyOsNextRefineStatusDiffReady => 'Iată ce s-a schimbat.';
+
+  @override
+  String get dailyOsNextRefineStatusIdle => 'Apăsați pentru a vorbi.';
+
+  @override
+  String get dailyOsNextRefineStatusListening => 'Ascult…';
+
+  @override
+  String get dailyOsNextRefineStatusThinking => '✦ Reorganizez planul…';
+
+  @override
+  String get dailyOsNextRefineTitle => 'Reglează planul';
+
+  @override
+  String get dailyOsNextShutdownCarryoverDrop => 'Renunță';
+
+  @override
+  String get dailyOsNextShutdownCarryoverDropped => 'Renunțat';
+
+  @override
+  String get dailyOsNextShutdownCarryoverOverline => 'SE REPORTEAZĂ';
+
+  @override
+  String get dailyOsNextShutdownCarryoverPickDate => 'Alege data';
+
+  @override
+  String get dailyOsNextShutdownCarryoverScheduled => 'Programat';
+
+  @override
+  String get dailyOsNextShutdownCloseDay => 'Închide ziua';
+
+  @override
+  String get dailyOsNextShutdownCompletedOverline => 'CE AȚI FĂCUT';
+
+  @override
+  String get dailyOsNextShutdownMetricEnergy => 'ENERGIE';
+
+  @override
+  String dailyOsNextShutdownMetricEnergyDelta(String delta) {
+    return '$delta vs. săptămână';
+  }
+
+  @override
+  String get dailyOsNextShutdownMetricFlow => 'SESIUNI DE FLOW';
+
+  @override
+  String get dailyOsNextShutdownMetricFocus => 'TIMP DE FOCUS';
+
+  @override
+  String get dailyOsNextShutdownMetricSwitches => 'SCHIMBĂRI DE CONTEXT';
+
+  @override
+  String dailyOsNextShutdownMetricSwitchesAvg(String avg) {
+    return 'media $avg săptămâna aceasta';
+  }
+
+  @override
+  String get dailyOsNextShutdownReflectionOverline => '💬 REFLECȚIE DE O LINIE';
+
+  @override
+  String get dailyOsNextShutdownReflectionPlaceholder =>
+      'ex.: dimineață ascuțită, după-amiază trenantă după o cafea lungă cu Sarah.';
+
+  @override
+  String get dailyOsNextShutdownReflectionPrompt =>
+      'Cum a fost ziua? (Asta alimentează schița de mâine.)';
+
+  @override
+  String get dailyOsNextShutdownReflectionSpeak => 'Spuneți';
+
+  @override
+  String get dailyOsNextShutdownReflectionSubmit => 'Treci peste';
+
+  @override
+  String get dailyOsNextShutdownReflectionThanks =>
+      'Notat — alimentează ziua de mâine.';
+
+  @override
+  String get dailyOsNextShutdownSaveAndClose => 'Salvează și închide';
+
+  @override
+  String get dailyOsNextShutdownTitle => 'Închideți ziua';
+
+  @override
+  String get dailyOsNextShutdownTomorrowOverline => '✦ PENTRU MÂINE';
+
+  @override
+  String get dailyOsNextStateDueToday => 'Scadent astăzi';
+
+  @override
+  String dailyOsNextStateInProgress(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'În progres · $count sesiuni',
+      one: 'În progres · 1 sesiune',
+      zero: 'În progres',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Întârziat · $days zile',
+      one: 'Întârziat · 1 zi',
+      zero: 'Întârziat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextStateRecurringMissed => 'Recurent · ratat';
+
+  @override
+  String get dailyOsNextTasksEmpty => 'Nimic aici încă.';
+
+  @override
+  String get dailyOsNextTasksFilterAll => 'Toate';
+
+  @override
+  String get dailyOsNextTasksFilterBacklog => 'Restanțe';
+
+  @override
+  String get dailyOsNextTasksFilterDone => 'Finalizate';
+
+  @override
+  String get dailyOsNextTasksFilterInProgress => 'În progres';
+
+  @override
+  String get dailyOsNextTasksFilterOverdue => 'Întârziate';
+
+  @override
+  String get dailyOsNextTasksFilterRecurring => 'Recurente';
+
+  @override
+  String get dailyOsNextTasksFilterScheduled => 'Programate';
+
+  @override
+  String get dailyOsNextTasksFooterHint =>
+      'Ritualul de dimineață scoate la suprafață ce contează.';
+
+  @override
+  String get dailyOsNextTasksSearchPlaceholder => 'Caută sarcini';
+
+  @override
+  String get dailyOsNextTasksSubtitle =>
+      'Tot ce Lotti păstrează pentru dvs. Ritualul de dimineață scoate la suprafață ce contează.';
+
+  @override
+  String get dailyOsNextTasksTitle => 'Sarcini';
+
+  @override
+  String get dailyOsNextTriageConfirmDefer => 'Amânat';
+
+  @override
+  String get dailyOsNextTriageConfirmDone => 'Marcat ca finalizat';
+
+  @override
+  String get dailyOsNextTriageConfirmDoNow => 'Făcut imediat';
+
+  @override
+  String get dailyOsNextTriageConfirmDrop => 'Renunțat';
+
+  @override
+  String get dailyOsNextTriageConfirmToday => 'Adăugat la astăzi';
+
+  @override
+  String get dailyOsNextTriageDefer => 'Amână';
+
+  @override
+  String get dailyOsNextTriageDone => 'Finalizat';
+
+  @override
+  String get dailyOsNextTriageDoNow => 'Fă acum';
+
+  @override
+  String get dailyOsNextTriageDrop => 'Renunță';
+
+  @override
+  String get dailyOsNextTriageToday => 'Astăzi';
 
   @override
   String get dailyOsNoBudgets => 'Fără bugete de timp';

@@ -153,6 +153,14 @@ class CaptureController extends Notifier<CaptureState> {
   /// noise into oscillating full-height bars.
   static const _minDbfs = -45.0;
 
+  /// Minimum extra characters the full-file batch transcript must have
+  /// over the realtime `done` text before we prefer the batch result.
+  /// Realtime and batch routinely differ by a few characters of
+  /// punctuation/whitespace; this margin avoids swapping out a good
+  /// realtime transcript for a near-identical batch one and only kicks
+  /// in when batch is meaningfully longer (i.e. realtime truncated).
+  static const _batchTranscriptOvertakeMargin = 8;
+
   late final AudioRecorderRepository _recorder =
       _recorderOverride ?? AudioRecorderRepository();
   late final AudioTranscriptionService _transcriber =
@@ -508,7 +516,8 @@ class CaptureController extends Notifier<CaptureState> {
       // Realtime `done` can occasionally be shorter than the spoken capture.
       // Keep realtime when it agrees, but let full-file transcription repair
       // obvious truncation before the user reaches the editable transcript.
-      if (batchTranscript.length > realtimeTranscript.length + 8) {
+      if (batchTranscript.length >
+          realtimeTranscript.length + _batchTranscriptOvertakeMargin) {
         return batchTranscript;
       }
     } catch (_) {

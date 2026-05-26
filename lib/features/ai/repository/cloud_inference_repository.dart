@@ -472,6 +472,16 @@ class CloudInferenceRepository {
             model: model,
             maxCompletionTokens: maxCompletionTokens,
             tools: tools,
+            // Audio-in-chat-completions calls on Gemini are effectively
+            // transcription / short-answer tasks (record button, voice
+            // capture). Thinking tokens add latency and cost without
+            // changing the transcript, so we pin reasoning to `low` here
+            // regardless of the model's default thinking config. This is
+            // intentionally independent of the workflow-side
+            // `geminiThinkingMode` setting (PR #3216), which applies to
+            // text/chat reasoning where extra thinking is useful.
+            // Other providers ignore `reasoningEffort` — only Gemini
+            // currently honours it, so we only set it for Gemini.
             reasoningEffort:
                 provider.inferenceProviderType == InferenceProviderType.gemini
                 ? ReasoningEffort.low
