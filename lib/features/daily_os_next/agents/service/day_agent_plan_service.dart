@@ -243,7 +243,7 @@ class DayAgentPlanService {
     return out;
   }
 
-  /// Persist a structured plan diff against the current draft for [dayId].
+  /// Persist a structured plan diff against the current plan for [dayId].
   ///
   /// Each entry in [rawChanges] becomes a `ChangeItem` on a new
   /// [ChangeSetEntity] (tool name `move_block` / `add_block` / `drop_block`).
@@ -256,8 +256,6 @@ class DayAgentPlanService {
   /// Throws [DayAgentCaptureException] when:
   ///   * the agent does not exist,
   ///   * no plan exists for [dayId] (call `draft_day_plan` first),
-  ///   * the plan is `committed` (refine is gated until Commit ships an
-  ///     uncommit path),
   ///   * [baselinePlanId] is supplied and does not match the live plan id,
   ///   * [rawChanges] is empty, or
   ///   * any change is malformed (missing fields for the action,
@@ -275,13 +273,7 @@ class DayAgentPlanService {
     final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
     if (plan == null) {
       throw DayAgentCaptureException(
-        'no draft plan for $dayId; call draft_day_plan first',
-      );
-    }
-    if (plan.data.status is! DayPlanStatusDraft) {
-      throw const DayAgentCaptureException(
-        'plan is not in draft state; refine is gated until Commit ships an '
-        'uncommit path',
+        'no plan for $dayId; call draft_day_plan first',
       );
     }
     if (baselinePlanId != null && baselinePlanId != plan.id) {
@@ -524,12 +516,6 @@ class DayAgentPlanService {
         'plan ${changeSet.taskId} no longer exists',
       );
     }
-    if (plan.data.status is! DayPlanStatusDraft) {
-      throw const DayAgentCaptureException(
-        'plan is not in draft state; refine resolution is blocked',
-      );
-    }
-
     final selected = _selectIndices(
       itemIndices: itemIndices,
       itemCount: changeSet.items.length,
@@ -567,12 +553,17 @@ class DayAgentPlanService {
     final newItemStatus = apply
         ? ChangeItemStatus.confirmed
         : ChangeItemStatus.rejected;
+    final addedBlockState = _stateForAcceptedAddedBlock(plan.data.status);
 
     for (final entry in pendingByIndex.entries) {
       final index = entry.key;
       final item = entry.value;
       if (apply) {
-        mutatedBlocks = _applyItem(item, mutatedBlocks);
+        mutatedBlocks = _applyItem(
+          item,
+          mutatedBlocks,
+          addedBlockState: addedBlockState,
+        );
       }
       updatedItems[index] = item.copyWith(status: newItemStatus);
       decisions.add(
@@ -1697,8 +1688,9 @@ class DayAgentPlanService {
 
   static List<PlannedBlock> _applyItem(
     ChangeItem item,
-    List<PlannedBlock> blocks,
-  ) {
+    List<PlannedBlock> blocks, {
+    required PlannedBlockState addedBlockState,
+  }) {
     // Defensive: `_validateApplicableBatch` runs immediately before this
     // and rejects every malformed item, so the assertions below should be
     // unreachable in normal flow. They exist so an accidental future
@@ -1744,6 +1736,7 @@ class DayAgentPlanService {
             title: args['title'] as String?,
             taskId: args['taskId'] as String?,
             type: _argType(args) ?? PlannedBlockType.ai,
+            state: addedBlockState,
             reason: args['blockReason'] as String?,
           ),
         );
@@ -1758,6 +1751,16 @@ class DayAgentPlanService {
         }
     }
     return out;
+  }
+
+  static PlannedBlockState _stateForAcceptedAddedBlock(
+    DayPlanStatus planStatus,
+  ) {
+    return planStatus.maybeMap(
+      agreed: (_) => PlannedBlockState.committed,
+      committed: (_) => PlannedBlockState.committed,
+      orElse: () => PlannedBlockState.drafted,
+    );
   }
 
   static DateTime? _argDate(Map<String, dynamic> args, String key) {

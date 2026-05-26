@@ -294,7 +294,7 @@ enum DayState { drafted, committed }
 
 /// Output of `draft_day_plan`. Carries the placed blocks, the day's
 /// energy bands, and the budget metadata the Agenda/Day surfaces need
-/// for the capacity donut + summary strip.
+/// for the capacity meter + summary strip.
 @immutable
 class DraftPlan {
   const DraftPlan({
@@ -436,6 +436,9 @@ enum LearningCardKind {
 /// Maps 1:1 to a row in the Refine right-column DiffRow list and a
 /// ping anchored to the affected timeline row.
 enum PlanDiffChangeKind { moved, added, dropped }
+
+/// User resolution state for a proposed refine change.
+enum PlanDiffChangeDecision { pending, accepted, rejected }
 
 @immutable
 class PlanDiffChange {

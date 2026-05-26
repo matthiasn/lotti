@@ -412,7 +412,7 @@ void main() {
         );
         verify(
           () => realtimeService.resolveRealtimeConfig(
-            preferMistral: any(named: 'preferMistral'),
+            preferMistral: true,
           ),
         ).called(1);
         verify(

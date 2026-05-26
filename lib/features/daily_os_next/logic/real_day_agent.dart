@@ -288,7 +288,7 @@ class RealDayAgent implements DayAgentInterface {
     if (!enqueued) {
       throw const DayAgentInteractionException(
         'Failed to enqueue the refine wake. The plan may have been '
-        'committed or deleted — refresh and try again.',
+        'deleted — refresh and try again.',
       );
     }
 
@@ -315,7 +315,10 @@ class RealDayAgent implements DayAgentInterface {
   }
 
   @override
-  Future<DraftPlan> acceptDiff(PlanDiff diff) async {
+  Future<DraftPlan> acceptDiff(
+    PlanDiff diff, {
+    List<int>? itemIndices,
+  }) async {
     final identity = await dayAgentService.getDayAgentForDate(
       diff.updatedPlan.dayDate,
     );
@@ -328,6 +331,7 @@ class RealDayAgent implements DayAgentInterface {
     await planService.acceptPlanDiff(
       agentId: identity.agentId,
       changeSetId: diff.id,
+      itemIndices: itemIndices,
     );
     final dayId = dayAgentIdForDate(diff.updatedPlan.dayDate);
     final plan = await planService.draftPlanForDay(
@@ -348,6 +352,7 @@ class RealDayAgent implements DayAgentInterface {
   Future<DraftPlan> revertDiff({
     required PlanDiff diff,
     required DraftPlan originalPlan,
+    List<int>? itemIndices,
   }) async {
     final identity = await dayAgentService.getDayAgentForDate(
       originalPlan.dayDate,
@@ -360,9 +365,20 @@ class RealDayAgent implements DayAgentInterface {
     await planService.revertPlanDiff(
       agentId: identity.agentId,
       changeSetId: diff.id,
+      itemIndices: itemIndices,
     );
-    // Revert leaves the plan untouched — return the caller's view.
-    return originalPlan;
+    final dayId = dayAgentIdForDate(originalPlan.dayDate);
+    final plan = await planService.draftPlanForDay(
+      agentId: identity.agentId,
+      dayId: dayId,
+    );
+    if (plan == null) {
+      throw DayAgentInteractionException(
+        'Plan disappeared after rejecting the diff — '
+        '$dayId no longer has a drafted plan.',
+      );
+    }
+    return _projectDayPlan(plan, originalPlan.dayDate);
   }
 
   @override
@@ -541,12 +557,15 @@ class RealDayAgent implements DayAgentInterface {
     final bands = [
       for (final band in entity.energyBands) _projectEnergyBand(band),
     ];
+    final scheduledMinutes = blocks
+        .where((block) => block.state != TimeBlockState.dropped)
+        .fold<int>(0, (sum, block) => sum + block.duration.inMinutes);
     return DraftPlan(
       dayDate: dayDate,
       blocks: blocks,
       bands: bands,
       capacityMinutes: entity.capacityMinutes,
-      scheduledMinutes: entity.scheduledMinutes,
+      scheduledMinutes: scheduledMinutes,
       agendaItems: _agendaFor(blocks),
       state: _projectDayState(entity.data.status),
     );
@@ -561,6 +580,7 @@ class RealDayAgent implements DayAgentInterface {
     final taskGroups = <String, List<TimeBlock>>{};
     final standalone = <TimeBlock>[];
     for (final block in blocks) {
+      if (block.state == TimeBlockState.dropped) continue;
       if (block.type == TimeBlockType.buffer) continue;
       final taskId = block.taskId;
       if (taskId != null && taskId.isNotEmpty) {

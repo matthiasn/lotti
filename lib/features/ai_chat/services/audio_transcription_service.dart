@@ -145,15 +145,6 @@ AiConfigModel _selectBatchAudioModel(
         type;
   }
 
-  final mlxQwen = audioModels.firstWhereOrNull(
-    (model) =>
-        isMlxAudioQwenAsrModelId(model.providerModelId) &&
-        hasProviderType(model, InferenceProviderType.mlxAudio),
-  );
-  if (mlxQwen != null) {
-    return mlxQwen;
-  }
-
   final mistralOffline = audioModels.firstWhereOrNull(
     (model) =>
         hasProviderType(model, InferenceProviderType.mistral) &&
@@ -170,6 +161,15 @@ AiConfigModel _selectBatchAudioModel(
   );
   if (mistralBatch != null) {
     return mistralBatch;
+  }
+
+  final mlxQwen = audioModels.firstWhereOrNull(
+    (model) =>
+        isMlxAudioQwenAsrModelId(model.providerModelId) &&
+        hasProviderType(model, InferenceProviderType.mlxAudio),
+  );
+  if (mlxQwen != null) {
+    return mlxQwen;
   }
 
   return audioModels.firstWhere(

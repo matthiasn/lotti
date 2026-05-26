@@ -489,7 +489,10 @@ class MockDayAgent implements DayAgentInterface {
   }
 
   @override
-  Future<DraftPlan> acceptDiff(PlanDiff diff) async {
+  Future<DraftPlan> acceptDiff(
+    PlanDiff diff, {
+    List<int>? itemIndices,
+  }) async {
     await Future<void>.delayed(triageLatency);
     return diff.updatedPlan;
   }
@@ -498,6 +501,7 @@ class MockDayAgent implements DayAgentInterface {
   Future<DraftPlan> revertDiff({
     required PlanDiff diff,
     required DraftPlan originalPlan,
+    List<int>? itemIndices,
   }) async {
     await Future<void>.delayed(triageLatency);
     return originalPlan;

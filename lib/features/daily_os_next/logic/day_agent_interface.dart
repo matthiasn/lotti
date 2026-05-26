@@ -98,14 +98,19 @@ abstract class DayAgentInterface {
   });
 
   /// Tool: `accept_diff`. Commit the proposed [PlanDiff] — the
-  /// returned plan becomes the user's current draft.
-  Future<DraftPlan> acceptDiff(PlanDiff diff);
+  /// returned plan becomes the user's current draft. When [itemIndices]
+  /// is supplied, only those zero-based change rows are accepted.
+  Future<DraftPlan> acceptDiff(
+    PlanDiff diff, {
+    List<int>? itemIndices,
+  });
 
   /// Tool: `revert_diff`. Discard the proposed [PlanDiff] — the
   /// caller-provided plan is the one to keep.
   Future<DraftPlan> revertDiff({
     required PlanDiff diff,
     required DraftPlan originalPlan,
+    List<int>? itemIndices,
   });
 
   /// Tool: `commit_day`. Toggles the day's state from drafted to

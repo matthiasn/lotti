@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -261,7 +263,7 @@ void main() {
         expect(result.blocks.single.type, TimeBlockType.ai);
         expect(result.blocks.single.reason, 'High-energy window');
         expect(result.capacityMinutes, 480);
-        expect(result.scheduledMinutes, 240);
+        expect(result.scheduledMinutes, 60);
         expect(result.state, DayState.drafted);
 
         // Standalone block (no taskId) still becomes one agenda item so
@@ -342,6 +344,166 @@ void main() {
           ),
           throwsA(isA<DayAgentInteractionException>()),
         );
+      },
+    );
+  });
+
+  group('RealDayAgent.resolveDiffItems', () {
+    late MockDayAgentCaptureService captureService;
+    late MockDayAgentPlanService planService;
+    late MockDayAgentService dayAgentService;
+    late MockJournalDb journalDb;
+    late RealDayAgent adapter;
+
+    setUp(() {
+      captureService = MockDayAgentCaptureService();
+      planService = MockDayAgentPlanService();
+      dayAgentService = MockDayAgentService();
+      journalDb = MockJournalDb();
+      adapter = RealDayAgent(
+        captureService: captureService,
+        planService: planService,
+        dayAgentService: dayAgentService,
+        journalDb: journalDb,
+        mockFallback: MockDayAgent(),
+      );
+    });
+
+    DayPlanEntity buildDayPlan({
+      required String agentId,
+      required String dayId,
+    }) {
+      return AgentDomainEntity.dayPlan(
+            id: 'day_agent_plan:$dayId',
+            agentId: agentId,
+            dayId: dayId,
+            planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
+            data: DayPlanData(
+              planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
+              status: const DayPlanStatus.draft(),
+            ),
+            createdAt: _asOf,
+            updatedAt: _asOf,
+            vectorClock: null,
+          )
+          as DayPlanEntity;
+    }
+
+    ChangeSetEntity buildChangeSet({required String agentId}) {
+      return AgentDomainEntity.changeSet(
+            id: 'diff-001',
+            agentId: agentId,
+            taskId: 'day_agent_plan:${dayAgentIdForDate(_asOf)}',
+            threadId: 'thread-001',
+            runKey: 'run-001',
+            status: ChangeSetStatus.pending,
+            items: const <ChangeItem>[],
+            createdAt: _asOf,
+            vectorClock: null,
+          )
+          as ChangeSetEntity;
+    }
+
+    PlanDiff buildDiff() {
+      return PlanDiff(
+        id: 'diff-001',
+        transcript: 'move the gym',
+        changes: const <PlanDiffChange>[],
+        updatedPlan: DraftPlan(
+          dayDate: _asOf,
+          blocks: const <TimeBlock>[],
+          bands: const <EnergyBand>[],
+          capacityMinutes: 480,
+          scheduledMinutes: 0,
+        ),
+      );
+    }
+
+    test('acceptDiff forwards selected item indices', () async {
+      const agentId = 'day-agent-001';
+      final dayId = dayAgentIdForDate(_asOf);
+      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: agentId,
+          agentId: agentId,
+          kind: AgentKinds.dayAgent,
+        ),
+      );
+      when(
+        () => planService.acceptPlanDiff(
+          agentId: any(named: 'agentId'),
+          changeSetId: any(named: 'changeSetId'),
+          itemIndices: any(named: 'itemIndices'),
+        ),
+      ).thenAnswer((_) async => buildChangeSet(agentId: agentId));
+      when(
+        () => planService.draftPlanForDay(
+          agentId: agentId,
+          dayId: dayId,
+        ),
+      ).thenAnswer((_) async => buildDayPlan(agentId: agentId, dayId: dayId));
+
+      final result = await adapter.acceptDiff(buildDiff(), itemIndices: [1]);
+
+      final captured =
+          verify(
+                () => planService.acceptPlanDiff(
+                  agentId: agentId,
+                  changeSetId: 'diff-001',
+                  itemIndices: captureAny(named: 'itemIndices'),
+                ),
+              ).captured.single
+              as List<int>;
+      expect(captured, [1]);
+      expect(result.dayDate, _asOf);
+    });
+
+    test(
+      'revertDiff forwards selected item indices and refetches the plan',
+      () async {
+        const agentId = 'day-agent-001';
+        final dayId = dayAgentIdForDate(_asOf);
+        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => planService.revertPlanDiff(
+            agentId: any(named: 'agentId'),
+            changeSetId: any(named: 'changeSetId'),
+            itemIndices: any(named: 'itemIndices'),
+          ),
+        ).thenAnswer((_) async => buildChangeSet(agentId: agentId));
+        when(
+          () => planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => buildDayPlan(agentId: agentId, dayId: dayId));
+
+        final result = await adapter.revertDiff(
+          diff: buildDiff(),
+          originalPlan: buildDiff().updatedPlan,
+          itemIndices: [0],
+        );
+
+        final captured =
+            verify(
+                  () => planService.revertPlanDiff(
+                    agentId: agentId,
+                    changeSetId: 'diff-001',
+                    itemIndices: captureAny(named: 'itemIndices'),
+                  ),
+                ).captured.single
+                as List<int>;
+        expect(captured, [0]);
+        expect(result.dayDate, _asOf);
+        verify(
+          () => planService.draftPlanForDay(agentId: agentId, dayId: dayId),
+        ).called(1);
       },
     );
   });

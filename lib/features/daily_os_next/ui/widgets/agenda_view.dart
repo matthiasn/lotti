@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
 /// Intent-first projection of the [DraftPlan]. One [AgendaCard] per
-/// task, top stat strip with capacity donut + summary + category mix.
+/// task, top stat strip with capacity meter + summary + category mix.
 class AgendaView extends StatelessWidget {
   const AgendaView({required this.draft, super.key});
 
@@ -82,38 +82,32 @@ class _StatStrip extends StatelessWidget {
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
       padding: EdgeInsets.all(tokens.spacing.step5),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CapacityDonut(
+          Text(
+            overline,
+            style: tokens.typography.styles.others.overline.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            context.messages.dailyOsNextAgendaSummary(
+              _formatHours(draft.scheduledMinutes),
+              _formatHours(draft.capacityMinutes),
+            ),
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          CapacityMeter(
             scheduledMinutes: draft.scheduledMinutes,
             capacityMinutes: draft.capacityMinutes,
           ),
-          SizedBox(width: tokens.spacing.step5),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  overline,
-                  style: tokens.typography.styles.others.overline.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-                SizedBox(height: tokens.spacing.step2),
-                Text(
-                  context.messages.dailyOsNextAgendaSummary(
-                    _formatHours(draft.scheduledMinutes),
-                    _formatHours(draft.capacityMinutes),
-                  ),
-                  style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                SizedBox(height: tokens.spacing.step3),
-                _CategoryMix(draft: draft),
-              ],
-            ),
-          ),
+          SizedBox(height: tokens.spacing.step3),
+          _CategoryMix(draft: draft),
         ],
       ),
     );
@@ -137,7 +131,7 @@ class _CategoryMix extends StatelessWidget {
     final tokens = context.designTokens;
     final totals = <String, ({DayAgentCategory category, int minutes})>{};
     for (final block in draft.blocks) {
-      if (block.type == TimeBlockType.buffer) continue;
+      if (block.state == TimeBlockState.dropped) continue;
       final key = block.category.id;
       final existing = totals[key];
       totals[key] = (

@@ -60,6 +60,7 @@ class CloudInferenceRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     bool stream = true,
+    ReasoningEffort? reasoningEffort,
   }) {
     final ChatCompletionToolChoiceOption? effectiveToolChoice;
     if (toolChoice != null) {
@@ -78,6 +79,7 @@ class CloudInferenceRepository {
       temperature: temperature,
       maxCompletionTokens: maxCompletionTokens,
       maxTokens: maxTokens,
+      reasoningEffort: reasoningEffort,
       stream: stream,
       tools: tools,
       toolChoice: effectiveToolChoice,
@@ -470,6 +472,10 @@ class CloudInferenceRepository {
             model: model,
             maxCompletionTokens: maxCompletionTokens,
             tools: tools,
+            reasoningEffort:
+                provider.inferenceProviderType == InferenceProviderType.gemini
+                ? ReasoningEffort.low
+                : null,
             stream: stream,
           ),
         )

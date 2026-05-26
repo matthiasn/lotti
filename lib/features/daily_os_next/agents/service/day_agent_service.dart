@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -219,10 +218,11 @@ class DayAgentService {
   /// — the wake still fires with only the refine token, and the model
   /// operates on the baseline plan + recent observations alone.
   ///
-  /// Pre-checks that a draft plan exists for the day; returns `false` (and
-  /// no wake) when none is found, mirroring the missing-agent guard. The
-  /// agent identity, captures, and any prior change sets are left
-  /// untouched.
+  /// Pre-checks that a non-deleted plan exists for the day; returns `false`
+  /// (and no wake) when none is found, mirroring the missing-agent guard.
+  /// The agent identity, captures, and any prior change sets are left
+  /// untouched. Explicit user refine is allowed after commit/agreement; the
+  /// amendment is tracked as a pending plan diff rather than applied directly.
   Future<bool> enqueueRefineWake({
     required DateTime dayDate,
     required String transcript,
@@ -242,11 +242,10 @@ class DayAgentService {
     final plan = await repository.getEntity(dayAgentPlanEntityId(dayId));
     if (plan is! DayPlanEntity ||
         plan.deletedAt != null ||
-        plan.agentId != agent.agentId ||
-        plan.data.status is! DayPlanStatusDraft) {
+        plan.agentId != agent.agentId) {
       domainLogger.log(
         LogDomains.agentRuntime,
-        'no draft plan for '
+        'no editable plan for '
         '${DomainLogger.sanitizeId(dayId)}; refine wake not enqueued',
         subDomain: 'refine',
       );

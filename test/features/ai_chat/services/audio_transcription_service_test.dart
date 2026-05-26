@@ -942,6 +942,131 @@ void main() {
   });
 
   group('offline bias-capable model selection', () {
+    test('prefers Mistral offline over MLX Qwen when both exist', () async {
+      final freshDb = AiConfigDb(inMemoryDatabase: true);
+      addTearDown(freshDb.close);
+      final aiRepo = AiConfigRepository(freshDb);
+
+      await aiRepo.saveConfig(
+        AiConfig.inferenceProvider(
+          id: 'p-mistral-default-choice',
+          baseUrl: 'https://api.mistral.ai/v1',
+          apiKey: 'mistral-key',
+          name: 'Mistral',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inferenceProviderType: InferenceProviderType.mistral,
+        ),
+        fromSync: true,
+      );
+      await aiRepo.saveConfig(
+        AiConfig.model(
+          id: 'm-mistral-default-choice',
+          name: 'Voxtral Mini Transcribe',
+          providerModelId: 'voxtral-mini-latest',
+          inferenceProviderId: 'p-mistral-default-choice',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inputModalities: const [Modality.audio],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        ),
+        fromSync: true,
+      );
+      await aiRepo.saveConfig(
+        AiConfig.inferenceProvider(
+          id: 'p-mlx-default-choice',
+          baseUrl: '',
+          apiKey: '',
+          name: 'MLX Audio',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inferenceProviderType: InferenceProviderType.mlxAudio,
+        ),
+        fromSync: true,
+      );
+      await aiRepo.saveConfig(
+        AiConfig.model(
+          id: 'm-mlx-default-choice',
+          name: 'Qwen3 ASR',
+          providerModelId: mlxAudioQwenAsrModelId,
+          inferenceProviderId: 'p-mlx-default-choice',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inputModalities: const [Modality.audio],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        ),
+        fromSync: true,
+      );
+
+      final dir = await Directory.systemTemp.createTemp(
+        'svc_mistral_default_',
+      );
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/mistral-default.m4a');
+      await file.writeAsBytes([1, 2, 3]);
+      final mlxAudioChannel = _FakeMlxAudioChannel();
+
+      final mockCloud = MockCloudInferenceRepository();
+      when(
+        () => mockCloud.generateWithAudio(
+          any(),
+          model: any(named: 'model'),
+          audioBase64: any(named: 'audioBase64'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          provider: any(named: 'provider'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          overrideClient: any(named: 'overrideClient'),
+          tools: any(named: 'tools'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.value(
+          const CreateChatCompletionStreamResponse(
+            id: '1',
+            object: 'chat.completion.chunk',
+            created: 0,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'mistral default',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+          cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
+          mlxAudioChannelProvider.overrideWithValue(mlxAudioChannel),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final svc = container.read(audioTranscriptionServiceProvider);
+      final result = await svc.transcribe(file.path);
+
+      expect(result, 'mistral default');
+      expect(mlxAudioChannel.transcribedFilePath, isNull);
+      final captured = verify(
+        () => mockCloud.generateWithAudio(
+          any(),
+          model: captureAny(named: 'model'),
+          audioBase64: any(named: 'audioBase64'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          provider: any(named: 'provider'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          overrideClient: any(named: 'overrideClient'),
+          tools: any(named: 'tools'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        ),
+      ).captured;
+      expect(captured.single, 'voxtral-mini-latest');
+    });
+
     test('prefers MLX Qwen and forwards speech dictionary terms', () async {
       final freshDb = AiConfigDb(inMemoryDatabase: true);
       addTearDown(freshDb.close);

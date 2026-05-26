@@ -15,14 +15,12 @@ import 'package:lotti/providers/service_providers.dart';
 /// Resolves the [DayAgentInterface] the UI talks to.
 ///
 /// Returns a [RealDayAgent] that delegates seven methods to the real
-/// agent layer: the six phase-2 capture/reconcile tools
+/// agent layer: the capture/reconcile tools
 /// (`submitCapture`, `parseCaptureToItems`, `surfacePendingDecisions`,
-/// `applyTriage`, `linkCapturePhraseToTask`, `breakCaptureLink`) plus
-/// `summarizeRecentPatterns` from the phase-3 plan service. All other
-/// methods — `draftDayPlan`, refine, commit, shutdown, tasks — still
-/// delegate to a held [MockDayAgent] fallback until their phases ship
-/// (or in the case of `draftDayPlan`, until the drafting wake trigger
-/// lands).
+/// `applyTriage`, `linkCapturePhraseToTask`, `breakCaptureLink`), day-plan
+/// drafting/refinement/commit calls, and plan summary reads. Shutdown and task
+/// corpus methods still delegate to a held [MockDayAgent] fallback until their
+/// backend tools ship.
 ///
 /// Tests override this provider with their own implementation via
 /// `ProviderScope(overrides: [...])` (typically with a fresh

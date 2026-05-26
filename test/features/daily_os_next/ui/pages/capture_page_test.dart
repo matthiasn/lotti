@@ -98,12 +98,16 @@ class _RecordingAgent implements DayAgentInterface {
   );
 
   @override
-  Future<DraftPlan> acceptDiff(PlanDiff diff) async => diff.updatedPlan;
+  Future<DraftPlan> acceptDiff(
+    PlanDiff diff, {
+    List<int>? itemIndices,
+  }) async => diff.updatedPlan;
 
   @override
   Future<DraftPlan> revertDiff({
     required PlanDiff diff,
     required DraftPlan originalPlan,
+    List<int>? itemIndices,
   }) async => originalPlan;
 
   @override

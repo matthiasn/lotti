@@ -72,9 +72,8 @@ class RealtimeTranscriptionService {
   /// Mistral is the fallback for cloud realtime transcription.
   ///
   /// Pass [preferMistral] `true` to invert the preference — Mistral first,
-  /// MLX only if no Mistral realtime model is configured. The Daily OS
-  /// Next Capture flow surfaces this preference behind the
-  /// `daily_os_next_realtime_prefer_cloud` config flag.
+  /// MLX only if no Mistral realtime model is configured. The Daily OS Next
+  /// Capture and Refine flows request this cloud-first ordering.
   Future<({AiConfigInferenceProvider provider, AiConfigModel model})?>
   resolveRealtimeConfig({bool preferMistral = false}) async {
     final aiRepo = _ref.read(aiConfigRepositoryProvider);

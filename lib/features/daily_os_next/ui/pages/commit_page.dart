@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -234,23 +234,21 @@ class _CapacityRecap extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CapacityDonut(
+          CapacityMeter(
             scheduledMinutes: draft.scheduledMinutes,
             capacityMinutes: draft.capacityMinutes,
-            diameter: 62,
           ),
-          SizedBox(width: tokens.spacing.step4),
-          Expanded(
-            child: Text(
-              context.messages.dailyOsNextCommitCapacityNote(
-                _formatHours(draft.scheduledMinutes),
-                _formatHours(draft.capacityMinutes),
-              ),
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            context.messages.dailyOsNextCommitCapacityNote(
+              _formatHours(draft.scheduledMinutes),
+              _formatHours(draft.capacityMinutes),
+            ),
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         ],

@@ -199,6 +199,18 @@ providers that have the required API key. This keeps local/mobile STT available
 when the user has installed MLX Audio but the desktop-only local profile is not
 available on that device.
 
+Gemini-backed transcription uses the OpenAI-compatible audio chat-completions
+path in `CloudInferenceRepository.generateWithAudio`. Gemini audio requests set
+`reasoning_effort: low`, which the Gemini compatibility layer maps to low
+thinking, while non-Gemini transcription providers leave reasoning effort
+unset.
+
+The direct `AudioTranscriptionService` path used by Daily OS capture/refine
+prefers Mistral's non-realtime Voxtral transcription model over MLX Qwen when
+both are configured, then falls back to MLX Qwen, Gemini Flash, or the first
+remaining audio-capable model. Realtime-only Mistral models stay excluded from
+that batch verifier because they require the WebSocket pipeline.
+
 **Synced-audio auto-trigger uses a different path.** When a `JournalAudio`
 arrives over Matrix sync (recorded on another device), `SyncedAudioInferenceDispatcher`
 runs the inference flow itself rather than calling `AutomaticPromptTrigger`.

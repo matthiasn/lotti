@@ -1081,34 +1081,37 @@ void main() {
             isA<DayAgentCaptureException>().having(
               (e) => e.message,
               'message',
-              contains('no draft plan'),
+              contains('no plan'),
             ),
           ),
         );
       });
 
-      test('rejects when the plan is not in draft state', () async {
-        // `committed` status is Phase 5 work; use the legacy `agreed`
-        // variant as a non-draft proxy until Commit lands.
-        seedPlan(
-          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25)),
-        );
-        await expectLater(
-          createService().proposePlanDiff(
+      test('persists a ChangeSetEntity against approved plans', () async {
+        final statuses = <DayPlanStatus>[
+          DayPlanStatus.committed(committedAt: DateTime(2026, 5, 25, 11)),
+          DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25, 10)),
+        ];
+
+        for (final status in statuses) {
+          seedPlan(status: status);
+
+          final changeSet = await createService().proposePlanDiff(
             agentId: _agentId,
             threadId: _threadId,
             runKey: _runKey,
             dayId: _dayId,
             rawChanges: [movedChange()],
-          ),
-          throwsA(
-            isA<DayAgentCaptureException>().having(
-              (e) => e.message,
-              'message',
-              contains('not in draft state'),
-            ),
-          ),
-        );
+          );
+
+          expect(changeSet.status, ChangeSetStatus.pending);
+          expect(changeSet.items.single.toolName, 'move_block');
+          expect(
+            upsertedEntities.whereType<ChangeSetEntity>().last,
+            changeSet,
+          );
+          expect(notifications, containsAll([_agentId, changeSet.id]));
+        }
       });
 
       test('rejects when baselinePlanId is stale', () async {
@@ -1456,7 +1459,10 @@ void main() {
     group('acceptPlanDiff / revertPlanDiff', () {
       const planEntityId = 'day_agent_plan:$_dayId';
 
-      DayPlanEntity seedPlan(List<PlannedBlock> blocks) {
+      DayPlanEntity seedPlan(
+        List<PlannedBlock> blocks, {
+        DayPlanStatus status = const DayPlanStatus.draft(),
+      }) {
         final scheduled = blocks.fold<int>(
           0,
           (sum, b) => sum + b.duration.inMinutes,
@@ -1469,7 +1475,7 @@ void main() {
                   planDate: DateTime(2026, 5, 25),
                   data: DayPlanData(
                     planDate: DateTime(2026, 5, 25),
-                    status: const DayPlanStatus.draft(),
+                    status: status,
                     plannedBlocks: blocks,
                   ),
                   capacityMinutes: 360,
@@ -1615,6 +1621,51 @@ void main() {
           expect(
             notifications,
             containsAll([_agentId, changeSet.id, _dayId, planEntityId]),
+          );
+        },
+      );
+
+      test(
+        'acceptPlanDiff amends a committed plan as a tracked change',
+        () async {
+          seedPlan(
+            [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 10),
+                title: 'Prep demo',
+                reason: 'Morning focus.',
+                state: PlannedBlockState.committed,
+              ),
+            ],
+            status: DayPlanStatus.committed(
+              committedAt: DateTime(2026, 5, 25, 11),
+            ),
+          );
+          final changeSet = seedChangeSet(items: [addBlockItem()]);
+
+          final updated = await withClock(Clock.fixed(_now), () {
+            return createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            );
+          });
+
+          expect(updated.status, ChangeSetStatus.resolved);
+          expect(updated.items.single.status, ChangeItemStatus.confirmed);
+          final updatedPlan = upsertedEntities
+              .whereType<DayPlanEntity>()
+              .single;
+          expect(updatedPlan.data.status, isA<DayPlanStatusCommitted>());
+          final addedBlock = updatedPlan.data.plannedBlocks.singleWhere(
+            (block) => block.title == 'Walk',
+          );
+          expect(addedBlock.state, PlannedBlockState.committed);
+          expect(
+            upsertedEntities.whereType<ChangeDecisionEntity>().single.verdict,
+            ChangeDecisionVerdict.confirmed,
           );
         },
       );

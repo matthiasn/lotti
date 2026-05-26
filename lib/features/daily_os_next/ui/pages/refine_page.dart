@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -87,7 +89,29 @@ class _RefinementPanel extends ConsumerWidget {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
     final notifier = ref.read(refineControllerProvider(draft).notifier);
+    final captureState = ref.watch(captureControllerProvider);
+    final captureNotifier = ref.read(captureControllerProvider.notifier);
     final messages = context.messages;
+
+    ref.listen<CaptureState>(captureControllerProvider, (previous, next) {
+      final refineNotifier = ref.read(refineControllerProvider(draft).notifier);
+      if (next.phase == CapturePhase.listening ||
+          next.phase == CapturePhase.transcribing) {
+        if (next.partialTranscript.trim().isNotEmpty) {
+          refineNotifier.updateActiveTranscript(next.partialTranscript);
+        }
+        return;
+      }
+
+      if (next.phase == CapturePhase.captured) {
+        unawaited(refineNotifier.finishWithTranscript(next.transcript));
+        return;
+      }
+
+      if (next.phase == CapturePhase.error) {
+        refineNotifier.cancelListening();
+      }
+    });
 
     return Container(
       decoration: BoxDecoration(
@@ -110,19 +134,25 @@ class _RefinementPanel extends ConsumerWidget {
             SizedBox(height: tokens.spacing.step4),
             Center(
               child: VoiceButton(
-                phase: _capturePhaseFor(state.phase),
+                phase: _capturePhaseFor(state.phase, captureState.phase),
                 semanticLabel: _voiceLabel(context, state.phase),
                 size: 88,
-                onTap: notifier.toggleListening,
+                onTap: () {
+                  _handleVoiceTap(
+                    refineState: state,
+                    refineNotifier: notifier,
+                    captureNotifier: captureNotifier,
+                  );
+                },
               ),
             ),
             SizedBox(height: tokens.spacing.step4),
             _StatusLine(state: state),
             if (state.phase == RefinePhase.listening) ...[
               SizedBox(height: tokens.spacing.step3),
-              const Center(
+              Center(
                 child: LiveWaveform(
-                  amplitudes: <double>[],
+                  amplitudes: captureState.amplitudes,
                   width: 180,
                   height: 22,
                 ),
@@ -138,7 +168,13 @@ class _RefinementPanel extends ConsumerWidget {
             if (state.diff != null) ...[
               SizedBox(height: tokens.spacing.step4),
               for (final change in state.diff!.changes) ...[
-                DiffRow(change: change),
+                DiffRow(
+                  change: change,
+                  decision: state.decisionFor(change),
+                  resolving: state.resolvingChangeId == change.id,
+                  onAccept: () => notifier.acceptChange(change.id),
+                  onReject: () => notifier.rejectChange(change.id),
+                ),
                 SizedBox(height: tokens.spacing.step3),
               ],
               _ActionRow(draft: draft),
@@ -149,14 +185,37 @@ class _RefinementPanel extends ConsumerWidget {
     );
   }
 
-  CapturePhase _capturePhaseFor(RefinePhase phase) {
+  void _handleVoiceTap({
+    required RefineState refineState,
+    required RefineController refineNotifier,
+    required CaptureController captureNotifier,
+  }) {
+    switch (refineState.phase) {
+      case RefinePhase.idle:
+      case RefinePhase.diffReady:
+        captureNotifier.reset();
+        refineNotifier.beginListening(
+          resetTranscript: refineState.phase == RefinePhase.idle,
+        );
+        unawaited(captureNotifier.toggle());
+      case RefinePhase.listening:
+        unawaited(captureNotifier.toggle());
+      case RefinePhase.thinking:
+      case RefinePhase.accepted:
+        break;
+    }
+  }
+
+  CapturePhase _capturePhaseFor(RefinePhase phase, CapturePhase capturePhase) {
     switch (phase) {
       case RefinePhase.idle:
       case RefinePhase.thinking:
       case RefinePhase.accepted:
         return CapturePhase.idle;
       case RefinePhase.listening:
-        return CapturePhase.listening;
+        return capturePhase == CapturePhase.listening
+            ? CapturePhase.listening
+            : CapturePhase.idle;
       case RefinePhase.diffReady:
         return CapturePhase.captured;
     }
@@ -271,22 +330,6 @@ class _ActionRow extends ConsumerWidget {
           label: Text(messages.dailyOsNextRefineKeepTalking),
           style: TextButton.styleFrom(foregroundColor: teal),
           onPressed: notifier.keepTalking,
-        ),
-        FilledButton.icon(
-          icon: const Icon(Icons.check_rounded, size: 14),
-          label: Text(messages.dailyOsNextRefineAccept),
-          style: FilledButton.styleFrom(
-            backgroundColor: teal,
-            foregroundColor: tokens.colors.text.onInteractiveAlert,
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step2,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(tokens.radii.m),
-            ),
-          ),
-          onPressed: notifier.accept,
         ),
       ],
     );

@@ -222,7 +222,8 @@ class CaptureController extends Notifier<CaptureState> {
   }
 
   Future<void> _beginListening() async {
-    // Dev/exploration: prefer Mistral cloud realtime for smoother UX.
+    // Daily OS capture/refine defaults to Mistral cloud realtime for
+    // interactive latency and falls back to MLX when cloud realtime is absent.
     // Falls back to MLX automatically when Mistral isn't configured.
     final realtimeConfig = await _realtimeService.resolveRealtimeConfig(
       preferMistral: true,
