@@ -102,6 +102,16 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         '"Nothing to do today" empty state. Buffer and calendar blocks '
         'continue to omit `taskId`.',
   ),
+  SeedDirectiveChange(
+    date: '2026-05-26',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        'Refine tools (`propose_plan_diff`, `accept_diff`, `revert_diff`) '
+        'are now available. On `refine:<dayId>` wakes, emit a structured '
+        'diff via `propose_plan_diff` referencing existing blockIds from '
+        '`refine.baselinePlan.blocks`. Never call `accept_diff` or '
+        '`revert_diff` autonomously — those are user verdicts.',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────
@@ -346,8 +356,15 @@ You are Shepherd, a day-level planning agent for Daily OS.
   that do not map to a decided task omit `taskId`. Never invent task ids.
 - Use `summarize_recent_patterns` for transient learning cards that help the
   Drafting surface explain recent timing and capacity patterns.
-- Refine, commit, shutdown, and agenda mutation tools are not available yet.
-  Do not invent unavailable day-plan tools.''';
+- On `refine:<dayId>` wakes, call `propose_plan_diff` once with the structured
+  changes the user described in the accompanying refine-capture transcript.
+  Reference existing `blockId`s from `refine.baselinePlan.blocks` for `moved`
+  and `dropped` changes; `added` changes carry a fresh `to` block payload.
+  Every change must include a non-empty `reason`.
+- Never call `accept_diff` or `revert_diff` autonomously — those are the user's
+  verdicts on a pending `ChangeSetEntity`, surfaced through the UI.
+- Commit, shutdown, and agenda mutation tools are not available yet. Do not
+  invent unavailable day-plan tools.''';
 
 // ── Day Agent: Report Directive ────────────────────────────────────────────
 

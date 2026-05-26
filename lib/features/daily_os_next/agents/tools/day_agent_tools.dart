@@ -349,10 +349,155 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
-  // Refine tools (`propose_plan_diff`, `accept_diff`, `revert_diff`) are
-  // intentionally NOT registered here yet. Their `DayAgentToolNames`
-  // constants and `planTools` membership exist so Phase 4 can wire
-  // service handlers + schemas atomically. Advertising the schemas
-  // without handlers in `DayAgentPlanService.executeTool` would let the
-  // model call them and receive an "unknown tool" error.
+  AgentToolDefinition(
+    name: DayAgentToolNames.proposePlanDiff,
+    description:
+        'Propose a structured diff against an existing day plan. Emits a '
+        'ChangeSet of moved/added/dropped block changes for the user to '
+        'accept or revert. Every change must include a non-empty reason.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'dayId': {'type': 'string'},
+        'baselinePlanId': {
+          'type': 'string',
+          'description':
+              'ID of the DayPlanEntity this diff was computed against. '
+              'Optional — when supplied, the handler rejects the diff if '
+              'the live plan id has shifted (stale-baseline guard).',
+        },
+        'captureId': {
+          'type': 'string',
+          'description':
+              'ID of the refinement-transcript CaptureEntity, if persisted.',
+        },
+        'changes': {
+          'type': 'array',
+          'minItems': 1,
+          'items': {
+            'type': 'object',
+            'properties': {
+              'action': {
+                'type': 'string',
+                'enum': ['moved', 'added', 'dropped'],
+              },
+              'blockId': {
+                'type': 'string',
+                'description':
+                    'Required for moved/dropped; absent for added '
+                    '(server assigns the new id).',
+              },
+              'from': {
+                'type': 'object',
+                'description':
+                    'Original block snapshot. Required for moved/dropped.',
+                'properties': {
+                  'start': {'type': 'string'},
+                  'end': {'type': 'string'},
+                  'title': {'type': 'string'},
+                  'categoryId': {'type': 'string'},
+                },
+                'additionalProperties': false,
+              },
+              'to': {
+                'type': 'object',
+                'description': 'Desired block shape. Required for moved/added.',
+                'properties': {
+                  'start': {'type': 'string'},
+                  'end': {'type': 'string'},
+                  'title': {'type': 'string'},
+                  'categoryId': {'type': 'string'},
+                  'taskId': {'type': 'string'},
+                  'type': {
+                    'type': 'string',
+                    'enum': ['ai', 'cal', 'buffer', 'manual'],
+                  },
+                  'reason': {'type': 'string', 'minLength': 1},
+                },
+                'additionalProperties': false,
+              },
+              'reason': {
+                'type': 'string',
+                'minLength': 1,
+                'description': 'Why this change. Required for every change.',
+              },
+            },
+            'required': ['action', 'reason'],
+            'additionalProperties': false,
+            'allOf': [
+              {
+                'if': {
+                  'properties': {
+                    'action': {
+                      'enum': ['moved', 'dropped'],
+                    },
+                  },
+                },
+                'then': {
+                  'required': ['blockId', 'from'],
+                },
+              },
+              {
+                'if': {
+                  'properties': {
+                    'action': {
+                      'enum': ['moved', 'added'],
+                    },
+                  },
+                },
+                'then': {
+                  'required': ['to'],
+                },
+              },
+            ],
+          },
+        },
+      },
+      'required': ['dayId', 'changes'],
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.acceptDiff,
+    description:
+        'Apply a previously proposed plan diff. Omit itemIndices to accept '
+        'every change in the ChangeSet.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'changeSetId': {'type': 'string'},
+        'itemIndices': {
+          'type': 'array',
+          'items': {'type': 'integer', 'minimum': 0},
+          'description':
+              'Zero-based indices of the changes to accept. Omit to accept '
+              'all pending changes.',
+        },
+      },
+      'required': ['changeSetId'],
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.revertDiff,
+    description:
+        'Retract a previously proposed plan diff without mutating the live '
+        'plan entity. Omit itemIndices to retract every change in the '
+        'ChangeSet.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'changeSetId': {'type': 'string'},
+        'itemIndices': {
+          'type': 'array',
+          'items': {'type': 'integer', 'minimum': 0},
+          'description':
+              'Zero-based indices of the changes to retract. Omit to '
+              'retract all pending changes.',
+        },
+      },
+      'required': ['changeSetId'],
+      'additionalProperties': false,
+    },
+  ),
 ];

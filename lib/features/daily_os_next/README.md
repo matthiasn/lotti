@@ -14,8 +14,9 @@ not depend on the existing Daily OS UI controllers.
 
 The day-agent layer under `agents/` reuses the shared agent infrastructure from
 `features/agents` and adds only the Daily OS Next runtime surface area. The
-current backend supports the foundation wake, Capture/Reconcile, and draft
-day-plan tool paths; the Flutter UI integration is intentionally separate.
+current backend supports the foundation wake, Capture/Reconcile, draft
+day-plan, and refine tool paths; the Flutter UI integration is intentionally
+separate.
 
 ```mermaid
 flowchart TD
@@ -30,10 +31,11 @@ flowchart TD
   CaptureService --> Entities["agent_entities: capture + parsedItem"]
   CaptureService --> Links["agent_links: capture_to_parsed_item + parsed_item_to_task"]
   CaptureService --> Tasks["JournalDb tasks"]
-  Strategy --> PlanTools["drafting tools"]
+  Strategy --> PlanTools["draft + refine tools"]
   PlanTools --> PlanService["DayAgentPlanService"]
   PlanService --> DayPlan["agent_entities: day_plan"]
   PlanService --> PlanLinks["agent_links: capture_to_plan"]
+  PlanService --> RefineSets["agent_entities: changeSet + changeDecision"]
   DayPlan --> SharedModel["DayPlanData + PlannedBlock"]
   Schedule --> State
 ```
@@ -59,8 +61,8 @@ Runtime behavior:
   observations, and, for `capture_submitted:<captureId>` wakes, the submitted
   capture plus a bounded task corpus snapshot.
 - `DayAgentStrategy` handles private observations itself and delegates
-  `set_next_wake`, Capture/Reconcile tools, and draft plan tools through the
-  workflow handler.
+  `set_next_wake`, Capture/Reconcile tools, draft plan tools, and refine
+  tools through the workflow handler.
 - `DayAgentCaptureService` owns direct Capture/Reconcile mutations:
   `submit_capture`, `parse_capture_to_items`, `match_to_corpus`,
   `link_capture_phrase_to_task`, `break_capture_link`,
@@ -88,10 +90,39 @@ Runtime behavior:
 - `PlannedBlock` now carries the agent-facing metadata required by the draft
   flow: optional task/title, block origin (`ai`, `cal`, `buffer`, `manual`),
   lifecycle state, and the model's placement reason.
+- `DayAgentService.enqueueDraftingWake({dayDate, captureId?, decidedTaskIds})`
+  is the UI's entry point for asking the agent to draft. The wake fires with
+  `drafting:<dayId>` plus optional `capture_submitted:<id>` and
+  `decided_task:<taskId>` tokens; the workflow surfaces the baseline plan and
+  hydrated decided tasks under the `drafting` block in the user message JSON.
+- Refine is the post-draft edit surface. `DayAgentService.enqueueRefineWake(
+  {dayDate, transcript})` pre-checks that a draft plan exists, persists the
+  refine transcript as a `CaptureEntity` (id prefixed `refine_capture:`,
+  skipped when the transcript is blank), and fires a manual wake with
+  `refine:<dayId>` (and `capture_submitted:<captureId>` when a capture was
+  written). The workflow attaches a `refine` block carrying the current
+  `baselinePlan` to the user message so the model can reference existing
+  blockIds.
+- `DayAgentPlanService.proposePlanDiff` persists each model-emitted change as
+  a `ChangeItem` (tool name `move_block` / `add_block` / `drop_block`) on a
+  new pending `ChangeSetEntity` keyed by the plan id. Optional
+  `baselinePlanId` guards against stale diffs; optional `captureId` is
+  stashed in the first item's args so the change set is discoverable from a
+  refine-transcript capture.
+- `acceptPlanDiff` / `revertPlanDiff` resolve some or all items atomically
+  (default = all pending). Accept mutates the plan in place: it overlays
+  block moves, adds new blocks, drops by id, then re-sorts blocks by start
+  time, recomputes `scheduledMinutes`, and rebuilds `pinnedTasks`. Energy
+  bands, capacity, and plan status are left intact. Revert leaves the plan
+  untouched. Both write `ChangeDecisionEntity` records per resolved item
+  with `actor: user` and `verdict: confirmed | rejected`.
+- Refine is gated to plans in `draft` status. Refine on `agreed` /
+  `committed` plans is rejected with a clear error; Commit ships an
+  uncommit path later.
 - Wakes consume any `scheduledWakeAt` timestamp that is no longer in the future
   so app restart does not replay an already-fired scheduled wake.
-- Future Daily OS Next refine, commit, agenda, and shutdown tools should be
-  added under this feature without importing `features/daily_os`.
+- Future Daily OS Next commit, agenda, and shutdown tools should be added
+  under this feature without importing `features/daily_os`.
 
 ```mermaid
 stateDiagram-v2
@@ -105,6 +136,10 @@ stateDiagram-v2
   Parsed --> TaskMutated: apply_triage
   Parsed --> DraftedPlan: draft_day_plan
   DraftedPlan --> PatternCards: summarize_recent_patterns
+  DraftedPlan --> RefineCaptured: enqueueRefineWake
+  RefineCaptured --> PendingDiff: propose_plan_diff
+  PendingDiff --> DraftedPlan: accept_diff
+  PendingDiff --> DraftedPlan: revert_diff
 ```
 
 ## Testing Strategy
@@ -118,9 +153,9 @@ invariant is easier to state than to cover with examples:
 - `DayPlanData` derived durations, category grouping, and JSON round-trips
 - draft-plan JSON value objects, required AI block reasons, and positive block
   durations
+- plan-diff change validation (moved/added/dropped action-specific required
+  fields, in-day timestamp guards, unknown-blockId rejection)
 - future tool validators such as non-overlap rules and commit-state gating
-- future diff application/reversion once refine tools produce `ChangeSetEntity`
-  proposals
 
 Service and workflow tests should stay deterministic example tests with mocks,
 fixed clocks, and no real timers. They should verify transaction boundaries,

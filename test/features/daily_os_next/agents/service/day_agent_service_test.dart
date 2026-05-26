@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -598,6 +600,232 @@ void main() {
           ).called(1);
         },
       );
+    });
+
+    group('enqueueRefineWake', () {
+      DayPlanEntity seedPlan({
+        String planAgentId = agentId,
+        DateTime? deletedAt,
+        DayPlanStatus status = const DayPlanStatus.draft(),
+      }) {
+        return AgentDomainEntity.dayPlan(
+              id: dayAgentPlanEntityId(dayId),
+              agentId: planAgentId,
+              dayId: dayId,
+              planDate: DateTime(2026, 5, 25),
+              data: DayPlanData(
+                planDate: DateTime(2026, 5, 25),
+                status: status,
+              ),
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+              deletedAt: deletedAt,
+            )
+            as DayPlanEntity;
+      }
+
+      void stubPlanLookup(DayPlanEntity? plan) {
+        when(
+          () => repository.getEntity(dayAgentPlanEntityId(dayId)),
+        ).thenAnswer((_) async => plan);
+      }
+
+      test(
+        'persists a refine capture and fires the wake with both tokens',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+          stubPlanLookup(seedPlan());
+
+          final result = await withClock(
+            Clock.fixed(now),
+            () => service.enqueueRefineWake(
+              dayDate: testDate,
+              transcript: 'move lunch to 1pm',
+            ),
+          );
+
+          expect(result, isTrue);
+          final captured = verify(
+            () => syncService.upsertEntity(captureAny()),
+          ).captured;
+          final capture = captured.single as CaptureEntity;
+          expect(capture.id, startsWith('refine_capture:'));
+          expect(capture.transcript, 'move lunch to 1pm');
+          expect(capture.capturedAt, now);
+          expect(changedTokens, [capture.id]);
+
+          final tokens =
+              verify(
+                    () => orchestrator.enqueueManualWake(
+                      agentId: agentId,
+                      reason: dayAgentRefineReason,
+                      triggerTokens: captureAny(named: 'triggerTokens'),
+                    ),
+                  ).captured.single
+                  as Set<String>;
+          expect(tokens, {
+            dayAgentRefineToken(dayId),
+            dayAgentCaptureSubmittedToken(capture.id),
+          });
+        },
+      );
+
+      test(
+        'blank transcript skips capture and fires wake with only refine token',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+          stubPlanLookup(seedPlan());
+
+          final result = await service.enqueueRefineWake(
+            dayDate: testDate,
+            transcript: '   ',
+          );
+
+          expect(result, isTrue);
+          verifyNever(() => syncService.upsertEntity(any()));
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: agentId,
+              reason: dayAgentRefineReason,
+              triggerTokens: {dayAgentRefineToken(dayId)},
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'returns false and skips enqueue when no day agent exists',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => null);
+
+          final result = await service.enqueueRefineWake(
+            dayDate: testDate,
+            transcript: 'something',
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => syncService.upsertEntity(any()));
+          verifyNever(
+            () => orchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'returns false and skips enqueue when no draft plan exists',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+          stubPlanLookup(null);
+
+          final result = await service.enqueueRefineWake(
+            dayDate: testDate,
+            transcript: 'something',
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => syncService.upsertEntity(any()));
+          verifyNever(
+            () => orchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'returns false when the plan belongs to a different agent',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+          stubPlanLookup(seedPlan(planAgentId: 'other-agent'));
+
+          final result = await service.enqueueRefineWake(
+            dayDate: testDate,
+            transcript: 'something',
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => syncService.upsertEntity(any()));
+        },
+      );
+
+      test('returns false when the plan is soft-deleted', () async {
+        when(
+          () => repository.getActiveAgentByKindAndActiveDayId(
+            kind: AgentKinds.dayAgent,
+            activeDayId: dayId,
+          ),
+        ).thenAnswer((_) async => identity());
+        stubPlanLookup(seedPlan(deletedAt: DateTime(2026, 5, 25)));
+
+        final result = await service.enqueueRefineWake(
+          dayDate: testDate,
+          transcript: 'something',
+        );
+
+        expect(result, isFalse);
+        verifyNever(() => syncService.upsertEntity(any()));
+      });
+
+      test('returns false when the plan is not in draft state', () async {
+        when(
+          () => repository.getActiveAgentByKindAndActiveDayId(
+            kind: AgentKinds.dayAgent,
+            activeDayId: dayId,
+          ),
+        ).thenAnswer((_) async => identity());
+        stubPlanLookup(
+          seedPlan(
+            status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25)),
+          ),
+        );
+
+        final result = await service.enqueueRefineWake(
+          dayDate: testDate,
+          transcript: 'something',
+        );
+
+        expect(result, isFalse);
+        verifyNever(() => syncService.upsertEntity(any()));
+        verifyNever(
+          () => orchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        );
+      });
     });
 
     test('triggerReanalysis enqueues a manual reanalysis wake', () {

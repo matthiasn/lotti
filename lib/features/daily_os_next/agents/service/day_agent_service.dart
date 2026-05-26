@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -204,6 +205,86 @@ class DayAgentService {
     orchestrator.enqueueManualWake(
       agentId: agent.agentId,
       reason: dayAgentDraftingReason,
+      triggerTokens: triggerTokens,
+    );
+    return true;
+  }
+
+  /// Enqueue a refine wake for the day agent that owns [dayDate].
+  ///
+  /// When [transcript] is non-blank, the text is persisted as a new
+  /// `CaptureEntity` (id prefixed `refine_capture:`) and advertised to the
+  /// workflow via a `capture_submitted:<captureId>` trigger token alongside
+  /// `refine:<dayId>`. Blank/whitespace transcripts skip the capture write
+  /// — the wake still fires with only the refine token, and the model
+  /// operates on the baseline plan + recent observations alone.
+  ///
+  /// Pre-checks that a draft plan exists for the day; returns `false` (and
+  /// no wake) when none is found, mirroring the missing-agent guard. The
+  /// agent identity, captures, and any prior change sets are left
+  /// untouched.
+  Future<bool> enqueueRefineWake({
+    required DateTime dayDate,
+    required String transcript,
+  }) async {
+    final agent = await getDayAgentForDate(dayDate);
+    if (agent == null) {
+      domainLogger.log(
+        LogDomains.agentRuntime,
+        'no day agent for '
+        '${DomainLogger.sanitizeId(dayAgentIdForDate(dayDate))}; '
+        'refine wake not enqueued',
+        subDomain: 'refine',
+      );
+      return false;
+    }
+    final dayId = dayAgentIdForDate(dayDate);
+    final plan = await repository.getEntity(dayAgentPlanEntityId(dayId));
+    if (plan is! DayPlanEntity ||
+        plan.deletedAt != null ||
+        plan.agentId != agent.agentId ||
+        plan.data.status is! DayPlanStatusDraft) {
+      domainLogger.log(
+        LogDomains.agentRuntime,
+        'no draft plan for '
+        '${DomainLogger.sanitizeId(dayId)}; refine wake not enqueued',
+        subDomain: 'refine',
+      );
+      return false;
+    }
+
+    final trimmedTranscript = transcript.trim();
+    final triggerTokens = <String>{dayAgentRefineToken(dayId)};
+    final now = clock.now();
+    String? captureId;
+    if (trimmedTranscript.isNotEmpty) {
+      captureId = 'refine_capture:${_uuid.v4()}';
+      final capture =
+          AgentDomainEntity.capture(
+                id: captureId,
+                agentId: agent.agentId,
+                transcript: trimmedTranscript,
+                capturedAt: now,
+                createdAt: now,
+                vectorClock: null,
+              )
+              as CaptureEntity;
+      await syncService.upsertEntity(capture);
+      triggerTokens.add(dayAgentCaptureSubmittedToken(captureId));
+      onPersistedStateChanged?.call(captureId);
+    }
+
+    domainLogger.log(
+      LogDomains.agentRuntime,
+      'refine wake enqueued for '
+      '${DomainLogger.sanitizeId(agent.agentId)} / '
+      '${DomainLogger.sanitizeId(dayId)}'
+      '${captureId == null ? ' (no transcript)' : ''}',
+      subDomain: 'refine',
+    );
+    orchestrator.enqueueManualWake(
+      agentId: agent.agentId,
+      reason: dayAgentRefineReason,
       triggerTokens: triggerTokens,
     );
     return true;

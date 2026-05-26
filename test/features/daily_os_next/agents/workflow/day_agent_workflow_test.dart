@@ -684,6 +684,117 @@ void main() {
       },
     );
 
+    test(
+      'surfaces the baseline plan for refine-token wakes',
+      () async {
+        final planService = MockDayAgentPlanService();
+        final baselinePlan =
+            AgentDomainEntity.dayPlan(
+                  id: 'day_agent_plan:$dayId',
+                  agentId: agentId,
+                  dayId: dayId,
+                  planDate: DateTime(2026, 5, 25),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 25),
+                    status: const DayPlanStatus.draft(),
+                    plannedBlocks: [
+                      PlannedBlock(
+                        id: 'block-1',
+                        categoryId: 'work',
+                        startTime: DateTime(2026, 5, 25, 9),
+                        endTime: DateTime(2026, 5, 25, 10),
+                        title: 'Prep demo',
+                        reason: 'Morning focus.',
+                      ),
+                    ],
+                  ),
+                  capacityMinutes: 360,
+                  scheduledMinutes: 60,
+                  createdAt: DateTime(2026, 5, 25, 8),
+                  updatedAt: DateTime(2026, 5, 25, 8),
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+        when(
+          () => planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => baselinePlan);
+
+        final result = await execute(
+          workflow(planService: planService),
+          triggerTokens: {dayAgentRefineToken(dayId), dayId},
+        );
+
+        expect(result.success, isTrue);
+        final userPayload =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final refinePayload = userPayload['refine'] as Map<String, dynamic>;
+        expect(refinePayload['requested'], isTrue);
+        final plan = refinePayload['baselinePlan'] as Map<String, dynamic>;
+        expect(plan['planId'], 'day_agent_plan:$dayId');
+        final blocks = plan['blocks'] as List<dynamic>;
+        expect(
+          (blocks.single as Map<String, dynamic>)['id'],
+          'block-1',
+        );
+        // hydrateDecidedTasks must NOT be called on a refine wake.
+        verifyNever(
+          () => planService.hydrateDecidedTasks(
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            explicitTaskIds: any(named: 'explicitTaskIds'),
+            parsedItems: any(named: 'parsedItems'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'refine context carries a null baselinePlan when no draft exists',
+      () async {
+        final planService = MockDayAgentPlanService();
+        when(
+          () => planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await execute(
+          workflow(planService: planService),
+          triggerTokens: {dayAgentRefineToken(dayId), dayId},
+        );
+
+        expect(result.success, isTrue);
+        final userPayload =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final refinePayload = userPayload['refine'] as Map<String, dynamic>;
+        expect(refinePayload['requested'], isTrue);
+        expect(refinePayload['baselinePlan'], isNull);
+      },
+    );
+
+    test(
+      'omits the refine context when no refine token is present',
+      () async {
+        final planService = MockDayAgentPlanService();
+
+        final result = await execute(
+          workflow(planService: planService),
+          triggerTokens: {dayId},
+        );
+
+        expect(result.success, isTrue);
+        final userPayload =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        expect(userPayload.containsKey('refine'), isFalse);
+      },
+    );
+
     test('delegates capture tools to the configured capture service', () async {
       final captureService = MockDayAgentCaptureService();
       when(

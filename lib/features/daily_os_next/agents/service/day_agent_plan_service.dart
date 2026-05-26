@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
@@ -60,6 +61,20 @@ class DayAgentPlanService {
         ),
         DayAgentToolNames.summarizeRecentPatterns =>
           await _summarizeRecentPatternsTool(agentId, args),
+        DayAgentToolNames.proposePlanDiff => await _proposePlanDiffTool(
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          args: args,
+        ),
+        DayAgentToolNames.acceptDiff => await _acceptPlanDiffTool(
+          agentId: agentId,
+          args: args,
+        ),
+        DayAgentToolNames.revertDiff => await _revertPlanDiffTool(
+          agentId: agentId,
+          args: args,
+        ),
         _ => throw DayAgentCaptureException('unknown tool "$toolName"'),
       };
       return DayAgentDirectToolResult.success(data);
@@ -81,7 +96,7 @@ class DayAgentPlanService {
     required String agentId,
     required String dayId,
   }) async {
-    final entity = await agentRepository.getEntity(_planEntityId(dayId));
+    final entity = await agentRepository.getEntity(dayAgentPlanEntityId(dayId));
     if (entity is DayPlanEntity && entity.agentId == agentId) {
       return entity;
     }
@@ -149,6 +164,296 @@ class DayAgentPlanService {
       );
     }
     return out;
+  }
+
+  /// Persist a structured plan diff against the current draft for [dayId].
+  ///
+  /// Each entry in [rawChanges] becomes a `ChangeItem` on a new
+  /// [ChangeSetEntity] (tool name `move_block` / `add_block` / `drop_block`).
+  /// Items are individually confirmable via [acceptPlanDiff] /
+  /// [revertPlanDiff]. The optional [baselinePlanId] guards against stale
+  /// diffs: when supplied and the live plan id has shifted, the proposal is
+  /// rejected. The optional [captureId] is stashed in the first item's args
+  /// so the change set is discoverable from a refine-transcript capture.
+  ///
+  /// Throws [DayAgentCaptureException] when:
+  ///   * the agent does not exist,
+  ///   * no plan exists for [dayId] (call `draft_day_plan` first),
+  ///   * the plan is `committed` (refine is gated until Commit ships an
+  ///     uncommit path),
+  ///   * [baselinePlanId] is supplied and does not match the live plan id,
+  ///   * [rawChanges] is empty, or
+  ///   * any change is malformed (missing fields for the action,
+  ///     out-of-day timestamps, unknown `blockId`, blank `reason`, etc.).
+  Future<ChangeSetEntity> proposePlanDiff({
+    required String agentId,
+    required String threadId,
+    required String runKey,
+    required String dayId,
+    required List<Object?> rawChanges,
+    String? baselinePlanId,
+    String? captureId,
+  }) async {
+    await _requireIdentity(agentId);
+    final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
+    if (plan == null) {
+      throw DayAgentCaptureException(
+        'no draft plan for $dayId; call draft_day_plan first',
+      );
+    }
+    if (plan.data.status is! DayPlanStatusDraft) {
+      throw const DayAgentCaptureException(
+        'plan is not in draft state; refine is gated until Commit ships an '
+        'uncommit path',
+      );
+    }
+    if (baselinePlanId != null && baselinePlanId != plan.id) {
+      throw DayAgentCaptureException(
+        'baselinePlanId $baselinePlanId does not match live plan ${plan.id}; '
+        'refresh the baseline and re-propose',
+      );
+    }
+    if (captureId != null) {
+      final capture = await _captureOrNull(captureId);
+      if (capture == null || capture.agentId != agentId) {
+        throw DayAgentCaptureException('capture $captureId not found');
+      }
+    }
+    if (rawChanges.isEmpty) {
+      throw const DayAgentCaptureException(
+        'propose_plan_diff requires at least one change',
+      );
+    }
+
+    final blockById = <String, PlannedBlock>{
+      for (final block in plan.data.plannedBlocks) block.id: block,
+    };
+    final parsed = <_DiffChange>[];
+    for (final raw in rawChanges) {
+      parsed.add(_parseDiffChange(raw: raw, plan: plan, blockById: blockById));
+    }
+
+    final now = clock.now();
+    final items = <ChangeItem>[];
+    for (var i = 0; i < parsed.length; i++) {
+      final change = parsed[i];
+      final args = <String, dynamic>{
+        ...change.toArgs(),
+        if (i == 0 && captureId != null) 'captureId': captureId,
+      };
+      items.add(
+        ChangeItem(
+          toolName: change.toolName,
+          args: args,
+          humanSummary: _formatChangeSummary(change, blockById),
+        ),
+      );
+    }
+
+    final changeSet =
+        AgentDomainEntity.changeSet(
+              id: 'plan_diff:${_uuid.v4()}',
+              agentId: agentId,
+              taskId: plan.id,
+              threadId: threadId,
+              runKey: runKey,
+              status: ChangeSetStatus.pending,
+              items: items,
+              createdAt: now,
+              vectorClock: null,
+            )
+            as ChangeSetEntity;
+    await syncService.upsertEntity(changeSet);
+
+    onPersistedStateChanged
+      ?..call(agentId)
+      ..call(changeSet.id);
+    return changeSet;
+  }
+
+  /// Apply some or all changes of [changeSetId] to the live plan.
+  ///
+  /// When [itemIndices] is null, every pending item is accepted; otherwise
+  /// only the listed indices are processed. Accept is atomic: if any
+  /// selected change cannot be applied (e.g., the target `blockId` is no
+  /// longer present), nothing is written. Items already resolved are
+  /// skipped silently — re-issuing accept against a partially-resolved set
+  /// is safe.
+  Future<ChangeSetEntity> acceptPlanDiff({
+    required String agentId,
+    required String changeSetId,
+    List<int>? itemIndices,
+  }) async {
+    return _resolvePlanDiff(
+      agentId: agentId,
+      changeSetId: changeSetId,
+      itemIndices: itemIndices,
+      apply: true,
+    );
+  }
+
+  /// Retract some or all changes of [changeSetId] without mutating the plan.
+  ///
+  /// Mirrors [acceptPlanDiff] but flips selected items' status to
+  /// `rejected` (with `actor = user`, `verdict = rejected`) and leaves the
+  /// plan entity untouched.
+  Future<ChangeSetEntity> revertPlanDiff({
+    required String agentId,
+    required String changeSetId,
+    List<int>? itemIndices,
+  }) async {
+    return _resolvePlanDiff(
+      agentId: agentId,
+      changeSetId: changeSetId,
+      itemIndices: itemIndices,
+      apply: false,
+    );
+  }
+
+  Future<ChangeSetEntity> _resolvePlanDiff({
+    required String agentId,
+    required String changeSetId,
+    required List<int>? itemIndices,
+    required bool apply,
+  }) async {
+    final identity = await _requireIdentity(agentId);
+    final loaded = await agentRepository.getEntity(changeSetId);
+    if (loaded is! ChangeSetEntity ||
+        loaded.deletedAt != null ||
+        loaded.agentId != agentId) {
+      throw DayAgentCaptureException('change set $changeSetId not found');
+    }
+    final changeSet = loaded;
+    final plan = await draftPlanForDay(
+      agentId: agentId,
+      dayId: _dayIdFromPlanEntityId(changeSet.taskId),
+    );
+    if (plan == null) {
+      throw DayAgentCaptureException(
+        'plan ${changeSet.taskId} no longer exists',
+      );
+    }
+    if (plan.data.status is! DayPlanStatusDraft) {
+      throw const DayAgentCaptureException(
+        'plan is not in draft state; refine resolution is blocked',
+      );
+    }
+
+    final selected = _selectIndices(
+      itemIndices: itemIndices,
+      itemCount: changeSet.items.length,
+    );
+    final pendingByIndex = <int, ChangeItem>{};
+    for (final index in selected) {
+      final item = changeSet.items[index];
+      if (item.status == ChangeItemStatus.pending) {
+        pendingByIndex[index] = item;
+      }
+    }
+
+    if (apply) {
+      // Pre-validate every pending selected change against the current
+      // plan before mutating anything (atomic all-or-nothing). The sweep
+      // is order-aware (drops/moves earlier in the batch affect later
+      // items) and re-runs the propose-time invariants against the
+      // *resolving* agent's allowed categories so a synced ChangeItem
+      // cannot smuggle an unauthorized category or out-of-day timestamp
+      // past the apply path.
+      _validateApplicableBatch(
+        pendingByIndex.entries,
+        plan,
+        identity.allowedCategoryIds,
+      );
+    }
+
+    final now = clock.now();
+    final updatedItems = List<ChangeItem>.of(changeSet.items);
+    final decisions = <ChangeDecisionEntity>[];
+    var mutatedBlocks = List<PlannedBlock>.of(plan.data.plannedBlocks);
+    final newVerdict = apply
+        ? ChangeDecisionVerdict.confirmed
+        : ChangeDecisionVerdict.rejected;
+    final newItemStatus = apply
+        ? ChangeItemStatus.confirmed
+        : ChangeItemStatus.rejected;
+
+    for (final entry in pendingByIndex.entries) {
+      final index = entry.key;
+      final item = entry.value;
+      if (apply) {
+        mutatedBlocks = _applyItem(item, mutatedBlocks);
+      }
+      updatedItems[index] = item.copyWith(status: newItemStatus);
+      decisions.add(
+        AgentDomainEntity.changeDecision(
+              id: '${changeSet.id}:decision:$index',
+              agentId: agentId,
+              changeSetId: changeSet.id,
+              itemIndex: index,
+              toolName: item.toolName,
+              verdict: newVerdict,
+              createdAt: now,
+              vectorClock: null,
+              taskId: plan.id,
+              humanSummary: item.humanSummary,
+              args: item.args,
+            )
+            as ChangeDecisionEntity,
+      );
+    }
+
+    final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
+    final updatedChangeSet = changeSet.copyWith(
+      items: updatedItems,
+      status: newSetStatus,
+      resolvedAt: ChangeItem.deriveResolvedAt(
+        newStatus: newSetStatus,
+        existingResolvedAt: changeSet.resolvedAt,
+        now: now,
+      ),
+    );
+
+    DayPlanEntity? updatedPlan;
+    if (apply && pendingByIndex.isNotEmpty) {
+      mutatedBlocks.sort((a, b) {
+        final byStart = a.startTime.compareTo(b.startTime);
+        if (byStart != 0) return byStart;
+        return a.id.compareTo(b.id);
+      });
+      final scheduledMinutes = mutatedBlocks.fold<int>(
+        0,
+        (sum, block) => sum + block.duration.inMinutes,
+      );
+      final pinnedTasks = _pinnedTasksFor(mutatedBlocks);
+      updatedPlan = plan.copyWith(
+        data: plan.data.copyWith(
+          plannedBlocks: mutatedBlocks,
+          pinnedTasks: pinnedTasks,
+        ),
+        scheduledMinutes: scheduledMinutes,
+        updatedAt: now,
+      );
+    }
+
+    await syncService.runInTransaction(() async {
+      await syncService.upsertEntity(updatedChangeSet);
+      for (final decision in decisions) {
+        await syncService.upsertEntity(decision);
+      }
+      if (updatedPlan != null) {
+        await syncService.upsertEntity(updatedPlan);
+      }
+    });
+
+    onPersistedStateChanged
+      ?..call(agentId)
+      ..call(changeSet.id);
+    if (updatedPlan != null) {
+      onPersistedStateChanged
+        ?..call(updatedPlan.dayId)
+        ..call(updatedPlan.id);
+    }
+    return updatedChangeSet;
   }
 
   /// Persist a model-emitted draft plan.
@@ -227,7 +532,7 @@ class DayAgentPlanService {
     final existing = await draftPlanForDay(agentId: agentId, dayId: dayId);
     final plan =
         AgentDomainEntity.dayPlan(
-              id: _planEntityId(dayId),
+              id: dayAgentPlanEntityId(dayId),
               agentId: agentId,
               dayId: dayId,
               captureId: captureId,
@@ -433,6 +738,86 @@ class DayAgentPlanService {
     );
     return {
       'cards': [for (final card in cards) card.toJson()],
+    };
+  }
+
+  Future<Map<String, Object?>> _proposePlanDiffTool({
+    required String agentId,
+    required String threadId,
+    required String runKey,
+    required Map<String, dynamic> args,
+  }) async {
+    final dayId = _requiredString(args, 'dayId');
+    final changeSet = await proposePlanDiff(
+      agentId: agentId,
+      threadId: threadId,
+      runKey: runKey,
+      dayId: dayId,
+      rawChanges: _objectList(args['changes'], 'changes'),
+      baselinePlanId: _optionalString(args['baselinePlanId']),
+      captureId: _optionalString(args['captureId']),
+    );
+    return {
+      'changeSetId': changeSet.id,
+      'items': [
+        for (var i = 0; i < changeSet.items.length; i++)
+          <String, Object?>{
+            'index': i,
+            'toolName': changeSet.items[i].toolName,
+            'summary': changeSet.items[i].humanSummary,
+            'reason': changeSet.items[i].args['reason'],
+          },
+      ],
+    };
+  }
+
+  Future<Map<String, Object?>> _acceptPlanDiffTool({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final changeSet = await acceptPlanDiff(
+      agentId: agentId,
+      changeSetId: _requiredString(args, 'changeSetId'),
+      itemIndices: _optionalIntList(args['itemIndices']),
+    );
+    return _resolutionSummary(changeSet);
+  }
+
+  Future<Map<String, Object?>> _revertPlanDiffTool({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final changeSet = await revertPlanDiff(
+      agentId: agentId,
+      changeSetId: _requiredString(args, 'changeSetId'),
+      itemIndices: _optionalIntList(args['itemIndices']),
+    );
+    return _resolutionSummary(changeSet);
+  }
+
+  static Map<String, Object?> _resolutionSummary(ChangeSetEntity changeSet) {
+    var confirmed = 0;
+    var rejected = 0;
+    var pending = 0;
+    for (final item in changeSet.items) {
+      switch (item.status) {
+        case ChangeItemStatus.confirmed:
+          confirmed++;
+        case ChangeItemStatus.rejected:
+          rejected++;
+        case ChangeItemStatus.pending:
+          pending++;
+        case ChangeItemStatus.deferred:
+        case ChangeItemStatus.retracted:
+          break;
+      }
+    }
+    return {
+      'changeSetId': changeSet.id,
+      'status': changeSet.status.name,
+      'confirmedCount': confirmed,
+      'rejectedCount': rejected,
+      'pendingCount': pending,
     };
   }
 
@@ -678,5 +1063,514 @@ class DayAgentPlanService {
     return DateTime.tryParse(dayId.substring(prefix.length));
   }
 
-  static String _planEntityId(String dayId) => 'day_agent_plan:$dayId';
+  static String _dayIdFromPlanEntityId(String planEntityId) {
+    const prefix = 'day_agent_plan:';
+    if (planEntityId.startsWith(prefix)) {
+      return planEntityId.substring(prefix.length);
+    }
+    return planEntityId;
+  }
+
+  static List<int>? _optionalIntList(Object? raw) {
+    if (raw == null) return null;
+    if (raw is! List) {
+      throw const DayAgentCaptureException('itemIndices must be an array');
+    }
+    final out = <int>[];
+    for (final value in raw) {
+      if (value is int) {
+        out.add(value);
+        continue;
+      }
+      if (value is num && value % 1 == 0) {
+        out.add(value.toInt());
+        continue;
+      }
+      throw const DayAgentCaptureException(
+        'itemIndices entries must be integers',
+      );
+    }
+    return out;
+  }
+
+  static List<int> _selectIndices({
+    required List<int>? itemIndices,
+    required int itemCount,
+  }) {
+    if (itemIndices == null) {
+      return [for (var i = 0; i < itemCount; i++) i];
+    }
+    final out = <int>{};
+    for (final index in itemIndices) {
+      if (index < 0 || index >= itemCount) {
+        throw DayAgentCaptureException(
+          'itemIndex $index is out of range for a set with $itemCount items',
+        );
+      }
+      out.add(index);
+    }
+    return out.toList()..sort();
+  }
+
+  static _DiffChange _parseDiffChange({
+    required Object? raw,
+    required DayPlanEntity plan,
+    required Map<String, PlannedBlock> blockById,
+  }) {
+    if (raw is! Map) {
+      throw const DayAgentCaptureException('change must be an object');
+    }
+    final data = raw.cast<String, dynamic>();
+    final actionName = _requiredString(data, 'action');
+    final action = parseEnumByName(_DiffAction.values, actionName);
+    if (action == null) {
+      throw DayAgentCaptureException(
+        'change action must be moved, added, or dropped (got "$actionName")',
+      );
+    }
+    final reason = _requiredString(data, 'reason');
+    final blockId = _optionalString(data['blockId']);
+    final from = _optionalBlockSnapshot(data['from'], 'from', plan);
+    final to = _optionalBlockSnapshot(data['to'], 'to', plan);
+    switch (action) {
+      case _DiffAction.moved:
+        if (blockId == null) {
+          throw const DayAgentCaptureException(
+            'moved change requires blockId',
+          );
+        }
+        if (!blockById.containsKey(blockId)) {
+          throw DayAgentCaptureException(
+            'moved change references unknown blockId $blockId',
+          );
+        }
+        if (to == null) {
+          throw const DayAgentCaptureException('moved change requires `to`');
+        }
+        if (from == null) {
+          throw const DayAgentCaptureException(
+            'moved change requires `from`',
+          );
+        }
+      case _DiffAction.added:
+        if (to == null) {
+          throw const DayAgentCaptureException('added change requires `to`');
+        }
+        if (to.start == null || to.end == null) {
+          throw const DayAgentCaptureException(
+            'added change requires `to.start` and `to.end`',
+          );
+        }
+        if (to.title == null || to.title!.isEmpty) {
+          throw const DayAgentCaptureException(
+            'added change requires `to.title`',
+          );
+        }
+        if (to.categoryId == null) {
+          throw const DayAgentCaptureException(
+            'added change requires `to.categoryId`',
+          );
+        }
+      case _DiffAction.dropped:
+        if (blockId == null) {
+          throw const DayAgentCaptureException(
+            'dropped change requires blockId',
+          );
+        }
+        if (!blockById.containsKey(blockId)) {
+          throw DayAgentCaptureException(
+            'dropped change references unknown blockId $blockId',
+          );
+        }
+        if (from == null) {
+          throw const DayAgentCaptureException(
+            'dropped change requires `from`',
+          );
+        }
+    }
+    return _DiffChange(
+      action: action,
+      reason: reason,
+      blockId: blockId,
+      from: from,
+      to: to,
+    );
+  }
+
+  static _BlockSnapshot? _optionalBlockSnapshot(
+    Object? raw,
+    String label,
+    DayPlanEntity plan,
+  ) {
+    if (raw == null) return null;
+    if (raw is! Map) {
+      throw DayAgentCaptureException('`$label` must be an object');
+    }
+    final data = raw.cast<String, dynamic>();
+    final start = _optionalDateTime(data['start']);
+    final end = _optionalDateTime(data['end']);
+    if (start != null && end != null && !end.isAfter(start)) {
+      throw DayAgentCaptureException(
+        '`$label.end` must be after `$label.start`',
+      );
+    }
+    if (start != null) {
+      _assertWithinDay(start, plan.planDate, '$label.start');
+    }
+    if (end != null) {
+      _assertWithinDay(end, plan.planDate, '$label.end');
+    }
+    final typeRaw = _optionalString(data['type']);
+    final type = typeRaw == null
+        ? null
+        : parseEnumByName(PlannedBlockType.values, typeRaw);
+    if (typeRaw != null && type == null) {
+      throw DayAgentCaptureException(
+        '`$label.type` must be ai, cal, buffer, or manual (got "$typeRaw")',
+      );
+    }
+    return _BlockSnapshot(
+      start: start,
+      end: end,
+      title: _optionalString(data['title']),
+      categoryId: _optionalString(data['categoryId']),
+      taskId: _optionalString(data['taskId']),
+      type: type,
+      reason: _optionalString(data['reason']),
+    );
+  }
+
+  static void _assertWithinDay(
+    DateTime time,
+    DateTime planDate,
+    String label,
+  ) {
+    final dayStart = localDay(planDate);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    if (time.isBefore(dayStart) || time.isAfter(dayEnd)) {
+      throw DayAgentCaptureException(
+        '`$label` must fall inside the plan day',
+      );
+    }
+  }
+
+  static String _formatChangeSummary(
+    _DiffChange change,
+    Map<String, PlannedBlock> blockById,
+  ) {
+    String fmt(DateTime? time) =>
+        time == null ? '?' : time.toIso8601String().substring(11, 16);
+    final liveBlock = change.blockId == null ? null : blockById[change.blockId];
+    final title =
+        change.to?.title ?? change.from?.title ?? liveBlock?.title ?? 'block';
+    switch (change.action) {
+      case _DiffAction.moved:
+        final fromStart = fmt(change.from?.start ?? liveBlock?.startTime);
+        final fromEnd = fmt(change.from?.end ?? liveBlock?.endTime);
+        final toStart = fmt(change.to?.start);
+        final toEnd = fmt(change.to?.end);
+        return 'Move "$title" from $fromStart–$fromEnd to $toStart–$toEnd';
+      case _DiffAction.added:
+        final start = fmt(change.to?.start);
+        final end = fmt(change.to?.end);
+        return 'Add "$title" at $start–$end';
+      case _DiffAction.dropped:
+        final start = fmt(change.from?.start ?? liveBlock?.startTime);
+        final end = fmt(change.from?.end ?? liveBlock?.endTime);
+        return 'Drop "$title" at $start–$end';
+    }
+  }
+
+  /// Order-aware validation across a batch of pending items.
+  ///
+  /// Walks the items in resolution order against a simulated block set so
+  /// that one item's effect (e.g. dropping a block) is visible to later
+  /// items in the same batch. Also re-runs the propose-time invariants
+  /// against the resolving agent's [allowedCategoryIds]:
+  ///   * `add_block` carries a full new block — validate shape, parseable
+  ///     timestamps, `end > start`, in-day bounds, allowed category.
+  ///   * `move_block` may carry partial overrides — validate any provided
+  ///     timestamps (parseable + in-day), the effective end > effective
+  ///     start (using the live block as fallback), and any category
+  ///     override against [allowedCategoryIds].
+  ///   * `drop_block` only needs the blockId still to exist in the
+  ///     simulated set.
+  static void _validateApplicableBatch(
+    Iterable<MapEntry<int, ChangeItem>> entries,
+    DayPlanEntity plan,
+    Set<String> allowedCategoryIds,
+  ) {
+    final simulatedIds = <String>{
+      for (final block in plan.data.plannedBlocks) block.id,
+    };
+    final blocksById = <String, PlannedBlock>{
+      for (final block in plan.data.plannedBlocks) block.id: block,
+    };
+    final dayStart = localDay(plan.planDate);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    void assertInDay(DateTime t, int idx, String label) {
+      if (t.isBefore(dayStart) || t.isAfter(dayEnd)) {
+        throw DayAgentCaptureException(
+          'cannot apply change at index $idx: $label is outside the plan day',
+        );
+      }
+    }
+
+    void assertAllowedCategory(String categoryId, int idx) {
+      if (allowedCategoryIds.isEmpty) return;
+      if (!allowedCategoryIds.contains(categoryId)) {
+        throw DayAgentCaptureException(
+          'cannot apply change at index $idx: categoryId $categoryId is '
+          'not allowed for this agent',
+        );
+      }
+    }
+
+    DateTime? parseDate(Object? raw, int idx, String label) {
+      if (raw == null) return null;
+      if (raw is! String) {
+        throw DayAgentCaptureException(
+          'cannot apply change at index $idx: $label must be a string',
+        );
+      }
+      final parsed = DateTime.tryParse(raw);
+      if (parsed == null) {
+        throw DayAgentCaptureException(
+          'cannot apply change at index $idx: $label is not a valid '
+          'ISO-8601 date-time',
+        );
+      }
+      return parsed;
+    }
+
+    for (final entry in entries) {
+      final idx = entry.key;
+      final item = entry.value;
+      switch (item.toolName) {
+        case 'move_block':
+          final blockId = item.args['blockId'] as String?;
+          if (blockId == null || !simulatedIds.contains(blockId)) {
+            throw DayAgentCaptureException(
+              'cannot apply move_block at index $idx: blockId $blockId not '
+              'in plan (possibly dropped earlier in this batch)',
+            );
+          }
+          final live = blocksById[blockId]!;
+          final newStart = parseDate(item.args['toStart'], idx, 'toStart');
+          final newEnd = parseDate(item.args['toEnd'], idx, 'toEnd');
+          final effStart = newStart ?? live.startTime;
+          final effEnd = newEnd ?? live.endTime;
+          if (!effEnd.isAfter(effStart)) {
+            throw DayAgentCaptureException(
+              'cannot apply move_block at index $idx: effective end must '
+              'be after effective start',
+            );
+          }
+          assertInDay(effStart, idx, 'effective start');
+          assertInDay(effEnd, idx, 'effective end');
+          final newCategoryId = item.args['categoryId'];
+          if (newCategoryId is String && newCategoryId.isNotEmpty) {
+            assertAllowedCategory(newCategoryId, idx);
+          }
+        case 'drop_block':
+          final blockId = item.args['blockId'] as String?;
+          if (blockId == null || !simulatedIds.contains(blockId)) {
+            throw DayAgentCaptureException(
+              'cannot apply drop_block at index $idx: blockId $blockId not '
+              'in plan (possibly dropped earlier in this batch)',
+            );
+          }
+          simulatedIds.remove(blockId);
+        case 'add_block':
+          final categoryId = item.args['categoryId'];
+          if (categoryId is! String || categoryId.isEmpty) {
+            throw DayAgentCaptureException(
+              'cannot apply add_block at index $idx: categoryId must be a '
+              'non-empty string',
+            );
+          }
+          assertAllowedCategory(categoryId, idx);
+          final start = parseDate(item.args['toStart'], idx, 'toStart');
+          final end = parseDate(item.args['toEnd'], idx, 'toEnd');
+          if (start == null) {
+            throw DayAgentCaptureException(
+              'cannot apply add_block at index $idx: toStart is required',
+            );
+          }
+          if (end == null) {
+            throw DayAgentCaptureException(
+              'cannot apply add_block at index $idx: toEnd is required',
+            );
+          }
+          if (!end.isAfter(start)) {
+            throw DayAgentCaptureException(
+              'cannot apply add_block at index $idx: toEnd must be after '
+              'toStart',
+            );
+          }
+          assertInDay(start, idx, 'toStart');
+          assertInDay(end, idx, 'toEnd');
+        default:
+          throw DayAgentCaptureException(
+            'cannot apply unknown change tool "${item.toolName}"',
+          );
+      }
+    }
+  }
+
+  static List<PlannedBlock> _applyItem(
+    ChangeItem item,
+    List<PlannedBlock> blocks,
+  ) {
+    // Defensive: `_validateApplicableBatch` runs immediately before this
+    // and rejects every malformed item, so the assertions below should be
+    // unreachable in normal flow. They exist so an accidental future
+    // bypass surfaces a clean `DayAgentCaptureException` instead of a
+    // bare `RangeError` / `TypeError`.
+    final out = List<PlannedBlock>.of(blocks);
+    final args = item.args;
+    switch (item.toolName) {
+      case 'move_block':
+        final blockId = args['blockId'] as String;
+        final index = out.indexWhere((b) => b.id == blockId);
+        if (index == -1) {
+          throw DayAgentCaptureException(
+            'cannot apply move_block: blockId $blockId not found in plan',
+          );
+        }
+        final block = out[index];
+        // NB: `args['reason']` is the change-level rationale (why the user
+        // wants this edit); the per-block reason override travels under
+        // `args['blockReason']` per `_DiffChange.toArgs()`. Mixing them
+        // would overwrite the block's placement reason with the diff
+        // motivation.
+        out[index] = block.copyWith(
+          startTime: _argDate(args, 'toStart') ?? block.startTime,
+          endTime: _argDate(args, 'toEnd') ?? block.endTime,
+          title: (args['title'] as String?) ?? block.title,
+          categoryId: (args['categoryId'] as String?) ?? block.categoryId,
+          taskId: args.containsKey('taskId')
+              ? args['taskId'] as String?
+              : block.taskId,
+          type: _argType(args) ?? block.type,
+          reason: args.containsKey('blockReason')
+              ? args['blockReason'] as String?
+              : block.reason,
+        );
+      case 'add_block':
+        out.add(
+          PlannedBlock(
+            id: 'block_${_uuid.v4()}',
+            categoryId: args['categoryId'] as String,
+            startTime: _argDate(args, 'toStart')!,
+            endTime: _argDate(args, 'toEnd')!,
+            title: args['title'] as String?,
+            taskId: args['taskId'] as String?,
+            type: _argType(args) ?? PlannedBlockType.ai,
+            reason: args['blockReason'] as String?,
+          ),
+        );
+      case 'drop_block':
+        final blockId = args['blockId'] as String;
+        final before = out.length;
+        out.removeWhere((b) => b.id == blockId);
+        if (out.length == before) {
+          throw DayAgentCaptureException(
+            'cannot apply drop_block: blockId $blockId not found in plan',
+          );
+        }
+    }
+    return out;
+  }
+
+  static DateTime? _argDate(Map<String, dynamic> args, String key) {
+    final raw = args[key];
+    if (raw is! String) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  static PlannedBlockType? _argType(Map<String, dynamic> args) {
+    final raw = args['type'];
+    if (raw is! String) return null;
+    return parseEnumByName(PlannedBlockType.values, raw);
+  }
+}
+
+enum _DiffAction { moved, added, dropped }
+
+class _DiffChange {
+  const _DiffChange({
+    required this.action,
+    required this.reason,
+    this.blockId,
+    this.from,
+    this.to,
+  });
+
+  final _DiffAction action;
+  final String reason;
+  final String? blockId;
+  final _BlockSnapshot? from;
+  final _BlockSnapshot? to;
+
+  String get toolName => switch (action) {
+    _DiffAction.moved => 'move_block',
+    _DiffAction.added => 'add_block',
+    _DiffAction.dropped => 'drop_block',
+  };
+
+  Map<String, dynamic> toArgs() {
+    final args = <String, dynamic>{
+      'action': action.name,
+      'reason': reason,
+    };
+    if (blockId != null) args['blockId'] = blockId;
+    final fromSnap = from;
+    if (fromSnap != null) {
+      if (fromSnap.start != null) {
+        args['fromStart'] = fromSnap.start!.toIso8601String();
+      }
+      if (fromSnap.end != null) {
+        args['fromEnd'] = fromSnap.end!.toIso8601String();
+      }
+      if (fromSnap.title != null) args['fromTitle'] = fromSnap.title;
+      if (fromSnap.categoryId != null) {
+        args['fromCategoryId'] = fromSnap.categoryId;
+      }
+    }
+    final toSnap = to;
+    if (toSnap != null) {
+      if (toSnap.start != null) {
+        args['toStart'] = toSnap.start!.toIso8601String();
+      }
+      if (toSnap.end != null) args['toEnd'] = toSnap.end!.toIso8601String();
+      if (toSnap.title != null) args['title'] = toSnap.title;
+      if (toSnap.categoryId != null) args['categoryId'] = toSnap.categoryId;
+      if (toSnap.taskId != null) args['taskId'] = toSnap.taskId;
+      if (toSnap.type != null) args['type'] = toSnap.type!.name;
+      if (toSnap.reason != null) args['blockReason'] = toSnap.reason;
+    }
+    return args;
+  }
+}
+
+class _BlockSnapshot {
+  const _BlockSnapshot({
+    this.start,
+    this.end,
+    this.title,
+    this.categoryId,
+    this.taskId,
+    this.type,
+    this.reason,
+  });
+
+  final DateTime? start;
+  final DateTime? end;
+  final String? title;
+  final String? categoryId;
+  final String? taskId;
+  final PlannedBlockType? type;
+  final String? reason;
 }
