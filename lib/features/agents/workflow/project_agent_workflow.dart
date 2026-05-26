@@ -275,6 +275,7 @@ class ProjectAgentWorkflow {
       final tools = _buildToolDefinitions();
       final inferenceRepo = CloudInferenceWrapper(
         cloudRepository: cloudInferenceRepository,
+        geminiThinkingMode: resolvedProfile.thinkingModel?.geminiThinkingMode,
       );
 
       // Record template + soul provenance on the wake run log.

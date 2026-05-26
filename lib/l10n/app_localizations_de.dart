@@ -3943,6 +3943,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get filterSelectionNoMatches => 'Keine Treffer';
 
   @override
+  String get geminiThinkingModeHighDescription =>
+      'Tiefstes Reasoning; kann Latenz und Kosten erhöhen.';
+
+  @override
+  String get geminiThinkingModeHighLabel => 'Hoch';
+
+  @override
+  String get geminiThinkingModeLowDescription =>
+      'Wenig Reasoning für schnelle Alltagsprompts.';
+
+  @override
+  String get geminiThinkingModeLowLabel => 'Niedrig';
+
+  @override
+  String get geminiThinkingModeMediumDescription =>
+      'Ausgewogenes Reasoning für sorgfältigere Antworten.';
+
+  @override
+  String get geminiThinkingModeMediumLabel => 'Mittel';
+
+  @override
+  String get geminiThinkingModeMinimalDescription =>
+      'Schnellste Einstellung; Gemini kann bei komplexen Prompts trotzdem kurz denken.';
+
+  @override
+  String get geminiThinkingModeMinimalLabel => 'Minimal';
+
+  @override
   String get generateCoverArt => 'Cover generieren';
 
   @override
@@ -4532,6 +4560,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get modelEditFunctionCallingLabel => 'Function Calling';
+
+  @override
+  String get modelEditGeminiThinkingModeLabel => 'Gemini-Denkmodus';
 
   @override
   String get modelEditInputModalitiesHint => 'Eingabetypen auswählen';

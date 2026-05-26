@@ -15,6 +15,8 @@ import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/selection/selection_modal_base.dart';
+import 'package:lotti/widgets/selection/selection_option.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 /// Create / edit page for an inference model row. Rewritten in v3 to
@@ -250,6 +252,23 @@ class _InferenceModelEditPageState
                 keyboardType: TextInputType.number,
                 prefixIcon: Icons.numbers_rounded,
               ),
+              if (ownerProvider?.inferenceProviderType ==
+                  InferenceProviderType.gemini) ...[
+                SizedBox(height: tokens.spacing.step4),
+                _SelectorField(
+                  label: messages.modelEditGeminiThinkingModeLabel,
+                  value: _formatGeminiThinkingMode(
+                    context,
+                    formState.geminiThinkingMode,
+                  ),
+                  isEmpty: false,
+                  onTap: () => _showGeminiThinkingModeSelectionModal(
+                    context,
+                    formState.geminiThinkingMode,
+                    formController.geminiThinkingModeChanged,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -337,6 +356,37 @@ class _InferenceModelEditPageState
     return modalities.map((m) => m.displayName(context)).join(', ');
   }
 
+  String _formatGeminiThinkingMode(
+    BuildContext context,
+    GeminiThinkingMode mode,
+  ) {
+    final messages = context.messages;
+    return switch (mode) {
+      GeminiThinkingMode.minimal => messages.geminiThinkingModeMinimalLabel,
+      GeminiThinkingMode.low => messages.geminiThinkingModeLowLabel,
+      GeminiThinkingMode.medium => messages.geminiThinkingModeMediumLabel,
+      GeminiThinkingMode.high => messages.geminiThinkingModeHighLabel,
+    };
+  }
+
+  void _showGeminiThinkingModeSelectionModal(
+    BuildContext context,
+    GeminiThinkingMode selectedMode,
+    ValueChanged<GeminiThinkingMode> onChanged,
+  ) {
+    SelectionModalBase.show(
+      context: context,
+      title: context.messages.modelEditGeminiThinkingModeLabel,
+      child: _GeminiThinkingModePickerContent(
+        selectedMode: selectedMode,
+        onChanged: (mode) {
+          onChanged(mode);
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+  }
+
   Widget _buildErrorState(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
@@ -374,6 +424,68 @@ class _InferenceModelEditPageState
         ),
       ),
     );
+  }
+}
+
+class _GeminiThinkingModePickerContent extends StatelessWidget {
+  const _GeminiThinkingModePickerContent({
+    required this.selectedMode,
+    required this.onChanged,
+  });
+
+  final GeminiThinkingMode selectedMode;
+  final ValueChanged<GeminiThinkingMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const modes = GeminiThinkingMode.values;
+    return SelectionModalContent(
+      children: [
+        SelectionOptionsList(
+          itemCount: modes.length,
+          itemBuilder: (context, index) {
+            final mode = modes[index];
+            return SelectionOption(
+              title: _label(context, mode),
+              description: _description(context, mode),
+              icon: _icon(mode),
+              isSelected: mode == selectedMode,
+              onTap: () => onChanged(mode),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  String _label(BuildContext context, GeminiThinkingMode mode) {
+    final messages = context.messages;
+    return switch (mode) {
+      GeminiThinkingMode.minimal => messages.geminiThinkingModeMinimalLabel,
+      GeminiThinkingMode.low => messages.geminiThinkingModeLowLabel,
+      GeminiThinkingMode.medium => messages.geminiThinkingModeMediumLabel,
+      GeminiThinkingMode.high => messages.geminiThinkingModeHighLabel,
+    };
+  }
+
+  String _description(BuildContext context, GeminiThinkingMode mode) {
+    final messages = context.messages;
+    return switch (mode) {
+      GeminiThinkingMode.minimal =>
+        messages.geminiThinkingModeMinimalDescription,
+      GeminiThinkingMode.low => messages.geminiThinkingModeLowDescription,
+      GeminiThinkingMode.medium => messages.geminiThinkingModeMediumDescription,
+      GeminiThinkingMode.high => messages.geminiThinkingModeHighDescription,
+    };
+  }
+
+  IconData _icon(GeminiThinkingMode mode) {
+    return switch (mode) {
+      GeminiThinkingMode.minimal => Icons.flash_on_rounded,
+      GeminiThinkingMode.low => Icons.speed_rounded,
+      GeminiThinkingMode.medium => Icons.psychology_alt_rounded,
+      GeminiThinkingMode.high => Icons.auto_awesome_rounded,
+    };
   }
 }
 

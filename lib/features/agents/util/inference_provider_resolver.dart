@@ -6,6 +6,11 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+typedef ResolvedInferenceProvider = ({
+  AiConfigModel model,
+  AiConfigInferenceProvider provider,
+});
+
 /// Resolves the inference provider for a given [modelId].
 ///
 /// Looks up configured [AiConfigModel] rows whose `providerModelId` matches
@@ -17,6 +22,25 @@ import 'package:lotti/services/domain_logging.dart';
 /// Returns `null` if the model is not configured, the provider is missing,
 /// or the provider has no API key set.
 Future<AiConfigInferenceProvider?> resolveInferenceProvider({
+  required String modelId,
+  required AiConfigRepository aiConfigRepository,
+  String logTag = 'InferenceProviderResolver',
+}) async {
+  final resolved = await resolveInferenceProviderWithModel(
+    modelId: modelId,
+    aiConfigRepository: aiConfigRepository,
+    logTag: logTag,
+  );
+  return resolved?.provider;
+}
+
+/// Resolves the configured model row and provider for a provider-native
+/// [modelId].
+///
+/// This keeps callers that need model-row settings (for example Gemini
+/// thinking mode) from performing a second providerModelId lookup after
+/// provider resolution.
+Future<ResolvedInferenceProvider?> resolveInferenceProviderWithModel({
   required String modelId,
   required AiConfigRepository aiConfigRepository,
   String logTag = 'InferenceProviderResolver',
@@ -39,7 +63,7 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
   }
 
   final preferredProviderTypes = _providerTypesForKnownModel(modelId);
-  AiConfigInferenceProvider? usableFallback;
+  ResolvedInferenceProvider? usableFallback;
 
   for (final model in matchingModels) {
     final providerId = model.inferenceProviderId;
@@ -65,10 +89,10 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
 
     if (preferredProviderTypes.isEmpty ||
         preferredProviderTypes.contains(provider.inferenceProviderType)) {
-      return provider;
+      return (model: model, provider: provider);
     }
 
-    usableFallback ??= provider;
+    usableFallback ??= (model: model, provider: provider);
     developer.log(
       'Skipping provider ${DomainLogger.sanitizeId(providerId)}: '
       'provider type ${provider.inferenceProviderType.name} does not match '
@@ -82,7 +106,7 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
     developer.log(
       'No provider with a known matching type configured; '
       'falling back to usable provider '
-      '${DomainLogger.sanitizeId(usableFallback.id)}',
+      '${DomainLogger.sanitizeId(usableFallback.provider.id)}',
       name: logTag,
     );
     return usableFallback;

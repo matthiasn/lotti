@@ -18,9 +18,11 @@ import 'package:openai_dart/openai_dart.dart';
 class CloudInferenceWrapper implements InferenceRepositoryInterface {
   CloudInferenceWrapper({
     required this.cloudRepository,
+    this.geminiThinkingMode,
   });
 
   final CloudInferenceRepository cloudRepository;
+  final GeminiThinkingMode? geminiThinkingMode;
 
   @override
   Stream<CreateChatCompletionStreamResponse> generateText({
@@ -45,6 +47,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       provider: provider,
       tools: tools,
       toolChoice: toolChoice,
+      geminiThinkingMode: geminiThinkingMode,
     );
   }
 
@@ -83,6 +86,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       thoughtSignatures: thoughtSignatures,
       signatureCollector: signatureCollector,
       turnIndex: turnIndex,
+      geminiThinkingMode: geminiThinkingMode,
     );
 
     // Pass through the stream but log any tool calls we see

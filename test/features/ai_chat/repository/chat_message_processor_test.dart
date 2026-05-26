@@ -857,6 +857,7 @@ void main() {
             apiKey: any<String>(named: 'apiKey'),
             systemMessage: any<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -1052,6 +1053,7 @@ void main() {
             apiKey: any<String>(named: 'apiKey'),
             systemMessage: any<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) => stream);
 
@@ -1127,6 +1129,7 @@ void main() {
             apiKey: any<String>(named: 'apiKey'),
             systemMessage: any<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) => stream);
 

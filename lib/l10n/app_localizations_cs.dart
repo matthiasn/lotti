@@ -3944,6 +3944,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get filterSelectionNoMatches => 'Žádné shody';
 
   @override
+  String get geminiThinkingModeHighDescription =>
+      'Nejhlubší uvažování; může zvýšit latenci a cenu.';
+
+  @override
+  String get geminiThinkingModeHighLabel => 'Vysoké';
+
+  @override
+  String get geminiThinkingModeLowDescription =>
+      'Nízké uvažování pro rychlé každodenní prompty.';
+
+  @override
+  String get geminiThinkingModeLowLabel => 'Nízké';
+
+  @override
+  String get geminiThinkingModeMediumDescription =>
+      'Vyvážené uvažování pro pečlivější odpovědi.';
+
+  @override
+  String get geminiThinkingModeMediumLabel => 'Střední';
+
+  @override
+  String get geminiThinkingModeMinimalDescription =>
+      'Nejrychlejší nastavení; Gemini může u složitých promptů pořád krátce uvažovat.';
+
+  @override
+  String get geminiThinkingModeMinimalLabel => 'Minimální';
+
+  @override
   String get generateCoverArt => 'Vytvořit obálku';
 
   @override
@@ -4548,6 +4576,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get modelEditFunctionCallingLabel => 'Volání funkcí';
+
+  @override
+  String get modelEditGeminiThinkingModeLabel => 'Režim uvažování Gemini';
 
   @override
   String get modelEditInputModalitiesHint => 'Vyber vstupní typy';

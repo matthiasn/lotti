@@ -427,6 +427,7 @@ class ChatMessageProcessor {
       apiKey: config.provider.apiKey,
       systemMessage: systemMessage,
       provider: config.provider,
+      geminiThinkingMode: config.model.geminiThinkingMode,
     );
 
     final finalResult = await processStreamResponse(finalStream);
@@ -450,6 +451,7 @@ class ChatMessageProcessor {
       apiKey: config.provider.apiKey,
       systemMessage: systemMessage,
       provider: config.provider,
+      geminiThinkingMode: config.model.geminiThinkingMode,
     );
 
     await for (final chunk in finalStream) {

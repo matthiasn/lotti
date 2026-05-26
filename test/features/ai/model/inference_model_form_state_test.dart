@@ -114,6 +114,7 @@ void main() {
         expect(state.outputModalities, equals([Modality.text]));
         expect(state.isReasoningModel, isFalse);
         expect(state.supportsFunctionCalling, isFalse);
+        expect(state.geminiThinkingMode, GeminiThinkingMode.low);
         expect(
           state.isValid,
           isFalse,
@@ -132,6 +133,7 @@ void main() {
           outputModalities: [Modality.text],
           isReasoningModel: true,
           supportsFunctionCalling: true,
+          geminiThinkingMode: GeminiThinkingMode.high,
         );
 
         expect(state.id, equals('test-id'));
@@ -144,6 +146,7 @@ void main() {
         expect(state.outputModalities, equals([Modality.text]));
         expect(state.isReasoningModel, isTrue);
         expect(state.supportsFunctionCalling, isTrue);
+        expect(state.geminiThinkingMode, GeminiThinkingMode.high);
       });
 
       test('copyWith maintains existing values when not specified', () {
@@ -154,6 +157,7 @@ void main() {
           inferenceProviderId: 'provider-id',
           isReasoningModel: true,
           supportsFunctionCalling: true,
+          geminiThinkingMode: GeminiThinkingMode.medium,
         );
 
         final copied = original.copyWith();
@@ -170,6 +174,7 @@ void main() {
           copied.supportsFunctionCalling,
           equals(original.supportsFunctionCalling),
         );
+        expect(copied.geminiThinkingMode, original.geminiThinkingMode);
       });
 
       test('copyWith updates specified values', () {
@@ -186,6 +191,7 @@ void main() {
           outputModalities: [Modality.text, Modality.image],
           isReasoningModel: true,
           supportsFunctionCalling: true,
+          geminiThinkingMode: GeminiThinkingMode.minimal,
         );
 
         expect(updated.id, equals('new-id'));
@@ -204,6 +210,7 @@ void main() {
         );
         expect(updated.isReasoningModel, isTrue);
         expect(updated.supportsFunctionCalling, isTrue);
+        expect(updated.geminiThinkingMode, GeminiThinkingMode.minimal);
       });
 
       test('FormzMixin validation works correctly', () {
@@ -257,6 +264,7 @@ void main() {
             outputModalities: [Modality.text],
             isReasoningModel: true,
             supportsFunctionCalling: true,
+            geminiThinkingMode: GeminiThinkingMode.medium,
           );
 
           final config = state.toAiConfig();
@@ -275,6 +283,7 @@ void main() {
           expect(modelConfig.outputModalities, equals([Modality.text]));
           expect(modelConfig.isReasoningModel, isTrue);
           expect(modelConfig.supportsFunctionCalling, isTrue);
+          expect(modelConfig.geminiThinkingMode, GeminiThinkingMode.medium);
           expect(modelConfig.maxCompletionTokens, equals(2000));
           expect(modelConfig.createdAt, isA<DateTime>());
         });

@@ -3967,6 +3967,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String get filterSelectionNoMatches => 'Fără rezultate';
 
   @override
+  String get geminiThinkingModeHighDescription =>
+      'Raționament cel mai profund; poate crește latența și costul.';
+
+  @override
+  String get geminiThinkingModeHighLabel => 'Ridicat';
+
+  @override
+  String get geminiThinkingModeLowDescription =>
+      'Raționament redus pentru prompturi zilnice rapide.';
+
+  @override
+  String get geminiThinkingModeLowLabel => 'Redus';
+
+  @override
+  String get geminiThinkingModeMediumDescription =>
+      'Raționament echilibrat pentru răspunsuri mai atente.';
+
+  @override
+  String get geminiThinkingModeMediumLabel => 'Mediu';
+
+  @override
+  String get geminiThinkingModeMinimalDescription =>
+      'Cea mai rapidă setare; Gemini poate gândi totuși scurt la prompturi complexe.';
+
+  @override
+  String get geminiThinkingModeMinimalLabel => 'Minim';
+
+  @override
   String get generateCoverArt => 'Generează copertă';
 
   @override
@@ -4568,6 +4596,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get modelEditFunctionCallingLabel => 'Apeluri de funcții';
+
+  @override
+  String get modelEditGeminiThinkingModeLabel => 'Mod de gândire Gemini';
 
   @override
   String get modelEditInputModalitiesHint => 'Selectați tipurile de intrare';

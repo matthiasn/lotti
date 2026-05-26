@@ -19,6 +19,7 @@ enum _GeneratedModelFormOperationKind {
   outputModalities,
   isReasoningModel,
   supportsFunctionCalling,
+  geminiThinkingMode,
 }
 
 enum _GeneratedModelFormTextSlot {
@@ -36,6 +37,13 @@ enum _GeneratedModelFormModalitiesSlot {
   audioText,
   all,
   empty,
+}
+
+enum _GeneratedModelFormGeminiThinkingModeSlot {
+  minimal,
+  low,
+  medium,
+  high,
 }
 
 String _generatedModelFormText(_GeneratedModelFormTextSlot slot) {
@@ -71,17 +79,32 @@ List<Modality> _generatedModelFormModalities(
   };
 }
 
+GeminiThinkingMode _generatedGeminiThinkingMode(
+  _GeneratedModelFormGeminiThinkingModeSlot slot,
+) {
+  return switch (slot) {
+    _GeneratedModelFormGeminiThinkingModeSlot.minimal =>
+      GeminiThinkingMode.minimal,
+    _GeneratedModelFormGeminiThinkingModeSlot.low => GeminiThinkingMode.low,
+    _GeneratedModelFormGeminiThinkingModeSlot.medium =>
+      GeminiThinkingMode.medium,
+    _GeneratedModelFormGeminiThinkingModeSlot.high => GeminiThinkingMode.high,
+  };
+}
+
 class _GeneratedModelFormOperation {
   const _GeneratedModelFormOperation({
     required this.kind,
     required this.textSlot,
     required this.modalitiesSlot,
+    required this.geminiThinkingModeSlot,
     required this.flag,
   });
 
   final _GeneratedModelFormOperationKind kind;
   final _GeneratedModelFormTextSlot textSlot;
   final _GeneratedModelFormModalitiesSlot modalitiesSlot;
+  final _GeneratedModelFormGeminiThinkingModeSlot geminiThinkingModeSlot;
   final bool flag;
 
   String get text => _generatedModelFormText(textSlot);
@@ -90,11 +113,16 @@ class _GeneratedModelFormOperation {
     modalitiesSlot,
   );
 
+  GeminiThinkingMode get geminiThinkingMode => _generatedGeminiThinkingMode(
+    geminiThinkingModeSlot,
+  );
+
   @override
   String toString() {
     return '_GeneratedModelFormOperation('
         'kind: $kind, textSlot: $textSlot, '
-        'modalitiesSlot: $modalitiesSlot, flag: $flag)';
+        'modalitiesSlot: $modalitiesSlot, '
+        'geminiThinkingModeSlot: $geminiThinkingModeSlot, flag: $flag)';
   }
 }
 
@@ -119,6 +147,7 @@ class _ExpectedModelFormState {
   List<Modality> outputModalities = [Modality.text];
   bool isReasoningModel = false;
   bool supportsFunctionCalling = false;
+  GeminiThinkingMode geminiThinkingMode = GeminiThinkingMode.low;
 
   void apply(_GeneratedModelFormOperation operation) {
     switch (operation.kind) {
@@ -140,6 +169,8 @@ class _ExpectedModelFormState {
         isReasoningModel = operation.flag;
       case _GeneratedModelFormOperationKind.supportsFunctionCalling:
         supportsFunctionCalling = operation.flag;
+      case _GeneratedModelFormOperationKind.geminiThinkingMode:
+        geminiThinkingMode = operation.geminiThinkingMode;
     }
   }
 }
@@ -156,21 +187,29 @@ extension _AnyGeneratedModelFormScenario on glados.Any {
   get modelFormModalitiesSlot =>
       glados.AnyUtils(this).choose(_GeneratedModelFormModalitiesSlot.values);
 
+  glados.Generator<_GeneratedModelFormGeminiThinkingModeSlot>
+  get modelFormGeminiThinkingModeSlot => glados.AnyUtils(this).choose(
+    _GeneratedModelFormGeminiThinkingModeSlot.values,
+  );
+
   glados.Generator<_GeneratedModelFormOperation> get modelFormOperation =>
-      glados.CombinableAny(this).combine4(
+      glados.CombinableAny(this).combine5(
         modelFormOperationKind,
         modelFormTextSlot,
         modelFormModalitiesSlot,
+        modelFormGeminiThinkingModeSlot,
         glados.any.bool,
         (
           _GeneratedModelFormOperationKind kind,
           _GeneratedModelFormTextSlot textSlot,
           _GeneratedModelFormModalitiesSlot modalitiesSlot,
+          _GeneratedModelFormGeminiThinkingModeSlot geminiThinkingModeSlot,
           bool flag,
         ) => _GeneratedModelFormOperation(
           kind: kind,
           textSlot: textSlot,
           modalitiesSlot: modalitiesSlot,
+          geminiThinkingModeSlot: geminiThinkingModeSlot,
           flag: flag,
         ),
       );
@@ -200,6 +239,7 @@ void main() {
     outputModalities: [Modality.text],
     isReasoningModel: true,
     supportsFunctionCalling: true,
+    geminiThinkingMode: GeminiThinkingMode.high,
     description: 'Test description',
     maxCompletionTokens: 4000,
   );
@@ -251,6 +291,8 @@ void main() {
         expect(formState?.inputModalities, equals([Modality.text]));
         expect(formState?.outputModalities, equals([Modality.text]));
         expect(formState?.isReasoningModel, isTrue);
+        expect(formState?.supportsFunctionCalling, isTrue);
+        expect(formState?.geminiThinkingMode, GeminiThinkingMode.high);
         verify(() => mockRepository.getConfigById('test-id')).called(1);
       },
     );
@@ -274,6 +316,8 @@ void main() {
       expect(formState?.inputModalities, equals([Modality.text]));
       expect(formState?.outputModalities, equals([Modality.text]));
       expect(formState?.isReasoningModel, isFalse);
+      expect(formState?.supportsFunctionCalling, isFalse);
+      expect(formState?.geminiThinkingMode, GeminiThinkingMode.low);
       verifyNever(() => mockRepository.getConfigById(any()));
     });
 
@@ -560,6 +604,26 @@ void main() {
       },
     );
 
+    test(
+      'should update form state when Gemini thinking mode is changed',
+      () async {
+        final controller = container.read(
+          inferenceModelFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceModelFormControllerProvider(configId: null).future,
+        );
+
+        controller.geminiThinkingModeChanged(GeminiThinkingMode.medium);
+        final formState = container
+            .read(inferenceModelFormControllerProvider(configId: null))
+            .value;
+
+        expect(formState?.geminiThinkingMode, GeminiThinkingMode.medium);
+        expect(formState?.isDirty, isTrue);
+      },
+    );
+
     glados.Glados(
       glados.any.modelFormScenario,
       glados.ExploreConfig(numRuns: 180),
@@ -600,6 +664,10 @@ void main() {
               controller.isReasoningModelChanged(operation.flag);
             case _GeneratedModelFormOperationKind.supportsFunctionCalling:
               controller.supportsFunctionCallingChanged(operation.flag);
+            case _GeneratedModelFormOperationKind.geminiThinkingMode:
+              controller.geminiThinkingModeChanged(
+                operation.geminiThinkingMode,
+              );
           }
           expected.apply(operation);
 
@@ -643,6 +711,11 @@ void main() {
           expect(
             formState.supportsFunctionCalling,
             expected.supportsFunctionCalling,
+          );
+          expect(
+            formState.geminiThinkingMode,
+            expected.geminiThinkingMode,
+            reason: '$scenario',
           );
         }
       } finally {

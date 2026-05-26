@@ -64,6 +64,7 @@ class InferenceModelFormState with FormzMixin {
     this.outputModalities = const [Modality.text],
     this.isReasoningModel = false,
     this.supportsFunctionCalling = false,
+    this.geminiThinkingMode = GeminiThinkingMode.low,
   });
 
   final String? id; // null for new models
@@ -76,6 +77,7 @@ class InferenceModelFormState with FormzMixin {
   final List<Modality> outputModalities;
   final bool isReasoningModel;
   final bool supportsFunctionCalling;
+  final GeminiThinkingMode geminiThinkingMode;
 
   InferenceModelFormState copyWith({
     String? id,
@@ -88,6 +90,7 @@ class InferenceModelFormState with FormzMixin {
     List<Modality>? outputModalities,
     bool? isReasoningModel,
     bool? supportsFunctionCalling,
+    GeminiThinkingMode? geminiThinkingMode,
   }) {
     return InferenceModelFormState(
       id: id ?? this.id,
@@ -101,6 +104,7 @@ class InferenceModelFormState with FormzMixin {
       isReasoningModel: isReasoningModel ?? this.isReasoningModel,
       supportsFunctionCalling:
           supportsFunctionCalling ?? this.supportsFunctionCalling,
+      geminiThinkingMode: geminiThinkingMode ?? this.geminiThinkingMode,
     );
   }
 
@@ -125,6 +129,7 @@ class InferenceModelFormState with FormzMixin {
       outputModalities: outputModalities,
       isReasoningModel: isReasoningModel,
       supportsFunctionCalling: supportsFunctionCalling,
+      geminiThinkingMode: geminiThinkingMode,
       maxCompletionTokens: maxCompletionTokens.value.isEmpty
           ? null
           : int.tryParse(maxCompletionTokens.value),

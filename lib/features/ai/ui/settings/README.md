@@ -118,6 +118,29 @@ AiConfigCard(
 )
 ```
 
+#### `InferenceModelEditPage`
+
+The model edit form owns user-editable model-row fields: display name,
+provider-native model ID, owning provider, modalities, reasoning/function-call
+flags, max completion tokens, and Gemini thinking mode. The Gemini thinking
+selector is conditional on the selected provider resolving to
+`InferenceProviderType.gemini`; non-Gemini rows keep the stored default value
+but do not render the selector.
+
+```mermaid
+flowchart TD
+  Page["InferenceModelEditPage"] --> Controller["InferenceModelFormController"]
+  Controller --> State["InferenceModelFormState"]
+  State --> Save["toAiConfig()"]
+  Save --> Model["AiConfig.model"]
+  Model --> Gemini{"Owner provider is Gemini?"}
+  Gemini -->|yes| Selector["Thinking mode selector<br/>minimal / low / medium / high"]
+  Gemini -->|no| Hidden["Selector hidden"]
+```
+
+Persisted rows that predate the field deserialize with
+`GeminiThinkingMode.low`, matching the runtime's low-latency default.
+
 #### `AiSettingsConfigSliver`
 A sliver-based configuration list that replaces the previous box-based implementation.
 
@@ -285,7 +308,8 @@ logged via `LoggingService` under `AI_CONFIG / DELETE_SERVICE`.
 
 ### 3. Tabbed Navigation
 - **Providers Tab**: Manage AI inference providers (OpenAI, Anthropic, etc.)
-- **Models Tab**: Manage AI models with advanced filtering options
+- **Models Tab**: Manage AI models with advanced filtering options. Gemini
+  model rows also expose the thinking mode used at inference time.
 - **Prompts Tab**: Manage AI prompts and templates
 
 ### 4. Direct Navigation

@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/soul_evolution_context_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
@@ -38,6 +39,7 @@ class ActiveEvolutionSession {
     required this.conversationId,
     required this.strategy,
     required this.modelId,
+    this.geminiThinkingMode,
     this.processor,
     this.genUiBridge,
     this.eventHandler,
@@ -48,6 +50,7 @@ class ActiveEvolutionSession {
   final String conversationId;
   final EvolutionStrategy strategy;
   final String modelId;
+  final GeminiThinkingMode? geminiThinkingMode;
 
   /// GenUI message processor for rendering dynamic surfaces.
   final SurfaceController? processor;
@@ -187,12 +190,12 @@ class TemplateEvolutionWorkflow {
     }
 
     // Resolve the inference provider.
-    final provider = await resolveInferenceProvider(
+    final inferenceSlot = await resolveInferenceProviderWithModel(
       modelId: template.modelId,
       aiConfigRepository: aiConfigRepository,
       logTag: _logTag,
     );
-    if (provider == null) {
+    if (inferenceSlot == null) {
       developer.log(
         'Cannot resolve provider for template model '
         '(modelIdLength=${template.modelId.length})',
@@ -200,6 +203,8 @@ class TemplateEvolutionWorkflow {
       );
       return null;
     }
+    final provider = inferenceSlot.provider;
+    final geminiThinkingMode = inferenceSlot.model.geminiThinkingMode;
 
     // Everything below is wrapped in try-catch so that exceptions from data
     // fetches, context building, or the LLM call all return `null` instead of
@@ -359,6 +364,7 @@ class TemplateEvolutionWorkflow {
         conversationId: conversationId,
         strategy: strategy,
         modelId: template.modelId,
+        geminiThinkingMode: geminiThinkingMode,
         processor: processor,
         genUiBridge: bridge,
         eventHandler: eventHandler,
@@ -371,6 +377,7 @@ class TemplateEvolutionWorkflow {
         provider: provider,
         inferenceRepo: CloudInferenceWrapper(
           cloudRepository: cloudInferenceRepository,
+          geminiThinkingMode: geminiThinkingMode,
         ),
         tools: _buildToolDefinitions(bridge: bridge),
         strategy: strategy,
@@ -408,12 +415,13 @@ class TemplateEvolutionWorkflow {
       return null;
     }
 
-    final provider = await resolveInferenceProvider(
+    final inferenceSlot = await resolveInferenceProviderWithModel(
       modelId: active.modelId,
       aiConfigRepository: aiConfigRepository,
       logTag: _logTag,
     );
-    if (provider == null) return null;
+    if (inferenceSlot == null) return null;
+    final provider = inferenceSlot.provider;
 
     try {
       await conversationRepository.sendMessage(
@@ -423,6 +431,7 @@ class TemplateEvolutionWorkflow {
         provider: provider,
         inferenceRepo: CloudInferenceWrapper(
           cloudRepository: cloudInferenceRepository,
+          geminiThinkingMode: active.geminiThinkingMode,
         ),
         tools: _buildToolDefinitions(bridge: active.genUiBridge),
         strategy: active.strategy,
@@ -852,12 +861,12 @@ class TemplateEvolutionWorkflow {
       return null;
     }
 
-    final provider = await resolveInferenceProvider(
+    final inferenceSlot = await resolveInferenceProviderWithModel(
       modelId: modelId,
       aiConfigRepository: aiConfigRepository,
       logTag: _logTag,
     );
-    if (provider == null) {
+    if (inferenceSlot == null) {
       developer.log(
         'Cannot resolve provider for soul-session model '
         '(modelIdLength=${modelId.length})',
@@ -865,6 +874,8 @@ class TemplateEvolutionWorkflow {
       );
       return null;
     }
+    final provider = inferenceSlot.provider;
+    final geminiThinkingMode = inferenceSlot.model.geminiThinkingMode;
 
     final sessionId = _uuid.v4();
     try {
@@ -963,6 +974,7 @@ class TemplateEvolutionWorkflow {
         conversationId: conversationId,
         strategy: strategy,
         modelId: modelId,
+        geminiThinkingMode: geminiThinkingMode,
         processor: processor,
         genUiBridge: bridge,
         eventHandler: eventHandler,
@@ -976,6 +988,7 @@ class TemplateEvolutionWorkflow {
         provider: provider,
         inferenceRepo: CloudInferenceWrapper(
           cloudRepository: cloudInferenceRepository,
+          geminiThinkingMode: geminiThinkingMode,
         ),
         tools: _buildSoulToolDefinitions(bridge: bridge),
         strategy: strategy,
