@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
+import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -24,6 +25,38 @@ void main() {
   final silenceAgentUpdates = agentUpdateStreamProvider.overrideWith(
     (ref, agentId) => const Stream<Set<String>>.empty(),
   );
+
+  group('dayAgentProvider factory', () {
+    test(
+      'constructs a RealDayAgent wired to the upstream service providers',
+      () {
+        final captureService = MockDayAgentCaptureService();
+        final planService = MockDayAgentPlanService();
+        final dayAgentService = MockDayAgentService();
+        final journalDb = MockJournalDb();
+
+        final container = ProviderContainer(
+          overrides: [
+            dayAgentCaptureServiceProvider.overrideWithValue(captureService),
+            dayAgentPlanServiceProvider.overrideWithValue(planService),
+            dayAgentServiceProvider.overrideWithValue(dayAgentService),
+            journalDbProvider.overrideWithValue(journalDb),
+            silenceAgentUpdates,
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final agent = container.read(dayAgentProvider);
+        expect(agent, isA<RealDayAgent>());
+        final real = agent as RealDayAgent;
+        expect(real.captureService, same(captureService));
+        expect(real.planService, same(planService));
+        expect(real.dayAgentService, same(dayAgentService));
+        expect(real.journalDb, same(journalDb));
+        expect(real.mockFallback, isA<MockDayAgent>());
+      },
+    );
+  });
 
   group('currentDraftPlanProvider', () {
     final asOf = DateTime(2026, 5, 25);
