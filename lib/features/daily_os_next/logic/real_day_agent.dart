@@ -24,15 +24,15 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 /// `submitCapture`, `parseCaptureToItems`, `surfacePendingDecisions`,
 /// `applyTriage`, `linkCapturePhraseToTask`, `breakCaptureLink`,
 /// `summarizeRecentPatterns`, `draftDayPlan`, `proposePlanDiff`,
-/// `acceptDiff`, `revertDiff`, `currentPlanForDate`,
+/// `acceptDiff`, `revertDiff`, `commitDay`, `currentPlanForDate`,
 /// `deletePlanForDate`.
 ///
 /// **Still mocked** — these methods still delegate to [mockFallback]
 /// because their agent-side tools have not shipped yet. Once each
 /// phase lands they graduate the same way (real calls + thrown
-/// errors): `commitDay` (Phase 5), `surfaceShutdownData`,
-/// `recordReflection`, `recordCarryoverDecision`,
-/// `generateTomorrowNote` (Phase 6), `surfaceTaskCorpus` (Phase 7).
+/// errors): `surfaceShutdownData`, `recordReflection`,
+/// `recordCarryoverDecision`, `generateTomorrowNote` (Phase 6),
+/// `surfaceTaskCorpus` (Phase 7).
 ///
 /// As those phases ship in the agent layer, methods graduate from
 /// `mockFallback` to direct service calls.
@@ -366,7 +366,19 @@ class RealDayAgent implements DayAgentInterface {
   }
 
   @override
-  Future<DraftPlan> commitDay(DraftPlan plan) => mockFallback.commitDay(plan);
+  Future<DraftPlan> commitDay(DraftPlan plan) async {
+    final identity = await dayAgentService.getDayAgentForDate(plan.dayDate);
+    if (identity is! AgentIdentityEntity) {
+      throw DayAgentInteractionException(
+        'No day agent exists for ${dayAgentIdForDate(plan.dayDate)}.',
+      );
+    }
+    final committed = await planService.commitDay(
+      agentId: identity.agentId,
+      dayId: dayAgentIdForDate(plan.dayDate),
+    );
+    return _projectDayPlan(committed, plan.dayDate);
+  }
 
   @override
   Future<
@@ -661,7 +673,11 @@ class RealDayAgent implements DayAgentInterface {
   }
 
   DayState _projectDayState(DayPlanStatus status) {
+    // `committed` is the new variant from PR #3214; `agreed` is the
+    // legacy variant from the old daily_os feature kept for back-compat.
+    // Both map to the UI's [DayState.committed].
     return status.maybeMap(
+      committed: (_) => DayState.committed,
       agreed: (_) => DayState.committed,
       orElse: () => DayState.drafted,
     );

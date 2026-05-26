@@ -413,37 +413,16 @@ const dayAgentTools = <AgentToolDefinition>[
               'reason': {
                 'type': 'string',
                 'minLength': 1,
-                'description': 'Why this change. Required for every change.',
+                'description':
+                    'Why this change. Required for every change. '
+                    'For action="moved" or "dropped", you MUST also '
+                    'include `blockId` and `from`. For action="moved" or '
+                    '"added", you MUST also include `to`. The tool '
+                    'handler rejects changes that violate these rules.',
               },
             },
             'required': ['action', 'reason'],
             'additionalProperties': false,
-            'allOf': [
-              {
-                'if': {
-                  'properties': {
-                    'action': {
-                      'enum': ['moved', 'dropped'],
-                    },
-                  },
-                },
-                'then': {
-                  'required': ['blockId', 'from'],
-                },
-              },
-              {
-                'if': {
-                  'properties': {
-                    'action': {
-                      'enum': ['moved', 'added'],
-                    },
-                  },
-                },
-                'then': {
-                  'required': ['to'],
-                },
-              },
-            ],
           },
         },
       },

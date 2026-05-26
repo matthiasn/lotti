@@ -345,4 +345,126 @@ void main() {
       },
     );
   });
+
+  group('RealDayAgent.commitDay', () {
+    late MockDayAgentCaptureService captureService;
+    late MockDayAgentPlanService planService;
+    late MockDayAgentService dayAgentService;
+    late MockJournalDb journalDb;
+    late RealDayAgent adapter;
+
+    setUp(() {
+      captureService = MockDayAgentCaptureService();
+      planService = MockDayAgentPlanService();
+      dayAgentService = MockDayAgentService();
+      journalDb = MockJournalDb();
+      adapter = RealDayAgent(
+        captureService: captureService,
+        planService: planService,
+        dayAgentService: dayAgentService,
+        journalDb: journalDb,
+        mockFallback: MockDayAgent(),
+      );
+    });
+
+    test(
+      'calls commitDay on the plan service and projects the result',
+      () async {
+        const agentId = 'day-agent-001';
+        final dayDate = DateTime(_asOf.year, _asOf.month, _asOf.day);
+        final committedAt = dayDate.add(const Duration(hours: 9));
+        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => planService.commitDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              AgentDomainEntity.dayPlan(
+                    id: 'day_agent_plan:${dayAgentIdForDate(dayDate)}',
+                    agentId: agentId,
+                    dayId: dayAgentIdForDate(dayDate),
+                    planDate: dayDate,
+                    data: DayPlanData(
+                      planDate: dayDate,
+                      status: DayPlanStatus.committed(committedAt: committedAt),
+                      plannedBlocks: [
+                        PlannedBlock(
+                          id: 'block_1',
+                          categoryId: 'work',
+                          startTime: dayDate.add(const Duration(hours: 9)),
+                          endTime: dayDate.add(const Duration(hours: 10)),
+                          title: 'Focus block',
+                          state: PlannedBlockState.committed,
+                        ),
+                      ],
+                    ),
+                    scheduledMinutes: 60,
+                    createdAt: dayDate,
+                    updatedAt: committedAt,
+                    vectorClock: null,
+                  )
+                  as DayPlanEntity,
+        );
+        when(
+          () => journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+
+        final plan = DraftPlan(
+          dayDate: dayDate,
+          blocks: const [],
+          bands: const [],
+          capacityMinutes: 480,
+          scheduledMinutes: 60,
+        );
+
+        final result = await adapter.commitDay(plan);
+
+        expect(result.state, DayState.committed);
+        expect(result.blocks, hasLength(1));
+        expect(result.blocks.single.state, TimeBlockState.committed);
+        verify(
+          () => planService.commitDay(
+            agentId: agentId,
+            dayId: dayAgentIdForDate(dayDate),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'throws DayAgentInteractionException when no day-agent exists',
+      () async {
+        when(
+          () => dayAgentService.getDayAgentForDate(any()),
+        ).thenAnswer((_) async => null);
+
+        final plan = DraftPlan(
+          dayDate: _asOf,
+          blocks: const [],
+          bands: const [],
+          capacityMinutes: 480,
+          scheduledMinutes: 0,
+        );
+
+        await expectLater(
+          adapter.commitDay(plan),
+          throwsA(isA<DayAgentInteractionException>()),
+        );
+        verifyNever(
+          () => planService.commitDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        );
+      },
+    );
+  });
 }
