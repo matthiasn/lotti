@@ -45,6 +45,12 @@ abstract final class DayAgentToolNames {
   /// Retracts a proposed plan diff without mutating the plan entity.
   static const revertDiff = 'revert_diff';
 
+  /// Commits the day's draft plan; agent shifts from drafting to shepherding.
+  static const commitDay = 'commit_day';
+
+  /// Reverts a committed day plan back to draft so it can be edited again.
+  static const uncommitDay = 'uncommit_day';
+
   /// Foundation tools implemented by the day-agent workflow itself.
   static const foundationHandlerTools = <String>{
     setNextWake,
@@ -62,13 +68,16 @@ abstract final class DayAgentToolNames {
     createTaskFromPhrase,
   };
 
-  /// Plan-mutation tools delegated to the plan service (draft + refine).
+  /// Plan-mutation tools delegated to the plan service (draft + refine +
+  /// commit/uncommit).
   static const planTools = <String>{
     draftDayPlan,
     summarizeRecentPatterns,
     proposePlanDiff,
     acceptDiff,
     revertDiff,
+    commitDay,
+    uncommitDay,
   };
 
   /// Tools that require workflow-level handling instead of local strategy state.

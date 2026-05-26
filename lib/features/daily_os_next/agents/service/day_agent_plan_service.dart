@@ -75,6 +75,14 @@ class DayAgentPlanService {
           agentId: agentId,
           args: args,
         ),
+        DayAgentToolNames.commitDay => await _commitDayTool(
+          agentId: agentId,
+          args: args,
+        ),
+        DayAgentToolNames.uncommitDay => await _uncommitDayTool(
+          agentId: agentId,
+          args: args,
+        ),
         _ => throw DayAgentCaptureException('unknown tool "$toolName"'),
       };
       return DayAgentDirectToolResult.success(data);
@@ -308,6 +316,120 @@ class DayAgentPlanService {
       itemIndices: itemIndices,
       apply: false,
     );
+  }
+
+  /// Commit the day's draft plan: flip `DayPlanStatus.draft` →
+  /// `DayPlanStatus.committed` and walk every `drafted` block to
+  /// `committed`. Blocks already in `inProgress` / `completed` / `dropped`
+  /// keep their state.
+  ///
+  /// Idempotent: when the plan is already `committed`, the live entity is
+  /// returned unchanged (no write, no notification). Throws
+  /// [DayAgentCaptureException] when no plan exists, the agent does not
+  /// own it, or the plan is in some other non-draft / non-committed state
+  /// (e.g. legacy `agreed` / `needsReview`).
+  Future<DayPlanEntity> commitDay({
+    required String agentId,
+    required String dayId,
+  }) async {
+    await _requireIdentity(agentId);
+    final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
+    if (plan == null) {
+      throw DayAgentCaptureException(
+        'no draft plan for $dayId; call draft_day_plan first',
+      );
+    }
+    if (plan.data.status is DayPlanStatusCommitted) {
+      // Idempotent no-op: re-commit returns the live plan without a write.
+      return plan;
+    }
+    if (plan.data.status is! DayPlanStatusDraft) {
+      throw const DayAgentCaptureException(
+        'plan is not in draft state; commit is gated to drafts',
+      );
+    }
+
+    final now = clock.now();
+    final flippedBlocks = [
+      for (final block in plan.data.plannedBlocks)
+        if (block.state == PlannedBlockState.drafted)
+          block.copyWith(state: PlannedBlockState.committed)
+        else
+          block,
+    ];
+    final committedPlan = plan.copyWith(
+      data: plan.data.copyWith(
+        status: DayPlanStatus.committed(committedAt: now),
+        plannedBlocks: flippedBlocks,
+      ),
+      updatedAt: now,
+    );
+
+    await syncService.upsertEntity(committedPlan);
+    onPersistedStateChanged
+      ?..call(agentId)
+      ..call(dayId)
+      ..call(committedPlan.id);
+    return committedPlan;
+  }
+
+  /// Revert a committed day plan back to draft so the user can edit it again.
+  ///
+  /// Mirrors [commitDay] in reverse: flips `DayPlanStatus.committed` →
+  /// `DayPlanStatus.draft` and walks each `committed` block back to
+  /// `drafted`. Blocks already in `inProgress` / `completed` / `dropped`
+  /// keep their state — those reflect what actually happened during the
+  /// day and are preserved as history.
+  ///
+  /// Idempotent: when the plan is already `draft`, the live entity is
+  /// returned unchanged (no write, no notification). Throws
+  /// [DayAgentCaptureException] when no plan exists, the agent does not
+  /// own it, or the plan is in some other non-draft / non-committed state
+  /// (e.g. legacy `agreed` / `needsReview`).
+  Future<DayPlanEntity> uncommitDay({
+    required String agentId,
+    required String dayId,
+  }) async {
+    await _requireIdentity(agentId);
+    final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
+    if (plan == null) {
+      throw DayAgentCaptureException(
+        'no plan for $dayId to uncommit',
+      );
+    }
+    if (plan.data.status is DayPlanStatusDraft) {
+      // Idempotent no-op: already a draft, no work to do.
+      return plan;
+    }
+    if (plan.data.status is! DayPlanStatusCommitted) {
+      throw const DayAgentCaptureException(
+        'plan is not in committed state; uncommit is gated to committed '
+        'plans',
+      );
+    }
+
+    final now = clock.now();
+    final flippedBlocks = [
+      for (final block in plan.data.plannedBlocks)
+        if (block.state == PlannedBlockState.committed)
+          block.copyWith(state: PlannedBlockState.drafted)
+        else
+          block,
+    ];
+    final uncommittedPlan = plan.copyWith(
+      data: plan.data.copyWith(
+        status: const DayPlanStatus.draft(),
+        plannedBlocks: flippedBlocks,
+      ),
+      updatedAt: now,
+    );
+
+    await syncService.upsertEntity(uncommittedPlan);
+    onPersistedStateChanged
+      ?..call(agentId)
+      ..call(dayId)
+      ..call(uncommittedPlan.id);
+    return uncommittedPlan;
   }
 
   Future<ChangeSetEntity> _resolvePlanDiff({
@@ -793,6 +915,43 @@ class DayAgentPlanService {
       itemIndices: _optionalIntList(args['itemIndices']),
     );
     return _resolutionSummary(changeSet);
+  }
+
+  Future<Map<String, Object?>> _commitDayTool({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final committedPlan = await commitDay(
+      agentId: agentId,
+      dayId: _requiredString(args, 'dayId'),
+    );
+    final status = committedPlan.data.status;
+    final committedAt = status is DayPlanStatusCommitted
+        ? status.committedAt
+        : null;
+    return <String, Object?>{
+      'planId': committedPlan.id,
+      'dayId': committedPlan.dayId,
+      'status': 'committed',
+      'committedAt': committedAt?.toIso8601String(),
+      'blockCount': committedPlan.data.plannedBlocks.length,
+    };
+  }
+
+  Future<Map<String, Object?>> _uncommitDayTool({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final plan = await uncommitDay(
+      agentId: agentId,
+      dayId: _requiredString(args, 'dayId'),
+    );
+    return <String, Object?>{
+      'planId': plan.id,
+      'dayId': plan.dayId,
+      'status': 'draft',
+      'blockCount': plan.data.plannedBlocks.length,
+    };
   }
 
   static Map<String, Object?> _resolutionSummary(ChangeSetEntity changeSet) {

@@ -19,6 +19,8 @@ void main() {
       DayAgentToolNames.proposePlanDiff,
       DayAgentToolNames.acceptDiff,
       DayAgentToolNames.revertDiff,
+      DayAgentToolNames.commitDay,
+      DayAgentToolNames.uncommitDay,
     ];
 
     test('uses the wire names expected by the day-agent prompt', () {
@@ -38,6 +40,8 @@ void main() {
         'propose_plan_diff',
         'accept_diff',
         'revert_diff',
+        'commit_day',
+        'uncommit_day',
       ]);
     });
 
@@ -71,6 +75,8 @@ void main() {
           DayAgentToolNames.proposePlanDiff,
           DayAgentToolNames.acceptDiff,
           DayAgentToolNames.revertDiff,
+          DayAgentToolNames.commitDay,
+          DayAgentToolNames.uncommitDay,
         },
       );
       expect(
@@ -126,6 +132,14 @@ void main() {
       );
       expect(
         DayAgentToolNames.isPlanTool(DayAgentToolNames.revertDiff),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isPlanTool(DayAgentToolNames.commitDay),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isPlanTool(DayAgentToolNames.uncommitDay),
         isTrue,
       );
       expect(

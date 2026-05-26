@@ -59,9 +59,11 @@ enum PlannedBlockState {
 /// State machine for day plan status.
 ///
 /// Transitions:
-/// - Draft -> Agreed (user agrees to plan)
-/// - Agreed -> NeedsReview (trigger event occurs)
-/// - NeedsReview -> Agreed (user re-agrees)
+/// - Draft -> Agreed (legacy: user agrees to plan)
+/// - Agreed -> NeedsReview (legacy: trigger event occurs)
+/// - NeedsReview -> Agreed (legacy: user re-agrees)
+/// - Draft -> Committed (day-agent: user commits to plan; agent shifts to
+///   shepherding mode, one-way)
 @freezed
 sealed class DayPlanStatus with _$DayPlanStatus {
   /// Initial state - plan exists but not yet committed to.
@@ -80,6 +82,13 @@ sealed class DayPlanStatus with _$DayPlanStatus {
     /// When the plan was last agreed (before this review trigger)
     DateTime? previouslyAgreedAt,
   }) = DayPlanStatusNeedsReview;
+
+  /// Day-agent terminal state: user committed to the plan and the agent
+  /// has shifted from drafting to shepherding mode. One-way from
+  /// [DayPlanStatus.draft]; further changes require an explicit refine.
+  const factory DayPlanStatus.committed({
+    required DateTime committedAt,
+  }) = DayPlanStatusCommitted;
 
   factory DayPlanStatus.fromJson(Map<String, dynamic> json) =>
       _$DayPlanStatusFromJson(json);

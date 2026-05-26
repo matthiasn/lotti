@@ -34,6 +34,8 @@ void main() {
           DayAgentToolNames.proposePlanDiff,
           DayAgentToolNames.acceptDiff,
           DayAgentToolNames.revertDiff,
+          DayAgentToolNames.commitDay,
+          DayAgentToolNames.uncommitDay,
         ]),
       );
     });
@@ -221,6 +223,25 @@ void main() {
         (movedAddedClause['then'] as Map<String, dynamic>)['required'],
         ['to'],
       );
+    });
+
+    test('commit_day and uncommit_day require dayId only', () {
+      for (final name in const [
+        DayAgentToolNames.commitDay,
+        DayAgentToolNames.uncommitDay,
+      ]) {
+        final params = parametersFor(name);
+        expect(params['type'], 'object', reason: name);
+        expect(params['required'], ['dayId'], reason: name);
+        expect(params['additionalProperties'], isFalse, reason: name);
+        final properties = params['properties'] as Map<String, dynamic>;
+        expect(properties.keys, ['dayId'], reason: name);
+        expect(
+          (properties['dayId'] as Map<String, dynamic>)['type'],
+          'string',
+          reason: name,
+        );
+      }
     });
 
     test('accept_diff and revert_diff share the resolution schema', () {

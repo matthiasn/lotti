@@ -500,4 +500,39 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.commitDay,
+    description:
+        "Commit the day's draft plan. Flips DayPlanStatus.draft → "
+        'DayPlanStatus.committed and walks every drafted block to '
+        'PlannedBlockState.committed. The agent shifts to shepherding mode; '
+        'further edits require an explicit refine. Idempotent: re-commit '
+        'on an already-committed plan returns the current state.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'dayId': {'type': 'string'},
+      },
+      'required': ['dayId'],
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.uncommitDay,
+    description:
+        'Revert a committed day plan back to draft so the user can edit it '
+        'again. Flips DayPlanStatus.committed → DayPlanStatus.draft and '
+        'walks each committed block back to PlannedBlockState.drafted. '
+        'Blocks already in inProgress / completed / dropped keep their '
+        'state (history preservation). Idempotent: calling on a draft plan '
+        'returns the live plan unchanged.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'dayId': {'type': 'string'},
+      },
+      'required': ['dayId'],
+      'additionalProperties': false,
+    },
+  ),
 ];
