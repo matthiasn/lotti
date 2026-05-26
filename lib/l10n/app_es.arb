@@ -1240,6 +1240,8 @@
   "completeHabitSkipButton": "Omitir",
   "completeHabitSuccessButton": "Éxito",
   "configFlagAttemptEmbeddingDescription": "Cuando está habilitado, la aplicación intentará generar incrustaciones para tus entradas para mejorar la búsqueda y las sugerencias de contenido relacionado.",
+  "configFlagDailyOsNextEnabled": "Usar el nuevo DailyOS agéntico",
+  "configFlagDailyOsNextEnabledDescription": "Reemplaza la superficie actual de DailyOS por el nuevo flujo de captura y reconciliación con voz dirigido por agente. Vista previa temprana — la lógica del backend está simulada.",
   "configFlagEnableAiStreaming": "Habilitar streaming de IA para acciones de tareas",
   "configFlagEnableAiStreamingDescription": "Transmitir respuestas de IA para acciones relacionadas con tareas. Desactívelo para almacenar respuestas en búfer y mantener la interfaz más fluida.",
   "configFlagEnableAiSummaryTts": "Reproducción de resúmenes de IA",
@@ -1507,6 +1509,209 @@
   "dailyOsFold": "Contraer",
   "dailyOsInvalidTimeRange": "Rango de tiempo no válido",
   "dailyOsNearLimit": "Cerca del límite",
+  "dailyOsNextAgendaCapacityComfortable": "CÓMODO",
+  "dailyOsNextAgendaCapacityNearFull": "CASI LLENO",
+  "dailyOsNextAgendaCapacityOf": "de {capacity}",
+  "@dailyOsNextAgendaCapacityOf": {
+    "placeholders": {
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextAgendaCapacityOver": "SOBRECARGADO",
+  "dailyOsNextAgendaEmpty": "Nada que hacer hoy.",
+  "dailyOsNextAgendaStateDone": "Hecho",
+  "dailyOsNextAgendaStateInProgress": "En curso",
+  "dailyOsNextAgendaStateOpen": "Abierto",
+  "dailyOsNextAgendaStateOverdue": "Atrasado",
+  "dailyOsNextAgendaSummary": "{scheduled} de {capacity} comprometidos",
+  "@dailyOsNextAgendaSummary": {
+    "placeholders": {
+      "scheduled": {
+        "type": "String",
+        "example": "5h 15m"
+      },
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextCaptureCaptured": "Entendido.",
+  "dailyOsNextCaptureHeadlineLead": "¿Qué tienes en mente",
+  "dailyOsNextCaptureHeadlineTail": "para hoy?",
+  "dailyOsNextCaptureIdleHint": "Toca para hablar · captúralo · o escríbelo",
+  "dailyOsNextCaptureListening": "ESCUCHANDO",
+  "dailyOsNextCaptureOpenTasks": "Explorar tareas",
+  "dailyOsNextCaptureReconcileCta": "Reconciliar",
+  "dailyOsNextCaptureTranscriptHint": "Corrige lo que la transcripción haya entendido mal antes de planificar.",
+  "dailyOsNextCaptureTranscriptLabel": "Revisa la transcripción",
+  "dailyOsNextCaptureVoiceButtonReset": "Empezar de nuevo",
+  "dailyOsNextCaptureVoiceButtonStart": "Empezar a escuchar",
+  "dailyOsNextCaptureVoiceButtonStop": "Detener",
+  "dailyOsNextCommitCapacityNote": "{scheduled} de {capacity} comprometidos. Margen cómodo — puedes absorber una sorpresa.",
+  "@dailyOsNextCommitCapacityNote": {
+    "placeholders": {
+      "scheduled": {
+        "type": "String",
+        "example": "5h 15m"
+      },
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextCommitDraftHeadline": "Tu día, en borrador.",
+  "dailyOsNextCommitDraftOverline": "HOY",
+  "dailyOsNextCommitHeadline": "Hazlo tuyo.",
+  "dailyOsNextCommitHoldHint": "MANTÉN",
+  "dailyOsNextCommitHoldLabel": "Confirmar hoy",
+  "dailyOsNextCommitLockingIn": "Fijando…",
+  "dailyOsNextCommitShepherdSubline": "Yo lo guío — tú haces el trabajo.",
+  "dailyOsNextCommitSubCaption": "Confirmar pasa el día de borrador a comprometido. Aún puedes hablarme, pero la estructura queda fija.",
+  "dailyOsNextCommitTitle": "Confirmar",
+  "dailyOsNextCommitTodayIsYours": "El día es tuyo.",
+  "dailyOsNextDayBack": "Atrás",
+  "dailyOsNextDayLockInCta": "Confirmar",
+  "dailyOsNextDayRefineCta": "Refinar con voz",
+  "dailyOsNextDayRefineFooterHint": "Habla para reformar el plan — los cambios aparecen como diff antes de aplicarse.",
+  "dailyOsNextDayTitle": "Tu día",
+  "dailyOsNextDayWhyChipLabel": "POR QUÉ",
+  "dailyOsNextDayWrapUpCta": "Cerrar día",
+  "dailyOsNextDraftingNudgeAccept": "Sí, protege las mañanas",
+  "dailyOsNextDraftingNudgeDecline": "Hoy no",
+  "dailyOsNextDraftingReasoningOverline": "✦ RAZONAMIENTO",
+  "dailyOsNextEstimateMinutes": "{minutes}m",
+  "@dailyOsNextEstimateMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "45"
+      }
+    }
+  },
+  "dailyOsNextGreetingAfternoon": "Buenas tardes.",
+  "dailyOsNextGreetingEvening": "Buenas noches.",
+  "dailyOsNextGreetingHi": "Hola 👋",
+  "dailyOsNextGreetingMorning": "Buenos días.",
+  "dailyOsNextPlanViewAgenda": "Agenda",
+  "dailyOsNextPlanViewDay": "Día",
+  "dailyOsNextReconcileBadgeMatched": "VINCULADO",
+  "dailyOsNextReconcileBadgeNew": "NUEVO",
+  "dailyOsNextReconcileBadgeUpdate": "ACTUALIZAR",
+  "dailyOsNextReconcileBuildDayCta": "Construir mi día",
+  "dailyOsNextReconcileDecideOverline": "VALE LA PENA DECIDIR",
+  "dailyOsNextReconcileDefaultBehaviorHint": "Tus decisiones aquí alimentan el plan — no decidir significa «déjalo donde está».",
+  "dailyOsNextReconcileError": "Algo salió mal: {detail}",
+  "@dailyOsNextReconcileError": {
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "Red inaccesible"
+      }
+    }
+  },
+  "dailyOsNextReconcileHeardEmpty": "Las tarjetas de la captura aparecerán aquí cuando termine el análisis.",
+  "dailyOsNextReconcileHeardOverline": "ESTO ES LO QUE ESCUCHÉ",
+  "dailyOsNextReconcileLowConfidence": "confianza baja",
+  "dailyOsNextReconcileReRecord": "Volver a grabar",
+  "dailyOsNextReconcileVoiceHint": "«Quita las facturas» también funciona aquí",
+  "dailyOsNextRefineAccept": "Aceptar",
+  "dailyOsNextRefineDiffAdded": "AÑADIDO",
+  "dailyOsNextRefineDiffDropped": "DESCARTADO",
+  "dailyOsNextRefineDiffMoved": "MOVIDO",
+  "dailyOsNextRefineKeepTalking": "Seguir hablando",
+  "dailyOsNextRefineOverline": "🎤 REFINAMIENTO",
+  "dailyOsNextRefineRevert": "Deshacer",
+  "dailyOsNextRefineStatusAccepted": "Confirmado.",
+  "dailyOsNextRefineStatusDiffReady": "Esto es lo que cambió.",
+  "dailyOsNextRefineStatusIdle": "Toca para hablar.",
+  "dailyOsNextRefineStatusListening": "Escuchando…",
+  "dailyOsNextRefineStatusThinking": "✦ Reformando el plan…",
+  "dailyOsNextRefineTitle": "Refinar el plan",
+  "dailyOsNextShutdownCarryoverDrop": "Descartar",
+  "dailyOsNextShutdownCarryoverDropped": "Descartado",
+  "dailyOsNextShutdownCarryoverOverline": "PASA A MAÑANA",
+  "dailyOsNextShutdownCarryoverPickDate": "Elegir fecha",
+  "dailyOsNextShutdownCarryoverScheduled": "Programado",
+  "dailyOsNextShutdownCloseDay": "Cerrar el día",
+  "dailyOsNextShutdownCompletedOverline": "LO QUE HICISTE",
+  "dailyOsNextShutdownMetricEnergy": "ENERGÍA",
+  "dailyOsNextShutdownMetricEnergyDelta": "{delta} vs. semana",
+  "@dailyOsNextShutdownMetricEnergyDelta": {
+    "placeholders": {
+      "delta": {
+        "type": "String",
+        "example": "⬆ 0.6"
+      }
+    }
+  },
+  "dailyOsNextShutdownMetricFlow": "SESIONES DE FLUJO",
+  "dailyOsNextShutdownMetricFocus": "TIEMPO DE FOCO",
+  "dailyOsNextShutdownMetricSwitches": "CAMBIOS DE CONTEXTO",
+  "dailyOsNextShutdownMetricSwitchesAvg": "media {avg} esta semana",
+  "@dailyOsNextShutdownMetricSwitchesAvg": {
+    "placeholders": {
+      "avg": {
+        "type": "String",
+        "example": "8.0"
+      }
+    }
+  },
+  "dailyOsNextShutdownReflectionOverline": "💬 REFLEXIÓN DE UNA LÍNEA",
+  "dailyOsNextShutdownReflectionPlaceholder": "p. ej., la mañana fue ágil, la tarde se hizo larga después del café con Sarah.",
+  "dailyOsNextShutdownReflectionPrompt": "¿Cómo aterrizó hoy? (Alimenta el borrador de mañana.)",
+  "dailyOsNextShutdownReflectionSpeak": "Háblalo",
+  "dailyOsNextShutdownReflectionSubmit": "Saltar",
+  "dailyOsNextShutdownReflectionThanks": "Anotado — alimenta el día de mañana.",
+  "dailyOsNextShutdownSaveAndClose": "Guardar y cerrar",
+  "dailyOsNextShutdownTitle": "Cerrar el día",
+  "dailyOsNextShutdownTomorrowOverline": "✦ PARA MAÑANA",
+  "dailyOsNextStateDueToday": "Vence hoy",
+  "dailyOsNextStateInProgress": "{count, plural, =0{En curso} =1{En curso · 1 sesión} other{En curso · {count} sesiones}}",
+  "@dailyOsNextStateInProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "dailyOsNextStateOverdue": "{days, plural, =0{Atrasado} =1{Atrasado · 1 día} other{Atrasado · {days} días}}",
+  "@dailyOsNextStateOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateRecurringMissed": "Recurrente · perdido",
+  "dailyOsNextTasksEmpty": "Aún no hay nada aquí.",
+  "dailyOsNextTasksFilterAll": "Todas",
+  "dailyOsNextTasksFilterBacklog": "Pendientes",
+  "dailyOsNextTasksFilterDone": "Hechas",
+  "dailyOsNextTasksFilterInProgress": "En curso",
+  "dailyOsNextTasksFilterOverdue": "Atrasadas",
+  "dailyOsNextTasksFilterRecurring": "Recurrentes",
+  "dailyOsNextTasksFilterScheduled": "Programadas",
+  "dailyOsNextTasksFooterHint": "El ritual matutino suele traer lo que importa.",
+  "dailyOsNextTasksSearchPlaceholder": "Buscar tareas",
+  "dailyOsNextTasksSubtitle": "Todo lo que Lotti guarda para ti. El ritual matutino lo prioriza.",
+  "dailyOsNextTasksTitle": "Tareas",
+  "dailyOsNextTriageConfirmDefer": "Aplazado",
+  "dailyOsNextTriageConfirmDone": "Marcado como hecho",
+  "dailyOsNextTriageConfirmDoNow": "Hecho ya",
+  "dailyOsNextTriageConfirmDrop": "Descartado",
+  "dailyOsNextTriageConfirmToday": "Añadido a hoy",
+  "dailyOsNextTriageDefer": "Aplazar",
+  "dailyOsNextTriageDone": "Hecho",
+  "dailyOsNextTriageDoNow": "Hacer ahora",
+  "dailyOsNextTriageDrop": "Descartar",
+  "dailyOsNextTriageToday": "Hoy",
   "dailyOsNoBudgets": "Sin presupuestos de tiempo",
   "dailyOsNoBudgetsHint": "Añade presupuestos para rastrear cómo distribuyes tu tiempo entre categorías.",
   "dailyOsNoBudgetWarning": "Sin tiempo planificado",

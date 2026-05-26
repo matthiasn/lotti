@@ -68,8 +68,11 @@ class RealtimeTranscriptionService {
 
   /// Resolves a configured real-time model.
   ///
-  /// MLX Qwen3-ASR is preferred when configured because it keeps audio local.
-  /// Mistral remains the fallback for cloud realtime transcription.
+  /// Mistral realtime is preferred by default — interactive latency on the
+  /// cloud endpoint is currently better than the local MLX Qwen3-ASR path, so
+  /// every caller (Daily OS Next capture/refine, chat input, the speech
+  /// recorder) gets cloud realtime when it is configured. MLX is the fallback
+  /// for users who have only the local model wired up.
   Future<({AiConfigInferenceProvider provider, AiConfigModel model})?>
   resolveRealtimeConfig() async {
     final aiRepo = _ref.read(aiConfigRepositoryProvider);
@@ -80,41 +83,43 @@ class RealtimeTranscriptionService {
     final models = await modelsFuture;
     final providers = await providersFuture;
 
-    final allProviders = providers.whereType<AiConfigInferenceProvider>();
+    final allProviders = providers
+        .whereType<AiConfigInferenceProvider>()
+        .toList();
 
+    final mistralConfig = _findRealtimeConfig(
+      models: models,
+      providers: allProviders,
+      isModel: MistralRealtimeTranscriptionRepository.isRealtimeModel,
+      providerType: InferenceProviderType.mistral,
+    );
+    if (mistralConfig != null) return mistralConfig;
+
+    return _findRealtimeConfig(
+      models: models,
+      providers: allProviders,
+      isModel: _isMlxRealtimeModel,
+      providerType: InferenceProviderType.mlxAudio,
+    );
+  }
+
+  static ({AiConfigInferenceProvider provider, AiConfigModel model})?
+  _findRealtimeConfig({
+    required List<AiConfig> models,
+    required List<AiConfigInferenceProvider> providers,
+    required bool Function(String providerModelId) isModel,
+    required InferenceProviderType providerType,
+  }) {
     for (final model in models.whereType<AiConfigModel>()) {
       if (!model.inputModalities.contains(Modality.audio)) continue;
-      if (!_isMlxRealtimeModel(model.providerModelId)) continue;
-
-      final provider = allProviders
+      if (!isModel(model.providerModelId)) continue;
+      final provider = providers
           .where(
             (p) =>
                 p.id == model.inferenceProviderId &&
-                p.inferenceProviderType == InferenceProviderType.mlxAudio,
+                p.inferenceProviderType == providerType,
           )
           .firstOrNull;
-
-      if (provider != null) {
-        return (provider: provider, model: model);
-      }
-    }
-
-    for (final model in models.whereType<AiConfigModel>()) {
-      if (!model.inputModalities.contains(Modality.audio)) continue;
-      if (!MistralRealtimeTranscriptionRepository.isRealtimeModel(
-        model.providerModelId,
-      )) {
-        continue;
-      }
-
-      final provider = allProviders
-          .where(
-            (p) =>
-                p.id == model.inferenceProviderId &&
-                p.inferenceProviderType == InferenceProviderType.mistral,
-          )
-          .firstOrNull;
-
       if (provider != null) {
         return (provider: provider, model: model);
       }
@@ -130,9 +135,10 @@ class RealtimeTranscriptionService {
   Future<void> startRealtimeTranscription({
     required Stream<Uint8List> pcmStream,
     required void Function(String delta) onDelta,
+    ({AiConfigInferenceProvider provider, AiConfigModel model})? config,
   }) async {
-    final config = await resolveRealtimeConfig();
-    if (config == null) {
+    final resolvedConfig = config ?? await resolveRealtimeConfig();
+    if (resolvedConfig == null) {
       throw StateError('No realtime transcription model configured');
     }
 
@@ -142,10 +148,10 @@ class RealtimeTranscriptionService {
     _detectedLanguage = null;
     _lastMlxConfirmedText = '';
 
-    if (config.provider.inferenceProviderType ==
+    if (resolvedConfig.provider.inferenceProviderType ==
         InferenceProviderType.mlxAudio) {
       await _startMlxRealtimeTranscription(
-        config: config,
+        config: resolvedConfig,
         pcmStream: pcmStream,
         onDelta: onDelta,
       );
@@ -153,9 +159,9 @@ class RealtimeTranscriptionService {
     }
 
     await _repository.connect(
-      apiKey: config.provider.apiKey,
-      baseUrl: config.provider.baseUrl,
-      model: config.model.providerModelId,
+      apiKey: resolvedConfig.provider.apiKey,
+      baseUrl: resolvedConfig.provider.baseUrl,
+      model: resolvedConfig.model.providerModelId,
     );
 
     // Subscribe to PCM stream: send to WebSocket + accumulate + compute dBFS
@@ -246,7 +252,7 @@ class RealtimeTranscriptionService {
       // 4. Wait for transcription.done — timeout starts here so the full
       //    budget applies to waiting for the server, not recorder shutdown.
       final done = await doneCompleter.future.timeout(_doneTimeout);
-      transcript = done.text;
+      transcript = _moreCompleteTranscript(done.text, _deltaBuffer.toString());
     } on TimeoutException {
       // Read delta buffer *after* the timeout so any late-arriving deltas
       // (from audio already in-flight when we cancelled the PCM subscription)
@@ -394,7 +400,7 @@ class RealtimeTranscriptionService {
       await _mlxAudioChannel.stopRealtimeTranscription();
 
       final done = await doneCompleter.future.timeout(_doneTimeout);
-      transcript = done.text;
+      transcript = _moreCompleteTranscript(done.text, _deltaBuffer.toString());
     } on TimeoutException {
       transcript = _deltaBuffer.toString();
       usedFallback = true;
@@ -442,6 +448,15 @@ class RealtimeTranscriptionService {
     if (delta.isEmpty) return;
     _deltaBuffer.write(delta);
     onDelta(delta);
+  }
+
+  String _moreCompleteTranscript(String finalText, String accumulatedText) {
+    final trimmedFinal = finalText.trim();
+    final trimmedAccumulated = accumulatedText.trim();
+    if (trimmedAccumulated.length > trimmedFinal.length) {
+      return accumulatedText;
+    }
+    return finalText;
   }
 
   String _confirmedTextDelta({

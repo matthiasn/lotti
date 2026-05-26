@@ -63,6 +63,8 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
+import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
+import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
@@ -78,6 +80,7 @@ import 'package:lotti/features/notifications/repository/notification_repository.
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
+import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -413,6 +416,15 @@ class MockVectorClockService extends Mock implements VectorClockService {
 class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockAudioPlayerController extends Mock implements AudioPlayerController {}
+
+class MockAudioRecorderRepository extends Mock
+    implements AudioRecorderRepository {}
+
+class MockAudioTranscriptionService extends Mock
+    implements AudioTranscriptionService {}
+
+class MockRealtimeTranscriptionService extends Mock
+    implements RealtimeTranscriptionService {}
 
 class MockNavService extends Mock implements NavService {}
 

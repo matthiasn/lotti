@@ -1240,6 +1240,8 @@
   "completeHabitSkipButton": "Sari peste",
   "completeHabitSuccessButton": "Succes",
   "configFlagAttemptEmbeddingDescription": "Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.",
+  "configFlagDailyOsNextEnabled": "Activează noul DailyOS agentic",
+  "configFlagDailyOsNextEnabledDescription": "Înlocuiește interfața DailyOS actuală cu noul flux vocal de captură și reconciliere coordonat de agent. Previzualizare timpurie — logica de backend este simulată.",
   "configFlagEnableAiStreaming": "Activează streamingul AI pentru acțiunile legate de sarcini",
   "configFlagEnableAiStreamingDescription": "Transmite răspunsurile AI pentru acțiunile legate de sarcini. Dezactivați pentru a stoca răspunsurile în buffer și a menține interfața mai fluidă.",
   "configFlagEnableAiSummaryTts": "Redare rezumate AI",
@@ -1507,6 +1509,209 @@
   "dailyOsFold": "Restrânge",
   "dailyOsInvalidTimeRange": "Interval de timp invalid",
   "dailyOsNearLimit": "Aproape de limită",
+  "dailyOsNextAgendaCapacityComfortable": "CONFORTABIL",
+  "dailyOsNextAgendaCapacityNearFull": "APROAPE PLIN",
+  "dailyOsNextAgendaCapacityOf": "din {capacity}",
+  "@dailyOsNextAgendaCapacityOf": {
+    "placeholders": {
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextAgendaCapacityOver": "PESTE CAPACITATE",
+  "dailyOsNextAgendaEmpty": "Nimic de făcut astăzi.",
+  "dailyOsNextAgendaStateDone": "Finalizat",
+  "dailyOsNextAgendaStateInProgress": "În progres",
+  "dailyOsNextAgendaStateOpen": "Deschis",
+  "dailyOsNextAgendaStateOverdue": "Întârziat",
+  "dailyOsNextAgendaSummary": "{scheduled} din {capacity} angajate",
+  "@dailyOsNextAgendaSummary": {
+    "placeholders": {
+      "scheduled": {
+        "type": "String",
+        "example": "5h 15m"
+      },
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextCaptureCaptured": "Am înțeles.",
+  "dailyOsNextCaptureHeadlineLead": "La ce vă gândiți",
+  "dailyOsNextCaptureHeadlineTail": "pentru astăzi?",
+  "dailyOsNextCaptureIdleHint": "Apăsați pentru a vorbi · capturați · sau tastați",
+  "dailyOsNextCaptureListening": "ASCULT",
+  "dailyOsNextCaptureOpenTasks": "Răsfoiește sarcinile",
+  "dailyOsNextCaptureReconcileCta": "Reconciliere",
+  "dailyOsNextCaptureTranscriptHint": "Corectați orice a înțeles greșit transcrierea înainte de planificare.",
+  "dailyOsNextCaptureTranscriptLabel": "Verificați transcrierea",
+  "dailyOsNextCaptureVoiceButtonReset": "Reîncepe",
+  "dailyOsNextCaptureVoiceButtonStart": "Începe ascultarea",
+  "dailyOsNextCaptureVoiceButtonStop": "Oprește ascultarea",
+  "dailyOsNextCommitCapacityNote": "{scheduled} din {capacity} angajate. Marjă confortabilă — poți absorbi o surpriză.",
+  "@dailyOsNextCommitCapacityNote": {
+    "placeholders": {
+      "scheduled": {
+        "type": "String",
+        "example": "5h 15m"
+      },
+      "capacity": {
+        "type": "String",
+        "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextCommitDraftHeadline": "Ziua dvs., schiță.",
+  "dailyOsNextCommitDraftOverline": "ASTĂZI",
+  "dailyOsNextCommitHeadline": "Faceți-o a dvs.",
+  "dailyOsNextCommitHoldHint": "ȚINEȚI",
+  "dailyOsNextCommitHoldLabel": "Confirmă astăzi",
+  "dailyOsNextCommitLockingIn": "Se fixează…",
+  "dailyOsNextCommitShepherdSubline": "Vă însoțesc — munca o faceți dvs.",
+  "dailyOsNextCommitSubCaption": "Confirmarea trece ziua din schiță în angajată. Puteți continua să-mi vorbiți — dar structura rămâne.",
+  "dailyOsNextCommitTitle": "Fixați-o",
+  "dailyOsNextCommitTodayIsYours": "Ziua este a dvs.",
+  "dailyOsNextDayBack": "Înapoi",
+  "dailyOsNextDayLockInCta": "Fixează",
+  "dailyOsNextDayRefineCta": "Reglare prin voce",
+  "dailyOsNextDayRefineFooterHint": "Vorbiți pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.",
+  "dailyOsNextDayTitle": "Ziua dvs.",
+  "dailyOsNextDayWhyChipLabel": "DE CE",
+  "dailyOsNextDayWrapUpCta": "Încheie",
+  "dailyOsNextDraftingNudgeAccept": "Da, protejează dimineața",
+  "dailyOsNextDraftingNudgeDecline": "Nu astăzi",
+  "dailyOsNextDraftingReasoningOverline": "✦ RAȚIONAMENT",
+  "dailyOsNextEstimateMinutes": "{minutes}m",
+  "@dailyOsNextEstimateMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "45"
+      }
+    }
+  },
+  "dailyOsNextGreetingAfternoon": "Bună după-amiaza.",
+  "dailyOsNextGreetingEvening": "Bună seara.",
+  "dailyOsNextGreetingHi": "Salut 👋",
+  "dailyOsNextGreetingMorning": "Bună dimineața.",
+  "dailyOsNextPlanViewAgenda": "Agenda",
+  "dailyOsNextPlanViewDay": "Ziua",
+  "dailyOsNextReconcileBadgeMatched": "LEGAT",
+  "dailyOsNextReconcileBadgeNew": "NOU",
+  "dailyOsNextReconcileBadgeUpdate": "ACTUALIZARE",
+  "dailyOsNextReconcileBuildDayCta": "Construiește ziua mea",
+  "dailyOsNextReconcileDecideOverline": "MERITĂ DECIS",
+  "dailyOsNextReconcileDefaultBehaviorHint": "Deciziile dvs. aici alimentează planul — nicio decizie înseamnă „lăsați-l unde este”.",
+  "dailyOsNextReconcileError": "Ceva nu a mers bine: {detail}",
+  "@dailyOsNextReconcileError": {
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "Rețea inaccesibilă"
+      }
+    }
+  },
+  "dailyOsNextReconcileHeardEmpty": "Cardurile capturii vor apărea aici după finalizarea parsării.",
+  "dailyOsNextReconcileHeardOverline": "IATĂ CE AM AUZIT",
+  "dailyOsNextReconcileLowConfidence": "încredere scăzută",
+  "dailyOsNextReconcileReRecord": "Reînregistrare",
+  "dailyOsNextReconcileVoiceHint": "„Renunță la facturi” funcționează și aici",
+  "dailyOsNextRefineAccept": "Acceptă",
+  "dailyOsNextRefineDiffAdded": "ADĂUGAT",
+  "dailyOsNextRefineDiffDropped": "RENUNȚAT",
+  "dailyOsNextRefineDiffMoved": "MUTAT",
+  "dailyOsNextRefineKeepTalking": "Continuă să vorbești",
+  "dailyOsNextRefineOverline": "🎤 REGLARE",
+  "dailyOsNextRefineRevert": "Anulează",
+  "dailyOsNextRefineStatusAccepted": "Fixat.",
+  "dailyOsNextRefineStatusDiffReady": "Iată ce s-a schimbat.",
+  "dailyOsNextRefineStatusIdle": "Apăsați pentru a vorbi.",
+  "dailyOsNextRefineStatusListening": "Ascult…",
+  "dailyOsNextRefineStatusThinking": "✦ Reorganizez planul…",
+  "dailyOsNextRefineTitle": "Reglează planul",
+  "dailyOsNextShutdownCarryoverDrop": "Renunță",
+  "dailyOsNextShutdownCarryoverDropped": "Renunțat",
+  "dailyOsNextShutdownCarryoverOverline": "SE REPORTEAZĂ",
+  "dailyOsNextShutdownCarryoverPickDate": "Alege data",
+  "dailyOsNextShutdownCarryoverScheduled": "Programat",
+  "dailyOsNextShutdownCloseDay": "Închide ziua",
+  "dailyOsNextShutdownCompletedOverline": "CE AȚI FĂCUT",
+  "dailyOsNextShutdownMetricEnergy": "ENERGIE",
+  "dailyOsNextShutdownMetricEnergyDelta": "{delta} vs. săptămână",
+  "@dailyOsNextShutdownMetricEnergyDelta": {
+    "placeholders": {
+      "delta": {
+        "type": "String",
+        "example": "⬆ 0.6"
+      }
+    }
+  },
+  "dailyOsNextShutdownMetricFlow": "SESIUNI DE FLOW",
+  "dailyOsNextShutdownMetricFocus": "TIMP DE FOCUS",
+  "dailyOsNextShutdownMetricSwitches": "SCHIMBĂRI DE CONTEXT",
+  "dailyOsNextShutdownMetricSwitchesAvg": "media {avg} săptămâna aceasta",
+  "@dailyOsNextShutdownMetricSwitchesAvg": {
+    "placeholders": {
+      "avg": {
+        "type": "String",
+        "example": "8.0"
+      }
+    }
+  },
+  "dailyOsNextShutdownReflectionOverline": "💬 REFLECȚIE DE O LINIE",
+  "dailyOsNextShutdownReflectionPlaceholder": "ex.: dimineață ascuțită, după-amiază trenantă după o cafea lungă cu Sarah.",
+  "dailyOsNextShutdownReflectionPrompt": "Cum a fost ziua? (Asta alimentează schița de mâine.)",
+  "dailyOsNextShutdownReflectionSpeak": "Spuneți",
+  "dailyOsNextShutdownReflectionSubmit": "Treci peste",
+  "dailyOsNextShutdownReflectionThanks": "Notat — alimentează ziua de mâine.",
+  "dailyOsNextShutdownSaveAndClose": "Salvează și închide",
+  "dailyOsNextShutdownTitle": "Închideți ziua",
+  "dailyOsNextShutdownTomorrowOverline": "✦ PENTRU MÂINE",
+  "dailyOsNextStateDueToday": "Scadent astăzi",
+  "dailyOsNextStateInProgress": "{count, plural, =0{În progres} =1{În progres · 1 sesiune} other{În progres · {count} sesiuni}}",
+  "@dailyOsNextStateInProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "dailyOsNextStateOverdue": "{days, plural, =0{Întârziat} =1{Întârziat · 1 zi} other{Întârziat · {days} zile}}",
+  "@dailyOsNextStateOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateRecurringMissed": "Recurent · ratat",
+  "dailyOsNextTasksEmpty": "Nimic aici încă.",
+  "dailyOsNextTasksFilterAll": "Toate",
+  "dailyOsNextTasksFilterBacklog": "Restanțe",
+  "dailyOsNextTasksFilterDone": "Finalizate",
+  "dailyOsNextTasksFilterInProgress": "În progres",
+  "dailyOsNextTasksFilterOverdue": "Întârziate",
+  "dailyOsNextTasksFilterRecurring": "Recurente",
+  "dailyOsNextTasksFilterScheduled": "Programate",
+  "dailyOsNextTasksFooterHint": "Ritualul de dimineață scoate la suprafață ce contează.",
+  "dailyOsNextTasksSearchPlaceholder": "Caută sarcini",
+  "dailyOsNextTasksSubtitle": "Tot ce Lotti păstrează pentru dvs. Ritualul de dimineață scoate la suprafață ce contează.",
+  "dailyOsNextTasksTitle": "Sarcini",
+  "dailyOsNextTriageConfirmDefer": "Amânat",
+  "dailyOsNextTriageConfirmDone": "Marcat ca finalizat",
+  "dailyOsNextTriageConfirmDoNow": "Făcut imediat",
+  "dailyOsNextTriageConfirmDrop": "Renunțat",
+  "dailyOsNextTriageConfirmToday": "Adăugat la astăzi",
+  "dailyOsNextTriageDefer": "Amână",
+  "dailyOsNextTriageDone": "Finalizat",
+  "dailyOsNextTriageDoNow": "Fă acum",
+  "dailyOsNextTriageDrop": "Renunță",
+  "dailyOsNextTriageToday": "Astăzi",
   "dailyOsNoBudgets": "Fără bugete de timp",
   "dailyOsNoBudgetsHint": "Adăugați bugete pentru a urmări cum vă distribuiți timpul pe categorii.",
   "dailyOsNoBudgetWarning": "Niciun timp planificat",

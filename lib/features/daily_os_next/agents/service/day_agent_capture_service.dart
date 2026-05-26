@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -10,15 +11,27 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
+
+/// Task creation seam for capture-derived NEW items.
+typedef DayAgentTaskFactory =
+    Future<Task?> Function({
+      required String title,
+      required String categoryId,
+      required DateTime now,
+      int? estimateMinutes,
+      DateTime? due,
+      String? profileId,
+    });
 
 /// Backend implementation for Daily OS capture and reconcile tools.
 class DayAgentCaptureService {
@@ -31,8 +44,9 @@ class DayAgentCaptureService {
     required this.fts5Db,
     required this.orchestrator,
     required this.domainLogger,
+    DayAgentTaskFactory? taskFactory,
     this.onPersistedStateChanged,
-  });
+  }) : _taskFactory = taskFactory ?? _defaultTaskFactory;
 
   /// Agent entity/link repository.
   final AgentRepository agentRepository;
@@ -54,6 +68,8 @@ class DayAgentCaptureService {
 
   /// Structured logger.
   final DomainLogger domainLogger;
+
+  final DayAgentTaskFactory _taskFactory;
 
   /// Callback fired when persisted state changes.
   final void Function(String id)? onPersistedStateChanged;
@@ -90,10 +106,8 @@ class DayAgentCaptureService {
           await _surfacePendingDecisionsTool(agentId, args),
         DayAgentToolNames.applyTriage => await _applyTriageTool(args),
         DayAgentToolNames.createTaskFromPhrase =>
-          await _createTaskFromPhraseProposalTool(
+          await _createTaskFromPhraseTool(
             agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
             args: args,
           ),
         _ => throw DayAgentCaptureException('unknown tool "$toolName"'),
@@ -581,43 +595,79 @@ class DayAgentCaptureService {
     };
   }
 
-  Future<Map<String, Object?>> _createTaskFromPhraseProposalTool({
+  Future<Map<String, Object?>> _createTaskFromPhraseTool({
     required String agentId,
-    required String threadId,
-    required String runKey,
     required Map<String, dynamic> args,
   }) async {
+    final identity = await _requireIdentity(agentId);
     final phrase = _requiredString(args, 'phrase');
-    final category = _requiredString(args, 'category');
+    final categoryId = _requiredString(args, 'category');
+    if (!_categoryAllowed(categoryId, identity.allowedCategoryIds)) {
+      throw DayAgentCaptureException('category $categoryId is not allowed');
+    }
     final now = clock.now();
-    final changeSet =
-        AgentDomainEntity.changeSet(
-              id: 'day-capture-change-set-${_uuid.v4()}',
-              agentId: agentId,
-              taskId: _optionalString(args['captureItemId']) ?? agentId,
-              threadId: threadId,
-              runKey: runKey,
-              status: ChangeSetStatus.pending,
-              items: [
-                ChangeItem(
-                  toolName: DayAgentToolNames.createTaskFromPhrase,
-                  args: {
-                    'phrase': phrase,
-                    'category': category,
-                    if (args['estimate'] != null) 'estimate': args['estimate'],
-                    if (args['dueAnchor'] != null)
-                      'dueAnchor': args['dueAnchor'],
-                  },
-                  humanSummary: 'Create task "$phrase"',
-                ),
-              ],
-              createdAt: now,
-              vectorClock: null,
-            )
-            as ChangeSetEntity;
-    await syncService.upsertEntity(changeSet);
-    onPersistedStateChanged?.call(agentId);
-    return {'changeSetId': changeSet.id};
+    final category = await journalDb.getCategoryById(categoryId);
+    final task = await _taskFactory(
+      title: phrase,
+      categoryId: categoryId,
+      now: now,
+      estimateMinutes: _optionalInt(args['estimate']),
+      due: _dueFromAnchor(_optionalString(args['dueAnchor']), now),
+      profileId: category?.defaultProfileId,
+    );
+    if (task == null) {
+      throw const DayAgentCaptureException('failed to create task');
+    }
+
+    final captureItemId = _optionalString(args['captureItemId']);
+    ParsedItemEntity? updatedParsedItem;
+    AgentLink? taskLink;
+    if (captureItemId != null) {
+      final entity = await agentRepository.getEntity(captureItemId);
+      if (entity is ParsedItemEntity && entity.agentId == agentId) {
+        updatedParsedItem = entity.copyWith(
+          matchedTaskId: task.id,
+          categoryId: task.meta.categoryId ?? categoryId,
+          kind: ParsedItemKind.matched,
+          confidence: ParsedItemConfidence.high,
+          lowConfidence: false,
+        );
+        taskLink = AgentLink.parsedItemToTask(
+          id: 'parsed_item_to_task:$captureItemId:${task.id}',
+          fromId: captureItemId,
+          toId: task.id,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        );
+      }
+    }
+
+    if (updatedParsedItem != null || taskLink != null) {
+      await syncService.runInTransaction(() async {
+        if (updatedParsedItem != null) {
+          await syncService.upsertEntity(updatedParsedItem);
+        }
+        if (taskLink != null) {
+          await _softDeleteTaskLinksForParsedItem(captureItemId!, now);
+          await syncService.upsertLink(taskLink);
+        }
+      });
+    }
+
+    onPersistedStateChanged
+      ?..call(agentId)
+      ..call(task.id);
+    if (captureItemId != null) {
+      onPersistedStateChanged?.call(captureItemId);
+    }
+    return {
+      'taskId': task.id,
+      'title': task.data.title,
+      'categoryId': task.meta.categoryId,
+      'estimateMinutes': task.data.estimate?.inMinutes,
+      'due': task.data.due?.toIso8601String(),
+    };
   }
 
   Future<_ParsedItemWithLink?> _parseModelItem({
@@ -843,6 +893,26 @@ class DayAgentCaptureService {
     return DateTime.tryParse(raw.trim());
   }
 
+  static DateTime? _dueFromAnchor(String? raw, DateTime now) {
+    if (raw == null) return null;
+    final trimmed = raw.trim();
+    final due = switch (trimmed.toLowerCase()) {
+      'today' => _endOfDay(now),
+      'tomorrow' => _endOfDay(now.add(const Duration(days: 1))),
+      _ => DateTime.tryParse(trimmed),
+    };
+    if (due == null) {
+      // Surfacing this as a structured failure (rather than silently dropping
+      // the anchor) prevents `create_task_from_phrase` from persisting an
+      // undated task when the model produces a malformed `dueAnchor`.
+      throw DayAgentCaptureException(
+        'dueAnchor must be "today", "tomorrow", or a valid ISO-8601 '
+        'date-time; got "$raw"',
+      );
+    }
+    return due;
+  }
+
   static String? _blankToNull(String? value) {
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty) return null;
@@ -874,7 +944,40 @@ class DayAgentCaptureService {
   }
 
   static DateTime _endOfDay(DateTime date) {
-    return DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+    // Preserve the input's UTC/local zone so callers comparing the resulting
+    // `due` against other UTC timestamps (created_at, etc.) don't get a
+    // local→UTC offset surprise.
+    return date.isUtc
+        ? DateTime.utc(date.year, date.month, date.day, 23, 59, 59, 999)
+        : DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+  }
+
+  static Future<Task?> _defaultTaskFactory({
+    required String title,
+    required String categoryId,
+    required DateTime now,
+    int? estimateMinutes,
+    DateTime? due,
+    String? profileId,
+  }) {
+    return getIt<PersistenceLogic>().createTaskEntry(
+      data: TaskData(
+        status: TaskStatus.open(
+          id: _uuid.v4(),
+          createdAt: now,
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+        title: title,
+        statusHistory: const [],
+        dateTo: now,
+        dateFrom: now,
+        estimate: Duration(minutes: estimateMinutes ?? 0),
+        due: due,
+        profileId: profileId,
+      ),
+      entryText: EntryText(plainText: title, markdown: title),
+      categoryId: categoryId,
+    );
   }
 
   static DateTime? _dateFromDayId(String dayId) {

@@ -732,7 +732,7 @@ void main() {
       );
 
       test(
-        'returns false and skips enqueue when no draft plan exists',
+        'returns false and skips enqueue when no plan exists',
         () async {
           when(
             () => repository.getActiveAgentByKindAndActiveDayId(
@@ -798,33 +798,36 @@ void main() {
         verifyNever(() => syncService.upsertEntity(any()));
       });
 
-      test('returns false when the plan is not in draft state', () async {
+      test('enqueues refine wake for committed or agreed plans', () async {
         when(
           () => repository.getActiveAgentByKindAndActiveDayId(
             kind: AgentKinds.dayAgent,
             activeDayId: dayId,
           ),
         ).thenAnswer((_) async => identity());
-        stubPlanLookup(
-          seedPlan(
-            status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25)),
-          ),
-        );
 
-        final result = await service.enqueueRefineWake(
-          dayDate: testDate,
-          transcript: 'something',
-        );
+        final statuses = <DayPlanStatus>[
+          DayPlanStatus.committed(committedAt: DateTime(2026, 5, 25, 11)),
+          DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25, 10)),
+        ];
+        for (final status in statuses) {
+          stubPlanLookup(seedPlan(status: status));
 
-        expect(result, isFalse);
+          final result = await service.enqueueRefineWake(
+            dayDate: testDate,
+            transcript: '   ',
+          );
+
+          expect(result, isTrue);
+        }
         verifyNever(() => syncService.upsertEntity(any()));
-        verifyNever(
+        verify(
           () => orchestrator.enqueueManualWake(
-            agentId: any(named: 'agentId'),
-            reason: any(named: 'reason'),
-            triggerTokens: any(named: 'triggerTokens'),
+            agentId: agentId,
+            reason: dayAgentRefineReason,
+            triggerTokens: {dayAgentRefineToken(dayId)},
           ),
-        );
+        ).called(statuses.length);
       });
     });
 

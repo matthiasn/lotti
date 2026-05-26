@@ -2589,6 +2589,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cuando está habilitado, la aplicación intentará generar incrustaciones para tus entradas para mejorar la búsqueda y las sugerencias de contenido relacionado.';
 
   @override
+  String get configFlagDailyOsNextEnabled => 'Usar el nuevo DailyOS agéntico';
+
+  @override
+  String get configFlagDailyOsNextEnabledDescription =>
+      'Reemplaza la superficie actual de DailyOS por el nuevo flujo de captura y reconciliación con voz dirigido por agente. Vista previa temprana — la lógica del backend está simulada.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Habilitar streaming de IA para acciones de tareas';
 
@@ -3084,6 +3091,421 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNearLimit => 'Cerca del límite';
+
+  @override
+  String get dailyOsNextAgendaCapacityComfortable => 'CÓMODO';
+
+  @override
+  String get dailyOsNextAgendaCapacityNearFull => 'CASI LLENO';
+
+  @override
+  String dailyOsNextAgendaCapacityOf(String capacity) {
+    return 'de $capacity';
+  }
+
+  @override
+  String get dailyOsNextAgendaCapacityOver => 'SOBRECARGADO';
+
+  @override
+  String get dailyOsNextAgendaEmpty => 'Nada que hacer hoy.';
+
+  @override
+  String get dailyOsNextAgendaStateDone => 'Hecho';
+
+  @override
+  String get dailyOsNextAgendaStateInProgress => 'En curso';
+
+  @override
+  String get dailyOsNextAgendaStateOpen => 'Abierto';
+
+  @override
+  String get dailyOsNextAgendaStateOverdue => 'Atrasado';
+
+  @override
+  String dailyOsNextAgendaSummary(String scheduled, String capacity) {
+    return '$scheduled de $capacity comprometidos';
+  }
+
+  @override
+  String get dailyOsNextCaptureCaptured => 'Entendido.';
+
+  @override
+  String get dailyOsNextCaptureHeadlineLead => '¿Qué tienes en mente';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTail => 'para hoy?';
+
+  @override
+  String get dailyOsNextCaptureIdleHint =>
+      'Toca para hablar · captúralo · o escríbelo';
+
+  @override
+  String get dailyOsNextCaptureListening => 'ESCUCHANDO';
+
+  @override
+  String get dailyOsNextCaptureOpenTasks => 'Explorar tareas';
+
+  @override
+  String get dailyOsNextCaptureReconcileCta => 'Reconciliar';
+
+  @override
+  String get dailyOsNextCaptureTranscriptHint =>
+      'Corrige lo que la transcripción haya entendido mal antes de planificar.';
+
+  @override
+  String get dailyOsNextCaptureTranscriptLabel => 'Revisa la transcripción';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonReset => 'Empezar de nuevo';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStart => 'Empezar a escuchar';
+
+  @override
+  String get dailyOsNextCaptureVoiceButtonStop => 'Detener';
+
+  @override
+  String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
+    return '$scheduled de $capacity comprometidos. Margen cómodo — puedes absorber una sorpresa.';
+  }
+
+  @override
+  String get dailyOsNextCommitDraftHeadline => 'Tu día, en borrador.';
+
+  @override
+  String get dailyOsNextCommitDraftOverline => 'HOY';
+
+  @override
+  String get dailyOsNextCommitHeadline => 'Hazlo tuyo.';
+
+  @override
+  String get dailyOsNextCommitHoldHint => 'MANTÉN';
+
+  @override
+  String get dailyOsNextCommitHoldLabel => 'Confirmar hoy';
+
+  @override
+  String get dailyOsNextCommitLockingIn => 'Fijando…';
+
+  @override
+  String get dailyOsNextCommitShepherdSubline =>
+      'Yo lo guío — tú haces el trabajo.';
+
+  @override
+  String get dailyOsNextCommitSubCaption =>
+      'Confirmar pasa el día de borrador a comprometido. Aún puedes hablarme, pero la estructura queda fija.';
+
+  @override
+  String get dailyOsNextCommitTitle => 'Confirmar';
+
+  @override
+  String get dailyOsNextCommitTodayIsYours => 'El día es tuyo.';
+
+  @override
+  String get dailyOsNextDayBack => 'Atrás';
+
+  @override
+  String get dailyOsNextDayLockInCta => 'Confirmar';
+
+  @override
+  String get dailyOsNextDayRefineCta => 'Refinar con voz';
+
+  @override
+  String get dailyOsNextDayRefineFooterHint =>
+      'Habla para reformar el plan — los cambios aparecen como diff antes de aplicarse.';
+
+  @override
+  String get dailyOsNextDayTitle => 'Tu día';
+
+  @override
+  String get dailyOsNextDayWhyChipLabel => 'POR QUÉ';
+
+  @override
+  String get dailyOsNextDayWrapUpCta => 'Cerrar día';
+
+  @override
+  String get dailyOsNextDraftingNudgeAccept => 'Sí, protege las mañanas';
+
+  @override
+  String get dailyOsNextDraftingNudgeDecline => 'Hoy no';
+
+  @override
+  String get dailyOsNextDraftingReasoningOverline => '✦ RAZONAMIENTO';
+
+  @override
+  String dailyOsNextEstimateMinutes(int minutes) {
+    return '${minutes}m';
+  }
+
+  @override
+  String get dailyOsNextGreetingAfternoon => 'Buenas tardes.';
+
+  @override
+  String get dailyOsNextGreetingEvening => 'Buenas noches.';
+
+  @override
+  String get dailyOsNextGreetingHi => 'Hola 👋';
+
+  @override
+  String get dailyOsNextGreetingMorning => 'Buenos días.';
+
+  @override
+  String get dailyOsNextPlanViewAgenda => 'Agenda';
+
+  @override
+  String get dailyOsNextPlanViewDay => 'Día';
+
+  @override
+  String get dailyOsNextReconcileBadgeMatched => 'VINCULADO';
+
+  @override
+  String get dailyOsNextReconcileBadgeNew => 'NUEVO';
+
+  @override
+  String get dailyOsNextReconcileBadgeUpdate => 'ACTUALIZAR';
+
+  @override
+  String get dailyOsNextReconcileBuildDayCta => 'Construir mi día';
+
+  @override
+  String get dailyOsNextReconcileDecideOverline => 'VALE LA PENA DECIDIR';
+
+  @override
+  String get dailyOsNextReconcileDefaultBehaviorHint =>
+      'Tus decisiones aquí alimentan el plan — no decidir significa «déjalo donde está».';
+
+  @override
+  String dailyOsNextReconcileError(String detail) {
+    return 'Algo salió mal: $detail';
+  }
+
+  @override
+  String get dailyOsNextReconcileHeardEmpty =>
+      'Las tarjetas de la captura aparecerán aquí cuando termine el análisis.';
+
+  @override
+  String get dailyOsNextReconcileHeardOverline => 'ESTO ES LO QUE ESCUCHÉ';
+
+  @override
+  String get dailyOsNextReconcileLowConfidence => 'confianza baja';
+
+  @override
+  String get dailyOsNextReconcileReRecord => 'Volver a grabar';
+
+  @override
+  String get dailyOsNextReconcileVoiceHint =>
+      '«Quita las facturas» también funciona aquí';
+
+  @override
+  String get dailyOsNextRefineAccept => 'Aceptar';
+
+  @override
+  String get dailyOsNextRefineDiffAdded => 'AÑADIDO';
+
+  @override
+  String get dailyOsNextRefineDiffDropped => 'DESCARTADO';
+
+  @override
+  String get dailyOsNextRefineDiffMoved => 'MOVIDO';
+
+  @override
+  String get dailyOsNextRefineKeepTalking => 'Seguir hablando';
+
+  @override
+  String get dailyOsNextRefineOverline => '🎤 REFINAMIENTO';
+
+  @override
+  String get dailyOsNextRefineRevert => 'Deshacer';
+
+  @override
+  String get dailyOsNextRefineStatusAccepted => 'Confirmado.';
+
+  @override
+  String get dailyOsNextRefineStatusDiffReady => 'Esto es lo que cambió.';
+
+  @override
+  String get dailyOsNextRefineStatusIdle => 'Toca para hablar.';
+
+  @override
+  String get dailyOsNextRefineStatusListening => 'Escuchando…';
+
+  @override
+  String get dailyOsNextRefineStatusThinking => '✦ Reformando el plan…';
+
+  @override
+  String get dailyOsNextRefineTitle => 'Refinar el plan';
+
+  @override
+  String get dailyOsNextShutdownCarryoverDrop => 'Descartar';
+
+  @override
+  String get dailyOsNextShutdownCarryoverDropped => 'Descartado';
+
+  @override
+  String get dailyOsNextShutdownCarryoverOverline => 'PASA A MAÑANA';
+
+  @override
+  String get dailyOsNextShutdownCarryoverPickDate => 'Elegir fecha';
+
+  @override
+  String get dailyOsNextShutdownCarryoverScheduled => 'Programado';
+
+  @override
+  String get dailyOsNextShutdownCloseDay => 'Cerrar el día';
+
+  @override
+  String get dailyOsNextShutdownCompletedOverline => 'LO QUE HICISTE';
+
+  @override
+  String get dailyOsNextShutdownMetricEnergy => 'ENERGÍA';
+
+  @override
+  String dailyOsNextShutdownMetricEnergyDelta(String delta) {
+    return '$delta vs. semana';
+  }
+
+  @override
+  String get dailyOsNextShutdownMetricFlow => 'SESIONES DE FLUJO';
+
+  @override
+  String get dailyOsNextShutdownMetricFocus => 'TIEMPO DE FOCO';
+
+  @override
+  String get dailyOsNextShutdownMetricSwitches => 'CAMBIOS DE CONTEXTO';
+
+  @override
+  String dailyOsNextShutdownMetricSwitchesAvg(String avg) {
+    return 'media $avg esta semana';
+  }
+
+  @override
+  String get dailyOsNextShutdownReflectionOverline =>
+      '💬 REFLEXIÓN DE UNA LÍNEA';
+
+  @override
+  String get dailyOsNextShutdownReflectionPlaceholder =>
+      'p. ej., la mañana fue ágil, la tarde se hizo larga después del café con Sarah.';
+
+  @override
+  String get dailyOsNextShutdownReflectionPrompt =>
+      '¿Cómo aterrizó hoy? (Alimenta el borrador de mañana.)';
+
+  @override
+  String get dailyOsNextShutdownReflectionSpeak => 'Háblalo';
+
+  @override
+  String get dailyOsNextShutdownReflectionSubmit => 'Saltar';
+
+  @override
+  String get dailyOsNextShutdownReflectionThanks =>
+      'Anotado — alimenta el día de mañana.';
+
+  @override
+  String get dailyOsNextShutdownSaveAndClose => 'Guardar y cerrar';
+
+  @override
+  String get dailyOsNextShutdownTitle => 'Cerrar el día';
+
+  @override
+  String get dailyOsNextShutdownTomorrowOverline => '✦ PARA MAÑANA';
+
+  @override
+  String get dailyOsNextStateDueToday => 'Vence hoy';
+
+  @override
+  String dailyOsNextStateInProgress(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'En curso · $count sesiones',
+      one: 'En curso · 1 sesión',
+      zero: 'En curso',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdue(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Atrasado · $days días',
+      one: 'Atrasado · 1 día',
+      zero: 'Atrasado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextStateRecurringMissed => 'Recurrente · perdido';
+
+  @override
+  String get dailyOsNextTasksEmpty => 'Aún no hay nada aquí.';
+
+  @override
+  String get dailyOsNextTasksFilterAll => 'Todas';
+
+  @override
+  String get dailyOsNextTasksFilterBacklog => 'Pendientes';
+
+  @override
+  String get dailyOsNextTasksFilterDone => 'Hechas';
+
+  @override
+  String get dailyOsNextTasksFilterInProgress => 'En curso';
+
+  @override
+  String get dailyOsNextTasksFilterOverdue => 'Atrasadas';
+
+  @override
+  String get dailyOsNextTasksFilterRecurring => 'Recurrentes';
+
+  @override
+  String get dailyOsNextTasksFilterScheduled => 'Programadas';
+
+  @override
+  String get dailyOsNextTasksFooterHint =>
+      'El ritual matutino suele traer lo que importa.';
+
+  @override
+  String get dailyOsNextTasksSearchPlaceholder => 'Buscar tareas';
+
+  @override
+  String get dailyOsNextTasksSubtitle =>
+      'Todo lo que Lotti guarda para ti. El ritual matutino lo prioriza.';
+
+  @override
+  String get dailyOsNextTasksTitle => 'Tareas';
+
+  @override
+  String get dailyOsNextTriageConfirmDefer => 'Aplazado';
+
+  @override
+  String get dailyOsNextTriageConfirmDone => 'Marcado como hecho';
+
+  @override
+  String get dailyOsNextTriageConfirmDoNow => 'Hecho ya';
+
+  @override
+  String get dailyOsNextTriageConfirmDrop => 'Descartado';
+
+  @override
+  String get dailyOsNextTriageConfirmToday => 'Añadido a hoy';
+
+  @override
+  String get dailyOsNextTriageDefer => 'Aplazar';
+
+  @override
+  String get dailyOsNextTriageDone => 'Hecho';
+
+  @override
+  String get dailyOsNextTriageDoNow => 'Hacer ahora';
+
+  @override
+  String get dailyOsNextTriageDrop => 'Descartar';
+
+  @override
+  String get dailyOsNextTriageToday => 'Hoy';
 
   @override
   String get dailyOsNoBudgets => 'Sin presupuestos de tiempo';

@@ -42,6 +42,10 @@ Startup does this:
   on-demand drill-down into a sibling task that was included in the current
   related-task directory. The tool is scoped to the current wake's allowlist;
   it cannot browse arbitrary tasks or other projects.
+- Task-agent wakes that resolve to Gemini 3 Flash pass a workflow-local
+  `GeminiThinkingConfig(thinkingBudget: 1)` override through
+  `CloudInferenceWrapper`, which serializes to Gemini 3 `thinkingLevel: LOW`.
+  The shared model default remains unchanged.
 - Linked task context for agents is built directly in
   `TaskAgentWorkflow._buildLinkedTasksContextJson` (forked from
   `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects

@@ -216,8 +216,8 @@ const dayAgentTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: DayAgentToolNames.createTaskFromPhrase,
     description:
-        'Propose a new task from a capture phrase. This creates a pending '
-        'change set; it does not directly create the task.',
+        'Create a real task from a capture phrase and return the new taskId. '
+        'When captureItemId is supplied, the parsed item is linked to it.',
     parameters: {
       'type': 'object',
       'properties': {
@@ -294,20 +294,14 @@ const dayAgentTools = <AgentToolDefinition>[
                 'type': 'string',
                 'minLength': 1,
                 'description':
-                    'Why this block belongs here. Required for ai blocks.',
+                    'Why this block belongs here. REQUIRED whenever type is '
+                    '"ai" — the tool handler rejects ai blocks without a '
+                    'non-empty reason.',
               },
               'note': {'type': 'string'},
             },
             'required': ['title', 'categoryId', 'start', 'end', 'type'],
             'additionalProperties': false,
-            'if': {
-              'properties': {
-                'type': {'const': 'ai'},
-              },
-            },
-            'then': {
-              'required': ['reason'],
-            },
           },
         },
         'energyBands': {
@@ -419,37 +413,16 @@ const dayAgentTools = <AgentToolDefinition>[
               'reason': {
                 'type': 'string',
                 'minLength': 1,
-                'description': 'Why this change. Required for every change.',
+                'description':
+                    'Why this change. Required for every change. '
+                    'For action="moved" or "dropped", you MUST also '
+                    'include `blockId` and `from`. For action="moved" or '
+                    '"added", you MUST also include `to`. The tool '
+                    'handler rejects changes that violate these rules.',
               },
             },
             'required': ['action', 'reason'],
             'additionalProperties': false,
-            'allOf': [
-              {
-                'if': {
-                  'properties': {
-                    'action': {
-                      'enum': ['moved', 'dropped'],
-                    },
-                  },
-                },
-                'then': {
-                  'required': ['blockId', 'from'],
-                },
-              },
-              {
-                'if': {
-                  'properties': {
-                    'action': {
-                      'enum': ['moved', 'added'],
-                    },
-                  },
-                },
-                'then': {
-                  'required': ['to'],
-                },
-              },
-            ],
           },
         },
       },

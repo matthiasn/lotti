@@ -191,39 +191,32 @@ void main() {
       expect(toProps.keys, containsAll(['start', 'end', 'reason']));
     });
 
-    test('propose_plan_diff enforces action-specific required fields', () {
-      final changeSchema =
-          ((parametersFor(DayAgentToolNames.proposePlanDiff)['properties']
-                      as Map<String, dynamic>)['changes']
-                  as Map<String, dynamic>)['items']
-              as Map<String, dynamic>;
-      final allOf = changeSchema['allOf'] as List<dynamic>;
-      expect(allOf, hasLength(2));
+    test(
+      'propose_plan_diff documents action-specific required fields in the '
+      'reason field (no JSON-Schema if/then/allOf because Gemini rejects '
+      'those keywords in tool definitions)',
+      () {
+        final changeSchema =
+            ((parametersFor(DayAgentToolNames.proposePlanDiff)['properties']
+                        as Map<String, dynamic>)['changes']
+                    as Map<String, dynamic>)['items']
+                as Map<String, dynamic>;
+        expect(changeSchema.containsKey('allOf'), isFalse);
+        expect(changeSchema.containsKey('if'), isFalse);
+        expect(changeSchema.containsKey('then'), isFalse);
 
-      final movedDroppedClause = allOf[0] as Map<String, dynamic>;
-      expect(
-        (((movedDroppedClause['if'] as Map<String, dynamic>)['properties']
-                as Map<String, dynamic>)['action']
-            as Map<String, dynamic>)['enum'],
-        ['moved', 'dropped'],
-      );
-      expect(
-        (movedDroppedClause['then'] as Map<String, dynamic>)['required'],
-        ['blockId', 'from'],
-      );
-
-      final movedAddedClause = allOf[1] as Map<String, dynamic>;
-      expect(
-        (((movedAddedClause['if'] as Map<String, dynamic>)['properties']
-                as Map<String, dynamic>)['action']
-            as Map<String, dynamic>)['enum'],
-        ['moved', 'added'],
-      );
-      expect(
-        (movedAddedClause['then'] as Map<String, dynamic>)['required'],
-        ['to'],
-      );
-    });
+        final reasonProp =
+            (changeSchema['properties'] as Map<String, dynamic>)['reason']
+                as Map<String, dynamic>;
+        final description = reasonProp['description'] as String;
+        expect(description, contains('moved'));
+        expect(description, contains('dropped'));
+        expect(description, contains('added'));
+        expect(description, contains('blockId'));
+        expect(description, contains('from'));
+        expect(description, contains('to'));
+      },
+    );
 
     test('commit_day and uncommit_day require dayId only', () {
       for (final name in const [

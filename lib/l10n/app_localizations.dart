@@ -4399,6 +4399,18 @@ abstract class AppLocalizations {
   /// **'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.'**
   String get configFlagAttemptEmbeddingDescription;
 
+  /// No description provided for @configFlagDailyOsNextEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Use next-gen agentic DailyOS'**
+  String get configFlagDailyOsNextEnabled;
+
+  /// No description provided for @configFlagDailyOsNextEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the current DailyOS surface with the new voice-first, agent-led capture and reconcile flow. Early preview — backend logic is mocked.'**
+  String get configFlagDailyOsNextEnabledDescription;
+
   /// No description provided for @configFlagEnableAiStreaming.
   ///
   /// In en, this message translates to:
@@ -5153,6 +5165,744 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Near limit'**
   String get dailyOsNearLimit;
+
+  /// No description provided for @dailyOsNextAgendaCapacityComfortable.
+  ///
+  /// In en, this message translates to:
+  /// **'COMFORTABLE'**
+  String get dailyOsNextAgendaCapacityComfortable;
+
+  /// No description provided for @dailyOsNextAgendaCapacityNearFull.
+  ///
+  /// In en, this message translates to:
+  /// **'NEAR FULL'**
+  String get dailyOsNextAgendaCapacityNearFull;
+
+  /// No description provided for @dailyOsNextAgendaCapacityOf.
+  ///
+  /// In en, this message translates to:
+  /// **'of {capacity}'**
+  String dailyOsNextAgendaCapacityOf(String capacity);
+
+  /// No description provided for @dailyOsNextAgendaCapacityOver.
+  ///
+  /// In en, this message translates to:
+  /// **'OVER CAPACITY'**
+  String get dailyOsNextAgendaCapacityOver;
+
+  /// No description provided for @dailyOsNextAgendaEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to do today.'**
+  String get dailyOsNextAgendaEmpty;
+
+  /// No description provided for @dailyOsNextAgendaStateDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get dailyOsNextAgendaStateDone;
+
+  /// No description provided for @dailyOsNextAgendaStateInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get dailyOsNextAgendaStateInProgress;
+
+  /// No description provided for @dailyOsNextAgendaStateOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get dailyOsNextAgendaStateOpen;
+
+  /// No description provided for @dailyOsNextAgendaStateOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get dailyOsNextAgendaStateOverdue;
+
+  /// No description provided for @dailyOsNextAgendaSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{scheduled} of {capacity} committed'**
+  String dailyOsNextAgendaSummary(String scheduled, String capacity);
+
+  /// No description provided for @dailyOsNextCaptureCaptured.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it.'**
+  String get dailyOsNextCaptureCaptured;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineLead.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s on your mind'**
+  String get dailyOsNextCaptureHeadlineLead;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineTail.
+  ///
+  /// In en, this message translates to:
+  /// **'for today?'**
+  String get dailyOsNextCaptureHeadlineTail;
+
+  /// No description provided for @dailyOsNextCaptureIdleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to talk · snap it · type instead'**
+  String get dailyOsNextCaptureIdleHint;
+
+  /// No description provided for @dailyOsNextCaptureListening.
+  ///
+  /// In en, this message translates to:
+  /// **'LISTENING'**
+  String get dailyOsNextCaptureListening;
+
+  /// No description provided for @dailyOsNextCaptureOpenTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse tasks'**
+  String get dailyOsNextCaptureOpenTasks;
+
+  /// No description provided for @dailyOsNextCaptureReconcileCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconcile'**
+  String get dailyOsNextCaptureReconcileCta;
+
+  /// No description provided for @dailyOsNextCaptureTranscriptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix anything the transcript got wrong before planning.'**
+  String get dailyOsNextCaptureTranscriptHint;
+
+  /// No description provided for @dailyOsNextCaptureTranscriptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Review transcript'**
+  String get dailyOsNextCaptureTranscriptLabel;
+
+  /// No description provided for @dailyOsNextCaptureVoiceButtonReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Start over'**
+  String get dailyOsNextCaptureVoiceButtonReset;
+
+  /// No description provided for @dailyOsNextCaptureVoiceButtonStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start listening'**
+  String get dailyOsNextCaptureVoiceButtonStart;
+
+  /// No description provided for @dailyOsNextCaptureVoiceButtonStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop listening'**
+  String get dailyOsNextCaptureVoiceButtonStop;
+
+  /// No description provided for @dailyOsNextCommitCapacityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{scheduled} of {capacity} committed. Comfortable margin — you can absorb one surprise.'**
+  String dailyOsNextCommitCapacityNote(String scheduled, String capacity);
+
+  /// No description provided for @dailyOsNextCommitDraftHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day, drafted.'**
+  String get dailyOsNextCommitDraftHeadline;
+
+  /// No description provided for @dailyOsNextCommitDraftOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'TODAY'**
+  String get dailyOsNextCommitDraftOverline;
+
+  /// No description provided for @dailyOsNextCommitHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it yours.'**
+  String get dailyOsNextCommitHeadline;
+
+  /// No description provided for @dailyOsNextCommitHoldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'HOLD'**
+  String get dailyOsNextCommitHoldHint;
+
+  /// No description provided for @dailyOsNextCommitHoldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit today'**
+  String get dailyOsNextCommitHoldLabel;
+
+  /// No description provided for @dailyOsNextCommitLockingIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Locking in…'**
+  String get dailyOsNextCommitLockingIn;
+
+  /// No description provided for @dailyOsNextCommitShepherdSubline.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ll shepherd it — you do the work.'**
+  String get dailyOsNextCommitShepherdSubline;
+
+  /// No description provided for @dailyOsNextCommitSubCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing off shifts the day from draft to committed. You can still talk to me — but the bones stay put.'**
+  String get dailyOsNextCommitSubCaption;
+
+  /// No description provided for @dailyOsNextCommitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock it in'**
+  String get dailyOsNextCommitTitle;
+
+  /// No description provided for @dailyOsNextCommitTodayIsYours.
+  ///
+  /// In en, this message translates to:
+  /// **'Today is yours.'**
+  String get dailyOsNextCommitTodayIsYours;
+
+  /// No description provided for @dailyOsNextDayBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get dailyOsNextDayBack;
+
+  /// No description provided for @dailyOsNextDayLockInCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock in'**
+  String get dailyOsNextDayLockInCta;
+
+  /// No description provided for @dailyOsNextDayRefineCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Refine by voice'**
+  String get dailyOsNextDayRefineCta;
+
+  /// No description provided for @dailyOsNextDayRefineFooterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to reshape the plan — moves, drops, and buffers are shown as a diff before they stick.'**
+  String get dailyOsNextDayRefineFooterHint;
+
+  /// No description provided for @dailyOsNextDayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day'**
+  String get dailyOsNextDayTitle;
+
+  /// No description provided for @dailyOsNextDayWhyChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'WHY'**
+  String get dailyOsNextDayWhyChipLabel;
+
+  /// No description provided for @dailyOsNextDayWrapUpCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrap up'**
+  String get dailyOsNextDayWrapUpCta;
+
+  /// No description provided for @dailyOsNextDraftingNudgeAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, protect mornings'**
+  String get dailyOsNextDraftingNudgeAccept;
+
+  /// No description provided for @dailyOsNextDraftingNudgeDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Not today'**
+  String get dailyOsNextDraftingNudgeDecline;
+
+  /// No description provided for @dailyOsNextDraftingReasoningOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'✦ REASONING'**
+  String get dailyOsNextDraftingReasoningOverline;
+
+  /// No description provided for @dailyOsNextEstimateMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m'**
+  String dailyOsNextEstimateMinutes(int minutes);
+
+  /// No description provided for @dailyOsNextGreetingAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon.'**
+  String get dailyOsNextGreetingAfternoon;
+
+  /// No description provided for @dailyOsNextGreetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening.'**
+  String get dailyOsNextGreetingEvening;
+
+  /// No description provided for @dailyOsNextGreetingHi.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi 👋'**
+  String get dailyOsNextGreetingHi;
+
+  /// No description provided for @dailyOsNextGreetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning.'**
+  String get dailyOsNextGreetingMorning;
+
+  /// No description provided for @dailyOsNextPlanViewAgenda.
+  ///
+  /// In en, this message translates to:
+  /// **'Agenda'**
+  String get dailyOsNextPlanViewAgenda;
+
+  /// No description provided for @dailyOsNextPlanViewDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get dailyOsNextPlanViewDay;
+
+  /// No description provided for @dailyOsNextReconcileBadgeMatched.
+  ///
+  /// In en, this message translates to:
+  /// **'MATCHED'**
+  String get dailyOsNextReconcileBadgeMatched;
+
+  /// No description provided for @dailyOsNextReconcileBadgeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW'**
+  String get dailyOsNextReconcileBadgeNew;
+
+  /// No description provided for @dailyOsNextReconcileBadgeUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'UPDATE'**
+  String get dailyOsNextReconcileBadgeUpdate;
+
+  /// No description provided for @dailyOsNextReconcileBuildDayCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Build my day'**
+  String get dailyOsNextReconcileBuildDayCta;
+
+  /// No description provided for @dailyOsNextReconcileDecideOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'WORTH DECIDING ON'**
+  String get dailyOsNextReconcileDecideOverline;
+
+  /// No description provided for @dailyOsNextReconcileDefaultBehaviorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Decisions here feed into the plan — no decision means \"leave it where it is.\"'**
+  String get dailyOsNextReconcileDefaultBehaviorHint;
+
+  /// No description provided for @dailyOsNextReconcileError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong: {detail}'**
+  String dailyOsNextReconcileError(String detail);
+
+  /// No description provided for @dailyOsNextReconcileHeardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture cards will appear here once parsing finishes.'**
+  String get dailyOsNextReconcileHeardEmpty;
+
+  /// No description provided for @dailyOsNextReconcileHeardOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'HERE\'S WHAT I HEARD'**
+  String get dailyOsNextReconcileHeardOverline;
+
+  /// No description provided for @dailyOsNextReconcileLowConfidence.
+  ///
+  /// In en, this message translates to:
+  /// **'low confidence'**
+  String get dailyOsNextReconcileLowConfidence;
+
+  /// No description provided for @dailyOsNextReconcileReRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-record'**
+  String get dailyOsNextReconcileReRecord;
+
+  /// No description provided for @dailyOsNextReconcileVoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Drop the invoices\" works here too'**
+  String get dailyOsNextReconcileVoiceHint;
+
+  /// No description provided for @dailyOsNextRefineAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get dailyOsNextRefineAccept;
+
+  /// No description provided for @dailyOsNextRefineDiffAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'ADDED'**
+  String get dailyOsNextRefineDiffAdded;
+
+  /// No description provided for @dailyOsNextRefineDiffDropped.
+  ///
+  /// In en, this message translates to:
+  /// **'DROPPED'**
+  String get dailyOsNextRefineDiffDropped;
+
+  /// No description provided for @dailyOsNextRefineDiffMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'MOVED'**
+  String get dailyOsNextRefineDiffMoved;
+
+  /// No description provided for @dailyOsNextRefineKeepTalking.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep talking'**
+  String get dailyOsNextRefineKeepTalking;
+
+  /// No description provided for @dailyOsNextRefineOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'🎤 REFINEMENT'**
+  String get dailyOsNextRefineOverline;
+
+  /// No description provided for @dailyOsNextRefineRevert.
+  ///
+  /// In en, this message translates to:
+  /// **'Revert'**
+  String get dailyOsNextRefineRevert;
+
+  /// No description provided for @dailyOsNextRefineStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked in.'**
+  String get dailyOsNextRefineStatusAccepted;
+
+  /// No description provided for @dailyOsNextRefineStatusDiffReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s what changed.'**
+  String get dailyOsNextRefineStatusDiffReady;
+
+  /// No description provided for @dailyOsNextRefineStatusIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to talk.'**
+  String get dailyOsNextRefineStatusIdle;
+
+  /// No description provided for @dailyOsNextRefineStatusListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening…'**
+  String get dailyOsNextRefineStatusListening;
+
+  /// No description provided for @dailyOsNextRefineStatusThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'✦ Reworking the plan…'**
+  String get dailyOsNextRefineStatusThinking;
+
+  /// No description provided for @dailyOsNextRefineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Refine the plan'**
+  String get dailyOsNextRefineTitle;
+
+  /// No description provided for @dailyOsNextShutdownCarryoverDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop'**
+  String get dailyOsNextShutdownCarryoverDrop;
+
+  /// No description provided for @dailyOsNextShutdownCarryoverDropped.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropped'**
+  String get dailyOsNextShutdownCarryoverDropped;
+
+  /// No description provided for @dailyOsNextShutdownCarryoverOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'CARRIES FORWARD'**
+  String get dailyOsNextShutdownCarryoverOverline;
+
+  /// No description provided for @dailyOsNextShutdownCarryoverPickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a date'**
+  String get dailyOsNextShutdownCarryoverPickDate;
+
+  /// No description provided for @dailyOsNextShutdownCarryoverScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get dailyOsNextShutdownCarryoverScheduled;
+
+  /// No description provided for @dailyOsNextShutdownCloseDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the day'**
+  String get dailyOsNextShutdownCloseDay;
+
+  /// No description provided for @dailyOsNextShutdownCompletedOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'WHAT YOU DID'**
+  String get dailyOsNextShutdownCompletedOverline;
+
+  /// No description provided for @dailyOsNextShutdownMetricEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'ENERGY'**
+  String get dailyOsNextShutdownMetricEnergy;
+
+  /// No description provided for @dailyOsNextShutdownMetricEnergyDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'{delta} vs. week'**
+  String dailyOsNextShutdownMetricEnergyDelta(String delta);
+
+  /// No description provided for @dailyOsNextShutdownMetricFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'FLOW SESSIONS'**
+  String get dailyOsNextShutdownMetricFlow;
+
+  /// No description provided for @dailyOsNextShutdownMetricFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'FOCUS TIME'**
+  String get dailyOsNextShutdownMetricFocus;
+
+  /// No description provided for @dailyOsNextShutdownMetricSwitches.
+  ///
+  /// In en, this message translates to:
+  /// **'CONTEXT SWITCHES'**
+  String get dailyOsNextShutdownMetricSwitches;
+
+  /// No description provided for @dailyOsNextShutdownMetricSwitchesAvg.
+  ///
+  /// In en, this message translates to:
+  /// **'avg {avg} this week'**
+  String dailyOsNextShutdownMetricSwitchesAvg(String avg);
+
+  /// No description provided for @dailyOsNextShutdownReflectionOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'💬 ONE-LINE REFLECTION'**
+  String get dailyOsNextShutdownReflectionOverline;
+
+  /// No description provided for @dailyOsNextShutdownReflectionPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., morning was sharp, afternoon dragged after coffee with Sarah ran long.'**
+  String get dailyOsNextShutdownReflectionPlaceholder;
+
+  /// No description provided for @dailyOsNextShutdownReflectionPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'How did today land? (This feeds tomorrow\'s draft.)'**
+  String get dailyOsNextShutdownReflectionPrompt;
+
+  /// No description provided for @dailyOsNextShutdownReflectionSpeak.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak it'**
+  String get dailyOsNextShutdownReflectionSpeak;
+
+  /// No description provided for @dailyOsNextShutdownReflectionSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get dailyOsNextShutdownReflectionSubmit;
+
+  /// No description provided for @dailyOsNextShutdownReflectionThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it — feeding tomorrow.'**
+  String get dailyOsNextShutdownReflectionThanks;
+
+  /// No description provided for @dailyOsNextShutdownSaveAndClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & close'**
+  String get dailyOsNextShutdownSaveAndClose;
+
+  /// No description provided for @dailyOsNextShutdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close out the day'**
+  String get dailyOsNextShutdownTitle;
+
+  /// No description provided for @dailyOsNextShutdownTomorrowOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'✦ FOR TOMORROW'**
+  String get dailyOsNextShutdownTomorrowOverline;
+
+  /// No description provided for @dailyOsNextStateDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get dailyOsNextStateDueToday;
+
+  /// No description provided for @dailyOsNextStateInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{In progress} =1{In progress · 1 session} other{In progress · {count} sessions}}'**
+  String dailyOsNextStateInProgress(int count);
+
+  /// No description provided for @dailyOsNextStateOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =0{Overdue} =1{Overdue · 1 day} other{Overdue · {days} days}}'**
+  String dailyOsNextStateOverdue(int days);
+
+  /// No description provided for @dailyOsNextStateRecurringMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring · missed'**
+  String get dailyOsNextStateRecurringMissed;
+
+  /// No description provided for @dailyOsNextTasksEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet.'**
+  String get dailyOsNextTasksEmpty;
+
+  /// No description provided for @dailyOsNextTasksFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get dailyOsNextTasksFilterAll;
+
+  /// No description provided for @dailyOsNextTasksFilterBacklog.
+  ///
+  /// In en, this message translates to:
+  /// **'Backlog'**
+  String get dailyOsNextTasksFilterBacklog;
+
+  /// No description provided for @dailyOsNextTasksFilterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get dailyOsNextTasksFilterDone;
+
+  /// No description provided for @dailyOsNextTasksFilterInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get dailyOsNextTasksFilterInProgress;
+
+  /// No description provided for @dailyOsNextTasksFilterOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get dailyOsNextTasksFilterOverdue;
+
+  /// No description provided for @dailyOsNextTasksFilterRecurring.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring'**
+  String get dailyOsNextTasksFilterRecurring;
+
+  /// No description provided for @dailyOsNextTasksFilterScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get dailyOsNextTasksFilterScheduled;
+
+  /// No description provided for @dailyOsNextTasksFooterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The morning ritual usually surfaces what matters from here.'**
+  String get dailyOsNextTasksFooterHint;
+
+  /// No description provided for @dailyOsNextTasksSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tasks'**
+  String get dailyOsNextTasksSearchPlaceholder;
+
+  /// No description provided for @dailyOsNextTasksSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything Lotti\'s holding for you. The morning ritual surfaces what matters.'**
+  String get dailyOsNextTasksSubtitle;
+
+  /// No description provided for @dailyOsNextTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get dailyOsNextTasksTitle;
+
+  /// No description provided for @dailyOsNextTriageConfirmDefer.
+  ///
+  /// In en, this message translates to:
+  /// **'Deferred'**
+  String get dailyOsNextTriageConfirmDefer;
+
+  /// No description provided for @dailyOsNextTriageConfirmDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked done'**
+  String get dailyOsNextTriageConfirmDone;
+
+  /// No description provided for @dailyOsNextTriageConfirmDoNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Done now'**
+  String get dailyOsNextTriageConfirmDoNow;
+
+  /// No description provided for @dailyOsNextTriageConfirmDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropped'**
+  String get dailyOsNextTriageConfirmDrop;
+
+  /// No description provided for @dailyOsNextTriageConfirmToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to today'**
+  String get dailyOsNextTriageConfirmToday;
+
+  /// No description provided for @dailyOsNextTriageDefer.
+  ///
+  /// In en, this message translates to:
+  /// **'Defer'**
+  String get dailyOsNextTriageDefer;
+
+  /// No description provided for @dailyOsNextTriageDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get dailyOsNextTriageDone;
+
+  /// No description provided for @dailyOsNextTriageDoNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Do now'**
+  String get dailyOsNextTriageDoNow;
+
+  /// No description provided for @dailyOsNextTriageDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop'**
+  String get dailyOsNextTriageDrop;
+
+  /// No description provided for @dailyOsNextTriageToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dailyOsNextTriageToday;
 
   /// No description provided for @dailyOsNoBudgets.
   ///

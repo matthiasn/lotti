@@ -85,6 +85,16 @@ void main() {
   late List<AgentDomainEntity> upsertedEntities;
   late List<AgentLink> upsertedLinks;
   late List<String> notifications;
+  late List<
+    ({
+      String title,
+      String categoryId,
+      int? estimateMinutes,
+      DateTime? due,
+      String? profileId,
+    })
+  >
+  createdTaskRequests;
 
   DayAgentCaptureService createService() {
     return DayAgentCaptureService(
@@ -95,6 +105,38 @@ void main() {
       fts5Db: fts5Db,
       orchestrator: orchestrator,
       domainLogger: domainLogger,
+      taskFactory:
+          ({
+            required String title,
+            required String categoryId,
+            required DateTime now,
+            int? estimateMinutes,
+            DateTime? due,
+            String? profileId,
+          }) async {
+            createdTaskRequests.add((
+              title: title,
+              categoryId: categoryId,
+              estimateMinutes: estimateMinutes,
+              due: due,
+              profileId: profileId,
+            ));
+            final baseTask = _task(
+              id: 'created-task-${createdTaskRequests.length}',
+              title: title,
+              status: _openStatus(),
+              categoryId: categoryId,
+            );
+            final task = baseTask.copyWith(
+              data: baseTask.data.copyWith(
+                estimate: Duration(minutes: estimateMinutes ?? 0),
+                due: due,
+                profileId: profileId,
+              ),
+            );
+            journalEntities[task.id] = task;
+            return task;
+          },
       onPersistedStateChanged: notifications.add,
     );
   }
@@ -120,6 +162,7 @@ void main() {
     upsertedEntities = <AgentDomainEntity>[];
     upsertedLinks = <AgentLink>[];
     notifications = <String>[];
+    createdTaskRequests = [];
 
     when(() => agentRepository.getEntity(any())).thenAnswer((invocation) async {
       return agentEntities[invocation.positionalArguments.single as String];
@@ -153,6 +196,7 @@ void main() {
     ) async {
       return journalEntities[invocation.positionalArguments.single as String];
     });
+    when(() => journalDb.getCategoryById(any())).thenAnswer((_) async => null);
     when(
       () => journalDb.getOpenTasksForDayAgentCorpus(
         categoryIds: any(named: 'categoryIds'),
@@ -744,31 +788,62 @@ void main() {
     });
 
     test(
-      'executeTool creates a pending change set proposal for new tasks',
+      'executeTool creates a task and links the parsed capture item',
       () async {
-        final result = await createService().executeTool(
-          agentId: _agentId,
-          threadId: _threadId,
-          runKey: _runKey,
-          toolName: DayAgentToolNames.createTaskFromPhrase,
-          args: const {
-            'phrase': 'Buy milk',
-            'category': 'home',
-            'estimate': 15,
-            'dueAnchor': 'today',
-            'captureItemId': 'parsed-1',
-          },
-        );
+        final parsed =
+            AgentDomainEntity.parsedItem(
+                  id: 'parsed-1',
+                  agentId: _agentId,
+                  captureId: 'capture-1',
+                  kind: ParsedItemKind.newTask,
+                  title: 'Buy milk',
+                  categoryId: 'work',
+                  confidence: ParsedItemConfidence.low,
+                  confidenceScore: 0.1,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as ParsedItemEntity;
+        agentEntities[parsed.id] = parsed;
+
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {
+              'phrase': 'Buy milk',
+              'category': 'work',
+              'estimate': 15,
+              'dueAnchor': 'today',
+              'captureItemId': 'parsed-1',
+            },
+          );
+        });
 
         expect(result.success, isTrue);
-        final changeSet = upsertedEntities.whereType<ChangeSetEntity>().single;
-        expect(changeSet.status, ChangeSetStatus.pending);
-        expect(changeSet.taskId, 'parsed-1');
+        final decoded = jsonDecode(result.output) as Map<String, dynamic>;
+        expect(decoded['taskId'], 'created-task-1');
+        expect(decoded['estimateMinutes'], 15);
         expect(
-          changeSet.items.single.toolName,
-          DayAgentToolNames.createTaskFromPhrase,
+          DateTime.parse(decoded['due'] as String),
+          DateTime(2026, 5, 25, 23, 59, 59, 999),
         );
-        expect(changeSet.items.single.args['phrase'], 'Buy milk');
+        expect(createdTaskRequests.single.title, 'Buy milk');
+        expect(createdTaskRequests.single.categoryId, 'work');
+
+        final updatedParsed = upsertedEntities
+            .whereType<ParsedItemEntity>()
+            .single;
+        expect(updatedParsed.id, 'parsed-1');
+        expect(updatedParsed.kind, ParsedItemKind.matched);
+        expect(updatedParsed.matchedTaskId, 'created-task-1');
+        expect(upsertedLinks.whereType<ParsedItemToTaskLink>(), hasLength(1));
+        expect(
+          notifications,
+          containsAll([_agentId, 'created-task-1', 'parsed-1']),
+        );
       },
     );
 

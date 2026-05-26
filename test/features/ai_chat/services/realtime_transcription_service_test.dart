@@ -434,20 +434,45 @@ void main() {
       expect(config.model.providerModelId, _providerModelId);
     });
 
-    test('prefers local MLX Qwen3-ASR when configured', () async {
-      final bench = await _TestBench.create(addMlxConfig: true);
-      addTearDown(bench.dispose);
+    test(
+      'prefers Mistral over MLX when both are configured (cloud-first '
+      'default)',
+      () async {
+        final bench = await _TestBench.create(addMlxConfig: true);
+        addTearDown(bench.dispose);
 
-      final config = await bench.service.resolveRealtimeConfig();
+        final config = await bench.service.resolveRealtimeConfig();
 
-      expect(config, isNotNull);
-      expect(config!.provider.id, _mlxProviderId);
-      expect(
-        config.provider.inferenceProviderType,
-        InferenceProviderType.mlxAudio,
-      );
-      expect(config.model.providerModelId, mlxAudioQwenAsrModelId);
-    });
+        expect(config, isNotNull);
+        expect(config!.provider.id, _providerId);
+        expect(
+          config.provider.inferenceProviderType,
+          InferenceProviderType.mistral,
+        );
+        expect(config.model.providerModelId, _providerModelId);
+      },
+    );
+
+    test(
+      'falls back to MLX when only the local model is configured',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+
+        final config = await bench.service.resolveRealtimeConfig();
+
+        expect(config, isNotNull);
+        expect(config!.provider.id, _mlxProviderId);
+        expect(
+          config.provider.inferenceProviderType,
+          InferenceProviderType.mlxAudio,
+        );
+        expect(config.model.providerModelId, mlxAudioQwenAsrModelId);
+      },
+    );
 
     test('returns null when no realtime model configured', () async {
       final bench = await _TestBench.create(addConfig: false);
@@ -977,6 +1002,33 @@ void main() {
 
       final result = await bench.stop();
       expect(result.transcript, 'Final transcript');
+      expect(result.usedTranscriptFallback, isFalse);
+    });
+
+    test('keeps accumulated deltas when done text is shorter', () async {
+      final bench = await _TestBench.create();
+      addTearDown(bench.dispose);
+
+      await bench.startTranscription();
+      await bench.sendPcm(_pcmSilence(64));
+      bench.channel
+        ..simulateServerMessage({
+          'type': 'transcription.text.delta',
+          'text': 'Complete client animation ',
+        })
+        ..simulateServerMessage({
+          'type': 'transcription.text.delta',
+          'text': 'and commission work',
+        });
+      await Future<void>.delayed(Duration.zero);
+
+      bench.scheduleDone('Complete client animation');
+
+      final result = await bench.stop();
+      expect(
+        result.transcript,
+        'Complete client animation and commission work',
+      );
       expect(result.usedTranscriptFallback, isFalse);
     });
 

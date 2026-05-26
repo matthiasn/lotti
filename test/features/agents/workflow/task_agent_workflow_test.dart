@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -467,6 +468,46 @@ void main() {
           contains('test-conv-id'),
         );
       });
+
+      test(
+        'propagates the resolved model geminiThinkingMode to the wrapper',
+        () async {
+          Object? capturedInferenceRepo;
+          String? capturedModel;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                capturedModel = model;
+                capturedInferenceRepo = inferenceRepo;
+                return null;
+              };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(capturedModel, 'models/gemini-3-flash-preview');
+          expect(capturedInferenceRepo, isA<CloudInferenceWrapper>());
+
+          final wrapper = capturedInferenceRepo! as CloudInferenceWrapper;
+          // geminiModel fixture relies on AiConfigModel.geminiThinkingMode's
+          // default value (low), which the workflow forwards to the wrapper.
+          expect(wrapper.geminiThinkingMode, GeminiThinkingMode.low);
+        },
+      );
 
       test('queries proposal ledger for deduplication context', () async {
         // Override with a non-empty ledger (pendingSets populated) to

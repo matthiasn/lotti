@@ -66,6 +66,7 @@ class DayAgentStrategy extends ConversationStrategy {
   final DomainLogger domainLogger;
 
   final _observations = <ObservationRecord>[];
+  var _didPersistDraftDayPlan = false;
   String? _finalResponse;
 
   static const _uuid = Uuid();
@@ -73,6 +74,9 @@ class DayAgentStrategy extends ConversationStrategy {
   /// Returns observations accumulated from `record_observations` calls.
   List<ObservationRecord> extractObservations() =>
       List.unmodifiable(_observations);
+
+  /// Whether this wake successfully persisted a plan via `draft_day_plan`.
+  bool get didPersistDraftDayPlan => _didPersistDraftDayPlan;
 
   /// Called by the workflow after the conversation loop finishes.
   void recordFinalResponse(String? content) {
@@ -117,6 +121,9 @@ class DayAgentStrategy extends ConversationStrategy {
 
       if (DayAgentToolNames.isWorkflowHandlerTool(toolName)) {
         final result = await executeToolHandler(toolName, args, manager);
+        if (toolName == DayAgentToolNames.draftDayPlan && result.success) {
+          _didPersistDraftDayPlan = true;
+        }
         manager.addToolResponse(toolCallId: call.id, response: result.output);
         await _recordToolResultMessage(
           toolName: toolName,
