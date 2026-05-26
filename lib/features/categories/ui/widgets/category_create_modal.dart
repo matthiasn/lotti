@@ -12,6 +12,25 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
+/// Returns the width to pass to `flutter_colorpicker.ColorPicker` given
+/// the [available] horizontal space inside the modal.
+///
+/// In `portraitOnly: true` mode the package sizes the whole picker
+/// (saturation square + hue slider below it) from `colorPickerWidth`,
+/// so this single value drives the entire layout. The result is
+/// clamped to the design-system maximum so wide modals don't render a
+/// disproportionately huge picker; the lower bound is `0.0` so an
+/// extremely narrow surface (split-view, tight column) shrinks the
+/// picker rather than overflowing it (red-team review by
+/// gemini-code-assist on PR #3215).
+@visibleForTesting
+double pickerSquareWidthFor(double available) {
+  return available.clamp(
+    0.0,
+    CategoryIconConstants.colorPickerMaxSquareWidth,
+  );
+}
+
 class CategoryCreateModal extends ConsumerStatefulWidget {
   const CategoryCreateModal({
     required this.onCategoryCreated,
@@ -80,18 +99,51 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: CategoryIconConstants.sectionSpacing),
-                  ColorPicker(
-                    pickerColor: _pickerColor,
-                    enableAlpha: false,
-                    labelTypes: const [],
-                    onColorChanged: (color) {
-                      setState(() {
-                        _pickerColor = color;
-                      });
+                  // `flutter_colorpicker` ships two layouts keyed off
+                  // `MediaQuery.of(context).orientation`:
+                  //   * portrait — saturation square on top, hue slider
+                  //     below; both derive their width from
+                  //     `colorPickerWidth`, so the whole picker is
+                  //     exactly `colorPickerWidth` wide.
+                  //   * landscape — saturation square on the left, a
+                  //     `sliderByPaletteType` Row on the right whose
+                  //     slider column is hard-coded to 260 px wide
+                  //     regardless of `colorPickerWidth`.
+                  // Desktop hosts (macOS, Linux, web) report landscape
+                  // orientation, so the package picks the landscape
+                  // branch inside our WoltModalSheet page and the
+                  // 260-px slider blew past the modal's right edge.
+                  //
+                  // `portraitOnly: true` forces the portrait branch
+                  // regardless of host orientation; the LayoutBuilder
+                  // then sizes the entire picker to fit available
+                  // width. The lower clamp is 0 (not a "preferred
+                  // minimum"): on extremely narrow surfaces — tight
+                  // split-views, custom test rigs — enforcing a fixed
+                  // minimum like 200 px would re-introduce a small
+                  // overflow. Scaling gracefully down to whatever
+                  // space we get is the safer default.
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final squareWidth = pickerSquareWidthFor(
+                        constraints.maxWidth,
+                      );
+                      return ColorPicker(
+                        pickerColor: _pickerColor,
+                        enableAlpha: false,
+                        labelTypes: const [],
+                        colorPickerWidth: squareWidth,
+                        portraitOnly: true,
+                        onColorChanged: (color) {
+                          setState(() {
+                            _pickerColor = color;
+                          });
+                        },
+                        pickerAreaBorderRadius: BorderRadius.circular(
+                          CategoryIconConstants.colorPickerBorderRadius,
+                        ),
+                      );
                     },
-                    pickerAreaBorderRadius: BorderRadius.circular(
-                      CategoryIconConstants.colorPickerBorderRadius,
-                    ),
                   ),
                   const SizedBox(height: CategoryIconConstants.sectionSpacing),
                   _buildIconPicker(),

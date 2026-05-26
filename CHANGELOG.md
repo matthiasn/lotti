@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   if the timer stops before you accept them.
 - Agent workflow diagnostics no longer write suggestion argument values or raw
   exception text into runtime log files.
+- The Create Category modal's colour picker no longer overflows on desktop:
+  the hue slider used to be clipped off the right edge of the modal, leaving
+  the colour ungrabbable. The picker now fits inside the modal width on every
+  platform, with the saturation square clamped to the design-system size.
 
 ## [0.9.1005]
 ### Changed

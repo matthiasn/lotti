@@ -36,7 +36,8 @@ abstract class AiSettingsFilterState with _$AiSettingsFilterState {
 enum AiSettingsTab {
   providers,
   models,
-  profiles;
+  profiles
+  ;
 
   /// Human-readable display name for the tab
   String get displayName {

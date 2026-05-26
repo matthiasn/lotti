@@ -20,7 +20,8 @@ enum PortalAccuracy {
   city(2),
   neighborhood(3),
   street(4),
-  exact(5);
+  exact(5)
+  ;
 
   const PortalAccuracy(this.value);
   final int value;
