@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -381,6 +382,109 @@ void main() {
         verifyNever(() => repository.getAgentState('task-agent'));
       },
     );
+
+    group('enqueueDraftingWake', () {
+      test(
+        'enqueues a drafting wake with the day-id token when an agent exists',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+
+          final result = await service.enqueueDraftingWake(dayDate: testDate);
+
+          expect(result, isTrue);
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: agentId,
+              reason: dayAgentDraftingReason,
+              triggerTokens: {dayAgentDraftingToken(dayId)},
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'adds the capture-submitted token when captureId is provided',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+
+          final result = await service.enqueueDraftingWake(
+            dayDate: testDate,
+            captureId: '  capture-42  ',
+          );
+
+          expect(result, isTrue);
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: agentId,
+              reason: dayAgentDraftingReason,
+              triggerTokens: {
+                dayAgentDraftingToken(dayId),
+                dayAgentCaptureSubmittedToken('capture-42'),
+              },
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'ignores a blank captureId and emits only the drafting token',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+
+          final result = await service.enqueueDraftingWake(
+            dayDate: testDate,
+            captureId: '   ',
+          );
+
+          expect(result, isTrue);
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: agentId,
+              reason: dayAgentDraftingReason,
+              triggerTokens: {dayAgentDraftingToken(dayId)},
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'returns false and skips enqueue when no day agent exists',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => null);
+
+          final result = await service.enqueueDraftingWake(dayDate: testDate);
+
+          expect(result, isFalse);
+          verifyNever(
+            () => orchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+        },
+      );
+    });
 
     test('triggerReanalysis enqueues a manual reanalysis wake', () {
       service.triggerReanalysis(agentId);

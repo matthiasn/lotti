@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
@@ -424,6 +426,134 @@ void main() {
         },
       ]);
     });
+
+    test(
+      'includes a null-baseline drafting context for drafting-token wakes',
+      () async {
+        final planService = MockDayAgentPlanService();
+        when(
+          () => planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await execute(
+          workflow(planService: planService),
+          triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+        );
+
+        expect(result.success, isTrue);
+        final userPayload =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
+        expect(draftingPayload['requested'], isTrue);
+        expect(draftingPayload['baselinePlan'], isNull);
+        verify(
+          () => planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'surfaces the existing draft as the baseline for drafting wakes',
+      () async {
+        final planService = MockDayAgentPlanService();
+        final baselinePlan =
+            AgentDomainEntity.dayPlan(
+                  id: 'day_agent_plan:$dayId',
+                  agentId: agentId,
+                  dayId: dayId,
+                  planDate: DateTime(2026, 5, 25),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 25),
+                    status: const DayPlanStatus.draft(),
+                    plannedBlocks: [
+                      PlannedBlock(
+                        id: 'block-1',
+                        categoryId: 'work',
+                        startTime: DateTime(2026, 5, 25, 9),
+                        endTime: DateTime(2026, 5, 25, 10),
+                        title: 'Prep demo',
+                        reason: 'High-energy window.',
+                      ),
+                    ],
+                  ),
+                  energyBands: [
+                    DayAgentEnergyBand(
+                      start: DateTime(2026, 5, 25, 9),
+                      end: DateTime(2026, 5, 25, 12),
+                      level: DayAgentEnergyLevel.high,
+                      label: 'HIGH ENERGY',
+                    ),
+                  ],
+                  capacityMinutes: 360,
+                  scheduledMinutes: 60,
+                  createdAt: DateTime(2026, 5, 25, 8),
+                  updatedAt: DateTime(2026, 5, 25, 8),
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+        when(
+          () => planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayId,
+          ),
+        ).thenAnswer((_) async => baselinePlan);
+
+        final result = await execute(
+          workflow(planService: planService),
+          triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+        );
+
+        expect(result.success, isTrue);
+        final userPayload =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
+        final plan = draftingPayload['baselinePlan'] as Map<String, dynamic>;
+        expect(plan['planId'], 'day_agent_plan:$dayId');
+        expect(plan['capacityMinutes'], 360);
+        expect(plan['scheduledMinutes'], 60);
+        final blocks = plan['blocks'] as List<dynamic>;
+        expect(blocks, hasLength(1));
+        expect(
+          (blocks.single as Map<String, dynamic>)['title'],
+          'Prep demo',
+        );
+        final bands = plan['energyBands'] as List<dynamic>;
+        expect(bands, hasLength(1));
+        expect((bands.single as Map<String, dynamic>)['level'], 'high');
+      },
+    );
+
+    test(
+      'omits the drafting context when no drafting token is present',
+      () async {
+        final planService = MockDayAgentPlanService();
+
+        final result = await execute(
+          workflow(planService: planService),
+          triggerTokens: {dayId},
+        );
+
+        expect(result.success, isTrue);
+        final userPayload =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        expect(userPayload.containsKey('drafting'), isFalse);
+        verifyNever(
+          () => planService.draftPlanForDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        );
+      },
+    );
 
     test('delegates capture tools to the configured capture service', () async {
       final captureService = MockDayAgentCaptureService();

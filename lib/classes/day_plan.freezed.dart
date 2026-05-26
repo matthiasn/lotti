@@ -408,6 +408,9 @@ mixin _$PlannedBlock {
  DateTime get endTime;/// Optional note on the block
  String? get note;/// Optional task this block schedules.
  String? get taskId;/// Human-readable title used when no backing task row is available.
+/// Nullable at the model layer for backwards compatibility with legacy
+/// Daily OS blocks; the day-agent tool handler rejects null/blank titles
+/// when parsing model-emitted blocks.
  String? get title;/// What created this block.
  PlannedBlockType get type;/// Current block lifecycle state.
  PlannedBlockState get state;/// Why this block belongs at this time. Required for AI blocks at the
@@ -631,6 +634,9 @@ class _PlannedBlock implements PlannedBlock {
 /// Optional task this block schedules.
 @override final  String? taskId;
 /// Human-readable title used when no backing task row is available.
+/// Nullable at the model layer for backwards compatibility with legacy
+/// Daily OS blocks; the day-agent tool handler rejects null/blank titles
+/// when parsing model-emitted blocks.
 @override final  String? title;
 /// What created this block.
 @override@JsonKey() final  PlannedBlockType type;

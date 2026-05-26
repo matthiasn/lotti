@@ -251,6 +251,71 @@ void _expectTokenRoundTrip() {
         isNull,
       );
     });
+
+    test('trims surrounding whitespace from the returned capture id', () {
+      expect(
+        captureIdFromTriggerTokens({
+          '$dayAgentCaptureSubmittedPrefix  capture-1  ',
+        }),
+        'capture-1',
+      );
+    });
+  });
+
+  group('dayAgentDraftingToken', () {
+    test('prefixes the day id', () {
+      expect(
+        dayAgentDraftingToken('dayplan-2026-05-25'),
+        '${dayAgentDraftingPrefix}dayplan-2026-05-25',
+      );
+    });
+  });
+
+  group('draftingDayIdFromTriggerTokens', () {
+    test('returns the day id when a token has the prefix', () {
+      final result = draftingDayIdFromTriggerTokens({
+        dayAgentCaptureSubmittedToken('capture-1'),
+        dayAgentDraftingToken('dayplan-2026-05-25'),
+      });
+      expect(result, 'dayplan-2026-05-25');
+    });
+
+    test('returns null when no token uses the drafting prefix', () {
+      expect(
+        draftingDayIdFromTriggerTokens({
+          dayAgentCaptureSubmittedToken('capture-1'),
+          'other',
+        }),
+        isNull,
+      );
+    });
+
+    test('returns null on an empty trigger-token set', () {
+      expect(draftingDayIdFromTriggerTokens(<String>{}), isNull);
+    });
+
+    test('skips a prefix-only token without a day id', () {
+      expect(
+        draftingDayIdFromTriggerTokens({dayAgentDraftingPrefix}),
+        isNull,
+      );
+    });
+
+    test('skips a whitespace-only day id and returns null', () {
+      expect(
+        draftingDayIdFromTriggerTokens({'$dayAgentDraftingPrefix   '}),
+        isNull,
+      );
+    });
+
+    test('trims surrounding whitespace from the returned day id', () {
+      expect(
+        draftingDayIdFromTriggerTokens({
+          '$dayAgentDraftingPrefix  dayplan-2026-05-25  ',
+        }),
+        'dayplan-2026-05-25',
+      );
+    });
   });
 }
 

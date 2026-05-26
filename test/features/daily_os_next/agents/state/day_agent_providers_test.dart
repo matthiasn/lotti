@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -255,6 +256,94 @@ void main() {
       expect(result, const [pending]);
       verify(
         () => captureService.surfacePendingDecisions(
+          agentId: 'day-agent-001',
+          dayId: 'dayplan-2026-05-25',
+        ),
+      ).called(1);
+    });
+  });
+
+  group('draftedPlanForDateProvider', () {
+    test('returns null when no day agent exists', () async {
+      final service = MockDayAgentService();
+      final planService = MockDayAgentPlanService();
+      final notifications = UpdateNotifications();
+      final date = DateTime(2026, 5, 25, 9);
+      when(
+        () => service.getDayAgentForDate(date),
+      ).thenAnswer((_) async => null);
+      final container = ProviderContainer(
+        overrides: [
+          dayAgentServiceProvider.overrideWithValue(service),
+          dayAgentPlanServiceProvider.overrideWithValue(planService),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        draftedPlanForDateProvider(date).future,
+      );
+
+      expect(result, isNull);
+      verifyNever(
+        () => planService.draftPlanForDay(
+          agentId: any(named: 'agentId'),
+          dayId: any(named: 'dayId'),
+        ),
+      );
+    });
+
+    test('loads the drafted plan for the active day agent', () async {
+      final service = MockDayAgentService();
+      final planService = MockDayAgentPlanService();
+      final notifications = UpdateNotifications();
+      final date = DateTime(2026, 5, 25, 9);
+      final agent = makeTestIdentity(
+        id: 'day-agent-001',
+        agentId: 'day-agent-001',
+        kind: AgentKinds.dayAgent,
+      );
+      final plan =
+          AgentDomainEntity.dayPlan(
+                id: 'day_agent_plan:dayplan-2026-05-25',
+                agentId: 'day-agent-001',
+                dayId: 'dayplan-2026-05-25',
+                planDate: DateTime(2026, 5, 25),
+                data: DayPlanData(
+                  planDate: DateTime(2026, 5, 25),
+                  status: const DayPlanStatus.draft(),
+                ),
+                createdAt: DateTime(2026, 5, 25, 8),
+                updatedAt: DateTime(2026, 5, 25, 8),
+                vectorClock: null,
+              )
+              as DayPlanEntity;
+      when(
+        () => service.getDayAgentForDate(date),
+      ).thenAnswer((_) async => agent);
+      when(
+        () => planService.draftPlanForDay(
+          agentId: 'day-agent-001',
+          dayId: 'dayplan-2026-05-25',
+        ),
+      ).thenAnswer((_) async => plan);
+      final container = ProviderContainer(
+        overrides: [
+          dayAgentServiceProvider.overrideWithValue(service),
+          dayAgentPlanServiceProvider.overrideWithValue(planService),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        draftedPlanForDateProvider(date).future,
+      );
+
+      expect(result, plan);
+      verify(
+        () => planService.draftPlanForDay(
           agentId: 'day-agent-001',
           dayId: 'dayplan-2026-05-25',
         ),

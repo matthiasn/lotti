@@ -101,3 +101,27 @@ Future<List<DayAgentPendingItem>> pendingDecisionsForDate(
     dayId: dayId,
   );
 }
+
+/// Currently drafted day plan for [date], if any.
+///
+/// Returns the base [AgentDomainEntity] for codegen compatibility — the
+/// riverpod_generator in this codebase rejects freezed subtypes as return
+/// types. Consumers should unwrap via `mapOrNull(dayPlan: (e) => e)` to
+/// get the typed [DayPlanEntity] view.
+@riverpod
+Future<AgentDomainEntity?> draftedPlanForDate(
+  Ref ref,
+  DateTime date,
+) async {
+  final dayId = dayAgentIdForDate(date);
+  final dayAgentService = ref.watch(dayAgentServiceProvider);
+  final planService = ref.watch(dayAgentPlanServiceProvider);
+  ref.watch(agentUpdateStreamProvider(dayId));
+
+  final agent = await dayAgentService.getDayAgentForDate(date);
+  if (agent == null) return null;
+  return planService.draftPlanForDay(
+    agentId: agent.agentId,
+    dayId: dayId,
+  );
+}
