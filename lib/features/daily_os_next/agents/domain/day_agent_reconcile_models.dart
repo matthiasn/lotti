@@ -22,6 +22,10 @@ const dayAgentRefinePrefix = 'refine:';
 /// Wake scheduling reason used when a refine is requested.
 const dayAgentRefineReason = 'refine';
 
+/// Wake trigger token prefix used to advertise a task the UI considers
+/// "decided" (one the user said yes to and wants placed in the day plan).
+const dayAgentDecidedTaskPrefix = 'decided_task:';
+
 /// Minimum score that becomes an auto-linked match.
 const dayAgentHighConfidenceThreshold = 0.75;
 
@@ -124,6 +128,36 @@ class DayAgentPendingItem {
   };
 }
 
+/// A task the user has decided to place in a day plan.
+///
+/// Emitted by `DayAgentPlanService.hydrateDecidedTasks` and surfaced in the
+/// drafting prompt under `drafting.decidedTasks`. The model is expected to
+/// set `PlannedBlock.taskId` to a value from this set when its `ai`/`manual`
+/// blocks correspond to one of these tasks.
+class DecidedTaskRef {
+  const DecidedTaskRef({
+    required this.id,
+    required this.title,
+    required this.categoryId,
+  });
+
+  /// Journal task ID.
+  final String id;
+
+  /// Task title.
+  final String title;
+
+  /// Task category ID, if any.
+  final String? categoryId;
+
+  /// JSON shape sent to the model in the drafting prompt.
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'title': title,
+    'categoryId': categoryId,
+  };
+}
+
 /// FTS-backed task candidate returned by `match_to_corpus`.
 class DayAgentCorpusMatch {
   const DayAgentCorpusMatch({
@@ -221,6 +255,27 @@ String? refineDayIdFromTriggerTokens(Set<String> triggerTokens) {
     }
   }
   return null;
+}
+
+/// Creates the decided-task trigger token for [taskId].
+String dayAgentDecidedTaskToken(String taskId) {
+  return '$dayAgentDecidedTaskPrefix$taskId';
+}
+
+/// Extracts every decided-task ID advertised on a trigger-token set.
+///
+/// Returns IDs trimmed of surrounding whitespace, in iteration order of the
+/// input set. Skips prefix-only and whitespace-only tokens. Returns an empty
+/// list when no decided-task tokens are present.
+List<String> decidedTaskIdsFromTriggerTokens(Set<String> triggerTokens) {
+  final out = <String>[];
+  for (final token in triggerTokens) {
+    if (token.startsWith(dayAgentDecidedTaskPrefix)) {
+      final taskId = token.substring(dayAgentDecidedTaskPrefix.length).trim();
+      if (taskId.isNotEmpty) out.add(taskId);
+    }
+  }
+  return out;
 }
 
 /// Converts a task row to a pending-decision projection.

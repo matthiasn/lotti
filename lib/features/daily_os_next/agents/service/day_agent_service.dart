@@ -160,12 +160,20 @@ class DayAgentService {
   /// `capture_submitted:<captureId>` trigger token so the workflow loads its
   /// transcript and parsed items into the drafting prompt.
   ///
+  /// When [decidedTaskIds] is non-empty, each task id is advertised as a
+  /// `decided_task:<taskId>` trigger token. The workflow hydrates these
+  /// alongside any capture-derived matches and surfaces the merged set in
+  /// the drafting prompt so the model can attach `taskId` on the blocks it
+  /// places. Blank/whitespace task ids are silently skipped to mirror the
+  /// [captureId] guard. Duplicates dedupe via the trigger-token set.
+  ///
   /// Returns `false` when no active day agent exists for [dayDate]. Callers
   /// are expected to either call [createDayAgent] first or surface the
   /// missing-agent state in the UI.
   Future<bool> enqueueDraftingWake({
     required DateTime dayDate,
     String? captureId,
+    List<String> decidedTaskIds = const [],
   }) async {
     final agent = await getDayAgentForDate(dayDate);
     if (agent == null) {
@@ -183,6 +191,8 @@ class DayAgentService {
       dayAgentDraftingToken(dayId),
       if (captureId != null && captureId.trim().isNotEmpty)
         dayAgentCaptureSubmittedToken(captureId.trim()),
+      for (final taskId in decidedTaskIds)
+        if (taskId.trim().isNotEmpty) dayAgentDecidedTaskToken(taskId.trim()),
     };
     domainLogger.log(
       LogDomains.agentRuntime,

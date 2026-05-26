@@ -484,6 +484,120 @@ void main() {
           );
         },
       );
+
+      test('encodes decidedTaskIds as per-task trigger tokens', () async {
+        when(
+          () => repository.getActiveAgentByKindAndActiveDayId(
+            kind: AgentKinds.dayAgent,
+            activeDayId: dayId,
+          ),
+        ).thenAnswer((_) async => identity());
+
+        final result = await service.enqueueDraftingWake(
+          dayDate: testDate,
+          decidedTaskIds: const ['task-1', 'task-2'],
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => orchestrator.enqueueManualWake(
+            agentId: agentId,
+            reason: dayAgentDraftingReason,
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentDecidedTaskToken('task-1'),
+              dayAgentDecidedTaskToken('task-2'),
+            },
+          ),
+        ).called(1);
+      });
+
+      test(
+        'merges drafting + capture + decided-task tokens in one wake',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+
+          final result = await service.enqueueDraftingWake(
+            dayDate: testDate,
+            captureId: 'capture-99',
+            decidedTaskIds: const ['task-7'],
+          );
+
+          expect(result, isTrue);
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: agentId,
+              reason: dayAgentDraftingReason,
+              triggerTokens: {
+                dayAgentDraftingToken(dayId),
+                dayAgentCaptureSubmittedToken('capture-99'),
+                dayAgentDecidedTaskToken('task-7'),
+              },
+            ),
+          ).called(1);
+        },
+      );
+
+      test('skips blank decidedTaskIds entries', () async {
+        when(
+          () => repository.getActiveAgentByKindAndActiveDayId(
+            kind: AgentKinds.dayAgent,
+            activeDayId: dayId,
+          ),
+        ).thenAnswer((_) async => identity());
+
+        final result = await service.enqueueDraftingWake(
+          dayDate: testDate,
+          decidedTaskIds: const ['task-1', '', '   ', 'task-2'],
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => orchestrator.enqueueManualWake(
+            agentId: agentId,
+            reason: dayAgentDraftingReason,
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentDecidedTaskToken('task-1'),
+              dayAgentDecidedTaskToken('task-2'),
+            },
+          ),
+        ).called(1);
+      });
+
+      test(
+        'dedupes duplicate decidedTaskIds via the trigger-token set',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+
+          final result = await service.enqueueDraftingWake(
+            dayDate: testDate,
+            decidedTaskIds: const ['task-1', 'task-1', '  task-1  '],
+          );
+
+          expect(result, isTrue);
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: agentId,
+              reason: dayAgentDraftingReason,
+              triggerTokens: {
+                dayAgentDraftingToken(dayId),
+                dayAgentDecidedTaskToken('task-1'),
+              },
+            ),
+          ).called(1);
+        },
+      );
     });
 
     test('triggerReanalysis enqueues a manual reanalysis wake', () {
