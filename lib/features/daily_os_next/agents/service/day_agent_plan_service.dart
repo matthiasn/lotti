@@ -99,13 +99,19 @@ class DayAgentPlanService {
     }
   }
 
-  /// Fetch the persisted draft for one day.
+  /// Fetch the persisted plan for one day. Soft-deleted entities are
+  /// hidden so callers that come in after `deletePlanForDay` (commit,
+  /// uncommit, refine, the UI's `currentPlanForDate` projection) all
+  /// see the same "no plan" state instead of operating on the deleted
+  /// row.
   Future<DayPlanEntity?> draftPlanForDay({
     required String agentId,
     required String dayId,
   }) async {
     final entity = await agentRepository.getEntity(dayAgentPlanEntityId(dayId));
-    if (entity is DayPlanEntity && entity.agentId == agentId) {
+    if (entity is DayPlanEntity &&
+        entity.agentId == agentId &&
+        entity.deletedAt == null) {
       return entity;
     }
     return null;
@@ -127,6 +133,11 @@ class DayAgentPlanService {
       agentId,
       type: 'changeSet',
     );
+    // Per-item filtering: a change set can stay `pending` overall while
+    // individual items have already been confirmed/rejected (e.g. the
+    // user accepted one row out of three). The UI only wants to see the
+    // rows it can still act on, so we project each set down to its
+    // still-pending items and drop sets that have nothing left.
     final diffs =
         entities
             .whereType<ChangeSetEntity>()
@@ -136,6 +147,16 @@ class DayAgentPlanService {
                   cs.deletedAt == null &&
                   cs.status == ChangeSetStatus.pending,
             )
+            .map(
+              (cs) => cs.copyWith(
+                items: cs.items
+                    .where(
+                      (item) => item.status == ChangeItemStatus.pending,
+                    )
+                    .toList(growable: false),
+              ),
+            )
+            .where((cs) => cs.items.isNotEmpty)
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return diffs;
@@ -1115,8 +1136,11 @@ class DayAgentPlanService {
       );
     }
     final taskId = _optionalString(data['taskId']);
+    // Always validate — an empty `decidedTaskIds` is not a license for the
+    // model to reference arbitrary task IDs; with no decided tasks the only
+    // permitted references are tasks the user has already authorised via
+    // `allowedExistingTaskIds`.
     if (taskId != null &&
-        decidedTaskIds.isNotEmpty &&
         !decidedTaskIds.contains(taskId) &&
         !allowedExistingTaskIds.contains(taskId)) {
       throw DayAgentCaptureException(

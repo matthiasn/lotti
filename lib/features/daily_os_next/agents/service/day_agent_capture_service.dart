@@ -895,12 +895,22 @@ class DayAgentCaptureService {
 
   static DateTime? _dueFromAnchor(String? raw, DateTime now) {
     if (raw == null) return null;
-    final normalized = raw.trim().toLowerCase();
-    return switch (normalized) {
+    final trimmed = raw.trim();
+    final due = switch (trimmed.toLowerCase()) {
       'today' => _endOfDay(now),
       'tomorrow' => _endOfDay(now.add(const Duration(days: 1))),
-      _ => DateTime.tryParse(raw.trim()),
+      _ => DateTime.tryParse(trimmed),
     };
+    if (due == null) {
+      // Surfacing this as a structured failure (rather than silently dropping
+      // the anchor) prevents `create_task_from_phrase` from persisting an
+      // undated task when the model produces a malformed `dueAnchor`.
+      throw DayAgentCaptureException(
+        'dueAnchor must be "today", "tomorrow", or a valid ISO-8601 '
+        'date-time; got "$raw"',
+      );
+    }
+    return due;
   }
 
   static String? _blankToNull(String? value) {
@@ -934,7 +944,12 @@ class DayAgentCaptureService {
   }
 
   static DateTime _endOfDay(DateTime date) {
-    return DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+    // Preserve the input's UTC/local zone so callers comparing the resulting
+    // `due` against other UTC timestamps (created_at, etc.) don't get a
+    // local→UTC offset surprise.
+    return date.isUtc
+        ? DateTime.utc(date.year, date.month, date.day, 23, 59, 59, 999)
+        : DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
   }
 
   static Future<Task?> _defaultTaskFactory({

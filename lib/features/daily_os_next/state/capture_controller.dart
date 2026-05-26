@@ -230,12 +230,11 @@ class CaptureController extends Notifier<CaptureState> {
   }
 
   Future<void> _beginListening() async {
-    // Daily OS capture/refine defaults to Mistral cloud realtime for
-    // interactive latency and falls back to MLX when cloud realtime is absent.
-    // Falls back to MLX automatically when Mistral isn't configured.
-    final realtimeConfig = await _realtimeService.resolveRealtimeConfig(
-      preferMistral: true,
-    );
+    // Mistral cloud realtime is preferred for interactive latency; MLX is the
+    // automatic fallback when no Mistral realtime model is configured. The
+    // ordering lives in `RealtimeTranscriptionService.resolveRealtimeConfig`
+    // so every realtime caller shares the same preference.
+    final realtimeConfig = await _realtimeService.resolveRealtimeConfig();
     _activeRealtimeConfig = realtimeConfig;
     if (realtimeConfig != null) {
       await _beginListeningRealtime();

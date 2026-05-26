@@ -26,9 +26,9 @@ void main() {
       'setStateFilter / setCategory / setQuery mutate only the touched field',
       () {
         final container = makeContainer();
-        final ctl = container.read(tasksCorpusControllerProvider.notifier);
+        final ctl = container.read(tasksCorpusControllerProvider.notifier)
+          ..setStateFilter(TaskCorpusState.overdue);
 
-        ctl.setStateFilter(TaskCorpusState.overdue);
         var s = container.read(tasksCorpusControllerProvider);
         expect(s.stateFilter, TaskCorpusState.overdue);
         expect(s.categoryId, isNull);
@@ -117,9 +117,7 @@ void main() {
       final container = makeContainer(freshAgent());
       await container.read(tasksCorpusItemsProvider.future);
 
-      container
-          .read(tasksCorpusControllerProvider.notifier)
-          .setQuery('DECK');
+      container.read(tasksCorpusControllerProvider.notifier).setQuery('DECK');
 
       final filtered = await container.read(tasksCorpusItemsProvider.future);
       expect(filtered, hasLength(1));

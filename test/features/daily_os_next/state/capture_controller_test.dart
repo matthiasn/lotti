@@ -100,9 +100,7 @@ void main() {
       // Realtime not configured → controller falls back to the batch
       // path for every test in this group.
       when(
-        () => realtimeService.resolveRealtimeConfig(
-          preferMistral: any(named: 'preferMistral'),
-        ),
+        () => realtimeService.resolveRealtimeConfig(),
       ).thenAnswer((_) async => null);
 
       when(recorder.hasPermission).thenAnswer((_) async => true);
@@ -328,9 +326,7 @@ void main() {
       fakeRecorder.pcmStream = pcmController.stream;
 
       when(
-        () => realtimeService.resolveRealtimeConfig(
-          preferMistral: any(named: 'preferMistral'),
-        ),
+        () => realtimeService.resolveRealtimeConfig(),
       ).thenAnswer((_) async => realtimeConfig);
       when(
         () => realtimeService.amplitudeStream,
@@ -410,11 +406,7 @@ void main() {
           container.read(captureControllerProvider).phase,
           CapturePhase.listening,
         );
-        verify(
-          () => realtimeService.resolveRealtimeConfig(
-            preferMistral: true,
-          ),
-        ).called(1);
+        verify(realtimeService.resolveRealtimeConfig).called(1);
         verify(
           () => realtimeService.startRealtimeTranscription(
             pcmStream: any(named: 'pcmStream'),

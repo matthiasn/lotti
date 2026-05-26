@@ -68,14 +68,13 @@ class RealtimeTranscriptionService {
 
   /// Resolves a configured real-time model.
   ///
-  /// MLX Qwen3-ASR is preferred by default because it keeps audio local.
-  /// Mistral is the fallback for cloud realtime transcription.
-  ///
-  /// Pass [preferMistral] `true` to invert the preference — Mistral first,
-  /// MLX only if no Mistral realtime model is configured. The Daily OS Next
-  /// Capture and Refine flows request this cloud-first ordering.
+  /// Mistral realtime is preferred by default — interactive latency on the
+  /// cloud endpoint is currently better than the local MLX Qwen3-ASR path, so
+  /// every caller (Daily OS Next capture/refine, chat input, the speech
+  /// recorder) gets cloud realtime when it is configured. MLX is the fallback
+  /// for users who have only the local model wired up.
   Future<({AiConfigInferenceProvider provider, AiConfigModel model})?>
-  resolveRealtimeConfig({bool preferMistral = false}) async {
+  resolveRealtimeConfig() async {
     final aiRepo = _ref.read(aiConfigRepositoryProvider);
     final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
     final providersFuture = aiRepo.getConfigsByType(
@@ -88,23 +87,20 @@ class RealtimeTranscriptionService {
         .whereType<AiConfigInferenceProvider>()
         .toList();
 
-    final mlxConfig = _findRealtimeConfig(
-      models: models,
-      providers: allProviders,
-      isModel: _isMlxRealtimeModel,
-      providerType: InferenceProviderType.mlxAudio,
-    );
     final mistralConfig = _findRealtimeConfig(
       models: models,
       providers: allProviders,
       isModel: MistralRealtimeTranscriptionRepository.isRealtimeModel,
       providerType: InferenceProviderType.mistral,
     );
+    if (mistralConfig != null) return mistralConfig;
 
-    if (preferMistral) {
-      return mistralConfig ?? mlxConfig;
-    }
-    return mlxConfig ?? mistralConfig;
+    return _findRealtimeConfig(
+      models: models,
+      providers: allProviders,
+      isModel: _isMlxRealtimeModel,
+      providerType: InferenceProviderType.mlxAudio,
+    );
   }
 
   static ({AiConfigInferenceProvider provider, AiConfigModel model})?
