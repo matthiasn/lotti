@@ -1543,13 +1543,6 @@
   "dailyOsNextCaptureHeadlineLead": "¿Qué tienes en mente",
   "dailyOsNextCaptureHeadlineTail": "para hoy?",
   "dailyOsNextCaptureHeadlineTailForDate": "para {date}?",
-  "@dailyOsNextCaptureHeadlineTailForDate": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "dailyOsNextCaptureHeadlineTailTomorrow": "para mañana?",
   "dailyOsNextCaptureHeadlineTailYesterday": "para ayer?",
   "dailyOsNextCaptureIdleHint": "Toca para hablar · captúralo · o escríbelo",
@@ -1727,16 +1720,6 @@
   "dailyOsNextTimelineMeridiemPm": "PM",
   "dailyOsNextTimelineMeridiemPmShort": "pm",
   "dailyOsNextTimelineSessionOf": "Sesión {index} de {total}",
-  "@dailyOsNextTimelineSessionOf": {
-    "placeholders": {
-      "index": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "dailyOsNextTriageConfirmDefer": "Aplazado",
   "dailyOsNextTriageConfirmDone": "Marcado como hecho",
   "dailyOsNextTriageConfirmDoNow": "Hecho ya",

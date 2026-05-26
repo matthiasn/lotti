@@ -339,7 +339,7 @@ class DayBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final category = _categoryColor(context);
+    final category = _categoryColor();
     final isBuffer = block.type == TimeBlockType.buffer;
     final isDrafted = block.state == TimeBlockState.drafted;
 
@@ -387,8 +387,7 @@ class DayBlock extends StatelessWidget {
     );
   }
 
-  Color _categoryColor(BuildContext context) =>
-      categoryColorFromHex(block.category.colorHex);
+  Color _categoryColor() => categoryColorFromHex(block.category.colorHex);
 }
 
 class _BlockContent extends StatelessWidget {

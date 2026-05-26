@@ -3300,7 +3300,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Bună dimineața.';
 
   @override
-  String get dailyOsNextParsedCardBreakLinkTooltip => 'Desfaceți legătura';
+  String get dailyOsNextParsedCardBreakLinkTooltip => 'Desface legătura';
 
   @override
   String get dailyOsNextPlanViewAgenda => 'Agenda';

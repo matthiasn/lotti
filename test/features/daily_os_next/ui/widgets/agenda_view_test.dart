@@ -234,7 +234,7 @@ void main() {
 
         // 90m of Work (dropped 60m excluded), 30m of Personal.
         expect(find.text('Work · 1h 30m'), findsOneWidget);
-        expect(find.text('Personal · 30m'), findsNothing);
+        expect(find.text('Personal · 0h 30m'), findsOneWidget);
       },
     );
 

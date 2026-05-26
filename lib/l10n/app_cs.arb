@@ -1352,13 +1352,6 @@
   "dailyOsNextCaptureHeadlineLead": "Co máš dnes",
   "dailyOsNextCaptureHeadlineTail": "na mysli?",
   "dailyOsNextCaptureHeadlineTailForDate": "na {date}?",
-  "@dailyOsNextCaptureHeadlineTailForDate": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "dailyOsNextCaptureHeadlineTailTomorrow": "na zítra?",
   "dailyOsNextCaptureHeadlineTailYesterday": "na včera?",
   "dailyOsNextCaptureIdleHint": "Klepni pro mluvení · zachyť to · nebo napiš",
@@ -1536,16 +1529,6 @@
   "dailyOsNextTimelineMeridiemPm": "PM",
   "dailyOsNextTimelineMeridiemPmShort": "pm",
   "dailyOsNextTimelineSessionOf": "Sezení {index} z {total}",
-  "@dailyOsNextTimelineSessionOf": {
-    "placeholders": {
-      "index": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "dailyOsNextTriageConfirmDefer": "Odloženo",
   "dailyOsNextTriageConfirmDone": "Označeno jako hotové",
   "dailyOsNextTriageConfirmDoNow": "Hotovo hned",

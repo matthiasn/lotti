@@ -1543,13 +1543,6 @@
   "dailyOsNextCaptureHeadlineLead": "La ce vă gândiți",
   "dailyOsNextCaptureHeadlineTail": "pentru astăzi?",
   "dailyOsNextCaptureHeadlineTailForDate": "pentru {date}?",
-  "@dailyOsNextCaptureHeadlineTailForDate": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "dailyOsNextCaptureHeadlineTailTomorrow": "pentru mâine?",
   "dailyOsNextCaptureHeadlineTailYesterday": "pentru ieri?",
   "dailyOsNextCaptureIdleHint": "Apăsați pentru a vorbi · capturați · sau tastați",
@@ -1616,7 +1609,7 @@
   "dailyOsNextGreetingEvening": "Bună seara.",
   "dailyOsNextGreetingHi": "Salut 👋",
   "dailyOsNextGreetingMorning": "Bună dimineața.",
-  "dailyOsNextParsedCardBreakLinkTooltip": "Desfaceți legătura",
+  "dailyOsNextParsedCardBreakLinkTooltip": "Desface legătura",
   "dailyOsNextPlanViewAgenda": "Agenda",
   "dailyOsNextPlanViewDay": "Ziua",
   "dailyOsNextReconcileBadgeMatched": "LEGAT",
@@ -1727,16 +1720,6 @@
   "dailyOsNextTimelineMeridiemPm": "PM",
   "dailyOsNextTimelineMeridiemPmShort": "pm",
   "dailyOsNextTimelineSessionOf": "Sesiunea {index} din {total}",
-  "@dailyOsNextTimelineSessionOf": {
-    "placeholders": {
-      "index": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "dailyOsNextTriageConfirmDefer": "Amânat",
   "dailyOsNextTriageConfirmDone": "Marcat ca finalizat",
   "dailyOsNextTriageConfirmDoNow": "Făcut imediat",
