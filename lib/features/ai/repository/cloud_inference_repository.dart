@@ -17,7 +17,6 @@ import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
-import 'package:lotti/features/ai/util/gemini_config.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -136,6 +135,7 @@ class CloudInferenceRepository {
     AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    GeminiThinkingMode? geminiThinkingMode,
   }) {
     developer.log(
       'CloudInferenceRepository.generate called with:\n'
@@ -163,14 +163,8 @@ class CloudInferenceRepository {
     // For Gemini, use the native Gemini repository to enable thinking config
     if (provider != null &&
         provider.inferenceProviderType == InferenceProviderType.gemini) {
-      final thinking = getDefaultThinkingConfig(model);
-      // Always capture thoughts for thinking-capable models (thinkingBudget != 0)
-      // so they're available in the AI response modal's Thoughts tab.
-      // The geminiIncludeThoughtsProvider only controls inline display in chat.
-      final includeThoughts = thinking.thinkingBudget != 0;
-      final finalThinking = GeminiThinkingConfig(
-        thinkingBudget: thinking.thinkingBudget,
-        includeThoughts: includeThoughts,
+      final finalThinking = _resolveGeminiThinkingConfig(
+        mode: geminiThinkingMode,
       );
       return _geminiRepository.generateText(
         prompt: prompt,
@@ -513,6 +507,7 @@ class CloudInferenceRepository {
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
+    GeminiThinkingMode? geminiThinkingMode,
   }) {
     developer.log(
       'CloudInferenceRepository.generateWithMessages called with:\n'
@@ -526,14 +521,8 @@ class CloudInferenceRepository {
 
     // For Gemini, use the native multi-turn API with signature support
     if (provider.inferenceProviderType == InferenceProviderType.gemini) {
-      final thinking = getDefaultThinkingConfig(model);
-      // Always capture thoughts for thinking-capable models (thinkingBudget != 0)
-      // so they're available in the AI response modal's Thoughts tab.
-      // The geminiIncludeThoughtsProvider only controls inline display in chat.
-      final includeThoughts = thinking.thinkingBudget != 0;
-      final finalThinking = GeminiThinkingConfig(
-        thinkingBudget: thinking.thinkingBudget,
-        includeThoughts: includeThoughts,
+      final finalThinking = _resolveGeminiThinkingConfig(
+        mode: geminiThinkingMode,
       );
 
       // Extract system message from messages if present
@@ -606,6 +595,23 @@ class CloudInferenceRepository {
     );
 
     return _filterAnthropicPings(res).asBroadcastStream();
+  }
+
+  GeminiThinkingConfig _resolveGeminiThinkingConfig({
+    GeminiThinkingMode? mode,
+  }) {
+    final base = GeminiThinkingConfig.fromMode(
+      mode ?? GeminiThinkingMode.low,
+    );
+
+    // Always capture thoughts for thinking-capable models (budget != 0) so
+    // they're available in the AI response modal's Thoughts tab. The chat UI
+    // still decides whether inline thinking is displayed.
+    return GeminiThinkingConfig(
+      thinkingBudget: base.thinkingBudget,
+      thinkingMode: base.thinkingMode,
+      includeThoughts: base.thinkingBudget != 0,
+    );
   }
 
   // Delegate Ollama-specific methods to OllamaInferenceRepository

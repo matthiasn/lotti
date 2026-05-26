@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 
 enum _GeneratedThinkingBudgetKind {
@@ -55,10 +56,11 @@ String? _generatedThinkingModelId(_GeneratedGeminiThinkingModelKind kind) {
 }
 
 String _generatedThinkingLevel(int budget) {
-  if (budget == -1) return 'HIGH';
-  if (budget < 4096) return 'LOW';
-  if (budget < 8192) return 'MEDIUM';
-  return 'HIGH';
+  if (budget == -1) return 'high';
+  if (budget == 0) return 'minimal';
+  if (budget < 4096) return 'low';
+  if (budget < 8192) return 'medium';
+  return 'high';
 }
 
 class _GeneratedGeminiThinkingScenario {
@@ -182,6 +184,23 @@ void main() {
         expect(GeminiThinkingConfig.standard.includeThoughts, isFalse);
       });
 
+      test('mode presets carry API modes and fallback budgets', () {
+        expect(
+          GeminiThinkingConfig.minimal.thinkingMode,
+          GeminiThinkingMode.minimal,
+        );
+        expect(GeminiThinkingConfig.minimal.thinkingBudget, 0);
+        expect(GeminiThinkingConfig.low.thinkingMode, GeminiThinkingMode.low);
+        expect(GeminiThinkingConfig.low.thinkingBudget, 1024);
+        expect(
+          GeminiThinkingConfig.medium.thinkingMode,
+          GeminiThinkingMode.medium,
+        );
+        expect(GeminiThinkingConfig.medium.thinkingBudget, 4096);
+        expect(GeminiThinkingConfig.high.thinkingMode, GeminiThinkingMode.high);
+        expect(GeminiThinkingConfig.high.thinkingBudget, -1);
+      });
+
       test('presets are const', () {
         // These compile-time const checks verify the presets are constant
         const auto = GeminiThinkingConfig.auto;
@@ -191,6 +210,34 @@ void main() {
         expect(auto, isNotNull);
         expect(disabled, isNotNull);
         expect(standard, isNotNull);
+      });
+    });
+
+    group('fromMode', () {
+      test('maps each model-setting mode to the expected config', () {
+        final cases = <GeminiThinkingMode, (int, String)>{
+          GeminiThinkingMode.minimal: (0, 'minimal'),
+          GeminiThinkingMode.low: (1024, 'low'),
+          GeminiThinkingMode.medium: (4096, 'medium'),
+          GeminiThinkingMode.high: (-1, 'high'),
+        };
+
+        for (final entry in cases.entries) {
+          final config = GeminiThinkingConfig.fromMode(
+            entry.key,
+            includeThoughts: entry.key != GeminiThinkingMode.minimal,
+          );
+
+          expect(config.thinkingMode, entry.key);
+          expect(config.thinkingBudget, entry.value.$1);
+          expect(
+            config.toJson(modelId: 'gemini-3.1-pro-preview'),
+            {
+              'thinkingLevel': entry.value.$2,
+              'includeThoughts': entry.key != GeminiThinkingMode.minimal,
+            },
+          );
+        }
       });
     });
 
@@ -289,13 +336,13 @@ void main() {
 
         expect(json.containsKey('thinkingLevel'), isTrue);
         expect(json.containsKey('thinkingBudget'), isFalse);
-        expect(json['thinkingLevel'], 'HIGH');
+        expect(json['thinkingLevel'], 'high');
         expect(json['includeThoughts'], isFalse);
       });
 
-      test('emits thinkingBudget for Gemini 2.5 model', () {
+      test('emits thinkingBudget for non-Gemini-3 model', () {
         final json = GeminiThinkingConfig.auto.toJson(
-          modelId: 'models/gemini-2.5-pro',
+          modelId: 'models/custom-model',
         );
 
         expect(json.containsKey('thinkingBudget'), isTrue);
@@ -310,43 +357,43 @@ void main() {
         expect(json.containsKey('thinkingLevel'), isFalse);
       });
 
-      test('maps auto preset to HIGH for Gemini 3', () {
+      test('maps auto preset to high for Gemini 3', () {
         final json = GeminiThinkingConfig.auto.toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
-        expect(json['thinkingLevel'], 'HIGH');
+        expect(json['thinkingLevel'], 'high');
       });
 
-      test('maps disabled preset to LOW for Gemini 3', () {
+      test('maps disabled preset to minimal for Gemini 3', () {
         final json = GeminiThinkingConfig.disabled.toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
-        expect(json['thinkingLevel'], 'LOW');
+        expect(json['thinkingLevel'], 'minimal');
       });
 
-      test('maps standard preset (8192) to HIGH for Gemini 3', () {
+      test('maps standard preset (8192) to high for Gemini 3', () {
         final json = GeminiThinkingConfig.standard.toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
-        expect(json['thinkingLevel'], 'HIGH');
+        expect(json['thinkingLevel'], 'high');
       });
 
-      test('maps budget 4096 to MEDIUM for Gemini 3', () {
+      test('maps budget 4096 to medium for Gemini 3', () {
         const config = GeminiThinkingConfig(thinkingBudget: 4096);
         final json = config.toJson(modelId: 'gemini-3-pro-preview');
-        expect(json['thinkingLevel'], 'MEDIUM');
+        expect(json['thinkingLevel'], 'medium');
       });
 
-      test('maps budget 2048 to LOW for Gemini 3', () {
+      test('maps budget 2048 to low for Gemini 3', () {
         const config = GeminiThinkingConfig(thinkingBudget: 2048);
         final json = config.toJson(modelId: 'gemini-3-pro-preview');
-        expect(json['thinkingLevel'], 'LOW');
+        expect(json['thinkingLevel'], 'low');
       });
 
-      test('maps large budget (>= 8192) to HIGH for Gemini 3', () {
+      test('maps large budget (>= 8192) to high for Gemini 3', () {
         const config = GeminiThinkingConfig(thinkingBudget: 16384);
         final json = config.toJson(modelId: 'gemini-3.1-pro-preview');
-        expect(json['thinkingLevel'], 'HIGH');
+        expect(json['thinkingLevel'], 'high');
       });
 
       glados.Glados(

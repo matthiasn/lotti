@@ -33,7 +33,7 @@ flowchart TD
 | Object | Stored as | Used by |
 | --- | --- | --- |
 | Provider | `AiConfig.inferenceProvider` | Base URL, API key, and provider type |
-| Model | `AiConfig.model` | Provider model ID, modalities, function-calling support |
+| Model | `AiConfig.model` | Provider model ID, modalities, function-calling support, Gemini thinking mode |
 | Prompt | `AiConfig.prompt` | Legacy/manual prompt execution through `UnifiedAiInferenceRepository` |
 | Profile | `AiConfig.inferenceProfile` | Capability slots for thinking, transcription, vision, and image generation |
 | Skill | `AiConfig.skill` (defined in code) | Capability contract plus `ContextPolicy`. Built-ins live in `skills/built_in_skills.dart`; not persisted in the DB |
@@ -358,6 +358,36 @@ Implementation details that matter:
 | `generateImage()` | Gemini, Alibaba DashScope | Unsupported for all other provider types |
 
 This routing is implemented in code, not inferred from documentation. If a provider type is not branched explicitly for an operation, it falls through to the compatibility client or throws `UnsupportedError`.
+
+### Gemini Thinking Mode
+
+Gemini thinking effort is stored on the configured model row as
+`AiConfigModel.geminiThinkingMode`. The field defaults to `low`, so older model
+rows that do not have the JSON key deserialize to the faster setting. The model
+edit form only shows the selector when the row's owning provider is Gemini.
+
+Runtime routing uses the resolved `AiConfigModel`, not a provider-model-name
+lookup table:
+
+```mermaid
+flowchart TD
+  Settings["InferenceModelEditPage"] --> ModelRow["AiConfig.model<br/>geminiThinkingMode"]
+  Profile["AiConfig.inferenceProfile<br/>providerModelId slot"] --> Resolver["ProfileResolver / resolveInferenceProviderWithModel"]
+  Resolver --> ModelRow
+  ModelRow --> CallSite["Chat, skill, prompt, and agent call sites"]
+  CallSite --> Cloud["CloudInferenceRepository"]
+  Cloud --> IsGemini{"provider.type == gemini?"}
+  IsGemini -->|yes| Config["GeminiThinkingConfig.fromMode(mode ?? low)"]
+  IsGemini -->|no| Other["Provider-specific or OpenAI-compatible path"]
+  Config --> Gemini3{"modelId starts with gemini-3?"}
+  Gemini3 -->|yes| Level["thinkingConfig.thinkingLevel<br/>minimal / low / medium / high"]
+  Gemini3 -->|no| Budget["thinkingConfig.thinkingBudget<br/>mapped fallback"]
+```
+
+`minimal` maps to no captured thought summaries (`includeThoughts=false`);
+`low`, `medium`, and `high` capture Gemini thought summaries so the response
+modal can still show the Thoughts tab. The old per-model Gemini default helper
+was removed: Flash 2.5 no longer receives a special compatibility preset.
 
 MLX Audio is intentionally not a localhost provider. Flutter owns provider/model
 configuration and progress state, while `MlxAudioChannel` talks to platform

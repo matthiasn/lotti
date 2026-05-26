@@ -125,6 +125,7 @@ class ChatRepository {
         systemMessage: systemMessage,
         provider: config.provider,
         tools: tools,
+        geminiThinkingMode: config.model.geminiThinkingMode,
       );
 
       // Accumulate tool calls while streaming content to UI

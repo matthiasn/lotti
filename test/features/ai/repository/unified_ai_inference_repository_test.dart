@@ -1224,6 +1224,7 @@ void main() {
             apiKey: 'test-api-key',
             systemMessage: 'System message',
             provider: provider,
+            geminiThinkingMode: GeminiThinkingMode.low,
           ),
         ).called(1);
       });
@@ -1709,6 +1710,7 @@ void main() {
               apiKey: any(named: 'apiKey'),
               systemMessage: any(named: 'systemMessage'),
               provider: any(named: 'provider'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
             ),
           ).thenThrow(Exception('Failed to build prompt'));
 
@@ -3319,6 +3321,7 @@ Take into account the following task context:
           systemMessage: any(named: 'systemMessage'),
           provider: any(named: 'provider'),
           maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
       ).thenAnswer(
         (_) => Stream.value(
@@ -5503,6 +5506,7 @@ void _stubGenerate(
       maxCompletionTokens: any(named: 'maxCompletionTokens'),
       provider: any(named: 'provider'),
       tools: any(named: 'tools'),
+      geminiThinkingMode: any(named: 'geminiThinkingMode'),
     ),
   ).thenAnswer((_) => stream);
 }

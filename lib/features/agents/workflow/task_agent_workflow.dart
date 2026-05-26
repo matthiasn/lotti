@@ -425,6 +425,7 @@ class TaskAgentWorkflow {
       final tools = _buildToolDefinitions();
       final inferenceRepo = CloudInferenceWrapper(
         cloudRepository: cloudInferenceRepository,
+        geminiThinkingMode: resolvedProfile.thinkingModel?.geminiThinkingMode,
       );
 
       // Record template + soul provenance and the resolved model on the wake

@@ -13,14 +13,19 @@ class ResolvedProfile {
   const ResolvedProfile({
     required this.thinkingModelId,
     required this.thinkingProvider,
+    this.thinkingModel,
     this.thinkingHighEndModelId,
     this.thinkingHighEndProvider,
+    this.thinkingHighEndModel,
     this.imageRecognitionModelId,
     this.imageRecognitionProvider,
+    this.imageRecognitionModel,
     this.transcriptionModelId,
     this.transcriptionProvider,
+    this.transcriptionModel,
     this.imageGenerationModelId,
     this.imageGenerationProvider,
+    this.imageGenerationModel,
     this.skillAssignments = const [],
   });
 
@@ -30,6 +35,9 @@ class ResolvedProfile {
   /// The resolved inference provider for thinking.
   final AiConfigInferenceProvider thinkingProvider;
 
+  /// The configured model row used for thinking, when resolved from a profile.
+  final AiConfigModel? thinkingModel;
+
   /// The providerModelId string for high-end thinking (nullable).
   /// Falls back to [thinkingModelId] when not set.
   final String? thinkingHighEndModelId;
@@ -38,11 +46,17 @@ class ResolvedProfile {
   /// Falls back to [thinkingProvider] when not set.
   final AiConfigInferenceProvider? thinkingHighEndProvider;
 
+  /// The configured model row used for high-end thinking, when set.
+  final AiConfigModel? thinkingHighEndModel;
+
   /// The providerModelId string for image recognition (nullable).
   final String? imageRecognitionModelId;
 
   /// The resolved inference provider for image recognition (nullable).
   final AiConfigInferenceProvider? imageRecognitionProvider;
+
+  /// The configured model row used for image recognition, when set.
+  final AiConfigModel? imageRecognitionModel;
 
   /// The providerModelId string for transcription (nullable).
   final String? transcriptionModelId;
@@ -50,11 +64,17 @@ class ResolvedProfile {
   /// The resolved inference provider for transcription (nullable).
   final AiConfigInferenceProvider? transcriptionProvider;
 
+  /// The configured model row used for transcription, when set.
+  final AiConfigModel? transcriptionModel;
+
   /// The providerModelId string for image generation (nullable).
   final String? imageGenerationModelId;
 
   /// The resolved inference provider for image generation (nullable).
   final AiConfigInferenceProvider? imageGenerationProvider;
+
+  /// The configured model row used for image generation, when set.
+  final AiConfigModel? imageGenerationModel;
 
   /// Skill assignments from the profile, for downstream automation lookup.
   final List<SkillAssignment> skillAssignments;
@@ -69,6 +89,11 @@ class ResolvedProfile {
   AiConfigInferenceProvider get effectiveHighEndProvider =>
       thinkingHighEndProvider ?? thinkingProvider;
 
+  /// Returns the high-end thinking model config, falling back to the regular
+  /// thinking model config when the high-end slot is not configured.
+  AiConfigModel? get effectiveHighEndModel =>
+      thinkingHighEndModel ?? thinkingModel;
+
   static const _listEquals = ListEquality<SkillAssignment>();
 
   @override
@@ -78,28 +103,38 @@ class ResolvedProfile {
           runtimeType == other.runtimeType &&
           thinkingModelId == other.thinkingModelId &&
           thinkingProvider == other.thinkingProvider &&
+          thinkingModel == other.thinkingModel &&
           thinkingHighEndModelId == other.thinkingHighEndModelId &&
           thinkingHighEndProvider == other.thinkingHighEndProvider &&
+          thinkingHighEndModel == other.thinkingHighEndModel &&
           imageRecognitionModelId == other.imageRecognitionModelId &&
           imageRecognitionProvider == other.imageRecognitionProvider &&
+          imageRecognitionModel == other.imageRecognitionModel &&
           transcriptionModelId == other.transcriptionModelId &&
           transcriptionProvider == other.transcriptionProvider &&
+          transcriptionModel == other.transcriptionModel &&
           imageGenerationModelId == other.imageGenerationModelId &&
           imageGenerationProvider == other.imageGenerationProvider &&
+          imageGenerationModel == other.imageGenerationModel &&
           _listEquals.equals(skillAssignments, other.skillAssignments);
 
   @override
   int get hashCode => Object.hash(
     thinkingModelId,
     thinkingProvider,
+    thinkingModel,
     thinkingHighEndModelId,
     thinkingHighEndProvider,
+    thinkingHighEndModel,
     imageRecognitionModelId,
     imageRecognitionProvider,
+    imageRecognitionModel,
     transcriptionModelId,
     transcriptionProvider,
+    transcriptionModel,
     imageGenerationModelId,
     imageGenerationProvider,
+    imageGenerationModel,
     _listEquals.hash(skillAssignments),
   );
 }

@@ -53,6 +53,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         outputModalities: _config!.outputModalities,
         isReasoningModel: _config!.isReasoningModel,
         supportsFunctionCalling: _config!.supportsFunctionCalling,
+        geminiThinkingMode: _config!.geminiThinkingMode,
       );
     }
 
@@ -77,6 +78,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
     List<Modality>? outputModalities,
     bool? isReasoningModel,
     bool? supportsFunctionCalling,
+    GeminiThinkingMode? geminiThinkingMode,
   }) {
     final prev = state.value;
     if (prev == null) return;
@@ -92,7 +94,9 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         (isReasoningModel != null &&
             isReasoningModel != prev.isReasoningModel) ||
         (supportsFunctionCalling != null &&
-            supportsFunctionCalling != prev.supportsFunctionCalling);
+            supportsFunctionCalling != prev.supportsFunctionCalling) ||
+        (geminiThinkingMode != null &&
+            geminiThinkingMode != prev.geminiThinkingMode);
 
     state = AsyncData(
       prev.copyWith(
@@ -115,6 +119,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         outputModalities: outputModalities,
         isReasoningModel: isReasoningModel,
         supportsFunctionCalling: supportsFunctionCalling,
+        geminiThinkingMode: geminiThinkingMode,
       ),
     );
   }
@@ -167,6 +172,10 @@ class InferenceModelFormController extends _$InferenceModelFormController {
   // ignore: avoid_positional_boolean_parameters
   void supportsFunctionCallingChanged(bool value) {
     _setAllFields(supportsFunctionCalling: value);
+  }
+
+  void geminiThinkingModeChanged(GeminiThinkingMode value) {
+    _setAllFields(geminiThinkingMode: value);
   }
 
   /// Add a new configuration

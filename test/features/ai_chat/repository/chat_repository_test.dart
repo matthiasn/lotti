@@ -197,6 +197,7 @@ void main() {
               systemMessage: any<String>(named: 'systemMessage'),
               provider: any<AiConfigInferenceProvider?>(named: 'provider'),
               tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
             ),
           ).thenAnswer((_) => Stream.error(TimeoutException('timeout')));
 
@@ -666,6 +667,7 @@ void main() {
               systemMessage: any<String>(named: 'systemMessage'),
               provider: any<AiConfigInferenceProvider?>(named: 'provider'),
               tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
             ),
           ).thenAnswer((_) => responseStream);
 
@@ -765,6 +767,7 @@ void main() {
             systemMessage: any<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
             tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) {
           callCount++;
@@ -871,6 +874,7 @@ void main() {
             systemMessage: any<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
             tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -949,6 +953,7 @@ void main() {
             systemMessage: any<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
             tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) {
           callCount++;
@@ -1058,6 +1063,7 @@ void main() {
             systemMessage: any<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
             tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) => (++call == 1) ? initialStream : finalStream);
 
@@ -1129,6 +1135,7 @@ void main() {
             systemMessage: any<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
             tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) => responseStream);
 
@@ -1160,6 +1167,7 @@ void main() {
                       named: 'provider',
                     ),
                     tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+                    geminiThinkingMode: any(named: 'geminiThinkingMode'),
                   ),
                 ).captured.first
                 as String;
@@ -1190,6 +1198,7 @@ void main() {
             systemMessage: captureAny<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
             tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((invocation) {
           capturedSystemMessage =

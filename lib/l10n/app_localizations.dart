@@ -6822,6 +6822,54 @@ abstract class AppLocalizations {
   /// **'No matches'**
   String get filterSelectionNoMatches;
 
+  /// No description provided for @geminiThinkingModeHighDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Deepest reasoning; can increase latency and cost.'**
+  String get geminiThinkingModeHighDescription;
+
+  /// No description provided for @geminiThinkingModeHighLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get geminiThinkingModeHighLabel;
+
+  /// No description provided for @geminiThinkingModeLowDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Low reasoning for fast everyday prompts.'**
+  String get geminiThinkingModeLowDescription;
+
+  /// No description provided for @geminiThinkingModeLowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get geminiThinkingModeLowLabel;
+
+  /// No description provided for @geminiThinkingModeMediumDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced reasoning for more careful answers.'**
+  String get geminiThinkingModeMediumDescription;
+
+  /// No description provided for @geminiThinkingModeMediumLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get geminiThinkingModeMediumLabel;
+
+  /// No description provided for @geminiThinkingModeMinimalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Fastest setting; Gemini may still think briefly on complex prompts.'**
+  String get geminiThinkingModeMinimalDescription;
+
+  /// No description provided for @geminiThinkingModeMinimalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal'**
+  String get geminiThinkingModeMinimalLabel;
+
   /// No description provided for @generateCoverArt.
   ///
   /// In en, this message translates to:
@@ -7863,6 +7911,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Function calling'**
   String get modelEditFunctionCallingLabel;
+
+  /// No description provided for @modelEditGeminiThinkingModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gemini thinking mode'**
+  String get modelEditGeminiThinkingModeLabel;
 
   /// No description provided for @modelEditInputModalitiesHint.
   ///

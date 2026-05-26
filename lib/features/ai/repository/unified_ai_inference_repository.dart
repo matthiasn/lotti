@@ -547,6 +547,7 @@ class UnifiedAiInferenceRepository {
         systemMessage: systemMessage,
         maxCompletionTokens: model.maxCompletionTokens,
         provider: provider,
+        geminiThinkingMode: model.geminiThinkingMode,
       );
     }
   }

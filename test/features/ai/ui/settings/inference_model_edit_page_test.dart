@@ -159,6 +159,72 @@ void main() {
       },
     );
 
+    testWidgets('renders Gemini thinking mode for Gemini provider models', (
+      tester,
+    ) async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      testProvider = AiConfig.inferenceProvider(
+        id: 'provider-1',
+        name: 'Gemini Provider',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        createdAt: testDate,
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+      testModel = AiConfig.model(
+        id: 'test-model-id',
+        name: 'Test Gemini Model',
+        providerModelId: 'gemini-3.1-pro-preview',
+        inferenceProviderId: 'provider-1',
+        createdAt: testDate,
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: true,
+        geminiThinkingMode: GeminiThinkingMode.high,
+      );
+
+      await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+      await pumpAndIdle(tester);
+
+      expect(find.text('Gemini thinking mode'), findsOneWidget);
+      expect(find.text('High'), findsOneWidget);
+    });
+
+    testWidgets('changing Gemini thinking mode updates the selector value', (
+      tester,
+    ) async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      testProvider = AiConfig.inferenceProvider(
+        id: 'provider-1',
+        name: 'Gemini Provider',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        createdAt: testDate,
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+      testModel = AiConfig.model(
+        id: 'test-model-id',
+        name: 'Test Gemini Model',
+        providerModelId: 'gemini-3.1-pro-preview',
+        inferenceProviderId: 'provider-1',
+        createdAt: testDate,
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: true,
+        geminiThinkingMode: GeminiThinkingMode.high,
+      );
+
+      await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+      await pumpAndIdle(tester);
+
+      await tester.tap(find.text('High'));
+      await pumpAndIdle(tester);
+      await tester.tap(find.text('Minimal'));
+      await pumpAndIdle(tester);
+
+      expect(find.text('Minimal'), findsOneWidget);
+    });
+
     testWidgets('Save action is in the AppBar (not a bottom bar)', (
       tester,
     ) async {

@@ -71,6 +71,12 @@ AiConfigModel _$AiConfigModelFromJson(Map<String, dynamic> json) =>
       isReasoningModel: json['isReasoningModel'] as bool,
       supportsFunctionCalling:
           json['supportsFunctionCalling'] as bool? ?? false,
+      geminiThinkingMode:
+          $enumDecodeNullable(
+            _$GeminiThinkingModeEnumMap,
+            json['geminiThinkingMode'],
+          ) ??
+          GeminiThinkingMode.low,
       updatedAt: json['updatedAt'] == null
           ? null
           : DateTime.parse(json['updatedAt'] as String),
@@ -94,6 +100,8 @@ Map<String, dynamic> _$AiConfigModelToJson(AiConfigModel instance) =>
           .toList(),
       'isReasoningModel': instance.isReasoningModel,
       'supportsFunctionCalling': instance.supportsFunctionCalling,
+      'geminiThinkingMode':
+          _$GeminiThinkingModeEnumMap[instance.geminiThinkingMode]!,
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'description': instance.description,
       'maxCompletionTokens': instance.maxCompletionTokens,
@@ -104,6 +112,13 @@ const _$ModalityEnumMap = {
   Modality.text: 'text',
   Modality.audio: 'audio',
   Modality.image: 'image',
+};
+
+const _$GeminiThinkingModeEnumMap = {
+  GeminiThinkingMode.minimal: 'minimal',
+  GeminiThinkingMode.low: 'low',
+  GeminiThinkingMode.medium: 'medium',
+  GeminiThinkingMode.high: 'high',
 };
 
 AiConfigPrompt _$AiConfigPromptFromJson(Map<String, dynamic> json) =>

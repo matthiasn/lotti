@@ -251,8 +251,10 @@ class ProfileAutomationService {
         // profile-shaped contract remains valid without creating a DB profile.
         thinkingModelId: selected.model.providerModelId,
         thinkingProvider: selected.provider,
+        thinkingModel: selected.model,
         transcriptionModelId: selected.model.providerModelId,
         transcriptionProvider: selected.provider,
+        transcriptionModel: selected.model,
         skillAssignments: const [_fallbackTranscriptionAssignment],
       ),
       skill: skill,

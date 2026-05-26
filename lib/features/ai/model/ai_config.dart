@@ -26,6 +26,17 @@ enum Modality {
   image,
 }
 
+/// User-facing reasoning effort levels for Gemini model rows.
+///
+/// Gemini 3 accepts these values directly as `thinkingLevel`; non-Gemini-3
+/// request builders map them to the closest `thinkingBudget` value.
+enum GeminiThinkingMode {
+  minimal,
+  low,
+  medium,
+  high,
+}
+
 /// Defines the types of additional input data a prompt might require.
 enum InputDataType {
   task,
@@ -57,6 +68,7 @@ sealed class AiConfig with _$AiConfig {
     required List<Modality> outputModalities,
     required bool isReasoningModel,
     @Default(false) bool supportsFunctionCalling,
+    @Default(GeminiThinkingMode.low) GeminiThinkingMode geminiThinkingMode,
     DateTime? updatedAt,
     String? description,
     int? maxCompletionTokens,

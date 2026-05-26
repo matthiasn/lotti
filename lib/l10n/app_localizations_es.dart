@@ -3960,6 +3960,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get filterSelectionNoMatches => 'Sin coincidencias';
 
   @override
+  String get geminiThinkingModeHighDescription =>
+      'Razonamiento más profundo; puede aumentar la latencia y el coste.';
+
+  @override
+  String get geminiThinkingModeHighLabel => 'Alto';
+
+  @override
+  String get geminiThinkingModeLowDescription =>
+      'Razonamiento bajo para prompts cotidianos rápidos.';
+
+  @override
+  String get geminiThinkingModeLowLabel => 'Bajo';
+
+  @override
+  String get geminiThinkingModeMediumDescription =>
+      'Razonamiento equilibrado para respuestas más cuidadas.';
+
+  @override
+  String get geminiThinkingModeMediumLabel => 'Medio';
+
+  @override
+  String get geminiThinkingModeMinimalDescription =>
+      'La opción más rápida; Gemini puede pensar brevemente en prompts complejos.';
+
+  @override
+  String get geminiThinkingModeMinimalLabel => 'Mínimo';
+
+  @override
   String get generateCoverArt => 'Generar portada';
 
   @override
@@ -4567,6 +4595,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get modelEditFunctionCallingLabel => 'Llamadas a funciones';
+
+  @override
+  String get modelEditGeminiThinkingModeLabel =>
+      'Modo de pensamiento de Gemini';
 
   @override
   String get modelEditInputModalitiesHint => 'Selecciona los tipos de entrada';

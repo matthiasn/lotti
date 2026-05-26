@@ -572,6 +572,7 @@ class SkillInferenceRunner {
           apiKey: provider.apiKey,
           provider: provider,
           systemMessage: promptResult.systemMessage,
+          geminiThinkingMode: profile.effectiveHighEndModel?.geminiThinkingMode,
         );
 
         // 6. Collect streaming response.

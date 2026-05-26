@@ -89,12 +89,12 @@ class ProfileResolver {
     AiConfigInferenceProfile config,
   ) async {
     // Resolve thinking slot (fatal if missing).
-    final thinkingProvider = await resolveInferenceProvider(
+    final thinkingSlot = await resolveInferenceProviderWithModel(
       modelId: config.thinkingModelId,
       aiConfigRepository: _aiConfigRepository,
       logTag: _logTag,
     );
-    if (thinkingProvider == null) {
+    if (thinkingSlot == null) {
       developer.log(
         'Cannot resolve thinking model ${config.thinkingModelId} '
         'for profile ${config.id}',
@@ -104,32 +104,32 @@ class ProfileResolver {
     }
 
     // Resolve optional slots (non-fatal).
-    final thinkingHighEndProvider = config.thinkingHighEndModelId != null
-        ? await resolveInferenceProvider(
+    final thinkingHighEndSlot = config.thinkingHighEndModelId != null
+        ? await resolveInferenceProviderWithModel(
             modelId: config.thinkingHighEndModelId!,
             aiConfigRepository: _aiConfigRepository,
             logTag: _logTag,
           )
         : null;
 
-    final imageRecognitionProvider = config.imageRecognitionModelId != null
-        ? await resolveInferenceProvider(
+    final imageRecognitionSlot = config.imageRecognitionModelId != null
+        ? await resolveInferenceProviderWithModel(
             modelId: config.imageRecognitionModelId!,
             aiConfigRepository: _aiConfigRepository,
             logTag: _logTag,
           )
         : null;
 
-    final transcriptionProvider = config.transcriptionModelId != null
-        ? await resolveInferenceProvider(
+    final transcriptionSlot = config.transcriptionModelId != null
+        ? await resolveInferenceProviderWithModel(
             modelId: config.transcriptionModelId!,
             aiConfigRepository: _aiConfigRepository,
             logTag: _logTag,
           )
         : null;
 
-    final imageGenerationProvider = config.imageGenerationModelId != null
-        ? await resolveInferenceProvider(
+    final imageGenerationSlot = config.imageGenerationModelId != null
+        ? await resolveInferenceProviderWithModel(
             modelId: config.imageGenerationModelId!,
             aiConfigRepository: _aiConfigRepository,
             logTag: _logTag,
@@ -138,34 +138,39 @@ class ProfileResolver {
 
     return ResolvedProfile(
       thinkingModelId: config.thinkingModelId,
-      thinkingProvider: thinkingProvider,
-      thinkingHighEndModelId: thinkingHighEndProvider != null
+      thinkingProvider: thinkingSlot.provider,
+      thinkingModel: thinkingSlot.model,
+      thinkingHighEndModelId: thinkingHighEndSlot != null
           ? config.thinkingHighEndModelId
           : null,
-      thinkingHighEndProvider: thinkingHighEndProvider,
-      imageRecognitionModelId: imageRecognitionProvider != null
+      thinkingHighEndProvider: thinkingHighEndSlot?.provider,
+      thinkingHighEndModel: thinkingHighEndSlot?.model,
+      imageRecognitionModelId: imageRecognitionSlot != null
           ? config.imageRecognitionModelId
           : null,
-      imageRecognitionProvider: imageRecognitionProvider,
-      transcriptionModelId: transcriptionProvider != null
+      imageRecognitionProvider: imageRecognitionSlot?.provider,
+      imageRecognitionModel: imageRecognitionSlot?.model,
+      transcriptionModelId: transcriptionSlot != null
           ? config.transcriptionModelId
           : null,
-      transcriptionProvider: transcriptionProvider,
-      imageGenerationModelId: imageGenerationProvider != null
+      transcriptionProvider: transcriptionSlot?.provider,
+      transcriptionModel: transcriptionSlot?.model,
+      imageGenerationModelId: imageGenerationSlot != null
           ? config.imageGenerationModelId
           : null,
-      imageGenerationProvider: imageGenerationProvider,
+      imageGenerationProvider: imageGenerationSlot?.provider,
+      imageGenerationModel: imageGenerationSlot?.model,
       skillAssignments: config.skillAssignments,
     );
   }
 
   Future<ResolvedProfile?> _resolveFromModelId(String modelId) async {
-    final provider = await resolveInferenceProvider(
+    final slot = await resolveInferenceProviderWithModel(
       modelId: modelId,
       aiConfigRepository: _aiConfigRepository,
       logTag: _logTag,
     );
-    if (provider == null) {
+    if (slot == null) {
       developer.log(
         'Cannot resolve legacy model $modelId',
         name: _logTag,
@@ -175,7 +180,8 @@ class ProfileResolver {
 
     return ResolvedProfile(
       thinkingModelId: modelId,
-      thinkingProvider: provider,
+      thinkingProvider: slot.provider,
+      thinkingModel: slot.model,
     );
   }
 }

@@ -1846,9 +1846,9 @@ void main() {
       },
     );
 
-    test('enables includeThoughts for thinking-capable models (Pro)', () async {
+    test('defaults Gemini thinking mode to low', () async {
       final provider = createGeminiProvider();
-      const model = 'gemini-2.5-pro';
+      const model = 'gemini-3.1-pro-preview';
       GeminiThinkingConfig? capturedConfig;
 
       when(
@@ -1880,16 +1880,56 @@ void main() {
           .toList();
 
       expect(capturedConfig, isNotNull);
-      // gemini-2.5-pro has auto config (budget = -1), so includeThoughts should be true
       expect(capturedConfig!.includeThoughts, isTrue);
+      expect(capturedConfig!.thinkingMode, GeminiThinkingMode.low);
+      expect(capturedConfig!.thinkingBudget, 1024);
+    });
+
+    test('passes explicit Gemini thinking mode to the repository', () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-3.1-pro-preview';
+      GeminiThinkingConfig? capturedConfig;
+
+      when(
+        () => mockGeminiRepo.generateText(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((invocation) {
+        capturedConfig =
+            invocation.namedArguments[#thinkingConfig] as GeminiThinkingConfig;
+        return const Stream.empty();
+      });
+
+      await repository
+          .generate(
+            'Test',
+            model: model,
+            temperature: 0.5,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+            geminiThinkingMode: GeminiThinkingMode.high,
+          )
+          .toList();
+
+      expect(capturedConfig, isNotNull);
+      expect(capturedConfig!.includeThoughts, isTrue);
+      expect(capturedConfig!.thinkingMode, GeminiThinkingMode.high);
       expect(capturedConfig!.thinkingBudget, -1);
     });
 
     test(
-      'enables includeThoughts for Flash models with thinking support',
+      'minimal Gemini thinking mode disables captured thoughts',
       () async {
         final provider = createGeminiProvider();
-        const model = 'gemini-2.5-flash';
+        const model = 'gemini-3.1-pro-preview';
         GeminiThinkingConfig? capturedConfig;
 
         when(
@@ -1918,55 +1958,13 @@ void main() {
               baseUrl: provider.baseUrl,
               apiKey: provider.apiKey,
               provider: provider,
+              geminiThinkingMode: GeminiThinkingMode.minimal,
             )
             .toList();
 
         expect(capturedConfig, isNotNull);
-        // gemini-2.5-flash has standard config (budget = 8192), so includeThoughts should be true
-        expect(capturedConfig!.includeThoughts, isTrue);
-        expect(capturedConfig!.thinkingBudget, 8192);
-      },
-    );
-
-    test(
-      'disables includeThoughts for models without thinking support',
-      () async {
-        final provider = createGeminiProvider();
-        const model = 'gemini-2.0-flash';
-        GeminiThinkingConfig? capturedConfig;
-
-        when(
-          () => mockGeminiRepo.generateText(
-            prompt: any(named: 'prompt'),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            thinkingConfig: any(named: 'thinkingConfig'),
-            provider: any(named: 'provider'),
-            systemMessage: any(named: 'systemMessage'),
-            maxCompletionTokens: any(named: 'maxCompletionTokens'),
-            tools: any(named: 'tools'),
-          ),
-        ).thenAnswer((invocation) {
-          capturedConfig =
-              invocation.namedArguments[#thinkingConfig]
-                  as GeminiThinkingConfig;
-          return const Stream.empty();
-        });
-
-        await repository
-            .generate(
-              'Test',
-              model: model,
-              temperature: 0.5,
-              baseUrl: provider.baseUrl,
-              apiKey: provider.apiKey,
-              provider: provider,
-            )
-            .toList();
-
-        expect(capturedConfig, isNotNull);
-        // gemini-2.0-flash has disabled config (budget = 0), so includeThoughts should be false
         expect(capturedConfig!.includeThoughts, isFalse);
+        expect(capturedConfig!.thinkingMode, GeminiThinkingMode.minimal);
         expect(capturedConfig!.thinkingBudget, 0);
       },
     );
@@ -2109,43 +2107,47 @@ void main() {
       ).called(1);
     });
 
-    test('uses models/ prefix correctly for model ID', () async {
-      final provider = createGeminiProvider();
-      const model = 'models/gemini-2.5-flash';
-      GeminiThinkingConfig? capturedConfig;
+    test(
+      'uses the same low default with models/ prefixed Gemini IDs',
+      () async {
+        final provider = createGeminiProvider();
+        const model = 'models/gemini-3.1-pro-preview';
+        GeminiThinkingConfig? capturedConfig;
 
-      when(
-        () => mockGeminiRepo.generateText(
-          prompt: any(named: 'prompt'),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          thinkingConfig: any(named: 'thinkingConfig'),
-          provider: any(named: 'provider'),
-          systemMessage: any(named: 'systemMessage'),
-          maxCompletionTokens: any(named: 'maxCompletionTokens'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((invocation) {
-        capturedConfig =
-            invocation.namedArguments[#thinkingConfig] as GeminiThinkingConfig;
-        return const Stream.empty();
-      });
+        when(
+          () => mockGeminiRepo.generateText(
+            prompt: any(named: 'prompt'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            thinkingConfig: any(named: 'thinkingConfig'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedConfig =
+              invocation.namedArguments[#thinkingConfig]
+                  as GeminiThinkingConfig;
+          return const Stream.empty();
+        });
 
-      await repository
-          .generate(
-            'Test',
-            model: model,
-            temperature: 0.5,
-            baseUrl: provider.baseUrl,
-            apiKey: provider.apiKey,
-            provider: provider,
-          )
-          .toList();
+        await repository
+            .generate(
+              'Test',
+              model: model,
+              temperature: 0.5,
+              baseUrl: provider.baseUrl,
+              apiKey: provider.apiKey,
+              provider: provider,
+            )
+            .toList();
 
-      // models/gemini-2.5-flash should get standard config
-      expect(capturedConfig!.thinkingBudget, 8192);
-      expect(capturedConfig!.includeThoughts, isTrue);
-    });
+        expect(capturedConfig!.thinkingMode, GeminiThinkingMode.low);
+        expect(capturedConfig!.thinkingBudget, 1024);
+        expect(capturedConfig!.includeThoughts, isTrue);
+      },
+    );
 
     test(
       'generateWithMessages routes to Gemini repository for multi-turn',
@@ -2263,11 +2265,10 @@ void main() {
     });
 
     test(
-      'generateWithMessages disables thoughts for non-thinking models',
+      'generateWithMessages disables thoughts for minimal Gemini thinking mode',
       () async {
-        // gemini-2.0-flash has thinkingBudget=0, so includeThoughts should be false
         final provider = createGeminiProvider();
-        const model = 'gemini-2.0-flash'; // Non-thinking model
+        const model = 'gemini-3.1-pro-preview';
         GeminiThinkingConfig? capturedConfig;
 
         when(
@@ -2300,11 +2301,13 @@ void main() {
               model: model,
               temperature: 0.5,
               provider: provider,
+              geminiThinkingMode: GeminiThinkingMode.minimal,
             )
             .toList();
 
-        // Non-thinking model (thinkingBudget=0) should have includeThoughts=false
         expect(capturedConfig!.includeThoughts, isFalse);
+        expect(capturedConfig!.thinkingMode, GeminiThinkingMode.minimal);
+        expect(capturedConfig!.thinkingBudget, 0);
       },
     );
 
@@ -2315,7 +2318,7 @@ void main() {
         // captured for thinking-capable models so they appear in the Thoughts tab.
         // The toggle only controls inline display in chat.
         final provider = createGeminiProvider();
-        const model = 'gemini-2.5-pro'; // Thinking-capable model
+        const model = 'gemini-3.1-pro-preview';
         GeminiThinkingConfig? capturedConfig;
 
         when(
@@ -2351,8 +2354,9 @@ void main() {
             )
             .toList();
 
-        // Thoughts are always captured for thinking-capable models
         expect(capturedConfig!.includeThoughts, isTrue);
+        expect(capturedConfig!.thinkingMode, GeminiThinkingMode.low);
+        expect(capturedConfig!.thinkingBudget, 1024);
       },
     );
   });

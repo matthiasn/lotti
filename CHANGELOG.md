@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1008]
 ### Added
+- Gemini model settings now include a configurable thinking mode with minimal,
+  low, medium, and high options; existing models default to low for faster
+  inference unless changed.
 - Active audio recordings now show a prominent desktop sidebar card above the
   running timer, with a larger speech-weighted dBFS-reactive recording orb,
   red signal-reactive frame, subtle red shadow, elapsed time, and one-tap stop
