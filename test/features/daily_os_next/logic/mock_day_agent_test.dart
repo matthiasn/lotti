@@ -208,6 +208,9 @@ class _NullAgent implements DayAgentInterface {
   }) async => const CaptureId('null');
 
   @override
+  Future<DraftPlan?> currentPlanForDate(DateTime date) async => null;
+
+  @override
   Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [];
 
   @override

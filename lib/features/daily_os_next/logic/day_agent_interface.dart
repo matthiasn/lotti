@@ -24,6 +24,11 @@ abstract class DayAgentInterface {
     String? audioId,
   });
 
+  /// Returns the currently persisted [DraftPlan] for [date], if any.
+  /// Used to route directly to the Day view on app open when a plan
+  /// already exists, instead of forcing the user back through Capture.
+  Future<DraftPlan?> currentPlanForDate(DateTime date);
+
   /// Tool: `parse_capture_to_items`. Tokenize the transcript into
   /// editable structured items, each tagged with NEW / MATCHED /
   /// UPDATE and a confidence level.

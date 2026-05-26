@@ -17,9 +17,15 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// projection a tap away. A footer pill opens the Refine screen for
 /// voice-driven plan changes.
 class DayPage extends StatefulWidget {
-  const DayPage({required this.draft, super.key});
+  const DayPage({required this.draft, this.dateStrip, super.key});
 
   final DraftPlan draft;
+
+  /// Optional widget rendered in place of the default static title.
+  /// The route-level `DailyOsNextRoot` uses this to inject a date
+  /// strip so the user can navigate between days without losing the
+  /// Agenda/Day toggle in the trailing actions slot.
+  final Widget? dateStrip;
 
   @override
   State<DayPage> createState() => _DayPageState();
@@ -67,17 +73,26 @@ class _DayPageState extends State<DayPage> {
       appBar: AppBar(
         backgroundColor: tokens.colors.background.level01,
         elevation: 0,
-        title: Text(
-          context.messages.dailyOsNextDayTitle,
-          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          tooltip: context.messages.dailyOsNextDayBack,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        title:
+            widget.dateStrip ??
+            Text(
+              context.messages.dailyOsNextDayTitle,
+              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
+        // When [dateStrip] is provided the page is mounted from the
+        // route-level root, which owns navigation. Suppress the
+        // in-page back button so the AppBar stays focused on the date
+        // controls.
+        automaticallyImplyLeading: widget.dateStrip == null,
+        leading: widget.dateStrip == null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: context.messages.dailyOsNextDayBack,
+                onPressed: () => Navigator.of(context).maybePop(),
+              )
+            : null,
         actions: [
           Padding(
             padding: EdgeInsets.symmetric(

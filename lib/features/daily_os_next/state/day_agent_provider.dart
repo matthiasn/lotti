@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -30,3 +33,16 @@ final dayAgentProvider = Provider<DayAgentInterface>((ref) {
     mockFallback: MockDayAgent(),
   );
 });
+
+/// Currently persisted `DraftPlan` for the given date, if any. Re-runs
+/// whenever the underlying day-agent emits an update (parsed items,
+/// drafted plan, etc.) so the routing layer flips from Capture → Day
+/// the instant the wake completes.
+// ignore: specify_nonobvious_property_types
+final currentDraftPlanProvider = FutureProvider.autoDispose
+    .family<DraftPlan?, DateTime>((ref, date) async {
+      final agent = ref.watch(dayAgentProvider);
+      // Re-runs whenever entities under this day-agent change.
+      ref.watch(agentUpdateStreamProvider(dayAgentIdForDate(date)));
+      return agent.currentPlanForDate(date);
+    });

@@ -1,6 +1,10 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
@@ -141,5 +145,197 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('RealDayAgent.draftDayPlan', () {
+    late MockDayAgentCaptureService captureService;
+    late MockDayAgentPlanService planService;
+    late MockDayAgentService dayAgentService;
+    late MockJournalDb journalDb;
+    late RealDayAgent adapter;
+
+    setUp(() {
+      captureService = MockDayAgentCaptureService();
+      planService = MockDayAgentPlanService();
+      dayAgentService = MockDayAgentService();
+      journalDb = MockJournalDb();
+      adapter = RealDayAgent(
+        captureService: captureService,
+        planService: planService,
+        dayAgentService: dayAgentService,
+        journalDb: journalDb,
+        mockFallback: MockDayAgent(),
+      );
+    });
+
+    DayPlanEntity buildDayPlan({
+      required String agentId,
+      required String dayId,
+      required DateTime updatedAt,
+      List<PlannedBlock> blocks = const <PlannedBlock>[],
+      int capacityMinutes = 480,
+      int scheduledMinutes = 240,
+    }) {
+      return AgentDomainEntity.dayPlan(
+            id: 'day_agent_plan:$dayId',
+            agentId: agentId,
+            dayId: dayId,
+            planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
+            data: DayPlanData(
+              planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: blocks,
+            ),
+            capacityMinutes: capacityMinutes,
+            scheduledMinutes: scheduledMinutes,
+            createdAt: updatedAt,
+            updatedAt: updatedAt,
+            vectorClock: null,
+          )
+          as DayPlanEntity;
+    }
+
+    test(
+      'enqueues the drafting wake, awaits the persisted plan, '
+      'and projects it onto DraftPlan',
+      () async {
+        const agentId = 'day-agent-001';
+        final dayId = dayAgentIdForDate(_asOf);
+        final freshlyDraftedAt = _asOf.add(const Duration(seconds: 5));
+        var draftPlanCalls = 0;
+
+        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => planService.draftPlanForDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer((_) async {
+          draftPlanCalls++;
+          // First call is the baseline read before the wake fires.
+          // Subsequent reads return the freshly drafted plan.
+          if (draftPlanCalls == 1) return null;
+          return buildDayPlan(
+            agentId: agentId,
+            dayId: dayId,
+            updatedAt: freshlyDraftedAt,
+            blocks: [
+              PlannedBlock(
+                id: 'block_1',
+                categoryId: 'work',
+                startTime: _asOf.add(const Duration(hours: 1)),
+                endTime: _asOf.add(const Duration(hours: 2)),
+                title: 'Demo prep',
+                reason: 'High-energy window',
+              ),
+            ],
+          );
+        });
+        when(
+          () => dayAgentService.enqueueDraftingWake(
+            dayDate: any(named: 'dayDate'),
+            captureId: any(named: 'captureId'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await withClock(Clock.fixed(_asOf), () async {
+          return adapter.draftDayPlan(
+            captureId: const CaptureId('cap_1'),
+            decidedTaskIds: const ['t_1'],
+            dayDate: _asOf,
+          );
+        });
+
+        expect(result.blocks, hasLength(1));
+        expect(result.blocks.single.title, 'Demo prep');
+        expect(result.blocks.single.type, TimeBlockType.ai);
+        expect(result.blocks.single.reason, 'High-energy window');
+        expect(result.capacityMinutes, 480);
+        expect(result.scheduledMinutes, 240);
+        expect(result.state, DayState.drafted);
+
+        // Standalone block (no taskId) still becomes one agenda item so
+        // the Agenda surface mirrors the Day timeline.
+        expect(result.agendaItems, hasLength(1));
+        expect(result.agendaItems.single.title, 'Demo prep');
+        expect(result.agendaItems.single.linkedBlockIds, ['block_1']);
+        expect(result.agendaItems.single.taskId, isNull);
+
+        verify(
+          () => dayAgentService.enqueueDraftingWake(
+            dayDate: _asOf,
+            captureId: 'cap_1',
+          ),
+        ).called(1);
+      },
+      timeout: const Timeout(Duration(seconds: 10)),
+    );
+
+    test(
+      'falls back to the mock plan when no day-agent exists for the date',
+      () async {
+        when(
+          () => dayAgentService.getDayAgentForDate(any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+
+        // Mock returns a non-empty scripted plan.
+        expect(result.blocks, isNotEmpty);
+        verifyNever(
+          () => dayAgentService.enqueueDraftingWake(
+            dayDate: any(named: 'dayDate'),
+            captureId: any(named: 'captureId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'falls back to the mock plan when enqueueDraftingWake reports no agent',
+      () async {
+        const agentId = 'day-agent-001';
+        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => planService.draftPlanForDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => dayAgentService.enqueueDraftingWake(
+            dayDate: any(named: 'dayDate'),
+            captureId: any(named: 'captureId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final result = await adapter.draftDayPlan(
+          captureId: const CaptureId('cap_1'),
+          decidedTaskIds: const [],
+          dayDate: _asOf,
+        );
+
+        expect(result.blocks, isNotEmpty);
+      },
+    );
   });
 }

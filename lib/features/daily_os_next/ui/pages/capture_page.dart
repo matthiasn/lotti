@@ -16,7 +16,19 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// Reconcile CTA). Plain, calm, no calendar or task list visible.
 /// Mirrors `prototype/screens/capture.jsx` variant A.
 class CapturePage extends ConsumerWidget {
-  const CapturePage({super.key});
+  const CapturePage({this.forDate, this.dateStrip, super.key});
+
+  /// Day this capture is for. Defaults to `DateTime.now()`, which
+  /// routes the capture to today's day-agent. When the route-level
+  /// root mounts CapturePage for a different selected date it passes
+  /// the local midnight of that day so the resulting day-agent is
+  /// keyed on the chosen day instead of today.
+  final DateTime? forDate;
+
+  /// Optional widget rendered in the AppBar title slot — used by the
+  /// route-level root to expose a date strip while Capture is open
+  /// for a non-today date.
+  final Widget? dateStrip;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,6 +41,7 @@ class CapturePage extends ConsumerWidget {
         backgroundColor: tokens.colors.background.level01,
         elevation: 0,
         toolbarHeight: 48,
+        title: dateStrip,
         actions: [
           IconButton(
             icon: const Icon(Icons.checklist_rounded),
@@ -57,7 +70,7 @@ class CapturePage extends ConsumerWidget {
                   children: [
                     const _GreetingBlock(),
                     SizedBox(height: tokens.spacing.step6),
-                    const _Headline(),
+                    _Headline(forDate: forDate),
                     SizedBox(height: tokens.spacing.step8),
                     VoiceButton(
                       phase: state.phase,
@@ -68,7 +81,7 @@ class CapturePage extends ConsumerWidget {
                     SizedBox(height: tokens.spacing.step5),
                     _StateRow(state: state),
                     SizedBox(height: tokens.spacing.step6),
-                    _ReconcileCta(state: state),
+                    _ReconcileCta(state: state, forDate: forDate),
                   ],
                 ),
               ),
@@ -126,12 +139,18 @@ class _GreetingBlock extends StatelessWidget {
 }
 
 class _Headline extends StatelessWidget {
-  const _Headline();
+  const _Headline({this.forDate});
+
+  /// When Capture is mounted for a non-today date, the trailing
+  /// "for today?" copy is swapped for `for <formatted date>?` so the
+  /// headline doesn't mislead.
+  final DateTime? forDate;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final tail = _resolveTail(messages.dailyOsNextCaptureHeadlineTail);
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
@@ -141,12 +160,39 @@ class _Headline extends StatelessWidget {
         children: [
           TextSpan(text: '${messages.dailyOsNextCaptureHeadlineLead} '),
           TextSpan(
-            text: messages.dailyOsNextCaptureHeadlineTail,
+            text: tail,
             style: TextStyle(color: tokens.colors.text.lowEmphasis),
           ),
         ],
       ),
     );
+  }
+
+  String _resolveTail(String defaultTail) {
+    final date = forDate;
+    if (date == null) return defaultTail;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final picked = DateTime(date.year, date.month, date.day);
+    if (picked.isAtSameMomentAs(today)) return defaultTail;
+    final delta = picked.difference(today).inDays;
+    if (delta == 1) return 'for tomorrow?';
+    if (delta == -1) return 'for yesterday?';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return 'for ${months[picked.month - 1]} ${picked.day}?';
   }
 }
 
@@ -276,9 +322,10 @@ class _TranscriptText extends StatelessWidget {
 }
 
 class _ReconcileCta extends ConsumerStatefulWidget {
-  const _ReconcileCta({required this.state});
+  const _ReconcileCta({required this.state, this.forDate});
 
   final CaptureState state;
+  final DateTime? forDate;
 
   @override
   ConsumerState<_ReconcileCta> createState() => _ReconcileCtaState();
@@ -329,7 +376,11 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
     try {
       final captureId = await agent.submitCapture(
         transcript: widget.state.transcript,
-        capturedAt: DateTime.now(),
+        // `capturedAt` routes the capture to the day-agent for that
+        // day. When the route-level root mounts CapturePage for a
+        // non-today selected date, pass that date so the resulting
+        // plan lands on the chosen day instead of today.
+        capturedAt: widget.forDate ?? DateTime.now(),
         audioId: widget.state.audioId,
       );
       if (!mounted) return;

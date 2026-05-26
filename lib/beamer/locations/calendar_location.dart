@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/ui/pages/daily_os_page.dart';
 import 'package:lotti/features/daily_os/ui/pages/set_time_blocks_page.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -55,7 +55,7 @@ class CalendarRoot extends StatelessWidget {
       initialData: false,
       builder: (context, snapshot) {
         final useNext = snapshot.data ?? false;
-        return useNext ? const CapturePage() : const DailyOsPage();
+        return useNext ? const DailyOsNextRoot() : const DailyOsPage();
       },
     );
   }
