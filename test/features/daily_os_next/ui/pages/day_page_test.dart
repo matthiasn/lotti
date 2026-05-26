@@ -179,7 +179,10 @@ Widget _wrap(
       capturesForDateProvider.overrideWith((ref, date) async => const []),
       ...overrides,
     ],
-    child: makeTestableWidget2(child, mediaQueryData: MediaQueryData(size: size)),
+    child: makeTestableWidget2(
+      child,
+      mediaQueryData: MediaQueryData(size: size),
+    ),
   );
 }
 

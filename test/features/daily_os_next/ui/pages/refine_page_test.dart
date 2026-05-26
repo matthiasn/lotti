@@ -236,7 +236,10 @@ Widget _wrap(
       captureControllerProvider.overrideWith(_stubCapture),
       ...overrides,
     ],
-    child: makeTestableWidget2(child, mediaQueryData: MediaQueryData(size: size)),
+    child: makeTestableWidget2(
+      child,
+      mediaQueryData: MediaQueryData(size: size),
+    ),
   );
 }
 
@@ -244,8 +247,9 @@ Widget _wrap(
 /// transitions without depending on real voice capture.
 RefineController _readNotifier(WidgetTester tester, DraftPlan draft) {
   final element = tester.element(find.byType(RefinePage));
-  return ProviderScope.containerOf(element)
-      .read(refineControllerProvider(draft).notifier);
+  return ProviderScope.containerOf(
+    element,
+  ).read(refineControllerProvider(draft).notifier);
 }
 
 void _setWideSurface(WidgetTester tester) {
@@ -567,26 +571,29 @@ void main() {
   // transcripts into the refine controller. We only need to verify the
   // wiring exists end-to-end with a fake capture state.
   group('RefinePage capture wiring', () {
-    testWidgets('partial transcripts from capture controller surface in panel', (
-      tester,
-    ) async {
-      final draft = _emptyPlan();
-      await tester.pumpWidget(_wrap(RefinePage(draft: draft)));
-      await tester.pump();
+    testWidgets(
+      'partial transcripts from capture controller surface in panel',
+      (
+        tester,
+      ) async {
+        final draft = _emptyPlan();
+        await tester.pumpWidget(_wrap(RefinePage(draft: draft)));
+        await tester.pump();
 
-      final element = tester.element(find.byType(RefinePage));
-      final container = ProviderScope.containerOf(element);
-      final refine = container.read(refineControllerProvider(draft).notifier)
-        ..beginListening(resetTranscript: true);
-      await tester.pump();
-      // Simulate the capture controller pushing a partial transcript.
-      refine.updateActiveTranscript('hello world');
-      await tester.pump();
+        final element = tester.element(find.byType(RefinePage));
+        final container = ProviderScope.containerOf(element);
+        final refine = container.read(refineControllerProvider(draft).notifier)
+          ..beginListening(resetTranscript: true);
+        await tester.pump();
+        // Simulate the capture controller pushing a partial transcript.
+        refine.updateActiveTranscript('hello world');
+        await tester.pump();
 
-      expect(find.text('hello world'), findsOneWidget);
+        expect(find.text('hello world'), findsOneWidget);
 
-      // Reference the capture provider so the import is exercised.
-      container.read(captureControllerProvider);
-    });
+        // Reference the capture provider so the import is exercised.
+        container.read(captureControllerProvider);
+      },
+    );
   });
 }

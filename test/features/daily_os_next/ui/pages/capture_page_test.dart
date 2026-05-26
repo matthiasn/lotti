@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -303,6 +304,242 @@ void main() {
       expect(find.byType(VoiceButton), findsOneWidget);
       expect(find.byType(LiveWaveform), findsNothing);
     });
+
+    testWidgets('morning greeting renders before noon', (tester) async {
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 8)), () async {
+        final harness = _AudioHarness()..arm();
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(harness.controllerFactory),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextGreetingMorning),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.dailyOsNextGreetingAfternoon),
+          findsNothing,
+        );
+        await harness.dispose();
+      });
+    });
+
+    testWidgets('afternoon greeting renders between noon and 6pm', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 14)), () async {
+        final harness = _AudioHarness()..arm();
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(harness.controllerFactory),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextGreetingAfternoon),
+          findsOneWidget,
+        );
+        await harness.dispose();
+      });
+    });
+
+    testWidgets('evening greeting renders after 6pm', (tester) async {
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 20)), () async {
+        final harness = _AudioHarness()..arm();
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(harness.controllerFactory),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextGreetingEvening),
+          findsOneWidget,
+        );
+        await harness.dispose();
+      });
+    });
+
+    testWidgets('forDate=tomorrow swaps the headline tail copy', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        final harness = _AudioHarness()..arm();
+        await tester.pumpWidget(
+          _wrap(
+            CapturePage(forDate: DateTime(2026, 5, 27)),
+            overrides: [
+              captureControllerProvider.overrideWith(harness.controllerFactory),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is RichText &&
+                w.text.toPlainText().contains(
+                  messages.dailyOsNextCaptureHeadlineTailTomorrow,
+                ),
+          ),
+          findsOneWidget,
+        );
+        await harness.dispose();
+      });
+    });
+
+    testWidgets('forDate=yesterday swaps the headline tail copy', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        final harness = _AudioHarness()..arm();
+        await tester.pumpWidget(
+          _wrap(
+            CapturePage(forDate: DateTime(2026, 5, 25)),
+            overrides: [
+              captureControllerProvider.overrideWith(harness.controllerFactory),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is RichText &&
+                w.text.toPlainText().contains(
+                  messages.dailyOsNextCaptureHeadlineTailYesterday,
+                ),
+          ),
+          findsOneWidget,
+        );
+        await harness.dispose();
+      });
+    });
+
+    testWidgets(
+      'forDate further out uses the formatted-date headline tail',
+      (tester) async {
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          final harness = _AudioHarness()..arm();
+          final far = DateTime(2026, 6, 10);
+          await tester.pumpWidget(
+            _wrap(
+              CapturePage(forDate: far),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  harness.controllerFactory,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          // Headline tail rendered as "for Jun 10?" via DateFormat.MMMd.
+          expect(
+            find.byWidgetPredicate(
+              (w) => w is RichText && w.text.toPlainText().contains('Jun 10'),
+            ),
+            findsOneWidget,
+          );
+          await harness.dispose();
+        });
+      },
+    );
+
+    testWidgets('forDate equal to today uses the default "for today?" tail', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        final harness = _AudioHarness()..arm();
+        await tester.pumpWidget(
+          _wrap(
+            CapturePage(forDate: DateTime(2026, 5, 26)),
+            overrides: [
+              captureControllerProvider.overrideWith(harness.controllerFactory),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is RichText &&
+                w.text.toPlainText().contains(
+                  messages.dailyOsNextCaptureHeadlineTail,
+                ),
+          ),
+          findsOneWidget,
+        );
+        await harness.dispose();
+      });
+    });
+
+    testWidgets('dateStrip widget renders in the AppBar when provided', (
+      tester,
+    ) async {
+      final harness = _AudioHarness()..arm();
+      await tester.pumpWidget(
+        _wrap(
+          const CapturePage(dateStrip: Text('PICKER')),
+          overrides: [
+            captureControllerProvider.overrideWith(harness.controllerFactory),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('PICKER'), findsOneWidget);
+      await harness.dispose();
+    });
+
+    testWidgets(
+      'tapping the Browse tasks action opens the TasksCorpusPage route',
+      (tester) async {
+        final harness = _AudioHarness()..arm();
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(harness.controllerFactory),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // The tasks corpus icon — the second action button in the AppBar.
+        await tester.tap(find.byIcon(Icons.checklist_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // CapturePage is now off-screen because the route was pushed.
+        expect(find.byType(CapturePage), findsNothing);
+        await harness.dispose();
+      },
+    );
 
     testWidgets('submits captures against the selected planning date', (
       tester,

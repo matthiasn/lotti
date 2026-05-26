@@ -11,9 +11,18 @@ LearningCard _standard({
   String overline = 'YESTERDAY',
   String summary = 'You finished focus work.',
   List<LearningBullet> bullets = const [
-    LearningBullet(text: 'Carried over: design polish', tone: LearningBulletTone.info),
-    LearningBullet(text: 'Energy: strong morning', tone: LearningBulletTone.positive),
-    LearningBullet(text: 'Beware mid-day context switching', tone: LearningBulletTone.warning),
+    LearningBullet(
+      text: 'Carried over: design polish',
+      tone: LearningBulletTone.info,
+    ),
+    LearningBullet(
+      text: 'Energy: strong morning',
+      tone: LearningBulletTone.positive,
+    ),
+    LearningBullet(
+      text: 'Beware mid-day context switching',
+      tone: LearningBulletTone.warning,
+    ),
   ],
 }) => LearningCard(
   id: id,
@@ -46,7 +55,16 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _wrap(
-          LearningCardsColumn(cards: [_standard(), _standard(id: 'b', overline: 'THIS WEEK', summary: 'You shipped 3 things.')]),
+          LearningCardsColumn(
+            cards: [
+              _standard(),
+              _standard(
+                id: 'b',
+                overline: 'THIS WEEK',
+                summary: 'You shipped 3 things.',
+              ),
+            ],
+          ),
         ),
       );
 

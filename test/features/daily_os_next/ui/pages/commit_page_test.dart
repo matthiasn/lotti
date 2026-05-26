@@ -45,9 +45,8 @@ DraftPlan _planWithItems() => DraftPlan(
 );
 
 class _RecordingAgent implements DayAgentInterface {
-  _RecordingAgent({this.committedPlan});
+  _RecordingAgent();
 
-  DraftPlan? committedPlan;
   DraftPlan? capturedPlan;
   int commitCount = 0;
 
@@ -55,7 +54,7 @@ class _RecordingAgent implements DayAgentInterface {
   Future<DraftPlan> commitDay(DraftPlan plan) async {
     capturedPlan = plan;
     commitCount++;
-    return (committedPlan ?? plan).copyWith(state: DayState.committed);
+    return plan.copyWith(state: DayState.committed);
   }
 
   // ---- Unused interface members below ----
@@ -184,7 +183,10 @@ Widget _wrap(
 }) {
   return ProviderScope(
     overrides: overrides,
-    child: makeTestableWidget2(child, mediaQueryData: MediaQueryData(size: size)),
+    child: makeTestableWidget2(
+      child,
+      mediaQueryData: MediaQueryData(size: size),
+    ),
   );
 }
 
@@ -265,27 +267,30 @@ void main() {
       );
     });
 
-    testWidgets('narrow layout (< 900) wraps content in SingleChildScrollView', (
-      tester,
-    ) async {
-      _setSurface(tester, const Size(600, 1400));
-      await tester.pumpWidget(
-        _wrap(
-          CommitPage(draft: _planWithItems()),
-          size: const Size(600, 1400),
-        ),
-      );
-      await tester.pump();
+    testWidgets(
+      'narrow layout (< 900) wraps content in SingleChildScrollView',
+      (
+        tester,
+      ) async {
+        _setSurface(tester, const Size(600, 1400));
+        await tester.pumpWidget(
+          _wrap(
+            CommitPage(draft: _planWithItems()),
+            size: const Size(600, 1400),
+          ),
+        );
+        await tester.pump();
 
-      // The narrow layout uses SingleChildScrollView wrapping the column.
-      final scaffold = find.byType(Scaffold);
-      expect(
-        find.descendant(of: scaffold, matching: find.byType(HoldToConfirm)),
-        findsOneWidget,
-      );
-      // Content still shows.
-      expect(find.text('Deep work'), findsOneWidget);
-    });
+        // The narrow layout uses SingleChildScrollView wrapping the column.
+        final scaffold = find.byType(Scaffold);
+        expect(
+          find.descendant(of: scaffold, matching: find.byType(HoldToConfirm)),
+          findsOneWidget,
+        );
+        // Content still shows.
+        expect(find.text('Deep work'), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'completing the hold calls agent.commitDay and reveals LockInScene',
