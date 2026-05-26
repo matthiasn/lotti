@@ -567,12 +567,14 @@ void main() {
     });
   });
 
-  // Sanity: the page's ref.listen on captureControllerProvider forwards
-  // transcripts into the refine controller. We only need to verify the
-  // wiring exists end-to-end with a fake capture state.
-  group('RefinePage capture wiring', () {
+  // Renders the active-transcript panel once the refine controller
+  // holds a partial transcript. The full capture → refine forwarding
+  // (`ref.listen` on `captureControllerProvider`) is exercised in the
+  // capture-page tests; here we only verify the surface that displays
+  // whatever the refine controller already holds.
+  group('RefinePage active-transcript panel', () {
     testWidgets(
-      'partial transcripts from capture controller surface in panel',
+      'partial transcripts pushed into the refine controller surface in panel',
       (
         tester,
       ) async {
@@ -585,14 +587,10 @@ void main() {
         final refine = container.read(refineControllerProvider(draft).notifier)
           ..beginListening(resetTranscript: true);
         await tester.pump();
-        // Simulate the capture controller pushing a partial transcript.
         refine.updateActiveTranscript('hello world');
         await tester.pump();
 
         expect(find.text('hello world'), findsOneWidget);
-
-        // Reference the capture provider so the import is exercised.
-        container.read(captureControllerProvider);
       },
     );
   });

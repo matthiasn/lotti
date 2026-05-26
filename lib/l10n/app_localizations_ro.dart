@@ -3234,10 +3234,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Blocurile schițate pentru această zi vor fi eliminate. Capturile dvs. și înregistrările audio rămân în jurnal.';
 
   @override
-  String get dailyOsNextDayDeleteDialogCancel => 'Anulați';
+  String get dailyOsNextDayDeleteDialogCancel => 'Anulează';
 
   @override
-  String get dailyOsNextDayDeleteDialogConfirm => 'Ștergeți';
+  String get dailyOsNextDayDeleteDialogConfirm => 'Șterge';
 
   @override
   String get dailyOsNextDayDeleteDialogTitle => 'Ștergeți acest plan?';
@@ -3246,10 +3246,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayLockInCta => 'Fixează';
 
   @override
-  String get dailyOsNextDayMenuDeletePlan => 'Ștergeți planul';
+  String get dailyOsNextDayMenuDeletePlan => 'Ștergere plan';
 
   @override
-  String get dailyOsNextDayMenuInspectAgent => 'Inspectați agentul';
+  String get dailyOsNextDayMenuInspectAgent => 'Inspectare agent';
 
   @override
   String get dailyOsNextDayMoreTooltip => 'Mai mult';
@@ -3259,7 +3259,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
-      'Vorbiți pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.';
+      'Vorbește pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.';
 
   @override
   String get dailyOsNextDayTitle => 'Ziua dvs.';

@@ -35,7 +35,9 @@ class ReconcilePage extends ConsumerWidget {
     final tokens = context.designTokens;
     final params = ReconcileParams(
       captureId: captureId,
-      dayDate: dayDate ?? clock.now(),
+      dayDate:
+          dayDate ??
+          DateTime(clock.now().year, clock.now().month, clock.now().day),
     );
     final state = ref.watch(reconcileControllerProvider(params));
 
