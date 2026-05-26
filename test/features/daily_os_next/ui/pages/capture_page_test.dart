@@ -245,14 +245,17 @@ void main() {
         );
         await tester.pump();
 
-        // Start listening (async permission + startRecording).
+        // Start listening: drive the controller's async chain (mock
+        // permission + startRecording + real Directory.create) to
+        // completion via a zero-delay `runAsync` — no fake `pump`
+        // frames can resolve the real filesystem call.
         await tester.tap(find.byType(VoiceButton));
+        await tester.runAsync(() async {});
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 20));
         // Stop listening — triggers transcribe + persist.
         await tester.tap(find.byType(VoiceButton));
+        await tester.runAsync(() async {});
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 20));
 
         final context = tester.element(find.byType(CapturePage));
         final messages = context.messages;
@@ -554,11 +557,11 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byType(VoiceButton));
+      await tester.runAsync(() async {});
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 20));
       await tester.tap(find.byType(VoiceButton));
+      await tester.runAsync(() async {});
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 20));
 
       final ctaFinder = find.text(
         tester
