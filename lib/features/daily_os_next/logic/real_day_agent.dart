@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
@@ -20,13 +21,14 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 /// `DayAgentPlanService` / `DayAgentService`):
 /// `submitCapture`, `parseCaptureToItems`, `surfacePendingDecisions`,
 /// `applyTriage`, `linkCapturePhraseToTask`, `breakCaptureLink`,
-/// `summarizeRecentPatterns`, `draftDayPlan`.
+/// `summarizeRecentPatterns`, `draftDayPlan`, `proposePlanDiff`,
+/// `acceptDiff`, `revertDiff`, `currentPlanForDate`,
+/// `deletePlanForDate`.
 ///
 /// **Still mocked** (no agent-side tool ships yet):
-/// `matchToCorpus`, `proposePlanDiff`, `acceptDiff`, `revertDiff`,
-/// `commitDay`, `surfaceShutdownData`, `recordReflection`,
-/// `recordCarryoverDecision`, `generateTomorrowNote`,
-/// `surfaceTaskCorpus`.
+/// `matchToCorpus`, `commitDay`, `surfaceShutdownData`,
+/// `recordReflection`, `recordCarryoverDecision`,
+/// `generateTomorrowNote`, `surfaceTaskCorpus`.
 ///
 /// As those phases ship in the agent layer, methods graduate from
 /// `mockFallback` to direct service calls.
@@ -256,23 +258,113 @@ class RealDayAgent implements DayAgentInterface {
     return [for (final card in cards) _projectLearningCard(card)];
   }
 
+  /// Polling cadence + ceiling for the refine wake. Same shape as the
+  /// drafting poller — dumb-and-reliable, easy to swap to a stream
+  /// later.
+  static const _refinePollInterval = Duration(milliseconds: 500);
+  static const _refineTimeout = Duration(seconds: 60);
+
   @override
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
     required String voiceTranscript,
-  }) => mockFallback.proposePlanDiff(
-    currentPlan: currentPlan,
-    voiceTranscript: voiceTranscript,
-  );
+  }) async {
+    final identity = await dayAgentService.getDayAgentForDate(
+      currentPlan.dayDate,
+    );
+    if (identity is! AgentIdentityEntity) {
+      return mockFallback.proposePlanDiff(
+        currentPlan: currentPlan,
+        voiceTranscript: voiceTranscript,
+      );
+    }
+    final dayId = dayAgentIdForDate(currentPlan.dayDate);
+    final baselineDiffs = await planService.pendingPlanDiffsForDay(
+      agentId: identity.agentId,
+      dayId: dayId,
+    );
+    final baselineIds = baselineDiffs.map((d) => d.id).toSet();
+
+    final enqueued = await dayAgentService.enqueueRefineWake(
+      dayDate: currentPlan.dayDate,
+      transcript: voiceTranscript,
+    );
+    if (!enqueued) {
+      return mockFallback.proposePlanDiff(
+        currentPlan: currentPlan,
+        voiceTranscript: voiceTranscript,
+      );
+    }
+
+    final deadline = clock.now().add(_refineTimeout);
+    while (clock.now().isBefore(deadline)) {
+      await Future<void>.delayed(_refinePollInterval);
+      final diffs = await planService.pendingPlanDiffsForDay(
+        agentId: identity.agentId,
+        dayId: dayId,
+      );
+      for (final diff in diffs) {
+        if (baselineIds.contains(diff.id)) continue;
+        return _projectPlanDiff(
+          changeSet: diff,
+          currentPlan: currentPlan,
+          transcript: voiceTranscript,
+        );
+      }
+    }
+    return mockFallback.proposePlanDiff(
+      currentPlan: currentPlan,
+      voiceTranscript: voiceTranscript,
+    );
+  }
 
   @override
-  Future<DraftPlan> acceptDiff(PlanDiff diff) => mockFallback.acceptDiff(diff);
+  Future<DraftPlan> acceptDiff(PlanDiff diff) async {
+    final identity = await dayAgentService.getDayAgentForDate(
+      diff.updatedPlan.dayDate,
+    );
+    if (identity is! AgentIdentityEntity) {
+      return mockFallback.acceptDiff(diff);
+    }
+    try {
+      await planService.acceptPlanDiff(
+        agentId: identity.agentId,
+        changeSetId: diff.id,
+      );
+    } catch (_) {
+      return mockFallback.acceptDiff(diff);
+    }
+    final dayId = dayAgentIdForDate(diff.updatedPlan.dayDate);
+    final plan = await planService.draftPlanForDay(
+      agentId: identity.agentId,
+      dayId: dayId,
+    );
+    if (plan == null) return mockFallback.acceptDiff(diff);
+    return _projectDayPlan(plan, diff.updatedPlan.dayDate);
+  }
 
   @override
   Future<DraftPlan> revertDiff({
     required PlanDiff diff,
     required DraftPlan originalPlan,
-  }) => mockFallback.revertDiff(diff: diff, originalPlan: originalPlan);
+  }) async {
+    final identity = await dayAgentService.getDayAgentForDate(
+      originalPlan.dayDate,
+    );
+    if (identity is! AgentIdentityEntity) {
+      return mockFallback.revertDiff(diff: diff, originalPlan: originalPlan);
+    }
+    try {
+      await planService.revertPlanDiff(
+        agentId: identity.agentId,
+        changeSetId: diff.id,
+      );
+    } catch (_) {
+      return mockFallback.revertDiff(diff: diff, originalPlan: originalPlan);
+    }
+    // Revert leaves the plan untouched — return the caller's view.
+    return originalPlan;
+  }
 
   @override
   Future<DraftPlan> commitDay(DraftPlan plan) => mockFallback.commitDay(plan);
@@ -573,6 +665,80 @@ class RealDayAgent implements DayAgentInterface {
     return status.maybeMap(
       agreed: (_) => DayState.committed,
       orElse: () => DayState.drafted,
+    );
+  }
+
+  /// Projects a refine ChangeSetEntity onto the UI's PlanDiff. The
+  /// `updatedPlan` slot is set to [currentPlan] for now — accepting
+  /// the diff triggers a real plan refetch in [acceptDiff], so the
+  /// Refine screen renders the diff list against today's baseline and
+  /// the new timeline appears only after the user confirms.
+  Future<PlanDiff> _projectPlanDiff({
+    required ChangeSetEntity changeSet,
+    required DraftPlan currentPlan,
+    required String transcript,
+  }) async {
+    final blocksById = {for (final b in currentPlan.blocks) b.id: b};
+    final changes = <PlanDiffChange>[];
+    for (var i = 0; i < changeSet.items.length; i++) {
+      final item = changeSet.items[i];
+      final projected = await _projectChangeItem(
+        item: item,
+        changeId: '${changeSet.id}_$i',
+        blocksById: blocksById,
+      );
+      if (projected != null) changes.add(projected);
+    }
+    return PlanDiff(
+      id: changeSet.id,
+      transcript: transcript,
+      changes: changes,
+      updatedPlan: currentPlan,
+    );
+  }
+
+  Future<PlanDiffChange?> _projectChangeItem({
+    required ChangeItem item,
+    required String changeId,
+    required Map<String, TimeBlock> blocksById,
+  }) async {
+    final kind = switch (item.toolName) {
+      'move_block' => PlanDiffChangeKind.moved,
+      'add_block' => PlanDiffChangeKind.added,
+      'drop_block' => PlanDiffChangeKind.dropped,
+      _ => null,
+    };
+    if (kind == null) return null;
+    final args = item.args;
+    final blockId = args['blockId'] as String?;
+    final existing = blockId != null ? blocksById[blockId] : null;
+    DateTime? parseDate(Object? raw) {
+      if (raw is! String) return null;
+      return DateTime.tryParse(raw);
+    }
+
+    final categoryId =
+        (args['categoryId'] as String?) ?? existing?.category.id ?? '';
+    final category = categoryId.isEmpty
+        ? _fallbackCategory
+        : await _resolveCategory(categoryId);
+    final title =
+        (args['title'] as String?) ?? existing?.title ?? item.humanSummary;
+    final reason = (args['reason'] as String?) ?? item.humanSummary;
+    final toStart = parseDate(args['toStart']);
+    final toEnd = parseDate(args['toEnd']);
+
+    return PlanDiffChange(
+      id: changeId,
+      kind: kind,
+      title: title,
+      category: category,
+      reason: reason,
+      affectedBlockId: blockId ?? existing?.id ?? '',
+      fromStart: existing?.start,
+      fromEnd: existing?.end,
+      toStart: toStart,
+      toEnd: toEnd,
     );
   }
 }

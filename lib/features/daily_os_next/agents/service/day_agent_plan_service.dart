@@ -111,6 +111,36 @@ class DayAgentPlanService {
     return null;
   }
 
+  /// Pending plan-diff change sets for [agentId]'s plan on [dayId],
+  /// newest-first. Used by the UI to surface the most recent refine
+  /// proposal after a refine wake completes.
+  ///
+  /// Returns an empty list when the plan does not exist or has no
+  /// pending diffs. Filters out resolved/deleted change sets so the
+  /// UI never sees stale rows.
+  Future<List<ChangeSetEntity>> pendingPlanDiffsForDay({
+    required String agentId,
+    required String dayId,
+  }) async {
+    final planId = dayAgentPlanEntityId(dayId);
+    final entities = await agentRepository.getEntitiesByAgentId(
+      agentId,
+      type: 'changeSet',
+    );
+    final diffs =
+        entities
+            .whereType<ChangeSetEntity>()
+            .where(
+              (cs) =>
+                  cs.taskId == planId &&
+                  cs.deletedAt == null &&
+                  cs.status == ChangeSetStatus.pending,
+            )
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return diffs;
+  }
+
   /// Soft-deletes the persisted [DayPlanEntity] for [dayId] (when one
   /// exists) and every `captureToPlan` link pointing at it. The agent
   /// identity and source captures stay intact — they predate the plan
