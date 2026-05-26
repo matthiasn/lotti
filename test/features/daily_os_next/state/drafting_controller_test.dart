@@ -1,4 +1,3 @@
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -40,67 +39,30 @@ void main() {
       final initial = await container.read(
         draftingControllerProvider(params()).future,
       );
-      expect(initial.phase, DraftingPhase.streaming);
-      expect(initial.visibleLines, isEmpty);
+      expect(initial.phase, DraftingPhase.drafting);
       expect(initial.learningCards, isNotNull);
       expect(initial.learningCards!.length, 3);
     });
 
     test(
-      'reasoning lines stream in on cadence and ready holds until draft '
-      'arrives',
-      () {
-        fakeAsync((async) {
-          final container = ProviderContainer(
-            overrides: [
-              dayAgentProvider.overrideWithValue(
-                MockDayAgent(
-                  // The draft latency must be > the time it would take
-                  // to drain the reasoning script — that way the final
-                  // "Ready" line stalls until the draft resolves, which
-                  // is the contract the screen relies on.
-                  draftLatency: const Duration(milliseconds: 700),
-                  parseLatency: Duration.zero,
-                  pendingLatency: Duration.zero,
-                  triageLatency: Duration.zero,
-                  summarizeLatency: Duration.zero,
-                ),
-              ),
-              draftingControllerProvider(params()).overrideWith(
-                () => DraftingController(
-                  params(),
-                  lineInterval: const Duration(milliseconds: 100),
-                  readyBeat: const Duration(milliseconds: 50),
-                ),
-              ),
-            ],
-          )..listen(draftingControllerProvider(params()), (_, _) {});
-          addTearDown(container.dispose);
+      'phase flips to ready and draft is populated once draftDayPlan '
+      'resolves',
+      () async {
+        final container = makeContainer();
+        await container.read(draftingControllerProvider(params()).future);
 
-          // Drain microtasks so the controller's build completes,
-          // then elapse 540ms — 5 lines × 100ms = 500ms; the 6th line
-          // ("Ready") will be held because the draft has not yet
-          // resolved (700ms).
-          async
-            ..flushMicrotasks()
-            ..elapse(const Duration(milliseconds: 540));
-          var state = container
-              .read(draftingControllerProvider(params()))
-              .value;
-          expect(state, isNotNull);
-          expect(state!.visibleLines.length, 5);
-          expect(state.phase, DraftingPhase.streaming);
+        // Drain microtasks so the fire-and-forget draftFuture listener
+        // completes and the controller pushes the ready state.
+        for (var i = 0; i < 4; i++) {
+          await Future<void>.delayed(Duration.zero);
+        }
 
-          // Cross the 700ms threshold so the draft resolves; the next
-          // periodic tick emits the "Ready" line, then the readyBeat
-          // fires. Allow generous slack so timer/future ordering
-          // inside fakeAsync stays robust.
-          async.elapse(const Duration(milliseconds: 600));
-          state = container.read(draftingControllerProvider(params())).value;
-          expect(state!.draft, isNotNull);
-          expect(state.visibleLines.length, 6);
-          expect(state.phase, DraftingPhase.ready);
-        });
+        final state = container
+            .read(draftingControllerProvider(params()))
+            .value;
+        expect(state, isNotNull);
+        expect(state!.phase, DraftingPhase.ready);
+        expect(state.draft, isNotNull);
       },
     );
   });

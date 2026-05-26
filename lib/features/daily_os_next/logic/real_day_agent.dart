@@ -14,21 +14,25 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.da
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 
-/// Bridges the UI's [DayAgentInterface] to the real agent layer that
-/// landed in PR #3209.
+/// Bridges the UI's [DayAgentInterface] to the real agent layer.
 ///
-/// **Graduated to real** (calls `DayAgentCaptureService` /
-/// `DayAgentPlanService` / `DayAgentService`):
+/// **Graduated to real** — direct calls into `DayAgentCaptureService`
+/// / `DayAgentPlanService` / `DayAgentService`. Failures throw a
+/// [DayAgentInteractionException] (or propagate the underlying service
+/// exception) so the UI can render a real error state instead of a
+/// scripted fallback that pretends the call succeeded:
 /// `submitCapture`, `parseCaptureToItems`, `surfacePendingDecisions`,
 /// `applyTriage`, `linkCapturePhraseToTask`, `breakCaptureLink`,
 /// `summarizeRecentPatterns`, `draftDayPlan`, `proposePlanDiff`,
 /// `acceptDiff`, `revertDiff`, `currentPlanForDate`,
 /// `deletePlanForDate`.
 ///
-/// **Still mocked** (no agent-side tool ships yet):
-/// `matchToCorpus`, `commitDay`, `surfaceShutdownData`,
+/// **Still mocked** — these methods still delegate to [mockFallback]
+/// because their agent-side tools have not shipped yet. Once each
+/// phase lands they graduate the same way (real calls + thrown
+/// errors): `commitDay` (Phase 5), `surfaceShutdownData`,
 /// `recordReflection`, `recordCarryoverDecision`,
-/// `generateTomorrowNote`, `surfaceTaskCorpus`.
+/// `generateTomorrowNote` (Phase 6), `surfaceTaskCorpus` (Phase 7).
 ///
 /// As those phases ship in the agent layer, methods graduate from
 /// `mockFallback` to direct service calls.
@@ -173,8 +177,8 @@ class RealDayAgent implements DayAgentInterface {
   static const _draftPollInterval = Duration(milliseconds: 500);
 
   /// Upper bound on how long [draftDayPlan] waits for the wake to
-  /// produce a plan before falling back to the mock. Long enough for
-  /// a typical model round-trip, short enough that the UI does not
+  /// produce a plan before surfacing a failure. Long enough for a
+  /// typical model round-trip, short enough that the UI does not
   /// look stuck.
   static const _draftTimeout = Duration(seconds: 60);
 
@@ -187,11 +191,9 @@ class RealDayAgent implements DayAgentInterface {
   }) async {
     final identity = await dayAgentService.getDayAgentForDate(dayDate);
     if (identity is! AgentIdentityEntity) {
-      return mockFallback.draftDayPlan(
-        captureId: captureId,
-        decidedTaskIds: decidedTaskIds,
-        dayDate: dayDate,
-        calendarBlocks: calendarBlocks,
+      throw DayAgentInteractionException(
+        'No day agent exists for ${dayAgentIdForDate(dayDate)}. '
+        'Submit a capture first so the day-agent is created.',
       );
     }
     final dayId = dayAgentIdForDate(dayDate);
@@ -210,11 +212,9 @@ class RealDayAgent implements DayAgentInterface {
       decidedTaskIds: decidedTaskIds,
     );
     if (!enqueued) {
-      return mockFallback.draftDayPlan(
-        captureId: captureId,
-        decidedTaskIds: decidedTaskIds,
-        dayDate: dayDate,
-        calendarBlocks: calendarBlocks,
+      throw const DayAgentInteractionException(
+        'Failed to enqueue the drafting wake — no day-agent was found '
+        'for this date.',
       );
     }
 
@@ -232,12 +232,9 @@ class RealDayAgent implements DayAgentInterface {
       }
     }
 
-    // Timed out — fall back to the mock so the UI still shows a plan.
-    return mockFallback.draftDayPlan(
-      captureId: captureId,
-      decidedTaskIds: decidedTaskIds,
-      dayDate: dayDate,
-      calendarBlocks: calendarBlocks,
+    throw const DayAgentInteractionException(
+      'Timed out waiting for the day-agent to produce a plan. Check '
+      '"Inspect agent" for the wake log and retry.',
     );
   }
 
@@ -273,9 +270,8 @@ class RealDayAgent implements DayAgentInterface {
       currentPlan.dayDate,
     );
     if (identity is! AgentIdentityEntity) {
-      return mockFallback.proposePlanDiff(
-        currentPlan: currentPlan,
-        voiceTranscript: voiceTranscript,
+      throw DayAgentInteractionException(
+        'No day agent exists for ${dayAgentIdForDate(currentPlan.dayDate)}.',
       );
     }
     final dayId = dayAgentIdForDate(currentPlan.dayDate);
@@ -290,9 +286,9 @@ class RealDayAgent implements DayAgentInterface {
       transcript: voiceTranscript,
     );
     if (!enqueued) {
-      return mockFallback.proposePlanDiff(
-        currentPlan: currentPlan,
-        voiceTranscript: voiceTranscript,
+      throw const DayAgentInteractionException(
+        'Failed to enqueue the refine wake. The plan may have been '
+        'committed or deleted — refresh and try again.',
       );
     }
 
@@ -312,9 +308,9 @@ class RealDayAgent implements DayAgentInterface {
         );
       }
     }
-    return mockFallback.proposePlanDiff(
-      currentPlan: currentPlan,
-      voiceTranscript: voiceTranscript,
+    throw const DayAgentInteractionException(
+      'Timed out waiting for the day-agent to produce a refine proposal. '
+      'Check "Inspect agent" for the wake log and retry.',
     );
   }
 
@@ -324,22 +320,27 @@ class RealDayAgent implements DayAgentInterface {
       diff.updatedPlan.dayDate,
     );
     if (identity is! AgentIdentityEntity) {
-      return mockFallback.acceptDiff(diff);
-    }
-    try {
-      await planService.acceptPlanDiff(
-        agentId: identity.agentId,
-        changeSetId: diff.id,
+      throw DayAgentInteractionException(
+        'No day agent exists for '
+        '${dayAgentIdForDate(diff.updatedPlan.dayDate)}.',
       );
-    } catch (_) {
-      return mockFallback.acceptDiff(diff);
     }
+    await planService.acceptPlanDiff(
+      agentId: identity.agentId,
+      changeSetId: diff.id,
+    );
     final dayId = dayAgentIdForDate(diff.updatedPlan.dayDate);
     final plan = await planService.draftPlanForDay(
       agentId: identity.agentId,
       dayId: dayId,
     );
-    if (plan == null) return mockFallback.acceptDiff(diff);
+    if (plan == null) {
+      throw DayAgentInteractionException(
+        'Plan disappeared after accepting the diff — '
+        '${dayAgentIdForDate(diff.updatedPlan.dayDate)} no longer has a '
+        'drafted plan.',
+      );
+    }
     return _projectDayPlan(plan, diff.updatedPlan.dayDate);
   }
 
@@ -352,16 +353,14 @@ class RealDayAgent implements DayAgentInterface {
       originalPlan.dayDate,
     );
     if (identity is! AgentIdentityEntity) {
-      return mockFallback.revertDiff(diff: diff, originalPlan: originalPlan);
-    }
-    try {
-      await planService.revertPlanDiff(
-        agentId: identity.agentId,
-        changeSetId: diff.id,
+      throw DayAgentInteractionException(
+        'No day agent exists for ${dayAgentIdForDate(originalPlan.dayDate)}.',
       );
-    } catch (_) {
-      return mockFallback.revertDiff(diff: diff, originalPlan: originalPlan);
     }
+    await planService.revertPlanDiff(
+      agentId: identity.agentId,
+      changeSetId: diff.id,
+    );
     // Revert leaves the plan untouched — return the caller's view.
     return originalPlan;
   }
@@ -741,6 +740,21 @@ class RealDayAgent implements DayAgentInterface {
       toEnd: toEnd,
     );
   }
+}
+
+/// Thrown by [RealDayAgent] when a graduated path cannot complete —
+/// no day-agent for the date, an enqueue refused by the backend, or
+/// the wake timed out. Replaces the previous "silently fall back to
+/// scripted mock data" behaviour so failures surface in the UI as
+/// real error states instead of being papered over with placeholder
+/// blocks.
+class DayAgentInteractionException implements Exception {
+  const DayAgentInteractionException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'DayAgentInteractionException: $message';
 }
 
 /// Tiny helper so the adapter can override one field on the fallback

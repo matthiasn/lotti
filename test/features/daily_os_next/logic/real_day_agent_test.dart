@@ -283,20 +283,21 @@ void main() {
     );
 
     test(
-      'falls back to the mock plan when no day-agent exists for the date',
+      'throws DayAgentInteractionException when no day-agent exists for '
+      'the date',
       () async {
         when(
           () => dayAgentService.getDayAgentForDate(any()),
         ).thenAnswer((_) async => null);
 
-        final result = await adapter.draftDayPlan(
-          captureId: const CaptureId('cap_1'),
-          decidedTaskIds: const [],
-          dayDate: _asOf,
+        await expectLater(
+          adapter.draftDayPlan(
+            captureId: const CaptureId('cap_1'),
+            decidedTaskIds: const [],
+            dayDate: _asOf,
+          ),
+          throwsA(isA<DayAgentInteractionException>()),
         );
-
-        // Mock returns a non-empty scripted plan.
-        expect(result.blocks, isNotEmpty);
         verifyNever(
           () => dayAgentService.enqueueDraftingWake(
             dayDate: any(named: 'dayDate'),
@@ -308,7 +309,8 @@ void main() {
     );
 
     test(
-      'falls back to the mock plan when enqueueDraftingWake reports no agent',
+      'throws DayAgentInteractionException when enqueueDraftingWake reports '
+      'no agent',
       () async {
         const agentId = 'day-agent-001';
         when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
@@ -332,13 +334,14 @@ void main() {
           ),
         ).thenAnswer((_) async => false);
 
-        final result = await adapter.draftDayPlan(
-          captureId: const CaptureId('cap_1'),
-          decidedTaskIds: const [],
-          dayDate: _asOf,
+        await expectLater(
+          adapter.draftDayPlan(
+            captureId: const CaptureId('cap_1'),
+            decidedTaskIds: const [],
+            dayDate: _asOf,
+          ),
+          throwsA(isA<DayAgentInteractionException>()),
         );
-
-        expect(result.blocks, isNotEmpty);
       },
     );
   });

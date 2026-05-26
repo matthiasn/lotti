@@ -4,7 +4,6 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/learning_cards.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/reasoning_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/skeleton_agenda.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -95,15 +94,12 @@ class _DraftingBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
-    final progress = state.totalLines == 0
-        ? 0.0
-        : state.visibleLines.length / state.totalLines;
     final isWide = MediaQuery.sizeOf(context).width >= 900;
 
     final left = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ReasoningPanel(lines: state.visibleLines),
+        _DraftingHeader(teal: teal),
         SizedBox(height: tokens.spacing.step5),
         const SkeletonAgenda(),
       ],
@@ -115,11 +111,11 @@ class _DraftingBody extends StatelessWidget {
 
     return Column(
       children: [
-        // 2 px teal progress bar across the content area.
+        // Indeterminate progress strip — the wait is honest about not
+        // knowing how long the agent will think.
         SizedBox(
           height: 2,
           child: LinearProgressIndicator(
-            value: progress.clamp(0.0, 1.0),
             valueColor: AlwaysStoppedAnimation<Color>(teal),
             backgroundColor: teal.withValues(alpha: 0.10),
           ),
@@ -144,6 +140,36 @@ class _DraftingBody extends StatelessWidget {
                       right,
                     ],
                   ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DraftingHeader extends StatelessWidget {
+  const _DraftingHeader({required this.teal});
+
+  final Color teal;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      children: [
+        SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(teal),
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        Text(
+          'Drafting your day…',
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
       ],

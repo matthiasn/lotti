@@ -9,12 +9,11 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 
 /// What stage of the drafting wait the user is in.
 enum DraftingPhase {
-  /// Reasoning lines are still streaming in. The draft may or may
-  /// not be ready behind the scenes.
-  streaming,
+  /// Waiting on the agent to produce the draft. Skeleton + learning
+  /// cards are shown.
+  drafting,
 
-  /// Both the reasoning stream and the draft plan have completed.
-  /// The UI animates a brief beat then auto-advances to the Day view.
+  /// Draft has arrived. The page auto-pushes the Day view.
   ready,
 }
 
@@ -51,21 +50,11 @@ class DraftingParams {
 class DraftingState {
   const DraftingState({
     required this.phase,
-    required this.visibleLines,
-    required this.totalLines,
     required this.learningCards,
     required this.draft,
   });
 
   final DraftingPhase phase;
-
-  /// Reasoning lines emitted so far. The most recent line is the one
-  /// the UI highlights with a pulsing dot; earlier ones fade.
-  final List<ReasoningLine> visibleLines;
-
-  /// Total scripted lines the controller will emit. The UI uses this
-  /// for the 2 px teal progress bar.
-  final int totalLines;
 
   /// Learning-card payload from `summarize_recent_patterns`. Null
   /// while still loading.
@@ -76,15 +65,11 @@ class DraftingState {
 
   DraftingState copyWith({
     DraftingPhase? phase,
-    List<ReasoningLine>? visibleLines,
-    int? totalLines,
     List<LearningCard>? learningCards,
     DraftPlan? draft,
   }) {
     return DraftingState(
       phase: phase ?? this.phase,
-      visibleLines: visibleLines ?? this.visibleLines,
-      totalLines: totalLines ?? this.totalLines,
       learningCards: learningCards ?? this.learningCards,
       draft: draft ?? this.draft,
     );
@@ -93,39 +78,19 @@ class DraftingState {
 
 /// Drives the Drafting wait screen.
 ///
-/// On first build the controller:
-/// 1. Kicks off `summarizeRecentPatterns` + `draftDayPlan` in parallel.
-/// 2. Starts streaming the scripted reasoning lines on a 900 ms
-///    cadence. The final "Ready" line is gated on `draftDayPlan`
-///    having actually returned, so the reflection beat never
-///    completes before the plan is real.
-/// 3. Flips [DraftingPhase.ready] when both streams are exhausted.
-///
-/// Test seam: pass `lineInterval`, `readyBeat`, and `lines` to control
-/// timing deterministically with `fakeAsync`.
+/// On first build the controller kicks off `summarizeRecentPatterns`
+/// and `draftDayPlan` in parallel. Learning cards are awaited so the
+/// right column has content from the first frame; the draft is
+/// awaited lazily and flips [DraftingPhase.ready] when it arrives.
+/// The previous "scripted reasoning lines streaming on a 900 ms
+/// cadence" theatre is gone — the wait is now an honest skeleton.
 class DraftingController extends AsyncNotifier<DraftingState> {
-  DraftingController(
-    this.params, {
-    this.lineInterval = const Duration(milliseconds: 900),
-    this.readyBeat = const Duration(milliseconds: 600),
-    List<ReasoningLine>? lines,
-  }) : _lines = lines ?? _defaultLines;
+  DraftingController(this.params);
 
   final DraftingParams params;
-  final Duration lineInterval;
-  final Duration readyBeat;
-  final List<ReasoningLine> _lines;
-
-  Timer? _streamTimer;
-  Timer? _readyTimer;
 
   @override
   Future<DraftingState> build() async {
-    ref.onDispose(() {
-      _streamTimer?.cancel();
-      _readyTimer?.cancel();
-    });
-
     final agent = ref.read(dayAgentProvider);
 
     final learningsFuture = agent.summarizeRecentPatterns(asOf: params.dayDate);
@@ -135,71 +100,33 @@ class DraftingController extends AsyncNotifier<DraftingState> {
       dayDate: params.dayDate,
     );
 
-    // The build awaits the *learning cards* so the right column has
-    // content from the first frame. The draft is awaited lazily —
-    // its readiness gates the final "Ready" reasoning line.
+    // Wait for learning cards so the right column has content from
+    // the first frame the user sees.
     final learnings = await learningsFuture;
 
-    // Start streaming after the controller exposes its initial state.
+    // The draft resolves lazily — fire-and-forget the listener that
+    // flips the phase to ready once it lands.
     unawaited(
-      Future<void>.microtask(() => _startStreaming(draftFuture)),
+      draftFuture
+          .then((value) {
+            if (!ref.mounted) return;
+            final current = state.value;
+            if (current == null) return;
+            state = AsyncData(
+              current.copyWith(draft: value, phase: DraftingPhase.ready),
+            );
+          })
+          .catchError((Object error, StackTrace stack) {
+            if (!ref.mounted) return;
+            state = AsyncError<DraftingState>(error, stack);
+          }),
     );
 
     return DraftingState(
-      phase: DraftingPhase.streaming,
-      visibleLines: const [],
-      totalLines: _lines.length,
+      phase: DraftingPhase.drafting,
       learningCards: learnings,
       draft: null,
     );
-  }
-
-  void _startStreaming(Future<DraftPlan> draftFuture) {
-    var cursor = 0;
-    var draft = state.value?.draft;
-
-    draftFuture.then((value) {
-      if (!ref.mounted) return;
-      draft = value;
-      final current = state.value;
-      if (current != null) {
-        state = AsyncData(current.copyWith(draft: value));
-      }
-    });
-
-    _streamTimer = Timer.periodic(lineInterval, (timer) {
-      if (!ref.mounted) {
-        timer.cancel();
-        return;
-      }
-      // Hold the final line until the draft actually resolves — the
-      // reflection beat must not "complete" before the plan exists.
-      if (cursor == _lines.length - 1 && draft == null) {
-        return;
-      }
-      if (cursor >= _lines.length) {
-        timer.cancel();
-        _scheduleReady();
-        return;
-      }
-      final current = state.value;
-      if (current == null) return;
-      state = AsyncData(
-        current.copyWith(
-          visibleLines: [...current.visibleLines, _lines[cursor]],
-        ),
-      );
-      cursor++;
-    });
-  }
-
-  void _scheduleReady() {
-    _readyTimer = Timer(readyBeat, () {
-      if (!ref.mounted) return;
-      final current = state.value;
-      if (current == null || current.draft == null) return;
-      state = AsyncData(current.copyWith(phase: DraftingPhase.ready));
-    });
   }
 }
 
@@ -207,30 +134,3 @@ final draftingControllerProvider = AsyncNotifierProvider.autoDispose
     .family<DraftingController, DraftingState, DraftingParams>(
       DraftingController.new,
     );
-
-const List<ReasoningLine> _defaultLines = [
-  ReasoningLine(
-    text: "Reviewing yesterday's carryover…",
-    icon: ReasoningIcon.review,
-  ),
-  ReasoningLine(
-    text: 'Pulling in calendar events…',
-    icon: ReasoningIcon.calendar,
-  ),
-  ReasoningLine(
-    text: 'Protecting your morning focus block',
-    icon: ReasoningIcon.shield,
-  ),
-  ReasoningLine(
-    text: 'Placing deep work in your high-energy window',
-    icon: ReasoningIcon.energy,
-  ),
-  ReasoningLine(
-    text: 'Balancing capacity',
-    icon: ReasoningIcon.balance,
-  ),
-  ReasoningLine(
-    text: 'Ready',
-    icon: ReasoningIcon.ready,
-  ),
-];

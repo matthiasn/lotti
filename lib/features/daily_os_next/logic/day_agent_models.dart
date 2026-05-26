@@ -387,28 +387,6 @@ enum AgendaItemState {
   done,
 }
 
-/// What the agent's reasoning stream emits one chunk at a time while
-/// the plan is being drafted. The UI fades older lines to medium
-/// emphasis and pulses a dot next to the currently-active line.
-@immutable
-class ReasoningLine {
-  const ReasoningLine({required this.text, required this.icon});
-
-  final String text;
-  final ReasoningIcon icon;
-}
-
-/// Iconography the reasoning stream uses. Mapped to real material
-/// icons in the UI layer so this model stays platform-agnostic.
-enum ReasoningIcon {
-  review,
-  calendar,
-  shield,
-  energy,
-  balance,
-  ready,
-}
-
 /// One bullet inside a learning card (Yesterday / This week / Gentle
 /// nudge). Tone matches the prototype copy.
 @immutable
