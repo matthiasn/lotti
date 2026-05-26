@@ -138,6 +138,23 @@ void main() {
       );
     });
 
+    test('draft_day_plan taskId references drafting.decidedTasks', () {
+      final properties =
+          parametersFor(DayAgentToolNames.draftDayPlan)['properties']
+              as Map<String, dynamic>;
+      final blockProps =
+          ((properties['blocks'] as Map<String, dynamic>)['items']
+                  as Map<String, dynamic>)['properties']
+              as Map<String, dynamic>;
+      final taskIdSchema = blockProps['taskId'] as Map<String, dynamic>;
+
+      expect(taskIdSchema['description'], isA<String>());
+      expect(
+        taskIdSchema['description'] as String,
+        contains('drafting.decidedTasks'),
+      );
+    });
+
     test('propose_plan_diff documents change-shape schema', () {
       final properties =
           parametersFor(DayAgentToolNames.proposePlanDiff)['properties']

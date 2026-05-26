@@ -258,7 +258,15 @@ const dayAgentTools = <AgentToolDefinition>[
             'properties': {
               'id': {'type': 'string'},
               'title': {'type': 'string'},
-              'taskId': {'type': 'string'},
+              'taskId': {
+                'type': 'string',
+                'description':
+                    'REQUIRED when the block corresponds to one of the '
+                    'tasks listed under drafting.decidedTasks. Omit only '
+                    'for buffer / calendar blocks that have no backing '
+                    'task, or for manual blocks that do not map to a '
+                    'decided task.',
+              },
               'categoryId': {'type': 'string'},
               'start': {
                 'type': 'string',

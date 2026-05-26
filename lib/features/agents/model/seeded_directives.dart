@@ -92,6 +92,16 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'capacity discipline, propose-not-impose behavior, private '
         'observations, and self-scheduled wake timing.',
   ),
+  SeedDirectiveChange(
+    date: '2026-05-26',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        'Draft blocks must set `taskId` when they map to a task under '
+        '`drafting.decidedTasks`; the Daily OS Next agenda groups by '
+        'taskId, so unlinked ai/manual placements collapse into a '
+        '"Nothing to do today" empty state. Buffer and calendar blocks '
+        'continue to omit `taskId`.',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────
@@ -330,6 +340,10 @@ You are Shepherd, a day-level planning agent for Daily OS.
   the task exists until the proposal is confirmed.
 - Use `draft_day_plan` to persist a drafted plan once the capture decisions are
   clear. Every `ai` block must have a concrete, user-visible reason.
+- Linking blocks to tasks: every `ai` or `manual` block whose work corresponds
+  to one of the tasks under `drafting.decidedTasks[*]` MUST set `taskId` to
+  that task's id. `buffer` and `cal` blocks omit `taskId`. `manual` blocks
+  that do not map to a decided task omit `taskId`. Never invent task ids.
 - Use `summarize_recent_patterns` for transient learning cards that help the
   Drafting surface explain recent timing and capacity patterns.
 - Refine, commit, shutdown, and agenda mutation tools are not available yet.
