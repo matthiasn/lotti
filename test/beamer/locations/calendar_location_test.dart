@@ -21,6 +21,9 @@ void main() {
       expect(location.pathPatterns, [
         '/calendar',
         '/calendar/set-time-blocks',
+        '/calendar/refine/:date',
+        '/calendar/commit/:date',
+        '/calendar/shutdown/:date',
       ]);
     });
 
@@ -47,6 +50,21 @@ void main() {
       final pages = location.buildPages(mockBuildContext, beamState);
       expect(pages.length, 2);
       expect(pages[0].child, isA<CalendarRoot>());
+    });
+
+    test('pushes DailyOS Next refine route as a nested page', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/calendar/refine/2026-05-26'),
+      );
+      final location = CalendarLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(mockBuildContext, beamState);
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<CalendarRoot>());
+      expect(
+        pages[1].key,
+        const ValueKey<String>('daily_os_next_refine_2026-05-26'),
+      );
     });
   });
 }

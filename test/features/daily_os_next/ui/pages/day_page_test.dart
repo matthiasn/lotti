@@ -8,11 +8,14 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -24,19 +27,22 @@ const _category = DayAgentCategory(
   colorHex: '0080FF',
 );
 
-DraftPlan _drafted({DayState state = DayState.drafted}) => DraftPlan(
+DraftPlan _drafted({
+  DayState state = DayState.drafted,
+  String title = 'Deep work',
+}) => DraftPlan(
   dayDate: DateTime(2026, 5, 26),
   blocks: const [],
   bands: const [],
   capacityMinutes: 240,
   scheduledMinutes: 120,
   state: state,
-  agendaItems: const [
+  agendaItems: [
     AgendaItem(
       id: 'item_1',
-      title: 'Deep work',
+      title: title,
       category: _category,
-      linkedBlockIds: ['blk_1'],
+      linkedBlockIds: const ['blk_1'],
     ),
   ],
 );
@@ -196,6 +202,7 @@ Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
   Size size = const Size(1400, 1200),
+  MediaQueryData? mediaQueryData,
 }) {
   return ProviderScope(
     overrides: [
@@ -209,7 +216,7 @@ Widget _wrap(
     ],
     child: makeTestableWidget2(
       child,
-      mediaQueryData: MediaQueryData(size: size),
+      mediaQueryData: mediaQueryData ?? MediaQueryData(size: size),
     ),
   );
 }
@@ -222,6 +229,10 @@ void _setSurface(WidgetTester tester) {
 }
 
 void main() {
+  tearDown(() {
+    nav_service.beamToNamedOverride = null;
+  });
+
   group('DayPage', () {
     testWidgets('default title and AgendaView render, DayTimeline absent', (
       tester,
@@ -297,6 +308,55 @@ void main() {
       expect(find.text(messages.dailyOsNextDayLockInCta), findsNothing);
       expect(find.text(messages.dailyOsNextDayWrapUpCta), findsOneWidget);
       expect(find.text(messages.dailyOsNextDayRefineCta), findsOneWidget);
+    });
+
+    testWidgets('syncs displayed agenda when the draft prop changes', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      await tester.pumpWidget(_wrap(DayPage(draft: _drafted())));
+      await tester.pump();
+
+      expect(find.text('Deep work'), findsOneWidget);
+      expect(find.text('Evening meeting'), findsNothing);
+
+      await tester.pumpWidget(
+        _wrap(DayPage(draft: _drafted(title: 'Evening meeting'))),
+      );
+      await tester.pump();
+
+      expect(find.text('Deep work'), findsNothing);
+      expect(find.text('Evening meeting'), findsOneWidget);
+    });
+
+    testWidgets('mobile footer clears the bottom navigation hit area', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(draft: _drafted()),
+          mediaQueryData: phoneMediaQueryData,
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(DayPage));
+      final bottomNavHeight = DesignSystemBottomNavigationBar.occupiedHeight(
+        context,
+      );
+      final messages = context.messages;
+      final lockInBottom = tester
+          .getBottomLeft(find.text(messages.dailyOsNextDayLockInCta))
+          .dy;
+
+      expect(
+        lockInBottom,
+        lessThan(phoneMediaQueryData.size.height - bottomNavHeight),
+      );
+      expect(
+        tester.getCenter(find.text(messages.dailyOsNextDayRefineCta)),
+        isA<Offset>(),
+      );
     });
 
     testWidgets('popup menu exposes Inspect agent + Delete plan items', (
@@ -400,13 +460,16 @@ void main() {
     );
 
     testWidgets(
-      'tapping Refine pushes RefinePage and absorbs its returned draft',
+      'tapping Refine beams to the DailyOS route for the plan date',
       (tester) async {
         _setSurface(tester);
         final agent = _RecordingAgent();
+        String? route;
+        nav_service.beamToNamedOverride = (path) => route = path;
+        final draft = _drafted();
         await tester.pumpWidget(
           _wrap(
-            DayPage(draft: _drafted()),
+            DayPage(draft: draft),
             overrides: [dayAgentProvider.overrideWithValue(agent)],
           ),
         );
@@ -415,22 +478,26 @@ void main() {
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextDayRefineCta));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump(const Duration(milliseconds: 200));
 
-        // The pushed route is the RefinePage instance — verify it built.
-        expect(find.byType(DayPage), findsNothing);
+        expect(
+          route,
+          dailyOsNextRoutePath(DailyOsNextRouteTarget.refine, draft.dayDate),
+        );
+        expect(find.byType(DayPage), findsOneWidget);
       },
     );
 
     testWidgets(
-      'tapping Lock In pushes CommitPage from the drafted footer',
+      'tapping Lock In beams to the DailyOS commit route',
       (tester) async {
         _setSurface(tester);
         final agent = _RecordingAgent();
+        String? route;
+        nav_service.beamToNamedOverride = (path) => route = path;
+        final draft = _drafted();
         await tester.pumpWidget(
           _wrap(
-            DayPage(draft: _drafted()),
+            DayPage(draft: draft),
             overrides: [dayAgentProvider.overrideWithValue(agent)],
           ),
         );
@@ -439,22 +506,26 @@ void main() {
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextDayLockInCta));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump(const Duration(milliseconds: 200));
 
-        // DayPage is no longer at the top — CommitPage took its place.
-        expect(find.byType(DayPage), findsNothing);
+        expect(
+          route,
+          dailyOsNextRoutePath(DailyOsNextRouteTarget.commit, draft.dayDate),
+        );
+        expect(find.byType(DayPage), findsOneWidget);
       },
     );
 
     testWidgets(
-      'tapping Wrap up on the committed footer pushes ShutdownPage',
+      'tapping Wrap up beams to the DailyOS shutdown route',
       (tester) async {
         _setSurface(tester);
         final agent = _RecordingAgent();
+        String? route;
+        nav_service.beamToNamedOverride = (path) => route = path;
+        final draft = _drafted(state: DayState.committed);
         await tester.pumpWidget(
           _wrap(
-            DayPage(draft: _drafted(state: DayState.committed)),
+            DayPage(draft: draft),
             overrides: [dayAgentProvider.overrideWithValue(agent)],
           ),
         );
@@ -463,11 +534,12 @@ void main() {
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextDayWrapUpCta));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump(const Duration(milliseconds: 200));
 
-        // DayPage was popped off the top of the stack by the push.
-        expect(find.byType(DayPage), findsNothing);
+        expect(
+          route,
+          dailyOsNextRoutePath(DailyOsNextRouteTarget.shutdown, draft.dayDate),
+        );
+        expect(find.byType(DayPage), findsOneWidget);
       },
     );
 

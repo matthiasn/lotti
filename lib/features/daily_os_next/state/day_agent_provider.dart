@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 
 /// Resolves the [DayAgentInterface] the UI talks to.
 ///
@@ -44,8 +45,12 @@ final dayAgentProvider = Provider<DayAgentInterface>((ref) {
 final currentDraftPlanProvider = FutureProvider.autoDispose
     .family<DraftPlan?, DateTime>((ref, date) async {
       final agent = ref.watch(dayAgentProvider);
-      // Re-runs whenever entities under this day-agent change.
-      ref.watch(agentUpdateStreamProvider(dayAgentIdForDate(date)));
+      // Re-runs whenever entities under this day-agent change. The broad
+      // agent sentinel covers sync-originated agent entity updates, which
+      // currently notify by agent id rather than by the derived day id.
+      ref
+        ..watch(agentUpdateStreamProvider(dayAgentIdForDate(date)))
+        ..watch(agentUpdateStreamProvider(agentNotification));
       return agent.currentPlanForDate(date);
     });
 
@@ -70,7 +75,9 @@ final capturesForDateProvider = FutureProvider.autoDispose
       final dayAgentService = ref.watch(dayAgentServiceProvider);
       final journalDb = ref.watch(journalDbProvider);
       final agentRepository = ref.watch(agentRepositoryProvider);
-      ref.watch(agentUpdateStreamProvider(dayAgentIdForDate(date)));
+      ref
+        ..watch(agentUpdateStreamProvider(dayAgentIdForDate(date)))
+        ..watch(agentUpdateStreamProvider(agentNotification));
 
       final agent = await dayAgentService.getDayAgentForDate(date);
       if (agent == null) return const <CaptureWithAudio>[];
