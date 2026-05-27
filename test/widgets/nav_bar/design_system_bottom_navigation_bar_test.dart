@@ -44,6 +44,46 @@ void main() {
       expect(find.byType(DesignSystemNavigationTabBar), findsOneWidget);
     });
 
+    testWidgets(
+      'reserves enough bottom breathing room to clear the screen edge on '
+      'devices without a home-indicator inset',
+      (tester) async {
+        // Pump with an explicitly zero bottom inset (Android with gesture
+        // nav off, simulators without a configured home indicator). The
+        // SafeArea around the pill contributes nothing here, so whatever
+        // gap exists below the last button row must come from padding().
+        const noInset = MediaQueryData(size: Size(390, 844));
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const DesignSystemBottomNavigationBar(
+              items: [
+                DesignSystemNavigationTabBarItem(
+                  label: 'Settings',
+                  icon: Icon(Icons.settings_outlined),
+                  active: true,
+                ),
+              ],
+            ),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: noInset,
+          ),
+        );
+
+        final pillBottom = tester
+            .getRect(find.byType(DesignSystemNavigationTabBar))
+            .bottom;
+        final navBarBottom = tester
+            .getRect(find.byType(DesignSystemBottomNavigationBar))
+            .bottom;
+
+        // 20 logical px ≈ the smallest tap-edge clearance that still reads
+        // as deliberate breathing room rather than a flush bar; the actual
+        // value is driven by a design-system spacing token.
+        expect(navBarBottom - pillBottom, greaterThanOrEqualTo(20));
+      },
+    );
+
     testWidgets('includes the bottom safe-area inset in occupied height', (
       tester,
     ) async {

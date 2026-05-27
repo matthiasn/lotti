@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Daily OS Next capture errors now use localized copy instead of raw controller
   strings.
+- Mobile: Daily OS reconcile controls now reserve the bottom navigation hit
+  area, and the bottom navigation labels have additional breathing room on
+  platforms without a home-indicator inset.
 - Improved sync reliability: fewer unresolvable gaps and more dependable
   delivery of local edits across devices.
 - Matrix sync now recovers automatically from stale empty downloads, so media

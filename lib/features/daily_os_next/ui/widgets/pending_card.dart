@@ -39,10 +39,12 @@ class PendingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              spacing: tokens.spacing.step3,
+              runSpacing: tokens.spacing.step2,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _StateBadge(item: item),
-                SizedBox(width: tokens.spacing.step3),
                 CategoryChip(category: item.category),
               ],
             ),
@@ -127,10 +129,14 @@ class _StateBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: color),
           SizedBox(width: tokens.spacing.step2),
-          Text(
-            label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: color,
+          Flexible(
+            child: Text(
+              label,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: color,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

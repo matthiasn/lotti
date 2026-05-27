@@ -168,27 +168,36 @@ class _MatchedTaskPill extends StatelessWidget {
         vertical: tokens.spacing.step2,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.arrow_forward_rounded, size: 14, color: accent),
           SizedBox(width: tokens.spacing.step2),
           Expanded(
-            child: Text(
-              title,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (taskState != null) ...[
+                  SizedBox(height: tokens.spacing.step1),
+                  Text(
+                    taskState!,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: accent,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
             ),
           ),
-          if (taskState != null) ...[
-            SizedBox(width: tokens.spacing.step3),
-            Text(
-              taskState!,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: accent,
-              ),
-            ),
-          ],
           SizedBox(width: tokens.spacing.step2),
           Tooltip(
             message: context.messages.dailyOsNextParsedCardBreakLinkTooltip,

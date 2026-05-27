@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Second screen of the agentic loop — turn the spoken check-in into
 /// editable structure and fold in the existing corpus.
@@ -53,18 +54,24 @@ class ReconcilePage extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: state.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(
-            child: Text(
-              context.messages.dailyOsNextReconcileError(error.toString()),
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              textAlign: TextAlign.center,
-            ),
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: DesignSystemBottomNavigationBar.occupiedHeight(context),
           ),
-          data: (data) => _ReconcileBody(params: params, data: data),
+          child: state.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: Text(
+                context.messages.dailyOsNextReconcileError(error.toString()),
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            data: (data) => _ReconcileBody(params: params, data: data),
+          ),
         ),
       ),
     );
@@ -220,10 +227,12 @@ class _ColumnHeader extends StatelessWidget {
     final tokens = context.designTokens;
     return Row(
       children: [
-        Text(
-          overline,
-          style: tokens.typography.styles.others.overline.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
+        Expanded(
+          child: Text(
+            overline,
+            style: tokens.typography.styles.others.overline.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
           ),
         ),
         SizedBox(width: tokens.spacing.step2),
@@ -311,6 +320,59 @@ class _ReconcileFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final isWide = MediaQuery.sizeOf(context).width >= 720;
+    final backButton = TextButton.icon(
+      icon: const Icon(Icons.arrow_back_rounded, size: 16),
+      label: Text(
+        messages.dailyOsNextReconcileReRecord,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      style: TextButton.styleFrom(
+        foregroundColor: tokens.colors.text.mediumEmphasis,
+      ),
+      onPressed: () => Navigator.of(context).maybePop(),
+    );
+    final hint = Text(
+      messages.dailyOsNextReconcileVoiceHint,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: tokens.colors.text.lowEmphasis,
+      ),
+      textAlign: TextAlign.center,
+    );
+    final draftButton = FilledButton.icon(
+      onPressed: () {
+        final selections = _draftingSelections();
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => DraftingPage(
+              captureId: params.captureId,
+              decidedTaskIds: selections.taskIds,
+              decidedCaptureItemIds: selections.captureItemIds,
+              dayDate: params.dayDate,
+              returnToRootOnReady: true,
+            ),
+          ),
+        );
+      },
+      icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+      label: Text(
+        messages.dailyOsNextReconcileBuildDayCta,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      style: FilledButton.styleFrom(
+        backgroundColor: tokens.colors.interactive.enabled,
+        foregroundColor: tokens.colors.text.onInteractiveAlert,
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step5,
+          vertical: tokens.spacing.step3,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+        ),
+      ),
+    );
     return Container(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
@@ -322,64 +384,28 @@ class _ReconcileFooter extends StatelessWidget {
         horizontal: tokens.spacing.step6,
         vertical: tokens.spacing.step4,
       ),
-      child: Row(
-        children: [
-          TextButton.icon(
-            icon: const Icon(Icons.arrow_back_rounded, size: 16),
-            label: Text(messages.dailyOsNextReconcileReRecord),
-            style: TextButton.styleFrom(
-              foregroundColor: tokens.colors.text.mediumEmphasis,
-            ),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                messages.dailyOsNextReconcileVoiceHint,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-          FilledButton(
-            onPressed: () {
-              final selections = _draftingSelections();
-              Navigator.of(context).push<void>(
-                MaterialPageRoute<void>(
-                  builder: (_) => DraftingPage(
-                    captureId: params.captureId,
-                    decidedTaskIds: selections.taskIds,
-                    decidedCaptureItemIds: selections.captureItemIds,
-                    dayDate: params.dayDate,
-                    returnToRootOnReady: true,
-                  ),
-                ),
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: tokens.colors.interactive.enabled,
-              foregroundColor: tokens.colors.text.onInteractiveAlert,
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step5,
-                vertical: tokens.spacing.step3,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(tokens.radii.m),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+      child: isWide
+          ? Row(
               children: [
-                Text(messages.dailyOsNextReconcileBuildDayCta),
-                SizedBox(width: tokens.spacing.step2),
-                const Icon(Icons.arrow_forward_rounded, size: 16),
+                backButton,
+                Expanded(child: hint),
+                draftButton,
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                hint,
+                SizedBox(height: tokens.spacing.step3),
+                Row(
+                  children: [
+                    Expanded(child: backButton),
+                    SizedBox(width: tokens.spacing.step3),
+                    Expanded(child: draftButton),
+                  ],
+                ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }
