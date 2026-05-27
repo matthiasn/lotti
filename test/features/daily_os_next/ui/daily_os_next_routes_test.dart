@@ -27,6 +27,9 @@ void main() {
         DateTime(2026, 5, 6),
       );
       expect(parseDailyOsNextRouteDate('not-a-date'), isNull);
+      expect(parseDailyOsNextRouteDate('2026-5-06'), isNull);
+      expect(parseDailyOsNextRouteDate('2026-02-31'), isNull);
+      expect(parseDailyOsNextRouteDate('2026-13-10'), isNull);
     });
   });
 }

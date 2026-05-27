@@ -16,7 +16,15 @@ String dailyOsNextRouteDate(DateTime date) {
 }
 
 DateTime? parseDailyOsNextRouteDate(String value) {
-  final parsed = DateTime.tryParse(value);
-  if (parsed == null) return null;
-  return DateTime(parsed.year, parsed.month, parsed.day);
+  final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
+  if (match == null) return null;
+
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3)!);
+  final parsed = DateTime(year, month, day);
+  if (parsed.year != year || parsed.month != month || parsed.day != day) {
+    return null;
+  }
+  return parsed;
 }
