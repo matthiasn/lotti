@@ -44,31 +44,25 @@ class DayPage extends ConsumerStatefulWidget {
 
 class _DayPageState extends ConsumerState<DayPage> {
   PlanView _view = PlanView.agenda;
-  late DraftPlan _draft = widget.draft;
-
-  @override
-  void didUpdateWidget(covariant DayPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.draft, widget.draft)) {
-      _draft = widget.draft;
-    }
-  }
 
   void _openRefine() {
     nav_service.beamToNamed(
-      dailyOsNextRoutePath(DailyOsNextRouteTarget.refine, _draft.dayDate),
+      dailyOsNextRoutePath(DailyOsNextRouteTarget.refine, widget.draft.dayDate),
     );
   }
 
   void _openCommit() {
     nav_service.beamToNamed(
-      dailyOsNextRoutePath(DailyOsNextRouteTarget.commit, _draft.dayDate),
+      dailyOsNextRoutePath(DailyOsNextRouteTarget.commit, widget.draft.dayDate),
     );
   }
 
   void _openShutdown() {
     nav_service.beamToNamed(
-      dailyOsNextRoutePath(DailyOsNextRouteTarget.shutdown, _draft.dayDate),
+      dailyOsNextRoutePath(
+        DailyOsNextRouteTarget.shutdown,
+        widget.draft.dayDate,
+      ),
     );
   }
 
@@ -78,7 +72,7 @@ class _DayPageState extends ConsumerState<DayPage> {
   /// token usage that produced this plan.
   Future<void> _openAgentInternals() async {
     final identity = await ref.read(
-      agent_providers.dayAgentProvider(_draft.dayDate).future,
+      agent_providers.dayAgentProvider(widget.draft.dayDate).future,
     );
     if (!mounted || identity == null) return;
     navigateToAgentInstance(identity.agentId);
@@ -118,7 +112,7 @@ class _DayPageState extends ConsumerState<DayPage> {
     );
     if (confirmed != true || !mounted) return;
     final agent = ref.read(dayAgentProvider);
-    await agent.deletePlanForDate(_draft.dayDate);
+    await agent.deletePlanForDate(widget.draft.dayDate);
   }
 
   @override
@@ -206,14 +200,14 @@ class _DayPageState extends ConsumerState<DayPage> {
           padding: EdgeInsets.only(bottom: bottomNavHeight),
           child: Column(
             children: [
-              CapturesPanel(date: _draft.dayDate),
+              CapturesPanel(date: widget.draft.dayDate),
               Expanded(
                 child: _view == PlanView.agenda
-                    ? AgendaView(draft: _draft)
-                    : DayTimeline(draft: _draft),
+                    ? AgendaView(draft: widget.draft)
+                    : DayTimeline(draft: widget.draft),
               ),
               _DayFooter(
-                draft: _draft,
+                draft: widget.draft,
                 onRefine: _openRefine,
                 onCommit: _openCommit,
                 onShutdown: _openShutdown,

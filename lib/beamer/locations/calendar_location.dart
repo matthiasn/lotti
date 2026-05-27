@@ -121,9 +121,23 @@ class _DailyOsNextRouteLoadingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.designTokens.colors.background.level01,
+      appBar: _dailyOsNextRouteAppBar(context),
       body: const Center(child: CircularProgressIndicator()),
     );
   }
+}
+
+AppBar _dailyOsNextRouteAppBar(BuildContext context) {
+  final tokens = context.designTokens;
+  return AppBar(
+    backgroundColor: tokens.colors.background.level01,
+    elevation: 0,
+    leading: IconButton(
+      icon: const Icon(Icons.arrow_back_rounded),
+      tooltip: context.messages.dailyOsNextDayBack,
+      onPressed: () => Navigator.of(context).maybePop(),
+    ),
+  );
 }
 
 class _DailyOsNextRouteErrorPage extends StatelessWidget {
@@ -136,6 +150,7 @@ class _DailyOsNextRouteErrorPage extends StatelessWidget {
     final tokens = context.designTokens;
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
+      appBar: _dailyOsNextRouteAppBar(context),
       body: Center(
         child: Padding(
           padding: EdgeInsets.all(tokens.spacing.step6),

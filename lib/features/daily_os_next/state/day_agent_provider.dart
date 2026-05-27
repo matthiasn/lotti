@@ -43,7 +43,7 @@ final dayAgentProvider = Provider<DayAgentInterface>((ref) {
 /// the instant the wake completes.
 // ignore: specify_nonobvious_property_types
 final currentDraftPlanProvider = FutureProvider.autoDispose
-    .family<DraftPlan?, DateTime>((ref, date) async {
+    .family<DraftPlan?, DateTime>((ref, date) {
       final agent = ref.watch(dayAgentProvider);
       // Re-runs whenever entities under this day-agent change. The broad
       // agent sentinel covers sync-originated agent entity updates, which
