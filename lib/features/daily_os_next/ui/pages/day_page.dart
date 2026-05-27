@@ -7,15 +7,16 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
     as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
+import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 enum _DayMenuAction { inspectAgent, deletePlan }
 
@@ -43,34 +44,24 @@ class DayPage extends ConsumerStatefulWidget {
 
 class _DayPageState extends ConsumerState<DayPage> {
   PlanView _view = PlanView.agenda;
-  late DraftPlan _draft = widget.draft;
 
-  Future<void> _openRefine() async {
-    final updated = await Navigator.of(context).push<DraftPlan>(
-      MaterialPageRoute<DraftPlan>(
-        builder: (_) => RefinePage(draft: _draft),
-      ),
+  void _openRefine() {
+    nav_service.beamToNamed(
+      dailyOsNextRoutePath(DailyOsNextRouteTarget.refine, widget.draft.dayDate),
     );
-    if (updated != null && mounted) {
-      setState(() => _draft = updated);
-    }
   }
 
-  Future<void> _openCommit() async {
-    final committed = await Navigator.of(context).push<DraftPlan>(
-      MaterialPageRoute<DraftPlan>(
-        builder: (_) => CommitPage(draft: _draft),
-      ),
+  void _openCommit() {
+    nav_service.beamToNamed(
+      dailyOsNextRoutePath(DailyOsNextRouteTarget.commit, widget.draft.dayDate),
     );
-    if (committed != null && mounted) {
-      setState(() => _draft = committed);
-    }
   }
 
-  Future<void> _openShutdown() async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => ShutdownPage(forDate: _draft.dayDate),
+  void _openShutdown() {
+    nav_service.beamToNamed(
+      dailyOsNextRoutePath(
+        DailyOsNextRouteTarget.shutdown,
+        widget.draft.dayDate,
       ),
     );
   }
@@ -81,7 +72,7 @@ class _DayPageState extends ConsumerState<DayPage> {
   /// token usage that produced this plan.
   Future<void> _openAgentInternals() async {
     final identity = await ref.read(
-      agent_providers.dayAgentProvider(_draft.dayDate).future,
+      agent_providers.dayAgentProvider(widget.draft.dayDate).future,
     );
     if (!mounted || identity == null) return;
     navigateToAgentInstance(identity.agentId);
@@ -121,12 +112,15 @@ class _DayPageState extends ConsumerState<DayPage> {
     );
     if (confirmed != true || !mounted) return;
     final agent = ref.read(dayAgentProvider);
-    await agent.deletePlanForDate(_draft.dayDate);
+    await agent.deletePlanForDate(widget.draft.dayDate);
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final bottomNavHeight = DesignSystemBottomNavigationBar.occupiedHeight(
+      context,
+    );
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
       appBar: AppBar(
@@ -201,21 +195,25 @@ class _DayPageState extends ConsumerState<DayPage> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            CapturesPanel(date: _draft.dayDate),
-            Expanded(
-              child: _view == PlanView.agenda
-                  ? AgendaView(draft: _draft)
-                  : DayTimeline(draft: _draft),
-            ),
-            _DayFooter(
-              draft: _draft,
-              onRefine: _openRefine,
-              onCommit: _openCommit,
-              onShutdown: _openShutdown,
-            ),
-          ],
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: bottomNavHeight),
+          child: Column(
+            children: [
+              CapturesPanel(date: widget.draft.dayDate),
+              Expanded(
+                child: _view == PlanView.agenda
+                    ? AgendaView(draft: widget.draft)
+                    : DayTimeline(draft: widget.draft),
+              ),
+              _DayFooter(
+                draft: widget.draft,
+                onRefine: _openRefine,
+                onCommit: _openCommit,
+                onShutdown: _openShutdown,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -239,6 +237,21 @@ class _DayFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
+    final isDesktop = isDesktopLayout(context);
+    final hint = Text(
+      context.messages.dailyOsNextDayRefineFooterHint,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: tokens.colors.text.lowEmphasis,
+      ),
+    );
+    final actions = _DayFooterActions(
+      draft: draft,
+      teal: teal,
+      onRefine: onRefine,
+      onCommit: onCommit,
+      onShutdown: onShutdown,
+      expand: !isDesktop,
+    );
     return Container(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
@@ -250,23 +263,78 @@ class _DayFooter extends StatelessWidget {
         horizontal: tokens.spacing.step6,
         vertical: tokens.spacing.step4,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              context.messages.dailyOsNextDayRefineFooterHint,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
+      child: isDesktop
+          ? Row(
+              children: [
+                Expanded(child: hint),
+                SizedBox(width: tokens.spacing.step4),
+                actions,
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                hint,
+                SizedBox(height: tokens.spacing.step3),
+                actions,
+              ],
             ),
-          ),
-          OutlinedButton.icon(
-            onPressed: onRefine,
-            icon: Icon(Icons.mic_rounded, size: 14, color: teal),
-            label: Text(context.messages.dailyOsNextDayRefineCta),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: teal,
-              side: BorderSide(color: teal.withValues(alpha: 0.32)),
+    );
+  }
+}
+
+class _DayFooterActions extends StatelessWidget {
+  const _DayFooterActions({
+    required this.draft,
+    required this.teal,
+    required this.onRefine,
+    required this.onCommit,
+    required this.onShutdown,
+    required this.expand,
+  });
+
+  final DraftPlan draft;
+  final Color teal;
+  final VoidCallback onRefine;
+  final VoidCallback onCommit;
+  final VoidCallback onShutdown;
+  final bool expand;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final refineButton = OutlinedButton.icon(
+      onPressed: onRefine,
+      icon: Icon(Icons.mic_rounded, size: 14, color: teal),
+      label: Text(
+        context.messages.dailyOsNextDayRefineCta,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: teal,
+        side: BorderSide(color: teal.withValues(alpha: 0.32)),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step2,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        ),
+      ),
+    );
+    final primaryButton = draft.state == DayState.drafted
+        ? FilledButton.icon(
+            onPressed: onCommit,
+            icon: const Icon(Icons.lock_outline_rounded, size: 14),
+            label: Text(
+              context.messages.dailyOsNextDayLockInCta,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: teal,
+              foregroundColor: tokens.colors.text.onInteractiveAlert,
               padding: EdgeInsets.symmetric(
                 horizontal: tokens.spacing.step4,
                 vertical: tokens.spacing.step2,
@@ -275,48 +343,38 @@ class _DayFooter extends StatelessWidget {
                 borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
               ),
             ),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          if (draft.state == DayState.drafted)
-            FilledButton.icon(
-              onPressed: onCommit,
-              icon: const Icon(Icons.lock_outline_rounded, size: 14),
-              label: Text(context.messages.dailyOsNextDayLockInCta),
-              style: FilledButton.styleFrom(
-                backgroundColor: teal,
-                foregroundColor: tokens.colors.text.onInteractiveAlert,
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step4,
-                  vertical: tokens.spacing.step2,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-                ),
+          )
+        : OutlinedButton.icon(
+            onPressed: onShutdown,
+            icon: Icon(
+              Icons.nights_stay_outlined,
+              size: 14,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            label: Text(
+              context.messages.dailyOsNextDayWrapUpCta,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: tokens.colors.text.mediumEmphasis,
+              side: BorderSide(color: tokens.colors.decorative.level01),
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step2,
               ),
-            )
-          else
-            OutlinedButton.icon(
-              onPressed: onShutdown,
-              icon: Icon(
-                Icons.nights_stay_outlined,
-                size: 14,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              label: Text(context.messages.dailyOsNextDayWrapUpCta),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: tokens.colors.text.mediumEmphasis,
-                side: BorderSide(color: tokens.colors.decorative.level01),
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step4,
-                  vertical: tokens.spacing.step2,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-                ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
               ),
             ),
-        ],
-      ),
+          );
+
+    return Row(
+      children: [
+        if (expand) Expanded(child: refineButton) else refineButton,
+        SizedBox(width: tokens.spacing.step2),
+        if (expand) Expanded(child: primaryButton) else primaryButton,
+      ],
     );
   }
 }
