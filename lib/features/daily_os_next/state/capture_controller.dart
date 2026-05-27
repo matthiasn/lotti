@@ -232,6 +232,16 @@ class CaptureController extends Notifier<CaptureState> {
     _verifyRealtimeTranscript = false;
   }
 
+  /// Opens the typed-capture path without touching the microphone.
+  void startTyping() {
+    _cleanupSync();
+    state = const CaptureState(
+      phase: CapturePhase.captured,
+      transcript: '',
+      amplitudes: <double>[],
+    );
+  }
+
   /// Edits the final transcript before it is handed to Reconcile.
   void updateTranscript(String transcript) {
     if (state.phase != CapturePhase.captured) return;

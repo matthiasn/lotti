@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/tasks_corpus_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -33,6 +37,7 @@ class TasksCorpusPage extends ConsumerWidget {
           tooltip: context.messages.dailyOsNextDayBack,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
+        actions: const [ProcessingCategoryFilterButton()],
       ),
       body: SafeArea(
         child: Padding(
@@ -51,6 +56,8 @@ class TasksCorpusPage extends ConsumerWidget {
               const _SearchField(),
               SizedBox(height: tokens.spacing.step3),
               const _StateFilterPills(),
+              SizedBox(height: tokens.spacing.step2),
+              const _CategoryFilterPills(),
               SizedBox(height: tokens.spacing.step4),
               Expanded(
                 child: asyncItems.when(
@@ -163,6 +170,47 @@ class _StateFilterPills extends ConsumerWidget {
   }
 }
 
+class _CategoryFilterPills extends ConsumerWidget {
+  const _CategoryFilterPills();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final selected = ref.watch(
+      tasksCorpusControllerProvider.select((f) => f.categoryId),
+    );
+    final categories = ref.watch(dailyOsKnownCategoriesProvider);
+    final notifier = ref.read(tasksCorpusControllerProvider.notifier);
+    return categories.maybeWhen(
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _FilterPill(
+                label: context.messages.dailyOsNextCategoryFilterAll,
+                isSelected: selected == null,
+                onTap: () => notifier.setCategory(null),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              for (final category in items) ...[
+                _CategoryFilterPill(
+                  category: category,
+                  isSelected: selected == category.id,
+                  onTap: () => notifier.setCategory(category.id),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+              ],
+            ],
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
 class _FilterPill extends StatelessWidget {
   const _FilterPill({
     required this.label,
@@ -208,6 +256,64 @@ class _FilterPill extends StatelessWidget {
   }
 }
 
+class _CategoryFilterPill extends StatelessWidget {
+  const _CategoryFilterPill({
+    required this.category,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final DayAgentCategory category;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final color = categoryColorFromHex(category.colorHex);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step3,
+          vertical: tokens.spacing.step2,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withValues(alpha: 0.16)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+          border: Border.all(
+            color: isSelected
+                ? color.withValues(alpha: 0.36)
+                : tokens.colors.decorative.level01,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: tokens.spacing.step2,
+              height: tokens.spacing.step2,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            Text(
+              category.name,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: isSelected ? color : tokens.colors.text.mediumEmphasis,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TaskRow extends StatelessWidget {
   const _TaskRow({required this.item});
 
@@ -228,49 +334,21 @@ class _TaskRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: color),
-          SizedBox(width: tokens.spacing.step3),
-          Expanded(
-            child: Text(
-              item.title,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: isDone
-                    ? tokens.colors.text.lowEmphasis
-                    : tokens.colors.text.highEmphasis,
-                decoration: isDone ? TextDecoration.lineThrough : null,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+      child: isDesktopLayout(context)
+          ? _DesktopTaskRowContent(
+              item: item,
+              icon: icon,
+              stateColor: color,
+              stateLabel: label,
+              isDone: isDone,
+            )
+          : _MobileTaskRowContent(
+              item: item,
+              icon: icon,
+              stateColor: color,
+              stateLabel: label,
+              isDone: isDone,
             ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          CategoryChip(category: item.category),
-          SizedBox(width: tokens.spacing.step3),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: color,
-              ),
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          Flexible(
-            child: Text(
-              item.updatedLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -324,6 +402,163 @@ class _TaskRow extends StatelessWidget {
           m.dailyOsNextTasksFilterDone,
         );
     }
+  }
+}
+
+class _DesktopTaskRowContent extends StatelessWidget {
+  const _DesktopTaskRowContent({
+    required this.item,
+    required this.icon,
+    required this.stateColor,
+    required this.stateLabel,
+    required this.isDone,
+  });
+
+  final TaskCorpusItem item;
+  final IconData icon;
+  final Color stateColor;
+  final String stateLabel;
+  final bool isDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: stateColor),
+        SizedBox(width: tokens.spacing.step3),
+        Expanded(
+          child: _TaskTitleText(
+            title: item.title,
+            isDone: isDone,
+            maxLines: 2,
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        CategoryChip(category: item.category),
+        SizedBox(width: tokens.spacing.step3),
+        Flexible(
+          child: _TaskMetaText(
+            label: stateLabel,
+            color: stateColor,
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        Flexible(
+          child: _TaskMetaText(
+            label: item.updatedLabel,
+            color: tokens.colors.text.lowEmphasis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MobileTaskRowContent extends StatelessWidget {
+  const _MobileTaskRowContent({
+    required this.item,
+    required this.icon,
+    required this.stateColor,
+    required this.stateLabel,
+    required this.isDone,
+  });
+
+  final TaskCorpusItem item;
+  final IconData icon;
+  final Color stateColor;
+  final String stateLabel;
+  final bool isDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 14, color: stateColor),
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(
+              child: _TaskTitleText(
+                title: item.title,
+                isDone: isDone,
+                maxLines: 3,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            CategoryChip(category: item.category),
+            _TaskMetaText(
+              label: stateLabel,
+              color: stateColor,
+            ),
+            _TaskMetaText(
+              label: item.updatedLabel,
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _TaskTitleText extends StatelessWidget {
+  const _TaskTitleText({
+    required this.title,
+    required this.isDone,
+    required this.maxLines,
+  });
+
+  final String title;
+  final bool isDone;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Text(
+      title,
+      style: tokens.typography.styles.body.bodyMedium.copyWith(
+        color: isDone
+            ? tokens.colors.text.lowEmphasis
+            : tokens.colors.text.highEmphasis,
+        decoration: isDone ? TextDecoration.lineThrough : null,
+      ),
+      maxLines: maxLines,
+      overflow: TextOverflow.fade,
+      softWrap: true,
+    );
+  }
+}
+
+class _TaskMetaText extends StatelessWidget {
+  const _TaskMetaText({
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: tokens.typography.styles.others.caption.copyWith(color: color),
+    );
   }
 }
 

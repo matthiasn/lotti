@@ -8,12 +8,16 @@ import 'package:lotti/features/daily_os_next/ui/pages/tasks_corpus_page.dart';
 
 import '../../../../widget_test_utils.dart';
 
-Widget _wrap(Widget child, {List<Override> overrides = const []}) {
+Widget _wrap(
+  Widget child, {
+  List<Override> overrides = const [],
+  MediaQueryData mediaQueryData = const MediaQueryData(size: Size(900, 1000)),
+}) {
   return ProviderScope(
     overrides: overrides,
     child: makeTestableWidget2(
       child,
-      mediaQueryData: const MediaQueryData(size: Size(900, 1000)),
+      mediaQueryData: mediaQueryData,
     ),
   );
 }
@@ -106,6 +110,29 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Reschedule dentist'), findsNothing);
+    });
+
+    testWidgets('lets task titles wrap on phone widths', (tester) async {
+      tester.view
+        ..physicalSize = const Size(390, 844)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final agent = _fastAgent();
+      await tester.pumpWidget(
+        _wrap(
+          const TasksCorpusPage(),
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final title = tester.widget<Text>(
+        find.text('Deck review — Q2 leadership update'),
+      );
+      expect(title.maxLines, greaterThan(1));
+      expect(title.overflow, TextOverflow.fade);
     });
   });
 }

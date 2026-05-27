@@ -5265,8 +5265,14 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextCaptureIdleHint.
   ///
   /// In en, this message translates to:
-  /// **'Tap to talk · snap it · type instead'**
+  /// **'Tap to talk · type instead'**
   String get dailyOsNextCaptureIdleHint;
+
+  /// No description provided for @dailyOsNextCaptureIdleTalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to talk'**
+  String get dailyOsNextCaptureIdleTalk;
 
   /// No description provided for @dailyOsNextCaptureListening.
   ///
@@ -5279,6 +5285,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Browse tasks'**
   String get dailyOsNextCaptureOpenTasks;
+
+  /// No description provided for @dailyOsNextCapturePastPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything you still want to track from {date}?'**
+  String dailyOsNextCapturePastPrompt(String date);
 
   /// No description provided for @dailyOsNextCaptureReconcileCta.
   ///
@@ -5304,6 +5316,12 @@ abstract class AppLocalizations {
   /// **'Review transcript'**
   String get dailyOsNextCaptureTranscriptLabel;
 
+  /// No description provided for @dailyOsNextCaptureTypeInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Type instead'**
+  String get dailyOsNextCaptureTypeInstead;
+
   /// No description provided for @dailyOsNextCaptureVoiceButtonReset.
   ///
   /// In en, this message translates to:
@@ -5321,6 +5339,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop listening'**
   String get dailyOsNextCaptureVoiceButtonStop;
+
+  /// No description provided for @dailyOsNextCategoryFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get dailyOsNextCategoryFilterAll;
+
+  /// No description provided for @dailyOsNextCategoryFilterDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Only enabled categories are surfaced for Daily OS automated processing.'**
+  String get dailyOsNextCategoryFilterDescription;
+
+  /// No description provided for @dailyOsNextCategoryFilterEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories available yet.'**
+  String get dailyOsNextCategoryFilterEmpty;
+
+  /// No description provided for @dailyOsNextCategoryFilterIncludeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Include all'**
+  String get dailyOsNextCategoryFilterIncludeAll;
+
+  /// No description provided for @dailyOsNextCategoryFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing categories'**
+  String get dailyOsNextCategoryFilterTitle;
+
+  /// No description provided for @dailyOsNextCategoryFilterTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Daily OS processing categories'**
+  String get dailyOsNextCategoryFilterTooltip;
 
   /// No description provided for @dailyOsNextCommitCapacityNote.
   ///
@@ -5519,6 +5573,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hi 👋'**
   String get dailyOsNextGreetingHi;
+
+  /// No description provided for @dailyOsNextGreetingHiName.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi {name},'**
+  String dailyOsNextGreetingHiName(String name);
 
   /// No description provided for @dailyOsNextGreetingMorning.
   ///
@@ -5922,6 +5982,18 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get dailyOsNextTasksTitle;
 
+  /// No description provided for @dailyOsNextTimelineActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual'**
+  String get dailyOsNextTimelineActual;
+
+  /// No description provided for @dailyOsNextTimelineBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan and actual'**
+  String get dailyOsNextTimelineBoth;
+
   /// No description provided for @dailyOsNextTimelineMeridiemAm.
   ///
   /// In en, this message translates to:
@@ -5946,11 +6018,53 @@ abstract class AppLocalizations {
   /// **'pm'**
   String get dailyOsNextTimelineMeridiemPmShort;
 
+  /// No description provided for @dailyOsNextTimelinePlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get dailyOsNextTimelinePlanned;
+
   /// No description provided for @dailyOsNextTimelineSessionOf.
   ///
   /// In en, this message translates to:
   /// **'Session {index} of {total}'**
   String dailyOsNextTimelineSessionOf(int index, int total);
+
+  /// No description provided for @dailyOsNextTimelineShowBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Show plan and actual together'**
+  String get dailyOsNextTimelineShowBoth;
+
+  /// No description provided for @dailyOsNextTimelineShowPaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Show swipeable plan and actual'**
+  String get dailyOsNextTimelineShowPaged;
+
+  /// No description provided for @dailyOsNextTimelineSwipeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe for actual · pinch vertically to zoom'**
+  String get dailyOsNextTimelineSwipeHint;
+
+  /// No description provided for @dailyOsNextTimeSpentEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No recorded time for this day yet.'**
+  String get dailyOsNextTimeSpentEmpty;
+
+  /// No description provided for @dailyOsNextTimeSpentSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} recorded · {completedCount} done'**
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount);
+
+  /// No description provided for @dailyOsNextTimeSpentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'TIME SPENT'**
+  String get dailyOsNextTimeSpentTitle;
 
   /// No description provided for @dailyOsNextTriageConfirmDefer.
   ///
@@ -10101,6 +10215,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Build Type'**
   String get settingsAboutBuildType;
+
+  /// No description provided for @settingsAboutDailyOsPersonalizationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS personalization'**
+  String get settingsAboutDailyOsPersonalizationTitle;
+
+  /// No description provided for @settingsAboutDailyOsUserNameHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Used only for the Daily OS greeting on this device.'**
+  String get settingsAboutDailyOsUserNameHelper;
+
+  /// No description provided for @settingsAboutDailyOsUserNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get settingsAboutDailyOsUserNameLabel;
 
   /// No description provided for @settingsAboutJournalEntries.
   ///

@@ -3159,13 +3159,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureIdleHint =>
-      'Apăsați pentru a vorbi · capturați · sau tastați';
+      'Apăsați pentru a vorbi · tastați în schimb';
+
+  @override
+  String get dailyOsNextCaptureIdleTalk => 'Apăsați pentru a vorbi';
 
   @override
   String get dailyOsNextCaptureListening => 'ASCULT';
 
   @override
   String get dailyOsNextCaptureOpenTasks => 'Răsfoiește sarcinile';
+
+  @override
+  String dailyOsNextCapturePastPrompt(String date) {
+    return 'Mai doriți să înregistrați ceva din $date?';
+  }
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Reconciliere';
@@ -3181,6 +3189,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureTranscriptLabel => 'Verificați transcrierea';
 
   @override
+  String get dailyOsNextCaptureTypeInstead => 'Tastați în schimb';
+
+  @override
   String get dailyOsNextCaptureVoiceButtonReset => 'Reîncepe';
 
   @override
@@ -3188,6 +3199,27 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureVoiceButtonStop => 'Oprește ascultarea';
+
+  @override
+  String get dailyOsNextCategoryFilterAll => 'Toate categoriile';
+
+  @override
+  String get dailyOsNextCategoryFilterDescription =>
+      'Doar categoriile activate sunt folosite pentru procesarea automată Daily OS.';
+
+  @override
+  String get dailyOsNextCategoryFilterEmpty =>
+      'Nu există încă nicio categorie disponibilă.';
+
+  @override
+  String get dailyOsNextCategoryFilterIncludeAll => 'Include toate';
+
+  @override
+  String get dailyOsNextCategoryFilterTitle => 'Categorii de procesare';
+
+  @override
+  String get dailyOsNextCategoryFilterTooltip =>
+      'Alegeți categoriile de procesare Daily OS';
 
   @override
   String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
@@ -3295,6 +3327,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingHi => 'Salut 👋';
+
+  @override
+  String dailyOsNextGreetingHiName(String name) {
+    return 'Bună, $name,';
+  }
 
   @override
   String get dailyOsNextGreetingMorning => 'Bună dimineața.';
@@ -3530,6 +3567,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextTasksTitle => 'Sarcini';
 
   @override
+  String get dailyOsNextTimelineActual => 'Real';
+
+  @override
+  String get dailyOsNextTimelineBoth => 'Plan și real';
+
+  @override
   String get dailyOsNextTimelineMeridiemAm => 'AM';
 
   @override
@@ -3542,9 +3585,35 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextTimelineMeridiemPmShort => 'pm';
 
   @override
+  String get dailyOsNextTimelinePlanned => 'Plan';
+
+  @override
   String dailyOsNextTimelineSessionOf(int index, int total) {
     return 'Sesiunea $index din $total';
   }
+
+  @override
+  String get dailyOsNextTimelineShowBoth => 'Afișați planul și realul împreună';
+
+  @override
+  String get dailyOsNextTimelineShowPaged =>
+      'Afișați planul și realul prin glisare';
+
+  @override
+  String get dailyOsNextTimelineSwipeHint =>
+      'Glisați spre real · ciupiți vertical pentru zoom';
+
+  @override
+  String get dailyOsNextTimeSpentEmpty =>
+      'Nu există încă timp înregistrat pentru această zi.';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    return '$duration înregistrat · $completedCount finalizate';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'TIMP PETRECUT';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Amânat';
@@ -5959,6 +6028,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsAboutBuildType => 'Tip build';
+
+  @override
+  String get settingsAboutDailyOsPersonalizationTitle =>
+      'Personalizare Daily OS';
+
+  @override
+  String get settingsAboutDailyOsUserNameHelper =>
+      'Folosit doar pentru salutul Daily OS pe acest dispozitiv.';
+
+  @override
+  String get settingsAboutDailyOsUserNameLabel => 'Numele dvs.';
 
   @override
   String get settingsAboutJournalEntries => 'Intrări jurnal';

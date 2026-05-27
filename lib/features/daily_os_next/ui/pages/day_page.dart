@@ -6,12 +6,14 @@ import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -121,6 +123,9 @@ class _DayPageState extends ConsumerState<DayPage> {
     final bottomNavHeight = DesignSystemBottomNavigationBar.occupiedHeight(
       context,
     );
+    final actualBlocks = _view == PlanView.day
+        ? ref.watch(dailyOsActualTimeBlocksProvider(widget.draft.dayDate)).value
+        : null;
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
       appBar: AppBar(
@@ -157,6 +162,7 @@ class _DayPageState extends ConsumerState<DayPage> {
               onChanged: (next) => setState(() => _view = next),
             ),
           ),
+          const ProcessingCategoryFilterButton(),
           PopupMenuButton<_DayMenuAction>(
             icon: const Icon(Icons.more_vert_rounded),
             tooltip: context.messages.dailyOsNextDayMoreTooltip,
@@ -204,7 +210,10 @@ class _DayPageState extends ConsumerState<DayPage> {
               Expanded(
                 child: _view == PlanView.agenda
                     ? AgendaView(draft: widget.draft)
-                    : DayTimeline(draft: widget.draft),
+                    : DayTimeline(
+                        draft: widget.draft,
+                        actualBlocks: actualBlocks,
+                      ),
               ),
               _DayFooter(
                 draft: widget.draft,

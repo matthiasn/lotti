@@ -292,6 +292,9 @@ The tests enforce that sync-specific items no longer live here as cards, even if
 - app version and build number from `PackageInfo`
 - journal entry count from `JournalDb`
 - flagged and task counts from shared widgets
+- the Daily OS display name field, persisted through
+  `DailyOsPreferencesController` into `SettingsDb` and read by the Daily OS
+  Capture greeting
 
 ## Sync Surfaces From Settings
 

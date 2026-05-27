@@ -121,6 +121,9 @@ void ensureThemingServicesRegistered() {
     final mockSettingsDb = MockSettingsDb();
     when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
     when(
+      () => mockSettingsDb.itemsByKeys(any()),
+    ).thenAnswer((_) async => <String, String?>{});
+    when(
       () => mockSettingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
     getIt.registerSingleton<SettingsDb>(mockSettingsDb);

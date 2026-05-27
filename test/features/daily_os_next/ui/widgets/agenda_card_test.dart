@@ -11,6 +11,11 @@ Widget _wrap(Widget child) => makeTestableWidget2(
   mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
 );
 
+Widget _wrapPhone(Widget child) => makeTestableWidget2(
+  child,
+  mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+);
+
 const _category = DayAgentCategory(
   id: 'cat_work',
   name: 'Work',
@@ -115,6 +120,34 @@ void main() {
       await tester.pump();
 
       expect(tapped, isTrue);
+    });
+
+    testWidgets('wraps long titles on phone layouts instead of ellipsizing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapPhone(
+          const Material(
+            child: AgendaCard(
+              index: 2,
+              item: AgendaItem(
+                id: 'a1',
+                title: 'Sprint Roundup presentation for leadership review',
+                category: _category,
+                linkedBlockIds: ['b1'],
+                totalEstimateMinutes: 60,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final title = tester.widget<Text>(
+        find.text('Sprint Roundup presentation for leadership review'),
+      );
+      expect(title.maxLines, greaterThan(1));
+      expect(title.overflow, TextOverflow.fade);
     });
   });
 }

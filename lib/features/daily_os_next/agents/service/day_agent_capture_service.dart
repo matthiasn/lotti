@@ -77,6 +77,7 @@ class DayAgentCaptureService {
   static const _uuid = Uuid();
   static const _maxCorpusTasks = 200;
   static const _maxMatchCandidates = 8;
+  static const _overdueLookbackDays = 7;
 
   /// Executes a non-foundation day-agent tool.
   Future<DayAgentDirectToolResult> executeTool({
@@ -305,9 +306,14 @@ class DayAgentCaptureService {
     final dayStart = localDay(day);
     final dueToday = await journalDb.getTasksDueOn(dayStart);
     final dueOnOrBefore = await journalDb.getTasksDueOnOrBefore(dayStart);
+    final overdueCutoff = dayStart.subtract(
+      const Duration(days: _overdueLookbackDays),
+    );
     final overdue = dueOnOrBefore.where((task) {
       final due = task.data.due;
-      return due != null && due.isBefore(dayStart);
+      return due != null &&
+          due.isBefore(dayStart) &&
+          !due.isBefore(overdueCutoff);
     });
     final inProgress = await journalDb.getInProgressTasks(
       categoryIds: identity.allowedCategoryIds,

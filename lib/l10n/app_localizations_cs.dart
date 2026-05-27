@@ -3136,13 +3136,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureIdleHint =>
-      'Klepni pro mluvení · zachyť to · nebo napiš';
+      'Klepni pro mluvení · místo toho napiš';
+
+  @override
+  String get dailyOsNextCaptureIdleTalk => 'Klepni pro mluvení';
 
   @override
   String get dailyOsNextCaptureListening => 'POSLOUCHÁM';
 
   @override
   String get dailyOsNextCaptureOpenTasks => 'Procházet úkoly';
+
+  @override
+  String dailyOsNextCapturePastPrompt(String date) {
+    return 'Chceš ještě něco zapsat k $date?';
+  }
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Sjednotit';
@@ -3158,6 +3166,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureTranscriptLabel => 'Zkontroluj přepis';
 
   @override
+  String get dailyOsNextCaptureTypeInstead => 'Místo toho napiš';
+
+  @override
   String get dailyOsNextCaptureVoiceButtonReset => 'Začít znovu';
 
   @override
@@ -3165,6 +3176,27 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureVoiceButtonStop => 'Zastavit';
+
+  @override
+  String get dailyOsNextCategoryFilterAll => 'Všechny kategorie';
+
+  @override
+  String get dailyOsNextCategoryFilterDescription =>
+      'Automatické zpracování Daily OS používá jen zapnuté kategorie.';
+
+  @override
+  String get dailyOsNextCategoryFilterEmpty =>
+      'Zatím nejsou dostupné žádné kategorie.';
+
+  @override
+  String get dailyOsNextCategoryFilterIncludeAll => 'Zahrnout vše';
+
+  @override
+  String get dailyOsNextCategoryFilterTitle => 'Kategorie ke zpracování';
+
+  @override
+  String get dailyOsNextCategoryFilterTooltip =>
+      'Vybrat kategorie pro zpracování v Daily OS';
 
   @override
   String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
@@ -3272,6 +3304,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingHi => 'Ahoj 👋';
+
+  @override
+  String dailyOsNextGreetingHiName(String name) {
+    return 'Ahoj $name,';
+  }
 
   @override
   String get dailyOsNextGreetingMorning => 'Dobré ráno.';
@@ -3507,6 +3544,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextTasksTitle => 'Úkoly';
 
   @override
+  String get dailyOsNextTimelineActual => 'Skutečnost';
+
+  @override
+  String get dailyOsNextTimelineBoth => 'Plán a skutečnost';
+
+  @override
   String get dailyOsNextTimelineMeridiemAm => 'AM';
 
   @override
@@ -3519,9 +3562,36 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextTimelineMeridiemPmShort => 'pm';
 
   @override
+  String get dailyOsNextTimelinePlanned => 'Plán';
+
+  @override
   String dailyOsNextTimelineSessionOf(int index, int total) {
     return 'Sezení $index z $total';
   }
+
+  @override
+  String get dailyOsNextTimelineShowBoth =>
+      'Zobrazit plán a skutečnost společně';
+
+  @override
+  String get dailyOsNextTimelineShowPaged =>
+      'Zobrazit plán a skutečnost posouváním';
+
+  @override
+  String get dailyOsNextTimelineSwipeHint =>
+      'Přejeď na skutečnost · svislým štípnutím přiblížíš';
+
+  @override
+  String get dailyOsNextTimeSpentEmpty =>
+      'Pro tento den zatím není zaznamenaný žádný čas.';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    return '$duration zaznamenáno · $completedCount hotovo';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'STRÁVENÝ ČAS';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Odloženo';
@@ -5940,6 +6010,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAboutBuildType => 'Typ sestavení';
+
+  @override
+  String get settingsAboutDailyOsPersonalizationTitle =>
+      'Přizpůsobení Daily OS';
+
+  @override
+  String get settingsAboutDailyOsUserNameHelper =>
+      'Používá se jen pro pozdrav Daily OS na tomto zařízení.';
+
+  @override
+  String get settingsAboutDailyOsUserNameLabel => 'Tvoje jméno';
 
   @override
   String get settingsAboutJournalEntries => 'Záznamy v deníku';

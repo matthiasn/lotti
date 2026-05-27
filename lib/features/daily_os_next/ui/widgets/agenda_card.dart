@@ -48,49 +48,11 @@ class AgendaCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _NumberedCircle(index: index, color: category),
-              SizedBox(width: tokens.spacing.step4),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            style: tokens.typography.styles.subtitle.subtitle1
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (whyReason != null) ...[
-                          SizedBox(width: tokens.spacing.step2),
-                          WhyChip(reason: whyReason!),
-                        ],
-                      ],
-                    ),
-                    if (item.outcome != null) ...[
-                      SizedBox(height: tokens.spacing.step2),
-                      Text(
-                        item.outcome!,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              _RightMeta(item: item),
-            ],
+          _AgendaCardTop(
+            index: index,
+            item: item,
+            category: category,
+            whyReason: whyReason,
           ),
           if (progress != null) ...[
             SizedBox(height: tokens.spacing.step4),
@@ -112,6 +74,78 @@ class AgendaCard extends StatelessWidget {
   }
 
   Color _categoryColor() => categoryColorFromHex(item.category.colorHex);
+}
+
+class _AgendaCardTop extends StatelessWidget {
+  const _AgendaCardTop({
+    required this.index,
+    required this.item,
+    required this.category,
+    required this.whyReason,
+  });
+
+  final int index;
+  final AgendaItem item;
+  final Color category;
+  final String? whyReason;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _NumberedCircle(index: index, color: category),
+        SizedBox(width: tokens.spacing.step4),
+        Expanded(
+          child: _AgendaContent(
+            item: item,
+            whyReason: whyReason,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AgendaContent extends StatelessWidget {
+  const _AgendaContent({
+    required this.item,
+    required this.whyReason,
+  });
+
+  final AgendaItem item;
+  final String? whyReason;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          item.title,
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+          maxLines: 3,
+          overflow: TextOverflow.fade,
+          softWrap: true,
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        _AgendaMetaRow(item: item, whyReason: whyReason),
+        if (item.outcome != null) ...[
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            item.outcome!,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class _NumberedCircle extends StatelessWidget {
@@ -142,40 +176,64 @@ class _NumberedCircle extends StatelessWidget {
   }
 }
 
-class _RightMeta extends StatelessWidget {
-  const _RightMeta({required this.item});
+class _AgendaMetaRow extends StatelessWidget {
+  const _AgendaMetaRow({required this.item, required this.whyReason});
 
   final AgendaItem item;
+  final String? whyReason;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return Wrap(
+      spacing: tokens.spacing.step2,
+      runSpacing: tokens.spacing.step2,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        if (whyReason != null) WhyChip(reason: whyReason!),
         if (item.totalEstimateMinutes != null)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.schedule_rounded,
-                size: 12,
-                color: tokens.colors.text.lowEmphasis,
-              ),
-              SizedBox(width: tokens.spacing.step1),
-              Text(
-                context.messages.dailyOsNextEstimateMinutes(
-                  item.totalEstimateMinutes!,
-                ),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-            ],
-          ),
-        SizedBox(height: tokens.spacing.step1),
+          _EstimateBadge(minutes: item.totalEstimateMinutes!),
         _StateBadge(state: item.state),
       ],
+    );
+  }
+}
+
+class _EstimateBadge extends StatelessWidget {
+  const _EstimateBadge({required this.minutes});
+
+  final int minutes;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final color = tokens.colors.text.lowEmphasis;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.schedule_rounded,
+            size: tokens.spacing.step3,
+            color: color,
+          ),
+          SizedBox(width: tokens.spacing.step1),
+          Text(
+            context.messages.dailyOsNextEstimateMinutes(minutes),
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -209,7 +267,7 @@ class _StateBadge extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step2,
-        vertical: 2,
+        vertical: tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.14),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 
 /// Atomic snapshot used by the Reconcile screen.
@@ -87,6 +88,7 @@ class ReconcileController extends AsyncNotifier<ReconcileData> {
   @override
   Future<ReconcileData> build() async {
     _agent = ref.watch(dayAgentProvider);
+    final preferences = ref.watch(dailyOsPreferencesControllerProvider);
     ref.watch(reconcileCaptureUpdateProvider(params.captureId.value));
     final triageDecisions =
         state.value?.triageDecisions ?? const <String, TriageResult>{};
@@ -97,8 +99,14 @@ class ReconcileController extends AsyncNotifier<ReconcileData> {
     final parsed = await parsedFuture;
     final pending = await pendingFuture;
     return ReconcileData(
-      parsed: parsed,
-      pending: pending,
+      parsed: [
+        for (final item in parsed)
+          if (preferences.allowsCategory(item.category)) item,
+      ],
+      pending: [
+        for (final item in pending)
+          if (preferences.allowsCategory(item.category)) item,
+      ],
       triageDecisions: triageDecisions,
     );
   }

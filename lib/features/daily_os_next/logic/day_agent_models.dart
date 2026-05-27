@@ -303,6 +303,7 @@ class DraftPlan {
     required this.bands,
     required this.capacityMinutes,
     required this.scheduledMinutes,
+    this.actualBlocks = const [],
     this.agendaItems = const [],
     this.state = DayState.drafted,
   });
@@ -312,6 +313,11 @@ class DraftPlan {
   final List<EnergyBand> bands;
   final int capacityMinutes;
   final int scheduledMinutes;
+
+  /// Recorded work sessions for the same day. Empty until the real
+  /// time-tracking projection is wired in; the Day timeline can still
+  /// compare the planned schedule with this list when it is present.
+  final List<TimeBlock> actualBlocks;
 
   /// Task-grouped projection of [blocks] used by the Agenda surface.
   /// Indexes back to the underlying blocks via
@@ -327,6 +333,7 @@ class DraftPlan {
     List<EnergyBand>? bands,
     int? capacityMinutes,
     int? scheduledMinutes,
+    List<TimeBlock>? actualBlocks,
     List<AgendaItem>? agendaItems,
     DayState? state,
   }) {
@@ -336,6 +343,7 @@ class DraftPlan {
       bands: bands ?? this.bands,
       capacityMinutes: capacityMinutes ?? this.capacityMinutes,
       scheduledMinutes: scheduledMinutes ?? this.scheduledMinutes,
+      actualBlocks: actualBlocks ?? this.actualBlocks,
       agendaItems: agendaItems ?? this.agendaItems,
       state: state ?? this.state,
     );

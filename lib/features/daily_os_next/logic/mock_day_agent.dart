@@ -307,9 +307,43 @@ class MockDayAgent implements DayAgentInterface {
         .where((b) => b.type != TimeBlockType.buffer)
         .fold<int>(0, (acc, b) => acc + b.duration.inMinutes);
 
+    final actualBlocks = <TimeBlock>[
+      TimeBlock(
+        id: 'a_deck_review',
+        title: 'Deck review — Q2 leadership update',
+        start: at(8, 35),
+        end: at(10, 10),
+        type: TimeBlockType.ai,
+        state: TimeBlockState.completed,
+        category: _work,
+        taskId: 't_deck_review',
+      ),
+      TimeBlock(
+        id: 'a_morning_run',
+        title: 'Morning run · 5km',
+        start: at(12, 5),
+        end: at(12, 33),
+        type: TimeBlockType.manual,
+        state: TimeBlockState.completed,
+        category: _health,
+        taskId: 't_morning_run',
+      ),
+      TimeBlock(
+        id: 'a_onboarding',
+        title: 'Finish the Onboarding doc',
+        start: at(15, 35),
+        end: at(16, 15),
+        type: TimeBlockType.ai,
+        state: TimeBlockState.inProgress,
+        category: _work,
+        taskId: 't_onboarding_doc',
+      ),
+    ];
+
     return DraftPlan(
       dayDate: start,
       blocks: allBlocks,
+      actualBlocks: actualBlocks,
       bands: bands,
       capacityMinutes: 480,
       scheduledMinutes: scheduled,

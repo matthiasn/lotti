@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/tasks_corpus_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -55,6 +57,7 @@ class CapturePage extends ConsumerWidget {
               ),
             ),
           ),
+          const ProcessingCategoryFilterButton(),
           SizedBox(width: tokens.spacing.step3),
         ],
       ),
@@ -74,6 +77,7 @@ class CapturePage extends ConsumerWidget {
                     const _GreetingBlock(),
                     SizedBox(height: tokens.spacing.step6),
                     _Headline(forDate: forDate),
+                    _PastTrackingPrompt(forDate: forDate),
                     SizedBox(height: tokens.spacing.step8),
                     VoiceButton(
                       phase: state.phase,
@@ -109,12 +113,15 @@ class CapturePage extends ConsumerWidget {
   }
 }
 
-class _GreetingBlock extends StatelessWidget {
+class _GreetingBlock extends ConsumerWidget {
   const _GreetingBlock();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final userName = ref.watch(
+      dailyOsPreferencesControllerProvider.select((prefs) => prefs.userName),
+    );
     final hour = clock.now().hour;
     final greetingWord = hour < 12
         ? context.messages.dailyOsNextGreetingMorning
@@ -124,7 +131,9 @@ class _GreetingBlock extends StatelessWidget {
     return Column(
       children: [
         Text(
-          context.messages.dailyOsNextGreetingHi,
+          userName.isEmpty
+              ? context.messages.dailyOsNextGreetingHi
+              : context.messages.dailyOsNextGreetingHiName(userName),
           style: tokens.typography.styles.subtitle.subtitle1.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),
@@ -137,6 +146,36 @@ class _GreetingBlock extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PastTrackingPrompt extends StatelessWidget {
+  const _PastTrackingPrompt({this.forDate});
+
+  final DateTime? forDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final date = forDate;
+    if (date == null) return const SizedBox.shrink();
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final picked = DateTime(date.year, date.month, date.day);
+    if (!picked.isBefore(today)) return const SizedBox.shrink();
+
+    final tokens = context.designTokens;
+    final locale = Localizations.localeOf(context).toString();
+    final formatted = DateFormat.MMMd(locale).format(date);
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.spacing.step4),
+      child: Text(
+        context.messages.dailyOsNextCapturePastPrompt(formatted),
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+        textAlign: TextAlign.center,
+      ),
     );
   }
 }
@@ -203,12 +242,9 @@ class _StateRow extends ConsumerWidget {
 
     switch (state.phase) {
       case CapturePhase.idle:
-        return Text(
-          messages.dailyOsNextCaptureIdleHint,
-          textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.lowEmphasis,
-          ),
+        return _IdleCaptureActions(
+          onTypeInstead: () =>
+              ref.read(captureControllerProvider.notifier).startTyping(),
         );
       case CapturePhase.listening:
         return Column(
@@ -289,6 +325,79 @@ class _StateRow extends ConsumerWidget {
           ),
         );
     }
+  }
+}
+
+class _IdleCaptureActions extends StatelessWidget {
+  const _IdleCaptureActions({required this.onTypeInstead});
+
+  final VoidCallback onTypeInstead;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final dotStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+    );
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: tokens.spacing.step2,
+      children: [
+        Text(
+          context.messages.dailyOsNextCaptureIdleTalk,
+          style: dotStyle,
+        ),
+        Container(
+          width: tokens.spacing.step1,
+          height: tokens.spacing.step1,
+          decoration: BoxDecoration(
+            color: tokens.colors.text.lowEmphasis,
+            shape: BoxShape.circle,
+          ),
+        ),
+        _InlineCaptureAction(
+          label: context.messages.dailyOsNextCaptureTypeInstead,
+          onTap: onTypeInstead,
+        ),
+      ],
+    );
+  }
+}
+
+class _InlineCaptureAction extends StatelessWidget {
+  const _InlineCaptureAction({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Semantics(
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step1,
+            vertical: tokens.spacing.step1,
+          ),
+          child: Text(
+            label,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.interactive.enabled,
+              decoration: TextDecoration.underline,
+              decorationColor: tokens.colors.interactive.enabled,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
