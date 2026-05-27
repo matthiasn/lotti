@@ -69,6 +69,7 @@ class _RecordingAgent implements DayAgentInterface {
   final DraftPlan acceptedPlan;
 
   PlanDiff? capturedDiff;
+  String? proposedTranscript;
   List<int>? acceptIndices;
   List<int>? revertIndices;
   DraftPlan? revertOriginalPlan;
@@ -81,6 +82,7 @@ class _RecordingAgent implements DayAgentInterface {
     bool Function()? isCancelled,
   }) async {
     proposeCount++;
+    proposedTranscript = voiceTranscript;
     return diff;
   }
 
@@ -307,6 +309,44 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'reviewing phase lets user edit transcript before proposing diff',
+      (tester) async {
+        final draft = _emptyPlan();
+        final agent = _RecordingAgent(diff: _diffWithTwoChanges(draft));
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        final notifier = _readNotifier(tester, draft);
+        notifier.reviewTranscript('make the gym block longer');
+        await tester.pump();
+
+        const editorKey = Key('daily_os_refine_transcript_editor');
+        final editor = find.byKey(editorKey);
+        expect(editor, findsOneWidget);
+
+        await tester.enterText(editor, 'make the writing block longer');
+        await tester.pump();
+
+        final messages = tester.element(find.byType(RefinePage)).messages;
+        await _tap(
+          tester,
+          find.widgetWithText(
+            FilledButton,
+            messages.dailyOsNextRefineTitle,
+          ),
+        );
+
+        expect(agent.proposedTranscript, 'make the writing block longer');
+        expect(find.byType(DiffRow), findsNWidgets(2));
+      },
+    );
 
     testWidgets('diffReady renders one DiffRow per change + action buttons', (
       tester,

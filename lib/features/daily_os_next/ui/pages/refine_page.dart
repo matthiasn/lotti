@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -104,7 +105,7 @@ class _RefinementPanel extends ConsumerWidget {
       }
 
       if (next.phase == CapturePhase.captured) {
-        unawaited(refineNotifier.finishWithTranscript(next.transcript));
+        refineNotifier.reviewTranscript(next.transcript);
         return;
       }
 
@@ -158,7 +159,10 @@ class _RefinementPanel extends ConsumerWidget {
                 ),
               ),
             ],
-            if (state.transcript.isNotEmpty) ...[
+            if (state.phase == RefinePhase.reviewing) ...[
+              SizedBox(height: tokens.spacing.step3),
+              _TranscriptReview(draft: draft, transcript: state.transcript),
+            ] else if (state.transcript.isNotEmpty) ...[
               SizedBox(height: tokens.spacing.step3),
               _TranscriptCard(
                 transcript: state.transcript,
@@ -192,10 +196,12 @@ class _RefinementPanel extends ConsumerWidget {
   }) {
     switch (refineState.phase) {
       case RefinePhase.idle:
+      case RefinePhase.reviewing:
       case RefinePhase.diffReady:
         captureNotifier.reset();
+        captureNotifier.skipRealtimeTranscriptVerificationForNextCapture();
         refineNotifier.beginListening(
-          resetTranscript: refineState.phase == RefinePhase.idle,
+          resetTranscript: refineState.phase != RefinePhase.diffReady,
         );
         unawaited(captureNotifier.toggle());
       case RefinePhase.listening:
@@ -212,6 +218,8 @@ class _RefinementPanel extends ConsumerWidget {
       case RefinePhase.thinking:
       case RefinePhase.accepted:
         return CapturePhase.idle;
+      case RefinePhase.reviewing:
+        return CapturePhase.captured;
       case RefinePhase.listening:
         return capturePhase == CapturePhase.listening
             ? CapturePhase.listening
@@ -226,6 +234,8 @@ class _RefinementPanel extends ConsumerWidget {
       case RefinePhase.idle:
       case RefinePhase.diffReady:
         return context.messages.dailyOsNextCaptureVoiceButtonStart;
+      case RefinePhase.reviewing:
+        return context.messages.dailyOsNextCaptureVoiceButtonReset;
       case RefinePhase.listening:
         return context.messages.dailyOsNextCaptureVoiceButtonStop;
       case RefinePhase.thinking:
@@ -253,6 +263,10 @@ class _StatusLine extends StatelessWidget {
         messages.dailyOsNextRefineStatusListening,
         tokens.colors.interactive.enabled,
       ),
+      RefinePhase.reviewing => (
+        messages.dailyOsNextCaptureCaptured,
+        tokens.colors.interactive.enabled,
+      ),
       RefinePhase.thinking => (
         messages.dailyOsNextRefineStatusThinking,
         tokens.colors.interactive.enabled,
@@ -270,6 +284,52 @@ class _StatusLine extends StatelessWidget {
       text,
       textAlign: TextAlign.center,
       style: tokens.typography.styles.body.bodySmall.copyWith(color: color),
+    );
+  }
+}
+
+class _TranscriptReview extends ConsumerWidget {
+  const _TranscriptReview({required this.draft, required this.transcript});
+
+  final DraftPlan draft;
+  final String transcript;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final notifier = ref.read(refineControllerProvider(draft).notifier);
+    final canSubmit = transcript.trim().isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TranscriptEditor(
+          fieldKey: const Key('daily_os_refine_transcript_editor'),
+          transcript: transcript,
+          onChanged: notifier.updateTranscript,
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton.icon(
+            onPressed: canSubmit
+                ? () => unawaited(notifier.finishWithTranscript(transcript))
+                : null,
+            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+            label: Text(context.messages.dailyOsNextRefineTitle),
+            style: FilledButton.styleFrom(
+              backgroundColor: tokens.colors.interactive.enabled,
+              foregroundColor: tokens.colors.text.onInteractiveAlert,
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step2,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(tokens.radii.m),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

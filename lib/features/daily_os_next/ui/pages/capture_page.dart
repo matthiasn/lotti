@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/tasks_corpus_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -190,13 +191,13 @@ class _Headline extends StatelessWidget {
   }
 }
 
-class _StateRow extends StatelessWidget {
+class _StateRow extends ConsumerWidget {
   const _StateRow({required this.state});
 
   final CaptureState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
 
@@ -270,7 +271,13 @@ class _StateRow extends StatelessWidget {
               ),
             ),
             SizedBox(height: tokens.spacing.step3),
-            _TranscriptEditor(transcript: state.transcript),
+            TranscriptEditor(
+              fieldKey: const Key('daily_os_capture_transcript_editor'),
+              transcript: state.transcript,
+              onChanged: ref
+                  .read(captureControllerProvider.notifier)
+                  .updateTranscript,
+            ),
           ],
         );
       case CapturePhase.error:
@@ -282,44 +289,6 @@ class _StateRow extends StatelessWidget {
           ),
         );
     }
-  }
-}
-
-class _TranscriptEditor extends ConsumerWidget {
-  const _TranscriptEditor({required this.transcript});
-
-  final String transcript;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    return TextFormField(
-      key: const Key('daily_os_capture_transcript_editor'),
-      initialValue: transcript,
-      minLines: 3,
-      maxLines: 5,
-      textInputAction: TextInputAction.newline,
-      style: tokens.typography.styles.body.bodyMedium.copyWith(
-        color: tokens.colors.text.highEmphasis,
-      ),
-      decoration: InputDecoration(
-        labelText: context.messages.dailyOsNextCaptureTranscriptLabel,
-        hintText: context.messages.dailyOsNextCaptureTranscriptHint,
-        alignLabelWithHint: true,
-        filled: true,
-        fillColor: tokens.colors.background.level02,
-        contentPadding: EdgeInsets.all(tokens.spacing.step4),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          borderSide: BorderSide(color: tokens.colors.decorative.level01),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          borderSide: BorderSide(color: tokens.colors.interactive.enabled),
-        ),
-      ),
-      onChanged: ref.read(captureControllerProvider.notifier).updateTranscript,
-    );
   }
 }
 

@@ -92,6 +92,29 @@ void main() {
       expect(state.currentPlan, isNot(equals(draft)));
     });
 
+    test('captured transcript enters an editable review phase first', () async {
+      final container = makeContainer();
+      final notifier = container.read(refineControllerProvider(draft).notifier)
+        ..beginListening(resetTranscript: true)
+        ..updateActiveTranscript('move client review later')
+        ..reviewTranscript('move client review later');
+
+      var state = container.read(refineControllerProvider(draft));
+      expect(state.phase, RefinePhase.reviewing);
+      expect(state.transcript, 'move client review later');
+      expect(state.diff, isNull);
+
+      notifier.updateTranscript('move client review to tomorrow');
+      state = container.read(refineControllerProvider(draft));
+      expect(state.transcript, 'move client review to tomorrow');
+
+      await notifier.finishWithTranscript(state.transcript);
+
+      state = container.read(refineControllerProvider(draft));
+      expect(state.phase, RefinePhase.diffReady);
+      expect(state.diff!.transcript, 'move client review to tomorrow');
+    });
+
     test('blank transcript returns to idle without producing a diff', () async {
       final container = makeContainer();
       final notifier = container.read(refineControllerProvider(draft).notifier)

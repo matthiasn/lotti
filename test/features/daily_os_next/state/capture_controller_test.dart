@@ -503,6 +503,52 @@ void main() {
     );
 
     test(
+      'can keep realtime text without full-file batch verification',
+      () async {
+        when(
+          () => realtimeService.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer((invocation) async {
+          final stopRecorder =
+              invocation.namedArguments[#stopRecorder]
+                  as Future<void> Function();
+          final outputPath = invocation.namedArguments[#outputPath] as String;
+          await stopRecorder();
+          return RealtimeStopResult(
+            transcript: 'mistral realtime text',
+            audioFilePath: '$outputPath.m4a',
+          );
+        });
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer((_) async => 'mlx batch text should not replace it');
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier)
+          ..skipRealtimeTranscriptVerificationForNextCapture();
+        await notifier.toggle();
+        await notifier.toggle();
+
+        expect(
+          container.read(captureControllerProvider).transcript,
+          'mistral realtime text',
+        );
+        verifyNever(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        );
+      },
+    );
+
+    test(
       'toggle without microphone permission lands in error and never '
       'starts the realtime WebSocket',
       () async {

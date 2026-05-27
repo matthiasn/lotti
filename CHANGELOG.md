@@ -34,7 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reconciliation, creates real tasks from new capture phrases, opens
   task-backed agenda rows, rejects new same-day draft blocks that start in the
   past, amends approved plans through per-change tracked diff approvals,
-  replaces the cramped capacity donut with a linear meter, uses real audio
+  replaces the cramped capacity donut with a linear meter, lets you review and
+  edit refine transcripts before they reshape the plan, uses real audio
   transcription on the refine screen instead of a scripted sample diff, and
   prefers Mistral cloud speech recognition over MLX when both are configured.
 - Gemini-backed speech recognition, Daily OS day planning, and task-agent
