@@ -118,13 +118,13 @@ class TaskActionBar extends ConsumerStatefulWidget {
 /// Alpha applied to the chip fill on top of `surface.focusPressed`. Sits
 /// above any `surface.*` token so the chip silhouette stays opaque
 /// enough to contrast the foreground against bright content (e.g. white
-/// chat bubbles bleeding through the glass blur).
-const double _glassFillAlpha = 0.4;
+/// chat bubbles or embedded screenshots bleeding through the glass blur).
+const double _glassFillAlpha = 0.55;
 
 /// Alpha for the hairline outline drawn over the chip fill. Painted via
 /// `foregroundDecoration` so it doesn't widen the chip and trip the
 /// action-row layout thresholds.
-const double _glassBorderAlpha = 0.3;
+const double _glassBorderAlpha = 0.45;
 
 class _TaskActionBarState extends ConsumerState<TaskActionBar> {
   final TimeService _timeService = getIt<TimeService>();

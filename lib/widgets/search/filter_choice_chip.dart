@@ -1,5 +1,6 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 
 class FilterChoiceChip extends StatelessWidget {
@@ -20,6 +21,7 @@ class FilterChoiceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -27,6 +29,14 @@ class FilterChoiceChip extends StatelessWidget {
         cursor: SystemMouseCursors.click,
         child: Chip(
           side: BorderSide(color: selectedColor),
+          // Material's default labelPadding is symmetric(horizontal: step3).
+          // Add a step1 nudge on the leading side so the label is visibly
+          // offset from the chip's start edge. Directional so RTL locales
+          // get the nudge on the right side once they ship.
+          labelPadding: EdgeInsetsDirectional.only(
+            start: tokens.spacing.step3 + tokens.spacing.step1,
+            end: tokens.spacing.step3,
+          ),
           label: Text(
             label,
             style:

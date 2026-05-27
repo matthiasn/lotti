@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Matrix sync now recovers automatically from stale empty downloads, so media
   and JSON attachments arrive more reliably without manual retries.
 
+### Changed
+- The task action bar's translucent pill and outline are slightly more
+  opaque so its icons stay readable when the body scrolling underneath the
+  glass strip is white (e.g. embedded screenshots or light-mode content).
+- Tasks category filter and journal entry-type filter chips have a small
+  extra nudge of space between the chip border and the label so the text
+  no longer sits flush against the leading edge.
+
 ## [0.9.1008]
 ### Added
 - Gemini model settings now include a configurable thinking mode with minimal,
