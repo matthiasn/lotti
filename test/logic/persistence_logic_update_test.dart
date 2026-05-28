@@ -14,6 +14,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -497,6 +498,12 @@ void main() {
       () => vectorClockService.getHost(),
     ).thenAnswer((_) async => 'test-host-id');
     when(
+      () => vectorClockService.burnUnboundVectorClock(
+        any<VectorClock?>(),
+        reason: any<String>(named: 'reason'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
       () => journalDb.addLabeled(any<JournalEntity>()),
     ).thenAnswer((_) async {});
     when(
@@ -582,6 +589,33 @@ void main() {
     expect(result, isFalse);
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
   });
+
+  test(
+    'updateDbEntity burns the pre-minted VC counter when the write is '
+    'rejected — without this the counter leaks as plain reserved since the '
+    'incoming clock was minted by updateMetadata outside this scope',
+    () async {
+      stubUpdateResult(
+        JournalUpdateResult.skipped(
+          reason: JournalUpdateSkipReason.olderOrEqual,
+        ),
+      );
+
+      final entry = buildEntry(clock: const VectorClock({'host': 42}));
+      final result = await logic.updateDbEntity(entry);
+
+      expect(result, isFalse);
+      verify(
+        () => vectorClockService.burnUnboundVectorClock(
+          entry.meta.vectorClock,
+          reason: any<String>(
+            named: 'reason',
+            that: contains('updateDbEntity write rejected id=entry-id'),
+          ),
+        ),
+      ).called(1);
+    },
+  );
 
   test('updateDbEntity returns null on exception', () async {
     when(
@@ -688,6 +722,15 @@ void main() {
     expect(saved, isFalse);
     verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+    verify(
+      () => vectorClockService.burnUnboundVectorClock(
+        entity.meta.vectorClock,
+        reason: any<String>(
+          named: 'reason',
+          that: contains('createDbEntity write rejected id=entry-id'),
+        ),
+      ),
+    ).called(1);
   });
 
   glados.Glados(
@@ -1365,6 +1408,207 @@ void main() {
 
         expect(callOrder, equals(['priority-column', 'notify']));
         expect(notifiedIds, contains('task-id'));
+      },
+    );
+  });
+
+  group('sequence-log integration', () {
+    late MockSyncSequenceLogService sequenceLog;
+
+    setUpAll(() => registerFallbackValue(const VectorClock({'host': 0})));
+
+    setUp(() {
+      sequenceLog = MockSyncSequenceLogService();
+      when(
+        () => sequenceLog.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => sequenceLog.recordSentEntryLink(
+          linkId: any(named: 'linkId'),
+          vectorClock: any(named: 'vectorClock'),
+        ),
+      ).thenAnswer((_) async {});
+      getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
+    });
+
+    test(
+      'updateDbEntity records the journal entity sequence after applied write',
+      () async {
+        stubUpdateResult(JournalUpdateResult.applied());
+
+        final entry = buildEntry();
+        final result = await logic.updateDbEntity(entry);
+
+        expect(result, isTrue);
+        verify(
+          () => sequenceLog.recordSentEntry(
+            entryId: entry.meta.id,
+            vectorClock: entry.meta.vectorClock!,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'updateDbEntity does not record when the write is skipped',
+      () async {
+        stubUpdateResult(
+          JournalUpdateResult.skipped(
+            reason: JournalUpdateSkipReason.olderOrEqual,
+          ),
+        );
+
+        await logic.updateDbEntity(buildEntry());
+
+        verifyNever(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'updateDbEntity sequence-record failure is swallowed and logged via '
+      'LoggingService; outbox is still enqueued',
+      () async {
+        stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence ledger boom'));
+
+        final result = await logic.updateDbEntity(buildEntry());
+
+        expect(result, isTrue);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'updateDbEntity.recordSent',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verify(
+          () => outboxService.enqueueMessage(any<SyncMessage>()),
+        ).called(1);
+      },
+    );
+
+    test(
+      'createDbEntity records the journal entity sequence after saved write',
+      () async {
+        stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => journalDb.parentLinkedEntityIds(any<String>()),
+        ).thenReturn(MockSelectable<String>([]));
+
+        final entity = buildEntry(clock: const VectorClock({'host': 7}));
+        final saved = await logic.createDbEntity(
+          entity,
+          shouldAddGeolocation: false,
+        );
+
+        expect(saved, isTrue);
+        verify(
+          () => sequenceLog.recordSentEntry(
+            entryId: entity.meta.id,
+            vectorClock: entity.meta.vectorClock!,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'createDbEntity sequence-record failure is swallowed and logged via '
+      'LoggingService',
+      () async {
+        stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => journalDb.parentLinkedEntityIds(any<String>()),
+        ).thenReturn(MockSelectable<String>([]));
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence ledger boom'));
+
+        final entity = buildEntry(clock: const VectorClock({'host': 8}));
+        final saved = await logic.createDbEntity(
+          entity,
+          shouldAddGeolocation: false,
+        );
+
+        expect(saved, isTrue);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'createDbEntity.recordSent',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'createLink records the entry-link sequence after the upsert returns >0 '
+      'rows',
+      () async {
+        when(
+          () => journalDb.upsertEntryLink(any<EntryLink>()),
+        ).thenAnswer((_) async => 1);
+
+        final created = await logic.createLink(
+          fromId: 'from-id',
+          toId: 'to-id',
+        );
+
+        expect(created, isTrue);
+        verify(
+          () => sequenceLog.recordSentEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: const VectorClock({'host': 1}),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'createLink sequence-record failure is swallowed and routed through '
+      'LoggingService.captureException',
+      () async {
+        when(
+          () => journalDb.upsertEntryLink(any<EntryLink>()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => sequenceLog.recordSentEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence ledger boom'));
+
+        final created = await logic.createLink(
+          fromId: 'from-id',
+          toId: 'to-id',
+        );
+
+        expect(created, isTrue);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'createLink.recordSent',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       },
     );
   });

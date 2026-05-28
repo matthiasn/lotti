@@ -6,6 +6,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -397,6 +399,89 @@ void main() {
         ).called(1);
       });
 
+      test('records the agent entity sequence before enqueuing', () async {
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async {});
+        final service = AgentSyncService(
+          repository: mockRepository,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVectorClockService,
+          sequenceLogService: sequenceLog,
+        );
+
+        await service.upsertEntity(testEntity);
+
+        verifyInOrder([
+          () => sequenceLog.recordSentEntry(
+            entryId: testEntity.id,
+            vectorClock: testClock,
+            payloadType: SyncSequencePayloadType.agentEntity,
+          ),
+          () => mockOutboxService.enqueueMessage(any<SyncMessage>()),
+        ]);
+      });
+
+      test(
+        'falls back to getIt-registered SyncSequenceLogService when '
+        'constructor arg is null',
+        () async {
+          final sequenceLog = MockSyncSequenceLogService();
+          when(
+            () => sequenceLog.recordSentEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          ).thenAnswer((_) async {});
+          getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
+          addTearDown(() => getIt.unregister<SyncSequenceLogService>());
+
+          // syncService was constructed without sequenceLogService; should
+          // resolve via getIt on first use.
+          await syncService.upsertEntity(testEntity);
+
+          verify(
+            () => sequenceLog.recordSentEntry(
+              entryId: testEntity.id,
+              vectorClock: testClock,
+              payloadType: SyncSequencePayloadType.agentEntity,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'swallows sequence-log error after entity is saved — sequence is '
+        'a best-effort post-write record; the VC is already on disk',
+        () async {
+          final sequenceLog = MockSyncSequenceLogService();
+          when(
+            () => sequenceLog.recordSentEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          ).thenThrow(StateError('sequence ledger boom'));
+          final service = AgentSyncService(
+            repository: mockRepository,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVectorClockService,
+            sequenceLogService: sequenceLog,
+          );
+
+          // Must NOT rethrow; outbox enqueue must still occur.
+          await service.upsertEntity(testEntity);
+
+          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+        },
+      );
+
       test('preserves original clock when fromSync is true', () async {
         final syncedEntity = testEntity.copyWith(
           vectorClock: const VectorClock({'remote': 42}),
@@ -524,6 +609,59 @@ void main() {
           ),
         ).called(1);
       });
+
+      test('records the agent link sequence before enqueuing', () async {
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async {});
+        final service = AgentSyncService(
+          repository: mockRepository,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVectorClockService,
+          sequenceLogService: sequenceLog,
+        );
+
+        await service.upsertLink(testBasicLink);
+
+        verifyInOrder([
+          () => sequenceLog.recordSentEntry(
+            entryId: testBasicLink.id,
+            vectorClock: testClock,
+            payloadType: SyncSequencePayloadType.agentLink,
+          ),
+          () => mockOutboxService.enqueueMessage(any<SyncMessage>()),
+        ]);
+      });
+
+      test(
+        'swallows sequence-log error after link is saved — best-effort '
+        'record must not cascade into the upsertLink flow',
+        () async {
+          final sequenceLog = MockSyncSequenceLogService();
+          when(
+            () => sequenceLog.recordSentEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          ).thenThrow(StateError('sequence ledger boom'));
+          final service = AgentSyncService(
+            repository: mockRepository,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVectorClockService,
+            sequenceLogService: sequenceLog,
+          );
+
+          await service.upsertLink(testBasicLink);
+
+          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+        },
+      );
 
       test('preserves original clock when fromSync is true', () async {
         final syncedLink = testBasicLink.copyWith(
@@ -1065,6 +1203,66 @@ void main() {
         // Inner exception propagates to outer; outbox never called.
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
       });
+
+      test(
+        'inner TX rollback caught by outer truncates buffered sequence '
+        'bindings so the outer commit does not record sent-sequence rows '
+        'for inner writes that were rolled back by the savepoint',
+        () async {
+          final sequenceLog = MockSyncSequenceLogService();
+          when(
+            () => sequenceLog.recordSentEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          ).thenAnswer((_) async {});
+          final service = AgentSyncService(
+            repository: mockRepository,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVectorClockService,
+            sequenceLogService: sequenceLog,
+          );
+
+          await service.runInTransaction(() async {
+            await service.upsertEntity(testEntity);
+
+            try {
+              await service.runInTransaction(() async {
+                await service.upsertLink(testBasicLink);
+                await service.upsertEntity(testStateEntity);
+                throw Exception('inner rollback');
+              });
+            } on Exception {
+              // Caught — outer TX continues.
+            }
+          });
+
+          // Only the outer entity's sequence binding survived; the inner
+          // link + state entity bindings were truncated on inner rollback.
+          verify(
+            () => sequenceLog.recordSentEntry(
+              entryId: testEntity.id,
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: SyncSequencePayloadType.agentEntity,
+            ),
+          ).called(1);
+          verifyNever(
+            () => sequenceLog.recordSentEntry(
+              entryId: testBasicLink.id,
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          );
+          verifyNever(
+            () => sequenceLog.recordSentEntry(
+              entryId: testStateEntity.id,
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          );
+        },
+      );
 
       test(
         'inner TX rollback caught by outer — only outer messages flushed',

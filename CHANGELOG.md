@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   time rail, shows recorded journal time in the Actual lane, keeps task-backed
   agenda titles in sync, refreshes without whole-page loading flashes, and
   avoids surfacing weeks-old overdue tasks in daily proposals.
+- Sync diagnostics and backfill stats put less load on the database, reducing
+  sync-related stalls and improving responsiveness on busy machines.
+
+### Fixed
+- Improved sync reliability: fewer unresolvable gaps and more dependable
+  delivery of local edits across devices.
+- Matrix sync now recovers automatically from stale empty downloads, so media
+  and JSON attachments arrive more reliably without manual retries.
 
 ## [0.9.1008]
 ### Added

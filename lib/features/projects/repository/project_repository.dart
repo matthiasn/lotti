@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -36,6 +37,34 @@ class ProjectRepository {
   final PersistenceLogic _persistenceLogic;
   final UpdateNotifications _updateNotifications;
   final VectorClockService _vectorClockService;
+
+  SyncSequenceLogService? get _sequenceLogService =>
+      getIt.isRegistered<SyncSequenceLogService>()
+      ? getIt<SyncSequenceLogService>()
+      : null;
+
+  Future<void> _recordLinkSequence(
+    EntryLink link, {
+    required String subDomain,
+  }) async {
+    final service = _sequenceLogService;
+    final vectorClock = link.vectorClock;
+    if (service == null || vectorClock == null) return;
+    try {
+      await service.recordSentEntryLink(
+        linkId: link.id,
+        vectorClock: vectorClock,
+      );
+    } catch (error, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomains.sync,
+        'sequence record failed after project link write; VC already committed',
+        error: error,
+        stackTrace: stackTrace,
+        subDomain: subDomain,
+      );
+    }
+  }
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -311,6 +340,10 @@ class ProjectRepository {
 
         final res = await _journalDb.upsertEntryLink(link);
         if (res == 0) return false;
+        await _recordLinkSequence(
+          link,
+          subDomain: 'linkTaskToProject.recordSent',
+        );
         // Wrap the per-project update token with [propagatedNotification]
         // so the wake orchestrator can tell "a task was linked under this
         // project" apart from "the project itself was edited" — only
@@ -440,6 +473,14 @@ class ProjectRepository {
         });
 
         if (!success) return false;
+        await _recordLinkSequence(
+          deletedLink,
+          subDomain: '_relinkTask.recordDeletedSent',
+        );
+        await _recordLinkSequence(
+          newLink,
+          subDomain: '_relinkTask.recordNewSent',
+        );
 
         // Same propagation tagging as [linkTaskToProject]: relinking is a
         // task-link side-effect, not a direct project edit.
@@ -481,6 +522,10 @@ class ProjectRepository {
         final deleted = await _prepareDeletedLink(link, now);
         final res = await _journalDb.upsertEntryLink(deleted);
         if (res == 0) return false;
+        await _recordLinkSequence(
+          deleted,
+          subDomain: '_softDeleteLink.recordSent',
+        );
         // Same propagation tagging as [linkTaskToProject]: unlinking is a
         // task-link side-effect, not a direct project edit.
         _updateNotifications.notify({

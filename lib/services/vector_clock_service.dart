@@ -365,6 +365,46 @@ class VectorClockService {
     }
   }
 
+  /// Explicitly burns a vector clock that was reserved outside a
+  /// [withVcScope] but whose write was later rejected as a no-op.
+  ///
+  /// This is the recovery path for deterministic-create flows: metadata is
+  /// built before the DB insert can discover that the row already exists. The
+  /// counter has already been persisted and cannot be reused, so the safest
+  /// terminal state is the same `burnPending` -> proactive unresolvable flow
+  /// used by scoped reservation releases.
+  ///
+  /// The host is taken from the [vectorClock] itself rather than the service's
+  /// current `_host`. Otherwise a [setNewHost] call between reservation and
+  /// the rejected write would leave the old counter stranded as plain
+  /// `reserved`, outside the startup recovery path.
+  Future<void> burnUnboundVectorClock(
+    VectorClock? vectorClock, {
+    required String reason,
+  }) async {
+    await _initialized;
+    if (vectorClock == null) return;
+    if (vectorClock.vclock.isEmpty) return;
+    // [reserveNextVectorClock] builds clocks as `{...previous, localHost: c}`,
+    // so the reservation host is always the last inserted entry. Picking
+    // [entries.first] would burn a peer's counter when the incoming clock
+    // carries spread-previous entries.
+    final entry = vectorClock.vclock.entries.last;
+    final hostId = entry.key;
+    final counter = entry.value;
+
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt<DomainLogger>().error(
+        LogDomains.sync,
+        'VC counter burnt host=$hostId counter=$counter '
+        '(unbound vector clock; $reason)',
+        subDomain: 'vc.burn.unbound',
+      );
+    }
+    await _markBurnPending(hostId, counter);
+    await _onReleaseBurn(hostId, counter);
+  }
+
   Future<void> _recordReservedCounter(String hostId, int counter) async {
     if (!getIt.isRegistered<SyncDatabase>()) return;
 
