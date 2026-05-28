@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'pane_width_controller.g.dart';
@@ -121,19 +120,9 @@ class PaneWidthController extends _$PaneWidthController {
         sidebarCollapsed: sidebarCollapsed,
       );
     } catch (error, stackTrace) {
-      // Guard so a catch handler can never double-throw if LoggingService
-      // hasn't been registered (e.g. in widget tests that mount AppScreen
-      // without going through full app bootstrap). Without this, a swallow
-      // becomes a fatal "Bad state: GetIt: Object/factory with type
-      // LoggingService is not registered" that aborts pumpWidget.
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt<LoggingService>().captureException(
-          error,
-          domain: 'PANE_WIDTH',
-          subDomain: 'loadPersistedWidths',
-          stackTrace: stackTrace,
-        );
-      }
+      debugPrint(
+        'PANE_WIDTH loadPersistedWidths failed: $error\n$stackTrace',
+      );
     }
   }
 
@@ -244,11 +233,8 @@ class PaneWidthController extends _$PaneWidthController {
     try {
       await getIt<SettingsDb>().saveSettingsItem(key, value);
     } catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
-        error,
-        domain: 'PANE_WIDTH',
-        subDomain: 'persistWidth:$key',
-        stackTrace: stackTrace,
+      debugPrint(
+        'PANE_WIDTH persistWidth:$key failed: $error\n$stackTrace',
       );
     }
   }

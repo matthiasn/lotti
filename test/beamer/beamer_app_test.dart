@@ -424,6 +424,21 @@ void main() {
   });
 
   group('AppScreen bottom navigation style', () {
+    // Pin a mobile-width surface so AppScreen takes the mobile-shell branch
+    // regardless of any view-size leakage from earlier tests in a bundled
+    // `very_good test` run. Without this, a contaminated view ≥960 px wide
+    // routes AppScreen into the desktop sidebar, which mounts
+    // DesktopNavigationSidebar / SidebarTimerSection and trips on the
+    // unstubbed `MockNavService.desktopSelectedTaskId` getter.
+    setUp(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        ..physicalSize = const Size(800, 1200)
+        ..devicePixelRatio = 1.0;
+    });
+    tearDown(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+    });
+
     for (final (index, name) in <(int, String)>[
       (0, 'tasks'),
       (1, 'projects'),
