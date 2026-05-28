@@ -334,6 +334,95 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'media empty-bytes retry surfaces error when second download is still '
+      'empty — purge succeeded but a refresh did not repopulate the bytes',
+      () async {
+        final fixedDate = DateTime(2024, 3, 15);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-empty-twice',
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+          ),
+          data: ImageData(
+            imageId: 'img-empty-twice',
+            imageDirectory: '/images/2024-01-01/',
+            imageFile: 'empty_twice.jpg',
+            capturedAt: fixedDate,
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        final jsonPathImg = path.join(
+          tempDir.path,
+          stripLeadingSlashes(relJson),
+        );
+        File(jsonPathImg)
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(image.toJson()));
+
+        final relMedia = getRelativeImagePath(image);
+        final index = AttachmentIndex();
+        final ev = MockEvent();
+        final room = MockRoom();
+        final client = MockMatrixClient();
+        final database = MockMatrixDatabase();
+        final mediaUri = Uri.parse('mxc://server/img-empty-twice');
+        when(() => ev.eventId).thenReturn('evt-img-empty-twice');
+        when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => ev.content).thenReturn({'relativePath': relMedia});
+        when(() => ev.room).thenReturn(room);
+        when(() => room.client).thenReturn(client);
+        when(() => client.database).thenReturn(database);
+        when(ev.attachmentOrThumbnailMxcUrl).thenReturn(mediaUri);
+        when(
+          () => database.deleteFile(mediaUri),
+        ).thenAnswer((_) async => true);
+        var downloads = 0;
+        when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+          downloads++;
+          return MatrixFile(bytes: Uint8List(0), name: 'empty_twice.jpg');
+        });
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+        String? pendingPath;
+        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        await loader.load(jsonPath: relJson);
+
+        expect(downloads, 2);
+        expect(pendingPath, relMedia);
+        // Both attempts saw empty bytes → purge runs twice.
+        verify(() => database.deleteFile(mediaUri)).called(2);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(
+              that: isA<FileSystemException>().having(
+                (e) => e.message,
+                'message',
+                contains('empty attachment bytes'),
+              ),
+            ),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetchMedia',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verify(
+          () => loggingService.captureEvent(
+            contains('smart.media.empty_bytes.refresh path=$relMedia'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetchMedia',
+          ),
+        ).called(1);
+      },
+    );
+
     test('no-VC JSON fetch logs and throws on empty bytes', () async {
       const relJson = '/text_entries/2024-02-01/empty.text.json';
       final index = AttachmentIndex();

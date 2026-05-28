@@ -638,7 +638,11 @@ void main() {
       'burnUnboundVectorClock turns an outside-scope reservation into a burn',
       () async {
         final syncDb = MockSyncDatabase();
-        getIt.registerSingleton<SyncDatabase>(syncDb);
+        final domainLogger = MockDomainLogger();
+        _stubDomainLoggerError(domainLogger);
+        getIt
+          ..registerSingleton<SyncDatabase>(syncDb)
+          ..registerSingleton<DomainLogger>(domainLogger);
         when(
           () => syncDb.recordReservedSequenceCounter(
             hostId: any(named: 'hostId'),
@@ -669,7 +673,37 @@ void main() {
           ),
         ).called(1);
         expect(burnt, [(hostId: host, counter: 900)]);
+        verify(
+          () => domainLogger.error(
+            LogDomains.sync,
+            any<String>(that: contains('unbound vector clock')),
+            error: any<dynamic>(named: 'error'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'vc.burn.unbound',
+          ),
+        ).called(1);
 
+        service.setBurnHandler(null);
+      },
+    );
+
+    test(
+      'burnUnboundVectorClock is a no-op for a null clock or a clock without '
+      'the current host',
+      () async {
+        await service.setNextAvailableCounter(950);
+        final burnt = <int>[];
+        service.setBurnHandler((_, counter) async {
+          burnt.add(counter);
+        });
+
+        await service.burnUnboundVectorClock(null, reason: 'null clock');
+        await service.burnUnboundVectorClock(
+          const VectorClock({'other-host': 7}),
+          reason: 'foreign host only',
+        );
+
+        expect(burnt, isEmpty);
         service.setBurnHandler(null);
       },
     );
