@@ -501,7 +501,7 @@ void main() {
           .designTokens;
       expect(
         audioButtonFill(tester),
-        tokens.colors.surface.focusPressed.withValues(alpha: 0.4),
+        tokens.colors.surface.focusPressed.withValues(alpha: 0.55),
       );
       expect(
         audioButtonFill(tester),
@@ -520,7 +520,7 @@ void main() {
           .designTokens;
       expect(
         audioButtonFill(tester),
-        tokens.colors.surface.focusPressed.withValues(alpha: 0.4),
+        tokens.colors.surface.focusPressed.withValues(alpha: 0.55),
       );
     },
   );

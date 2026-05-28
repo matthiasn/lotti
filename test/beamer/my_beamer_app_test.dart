@@ -344,6 +344,16 @@ void main() {
     }
 
     setUp(() async {
+      // Pin a mobile-width surface so MyBeamerApp's AppScreen takes the
+      // mobile-shell branch regardless of view-size leakage from earlier
+      // tests in a bundled `very_good test` run. Without this, a
+      // contaminated view ≥960 px wide routes AppScreen into the desktop
+      // sidebar, which mounts SidebarTimerSection and trips on the
+      // unstubbed `MockNavService.desktopSelectedTaskId` getter.
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        ..physicalSize = const Size(800, 1200)
+        ..devicePixelRatio = 1.0;
+
       mockNavService = MockNavService();
       when(() => mockNavService.currentPath).thenReturn('/');
       await stubNavService(mockNavService);
@@ -364,7 +374,10 @@ void main() {
       );
     });
 
-    tearDown(tearDownTestGetIt);
+    tearDown(() async {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+      await tearDownTestGetIt();
+    });
 
     testWidgets(
       'passes zoom controller to DesktopMenuWrapper and ZoomWrapper',

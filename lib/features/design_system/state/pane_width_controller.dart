@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'pane_width_controller.g.dart';
@@ -121,11 +120,8 @@ class PaneWidthController extends _$PaneWidthController {
         sidebarCollapsed: sidebarCollapsed,
       );
     } catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
-        error,
-        domain: 'PANE_WIDTH',
-        subDomain: 'loadPersistedWidths',
-        stackTrace: stackTrace,
+      debugPrint(
+        'PANE_WIDTH loadPersistedWidths failed: $error\n$stackTrace',
       );
     }
   }
@@ -237,11 +233,8 @@ class PaneWidthController extends _$PaneWidthController {
     try {
       await getIt<SettingsDb>().saveSettingsItem(key, value);
     } catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
-        error,
-        domain: 'PANE_WIDTH',
-        subDomain: 'persistWidth:$key',
-        stackTrace: stackTrace,
+      debugPrint(
+        'PANE_WIDTH persistWidth:$key failed: $error\n$stackTrace',
       );
     }
   }
