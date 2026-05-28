@@ -11,6 +11,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -35,6 +37,18 @@ class _MockUserActivityService extends Mock implements UserActivityService {}
 class _MockAiSetupPromptService extends AiSetupPromptService {
   @override
   Future<bool> build() async => false;
+}
+
+class _TestAudioRecorderController extends AudioRecorderController {
+  @override
+  AudioRecorderState build() => AudioRecorderState(
+    status: AudioRecorderStatus.stopped,
+    progress: Duration.zero,
+    vu: -20,
+    dBFS: -160,
+    showIndicator: false,
+    modalVisible: false,
+  );
 }
 
 // Simple test location for wrapping AppScreen
@@ -73,12 +87,84 @@ class _EmptyLocation extends BeamLocation<BeamState> {
   List<Pattern> get pathPatterns => ['*'];
 }
 
+Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
+  final delegate = BeamerDelegate(
+    setBrowserTabTitle: false,
+    initialPath: initialPath,
+    locationBuilder: (routeInformation, _) => _EmptyLocation(routeInformation),
+  );
+  addTearDown(delegate.dispose);
+  await delegate.setNewRoutePath(
+    RouteInformation(uri: Uri.parse(initialPath)),
+  );
+  return delegate;
+}
+
+Future<MockNavService> _stubNavService() async {
+  final mockNav = MockNavService();
+  final indexStream = Stream<int>.value(0).asBroadcastStream();
+  when(mockNav.getIndexStream).thenAnswer((_) => indexStream);
+  when(() => mockNav.isProjectsPageEnabled).thenReturn(false);
+  when(() => mockNav.isDailyOsPageEnabled).thenReturn(true);
+  when(() => mockNav.isHabitsPageEnabled).thenReturn(true);
+  when(() => mockNav.isDashboardsPageEnabled).thenReturn(true);
+  when(() => mockNav.tasksDelegate).thenReturn(
+    await _createEmptyDelegate('/tasks'),
+  );
+  when(() => mockNav.calendarDelegate).thenReturn(
+    await _createEmptyDelegate('/calendar'),
+  );
+  when(() => mockNav.habitsDelegate).thenReturn(
+    await _createEmptyDelegate('/habits'),
+  );
+  when(() => mockNav.dashboardsDelegate).thenReturn(
+    await _createEmptyDelegate('/dashboards'),
+  );
+  when(() => mockNav.journalDelegate).thenReturn(
+    await _createEmptyDelegate('/journal'),
+  );
+  when(() => mockNav.settingsDelegate).thenReturn(
+    await _createEmptyDelegate('/settings'),
+  );
+  when(() => mockNav.currentPath).thenReturn('/');
+  when(() => mockNav.isDesktopMode).thenReturn(false);
+  when(
+    () => mockNav.desktopSelectedTaskId,
+  ).thenReturn(ValueNotifier<String?>(null));
+  when(() => mockNav.tapIndex(any())).thenReturn(null);
+  return mockNav;
+}
+
+void _registerNavService(MockNavService mockNav) {
+  if (getIt.isRegistered<NavService>()) {
+    getIt.unregister<NavService>();
+  }
+  getIt.registerSingleton<NavService>(mockNav);
+}
+
+void _registerTimeService() {
+  final mockTimeService = MockTimeService();
+  when(
+    mockTimeService.getStream,
+  ).thenAnswer((_) => const Stream<JournalEntity?>.empty());
+  when(mockTimeService.getCurrent).thenReturn(null);
+  if (getIt.isRegistered<TimeService>()) {
+    getIt.unregister<TimeService>();
+  }
+  getIt.registerSingleton<TimeService>(mockTimeService);
+}
+
 Widget _buildTestRouterApp({
   required BeamerDelegate routerDelegate,
   required List<Override> overrides,
 }) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      audioRecorderControllerProvider.overrideWith(
+        _TestAudioRecorderController.new,
+      ),
+      ...overrides,
+    ],
     child: MaterialApp.router(
       theme: resolveTestTheme(ThemeData.dark(useMaterial3: true)),
       supportedLocales: AppLocalizations.supportedLocales,
@@ -92,10 +178,33 @@ Widget _buildTestRouterApp({
   );
 }
 
+void _usePhoneViewport(WidgetTester tester) {
+  tester.view
+    ..physicalSize = phoneMediaQueryData.size
+    ..devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
+MockSettingsDb _stubSettingsDb() {
+  final settingsDb = MockSettingsDb();
+  when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+  when(
+    () => settingsDb.itemsByKeys(any()),
+  ).thenAnswer((_) async => <String, String?>{});
+  when(
+    () => settingsDb.saveSettingsItem(any(), any()),
+  ).thenAnswer((_) async => 1);
+  return settingsDb;
+}
+
 void main() {
   testWidgets('Shows red toast only when outbox attempts send while logged out', (
     tester,
   ) async {
+    _usePhoneViewport(tester);
+    addTearDown(tearDownTestGetIt);
+
     final db = MockJournalDb();
     when(() => db.watchConfigFlag(any())).thenAnswer((invocation) {
       final flagName = invocation.positionalArguments.first as String;
@@ -116,94 +225,14 @@ void main() {
     if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
     if (getIt.isRegistered<SyncDatabase>()) getIt.unregister<SyncDatabase>();
     if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
-    final settingsDb = MockSettingsDb();
-    when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-    when(
-      () => settingsDb.saveSettingsItem(any(), any()),
-    ).thenAnswer((_) async => 1);
+    final settingsDb = _stubSettingsDb();
     getIt
       ..registerSingleton<JournalDb>(db)
       ..registerSingleton<SyncDatabase>(syncDb)
       ..registerSingleton<SettingsDb>(settingsDb);
+    ensureThemingServicesRegistered();
 
-    // Minimal nav service stub with properly initialized delegates
-    final mockNav = MockNavService();
-
-    // Create delegates once with initialization
-    final tasksDelegate = BeamerDelegate(
-      setBrowserTabTitle: false,
-      initialPath: '/tasks',
-      locationBuilder: (routeInformation, _) =>
-          _EmptyLocation(routeInformation),
-    );
-    final calendarDelegate = BeamerDelegate(
-      setBrowserTabTitle: false,
-      initialPath: '/calendar',
-      locationBuilder: (routeInformation, _) =>
-          _EmptyLocation(routeInformation),
-    );
-    final habitsDelegate = BeamerDelegate(
-      setBrowserTabTitle: false,
-      initialPath: '/habits',
-      locationBuilder: (routeInformation, _) =>
-          _EmptyLocation(routeInformation),
-    );
-    final dashboardsDelegate = BeamerDelegate(
-      setBrowserTabTitle: false,
-      initialPath: '/dashboards',
-      locationBuilder: (routeInformation, _) =>
-          _EmptyLocation(routeInformation),
-    );
-    final journalDelegate = BeamerDelegate(
-      setBrowserTabTitle: false,
-      initialPath: '/journal',
-      locationBuilder: (routeInformation, _) =>
-          _EmptyLocation(routeInformation),
-    );
-    final settingsDelegate = BeamerDelegate(
-      setBrowserTabTitle: false,
-      initialPath: '/settings',
-      locationBuilder: (routeInformation, _) =>
-          _EmptyLocation(routeInformation),
-    );
-
-    // Initialize all delegates
-    await tasksDelegate.setNewRoutePath(
-      RouteInformation(uri: Uri.parse('/tasks')),
-    );
-    await calendarDelegate.setNewRoutePath(
-      RouteInformation(uri: Uri.parse('/calendar')),
-    );
-    await habitsDelegate.setNewRoutePath(
-      RouteInformation(uri: Uri.parse('/habits')),
-    );
-    await dashboardsDelegate.setNewRoutePath(
-      RouteInformation(uri: Uri.parse('/dashboards')),
-    );
-    await journalDelegate.setNewRoutePath(
-      RouteInformation(uri: Uri.parse('/journal')),
-    );
-    await settingsDelegate.setNewRoutePath(
-      RouteInformation(uri: Uri.parse('/settings')),
-    );
-
-    when(mockNav.getIndexStream).thenAnswer((_) => Stream<int>.value(0));
-    when(() => mockNav.isProjectsPageEnabled).thenReturn(false);
-    when(() => mockNav.isDailyOsPageEnabled).thenReturn(true);
-    when(() => mockNav.isHabitsPageEnabled).thenReturn(true);
-    when(() => mockNav.isDashboardsPageEnabled).thenReturn(true);
-    when(() => mockNav.tasksDelegate).thenReturn(tasksDelegate);
-    when(() => mockNav.calendarDelegate).thenReturn(calendarDelegate);
-    when(() => mockNav.habitsDelegate).thenReturn(habitsDelegate);
-    when(() => mockNav.dashboardsDelegate).thenReturn(dashboardsDelegate);
-    when(() => mockNav.journalDelegate).thenReturn(journalDelegate);
-    when(() => mockNav.settingsDelegate).thenReturn(settingsDelegate);
-    when(() => mockNav.currentPath).thenReturn('/');
-    when(() => mockNav.tapIndex(any())).thenReturn(null);
-    if (getIt.isRegistered<NavService>()) {
-      getIt.unregister<NavService>();
-    }
-    getIt.registerSingleton<NavService>(mockNav);
+    _registerNavService(await _stubNavService());
 
     // Build with provider overrides to satisfy Riverpod + Router via MyBeamerApp
     final mockMatrix = MockMatrixService();
@@ -215,13 +244,7 @@ void main() {
       () => mockMatrix.incomingKeyVerificationRunnerStream,
     ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
 
-    // Additional service stubs used by AppScreen widgets
-    final mockTimeService = MockTimeService();
-    when(
-      mockTimeService.getStream,
-    ).thenAnswer((_) => const Stream<JournalEntity?>.empty());
-    if (getIt.isRegistered<TimeService>()) getIt.unregister<TimeService>();
-    getIt.registerSingleton<TimeService>(mockTimeService);
+    _registerTimeService();
 
     // User activity for MyBeamerApp
     final mockUserActivityService = _MockUserActivityService();
@@ -241,6 +264,7 @@ void main() {
     // Mock OutboxService and provide a stream to emit login-gate events
     final mockOutboxService = MockOutboxService();
     final controller = StreamController<void>.broadcast();
+    addTearDown(controller.close);
     when(
       () => mockOutboxService.notLoggedInGateStream,
     ).thenAnswer((_) => controller.stream);
@@ -319,6 +343,9 @@ void main() {
   testWidgets('Duplicate login-gate events show only one toast per session', (
     tester,
   ) async {
+    _usePhoneViewport(tester);
+    addTearDown(tearDownTestGetIt);
+
     final db = MockJournalDb();
     when(() => db.getConfigFlag(any())).thenAnswer((_) async => false);
     when(
@@ -330,15 +357,15 @@ void main() {
     if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
     if (getIt.isRegistered<SyncDatabase>()) getIt.unregister<SyncDatabase>();
     if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
-    final settingsDb = MockSettingsDb();
-    when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-    when(
-      () => settingsDb.saveSettingsItem(any(), any()),
-    ).thenAnswer((_) async => 1);
+    final settingsDb = _stubSettingsDb();
     getIt
       ..registerSingleton<JournalDb>(db)
       ..registerSingleton<SyncDatabase>(syncDb)
       ..registerSingleton<SettingsDb>(settingsDb);
+    ensureThemingServicesRegistered();
+
+    _registerNavService(await _stubNavService());
+    _registerTimeService();
 
     final mockMatrix = MockMatrixService();
     when(
@@ -350,6 +377,7 @@ void main() {
 
     final mockOutboxService = MockOutboxService();
     final controller = StreamController<void>.broadcast();
+    addTearDown(controller.close);
     when(
       () => mockOutboxService.notLoggedInGateStream,
     ).thenAnswer((_) => controller.stream);
@@ -398,6 +426,9 @@ void main() {
   testWidgets('Guard resets on login; event after login shows toast again', (
     tester,
   ) async {
+    _usePhoneViewport(tester);
+    addTearDown(tearDownTestGetIt);
+
     final db = MockJournalDb();
     when(() => db.getConfigFlag(any())).thenAnswer((_) async => false);
     when(
@@ -409,15 +440,15 @@ void main() {
     if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
     if (getIt.isRegistered<SyncDatabase>()) getIt.unregister<SyncDatabase>();
     if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
-    final settingsDb = MockSettingsDb();
-    when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-    when(
-      () => settingsDb.saveSettingsItem(any(), any()),
-    ).thenAnswer((_) async => 1);
+    final settingsDb = _stubSettingsDb();
     getIt
       ..registerSingleton<JournalDb>(db)
       ..registerSingleton<SyncDatabase>(syncDb)
       ..registerSingleton<SettingsDb>(settingsDb);
+    ensureThemingServicesRegistered();
+
+    _registerNavService(await _stubNavService());
+    _registerTimeService();
 
     final mockMatrix = MockMatrixService();
     when(
@@ -429,6 +460,7 @@ void main() {
 
     final mockOutboxService = MockOutboxService();
     final controller = StreamController<void>.broadcast();
+    addTearDown(controller.close);
     when(
       () => mockOutboxService.notLoggedInGateStream,
     ).thenAnswer((_) => controller.stream);

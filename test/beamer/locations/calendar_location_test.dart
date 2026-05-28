@@ -10,6 +10,7 @@ import 'package:lotti/beamer/locations/calendar_location.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
@@ -104,6 +105,11 @@ MockDayAgent _stubDayAgent() {
   return _RouteDayAgent();
 }
 
+class _SeededPreferencesController extends DailyOsPreferencesController {
+  @override
+  DailyOsPreferences build() => DailyOsPreferences();
+}
+
 Widget _routeChildFor(String path, BuildContext context) {
   final routeInformation = RouteInformation(uri: Uri.parse(path));
   final location = CalendarLocation(routeInformation);
@@ -119,6 +125,9 @@ Widget _wrapRouteChild(
   return ProviderScope(
     overrides: [
       captureControllerProvider.overrideWith(_stubCapture),
+      dailyOsPreferencesControllerProvider.overrideWith(
+        _SeededPreferencesController.new,
+      ),
       dayAgentProvider.overrideWith((ref) => _stubDayAgent()),
       ...overrides,
     ],

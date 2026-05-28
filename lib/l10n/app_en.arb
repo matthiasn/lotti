@@ -1751,7 +1751,6 @@
   "dailyOsNextCaptureIdleHint": "Tap to talk · type instead",
   "dailyOsNextCaptureIdleTalk": "Tap to talk",
   "dailyOsNextCaptureListening": "LISTENING",
-  "dailyOsNextCaptureOpenTasks": "Browse tasks",
   "dailyOsNextCapturePastPrompt": "Anything you still want to track from {date}?",
   "@dailyOsNextCapturePastPrompt": {
     "placeholders": {
@@ -1930,18 +1929,6 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Recurring · missed",
-  "dailyOsNextTasksEmpty": "Nothing here yet.",
-  "dailyOsNextTasksFilterAll": "All",
-  "dailyOsNextTasksFilterBacklog": "Backlog",
-  "dailyOsNextTasksFilterDone": "Done",
-  "dailyOsNextTasksFilterInProgress": "In progress",
-  "dailyOsNextTasksFilterOverdue": "Overdue",
-  "dailyOsNextTasksFilterRecurring": "Recurring",
-  "dailyOsNextTasksFilterScheduled": "Scheduled",
-  "dailyOsNextTasksFooterHint": "The morning ritual usually surfaces what matters from here.",
-  "dailyOsNextTasksSearchPlaceholder": "Search tasks",
-  "dailyOsNextTasksSubtitle": "Everything Lotti's holding for you. The morning ritual surfaces what matters.",
-  "dailyOsNextTasksTitle": "Tasks",
   "dailyOsNextTimelineActual": "Actual",
   "dailyOsNextTimelineBoth": "Plan and actual",
   "dailyOsNextTimelineMeridiemAm": "AM",

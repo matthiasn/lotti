@@ -3168,9 +3168,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureListening => 'ASCULT';
 
   @override
-  String get dailyOsNextCaptureOpenTasks => 'Răsfoiește sarcinile';
-
-  @override
   String dailyOsNextCapturePastPrompt(String date) {
     return 'Mai doriți să înregistrați ceva din $date?';
   }
@@ -3527,44 +3524,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextStateRecurringMissed => 'Recurent · ratat';
-
-  @override
-  String get dailyOsNextTasksEmpty => 'Nimic aici încă.';
-
-  @override
-  String get dailyOsNextTasksFilterAll => 'Toate';
-
-  @override
-  String get dailyOsNextTasksFilterBacklog => 'Restanțe';
-
-  @override
-  String get dailyOsNextTasksFilterDone => 'Finalizate';
-
-  @override
-  String get dailyOsNextTasksFilterInProgress => 'În progres';
-
-  @override
-  String get dailyOsNextTasksFilterOverdue => 'Întârziate';
-
-  @override
-  String get dailyOsNextTasksFilterRecurring => 'Recurente';
-
-  @override
-  String get dailyOsNextTasksFilterScheduled => 'Programate';
-
-  @override
-  String get dailyOsNextTasksFooterHint =>
-      'Ritualul de dimineață scoate la suprafață ce contează.';
-
-  @override
-  String get dailyOsNextTasksSearchPlaceholder => 'Caută sarcini';
-
-  @override
-  String get dailyOsNextTasksSubtitle =>
-      'Tot ce Lotti păstrează pentru dvs. Ritualul de dimineață scoate la suprafață ce contează.';
-
-  @override
-  String get dailyOsNextTasksTitle => 'Sarcini';
 
   @override
   String get dailyOsNextTimelineActual => 'Real';

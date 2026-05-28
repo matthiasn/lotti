@@ -5280,12 +5280,6 @@ abstract class AppLocalizations {
   /// **'LISTENING'**
   String get dailyOsNextCaptureListening;
 
-  /// No description provided for @dailyOsNextCaptureOpenTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'Browse tasks'**
-  String get dailyOsNextCaptureOpenTasks;
-
   /// No description provided for @dailyOsNextCapturePastPrompt.
   ///
   /// In en, this message translates to:
@@ -5909,78 +5903,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recurring · missed'**
   String get dailyOsNextStateRecurringMissed;
-
-  /// No description provided for @dailyOsNextTasksEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing here yet.'**
-  String get dailyOsNextTasksEmpty;
-
-  /// No description provided for @dailyOsNextTasksFilterAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get dailyOsNextTasksFilterAll;
-
-  /// No description provided for @dailyOsNextTasksFilterBacklog.
-  ///
-  /// In en, this message translates to:
-  /// **'Backlog'**
-  String get dailyOsNextTasksFilterBacklog;
-
-  /// No description provided for @dailyOsNextTasksFilterDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get dailyOsNextTasksFilterDone;
-
-  /// No description provided for @dailyOsNextTasksFilterInProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'In progress'**
-  String get dailyOsNextTasksFilterInProgress;
-
-  /// No description provided for @dailyOsNextTasksFilterOverdue.
-  ///
-  /// In en, this message translates to:
-  /// **'Overdue'**
-  String get dailyOsNextTasksFilterOverdue;
-
-  /// No description provided for @dailyOsNextTasksFilterRecurring.
-  ///
-  /// In en, this message translates to:
-  /// **'Recurring'**
-  String get dailyOsNextTasksFilterRecurring;
-
-  /// No description provided for @dailyOsNextTasksFilterScheduled.
-  ///
-  /// In en, this message translates to:
-  /// **'Scheduled'**
-  String get dailyOsNextTasksFilterScheduled;
-
-  /// No description provided for @dailyOsNextTasksFooterHint.
-  ///
-  /// In en, this message translates to:
-  /// **'The morning ritual usually surfaces what matters from here.'**
-  String get dailyOsNextTasksFooterHint;
-
-  /// No description provided for @dailyOsNextTasksSearchPlaceholder.
-  ///
-  /// In en, this message translates to:
-  /// **'Search tasks'**
-  String get dailyOsNextTasksSearchPlaceholder;
-
-  /// No description provided for @dailyOsNextTasksSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Everything Lotti\'s holding for you. The morning ritual surfaces what matters.'**
-  String get dailyOsNextTasksSubtitle;
-
-  /// No description provided for @dailyOsNextTasksTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Tasks'**
-  String get dailyOsNextTasksTitle;
 
   /// No description provided for @dailyOsNextTimelineActual.
   ///

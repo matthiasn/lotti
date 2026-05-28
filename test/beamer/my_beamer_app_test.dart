@@ -336,6 +336,11 @@ void main() {
       when(() => nav.isHabitsPageEnabled).thenReturn(false);
       when(() => nav.isDashboardsPageEnabled).thenReturn(false);
       when(() => nav.tapIndex(any())).thenReturn(null);
+      when(() => nav.isDesktopMode).thenReturn(false);
+      when(
+        () => nav.desktopSelectedTaskId,
+      ).thenReturn(ValueNotifier<String?>(null));
+      when(() => nav.currentPath).thenReturn('/');
     }
 
     setUp(() async {

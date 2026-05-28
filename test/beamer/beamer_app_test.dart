@@ -47,6 +47,17 @@ bool _isFlatpakTestHost() {
               false));
 }
 
+const _phoneViewportSize = Size(390, 844);
+const _desktopViewportSize = Size(1280, 800);
+
+void _useViewport(WidgetTester tester, Size size) {
+  tester.view
+    ..physicalSize = size
+    ..devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 int calculateClampedIndex({
   required int rawIndex,
   required bool isProjectsEnabled,
@@ -185,7 +196,10 @@ Future<void> _pumpAppScreen(
   WidgetTester tester, {
   required MockNavService navService,
   MockJournalDb? journalDb,
+  Size viewportSize = _phoneViewportSize,
 }) async {
+  _useViewport(tester, viewportSize);
+
   final effectiveJournalDb = journalDb ?? MockJournalDb();
   final mockMatrix = MockMatrixService();
   when(
@@ -360,7 +374,10 @@ void main() {
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+      );
 
       expect(find.text('Projects'), findsNothing);
       expect(find.text('Tasks'), findsOneWidget);
@@ -388,7 +405,10 @@ void main() {
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+      );
       expect(find.text('Projects'), findsNothing);
 
       isProjectsEnabled = true;
@@ -576,7 +596,11 @@ void main() {
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
 
       expect(find.byType(DesktopNavigationSidebar), findsOneWidget);
       expect(find.byType(DesignSystemBottomNavigationBar), findsNothing);
@@ -606,7 +630,11 @@ void main() {
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
 
       final sidebar = tester.widget<DesktopNavigationSidebar>(
         find.byType(DesktopNavigationSidebar),
@@ -645,7 +673,11 @@ void main() {
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
 
       expect(find.text('Settings'), findsOneWidget);
       expect(find.text('Tasks'), findsOneWidget);
@@ -674,7 +706,11 @@ void main() {
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
 
       // Tap Projects in the sidebar
       await tester.tap(find.text('Projects'));
@@ -708,7 +744,11 @@ void main() {
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
 
       await tester.tap(find.text('Settings'));
       await tester.pump();
@@ -742,7 +782,11 @@ void main() {
         await _registerAppScreenGetIt(mockNavService);
         addTearDown(tearDownTestGetIt);
 
-        await _pumpAppScreen(tester, navService: mockNavService);
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+        );
 
         // The legacy bottom-anchored TimeRecordingIndicator must not appear in
         // the desktop layout; timer and audio recording cards render inside
@@ -784,7 +828,11 @@ void main() {
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
 
       final stack = tester.widget<IndexedStack>(find.byType(IndexedStack));
       expect(stack.index, 2);
@@ -817,7 +865,11 @@ void main() {
       await _registerAppScreenGetIt(mockNavService);
       addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
 
       // Only Tasks, Journal, Settings should be visible
       expect(find.text('Tasks'), findsOneWidget);

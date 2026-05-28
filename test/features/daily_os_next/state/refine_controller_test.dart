@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -56,6 +57,11 @@ void main() {
     });
 
     test('failed diff proposal returns to idle with the transcript', () async {
+      final previousOnError = FlutterError.onError;
+      FlutterErrorDetails? reportedError;
+      FlutterError.onError = (details) => reportedError = details;
+      addTearDown(() => FlutterError.onError = previousOnError);
+
       final container = makeContainer(overrideAgent: _ThrowingRefineAgent());
       final notifier = container.read(refineControllerProvider(draft).notifier)
         ..beginListening(resetTranscript: true)
@@ -68,6 +74,11 @@ void main() {
       expect(state.transcript, 'make the writing block longer');
       expect(state.diff, isNull);
       expect(state.currentPlan, draft);
+      expect(reportedError?.exception, isA<StateError>());
+      expect(
+        reportedError?.context?.toDescription(),
+        'while proposing a plan refinement',
+      );
     });
 
     test('captured transcript drives the diff proposal', () async {

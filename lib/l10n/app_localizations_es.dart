@@ -3157,9 +3157,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextCaptureListening => 'ESCUCHANDO';
 
   @override
-  String get dailyOsNextCaptureOpenTasks => 'Explorar tareas';
-
-  @override
   String dailyOsNextCapturePastPrompt(String date) {
     return '¿Quieres registrar algo del $date?';
   }
@@ -3517,44 +3514,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextStateRecurringMissed => 'Recurrente · perdido';
-
-  @override
-  String get dailyOsNextTasksEmpty => 'Aún no hay nada aquí.';
-
-  @override
-  String get dailyOsNextTasksFilterAll => 'Todas';
-
-  @override
-  String get dailyOsNextTasksFilterBacklog => 'Pendientes';
-
-  @override
-  String get dailyOsNextTasksFilterDone => 'Hechas';
-
-  @override
-  String get dailyOsNextTasksFilterInProgress => 'En curso';
-
-  @override
-  String get dailyOsNextTasksFilterOverdue => 'Atrasadas';
-
-  @override
-  String get dailyOsNextTasksFilterRecurring => 'Recurrentes';
-
-  @override
-  String get dailyOsNextTasksFilterScheduled => 'Programadas';
-
-  @override
-  String get dailyOsNextTasksFooterHint =>
-      'El ritual matutino suele traer lo que importa.';
-
-  @override
-  String get dailyOsNextTasksSearchPlaceholder => 'Buscar tareas';
-
-  @override
-  String get dailyOsNextTasksSubtitle =>
-      'Todo lo que Lotti guarda para ti. El ritual matutino lo prioriza.';
-
-  @override
-  String get dailyOsNextTasksTitle => 'Tareas';
 
   @override
   String get dailyOsNextTimelineActual => 'Real';
