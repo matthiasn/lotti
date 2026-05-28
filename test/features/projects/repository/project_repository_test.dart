@@ -1083,34 +1083,36 @@ void main() {
       },
     );
 
-    test('unlinkTaskFromProject records the soft-deleted link sequence',
-        () async {
-      final existingLink = EntryLink.project(
-        id: 'link-001',
-        fromId: 'project-001',
-        toId: 'task-001',
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-      );
-      when(
-        () => mockDb.getProjectLinkForTask('task-001'),
-      ).thenAnswer((_) async => existingLink);
-      when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-      when(() => mockNotifications.notify(any())).thenReturn(null);
-      when(
-        mockVectorClockService.getNextVectorClock,
-      ).thenAnswer((_) async => const VectorClock({'d': 2}));
+    test(
+      'unlinkTaskFromProject records the soft-deleted link sequence',
+      () async {
+        final existingLink = EntryLink.project(
+          id: 'link-001',
+          fromId: 'project-001',
+          toId: 'task-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+        when(
+          () => mockDb.getProjectLinkForTask('task-001'),
+        ).thenAnswer((_) async => existingLink);
+        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+        when(() => mockNotifications.notify(any())).thenReturn(null);
+        when(
+          mockVectorClockService.getNextVectorClock,
+        ).thenAnswer((_) async => const VectorClock({'d': 2}));
 
-      await repository.unlinkTaskFromProject('task-001');
+        await repository.unlinkTaskFromProject('task-001');
 
-      verify(
-        () => mockSequenceLog.recordSentEntryLink(
-          linkId: 'link-001',
-          vectorClock: const VectorClock({'d': 2}),
-        ),
-      ).called(1);
-    });
+        verify(
+          () => mockSequenceLog.recordSentEntryLink(
+            linkId: 'link-001',
+            vectorClock: const VectorClock({'d': 2}),
+          ),
+        ).called(1);
+      },
+    );
 
     test(
       'sequence-record failure is swallowed and routed through DomainLogger; '

@@ -688,8 +688,7 @@ void main() {
     );
 
     test(
-      'burnUnboundVectorClock is a no-op for a null clock or a clock without '
-      'the current host',
+      'burnUnboundVectorClock is a no-op for null and empty clocks',
       () async {
         await service.setNextAvailableCounter(950);
         final burnt = <int>[];
@@ -699,11 +698,99 @@ void main() {
 
         await service.burnUnboundVectorClock(null, reason: 'null clock');
         await service.burnUnboundVectorClock(
-          const VectorClock({'other-host': 7}),
-          reason: 'foreign host only',
+          const VectorClock({}),
+          reason: 'empty clock',
         );
 
         expect(burnt, isEmpty);
+        service.setBurnHandler(null);
+      },
+    );
+
+    test(
+      'burnUnboundVectorClock picks the reservation host from the LAST clock '
+      'entry, not the first — service-generated clocks spread previous peer '
+      'entries before the local host, and burning the first entry would '
+      'target a peer counter that this host never reserved',
+      () async {
+        final syncDb = MockSyncDatabase();
+        getIt.registerSingleton<SyncDatabase>(syncDb);
+        when(
+          () => syncDb.markReservedSequenceCounterBurnPending(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final burnt = <({String hostId, int counter})>[];
+        service.setBurnHandler((hostId, counter) async {
+          burnt.add((hostId: hostId, counter: counter));
+        });
+
+        // Mimics reserveNextVectorClock's output: previous peers spread first,
+        // local host last.
+        const localHost = 'local-host';
+        const localCounter = 42;
+        await service.burnUnboundVectorClock(
+          const VectorClock({
+            'peer-a': 7,
+            'peer-b': 11,
+            localHost: localCounter,
+          }),
+          reason: 'write rejected with multi-host clock',
+        );
+
+        verify(
+          () => syncDb.markReservedSequenceCounterBurnPending(
+            hostId: localHost,
+            counter: localCounter,
+          ),
+        ).called(1);
+        expect(burnt, [(hostId: localHost, counter: localCounter)]);
+
+        service.setBurnHandler(null);
+      },
+    );
+
+    test(
+      'burnUnboundVectorClock uses the host captured in the vector clock so a '
+      'setNewHost between reservation and the rejected write does not strand '
+      'the original counter as plain reserved',
+      () async {
+        final syncDb = MockSyncDatabase();
+        getIt.registerSingleton<SyncDatabase>(syncDb);
+        when(
+          () => syncDb.markReservedSequenceCounterBurnPending(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+          ),
+        ).thenAnswer((_) async {});
+
+        const originalHost = 'original-host';
+        const reservedCounter = 920;
+        final burnt = <({String hostId, int counter})>[];
+        service.setBurnHandler((hostId, counter) async {
+          burnt.add((hostId: hostId, counter: counter));
+        });
+
+        // Simulate the service's host having moved on (e.g. via setNewHost)
+        // between reservation and the burn call. Despite that, the burn must
+        // be attributed to the host captured in the vector clock itself.
+        await service.setNewHost();
+
+        await service.burnUnboundVectorClock(
+          const VectorClock({originalHost: reservedCounter}),
+          reason: 'write rejected after host swap',
+        );
+
+        verify(
+          () => syncDb.markReservedSequenceCounterBurnPending(
+            hostId: originalHost,
+            counter: reservedCounter,
+          ),
+        ).called(1);
+        expect(burnt, [(hostId: originalHost, counter: reservedCounter)]);
+
         service.setBurnHandler(null);
       },
     );

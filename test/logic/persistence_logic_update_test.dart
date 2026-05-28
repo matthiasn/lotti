@@ -590,6 +590,33 @@ void main() {
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
   });
 
+  test(
+    'updateDbEntity burns the pre-minted VC counter when the write is '
+    'rejected — without this the counter leaks as plain reserved since the '
+    'incoming clock was minted by updateMetadata outside this scope',
+    () async {
+      stubUpdateResult(
+        JournalUpdateResult.skipped(
+          reason: JournalUpdateSkipReason.olderOrEqual,
+        ),
+      );
+
+      final entry = buildEntry(clock: const VectorClock({'host': 42}));
+      final result = await logic.updateDbEntity(entry);
+
+      expect(result, isFalse);
+      verify(
+        () => vectorClockService.burnUnboundVectorClock(
+          entry.meta.vectorClock,
+          reason: any<String>(
+            named: 'reason',
+            that: contains('updateDbEntity write rejected id=entry-id'),
+          ),
+        ),
+      ).called(1);
+    },
+  );
+
   test('updateDbEntity returns null on exception', () async {
     when(
       () => journalDb.updateJournalEntity(

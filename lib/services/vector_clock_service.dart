@@ -373,15 +373,25 @@ class VectorClockService {
   /// counter has already been persisted and cannot be reused, so the safest
   /// terminal state is the same `burnPending` -> proactive unresolvable flow
   /// used by scoped reservation releases.
+  ///
+  /// The host is taken from the [vectorClock] itself rather than the service's
+  /// current `_host`. Otherwise a [setNewHost] call between reservation and
+  /// the rejected write would leave the old counter stranded as plain
+  /// `reserved`, outside the startup recovery path.
   Future<void> burnUnboundVectorClock(
     VectorClock? vectorClock, {
     required String reason,
   }) async {
     await _initialized;
-    final hostId = _host;
     if (vectorClock == null) return;
-    final counter = vectorClock.vclock[hostId];
-    if (counter == null) return;
+    if (vectorClock.vclock.isEmpty) return;
+    // [reserveNextVectorClock] builds clocks as `{...previous, localHost: c}`,
+    // so the reservation host is always the last inserted entry. Picking
+    // [entries.first] would burn a peer's counter when the incoming clock
+    // carries spread-previous entries.
+    final entry = vectorClock.vclock.entries.last;
+    final hostId = entry.key;
+    final counter = entry.value;
 
     if (getIt.isRegistered<DomainLogger>()) {
       getIt<DomainLogger>().error(

@@ -899,6 +899,18 @@ class PersistenceLogic {
           );
           final applied = updateResult.applied;
 
+          if (!applied) {
+            // The incoming entity carries a VC counter that was reserved by
+            // the caller (typically via [updateMetadata]) BEFORE entering
+            // this scope, so the scope itself has nothing to release on
+            // rejection. Burn it explicitly so the counter does not linger
+            // as plain `reserved`, outside the startup recovery path.
+            await _vectorClockService.burnUnboundVectorClock(
+              journalEntity.meta.vectorClock,
+              reason: 'updateDbEntity write rejected id=${journalEntity.id}',
+            );
+          }
+
           if (applied) {
             await _recordJournalSequence(
               journalEntity,

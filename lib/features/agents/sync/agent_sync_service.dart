@@ -296,17 +296,23 @@ class AgentSyncService {
     final existingCtx = _currentTxContext;
     if (existingCtx != null) {
       // Nested: piggyback on the outermost chain's zone/buffer.
-      // Snapshot the buffer length so that if the inner savepoint rolls back
-      // (throws) but the caller catches and continues, we discard only the
-      // messages added by this inner scope — preventing ghost outbox entries
-      // for writes that were rolled back by the savepoint.
-      final snapshot = existingCtx.pendingMessages.length;
+      // Snapshot the buffer lengths so that if the inner savepoint rolls
+      // back (throws) but the caller catches and continues, we discard
+      // only the messages and sequence bindings added by this inner scope.
+      // Without truncating bindings on rollback, the outer commit would
+      // record a sent sequence row for a write that was rolled back.
+      final messageSnapshot = existingCtx.pendingMessages.length;
+      final sequenceSnapshot = existingCtx.pendingSequenceBindings.length;
       try {
         return await _repository.runInTransaction(action);
       } catch (_) {
         existingCtx.pendingMessages.removeRange(
-          snapshot,
+          messageSnapshot,
           existingCtx.pendingMessages.length,
+        );
+        existingCtx.pendingSequenceBindings.removeRange(
+          sequenceSnapshot,
+          existingCtx.pendingSequenceBindings.length,
         );
         rethrow;
       }
