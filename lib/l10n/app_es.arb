@@ -1540,6 +1540,13 @@
     }
   },
   "dailyOsNextCaptureCaptured": "Entendido.",
+  "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Se denegó el permiso del micrófono.",
+  "dailyOsNextCaptureErrorNoActiveRealtimeSession": "No hay ninguna sesión en tiempo real activa.",
+  "dailyOsNextCaptureErrorNoAudioRecorded": "No se grabó ningún audio.",
+  "dailyOsNextCaptureErrorRealtimeTranscriptionFailed": "Falló la transcripción en tiempo real.",
+  "dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed": "No se pudo iniciar la transcripción en tiempo real.",
+  "dailyOsNextCaptureErrorRecordingStartFailed": "No se pudo iniciar la grabación.",
+  "dailyOsNextCaptureErrorTranscriptionFailed": "Falló la transcripción.",
   "dailyOsNextCaptureHeadlineLead": "¿Qué tienes en mente",
   "dailyOsNextCaptureHeadlineTail": "para hoy?",
   "dailyOsNextCaptureHeadlineTailForDate": "para {date}?",
@@ -1692,6 +1699,14 @@
   "dailyOsNextShutdownSaveAndClose": "Guardar y cerrar",
   "dailyOsNextShutdownTitle": "Cerrar el día",
   "dailyOsNextShutdownTomorrowOverline": "✦ PARA MAÑANA",
+  "dailyOsNextStateDueOnDate": "Vence el {date}",
+  "@dailyOsNextStateDueOnDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "dailyOsNextStateDueToday": "Vence hoy",
   "dailyOsNextStateInProgress": "{count, plural, =0{En curso} =1{En curso · 1 sesión} other{En curso · {count} sesiones}}",
   "@dailyOsNextStateInProgress": {
@@ -1708,6 +1723,18 @@
       "days": {
         "type": "int",
         "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateOverdueOnDate": "{days, plural, =0{Atrasado el {date}} =1{Atrasado 1 día el {date}} other{Atrasado {days} días el {date}}}",
+  "@dailyOsNextStateOverdueOnDate": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      },
+      "date": {
+        "type": "String"
       }
     }
   },

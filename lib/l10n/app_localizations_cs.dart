@@ -3118,6 +3118,33 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'Rozumím.';
 
   @override
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Přístup k mikrofonu byl odepřen.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
+      'Žádná aktivní relace v reálném čase.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoAudioRecorded =>
+      'Nebylo nahráno žádné audio.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
+      'Přepis v reálném čase selhal.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
+      'Přepis v reálném čase se nepodařilo spustit.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingStartFailed =>
+      'Nahrávání se nepodařilo spustit.';
+
+  @override
+  String get dailyOsNextCaptureErrorTranscriptionFailed => 'Přepis selhal.';
+
+  @override
   String get dailyOsNextCaptureHeadlineLead => 'Co máš dnes';
 
   @override
@@ -3471,6 +3498,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextShutdownTomorrowOverline => '✦ NA ZÍTŘEK';
 
   @override
+  String dailyOsNextStateDueOnDate(String date) {
+    return 'Splatné $date';
+  }
+
+  @override
   String get dailyOsNextStateDueToday => 'Splatné dnes';
 
   @override
@@ -3495,6 +3527,19 @@ class AppLocalizationsCs extends AppLocalizations {
       few: 'Po termínu · $days dny',
       one: 'Po termínu · 1 den',
       zero: 'Po termínu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdueOnDate(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Po termínu o $days dní k $date',
+      few: 'Po termínu o $days dny k $date',
+      one: 'Po termínu o 1 den k $date',
+      zero: 'Po termínu k $date',
     );
     return '$_temp0';
   }

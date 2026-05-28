@@ -209,6 +209,7 @@ class MockDayAgent implements DayAgentInterface {
     required CaptureId captureId,
     required List<String> decidedTaskIds,
     required DateTime dayDate,
+    List<String> decidedCaptureItemIds = const [],
     List<TimeBlock> calendarBlocks = const [],
     // ignored: mock returns immediately, has no poll loop to cancel.
     bool Function()? isCancelled,
@@ -304,7 +305,7 @@ class MockDayAgent implements DayAgentInterface {
     ];
 
     final scheduled = allBlocks
-        .where((b) => b.type != TimeBlockType.buffer)
+        .where((b) => b.state != TimeBlockState.dropped)
         .fold<int>(0, (acc, b) => acc + b.duration.inMinutes);
 
     final actualBlocks = <TimeBlock>[
@@ -489,7 +490,7 @@ class MockDayAgent implements DayAgentInterface {
         );
 
     final scheduled = updatedBlocks
-        .where((b) => b.type != TimeBlockType.buffer)
+        .where((b) => b.state != TimeBlockState.dropped)
         .fold<int>(0, (acc, b) => acc + b.duration.inMinutes);
 
     final updatedPlan = currentPlan.copyWith(

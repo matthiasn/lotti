@@ -1540,6 +1540,13 @@
     }
   },
   "dailyOsNextCaptureCaptured": "Am înțeles.",
+  "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Permisiunea pentru microfon a fost refuzată.",
+  "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Nu există nicio sesiune în timp real activă.",
+  "dailyOsNextCaptureErrorNoAudioRecorded": "Nu s-a înregistrat niciun audio.",
+  "dailyOsNextCaptureErrorRealtimeTranscriptionFailed": "Transcrierea în timp real a eșuat.",
+  "dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed": "Transcrierea în timp real nu a putut porni.",
+  "dailyOsNextCaptureErrorRecordingStartFailed": "Înregistrarea nu a putut porni.",
+  "dailyOsNextCaptureErrorTranscriptionFailed": "Transcrierea a eșuat.",
   "dailyOsNextCaptureHeadlineLead": "La ce vă gândiți",
   "dailyOsNextCaptureHeadlineTail": "pentru astăzi?",
   "dailyOsNextCaptureHeadlineTailForDate": "pentru {date}?",
@@ -1692,6 +1699,14 @@
   "dailyOsNextShutdownSaveAndClose": "Salvează și închide",
   "dailyOsNextShutdownTitle": "Închideți ziua",
   "dailyOsNextShutdownTomorrowOverline": "✦ PENTRU MÂINE",
+  "dailyOsNextStateDueOnDate": "Scadent pe {date}",
+  "@dailyOsNextStateDueOnDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "dailyOsNextStateDueToday": "Scadent astăzi",
   "dailyOsNextStateInProgress": "{count, plural, =0{În progres} =1{În progres · 1 sesiune} other{În progres · {count} sesiuni}}",
   "@dailyOsNextStateInProgress": {
@@ -1708,6 +1723,18 @@
       "days": {
         "type": "int",
         "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateOverdueOnDate": "{days, plural, =0{Întârziat pe {date}} =1{Întârziat cu 1 zi pe {date}} other{Întârziat cu {days} zile pe {date}}}",
+  "@dailyOsNextStateOverdueOnDate": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      },
+      "date": {
+        "type": "String"
       }
     }
   },

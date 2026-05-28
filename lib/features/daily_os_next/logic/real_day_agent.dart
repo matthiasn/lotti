@@ -120,18 +120,20 @@ class RealDayAgent implements DayAgentInterface {
 
   @override
   Future<List<PendingItem>> surfacePendingDecisions({DateTime? forDate}) async {
-    final date = forDate ?? DateTime.now();
+    final date = forDate ?? clock.now();
+    final selectedDay = DateTime(date.year, date.month, date.day);
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
     final identity = await dayAgentService.getDayAgentForDate(date);
     if (identity is! AgentIdentityEntity) return const [];
     final items = await captureService.surfacePendingDecisions(
       agentId: identity.agentId,
       dayId: dayAgentIdForDate(date),
     );
-    final out = <PendingItem>[];
-    for (final item in items) {
-      out.add(await _projectPendingItem(item));
-    }
-    return out;
+    return Future.wait([
+      for (final item in items)
+        _projectPendingItem(item, selectedDay: selectedDay, today: today),
+    ]);
   }
 
   @override
@@ -187,6 +189,7 @@ class RealDayAgent implements DayAgentInterface {
     required CaptureId captureId,
     required List<String> decidedTaskIds,
     required DateTime dayDate,
+    List<String> decidedCaptureItemIds = const [],
     List<TimeBlock> calendarBlocks = const [],
     bool Function()? isCancelled,
   }) async {
@@ -211,6 +214,7 @@ class RealDayAgent implements DayAgentInterface {
       // trigger tokens and surfaces the hydrated tasks in the drafting
       // prompt so the model can attach `taskId` to each placed block.
       decidedTaskIds: decidedTaskIds,
+      decidedCaptureItemIds: decidedCaptureItemIds,
     );
     if (!enqueued) {
       throw const DayAgentInteractionException(
@@ -485,7 +489,11 @@ class RealDayAgent implements DayAgentInterface {
     );
   }
 
-  Future<PendingItem> _projectPendingItem(DayAgentPendingItem item) async {
+  Future<PendingItem> _projectPendingItem(
+    DayAgentPendingItem item, {
+    required DateTime selectedDay,
+    required DateTime today,
+  }) async {
     final category = await _resolveCategory(item.categoryId);
     final reason = _projectPendingReason(item.kind);
     return PendingItem(
@@ -494,8 +502,9 @@ class RealDayAgent implements DayAgentInterface {
       category: category,
       reason: reason,
       overdueByDays: reason == PendingItemReason.overdue && item.due != null
-          ? _daysBetween(item.due!, DateTime.now())
+          ? _daysBetween(item.due!, selectedDay)
           : null,
+      referenceDate: selectedDay == today ? null : selectedDay,
     );
   }
 
@@ -579,15 +588,10 @@ class RealDayAgent implements DayAgentInterface {
     final bands = [
       for (final band in entity.energyBands) _projectEnergyBand(band),
     ];
-    // Buffers are transitions, not work — counting them as scheduled
-    // workload inflates the capacity meter. Dropped blocks shouldn't
-    // contribute either, since the user explicitly removed them.
+    // Dropped blocks should not contribute to the capacity meter, but buffers
+    // still reserve real minutes in the user's day.
     final scheduledMinutes = blocks
-        .where(
-          (block) =>
-              block.state != TimeBlockState.dropped &&
-              block.type != TimeBlockType.buffer,
-        )
+        .where((block) => block.state != TimeBlockState.dropped)
         .fold<int>(0, (sum, block) => sum + block.duration.inMinutes);
     return DraftPlan(
       dayDate: dayDate,

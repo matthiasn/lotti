@@ -167,6 +167,12 @@ class DayAgentService {
   /// places. Blank/whitespace task ids are silently skipped to mirror the
   /// [captureId] guard. Duplicates dedupe via the trigger-token set.
   ///
+  /// When [decidedCaptureItemIds] is non-empty, each parsed item id is
+  /// advertised as a `decided_capture_item:<parsedItemId>` trigger token.
+  /// These represent approved capture items that do not have a persisted task
+  /// yet; drafting carries their parsed details so the model can create a task
+  /// before placing it.
+  ///
   /// Returns `false` when no active day agent exists for [dayDate]. Callers
   /// are expected to either call [createDayAgent] first or surface the
   /// missing-agent state in the UI.
@@ -174,6 +180,7 @@ class DayAgentService {
     required DateTime dayDate,
     String? captureId,
     List<String> decidedTaskIds = const [],
+    List<String> decidedCaptureItemIds = const [],
   }) async {
     final agent = await getDayAgentForDate(dayDate);
     if (agent == null) {
@@ -193,6 +200,9 @@ class DayAgentService {
         dayAgentCaptureSubmittedToken(captureId.trim()),
       for (final taskId in decidedTaskIds)
         if (taskId.trim().isNotEmpty) dayAgentDecidedTaskToken(taskId.trim()),
+      for (final parsedItemId in decidedCaptureItemIds)
+        if (parsedItemId.trim().isNotEmpty)
+          dayAgentDecidedCaptureItemToken(parsedItemId.trim()),
     };
     domainLogger.log(
       LogDomains.agentRuntime,

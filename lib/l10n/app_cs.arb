@@ -1349,6 +1349,13 @@
     }
   },
   "dailyOsNextCaptureCaptured": "Rozumím.",
+  "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Přístup k mikrofonu byl odepřen.",
+  "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Žádná aktivní relace v reálném čase.",
+  "dailyOsNextCaptureErrorNoAudioRecorded": "Nebylo nahráno žádné audio.",
+  "dailyOsNextCaptureErrorRealtimeTranscriptionFailed": "Přepis v reálném čase selhal.",
+  "dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed": "Přepis v reálném čase se nepodařilo spustit.",
+  "dailyOsNextCaptureErrorRecordingStartFailed": "Nahrávání se nepodařilo spustit.",
+  "dailyOsNextCaptureErrorTranscriptionFailed": "Přepis selhal.",
   "dailyOsNextCaptureHeadlineLead": "Co máš dnes",
   "dailyOsNextCaptureHeadlineTail": "na mysli?",
   "dailyOsNextCaptureHeadlineTailForDate": "na {date}?",
@@ -1501,6 +1508,14 @@
   "dailyOsNextShutdownSaveAndClose": "Uložit a zavřít",
   "dailyOsNextShutdownTitle": "Uzavřít den",
   "dailyOsNextShutdownTomorrowOverline": "✦ NA ZÍTŘEK",
+  "dailyOsNextStateDueOnDate": "Splatné {date}",
+  "@dailyOsNextStateDueOnDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "dailyOsNextStateDueToday": "Splatné dnes",
   "dailyOsNextStateInProgress": "{count, plural, =0{Probíhá} =1{Probíhá · 1 relace} few{Probíhá · {count} relace} other{Probíhá · {count} relací}}",
   "@dailyOsNextStateInProgress": {
@@ -1517,6 +1532,18 @@
       "days": {
         "type": "int",
         "example": "3"
+      }
+    }
+  },
+  "dailyOsNextStateOverdueOnDate": "{days, plural, =0{Po termínu k {date}} =1{Po termínu o 1 den k {date}} few{Po termínu o {days} dny k {date}} other{Po termínu o {days} dní k {date}}}",
+  "@dailyOsNextStateOverdueOnDate": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "3"
+      },
+      "date": {
+        "type": "String"
       }
     }
   },

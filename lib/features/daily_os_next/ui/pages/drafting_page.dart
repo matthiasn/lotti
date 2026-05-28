@@ -22,12 +22,14 @@ class DraftingPage extends ConsumerStatefulWidget {
     required this.captureId,
     required this.decidedTaskIds,
     required this.dayDate,
+    this.decidedCaptureItemIds = const [],
     this.returnToRootOnReady = false,
     super.key,
   });
 
   final CaptureId captureId;
   final List<String> decidedTaskIds;
+  final List<String> decidedCaptureItemIds;
   final DateTime dayDate;
   final bool returnToRootOnReady;
 
@@ -44,6 +46,7 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
     final params = DraftingParams(
       captureId: widget.captureId,
       decidedTaskIds: widget.decidedTaskIds,
+      decidedCaptureItemIds: widget.decidedCaptureItemIds,
       dayDate: widget.dayDate,
     );
 

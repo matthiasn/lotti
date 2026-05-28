@@ -383,6 +383,15 @@ void _expectTokenRoundTrip() {
     });
   });
 
+  group('dayAgentDecidedCaptureItemToken', () {
+    test('prefixes the parsed item id', () {
+      expect(
+        dayAgentDecidedCaptureItemToken('parsed-abc'),
+        '${dayAgentDecidedCaptureItemPrefix}parsed-abc',
+      );
+    });
+  });
+
   group('decidedTaskIdsFromTriggerTokens', () {
     test('returns every decided-task id in the set', () {
       final result = decidedTaskIdsFromTriggerTokens({
@@ -424,6 +433,47 @@ void _expectTokenRoundTrip() {
         '$dayAgentDecidedTaskPrefix task-2',
       });
       expect(result, containsAll(['task-1', 'task-2']));
+      expect(result.every((id) => id.trim() == id), isTrue);
+    });
+  });
+
+  group('decidedCaptureItemIdsFromTriggerTokens', () {
+    test('returns every decided capture item id in the set', () {
+      final result = decidedCaptureItemIdsFromTriggerTokens({
+        dayAgentDraftingToken('dayplan-2026-05-25'),
+        dayAgentDecidedCaptureItemToken('parsed-1'),
+        dayAgentDecidedCaptureItemToken('parsed-2'),
+        'other',
+      });
+      expect(result, containsAll(['parsed-1', 'parsed-2']));
+      expect(result, hasLength(2));
+    });
+
+    test('returns an empty list when no decided capture items are present', () {
+      expect(
+        decidedCaptureItemIdsFromTriggerTokens({
+          dayAgentDraftingToken('dayplan-2026-05-25'),
+        }),
+        isEmpty,
+      );
+    });
+
+    test('skips prefix-only and whitespace-only tokens', () {
+      expect(
+        decidedCaptureItemIdsFromTriggerTokens({
+          dayAgentDecidedCaptureItemPrefix,
+          '$dayAgentDecidedCaptureItemPrefix   ',
+        }),
+        isEmpty,
+      );
+    });
+
+    test('trims surrounding whitespace from each returned parsed item id', () {
+      final result = decidedCaptureItemIdsFromTriggerTokens({
+        '$dayAgentDecidedCaptureItemPrefix  parsed-1  ',
+        '$dayAgentDecidedCaptureItemPrefix parsed-2',
+      });
+      expect(result, containsAll(['parsed-1', 'parsed-2']));
       expect(result.every((id) => id.trim() == id), isTrue);
     });
   });

@@ -201,7 +201,7 @@ void main() {
     );
 
     testWidgets(
-      'tapping "Draft my day" pushes DraftingPage with committed task ids',
+      'tapping "Draft my day" keeps task ids and new capture items separate',
       (tester) async {
         _setWideSurface(tester);
         final agent = _fastAgent();
@@ -225,9 +225,43 @@ void main() {
         final pushed = tester.widget<DraftingPage>(find.byType(DraftingPage));
         expect(pushed.captureId, const CaptureId('cap_x'));
         expect(pushed.returnToRootOnReady, isTrue);
-        // Mock surfaces 4 parsed items (matched/update/new) — all
-        // contribute to the committed-task set, plus zero triaged-today.
-        expect(pushed.decidedTaskIds, isNotEmpty);
+        expect(
+          pushed.decidedTaskIds,
+          containsAll(['t_deck_review', 't_morning_run']),
+        );
+        expect(pushed.decidedTaskIds, isNot(contains('p_invoices')));
+        expect(pushed.decidedTaskIds, isNot(contains('p_call_mom')));
+        expect(
+          pushed.decidedCaptureItemIds,
+          containsAll(['p_invoices', 'p_call_mom']),
+        );
+      },
+    );
+
+    testWidgets(
+      'a matched item without a task id is carried as a capture item',
+      (tester) async {
+        _setWideSurface(tester);
+        final agent = _MatchedWithoutTaskIdAgent();
+        await tester.pumpWidget(
+          _wrap(
+            const ReconcilePage(captureId: CaptureId('cap_x')),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final messages = tester.element(find.byType(ReconcilePage)).messages;
+        final cta = find.text(messages.dailyOsNextReconcileBuildDayCta);
+        await tester.ensureVisible(cta);
+        await tester.tap(cta);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        final pushed = tester.widget<DraftingPage>(find.byType(DraftingPage));
+        expect(pushed.decidedCaptureItemIds, contains('p_unlinked_match'));
+        expect(pushed.decidedTaskIds, isNot(contains('p_unlinked_match')));
       },
     );
 
@@ -264,8 +298,11 @@ void main() {
 
         expect(find.byType(DraftingPage), findsOneWidget);
         final pushed = tester.widget<DraftingPage>(find.byType(DraftingPage));
-        // Parsed surrogates (4) + 1 triaged pending → 5 ids.
-        expect(pushed.decidedTaskIds.length, greaterThanOrEqualTo(5));
+        expect(pushed.decidedTaskIds, contains('t_onboarding_doc'));
+        expect(
+          pushed.decidedCaptureItemIds,
+          containsAll(['p_invoices', 'p_call_mom']),
+        );
       },
     );
 
@@ -322,6 +359,29 @@ void main() {
       expect(find.byType(PendingCard), findsNWidgets(3));
     });
   });
+}
+
+/// Agent whose parse step surfaces a matched item that has no resolved
+/// task id, exercising the capture-item fallback in `_draftingSelections`.
+class _MatchedWithoutTaskIdAgent extends MockDayAgent {
+  _MatchedWithoutTaskIdAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [
+    ParsedItem(
+      id: 'p_unlinked_match',
+      kind: ParsedItemKind.matched,
+      title: 'Follow up with Sarah',
+      category: DayAgentCategory(id: 'work', name: 'Work', colorHex: '5ED4B7'),
+      confidence: ParsedItemConfidence.high,
+    ),
+  ];
 }
 
 /// Agent that records breakCaptureLink calls instead of throwing.

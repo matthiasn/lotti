@@ -5232,6 +5232,48 @@ abstract class AppLocalizations {
   /// **'Got it.'**
   String get dailyOsNextCaptureCaptured;
 
+  /// No description provided for @dailyOsNextCaptureErrorMicrophonePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission was denied.'**
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied;
+
+  /// No description provided for @dailyOsNextCaptureErrorNoActiveRealtimeSession.
+  ///
+  /// In en, this message translates to:
+  /// **'No active realtime session.'**
+  String get dailyOsNextCaptureErrorNoActiveRealtimeSession;
+
+  /// No description provided for @dailyOsNextCaptureErrorNoAudioRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No audio was recorded.'**
+  String get dailyOsNextCaptureErrorNoAudioRecorded;
+
+  /// No description provided for @dailyOsNextCaptureErrorRealtimeTranscriptionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription failed.'**
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed;
+
+  /// No description provided for @dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime transcription could not start.'**
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed;
+
+  /// No description provided for @dailyOsNextCaptureErrorRecordingStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording could not start.'**
+  String get dailyOsNextCaptureErrorRecordingStartFailed;
+
+  /// No description provided for @dailyOsNextCaptureErrorTranscriptionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription failed.'**
+  String get dailyOsNextCaptureErrorTranscriptionFailed;
+
   /// No description provided for @dailyOsNextCaptureHeadlineLead.
   ///
   /// In en, this message translates to:
@@ -5880,6 +5922,12 @@ abstract class AppLocalizations {
   /// **'✦ FOR TOMORROW'**
   String get dailyOsNextShutdownTomorrowOverline;
 
+  /// No description provided for @dailyOsNextStateDueOnDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String dailyOsNextStateDueOnDate(String date);
+
   /// No description provided for @dailyOsNextStateDueToday.
   ///
   /// In en, this message translates to:
@@ -5897,6 +5945,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days, plural, =0{Overdue} =1{Overdue · 1 day} other{Overdue · {days} days}}'**
   String dailyOsNextStateOverdue(int days);
+
+  /// No description provided for @dailyOsNextStateOverdueOnDate.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =0{Overdue on {date}} =1{Overdue by 1 day on {date}} other{Overdue by {days} days on {date}}}'**
+  String dailyOsNextStateOverdueOnDate(int days, String date);
 
   /// No description provided for @dailyOsNextStateRecurringMissed.
   ///

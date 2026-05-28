@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -89,26 +90,27 @@ class _StateBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final messages = context.messages;
     final (color, icon, label) = switch (item.reason) {
       PendingItemReason.overdue => (
         tokens.colors.alert.error.defaultColor,
         Icons.warning_amber_rounded,
-        context.messages.dailyOsNextStateOverdue(item.overdueByDays ?? 0),
+        _overdueLabel(context, item),
       ),
       PendingItemReason.inProgress => (
         tokens.colors.alert.warning.defaultColor,
         Icons.adjust_rounded,
-        context.messages.dailyOsNextStateInProgress(item.sessionCount ?? 0),
+        messages.dailyOsNextStateInProgress(item.sessionCount ?? 0),
       ),
       PendingItemReason.missedRecurring => (
         tokens.colors.alert.info.defaultColor,
         Icons.refresh_rounded,
-        context.messages.dailyOsNextStateRecurringMissed,
+        messages.dailyOsNextStateRecurringMissed,
       ),
       PendingItemReason.dueToday => (
         tokens.colors.interactive.enabled,
         Icons.today_rounded,
-        context.messages.dailyOsNextStateDueToday,
+        _dueLabel(context, item),
       ),
     };
     return Container(
@@ -135,6 +137,31 @@ class _StateBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+String _dueLabel(BuildContext context, PendingItem item) {
+  final referenceDate = item.referenceDate;
+  if (referenceDate == null) return context.messages.dailyOsNextStateDueToday;
+  return context.messages.dailyOsNextStateDueOnDate(
+    _formatReferenceDate(context, referenceDate),
+  );
+}
+
+String _overdueLabel(BuildContext context, PendingItem item) {
+  final overdueByDays = item.overdueByDays ?? 0;
+  final referenceDate = item.referenceDate;
+  if (referenceDate == null) {
+    return context.messages.dailyOsNextStateOverdue(overdueByDays);
+  }
+  return context.messages.dailyOsNextStateOverdueOnDate(
+    overdueByDays,
+    _formatReferenceDate(context, referenceDate),
+  );
+}
+
+String _formatReferenceDate(BuildContext context, DateTime date) {
+  final locale = Localizations.localeOf(context).toString();
+  return DateFormat.MMMd(locale).format(date);
 }
 
 class _TriageButtonRow extends StatelessWidget {

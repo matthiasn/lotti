@@ -247,6 +247,7 @@ void main() {
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
             decidedTaskIds: any(named: 'decidedTaskIds'),
+            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
           ),
         ).thenAnswer((_) async => true);
         when(
@@ -257,6 +258,7 @@ void main() {
           return adapter.draftDayPlan(
             captureId: const CaptureId('cap_1'),
             decidedTaskIds: const ['t_1'],
+            decidedCaptureItemIds: const ['parsed_1'],
             dayDate: _asOf,
           );
         });
@@ -281,6 +283,7 @@ void main() {
             dayDate: _asOf,
             captureId: 'cap_1',
             decidedTaskIds: ['t_1'],
+            decidedCaptureItemIds: ['parsed_1'],
           ),
         ).called(1);
       },
@@ -308,6 +311,7 @@ void main() {
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
             decidedTaskIds: any(named: 'decidedTaskIds'),
+            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
           ),
         );
       },
@@ -336,6 +340,7 @@ void main() {
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
             decidedTaskIds: any(named: 'decidedTaskIds'),
+            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
           ),
         ).thenAnswer((_) async => false);
 
@@ -1170,7 +1175,9 @@ void main() {
           ],
         );
 
-        final items = await adapter.surfacePendingDecisions(forDate: _asOf);
+        final items = await withClock(Clock.fixed(_asOf), () {
+          return adapter.surfacePendingDecisions(forDate: _asOf);
+        });
         expect(items.map((i) => i.reason), [
           PendingItemReason.overdue,
           PendingItemReason.inProgress,
@@ -1179,10 +1186,57 @@ void main() {
         ]);
         // overdueByDays is only populated for the overdue reason with a
         // non-null due date.
-        expect(items[0].overdueByDays, isNotNull);
-        expect(items[0].overdueByDays! > 0, isTrue);
+        expect(items[0].overdueByDays, 3);
+        expect(items[0].referenceDate, isNull);
         expect(items[1].overdueByDays, isNull);
         expect(items[3].overdueByDays, isNull);
+      },
+    );
+
+    test(
+      'computes overdue age and label reference from the selected plan date',
+      () async {
+        const agentId = 'agent-future-pending';
+        final selectedDate = DateTime(2026, 5, 30, 9);
+        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => captureService.surfacePendingDecisions(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            DayAgentPendingItem(
+              taskId: 't-overdue',
+              title: 'Overdue',
+              kind: DayAgentPendingKind.overdue,
+              status: 'OPEN',
+              categoryId: null,
+              due: DateTime(2026, 5, 25),
+            ),
+            const DayAgentPendingItem(
+              taskId: 't-due',
+              title: 'Due',
+              kind: DayAgentPendingKind.dueToday,
+              status: 'OPEN',
+              categoryId: null,
+            ),
+          ],
+        );
+
+        final items = await withClock(Clock.fixed(_asOf), () {
+          return adapter.surfacePendingDecisions(forDate: selectedDate);
+        });
+
+        expect(items[0].overdueByDays, 5);
+        expect(items[0].referenceDate, DateTime(2026, 5, 30));
+        expect(items[1].referenceDate, DateTime(2026, 5, 30));
       },
     );
 
@@ -1393,6 +1447,7 @@ void main() {
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
             decidedTaskIds: any(named: 'decidedTaskIds'),
+            decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -2013,9 +2068,8 @@ void main() {
         ]);
         // Untitled fallback applied to the buffer with empty title.
         expect(result.blocks[2].title, 'Untitled');
-        // Buffers and dropped blocks are excluded from scheduledMinutes,
-        // since buffers are transitions and dropped blocks were removed.
-        expect(result.scheduledMinutes, 60 + 60 + 60);
+        // Buffers still reserve day capacity; dropped blocks do not.
+        expect(result.scheduledMinutes, 60 + 60 + 15 + 60);
 
         // Agenda: task-1 groups its non-buffer non-dropped blocks; the
         // standalone manual block becomes its own agenda item. The

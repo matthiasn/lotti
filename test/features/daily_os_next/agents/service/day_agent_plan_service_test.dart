@@ -140,6 +140,15 @@ void main() {
                 'end': DateTime(2026, 5, 25, 10, 15).toIso8601String(),
                 'type': 'buffer',
               },
+              {
+                'id': 'block-3',
+                'title': 'Dropped errand',
+                'categoryId': 'life',
+                'start': DateTime(2026, 5, 25, 10, 15).toIso8601String(),
+                'end': DateTime(2026, 5, 25, 10, 45).toIso8601String(),
+                'type': 'manual',
+                'state': 'dropped',
+              },
             ],
             rawEnergyBands: [
               {
@@ -155,13 +164,14 @@ void main() {
         expect(plan.id, 'day_agent_plan:$_dayId');
         expect(plan.capacityMinutes, 360);
         expect(plan.scheduledMinutes, 75);
-        expect(plan.data.plannedBlocks, hasLength(2));
+        expect(plan.data.plannedBlocks, hasLength(3));
         expect(plan.data.pinnedTasks.single.taskId, 'task-1');
         expect(
           plan.data.plannedBlocks.first.reason,
           'High-energy focus window.',
         );
-        expect(plan.data.plannedBlocks.last.type, PlannedBlockType.buffer);
+        expect(plan.data.plannedBlocks[1].type, PlannedBlockType.buffer);
+        expect(plan.data.plannedBlocks.last.state, PlannedBlockState.dropped);
         expect(plan.energyBands.single.level, DayAgentEnergyLevel.high);
         expect(upsertedEntities.single, isA<DayPlanEntity>());
         expect(upsertedLinks.single, isA<CaptureToPlanLink>());

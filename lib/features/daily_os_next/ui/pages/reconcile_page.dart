@@ -277,29 +277,34 @@ class _ReconcileFooter extends StatelessWidget {
   final ReconcileParams params;
   final ReconcileData data;
 
-  /// Task ids the user has effectively committed to taking on today —
-  /// matched/update parsed items, plus pending items triaged to
-  /// `today` / `doNow`. Used as the input to `draft_day_plan`.
-  List<String> _committedTaskIds() {
-    final ids = <String>{};
+  /// The work the user has effectively committed to taking on today.
+  ///
+  /// Matched/update parsed items and pending triage rows carry task IDs.
+  /// NEW/unlinked parsed items carry parsed capture item IDs so drafting can
+  /// still create tasks from the approved capture text before placing them.
+  ({List<String> taskIds, List<String> captureItemIds}) _draftingSelections() {
+    final taskIds = <String>{};
+    final captureItemIds = <String>{};
     for (final item in data.parsed) {
       if (item.kind == ParsedItemKind.matched ||
           item.kind == ParsedItemKind.update) {
-        if (item.matchedTaskId != null) ids.add(item.matchedTaskId!);
+        final taskId = item.matchedTaskId;
+        if (taskId != null) {
+          taskIds.add(taskId);
+        } else {
+          captureItemIds.add(item.id);
+        }
       } else {
-        // For NEW items we don't yet have a task id (the mock won't
-        // mint one until the day-agent layer lands). Use the parsed
-        // item id as a stable surrogate so the count is right.
-        ids.add(item.id);
+        captureItemIds.add(item.id);
       }
     }
     for (final entry in data.triageDecisions.entries) {
       final action = entry.value.action;
       if (action == TriageAction.today || action == TriageAction.doNow) {
-        ids.add(entry.key);
+        taskIds.add(entry.key);
       }
     }
-    return ids.toList();
+    return (taskIds: taskIds.toList(), captureItemIds: captureItemIds.toList());
   }
 
   @override
@@ -340,11 +345,13 @@ class _ReconcileFooter extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
+              final selections = _draftingSelections();
               Navigator.of(context).push<void>(
                 MaterialPageRoute<void>(
                   builder: (_) => DraftingPage(
                     captureId: params.captureId,
-                    decidedTaskIds: _committedTaskIds(),
+                    decidedTaskIds: selections.taskIds,
+                    decidedCaptureItemIds: selections.captureItemIds,
                     dayDate: params.dayDate,
                     returnToRootOnReady: true,
                   ),

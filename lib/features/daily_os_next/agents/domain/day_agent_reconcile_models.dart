@@ -26,6 +26,10 @@ const dayAgentRefineReason = 'refine';
 /// "decided" (one the user said yes to and wants placed in the day plan).
 const dayAgentDecidedTaskPrefix = 'decided_task:';
 
+/// Wake trigger token prefix used to advertise a parsed capture item the UI
+/// considers "decided" but which does not have a persisted task ID yet.
+const dayAgentDecidedCaptureItemPrefix = 'decided_capture_item:';
+
 /// Minimum score that becomes an auto-linked match.
 const dayAgentHighConfidenceThreshold = 0.75;
 
@@ -262,17 +266,34 @@ String dayAgentDecidedTaskToken(String taskId) {
   return '$dayAgentDecidedTaskPrefix$taskId';
 }
 
+/// Creates the decided capture-item trigger token for [parsedItemId].
+String dayAgentDecidedCaptureItemToken(String parsedItemId) {
+  return '$dayAgentDecidedCaptureItemPrefix$parsedItemId';
+}
+
 /// Extracts every decided-task ID advertised on a trigger-token set.
 ///
 /// Returns IDs trimmed of surrounding whitespace, in iteration order of the
 /// input set. Skips prefix-only and whitespace-only tokens. Returns an empty
 /// list when no decided-task tokens are present.
-List<String> decidedTaskIdsFromTriggerTokens(Set<String> triggerTokens) {
+List<String> decidedTaskIdsFromTriggerTokens(Set<String> triggerTokens) =>
+    _idsForPrefix(triggerTokens, dayAgentDecidedTaskPrefix);
+
+/// Extracts every decided capture-item ID advertised on a trigger-token set.
+///
+/// These IDs refer to parsed capture items rather than journal tasks. They let
+/// drafting carry approved NEW/unlinked items forward so the model can create
+/// tasks before placing them.
+List<String> decidedCaptureItemIdsFromTriggerTokens(
+  Set<String> triggerTokens,
+) => _idsForPrefix(triggerTokens, dayAgentDecidedCaptureItemPrefix);
+
+List<String> _idsForPrefix(Set<String> tokens, String prefix) {
   final out = <String>[];
-  for (final token in triggerTokens) {
-    if (token.startsWith(dayAgentDecidedTaskPrefix)) {
-      final taskId = token.substring(dayAgentDecidedTaskPrefix.length).trim();
-      if (taskId.isNotEmpty) out.add(taskId);
+  for (final token in tokens) {
+    if (token.startsWith(prefix)) {
+      final id = token.substring(prefix.length).trim();
+      if (id.isNotEmpty) out.add(id);
     }
   }
   return out;

@@ -3130,6 +3130,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'Entendido.';
 
   @override
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Se denegó el permiso del micrófono.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
+      'No hay ninguna sesión en tiempo real activa.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoAudioRecorded =>
+      'No se grabó ningún audio.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
+      'Falló la transcripción en tiempo real.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
+      'No se pudo iniciar la transcripción en tiempo real.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingStartFailed =>
+      'No se pudo iniciar la grabación.';
+
+  @override
+  String get dailyOsNextCaptureErrorTranscriptionFailed =>
+      'Falló la transcripción.';
+
+  @override
   String get dailyOsNextCaptureHeadlineLead => '¿Qué tienes en mente';
 
   @override
@@ -3486,6 +3514,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextShutdownTomorrowOverline => '✦ PARA MAÑANA';
 
   @override
+  String dailyOsNextStateDueOnDate(String date) {
+    return 'Vence el $date';
+  }
+
+  @override
   String get dailyOsNextStateDueToday => 'Vence hoy';
 
   @override
@@ -3508,6 +3541,18 @@ class AppLocalizationsEs extends AppLocalizations {
       other: 'Atrasado · $days días',
       one: 'Atrasado · 1 día',
       zero: 'Atrasado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdueOnDate(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Atrasado $days días el $date',
+      one: 'Atrasado 1 día el $date',
+      zero: 'Atrasado el $date',
     );
     return '$_temp0';
   }

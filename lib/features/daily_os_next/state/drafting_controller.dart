@@ -26,10 +26,12 @@ class DraftingParams {
     required this.captureId,
     required this.decidedTaskIds,
     required this.dayDate,
+    this.decidedCaptureItemIds = const [],
   });
 
   final CaptureId captureId;
   final List<String> decidedTaskIds;
+  final List<String> decidedCaptureItemIds;
   final DateTime dayDate;
 
   @override
@@ -38,11 +40,16 @@ class DraftingParams {
       other is DraftingParams &&
           captureId == other.captureId &&
           dayDate == other.dayDate &&
-          listEquals(decidedTaskIds, other.decidedTaskIds);
+          listEquals(decidedTaskIds, other.decidedTaskIds) &&
+          listEquals(decidedCaptureItemIds, other.decidedCaptureItemIds);
 
   @override
-  int get hashCode =>
-      Object.hash(captureId, dayDate, Object.hashAll(decidedTaskIds));
+  int get hashCode => Object.hash(
+    captureId,
+    dayDate,
+    Object.hashAll(decidedTaskIds),
+    Object.hashAll(decidedCaptureItemIds),
+  );
 }
 
 /// Snapshot the Drafting screen renders against.
@@ -103,6 +110,7 @@ class DraftingController extends AsyncNotifier<DraftingState> {
     final draftFuture = agent.draftDayPlan(
       captureId: params.captureId,
       decidedTaskIds: params.decidedTaskIds,
+      decidedCaptureItemIds: params.decidedCaptureItemIds,
       dayDate: params.dayDate,
       isCancelled: () => disposed,
     );

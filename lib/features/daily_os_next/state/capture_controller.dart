@@ -43,6 +43,17 @@ enum CapturePhase {
   error,
 }
 
+/// Localizable capture failures surfaced by the UI.
+enum CaptureError {
+  microphonePermissionDenied,
+  recordingStartFailed,
+  realtimeTranscriptionStartFailed,
+  noActiveRealtimeSession,
+  realtimeTranscriptionFailed,
+  noAudioRecorded,
+  transcriptionFailed,
+}
+
 /// State held by [CaptureController].
 @immutable
 class CaptureState {
@@ -52,7 +63,7 @@ class CaptureState {
     required this.amplitudes,
     this.partialTranscript = '',
     this.audioId,
-    this.errorMessage,
+    this.error,
   });
 
   const CaptureState.idle()
@@ -61,7 +72,7 @@ class CaptureState {
       partialTranscript = '',
       amplitudes = const <double>[],
       audioId = null,
-      errorMessage = null;
+      error = null;
 
   final CapturePhase phase;
 
@@ -81,9 +92,9 @@ class CaptureState {
   /// no audio is available yet (e.g. in [CapturePhase.idle]).
   final String? audioId;
 
-  /// Human-readable failure message; surfaced under the voice button in
+  /// Localizable failure code surfaced under the voice button in
   /// [CapturePhase.error].
-  final String? errorMessage;
+  final CaptureError? error;
 
   CaptureState copyWith({
     CapturePhase? phase,
@@ -91,7 +102,7 @@ class CaptureState {
     String? partialTranscript,
     List<double>? amplitudes,
     String? audioId,
-    String? errorMessage,
+    CaptureError? error,
   }) {
     return CaptureState(
       phase: phase ?? this.phase,
@@ -99,7 +110,7 @@ class CaptureState {
       partialTranscript: partialTranscript ?? this.partialTranscript,
       amplitudes: amplitudes ?? this.amplitudes,
       audioId: audioId ?? this.audioId,
-      errorMessage: errorMessage ?? this.errorMessage,
+      error: error ?? this.error,
     );
   }
 }
@@ -271,7 +282,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'Microphone permission was denied.',
+        error: CaptureError.microphonePermissionDenied,
       );
       return;
     }
@@ -285,13 +296,21 @@ class CaptureController extends Notifier<CaptureState> {
           numChannels: 1,
         ),
       );
-    } catch (e) {
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription('while starting the realtime PCM stream'),
+        ),
+      );
       await recorder.dispose();
-      state = CaptureState(
+      state = const CaptureState(
         phase: CapturePhase.error,
         transcript: '',
-        amplitudes: const <double>[],
-        errorMessage: 'Failed to start recording: $e',
+        amplitudes: <double>[],
+        error: CaptureError.recordingStartFailed,
       );
       return;
     }
@@ -338,13 +357,23 @@ class CaptureController extends Notifier<CaptureState> {
         onDelta: _onRealtimeDelta,
         config: _activeRealtimeConfig,
       );
-    } catch (e) {
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription(
+            'while starting realtime transcription',
+          ),
+        ),
+      );
       await _cleanupRealtime(disposeRecorder: true);
-      state = CaptureState(
+      state = const CaptureState(
         phase: CapturePhase.error,
         transcript: '',
-        amplitudes: const <double>[],
-        errorMessage: 'Failed to start realtime transcription: $e',
+        amplitudes: <double>[],
+        error: CaptureError.realtimeTranscriptionStartFailed,
       );
     }
   }
@@ -366,7 +395,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'Microphone permission was denied.',
+        error: CaptureError.microphonePermissionDenied,
       );
       return;
     }
@@ -376,7 +405,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'Failed to start recording.',
+        error: CaptureError.recordingStartFailed,
       );
       return;
     }
@@ -427,7 +456,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'No active realtime session.',
+        error: CaptureError.noActiveRealtimeSession,
       );
       return;
     }
@@ -446,13 +475,21 @@ class CaptureController extends Notifier<CaptureState> {
         },
         outputPath: outputBase,
       );
-    } catch (e) {
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription('while stopping realtime transcription'),
+        ),
+      );
       await _cleanupRealtime(disposeRecorder: true);
-      state = CaptureState(
+      state = const CaptureState(
         phase: CapturePhase.error,
         transcript: '',
-        amplitudes: const <double>[],
-        errorMessage: 'Realtime transcription failed: $e',
+        amplitudes: <double>[],
+        error: CaptureError.realtimeTranscriptionFailed,
       );
       return;
     }
@@ -560,7 +597,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'No audio recorded.',
+        error: CaptureError.noAudioRecorded,
       );
       _recordingStartedAt = null;
       _activeIsRealtime = null;
@@ -584,7 +621,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'Transcription failed.',
+        error: CaptureError.transcriptionFailed,
       );
       _recordingNote = null;
       _recordingStartedAt = null;

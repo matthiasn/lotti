@@ -369,6 +369,7 @@ class _NullAgent implements DayAgentInterface {
     required CaptureId captureId,
     required List<String> decidedTaskIds,
     required DateTime dayDate,
+    List<String> decidedCaptureItemIds = const [],
     List<TimeBlock> calendarBlocks = const [],
     bool Function()? isCancelled,
   }) async => DraftPlan(
