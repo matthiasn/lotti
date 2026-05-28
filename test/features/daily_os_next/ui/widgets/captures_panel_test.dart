@@ -12,6 +12,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import '../../../../widget_test_utils.dart';
 
 final _date = DateTime(2026, 5, 26);
+final StreamProvider<int> _capturesReloadTickProvider = StreamProvider<int>(
+  (ref) => const Stream<int>.empty(),
+);
 
 CaptureEntity _capture({
   required String id,
@@ -211,6 +214,55 @@ void main() {
 
       final messages = tester.element(find.byType(CapturesPanel)).messages;
       expect(find.text(messages.dailyOsNextCapturesPanelTitle), findsNothing);
+    });
+
+    testWidgets('keeps previous captures visible during dependency reloads', (
+      tester,
+    ) async {
+      final captures = [
+        _row(
+          id: 'c1',
+          transcript: 'pick up groceries',
+          at: DateTime(2026, 5, 26, 9, 5),
+        ),
+      ];
+      final pendingReload = Completer<List<CaptureWithAudio>>();
+      final reloadTicks = StreamController<int>.broadcast();
+      addTearDown(() {
+        if (!pendingReload.isCompleted) pendingReload.complete(captures);
+        return reloadTicks.close();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            _capturesReloadTickProvider.overrideWith(
+              (ref) => reloadTicks.stream,
+            ),
+            capturesForDateProvider.overrideWith((ref, _) {
+              final tick = ref.watch(_capturesReloadTickProvider).value ?? 0;
+              if (tick == 0) return captures;
+              return pendingReload.future;
+            }),
+          ],
+          child: makeTestableWidget2(
+            Material(child: CapturesPanel(date: _date)),
+            mediaQueryData: const MediaQueryData(size: Size(800, 1000)),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(CapturesPanel)).messages;
+      expect(find.text(messages.dailyOsNextCapturesPanelTitle), findsOneWidget);
+      expect(find.text('·  1'), findsOneWidget);
+
+      reloadTicks.add(1);
+      await tester.idle();
+      await tester.pump();
+
+      expect(find.text(messages.dailyOsNextCapturesPanelTitle), findsOneWidget);
+      expect(find.text('·  1'), findsOneWidget);
     });
   });
 }

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 
 /// Intent-first projection of the [DraftPlan]. One [AgendaCard] per
@@ -23,15 +28,15 @@ class AgendaView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _StatStrip(draft: draft),
-          SizedBox(height: tokens.spacing.step5),
+          SizedBox(height: tokens.spacing.step4),
           for (final (index, item) in draft.agendaItems.indexed) ...[
-            AgendaCard(
+            _LiveAgendaCard(
               index: index + 1,
               item: item,
               whyReason: _whyReasonFor(item),
               onTap: _taskTapFor(item),
             ),
-            SizedBox(height: tokens.spacing.step4),
+            SizedBox(height: tokens.spacing.step3),
           ],
           if (draft.agendaItems.isEmpty) const _AgendaEmptyState(),
         ],
@@ -56,6 +61,41 @@ class AgendaView extends StatelessWidget {
     final taskId = item.taskId;
     if (taskId == null || taskId.isEmpty) return null;
     return () => beamToNamed('/tasks/$taskId');
+  }
+}
+
+class _LiveAgendaCard extends ConsumerWidget {
+  const _LiveAgendaCard({
+    required this.index,
+    required this.item,
+    required this.whyReason,
+    required this.onTap,
+  });
+
+  final int index;
+  final AgendaItem item;
+  final String? whyReason;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final taskId = item.taskId;
+    final task = taskId == null || !_canResolveLiveTaskTitles()
+        ? null
+        : ref.watch(taskLiveDataProvider(taskId)).value;
+    final liveTitle = task?.data.title.trim();
+    return AgendaCard(
+      index: index,
+      item: item,
+      displayTitle: liveTitle == null || liveTitle.isEmpty ? null : liveTitle,
+      whyReason: whyReason,
+      onTap: onTap,
+    );
+  }
+
+  bool _canResolveLiveTaskTitles() {
+    return getIt.isRegistered<JournalDb>() &&
+        getIt.isRegistered<UpdateNotifications>();
   }
 }
 

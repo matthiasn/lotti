@@ -76,7 +76,10 @@ Runtime behavior:
   visible on Capture and Day surfaces. Capture submissions use that selected
   date for day-agent routing, Reconcile carries it into pending decisions, and
   Drafting returns to the root after the plan persists so the date-aware shell
-  remains in control.
+  remains in control. Background agent or sync updates reload the current plan
+  stale-while-revalidate: the root keeps rendering the last Capture or Day
+  surface while the provider re-fetches, and only shows the loading shell for
+  the initial route load.
 - `DailyOsPreferencesController` persists Daily OS personalization in
   `SettingsDb`. The user's display name is edited from Settings > Advanced >
   About and read by the Capture greeting. Category exclusions are edited from

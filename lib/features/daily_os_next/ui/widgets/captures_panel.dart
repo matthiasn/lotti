@@ -27,6 +27,8 @@ class _CapturesPanelState extends ConsumerState<CapturesPanel> {
     final asyncCaptures = ref.watch(capturesForDateProvider(widget.date));
     final tokens = context.designTokens;
     return asyncCaptures.maybeWhen(
+      skipLoadingOnReload: true,
+      skipError: true,
       orElse: () => const SizedBox.shrink(),
       data: (captures) {
         if (captures.isEmpty) return const SizedBox.shrink();
