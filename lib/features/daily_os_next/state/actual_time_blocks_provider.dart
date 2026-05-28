@@ -19,12 +19,13 @@ const _fallbackActualCategory = DayAgentCategory(
 );
 
 // ignore: specify_nonobvious_property_types
-final dailyOsActualTimeUpdateProvider = StreamProvider.autoDispose
-    .family<Set<String>, DateTime>((ref, _) {
-      final notifications = ref.watch(maybeUpdateNotificationsProvider);
-      if (notifications == null) return const Stream<Set<String>>.empty();
-      return actualTimelineUpdateBatches(notifications.updateStream);
-    });
+final dailyOsActualTimeUpdateProvider = StreamProvider.autoDispose<Set<String>>(
+  (ref) {
+    final notifications = ref.watch(maybeUpdateNotificationsProvider);
+    if (notifications == null) return const Stream<Set<String>>.empty();
+    return actualTimelineUpdateBatches(notifications.updateStream);
+  },
+);
 
 @visibleForTesting
 Stream<Set<String>> actualTimelineUpdateBatches(Stream<Set<String>> updates) {
@@ -34,7 +35,7 @@ Stream<Set<String>> actualTimelineUpdateBatches(Stream<Set<String>> updates) {
 // ignore: specify_nonobvious_property_types
 final dailyOsActualTimeBlocksProvider = FutureProvider.autoDispose
     .family<List<TimeBlock>, DateTime>((ref, date) async {
-      ref.watch(dailyOsActualTimeUpdateProvider(date));
+      ref.watch(dailyOsActualTimeUpdateProvider);
       final db = ref.watch(journalDbProvider);
       final dayStart = date.dayAtMidnight;
       final dayEnd = dayStart.add(const Duration(days: 1));
@@ -142,11 +143,15 @@ DayAgentCategory _projectCategory(
 ) {
   if (categoryId == null || categoryId.isEmpty) return _fallbackActualCategory;
   final category = categoryById(categoryId);
+  final rawColor = (category?.color ?? _fallbackActualCategory.colorHex)
+      .replaceFirst('#', '');
+  final normalizedColor = rawColor.length >= 6
+      ? rawColor.substring(0, 6)
+      : _fallbackActualCategory.colorHex;
   return DayAgentCategory(
     id: categoryId,
     name: category?.name ?? categoryId,
-    colorHex: (category?.color ?? _fallbackActualCategory.colorHex)
-        .replaceFirst('#', ''),
+    colorHex: normalizedColor,
   );
 }
 

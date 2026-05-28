@@ -126,6 +126,7 @@ class _DayTimelineState extends State<DayTimeline> {
     final actualBlocks = widget.actualBlocks ?? widget.draft.actualBlocks;
     final foldingState = _TimelineFoldingState.fromBlocks(
       blocks: [...widget.draft.blocks, ...actualBlocks],
+      dayDate: widget.draft.dayDate,
       startHour: widget.startHour,
       endHour: widget.endHour,
       expandedRegionStarts: _expandedFoldRegionStarts,
@@ -503,18 +504,29 @@ class _TimelineFoldingState {
   });
   factory _TimelineFoldingState.fromBlocks({
     required List<TimeBlock> blocks,
+    required DateTime dayDate,
     required int startHour,
     required int endHour,
     required Set<int> expandedRegionStarts,
     required double collapsedHourHeight,
   }) {
     final occupiedHours = <int>{};
+    final dayStart = DateTime(dayDate.year, dayDate.month, dayDate.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
 
     for (final block in blocks) {
-      final start = block.start.hour;
-      final crossesMidnight = !_sameDay(block.start, block.end);
-      final rawEnd = block.end.hour + (block.end.minute > 0 ? 1 : 0);
-      final end = crossesMidnight ? 24 : rawEnd;
+      final effectiveStart = block.start.isBefore(dayStart)
+          ? dayStart
+          : block.start;
+      final effectiveEnd = block.end.isAfter(dayEnd) ? dayEnd : block.end;
+      if (!effectiveStart.isBefore(effectiveEnd)) continue;
+
+      final start = effectiveStart.hour;
+      final end = effectiveEnd == dayEnd
+          ? 24
+          : effectiveEnd.hour + (effectiveEnd.minute > 0 ? 1 : 0);
+      if (start >= endHour || end <= startHour) continue;
+
       final clampedStart = start.clamp(startHour, endHour - 1);
       final clampedEnd = end.clamp(startHour + 1, endHour);
       for (var hour = clampedStart; hour < clampedEnd; hour++) {
@@ -661,9 +673,6 @@ class _TimelineFoldingState {
     }
     return position;
   }
-
-  static bool _sameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
 sealed class _TimelineRegion {
@@ -1125,7 +1134,8 @@ class _SharedHourRail extends StatelessWidget {
   }
 
   String _formatHour(int hour24) {
-    return '${(hour24 % 24).toString().padLeft(2, '0')}:00';
+    final displayHour = hour24 == 24 ? 24 : hour24 % 24;
+    return '${displayHour.toString().padLeft(2, '0')}:00';
   }
 
   String _formatNow(DateTime now) {
@@ -1217,12 +1227,14 @@ class _FoldRegionToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     if (!region.isExpanded) {
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: _CompressedFoldSurface(
-          region: region,
-          label: _formatFoldRange(region),
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: _CompressedFoldSurface(
+            region: region,
+            label: _formatFoldRange(region),
+          ),
         ),
       );
     }

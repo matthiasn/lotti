@@ -3161,7 +3161,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dailyOsNextCapturePastPrompt(String date) {
-    return '¿Quieres registrar algo pendiente de $date?';
+    return '¿Quieres registrar algo del $date?';
   }
 
   @override
@@ -3598,7 +3598,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration registrado · $completedCount hechas';
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount hechas',
+      one: '1 hecha',
+    );
+    return '$duration registrado · $_temp0';
   }
 
   @override

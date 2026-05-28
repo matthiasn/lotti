@@ -12,6 +12,9 @@ void main() {
 
     setUp(() async {
       mocks = await setUpTestGetIt();
+      when(
+        () => mocks.settingsDb.itemsByKeys(any()),
+      ).thenAnswer((_) async => const <String, String>{});
       container = ProviderContainer();
     });
 

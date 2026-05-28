@@ -13,10 +13,10 @@ const dailyOsExcludedCategoryIdsSettingsKey = 'DAILY_OS_EXCLUDED_CATEGORY_IDS';
 
 @immutable
 class DailyOsPreferences {
-  const DailyOsPreferences({
+  DailyOsPreferences({
     this.userName = '',
-    this.excludedCategoryIds = const <String>{},
-  });
+    Set<String> excludedCategoryIds = const <String>{},
+  }) : excludedCategoryIds = Set<String>.unmodifiable(excludedCategoryIds);
 
   final String userName;
   final Set<String> excludedCategoryIds;
@@ -47,7 +47,7 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   @override
   DailyOsPreferences build() {
     unawaited(_load());
-    return const DailyOsPreferences();
+    return DailyOsPreferences();
   }
 
   Future<void> _load() async {

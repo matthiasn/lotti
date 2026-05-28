@@ -47,7 +47,7 @@ class ProcessingCategoryFilterButton extends ConsumerWidget {
         .read(dailyOsPreferencesControllerProvider.notifier)
         .setIncludedCategoryIds(
           includedCategoryIds: selected.map((category) => category.id).toSet(),
-          allCategoryIds: _activeCategoryIds(),
+          allCategoryIds: allCategoryIds,
         );
   }
 }

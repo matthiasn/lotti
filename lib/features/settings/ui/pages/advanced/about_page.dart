@@ -58,7 +58,9 @@ class _AboutBodyState extends ConsumerState<AboutBody> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
+    _nameController = TextEditingController(
+      text: ref.read(dailyOsPreferencesControllerProvider).userName,
+    );
     _nameFocusNode = FocusNode();
     getVersions();
   }
@@ -83,11 +85,14 @@ class _AboutBodyState extends ConsumerState<AboutBody> {
     }
 
     final tokens = context.designTokens;
-    final dailyOsPrefs = ref.watch(dailyOsPreferencesControllerProvider);
-    if (!_nameFocusNode.hasFocus &&
-        _nameController.text != dailyOsPrefs.userName) {
-      _nameController.text = dailyOsPrefs.userName;
-    }
+    ref.listen<String>(
+      dailyOsPreferencesControllerProvider.select((prefs) => prefs.userName),
+      (previous, next) {
+        if (!_nameFocusNode.hasFocus && _nameController.text != next) {
+          _nameController.text = next;
+        }
+      },
+    );
 
     return FutureBuilder<int>(
       future: getIt<JournalDb>().getJournalCount(),

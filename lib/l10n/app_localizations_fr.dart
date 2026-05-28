@@ -3180,7 +3180,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextCaptureTranscriptLabel => 'Relis la transcription';
 
   @override
-  String get dailyOsNextCaptureTypeInstead => 'Écris plutôt';
+  String get dailyOsNextCaptureTypeInstead => 'Écrire plutôt';
 
   @override
   String get dailyOsNextCaptureVoiceButtonReset => 'Recommencer';
