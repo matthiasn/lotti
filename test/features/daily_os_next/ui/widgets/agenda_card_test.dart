@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -24,7 +23,9 @@ const _category = DayAgentCategory(
 
 void main() {
   group('AgendaCard', () {
-    testWidgets('renders title, outcome and an estimate chip', (tester) async {
+    testWidgets('renders title, outcome and inline estimate metadata', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           const Material(
@@ -52,7 +53,9 @@ void main() {
       expect(find.text('120m'), findsOneWidget);
     });
 
-    testWidgets('shows WhyChip when a whyReason is provided', (tester) async {
+    testWidgets('shows why metadata when a whyReason is provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           const Material(
@@ -71,10 +74,14 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(WhyChip), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
+      expect(find.text('WHY'), findsOneWidget);
+      expect(find.byTooltip('High-energy window 8–10:30.'), findsOneWidget);
     });
 
-    testWidgets('omits WhyChip when no reason is provided', (tester) async {
+    testWidgets('omits why metadata when no reason is provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           const Material(
@@ -92,7 +99,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(WhyChip), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
+      expect(find.text('WHY'), findsNothing);
     });
 
     testWidgets('invokes onTap when the card is tapped', (tester) async {

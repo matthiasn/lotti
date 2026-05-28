@@ -82,6 +82,8 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   Widget build(BuildContext context) {
     final asyncPlan = ref.watch(currentDraftPlanProvider(_selectedDate));
     return asyncPlan.when(
+      skipLoadingOnReload: true,
+      skipError: true,
       loading: () => const _LoadingShell(),
       error: (e, _) => _ErrorShell(error: '$e'),
       data: (plan) {

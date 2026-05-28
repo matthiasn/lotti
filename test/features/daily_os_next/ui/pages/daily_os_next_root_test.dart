@@ -16,6 +16,10 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
+final StreamProvider<int> _dailyOsRootReloadTickProvider = StreamProvider<int>(
+  (ref) => const Stream<int>.empty(),
+);
+
 Widget _wrap(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: overrides,
@@ -23,6 +27,30 @@ Widget _wrap(Widget child, {List<Override> overrides = const []}) {
       child,
       mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
     ),
+  );
+}
+
+const _category = DayAgentCategory(
+  id: 'cat',
+  name: 'Work',
+  colorHex: '5ED4B7',
+);
+
+DraftPlan _draftPlan() {
+  return DraftPlan(
+    dayDate: DateTime(2026, 5, 26),
+    blocks: const [],
+    bands: const [],
+    capacityMinutes: 240,
+    scheduledMinutes: 60,
+    agendaItems: const [
+      AgendaItem(
+        id: 'a',
+        title: 'Deep work',
+        category: _category,
+        linkedBlockIds: ['blk_1'],
+      ),
+    ],
   );
 }
 
@@ -93,26 +121,7 @@ void main() {
     testWidgets(
       'when a plan exists for the date, DayPage renders with the date strip',
       (tester) async {
-        const category = DayAgentCategory(
-          id: 'cat',
-          name: 'Work',
-          colorHex: '5ED4B7',
-        );
-        final plan = DraftPlan(
-          dayDate: DateTime(2026, 5, 26),
-          blocks: const [],
-          bands: const [],
-          capacityMinutes: 240,
-          scheduledMinutes: 60,
-          agendaItems: const [
-            AgendaItem(
-              id: 'a',
-              title: 'Deep work',
-              category: category,
-              linkedBlockIds: ['blk_1'],
-            ),
-          ],
-        );
+        final plan = _draftPlan();
         final realtimeService = MockRealtimeTranscriptionService();
         when(
           realtimeService.resolveRealtimeConfig,
@@ -140,6 +149,62 @@ void main() {
           expect(find.byType(DayPage), findsOneWidget);
           expect(find.byType(CapturePage), findsNothing);
           expect(find.text('Today'), findsOneWidget); // date strip label.
+        });
+      },
+    );
+
+    testWidgets(
+      'keeps rendered day content during provider dependency reloads',
+      (tester) async {
+        final plan = _draftPlan();
+        final pendingReload = Completer<DraftPlan?>();
+        final reloadTicks = StreamController<int>.broadcast();
+        addTearDown(() {
+          if (!pendingReload.isCompleted) pendingReload.complete(plan);
+          return reloadTicks.close();
+        });
+        final realtimeService = MockRealtimeTranscriptionService();
+        when(
+          realtimeService.resolveRealtimeConfig,
+        ).thenAnswer((_) async => null);
+        when(realtimeService.dispose).thenAnswer((_) async {});
+
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(realtimeService: realtimeService),
+                ),
+                capturesForDateProvider.overrideWith(
+                  (ref, _) async => const [],
+                ),
+                _dailyOsRootReloadTickProvider.overrideWith(
+                  (ref) => reloadTicks.stream,
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) {
+                  final tick =
+                      ref.watch(_dailyOsRootReloadTickProvider).value ?? 0;
+                  if (tick == 0) return plan;
+                  return pendingReload.future;
+                }),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(DayPage), findsOneWidget);
+          expect(find.text('Deep work'), findsOneWidget);
+
+          reloadTicks.add(1);
+          await tester.idle();
+          await tester.pump();
+
+          expect(find.byType(DayPage), findsOneWidget);
+          expect(find.text('Deep work'), findsOneWidget);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
         });
       },
     );

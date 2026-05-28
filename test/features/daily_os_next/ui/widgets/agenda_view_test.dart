@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -8,10 +10,12 @@ import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/entity_factories.dart';
 import '../../../../widget_test_utils.dart';
 
-Widget _wrap(Widget child) => makeTestableWidget2(
+Widget _wrap(Widget child) => makeTestableWidgetNoScroll(
   child,
   mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
 );
@@ -73,6 +77,47 @@ void main() {
       await tester.pump();
 
       expect(openedPath, isNull);
+    });
+
+    testWidgets('uses live task title for linked agenda items', (
+      tester,
+    ) async {
+      final updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final mocks = await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updates.stream);
+
+      var task = TestTaskFactory.create(
+        id: 't1',
+        title: 'Updated task title',
+      );
+      when(() => mocks.journalDb.journalEntityById('t1')).thenAnswer(
+        (_) async => task,
+      );
+
+      await tester.pumpWidget(
+        _wrap(AgendaView(draft: _draft(taskId: 't1'))),
+      );
+      await tester.pump();
+
+      expect(find.text('Updated task title'), findsOneWidget);
+      expect(find.text('Complete client animation'), findsNothing);
+
+      task = TestTaskFactory.create(
+        id: 't1',
+        title: 'Renamed from task detail',
+      );
+      updates.add({'t1'});
+      await tester.idle();
+      await tester.pump();
+      await tester.idle();
+      await tester.pump();
+
+      expect(find.text('Renamed from task detail'), findsOneWidget);
+      expect(find.text('Updated task title'), findsNothing);
     });
 
     testWidgets('comfortable capacity (< 90%) shows comfortable overline', (

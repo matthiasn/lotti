@@ -10,8 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lets typed capture start from the idle screen, filters processing categories,
   wraps mobile task titles, compares planned and actual timelines with a shared
   scroll/zoom surface, folds idle midnight-to-midnight day gaps with a 24-hour
-  time rail, shows recorded journal time in the Actual lane, and avoids
-  surfacing weeks-old overdue tasks in daily proposals.
+  time rail, shows recorded journal time in the Actual lane, keeps task-backed
+  agenda titles in sync, refreshes without whole-page loading flashes, and
+  avoids surfacing weeks-old overdue tasks in daily proposals.
 
 ## [0.9.1008]
 ### Added
