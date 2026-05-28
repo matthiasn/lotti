@@ -837,7 +837,11 @@ class SyncDatabase extends _$SyncDatabase {
   Stream<int> watchOutboxCount() {
     return customSelect(
       'SELECT COUNT(id) AS cnt FROM outbox '
-      'WHERE status IN (${OutboxStatus.pending.index}, $_outboxSendingStatus)',
+      'WHERE status IN (?, ?)',
+      variables: [
+        Variable.withInt(OutboxStatus.pending.index),
+        Variable.withInt(_outboxSendingStatus),
+      ],
       readsFrom: {outbox},
     ).watchSingle().map((row) => row.read<int>('cnt'));
   }

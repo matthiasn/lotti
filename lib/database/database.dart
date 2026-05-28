@@ -51,7 +51,7 @@ const String _createIdxJournalTaskStatusPrivateSql =
     "WHERE type = 'Task' AND task = 1 AND deleted = FALSE";
 
 const String _createIdxJournalQuantLatestSql =
-    'CREATE INDEX idx_journal_quant_latest '
+    'CREATE INDEX IF NOT EXISTS idx_journal_quant_latest '
     'ON journal(subtype COLLATE BINARY ASC, date_from COLLATE BINARY DESC) '
     "WHERE type = 'QuantitativeEntry' AND deleted = FALSE";
 
@@ -131,12 +131,7 @@ class JournalDb extends _$JournalDb {
         // PRAGMA is connection-local — must run on every connection.
         await customStatement('PRAGMA foreign_keys = ON');
         if (await _tableExists('journal')) {
-          await customStatement(
-            _createIdxJournalQuantLatestSql.replaceFirst(
-              'CREATE INDEX ',
-              'CREATE INDEX IF NOT EXISTS ',
-            ),
-          );
+          await customStatement(_createIdxJournalQuantLatestSql);
         }
       },
       onCreate: (Migrator m) async {

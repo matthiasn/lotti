@@ -294,7 +294,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     try {
       final uri = event.attachmentOrThumbnailMxcUrl();
       if (uri == null) return false;
-      await event.room.client.database.deleteFile(uri);
+      final room = event.room;
+      if (room == null) return false;
+      await room.client.database.deleteFile(uri);
       _logging.captureEvent(
         'smart.media.empty_bytes.purge path=$path mxc=$uri',
         domain: 'MATRIX_SERVICE',
