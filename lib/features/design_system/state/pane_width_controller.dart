@@ -121,12 +121,19 @@ class PaneWidthController extends _$PaneWidthController {
         sidebarCollapsed: sidebarCollapsed,
       );
     } catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
-        error,
-        domain: 'PANE_WIDTH',
-        subDomain: 'loadPersistedWidths',
-        stackTrace: stackTrace,
-      );
+      // Guard so a catch handler can never double-throw if LoggingService
+      // hasn't been registered (e.g. in widget tests that mount AppScreen
+      // without going through full app bootstrap). Without this, a swallow
+      // becomes a fatal "Bad state: GetIt: Object/factory with type
+      // LoggingService is not registered" that aborts pumpWidget.
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt<LoggingService>().captureException(
+          error,
+          domain: 'PANE_WIDTH',
+          subDomain: 'loadPersistedWidths',
+          stackTrace: stackTrace,
+        );
+      }
     }
   }
 

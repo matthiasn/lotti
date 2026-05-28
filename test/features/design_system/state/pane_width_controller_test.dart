@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../widget_test_utils.dart';
@@ -699,6 +700,33 @@ void main() {
       expect(result.sidebarWidth, defaultSidebarWidth);
       expect(result.listPaneWidth, defaultListPaneWidth);
     });
+
+    test(
+      'catch handler does not double-throw when LoggingService is missing',
+      () async {
+        // Reproduce a partially-bootstrapped GetIt: SettingsDb is registered
+        // but LoggingService is not (the exact shape that broke
+        // not_logged_in_toast_test in CI before the catch-block guard was
+        // added). The load must fail silently — no GetIt lookup error
+        // escaping into the test framework — and state must fall back to
+        // defaults.
+        container.dispose();
+        await tearDownTestGetIt();
+        final mocks = await setUpTestGetIt();
+        when(
+          () => mocks.settingsDb.itemsByKeys(any()),
+        ).thenThrow(Exception('database error'));
+        if (getIt.isRegistered<LoggingService>()) {
+          getIt.unregister<LoggingService>();
+        }
+        container = ProviderContainer();
+
+        final result = await _awaitHydration(container);
+        expect(result.sidebarWidth, defaultSidebarWidth);
+        expect(result.listPaneWidth, defaultListPaneWidth);
+        expect(getIt.isRegistered<LoggingService>(), isFalse);
+      },
+    );
 
     test('logs error when persist write fails', () {
       fakeAsync((async) {
