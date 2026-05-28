@@ -3145,9 +3145,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureListening => 'POSLOUCHÁM';
 
   @override
-  String get dailyOsNextCaptureOpenTasks => 'Procházet úkoly';
-
-  @override
   String dailyOsNextCapturePastPrompt(String date) {
     return 'Chceš ještě něco zapsat k $date?';
   }
@@ -3504,44 +3501,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextStateRecurringMissed => 'Opakující · zmeškané';
-
-  @override
-  String get dailyOsNextTasksEmpty => 'Tady zatím nic.';
-
-  @override
-  String get dailyOsNextTasksFilterAll => 'Vše';
-
-  @override
-  String get dailyOsNextTasksFilterBacklog => 'Backlog';
-
-  @override
-  String get dailyOsNextTasksFilterDone => 'Hotovo';
-
-  @override
-  String get dailyOsNextTasksFilterInProgress => 'Probíhá';
-
-  @override
-  String get dailyOsNextTasksFilterOverdue => 'Po termínu';
-
-  @override
-  String get dailyOsNextTasksFilterRecurring => 'Opakující';
-
-  @override
-  String get dailyOsNextTasksFilterScheduled => 'Naplánované';
-
-  @override
-  String get dailyOsNextTasksFooterHint =>
-      'Ranní rituál obvykle vynese to podstatné.';
-
-  @override
-  String get dailyOsNextTasksSearchPlaceholder => 'Hledat úkoly';
-
-  @override
-  String get dailyOsNextTasksSubtitle =>
-      'Vše, co Lotti pro tebe drží. Ranní rituál vyplaví to podstatné.';
-
-  @override
-  String get dailyOsNextTasksTitle => 'Úkoly';
 
   @override
   String get dailyOsNextTimelineActual => 'Skutečnost';

@@ -469,32 +469,6 @@ void main() {
     });
 
     testWidgets(
-      'tapping the Browse tasks action opens the TasksCorpusPage route',
-      (tester) async {
-        final harness = _AudioHarness()..arm();
-        await tester.pumpWidget(
-          _wrap(
-            const CapturePage(),
-            overrides: [
-              captureControllerProvider.overrideWith(harness.controllerFactory),
-            ],
-          ),
-        );
-        await tester.pump();
-
-        // The tasks corpus icon — the second action button in the AppBar.
-        await tester.tap(find.byIcon(Icons.checklist_rounded));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump(const Duration(milliseconds: 400));
-
-        // CapturePage is now off-screen because the route was pushed.
-        expect(find.byType(CapturePage), findsNothing);
-        await harness.dispose();
-      },
-    );
-
-    testWidgets(
       'transcribing phase renders the spinner instead of the waveform',
       (tester) async {
         await tester.pumpWidget(

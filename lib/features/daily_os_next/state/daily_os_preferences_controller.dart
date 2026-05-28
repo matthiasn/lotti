@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/get_it.dart';
 
 const dailyOsUserNameSettingsKey = 'DAILY_OS_USER_NAME';
@@ -139,16 +138,3 @@ final dailyOsPreferencesControllerProvider =
     NotifierProvider<DailyOsPreferencesController, DailyOsPreferences>(
       DailyOsPreferencesController.new,
     );
-
-final FutureProvider<List<DayAgentCategory>> dailyOsKnownCategoriesProvider =
-    FutureProvider.autoDispose<List<DayAgentCategory>>((ref) async {
-      final agent = ref.read(dayAgentProvider);
-      final items = await agent.surfaceTaskCorpus();
-      final categories = <String, DayAgentCategory>{};
-      for (final item in items) {
-        categories[item.category.id] = item.category;
-      }
-      final sorted = categories.values.toList()
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      return sorted;
-    });

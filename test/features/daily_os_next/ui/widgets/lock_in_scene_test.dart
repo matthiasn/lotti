@@ -115,7 +115,8 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byType(LockInScene));
+        final overlayCenter = tester.getCenter(find.byType(LockInScene));
+        await tester.tapAt(overlayCenter);
         await tester.pump();
 
         expect(underlyingTaps, 1);

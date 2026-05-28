@@ -6,7 +6,6 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/tasks_corpus_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
@@ -48,15 +47,6 @@ class CapturePage extends ConsumerWidget {
         toolbarHeight: 48,
         title: dateStrip,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.checklist_rounded),
-            tooltip: context.messages.dailyOsNextCaptureOpenTasks,
-            onPressed: () => Navigator.of(context).push<void>(
-              MaterialPageRoute<void>(
-                builder: (_) => const TasksCorpusPage(),
-              ),
-            ),
-          ),
           const ProcessingCategoryFilterButton(),
           SizedBox(width: tokens.spacing.step3),
         ],
