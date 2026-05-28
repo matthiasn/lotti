@@ -276,16 +276,8 @@ String dayAgentDecidedCaptureItemToken(String parsedItemId) {
 /// Returns IDs trimmed of surrounding whitespace, in iteration order of the
 /// input set. Skips prefix-only and whitespace-only tokens. Returns an empty
 /// list when no decided-task tokens are present.
-List<String> decidedTaskIdsFromTriggerTokens(Set<String> triggerTokens) {
-  final out = <String>[];
-  for (final token in triggerTokens) {
-    if (token.startsWith(dayAgentDecidedTaskPrefix)) {
-      final taskId = token.substring(dayAgentDecidedTaskPrefix.length).trim();
-      if (taskId.isNotEmpty) out.add(taskId);
-    }
-  }
-  return out;
-}
+List<String> decidedTaskIdsFromTriggerTokens(Set<String> triggerTokens) =>
+    _idsForPrefix(triggerTokens, dayAgentDecidedTaskPrefix);
 
 /// Extracts every decided capture-item ID advertised on a trigger-token set.
 ///
@@ -294,14 +286,14 @@ List<String> decidedTaskIdsFromTriggerTokens(Set<String> triggerTokens) {
 /// tasks before placing them.
 List<String> decidedCaptureItemIdsFromTriggerTokens(
   Set<String> triggerTokens,
-) {
+) => _idsForPrefix(triggerTokens, dayAgentDecidedCaptureItemPrefix);
+
+List<String> _idsForPrefix(Set<String> tokens, String prefix) {
   final out = <String>[];
-  for (final token in triggerTokens) {
-    if (token.startsWith(dayAgentDecidedCaptureItemPrefix)) {
-      final parsedItemId = token
-          .substring(dayAgentDecidedCaptureItemPrefix.length)
-          .trim();
-      if (parsedItemId.isNotEmpty) out.add(parsedItemId);
+  for (final token in tokens) {
+    if (token.startsWith(prefix)) {
+      final id = token.substring(prefix.length).trim();
+      if (id.isNotEmpty) out.add(id);
     }
   }
   return out;

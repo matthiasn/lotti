@@ -5232,36 +5232,6 @@ abstract class AppLocalizations {
   /// **'Got it.'**
   String get dailyOsNextCaptureCaptured;
 
-  /// No description provided for @dailyOsNextCaptureHeadlineLead.
-  ///
-  /// In en, this message translates to:
-  /// **'What\'s on your mind'**
-  String get dailyOsNextCaptureHeadlineLead;
-
-  /// No description provided for @dailyOsNextCaptureHeadlineTail.
-  ///
-  /// In en, this message translates to:
-  /// **'for today?'**
-  String get dailyOsNextCaptureHeadlineTail;
-
-  /// No description provided for @dailyOsNextCaptureHeadlineTailForDate.
-  ///
-  /// In en, this message translates to:
-  /// **'for {date}?'**
-  String dailyOsNextCaptureHeadlineTailForDate(String date);
-
-  /// No description provided for @dailyOsNextCaptureHeadlineTailTomorrow.
-  ///
-  /// In en, this message translates to:
-  /// **'for tomorrow?'**
-  String get dailyOsNextCaptureHeadlineTailTomorrow;
-
-  /// No description provided for @dailyOsNextCaptureHeadlineTailYesterday.
-  ///
-  /// In en, this message translates to:
-  /// **'for yesterday?'**
-  String get dailyOsNextCaptureHeadlineTailYesterday;
-
   /// No description provided for @dailyOsNextCaptureErrorMicrophonePermissionDenied.
   ///
   /// In en, this message translates to:
@@ -5303,6 +5273,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcription failed.'**
   String get dailyOsNextCaptureErrorTranscriptionFailed;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineLead.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s on your mind'**
+  String get dailyOsNextCaptureHeadlineLead;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineTail.
+  ///
+  /// In en, this message translates to:
+  /// **'for today?'**
+  String get dailyOsNextCaptureHeadlineTail;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineTailForDate.
+  ///
+  /// In en, this message translates to:
+  /// **'for {date}?'**
+  String dailyOsNextCaptureHeadlineTailForDate(String date);
+
+  /// No description provided for @dailyOsNextCaptureHeadlineTailTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'for tomorrow?'**
+  String get dailyOsNextCaptureHeadlineTailTomorrow;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineTailYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'for yesterday?'**
+  String get dailyOsNextCaptureHeadlineTailYesterday;
 
   /// No description provided for @dailyOsNextCaptureIdleHint.
   ///

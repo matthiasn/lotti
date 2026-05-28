@@ -3076,23 +3076,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'Got it.';
 
   @override
-  String get dailyOsNextCaptureHeadlineLead => 'What\'s on your mind';
-
-  @override
-  String get dailyOsNextCaptureHeadlineTail => 'for today?';
-
-  @override
-  String dailyOsNextCaptureHeadlineTailForDate(String date) {
-    return 'for $date?';
-  }
-
-  @override
-  String get dailyOsNextCaptureHeadlineTailTomorrow => 'for tomorrow?';
-
-  @override
-  String get dailyOsNextCaptureHeadlineTailYesterday => 'for yesterday?';
-
-  @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
       'Microphone permission was denied.';
 
@@ -3118,6 +3101,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dailyOsNextCaptureErrorTranscriptionFailed =>
       'Transcription failed.';
+
+  @override
+  String get dailyOsNextCaptureHeadlineLead => 'What\'s on your mind';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTail => 'for today?';
+
+  @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return 'for $date?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'for tomorrow?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'for yesterday?';
 
   @override
   String get dailyOsNextCaptureIdleHint => 'Tap to talk · type instead';

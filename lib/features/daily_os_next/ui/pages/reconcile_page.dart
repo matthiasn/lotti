@@ -282,7 +282,7 @@ class _ReconcileFooter extends StatelessWidget {
   /// Matched/update parsed items and pending triage rows carry task IDs.
   /// NEW/unlinked parsed items carry parsed capture item IDs so drafting can
   /// still create tasks from the approved capture text before placing them.
-  _DraftingSelections _draftingSelections() {
+  ({List<String> taskIds, List<String> captureItemIds}) _draftingSelections() {
     final taskIds = <String>{};
     final captureItemIds = <String>{};
     for (final item in data.parsed) {
@@ -304,10 +304,7 @@ class _ReconcileFooter extends StatelessWidget {
         taskIds.add(entry.key);
       }
     }
-    return _DraftingSelections(
-      taskIds: taskIds.toList(),
-      captureItemIds: captureItemIds.toList(),
-    );
+    return (taskIds: taskIds.toList(), captureItemIds: captureItemIds.toList());
   }
 
   @override
@@ -385,16 +382,6 @@ class _ReconcileFooter extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DraftingSelections {
-  const _DraftingSelections({
-    required this.taskIds,
-    required this.captureItemIds,
-  });
-
-  final List<String> taskIds;
-  final List<String> captureItemIds;
 }
 
 /// Simple dashed border decoration — used for secondary hint cards.

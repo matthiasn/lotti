@@ -1540,7 +1540,7 @@
     }
   },
   "dailyOsNextCaptureCaptured": "Hab's.",
-  "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Das Mikrofon wurde nicht freigegeben.",
+  "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Der Zugriff auf das Mikrofon wurde verweigert.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Keine aktive Echtzeit-Sitzung.",
   "dailyOsNextCaptureErrorNoAudioRecorded": "Es wurde kein Audio aufgenommen.",
   "dailyOsNextCaptureErrorRealtimeTranscriptionFailed": "Die Echtzeit-Transkription ist fehlgeschlagen.",

@@ -64,7 +64,6 @@ class CaptureState {
     this.partialTranscript = '',
     this.audioId,
     this.error,
-    this.errorMessage,
   });
 
   const CaptureState.idle()
@@ -73,8 +72,7 @@ class CaptureState {
       partialTranscript = '',
       amplitudes = const <double>[],
       audioId = null,
-      error = null,
-      errorMessage = null;
+      error = null;
 
   final CapturePhase phase;
 
@@ -98,10 +96,6 @@ class CaptureState {
   /// [CapturePhase.error].
   final CaptureError? error;
 
-  /// Technical failure detail for diagnostics. The UI does not surface this
-  /// string directly.
-  final String? errorMessage;
-
   CaptureState copyWith({
     CapturePhase? phase,
     String? transcript,
@@ -109,7 +103,6 @@ class CaptureState {
     List<double>? amplitudes,
     String? audioId,
     CaptureError? error,
-    String? errorMessage,
   }) {
     return CaptureState(
       phase: phase ?? this.phase,
@@ -118,7 +111,6 @@ class CaptureState {
       amplitudes: amplitudes ?? this.amplitudes,
       audioId: audioId ?? this.audioId,
       error: error ?? this.error,
-      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
@@ -304,14 +296,21 @@ class CaptureController extends Notifier<CaptureState> {
           numChannels: 1,
         ),
       );
-    } catch (e) {
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription('while starting the realtime PCM stream'),
+        ),
+      );
       await recorder.dispose();
-      state = CaptureState(
+      state = const CaptureState(
         phase: CapturePhase.error,
         transcript: '',
-        amplitudes: const <double>[],
+        amplitudes: <double>[],
         error: CaptureError.recordingStartFailed,
-        errorMessage: e.toString(),
       );
       return;
     }
@@ -358,14 +357,23 @@ class CaptureController extends Notifier<CaptureState> {
         onDelta: _onRealtimeDelta,
         config: _activeRealtimeConfig,
       );
-    } catch (e) {
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription(
+            'while starting realtime transcription',
+          ),
+        ),
+      );
       await _cleanupRealtime(disposeRecorder: true);
-      state = CaptureState(
+      state = const CaptureState(
         phase: CapturePhase.error,
         transcript: '',
-        amplitudes: const <double>[],
+        amplitudes: <double>[],
         error: CaptureError.realtimeTranscriptionStartFailed,
-        errorMessage: e.toString(),
       );
     }
   }
@@ -467,14 +475,21 @@ class CaptureController extends Notifier<CaptureState> {
         },
         outputPath: outputBase,
       );
-    } catch (e) {
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription('while stopping realtime transcription'),
+        ),
+      );
       await _cleanupRealtime(disposeRecorder: true);
-      state = CaptureState(
+      state = const CaptureState(
         phase: CapturePhase.error,
         transcript: '',
-        amplitudes: const <double>[],
+        amplitudes: <double>[],
         error: CaptureError.realtimeTranscriptionFailed,
-        errorMessage: e.toString(),
       );
       return;
     }

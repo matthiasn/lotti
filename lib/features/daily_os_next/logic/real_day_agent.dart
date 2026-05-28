@@ -124,24 +124,16 @@ class RealDayAgent implements DayAgentInterface {
     final selectedDay = DateTime(date.year, date.month, date.day);
     final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
-    final labelReferenceDate = selectedDay == today ? null : selectedDay;
     final identity = await dayAgentService.getDayAgentForDate(date);
     if (identity is! AgentIdentityEntity) return const [];
     final items = await captureService.surfacePendingDecisions(
       agentId: identity.agentId,
       dayId: dayAgentIdForDate(date),
     );
-    final out = <PendingItem>[];
-    for (final item in items) {
-      out.add(
-        await _projectPendingItem(
-          item,
-          selectedDay: selectedDay,
-          labelReferenceDate: labelReferenceDate,
-        ),
-      );
-    }
-    return out;
+    return Future.wait([
+      for (final item in items)
+        _projectPendingItem(item, selectedDay: selectedDay, today: today),
+    ]);
   }
 
   @override
@@ -500,7 +492,7 @@ class RealDayAgent implements DayAgentInterface {
   Future<PendingItem> _projectPendingItem(
     DayAgentPendingItem item, {
     required DateTime selectedDay,
-    required DateTime? labelReferenceDate,
+    required DateTime today,
   }) async {
     final category = await _resolveCategory(item.categoryId);
     final reason = _projectPendingReason(item.kind);
@@ -512,7 +504,7 @@ class RealDayAgent implements DayAgentInterface {
       overdueByDays: reason == PendingItemReason.overdue && item.due != null
           ? _daysBetween(item.due!, selectedDay)
           : null,
-      referenceDate: labelReferenceDate,
+      referenceDate: selectedDay == today ? null : selectedDay,
     );
   }
 

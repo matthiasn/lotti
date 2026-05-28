@@ -3141,23 +3141,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'Am înțeles.';
 
   @override
-  String get dailyOsNextCaptureHeadlineLead => 'La ce vă gândiți';
-
-  @override
-  String get dailyOsNextCaptureHeadlineTail => 'pentru astăzi?';
-
-  @override
-  String dailyOsNextCaptureHeadlineTailForDate(String date) {
-    return 'pentru $date?';
-  }
-
-  @override
-  String get dailyOsNextCaptureHeadlineTailTomorrow => 'pentru mâine?';
-
-  @override
-  String get dailyOsNextCaptureHeadlineTailYesterday => 'pentru ieri?';
-
-  @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
       'Permisiunea pentru microfon a fost refuzată.';
 
@@ -3184,6 +3167,23 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dailyOsNextCaptureErrorTranscriptionFailed =>
       'Transcrierea a eșuat.';
+
+  @override
+  String get dailyOsNextCaptureHeadlineLead => 'La ce vă gândiți';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTail => 'pentru astăzi?';
+
+  @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return 'pentru $date?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'pentru mâine?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'pentru ieri?';
 
   @override
   String get dailyOsNextCaptureIdleHint =>

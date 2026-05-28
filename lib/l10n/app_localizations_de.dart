@@ -3120,25 +3120,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'Hab\'s.';
 
   @override
-  String get dailyOsNextCaptureHeadlineLead => 'Was beschäftigt dich';
-
-  @override
-  String get dailyOsNextCaptureHeadlineTail => 'heute?';
-
-  @override
-  String dailyOsNextCaptureHeadlineTailForDate(String date) {
-    return 'für $date?';
-  }
-
-  @override
-  String get dailyOsNextCaptureHeadlineTailTomorrow => 'für morgen?';
-
-  @override
-  String get dailyOsNextCaptureHeadlineTailYesterday => 'für gestern?';
-
-  @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
-      'Das Mikrofon wurde nicht freigegeben.';
+      'Der Zugriff auf das Mikrofon wurde verweigert.';
 
   @override
   String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
@@ -3163,6 +3146,23 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dailyOsNextCaptureErrorTranscriptionFailed =>
       'Die Transkription ist fehlgeschlagen.';
+
+  @override
+  String get dailyOsNextCaptureHeadlineLead => 'Was beschäftigt dich';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTail => 'heute?';
+
+  @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return 'für $date?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'für morgen?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'für gestern?';
 
   @override
   String get dailyOsNextCaptureIdleHint =>

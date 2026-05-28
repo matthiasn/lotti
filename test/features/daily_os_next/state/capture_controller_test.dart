@@ -582,7 +582,6 @@ void main() {
       expect(state.amplitudes, isEmpty);
       expect(state.audioId, isNull);
       expect(state.error, isNull);
-      expect(state.errorMessage, isNull);
     });
 
     test('copyWith replaces only the supplied fields', () {
@@ -601,7 +600,6 @@ void main() {
         amplitudes: const <double>[],
         audioId: 'a-2',
         error: CaptureError.transcriptionFailed,
-        errorMessage: 'broken',
       );
 
       expect(next.phase, CapturePhase.captured);
@@ -610,7 +608,6 @@ void main() {
       expect(next.amplitudes, isEmpty);
       expect(next.audioId, 'a-2');
       expect(next.error, CaptureError.transcriptionFailed);
-      expect(next.errorMessage, 'broken');
 
       final partial = base.copyWith(transcript: 'updated');
       expect(partial.transcript, 'updated');

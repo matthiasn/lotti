@@ -3118,23 +3118,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'Rozumím.';
 
   @override
-  String get dailyOsNextCaptureHeadlineLead => 'Co máš dnes';
-
-  @override
-  String get dailyOsNextCaptureHeadlineTail => 'na mysli?';
-
-  @override
-  String dailyOsNextCaptureHeadlineTailForDate(String date) {
-    return 'na $date?';
-  }
-
-  @override
-  String get dailyOsNextCaptureHeadlineTailTomorrow => 'na zítra?';
-
-  @override
-  String get dailyOsNextCaptureHeadlineTailYesterday => 'na včera?';
-
-  @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
       'Přístup k mikrofonu byl odepřen.';
 
@@ -3160,6 +3143,23 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureErrorTranscriptionFailed => 'Přepis selhal.';
+
+  @override
+  String get dailyOsNextCaptureHeadlineLead => 'Co máš dnes';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTail => 'na mysli?';
+
+  @override
+  String dailyOsNextCaptureHeadlineTailForDate(String date) {
+    return 'na $date?';
+  }
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailTomorrow => 'na zítra?';
+
+  @override
+  String get dailyOsNextCaptureHeadlineTailYesterday => 'na včera?';
 
   @override
   String get dailyOsNextCaptureIdleHint =>

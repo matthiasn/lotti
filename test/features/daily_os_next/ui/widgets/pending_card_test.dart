@@ -71,5 +71,52 @@ void main() {
       );
       expect(find.text('Pay invoice'), findsOneWidget);
     });
+
+    testWidgets('uses today wording for due items without a reference date', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          PendingCard(
+            item: const PendingItem(
+              taskId: 'task-1',
+              title: 'Submit report',
+              category: _category,
+              reason: PendingItemReason.dueToday,
+            ),
+            onTriage: (_) {},
+          ),
+        ),
+      );
+
+      final messages = tester.element(find.byType(PendingCard)).messages;
+      expect(find.text(messages.dailyOsNextStateDueToday), findsOneWidget);
+    });
+
+    testWidgets(
+      'uses relative wording for overdue items without a reference date',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            PendingCard(
+              item: const PendingItem(
+                taskId: 'task-1',
+                title: 'Pay invoice',
+                category: _category,
+                reason: PendingItemReason.overdue,
+                overdueByDays: 5,
+              ),
+              onTriage: (_) {},
+            ),
+          ),
+        );
+
+        final messages = tester.element(find.byType(PendingCard)).messages;
+        expect(
+          find.text(messages.dailyOsNextStateOverdue(5)),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

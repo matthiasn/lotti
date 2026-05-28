@@ -563,6 +563,60 @@ void main() {
       },
     );
 
+    // The microphone-permission and recording-start arms are exercised
+    // individually above; cover the remaining error arms in one pass so every
+    // CaptureError maps to its localized copy.
+    final remainingErrorCases =
+        <(CaptureError, String Function(AppLocalizations))>[
+          (
+            CaptureError.realtimeTranscriptionStartFailed,
+            (m) => m.dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed,
+          ),
+          (
+            CaptureError.noActiveRealtimeSession,
+            (m) => m.dailyOsNextCaptureErrorNoActiveRealtimeSession,
+          ),
+          (
+            CaptureError.realtimeTranscriptionFailed,
+            (m) => m.dailyOsNextCaptureErrorRealtimeTranscriptionFailed,
+          ),
+          (
+            CaptureError.noAudioRecorded,
+            (m) => m.dailyOsNextCaptureErrorNoAudioRecorded,
+          ),
+          (
+            CaptureError.transcriptionFailed,
+            (m) => m.dailyOsNextCaptureErrorTranscriptionFailed,
+          ),
+        ];
+    for (final c in remainingErrorCases) {
+      testWidgets('error phase surfaces localized copy for ${c.$1.name}', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  CaptureState(
+                    phase: CapturePhase.error,
+                    transcript: '',
+                    amplitudes: const [],
+                    error: c.$1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(find.text(c.$2(messages)), findsOneWidget);
+      });
+    }
+
     testWidgets(
       'listening phase with a partial transcript shows the live preview text',
       (tester) async {
