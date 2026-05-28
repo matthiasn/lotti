@@ -308,7 +308,8 @@ class _StateRow extends ConsumerWidget {
         );
       case CapturePhase.error:
         return Text(
-          state.errorMessage ?? messages.dailyOsNextCaptureIdleHint,
+          _captureErrorMessage(context, state.error) ??
+              messages.dailyOsNextCaptureIdleHint,
           textAlign: TextAlign.center,
           style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.alert.error.defaultColor,
@@ -316,6 +317,27 @@ class _StateRow extends ConsumerWidget {
         );
     }
   }
+}
+
+String? _captureErrorMessage(BuildContext context, CaptureError? error) {
+  final messages = context.messages;
+  return switch (error) {
+    CaptureError.microphonePermissionDenied =>
+      messages.dailyOsNextCaptureErrorMicrophonePermissionDenied,
+    CaptureError.recordingStartFailed =>
+      messages.dailyOsNextCaptureErrorRecordingStartFailed,
+    CaptureError.realtimeTranscriptionStartFailed =>
+      messages.dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed,
+    CaptureError.noActiveRealtimeSession =>
+      messages.dailyOsNextCaptureErrorNoActiveRealtimeSession,
+    CaptureError.realtimeTranscriptionFailed =>
+      messages.dailyOsNextCaptureErrorRealtimeTranscriptionFailed,
+    CaptureError.noAudioRecorded =>
+      messages.dailyOsNextCaptureErrorNoAudioRecorded,
+    CaptureError.transcriptionFailed =>
+      messages.dailyOsNextCaptureErrorTranscriptionFailed,
+    null => null,
+  };
 }
 
 class _IdleCaptureActions extends StatelessWidget {

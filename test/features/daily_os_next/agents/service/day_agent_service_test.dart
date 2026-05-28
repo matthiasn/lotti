@@ -515,6 +515,36 @@ void main() {
       });
 
       test(
+        'encodes decidedCaptureItemIds as parsed-item trigger tokens',
+        () async {
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: dayId,
+            ),
+          ).thenAnswer((_) async => identity());
+
+          final result = await service.enqueueDraftingWake(
+            dayDate: testDate,
+            decidedCaptureItemIds: const ['parsed-1', 'parsed-2'],
+          );
+
+          expect(result, isTrue);
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: agentId,
+              reason: dayAgentDraftingReason,
+              triggerTokens: {
+                dayAgentDraftingToken(dayId),
+                dayAgentDecidedCaptureItemToken('parsed-1'),
+                dayAgentDecidedCaptureItemToken('parsed-2'),
+              },
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'merges drafting + capture + decided-task tokens in one wake',
         () async {
           when(

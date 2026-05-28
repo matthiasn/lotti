@@ -3137,6 +3137,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTailYesterday => 'für gestern?';
 
   @override
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Das Mikrofon wurde nicht freigegeben.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
+      'Keine aktive Echtzeit-Sitzung.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoAudioRecorded =>
+      'Es wurde kein Audio aufgenommen.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
+      'Die Echtzeit-Transkription ist fehlgeschlagen.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
+      'Die Echtzeit-Transkription konnte nicht starten.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingStartFailed =>
+      'Die Aufnahme konnte nicht starten.';
+
+  @override
+  String get dailyOsNextCaptureErrorTranscriptionFailed =>
+      'Die Transkription ist fehlgeschlagen.';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Tippen zum Sprechen · stattdessen tippen';
 
@@ -3475,6 +3503,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextShutdownTomorrowOverline => '✦ FÜR MORGEN';
 
   @override
+  String dailyOsNextStateDueOnDate(String date) {
+    return 'Fällig am $date';
+  }
+
+  @override
   String get dailyOsNextStateDueToday => 'Heute fällig';
 
   @override
@@ -3497,6 +3530,18 @@ class AppLocalizationsDe extends AppLocalizations {
       other: 'Überfällig · $days Tage',
       one: 'Überfällig · 1 Tag',
       zero: 'Überfällig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdueOnDate(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Am $date seit $days Tagen überfällig',
+      one: 'Am $date seit 1 Tag überfällig',
+      zero: 'Am $date überfällig',
     );
     return '$_temp0';
   }

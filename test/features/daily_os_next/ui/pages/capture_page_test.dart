@@ -73,6 +73,7 @@ class _RecordingAgent implements DayAgentInterface {
     required CaptureId captureId,
     required List<String> decidedTaskIds,
     required DateTime dayDate,
+    List<String> decidedCaptureItemIds = const [],
     List<TimeBlock> calendarBlocks = const [],
     bool Function()? isCancelled,
   }) async => DraftPlan(
@@ -336,7 +337,7 @@ void main() {
       },
     );
 
-    testWidgets('error phase surfaces the controller errorMessage', (
+    testWidgets('error phase surfaces the localized controller error', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -349,7 +350,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Microphone permission was denied.'), findsOneWidget);
+      final messages = tester.element(find.byType(CapturePage)).messages;
+      expect(
+        find.text(messages.dailyOsNextCaptureErrorMicrophonePermissionDenied),
+        findsOneWidget,
+      );
       expect(find.byType(VoiceButton), findsOneWidget);
       expect(find.byType(LiveWaveform), findsNothing);
     });
@@ -500,7 +505,7 @@ void main() {
     );
 
     testWidgets(
-      'error phase surfaces the controller errorMessage',
+      'error phase surfaces the localized controller error',
       (tester) async {
         await tester.pumpWidget(
           _wrap(
@@ -512,7 +517,7 @@ void main() {
                     phase: CapturePhase.error,
                     transcript: '',
                     amplitudes: [],
-                    errorMessage: 'mic permission denied',
+                    error: CaptureError.recordingStartFailed,
                   ),
                 ),
               ),
@@ -521,7 +526,11 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('mic permission denied'), findsOneWidget);
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextCaptureErrorRecordingStartFailed),
+          findsOneWidget,
+        );
       },
     );
 
@@ -664,7 +673,7 @@ class _ErrorController extends CaptureController {
     phase: CapturePhase.error,
     transcript: '',
     amplitudes: <double>[],
-    errorMessage: 'Microphone permission was denied.',
+    error: CaptureError.microphonePermissionDenied,
   );
 }
 

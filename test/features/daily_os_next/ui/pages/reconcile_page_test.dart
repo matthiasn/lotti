@@ -201,7 +201,7 @@ void main() {
     );
 
     testWidgets(
-      'tapping "Draft my day" pushes DraftingPage with committed task ids',
+      'tapping "Draft my day" keeps task ids and new capture items separate',
       (tester) async {
         _setWideSurface(tester);
         final agent = _fastAgent();
@@ -225,9 +225,16 @@ void main() {
         final pushed = tester.widget<DraftingPage>(find.byType(DraftingPage));
         expect(pushed.captureId, const CaptureId('cap_x'));
         expect(pushed.returnToRootOnReady, isTrue);
-        // Mock surfaces 4 parsed items (matched/update/new) — all
-        // contribute to the committed-task set, plus zero triaged-today.
-        expect(pushed.decidedTaskIds, isNotEmpty);
+        expect(
+          pushed.decidedTaskIds,
+          containsAll(['t_deck_review', 't_morning_run']),
+        );
+        expect(pushed.decidedTaskIds, isNot(contains('p_invoices')));
+        expect(pushed.decidedTaskIds, isNot(contains('p_call_mom')));
+        expect(
+          pushed.decidedCaptureItemIds,
+          containsAll(['p_invoices', 'p_call_mom']),
+        );
       },
     );
 
@@ -264,8 +271,11 @@ void main() {
 
         expect(find.byType(DraftingPage), findsOneWidget);
         final pushed = tester.widget<DraftingPage>(find.byType(DraftingPage));
-        // Parsed surrogates (4) + 1 triaged pending → 5 ids.
-        expect(pushed.decidedTaskIds.length, greaterThanOrEqualTo(5));
+        expect(pushed.decidedTaskIds, contains('t_onboarding_doc'));
+        expect(
+          pushed.decidedCaptureItemIds,
+          containsAll(['p_invoices', 'p_call_mom']),
+        );
       },
     );
 

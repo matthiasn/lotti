@@ -3158,6 +3158,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTailYesterday => 'pentru ieri?';
 
   @override
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Permisiunea pentru microfon a fost refuzată.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
+      'Nu există nicio sesiune în timp real activă.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoAudioRecorded =>
+      'Nu s-a înregistrat niciun audio.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
+      'Transcrierea în timp real a eșuat.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
+      'Transcrierea în timp real nu a putut porni.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingStartFailed =>
+      'Înregistrarea nu a putut porni.';
+
+  @override
+  String get dailyOsNextCaptureErrorTranscriptionFailed =>
+      'Transcrierea a eșuat.';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Apăsați pentru a vorbi · tastați în schimb';
 
@@ -3496,6 +3524,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextShutdownTomorrowOverline => '✦ PENTRU MÂINE';
 
   @override
+  String dailyOsNextStateDueOnDate(String date) {
+    return 'Scadent pe $date';
+  }
+
+  @override
   String get dailyOsNextStateDueToday => 'Scadent astăzi';
 
   @override
@@ -3518,6 +3551,18 @@ class AppLocalizationsRo extends AppLocalizations {
       other: 'Întârziat · $days zile',
       one: 'Întârziat · 1 zi',
       zero: 'Întârziat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdueOnDate(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Întârziat cu $days zile pe $date',
+      one: 'Întârziat cu 1 zi pe $date',
+      zero: 'Întârziat pe $date',
     );
     return '$_temp0';
   }

@@ -159,6 +159,7 @@ class PendingItem {
     this.note,
     this.overdueByDays,
     this.sessionCount,
+    this.referenceDate,
   });
 
   final String taskId;
@@ -174,6 +175,10 @@ class PendingItem {
 
   /// Populated when reason == inProgress.
   final int? sessionCount;
+
+  /// Selected plan date used for date-aware due/overdue labels. Null means
+  /// the label should use the current-day wording.
+  final DateTime? referenceDate;
 }
 
 /// Result of applying a triage action — the UI uses this to render

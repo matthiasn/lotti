@@ -61,6 +61,7 @@ class _FakeAgent implements DayAgentInterface {
   Completer<DraftPlan> draft;
   CaptureId? capturedCaptureId;
   List<String>? capturedTaskIds;
+  List<String>? capturedCaptureItemIds;
   DateTime? capturedDate;
 
   @override
@@ -74,11 +75,13 @@ class _FakeAgent implements DayAgentInterface {
     required CaptureId captureId,
     required List<String> decidedTaskIds,
     required DateTime dayDate,
+    List<String> decidedCaptureItemIds = const [],
     List<TimeBlock> calendarBlocks = const [],
     bool Function()? isCancelled,
   }) {
     capturedCaptureId = captureId;
     capturedTaskIds = decidedTaskIds;
+    capturedCaptureItemIds = decidedCaptureItemIds;
     capturedDate = dayDate;
     return draft.future;
   }
@@ -196,6 +199,7 @@ DraftingPage _page({
 }) => DraftingPage(
   captureId: const CaptureId('cap_x'),
   decidedTaskIds: const ['task_1'],
+  decidedCaptureItemIds: const ['parsed_1'],
   dayDate: DateTime(2026, 5, 26),
   returnToRootOnReady: returnToRootOnReady,
 );
@@ -324,6 +328,7 @@ void main() {
         // Agent was called with the params from the widget.
         expect(agent.capturedCaptureId, const CaptureId('cap_x'));
         expect(agent.capturedTaskIds, ['task_1']);
+        expect(agent.capturedCaptureItemIds, ['parsed_1']);
         expect(agent.capturedDate, DateTime(2026, 5, 26));
       },
     );

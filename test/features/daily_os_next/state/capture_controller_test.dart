@@ -238,7 +238,7 @@ void main() {
 
         final state = container.read(captureControllerProvider);
         expect(state.phase, CapturePhase.error);
-        expect(state.errorMessage, contains('Transcription failed'));
+        expect(state.error, CaptureError.transcriptionFailed);
         expect(state.audioId, isNull);
         expect(persistedNotes, isEmpty);
       },
@@ -259,7 +259,7 @@ void main() {
 
       final state = container.read(captureControllerProvider);
       expect(state.phase, CapturePhase.error);
-      expect(state.errorMessage, contains('Microphone permission'));
+      expect(state.error, CaptureError.microphonePermissionDenied);
       verifyNever(() => recorder.startRecording());
     });
 
@@ -280,7 +280,7 @@ void main() {
 
         final state = container.read(captureControllerProvider);
         expect(state.phase, CapturePhase.error);
-        expect(state.errorMessage, contains('Failed to start'));
+        expect(state.error, CaptureError.recordingStartFailed);
       },
     );
 
@@ -561,7 +561,7 @@ void main() {
 
         final state = container.read(captureControllerProvider);
         expect(state.phase, CapturePhase.error);
-        expect(state.errorMessage, contains('Microphone permission'));
+        expect(state.error, CaptureError.microphonePermissionDenied);
         verifyNever(
           () => realtimeService.startRealtimeTranscription(
             pcmStream: any(named: 'pcmStream'),
@@ -581,6 +581,7 @@ void main() {
       expect(state.partialTranscript, '');
       expect(state.amplitudes, isEmpty);
       expect(state.audioId, isNull);
+      expect(state.error, isNull);
       expect(state.errorMessage, isNull);
     });
 
@@ -599,6 +600,7 @@ void main() {
         partialTranscript: '',
         amplitudes: const <double>[],
         audioId: 'a-2',
+        error: CaptureError.transcriptionFailed,
         errorMessage: 'broken',
       );
 
@@ -607,6 +609,7 @@ void main() {
       expect(next.partialTranscript, '');
       expect(next.amplitudes, isEmpty);
       expect(next.audioId, 'a-2');
+      expect(next.error, CaptureError.transcriptionFailed);
       expect(next.errorMessage, 'broken');
 
       final partial = base.copyWith(transcript: 'updated');
@@ -880,7 +883,7 @@ void main() {
 
       final state = container.read(captureControllerProvider);
       expect(state.phase, CapturePhase.error);
-      expect(state.errorMessage, contains('Failed to start recording'));
+      expect(state.error, CaptureError.recordingStartFailed);
       expect(fakeRecorder.disposed, isTrue);
     });
 
@@ -902,10 +905,7 @@ void main() {
 
         final state = container.read(captureControllerProvider);
         expect(state.phase, CapturePhase.error);
-        expect(
-          state.errorMessage,
-          contains('Failed to start realtime transcription'),
-        );
+        expect(state.error, CaptureError.realtimeTranscriptionStartFailed);
       },
     );
 
@@ -935,7 +935,7 @@ void main() {
 
         final state = container.read(captureControllerProvider);
         expect(state.phase, CapturePhase.error);
-        expect(state.errorMessage, contains('Realtime transcription failed'));
+        expect(state.error, CaptureError.realtimeTranscriptionFailed);
         expect(fakeRecorder.disposed, isTrue);
       },
     );

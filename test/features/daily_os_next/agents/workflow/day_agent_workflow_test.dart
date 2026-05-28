@@ -659,7 +659,7 @@ void main() {
     );
 
     test(
-      'surfaces decidedTasks merged from explicit ids and capture parsed items',
+      'surfaces decided tasks and unlinked capture items for drafting',
       () async {
         final planService = MockDayAgentPlanService();
         final captureService = MockDayAgentCaptureService();
@@ -688,6 +688,22 @@ void main() {
                   vectorClock: null,
                 )
                 as ParsedItemEntity;
+        final newParsedItem =
+            AgentDomainEntity.parsedItem(
+                  id: 'parsed-new',
+                  agentId: agentId,
+                  captureId: 'capture-1',
+                  kind: ParsedItemKind.newTask,
+                  title: 'Prep demo follow-up',
+                  categoryId: 'work',
+                  confidence: ParsedItemConfidence.medium,
+                  confidenceScore: 0.6,
+                  spokenPhrase: 'prep the follow-up',
+                  estimateMinutes: 25,
+                  createdAt: DateTime(2026, 5, 25, 7, 51),
+                  vectorClock: null,
+                )
+                as ParsedItemEntity;
         when(() => captureService.getCapture('capture-1')).thenAnswer(
           (_) async => capture,
         );
@@ -699,7 +715,7 @@ void main() {
         ).thenAnswer((_) async => const []);
         when(
           () => captureService.parsedItemsForCapture('capture-1'),
-        ).thenAnswer((_) async => [parsedItem]);
+        ).thenAnswer((_) async => [parsedItem, newParsedItem]);
         when(
           () => planService.draftPlanForDay(
             agentId: agentId,
@@ -737,6 +753,7 @@ void main() {
             dayAgentDraftingToken(dayId),
             dayAgentCaptureSubmittedToken('capture-1'),
             dayAgentDecidedTaskToken('task-1'),
+            dayAgentDecidedCaptureItemToken('parsed-new'),
             dayId,
           },
         );
@@ -756,6 +773,17 @@ void main() {
           (decidedTasks[1] as Map<String, dynamic>)['title'],
           'Buy milk',
         );
+        final decidedCaptureItems =
+            draftingPayload['decidedCaptureItems'] as List<dynamic>;
+        expect(decidedCaptureItems, hasLength(1));
+        expect(
+          (decidedCaptureItems.single as Map<String, dynamic>)['id'],
+          'parsed-new',
+        );
+        expect(
+          (decidedCaptureItems.single as Map<String, dynamic>)['title'],
+          'Prep demo follow-up',
+        );
 
         final hydrateCall = verify(
           () => planService.hydrateDecidedTasks(
@@ -766,10 +794,8 @@ void main() {
         ).captured;
         expect(hydrateCall.first, ['task-1']);
         final passedParsedItems = hydrateCall.last as List<ParsedItemEntity>;
-        expect(
-          passedParsedItems.single.matchedTaskId,
-          'task-milk',
-        );
+        expect(passedParsedItems, hasLength(2));
+        expect(passedParsedItems.first.matchedTaskId, 'task-milk');
       },
     );
 

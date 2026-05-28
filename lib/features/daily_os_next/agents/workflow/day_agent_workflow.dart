@@ -522,6 +522,11 @@ Capture matching rules:
 - confidenceScore >= 0.75 is a strong match.
 - confidenceScore >= 0.5 and < 0.75 is a low-confidence match.
 - confidenceScore < 0.5 should be treated as a new item.
+- Older overdue or stale-looking corpus tasks can still be valid matches, but
+  only emit them as strong matches when the capture phrase clearly refers to
+  that existing task. When the evidence is ambiguous, prefer a low-confidence
+  match or a new item so the user can choose instead of silently reviving old
+  work.
 
 Drafting rules:
 - Every `ai` block passed to `draft_day_plan` must include a concrete reason.
@@ -536,6 +541,13 @@ Drafting rules:
   tokens include `drafting:<dayId>`), your priority is to call
   `draft_day_plan` once with the full updated block list — replacing or
   extending `drafting.baselinePlan` rather than emitting partial diffs.
+- On drafting wakes, `drafting.decidedTasks` contains existing tasks the user
+  approved for placement. If an existing task appears stale or unclear from the
+  capture evidence, do not force the placement; create a new task from the
+  phrase or keep the plan conservative.
+- On drafting wakes, `drafting.decidedCaptureItems` contains approved capture
+  items without task IDs. For each item you place, call `create_task_from_phrase`
+  first and use the returned `taskId` in `draft_day_plan`.
 - On `drafting:<dayId>` wakes, `draft_day_plan` MUST be the final tool call.
   Do not end the wake with plain text. Process reconcile decisions first, then
   emit the full plan through `draft_day_plan`.
@@ -700,15 +712,23 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       dayId: dayId,
     );
     final explicitTaskIds = decidedTaskIdsFromTriggerTokens(triggerTokens);
+    final explicitCaptureItemIds = decidedCaptureItemIdsFromTriggerTokens(
+      triggerTokens,
+    ).toSet();
     final parsedItems = await _parsedItemsForCapture(captureContext);
     final decidedTasks = await service.hydrateDecidedTasks(
       allowedCategoryIds: agentIdentity.allowedCategoryIds,
       explicitTaskIds: explicitTaskIds,
       parsedItems: parsedItems,
     );
+    final decidedCaptureItems = [
+      for (final item in parsedItems)
+        if (explicitCaptureItemIds.contains(item.id)) item,
+    ];
     return _DraftingContext(
       baselinePlan: baselinePlan,
       decidedTasks: decidedTasks,
+      decidedCaptureItems: decidedCaptureItems,
     );
   }
 
@@ -1086,10 +1106,12 @@ class _DraftingContext {
   const _DraftingContext({
     this.baselinePlan,
     this.decidedTasks = const [],
+    this.decidedCaptureItems = const [],
   });
 
   final DayPlanEntity? baselinePlan;
   final List<DecidedTaskRef> decidedTasks;
+  final List<ParsedItemEntity> decidedCaptureItems;
 
   Map<String, Object?> toJson() {
     final plan = baselinePlan;
@@ -1123,6 +1145,23 @@ class _DraftingContext {
               ],
             },
       'decidedTasks': [for (final task in decidedTasks) task.toJson()],
+      'decidedCaptureItems': [
+        for (final item in decidedCaptureItems)
+          <String, Object?>{
+            'id': item.id,
+            'kind': item.kind.name,
+            'title': item.title,
+            'categoryId': item.categoryId,
+            'confidence': item.confidence.name,
+            'confidenceScore': item.confidenceScore,
+            'lowConfidence': item.lowConfidence,
+            'spokenPhrase': item.spokenPhrase,
+            'matchedTaskId': item.matchedTaskId,
+            'estimateMinutes': item.estimateMinutes,
+            'timeAnchor': item.timeAnchor,
+            'proposedUpdate': item.proposedUpdate,
+          },
+      ],
     };
   }
 }

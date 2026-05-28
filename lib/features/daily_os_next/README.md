@@ -98,12 +98,17 @@ Runtime behavior:
   realtime path but disables the full-file batch verifier for that session so a
   reviewed Mistral transcript is not replaced by an MLX fallback.
 - Agenda and Commit surfaces use a linear capacity meter. UI projections derive
-  scheduled minutes from the non-dropped blocks they render, so stale persisted
-  totals cannot make the capacity meter disagree with the agenda rows.
+  scheduled minutes from the non-dropped blocks they render. Buffers count
+  because they reserve real time; dropped blocks do not. This keeps stale
+  persisted totals from making the capacity meter disagree with the agenda rows.
 - `parse_capture_to_items` persists `ParsedItemEntity` rows and links them to
   the source capture. High-confidence matches (`>= 0.75`) auto-link to tasks,
   medium-confidence matches (`0.5..0.75`) auto-link with `lowConfidence`, and
-  low-confidence items stay as new capture items.
+  low-confidence items stay as new capture items. Stale or older overdue corpus
+  tasks are allowed candidates, but the workflow prompt tells the model to use
+  a strong match only when the capture phrase clearly refers to that task; when
+  the evidence is ambiguous, it should emit a low-confidence match or NEW item
+  so Reconcile can surface the choice.
 - `ReconcileController` watches capture-id update notifications, so the
   "heard" column re-reads parsed items when the asynchronous parsing wake
   persists them.
@@ -151,11 +156,15 @@ Runtime behavior:
 - `PlannedBlock` now carries the agent-facing metadata required by the draft
   flow: optional task/title, block origin (`ai`, `cal`, `buffer`, `manual`),
   lifecycle state, and the model's placement reason.
-- `DayAgentService.enqueueDraftingWake({dayDate, captureId?, decidedTaskIds})`
-  is the UI's entry point for asking the agent to draft. The wake fires with
-  `drafting:<dayId>` plus optional `capture_submitted:<id>` and
-  `decided_task:<taskId>` tokens; the workflow surfaces the baseline plan and
-  hydrated decided tasks under the `drafting` block in the user message JSON.
+- `DayAgentService.enqueueDraftingWake({dayDate, captureId?, decidedTaskIds,
+  decidedCaptureItemIds})` is the UI's entry point for asking the agent to
+  draft. The wake fires with `drafting:<dayId>` plus optional
+  `capture_submitted:<id>`, `decided_task:<taskId>`, and
+  `decided_capture_item:<parsedItemId>` tokens. The workflow surfaces the
+  baseline plan, hydrated decided tasks, and `decidedCaptureItems` under the
+  `drafting` block in the user message JSON. Items in `decidedCaptureItems`
+  are approved NEW/unlinked capture items; the model must call
+  `create_task_from_phrase` first and place the returned task id.
 - Day-agent wakes that resolve to Gemini 3 Flash use a `thinkingLevel: LOW`
   override through their `CloudInferenceWrapper` instance. The shared Gemini
   Flash default remains unchanged; workflows opt into this latency profile

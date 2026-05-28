@@ -3093,6 +3093,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTailYesterday => 'for yesterday?';
 
   @override
+  String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
+      'Microphone permission was denied.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoActiveRealtimeSession =>
+      'No active realtime session.';
+
+  @override
+  String get dailyOsNextCaptureErrorNoAudioRecorded => 'No audio was recorded.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionFailed =>
+      'Realtime transcription failed.';
+
+  @override
+  String get dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed =>
+      'Realtime transcription could not start.';
+
+  @override
+  String get dailyOsNextCaptureErrorRecordingStartFailed =>
+      'Recording could not start.';
+
+  @override
+  String get dailyOsNextCaptureErrorTranscriptionFailed =>
+      'Transcription failed.';
+
+  @override
   String get dailyOsNextCaptureIdleHint => 'Tap to talk · type instead';
 
   @override
@@ -3429,6 +3456,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextShutdownTomorrowOverline => '✦ FOR TOMORROW';
 
   @override
+  String dailyOsNextStateDueOnDate(String date) {
+    return 'Due $date';
+  }
+
+  @override
   String get dailyOsNextStateDueToday => 'Due today';
 
   @override
@@ -3451,6 +3483,18 @@ class AppLocalizationsEn extends AppLocalizations {
       other: 'Overdue · $days days',
       one: 'Overdue · 1 day',
       zero: 'Overdue',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextStateOverdueOnDate(int days, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Overdue by $days days on $date',
+      one: 'Overdue by 1 day on $date',
+      zero: 'Overdue on $date',
     );
     return '$_temp0';
   }

@@ -43,6 +43,17 @@ enum CapturePhase {
   error,
 }
 
+/// Localizable capture failures surfaced by the UI.
+enum CaptureError {
+  microphonePermissionDenied,
+  recordingStartFailed,
+  realtimeTranscriptionStartFailed,
+  noActiveRealtimeSession,
+  realtimeTranscriptionFailed,
+  noAudioRecorded,
+  transcriptionFailed,
+}
+
 /// State held by [CaptureController].
 @immutable
 class CaptureState {
@@ -52,6 +63,7 @@ class CaptureState {
     required this.amplitudes,
     this.partialTranscript = '',
     this.audioId,
+    this.error,
     this.errorMessage,
   });
 
@@ -61,6 +73,7 @@ class CaptureState {
       partialTranscript = '',
       amplitudes = const <double>[],
       audioId = null,
+      error = null,
       errorMessage = null;
 
   final CapturePhase phase;
@@ -81,8 +94,12 @@ class CaptureState {
   /// no audio is available yet (e.g. in [CapturePhase.idle]).
   final String? audioId;
 
-  /// Human-readable failure message; surfaced under the voice button in
+  /// Localizable failure code surfaced under the voice button in
   /// [CapturePhase.error].
+  final CaptureError? error;
+
+  /// Technical failure detail for diagnostics. The UI does not surface this
+  /// string directly.
   final String? errorMessage;
 
   CaptureState copyWith({
@@ -91,6 +108,7 @@ class CaptureState {
     String? partialTranscript,
     List<double>? amplitudes,
     String? audioId,
+    CaptureError? error,
     String? errorMessage,
   }) {
     return CaptureState(
@@ -99,6 +117,7 @@ class CaptureState {
       partialTranscript: partialTranscript ?? this.partialTranscript,
       amplitudes: amplitudes ?? this.amplitudes,
       audioId: audioId ?? this.audioId,
+      error: error ?? this.error,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
@@ -271,7 +290,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'Microphone permission was denied.',
+        error: CaptureError.microphonePermissionDenied,
       );
       return;
     }
@@ -291,7 +310,8 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: const <double>[],
-        errorMessage: 'Failed to start recording: $e',
+        error: CaptureError.recordingStartFailed,
+        errorMessage: e.toString(),
       );
       return;
     }
@@ -344,7 +364,8 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: const <double>[],
-        errorMessage: 'Failed to start realtime transcription: $e',
+        error: CaptureError.realtimeTranscriptionStartFailed,
+        errorMessage: e.toString(),
       );
     }
   }
@@ -366,7 +387,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'Microphone permission was denied.',
+        error: CaptureError.microphonePermissionDenied,
       );
       return;
     }
@@ -376,7 +397,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'Failed to start recording.',
+        error: CaptureError.recordingStartFailed,
       );
       return;
     }
@@ -427,7 +448,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'No active realtime session.',
+        error: CaptureError.noActiveRealtimeSession,
       );
       return;
     }
@@ -452,7 +473,8 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: const <double>[],
-        errorMessage: 'Realtime transcription failed: $e',
+        error: CaptureError.realtimeTranscriptionFailed,
+        errorMessage: e.toString(),
       );
       return;
     }
@@ -560,7 +582,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'No audio recorded.',
+        error: CaptureError.noAudioRecorded,
       );
       _recordingStartedAt = null;
       _activeIsRealtime = null;
@@ -584,7 +606,7 @@ class CaptureController extends Notifier<CaptureState> {
         phase: CapturePhase.error,
         transcript: '',
         amplitudes: <double>[],
-        errorMessage: 'Transcription failed.',
+        error: CaptureError.transcriptionFailed,
       );
       _recordingNote = null;
       _recordingStartedAt = null;

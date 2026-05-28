@@ -623,10 +623,7 @@ class DayAgentPlanService {
         if (byStart != 0) return byStart;
         return a.id.compareTo(b.id);
       });
-      final scheduledMinutes = mutatedBlocks.fold<int>(
-        0,
-        (sum, block) => sum + block.duration.inMinutes,
-      );
+      final scheduledMinutes = _scheduledMinutesFor(mutatedBlocks);
       final pinnedTasks = _pinnedTasksFor(mutatedBlocks);
       updatedPlan = plan.copyWith(
         data: plan.data.copyWith(
@@ -734,10 +731,7 @@ class DayAgentPlanService {
       for (final raw in rawEnergyBands)
         _parseEnergyBand(raw: raw, day: planDate),
     ];
-    final scheduledMinutes = blocks.fold<int>(
-      0,
-      (sum, block) => sum + block.duration.inMinutes,
-    );
+    final scheduledMinutes = _scheduledMinutesFor(blocks);
     final pinnedTasks = _pinnedTasksFor(blocks);
     final existing = await draftPlanForDay(agentId: agentId, dayId: dayId);
     final plan =
@@ -1242,6 +1236,12 @@ class DayAgentPlanService {
       );
     }
     return out;
+  }
+
+  static int _scheduledMinutesFor(List<PlannedBlock> blocks) {
+    return blocks
+        .where((block) => block.state != PlannedBlockState.dropped)
+        .fold<int>(0, (sum, block) => sum + block.duration.inMinutes);
   }
 
   static Map<String, Object?> _planJson(DayPlanEntity plan) => {
