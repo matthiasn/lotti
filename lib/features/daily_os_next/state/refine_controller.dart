@@ -12,12 +12,14 @@ enum RefinePhase {
   /// User tapped the voice button; transcript streams in.
   listening,
 
+  /// Final transcript is ready and editable before the agent sees it.
+  reviewing,
+
   /// Transcript captured; the agent is producing a `PlanDiff`.
   thinking,
 
-  /// Diff returned; the timeline shows the proposed plan with pings,
-  /// the right column shows the diff rows + Revert / Keep talking /
-  /// Accept buttons.
+  /// Diff returned; the timeline shows the proposed plan with pings, and the
+  /// right column shows per-change diff cards plus Revert / Keep talking.
   diffReady,
 
   /// User resolved every diff item; the controller hands the resulting plan
@@ -107,6 +109,8 @@ class RefineController extends Notifier<RefineState> {
       case RefinePhase.listening:
         // CaptureController stops the microphone and calls finishWithTranscript.
         break;
+      case RefinePhase.reviewing:
+        beginListening(resetTranscript: true);
       case RefinePhase.thinking:
       case RefinePhase.accepted:
         // No-op — we're mid-flight.
@@ -120,6 +124,23 @@ class RefineController extends Notifier<RefineState> {
     if (state.phase == RefinePhase.diffReady) {
       beginListening(resetTranscript: false);
     }
+  }
+
+  void reviewTranscript(String transcript) {
+    final nextTranscript = _joinTranscript(_transcriptPrefix, transcript);
+    _transcriptPrefix = '';
+    state = state.copyWith(
+      phase: nextTranscript.isEmpty ? RefinePhase.idle : RefinePhase.reviewing,
+      transcript: nextTranscript,
+      clearDiff: true,
+      decisions: const {},
+      clearResolvingChangeId: true,
+    );
+  }
+
+  void updateTranscript(String transcript) {
+    if (state.phase != RefinePhase.reviewing) return;
+    state = state.copyWith(transcript: transcript);
   }
 
   Future<void> accept() async {

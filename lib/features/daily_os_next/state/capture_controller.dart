@@ -190,6 +190,7 @@ class CaptureController extends Notifier<CaptureState> {
   // Batch fallback state.
   AudioNote? _recordingNote;
   DateTime? _recordingStartedAt;
+  bool _verifyRealtimeTranscript = true;
 
   /// Marks whether the current session is using the realtime path.
   /// `null` outside of a session.
@@ -220,7 +221,15 @@ class CaptureController extends Notifier<CaptureState> {
   /// Manual reset — used by the "Re-record" footer on Reconcile.
   void reset() {
     _cleanupSync();
+    _verifyRealtimeTranscript = true;
     state = const CaptureState.idle();
+  }
+
+  /// Skips the full-audio verifier for the next realtime capture. Refine uses
+  /// this so Mistral realtime text is not replaced by an MLX batch fallback
+  /// before the user reviews the transcript.
+  void skipRealtimeTranscriptVerificationForNextCapture() {
+    _verifyRealtimeTranscript = false;
   }
 
   /// Edits the final transcript before it is handed to Reconcile.
@@ -485,6 +494,7 @@ class CaptureController extends Notifier<CaptureState> {
     _recordingStartedAt = null;
     _activeIsRealtime = null;
     _activeRealtimeConfig = null;
+    _verifyRealtimeTranscript = true;
 
     state = CaptureState(
       phase: CapturePhase.captured,
@@ -498,6 +508,8 @@ class CaptureController extends Notifier<CaptureState> {
     required RealtimeStopResult result,
     required String realtimeTranscript,
   }) async {
+    if (!_verifyRealtimeTranscript) return realtimeTranscript;
+
     final audioFilePath = result.audioFilePath;
     if (audioFilePath == null || audioFilePath.isEmpty) {
       return realtimeTranscript;
@@ -591,6 +603,7 @@ class CaptureController extends Notifier<CaptureState> {
     _recordingStartedAt = null;
     _activeIsRealtime = null;
     _activeRealtimeConfig = null;
+    _verifyRealtimeTranscript = true;
     state = CaptureState(
       phase: CapturePhase.captured,
       transcript: transcript,

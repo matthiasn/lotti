@@ -80,7 +80,9 @@ Runtime behavior:
 - The Capture voice path asks realtime transcription to prefer Mistral cloud
   realtime before MLX local realtime, then verifies the final editable
   transcript against the saved full recording via the batch transcriber when
-  realtime output looks truncated.
+  realtime output looks truncated. Refine uses the same Mistral-preferred
+  realtime path but disables the full-file batch verifier for that session so a
+  reviewed Mistral transcript is not replaced by an MLX fallback.
 - Agenda and Commit surfaces use a linear capacity meter. UI projections derive
   scheduled minutes from the non-dropped blocks they render, so stale persisted
   totals cannot make the capacity meter disagree with the agenda rows.
@@ -138,10 +140,12 @@ Runtime behavior:
 - The Refine UI uses the same `CaptureController` recording/transcription path
   as the initial capture screen. It never injects a scripted transcript; when
   transcription produces no text, the screen returns to idle without proposing
-  a diff. Proposed changes render as independent suggestion cards, matching
-  task-agent approval affordances: each row can be accepted or rejected, then
-  collapses to an applied/rejected confirmation pill while unresolved rows stay
-  actionable.
+  a diff. Final refine transcripts stop in the same editable review field as
+  initial capture, and the edited text is what gets submitted to
+  `propose_plan_diff`. Proposed changes render as independent suggestion cards,
+  matching task-agent approval affordances: each row can be accepted or
+  rejected, then collapses to an applied/rejected confirmation pill while
+  unresolved rows stay actionable.
 - `DayAgentPlanService.proposePlanDiff` persists each model-emitted change as
   a `ChangeItem` (tool name `move_block` / `add_block` / `drop_block`) on a
   new pending `ChangeSetEntity` keyed by the plan id. Optional
