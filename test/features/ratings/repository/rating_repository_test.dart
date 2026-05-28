@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -612,6 +613,214 @@ void main() {
           verify(() => mockOutbox.enqueueMessage(any())).called(1);
         },
       );
+    });
+
+    group('error and rollback paths', () {
+      setUpAll(() {
+        registerFallbackValue(testMetadata);
+      });
+
+      Future<void> stubBaseCreateFlow({
+        Future<int> Function()? upsertResult,
+      }) async {
+        when(
+          () => mockDb.getRatingForTimeEntry(testTimeEntryId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.journalEntityById(testTimeEntryId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockPersistence.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+          ),
+        ).thenAnswer((_) async => testMetadata);
+        when(
+          () => mockPersistence.updateMetadata(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((invocation) async {
+          final meta = invocation.positionalArguments.first as Metadata;
+          return meta.copyWith(
+            deletedAt: invocation.namedArguments[#deletedAt] as DateTime?,
+          );
+        });
+        when(
+          () => mockPersistence.createDbEntity(
+            any(),
+            shouldAddGeolocation: false,
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockVectorClock.getNextVectorClock(),
+        ).thenAnswer((_) async => testVectorClock);
+        when(() => mockNotifications.notify(any())).thenReturn(null);
+        when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+        if (upsertResult != null) {
+          when(() => mockDb.upsertEntryLink(any())).thenAnswer(
+            (_) => upsertResult(),
+          );
+        }
+      }
+
+      test(
+        'soft-deletes the orphaned rating entity and logs when '
+        '_createRatingLink throws',
+        () async {
+          await stubBaseCreateFlow();
+          when(
+            () => mockDb.upsertEntryLink(any()),
+          ).thenThrow(StateError('boom from link upsert'));
+
+          final result = await repository.createOrUpdateRating(
+            targetId: testTimeEntryId,
+            dimensions: testDimensions,
+          );
+
+          expect(result, isNull);
+          verify(
+            () => mockLogging.captureException(
+              any<Object>(),
+              domain: 'RatingRepository',
+              subDomain: '_createRating.linkCleanup',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+          // _softDeleteEntity issued the compensating updateDbEntity with a
+          // deletedAt-stamped metadata.
+          final captured =
+              verify(
+                    () => mockPersistence.updateDbEntity(captureAny()),
+                  ).captured.single
+                  as JournalEntity;
+          expect(captured.meta.deletedAt, isNotNull);
+        },
+      );
+
+      test(
+        '_softDeleteEntity logs and swallows when the compensating '
+        'updateDbEntity itself throws',
+        () async {
+          await stubBaseCreateFlow();
+          when(
+            () => mockDb.upsertEntryLink(any()),
+          ).thenThrow(StateError('boom from link upsert'));
+          when(
+            () => mockPersistence.updateDbEntity(any()),
+          ).thenThrow(StateError('boom from soft delete'));
+
+          final result = await repository.createOrUpdateRating(
+            targetId: testTimeEntryId,
+            dimensions: testDimensions,
+          );
+
+          expect(result, isNull);
+          verify(
+            () => mockLogging.captureException(
+              any<Object>(),
+              domain: 'RatingRepository',
+              subDomain: '_softDeleteEntity',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        '_createRatingLink swallows outbox enqueue failures and routes them '
+        'through DomainLogger so the already-persisted link is not rolled '
+        'back by a transient outbox error',
+        () async {
+          final mockSequenceLog = MockSyncSequenceLogService();
+          final mockDomainLogger = MockDomainLogger();
+          when(
+            () => mockSequenceLog.recordSentEntryLink(
+              linkId: any(named: 'linkId'),
+              vectorClock: any(named: 'vectorClock'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDomainLogger.error(
+              any<String>(),
+              any<String>(),
+              error: any<dynamic>(named: 'error'),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: any<String>(named: 'subDomain'),
+            ),
+          ).thenReturn(null);
+          getIt
+            ..registerSingleton<SyncSequenceLogService>(mockSequenceLog)
+            ..registerSingleton<DomainLogger>(mockDomainLogger);
+
+          await stubBaseCreateFlow();
+          when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+          when(
+            () => mockOutbox.enqueueMessage(any()),
+          ).thenThrow(StateError('outbox boom'));
+
+          final result = await repository.createOrUpdateRating(
+            targetId: testTimeEntryId,
+            dimensions: testDimensions,
+          );
+
+          // The rating itself is still considered created — the outbox
+          // failure must not propagate into the caller.
+          expect(result, isA<RatingEntry>());
+          verify(
+            () => mockDomainLogger.error(
+              LogDomains.sync,
+              any<String>(
+                that: contains('outbox enqueue failed after _createRatingLink'),
+              ),
+              error: any<dynamic>(named: 'error'),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: '_createRatingLink.enqueue',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        '_createRatingLink commitWhen returns false when upsert reports 0 '
+        'rows so the reserved VC counter is released through the scope and '
+        'no sync message is enqueued',
+        () async {
+          await stubBaseCreateFlow();
+          when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
+
+          final result = await repository.createOrUpdateRating(
+            targetId: testTimeEntryId,
+            dimensions: testDimensions,
+          );
+
+          // Link upsert was a no-op → _createRatingLink returns early; the
+          // rating itself is still considered created (the link row exists,
+          // just not modified). Crucially, no outbox/notify side-effects fire
+          // because the scope's commitWhen=false short-circuits them.
+          expect(result, isA<RatingEntry>());
+          verifyNever(() => mockOutbox.enqueueMessage(any()));
+          verifyNever(() => mockNotifications.notify(any()));
+        },
+      );
+    });
+  });
+
+  group('ratingRepository riverpod provider', () {
+    test('provides a RatingRepository instance', () {
+      // GetIt is already populated by the outer setUp with JournalDb +
+      // PersistenceLogic mocks, so the provider can construct the repo
+      // without registering anything new here.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final repo = container.read(ratingRepositoryProvider);
+      expect(repo, isA<RatingRepository>());
     });
   });
 }

@@ -335,6 +335,83 @@ void main() {
     });
 
     test(
+      'media empty-bytes retry surfaces error when deleteFile on the cached '
+      'MXC throws — purge cannot recover, so the second attempt is skipped '
+      'and the empty-bytes failure is logged through the purge subDomain',
+      () async {
+        final fixedDate = DateTime(2024, 3, 15);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-delete-throws',
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+          ),
+          data: ImageData(
+            imageId: 'img-delete-throws',
+            imageDirectory: '/images/2024-01-01/',
+            imageFile: 'delete_throws.jpg',
+            capturedAt: fixedDate,
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        final jsonPathImg = path.join(
+          tempDir.path,
+          stripLeadingSlashes(relJson),
+        );
+        File(jsonPathImg)
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(image.toJson()));
+
+        final relMedia = getRelativeImagePath(image);
+        final index = AttachmentIndex();
+        final ev = MockEvent();
+        final room = MockRoom();
+        final client = MockMatrixClient();
+        final database = MockMatrixDatabase();
+        final mediaUri = Uri.parse('mxc://server/img-delete-throws');
+        when(() => ev.eventId).thenReturn('evt-img-delete-throws');
+        when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => ev.content).thenReturn({'relativePath': relMedia});
+        when(() => ev.room).thenReturn(room);
+        when(() => room.client).thenReturn(client);
+        when(() => client.database).thenReturn(database);
+        when(ev.attachmentOrThumbnailMxcUrl).thenReturn(mediaUri);
+        when(
+          () => database.deleteFile(mediaUri),
+        ).thenThrow(Exception('db purge failed'));
+        var downloads = 0;
+        when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+          downloads++;
+          return MatrixFile(bytes: Uint8List(0), name: 'delete_throws.jpg');
+        });
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+        String? pendingPath;
+        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        await loader.load(jsonPath: relJson);
+
+        // First download empty → purge throws → purged=false → outer catch
+        // surfaces the empty-bytes error without a second download attempt.
+        expect(downloads, 1);
+        expect(pendingPath, relMedia);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetchMedia.purge',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'media empty-bytes retry surfaces error when second download is still '
       'empty — purge succeeded but a refresh did not repopulate the bytes',
       () async {

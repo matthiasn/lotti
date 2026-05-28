@@ -1205,6 +1205,66 @@ void main() {
       });
 
       test(
+        'inner TX rollback caught by outer truncates buffered sequence '
+        'bindings so the outer commit does not record sent-sequence rows '
+        'for inner writes that were rolled back by the savepoint',
+        () async {
+          final sequenceLog = MockSyncSequenceLogService();
+          when(
+            () => sequenceLog.recordSentEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          ).thenAnswer((_) async {});
+          final service = AgentSyncService(
+            repository: mockRepository,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVectorClockService,
+            sequenceLogService: sequenceLog,
+          );
+
+          await service.runInTransaction(() async {
+            await service.upsertEntity(testEntity);
+
+            try {
+              await service.runInTransaction(() async {
+                await service.upsertLink(testBasicLink);
+                await service.upsertEntity(testStateEntity);
+                throw Exception('inner rollback');
+              });
+            } on Exception {
+              // Caught — outer TX continues.
+            }
+          });
+
+          // Only the outer entity's sequence binding survived; the inner
+          // link + state entity bindings were truncated on inner rollback.
+          verify(
+            () => sequenceLog.recordSentEntry(
+              entryId: testEntity.id,
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: SyncSequencePayloadType.agentEntity,
+            ),
+          ).called(1);
+          verifyNever(
+            () => sequenceLog.recordSentEntry(
+              entryId: testBasicLink.id,
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          );
+          verifyNever(
+            () => sequenceLog.recordSentEntry(
+              entryId: testStateEntity.id,
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          );
+        },
+      );
+
+      test(
         'inner TX rollback caught by outer — only outer messages flushed',
         () async {
           await syncService.runInTransaction(() async {
