@@ -77,6 +77,17 @@ Runtime behavior:
   date for day-agent routing, Reconcile carries it into pending decisions, and
   Drafting returns to the root after the plan persists so the date-aware shell
   remains in control.
+- `DailyOsPreferencesController` persists Daily OS personalization in
+  `SettingsDb`. The user's display name is edited from Settings > Advanced >
+  About and read by the Capture greeting. Category exclusions are edited from
+  the processing filter button; `ReconcileController` applies the same
+  preference to parsed capture items and pending decisions before the user sees
+  them.
+- Capture supports both voice and typed intake. The idle copy exposes a real
+  "type instead" action that moves the controller directly to the editable
+  transcript state without opening the microphone. When Capture is opened for a
+  previous selected date, the screen renders a prompt asking whether there is
+  still time to track for that concrete day.
 - The Capture voice path asks realtime transcription to prefer Mistral cloud
   realtime before MLX local realtime, then verifies the final editable
   transcript against the saved full recording via the batch transcriber when
@@ -110,6 +121,28 @@ Runtime behavior:
   blocks whose start is before `currentLocalTime`. It still accepts earlier
   blocks when their state is `inProgress`, `completed`, or `dropped`, because
   those represent what actually happened rather than new future planning.
+- `dailyOsActualTimeBlocksProvider` projects recorded journal entries for the
+  selected local day into `TimeBlock`s without importing the legacy Daily OS UI
+  controllers. It reads `JournalDb.sortedCalendarEntries` across the
+  midnight-to-midnight day, follows entry links back to tasks where available,
+  resolves categories through `EntitiesCacheService`, and refreshes from every
+  non-empty database update batch so newly stopped timers appear in the Actual
+  lane.
+- The Day timeline spans `00:00` to `00:00` and folds idle regions instead of
+  cropping the day. Folding is calculated from the union of planned and actual
+  blocks, so gaps on either side compress into the same folded-paper region
+  with a shared zigzag edge and faint compressed-hour marks. Plan and Actual
+  share one vertical `SingleChildScrollView`, one minute-density zoom value, and
+  one sticky 24-hour time rail. Compact layouts keep the plan-first horizontal
+  pager with an Actual peek; desktop-width layouts default to side-by-side.
+  Two-finger vertical pinch and trackpad pinch zoom both lanes together, while
+  the toolbar/horizontal pinch toggles paged versus side-by-side comparison.
+  The summary card above the tracks groups actual minutes by category and
+  counts completed task blocks.
+- `surface_pending_decisions` intentionally limits overdue carryover to the
+  last seven days. Due-today tasks and in-progress work still surface, but
+  weeks-old overdue rows are left out of daily proposals unless the user brings
+  them back through search, capture, or an explicit task decision.
 - `summarize_recent_patterns` returns transient learning-card payloads from
   recent `DayPlanEntity` rows. It does not persist new state.
 - `PlannedBlock` now carries the agent-facing metadata required by the draft
@@ -183,6 +216,24 @@ stateDiagram-v2
   PendingDiff --> PendingDiff: accept_diff(itemIndices)
   PendingDiff --> PendingDiff: revert_diff(itemIndices)
   PendingDiff --> DraftedPlan: all items resolved
+```
+
+The Day view is a projection over one `DraftPlan` rather than a second planner
+store:
+
+```mermaid
+flowchart LR
+  DraftPlan["DraftPlan"] --> Planned["blocks: planned timeline"]
+  JournalDb["JournalDb calendar entries"] --> ActualProvider["dailyOsActualTimeBlocksProvider"]
+  ActualProvider --> Actual["actual TimeBlocks"]
+  Planned --> DayView["DayTimeline"]
+  Actual --> DayView
+  DayView --> SharedScroll["single vertical scroll + shared zoom"]
+  DayView --> Rail["sticky 24h time rail"]
+  DayView --> Folds["folded idle regions"]
+  DayView --> Paged["compact plan-first pager"]
+  DayView --> Both["desktop side-by-side comparison"]
+  Actual --> Summary["time-spent summary by category + completed tasks"]
 ```
 
 ## Testing Strategy

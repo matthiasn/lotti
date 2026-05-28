@@ -17,32 +17,47 @@ class TranscriptEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return TextFormField(
-      key: fieldKey,
-      initialValue: transcript,
-      minLines: 3,
-      maxLines: 5,
-      textInputAction: TextInputAction.newline,
-      style: tokens.typography.styles.body.bodyMedium.copyWith(
-        color: tokens.colors.text.highEmphasis,
-      ),
-      decoration: InputDecoration(
-        labelText: context.messages.dailyOsNextCaptureTranscriptLabel,
-        hintText: context.messages.dailyOsNextCaptureTranscriptHint,
-        alignLabelWithHint: true,
-        filled: true,
-        fillColor: tokens.colors.background.level02,
-        contentPadding: EdgeInsets.all(tokens.spacing.step4),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          borderSide: BorderSide(color: tokens.colors.decorative.level01),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          context.messages.dailyOsNextCaptureTranscriptLabel,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          borderSide: BorderSide(color: tokens.colors.interactive.enabled),
+        SizedBox(height: tokens.spacing.step2),
+        TextFormField(
+          key: fieldKey,
+          initialValue: transcript,
+          minLines: 3,
+          maxLines: 5,
+          textInputAction: TextInputAction.newline,
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+          decoration: InputDecoration(
+            hintText: context.messages.dailyOsNextCaptureTranscriptHint,
+            filled: true,
+            fillColor: tokens.colors.background.level02.withValues(alpha: 0.54),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step3,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              borderSide: BorderSide(
+                color: tokens.colors.decorative.level01.withValues(alpha: 0.72),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              borderSide: BorderSide(color: tokens.colors.interactive.enabled),
+            ),
+          ),
+          onChanged: onChanged,
         ),
-      ),
-      onChanged: onChanged,
+      ],
     );
   }
 }

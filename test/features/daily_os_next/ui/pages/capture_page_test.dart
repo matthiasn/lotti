@@ -198,28 +198,57 @@ Future<void> _pumpCapture(
 
 void main() {
   group('CapturePage', () {
-    testWidgets('idle phase shows hint, headline, voice button, no CTA', (
+    testWidgets(
+      'idle phase shows talk hint, type action, voice button, no CTA',
+      (
+        tester,
+      ) async {
+        final harness = _AudioHarness()..arm();
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(harness.controllerFactory),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(CapturePage));
+        final messages = context.messages;
+
+        expect(find.text(messages.dailyOsNextGreetingHi), findsOneWidget);
+        expect(find.text(messages.dailyOsNextCaptureIdleTalk), findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextCaptureTypeInstead),
+          findsOneWidget,
+        );
+        expect(find.byType(VoiceButton), findsOneWidget);
+        expect(find.byType(LiveWaveform), findsNothing);
+        expect(
+          find.text(messages.dailyOsNextCaptureReconcileCta),
+          findsNothing,
+        );
+
+        await harness.dispose();
+      },
+    );
+
+    testWidgets('type instead opens the editable transcript path', (
       tester,
     ) async {
       final harness = _AudioHarness()..arm();
-      await tester.pumpWidget(
-        _wrap(
-          const CapturePage(),
-          overrides: [
-            captureControllerProvider.overrideWith(harness.controllerFactory),
-          ],
-        ),
-      );
+      await _pumpCapture(tester, harness: harness);
+
+      final messages = tester.element(find.byType(CapturePage)).messages;
+      await tester.tap(find.text(messages.dailyOsNextCaptureTypeInstead));
       await tester.pump();
 
-      final context = tester.element(find.byType(CapturePage));
-      final messages = context.messages;
-
-      expect(find.text(messages.dailyOsNextGreetingHi), findsOneWidget);
-      expect(find.text(messages.dailyOsNextCaptureIdleHint), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextCaptureTranscriptLabel),
+        findsOneWidget,
+      );
       expect(find.byType(VoiceButton), findsOneWidget);
-      expect(find.byType(LiveWaveform), findsNothing);
-      expect(find.text(messages.dailyOsNextCaptureReconcileCta), findsNothing);
 
       await harness.dispose();
     });

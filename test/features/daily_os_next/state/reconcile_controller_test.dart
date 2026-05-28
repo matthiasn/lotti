@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -35,12 +36,16 @@ void main() {
       DayAgentInterface? override,
       ReconcileParams? aliveFor,
       Stream<Set<String>>? updates,
+      Set<String> excludedCategoryIds = const <String>{},
     }) {
       final aliveParams = aliveFor ?? paramsFor(const CaptureId('cap_alive'));
       final container =
           ProviderContainer(
               overrides: [
                 dayAgentProvider.overrideWithValue(override ?? agent),
+                dailyOsPreferencesControllerProvider.overrideWith(
+                  () => _SeededPreferencesController(excludedCategoryIds),
+                ),
                 reconcileCaptureUpdateProvider.overrideWith(
                   (ref, captureId) =>
                       updates ?? const Stream<Set<String>>.empty(),
@@ -68,6 +73,31 @@ void main() {
         expect(data.parsed, hasLength(4));
         expect(data.pending, hasLength(3));
         expect(data.triageDecisions, isEmpty);
+      },
+    );
+
+    test(
+      'build filters parsed and pending items by processing category',
+      () async {
+        const id = CaptureId('cap_filtered');
+        final params = paramsFor(id);
+        final container = makeContainer(
+          aliveFor: params,
+          excludedCategoryIds: {'cat_health'},
+        );
+
+        final data = await container.read(
+          reconcileControllerProvider(params).future,
+        );
+
+        expect(
+          data.parsed.map((item) => item.category.id),
+          isNot(contains('cat_health')),
+        );
+        expect(
+          data.pending.map((item) => item.category.id),
+          isNot(contains('cat_health')),
+        );
       },
     );
 
@@ -350,6 +380,17 @@ class _DateRecordingDayAgent extends MockDayAgent {
   }) async {
     pendingDate = forDate;
     return super.surfacePendingDecisions(forDate: forDate);
+  }
+}
+
+class _SeededPreferencesController extends DailyOsPreferencesController {
+  _SeededPreferencesController(this.excludedCategoryIds);
+
+  final Set<String> excludedCategoryIds;
+
+  @override
+  DailyOsPreferences build() {
+    return DailyOsPreferences(excludedCategoryIds: excludedCategoryIds);
   }
 }
 

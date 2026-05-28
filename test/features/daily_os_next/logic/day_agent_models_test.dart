@@ -68,6 +68,7 @@ void main() {
       expect(copy.bands, original.bands);
       expect(copy.capacityMinutes, original.capacityMinutes);
       expect(copy.scheduledMinutes, original.scheduledMinutes);
+      expect(copy.actualBlocks, original.actualBlocks);
       expect(copy.agendaItems, original.agendaItems);
       expect(copy.state, original.state);
     });
@@ -111,6 +112,7 @@ void main() {
         bands: [newBand],
         capacityMinutes: 360,
         scheduledMinutes: 60,
+        actualBlocks: [newBlock],
         agendaItems: const [newAgenda],
         state: DayState.committed,
       );
@@ -120,6 +122,7 @@ void main() {
       expect(updated.bands, hasLength(1));
       expect(updated.capacityMinutes, 360);
       expect(updated.scheduledMinutes, 60);
+      expect(updated.actualBlocks, hasLength(1));
       expect(updated.agendaItems, hasLength(1));
       expect(updated.state, DayState.committed);
 

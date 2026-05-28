@@ -6,20 +6,21 @@ import 'package:lotti/themes/colors.dart';
 ///
 /// Kept here so both the status chip and the selection modal use the same
 /// icons without duplication.
-IconData taskIconFromStatusString(String status) => switch (status) {
-  'OPEN' => Icons.radio_button_unchecked,
-  'GROOMED' => Icons.edit_outlined,
-  'IN PROGRESS' => Icons.play_arrow_rounded,
-  'BLOCKED' => Icons.warning_sharp,
-  'ON HOLD' => Icons.pause,
-  'DONE' => Icons.check_circle_outline,
-  'REJECTED' => Icons.close_rounded,
-  String() => Icons.help_outline,
-};
+IconData taskIconFromStatusString(String status) =>
+    switch (normalizeTaskStatusString(status)) {
+      'OPEN' => Icons.radio_button_unchecked,
+      'GROOMED' => Icons.edit_outlined,
+      'IN PROGRESS' => Icons.play_arrow_rounded,
+      'BLOCKED' => Icons.warning_sharp,
+      'ON HOLD' => Icons.pause,
+      'DONE' => Icons.check_circle_outline,
+      'REJECTED' => Icons.close_rounded,
+      String() => Icons.help_outline,
+    };
 
 Color taskColorFromStatusString(String status, {Brightness? brightness}) {
   final isLight = brightness == Brightness.light;
-  return switch (status) {
+  return switch (normalizeTaskStatusString(status)) {
     'OPEN' => isLight ? taskIconColorDarkGrey : taskIconColorGrey,
     'GROOMED' => isLight ? taskIconColorDarkBlue : taskIconColorBlue,
     'IN PROGRESS' => isLight ? taskIconColorDarkBlue : taskIconColorBlue,
@@ -34,7 +35,7 @@ Color taskColorFromStatusString(String status, {Brightness? brightness}) {
 String taskLabelFromStatusString(
   String status,
   BuildContext context,
-) => switch (status) {
+) => switch (normalizeTaskStatusString(status)) {
   'OPEN' => context.messages.taskStatusOpen,
   'GROOMED' => context.messages.taskStatusGroomed,
   'IN PROGRESS' => context.messages.taskStatusInProgress,
@@ -44,6 +45,15 @@ String taskLabelFromStatusString(
   'REJECTED' => context.messages.taskStatusRejected,
   String() => '-',
 };
+
+String normalizeTaskStatusString(String status) {
+  final normalized = status.trim().toUpperCase().replaceAll('_', ' ');
+  return switch (normalized) {
+    'OPENING' || 'OPENED' => 'OPEN',
+    'INPROGRESS' => 'IN PROGRESS',
+    _ => normalized,
+  };
+}
 
 const allTaskStatuses = [
   'OPEN',

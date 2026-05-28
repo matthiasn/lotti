@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
@@ -209,6 +210,9 @@ Widget _wrap(
       // CapturesPanel watches this; stub to empty so the panel collapses
       // to SizedBox.shrink instead of touching the DB.
       capturesForDateProvider.overrideWith((ref, date) async => const []),
+      dailyOsActualTimeBlocksProvider.overrideWith(
+        (ref, date) async => const [],
+      ),
       // RefinePage builds a CaptureController; stub so it doesn't read
       // the realtime service providers during dispose.
       captureControllerProvider.overrideWith(_stubCapture),

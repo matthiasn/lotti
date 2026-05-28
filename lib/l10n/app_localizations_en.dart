@@ -3093,14 +3093,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTailYesterday => 'for yesterday?';
 
   @override
-  String get dailyOsNextCaptureIdleHint =>
-      'Tap to talk · snap it · type instead';
+  String get dailyOsNextCaptureIdleHint => 'Tap to talk · type instead';
+
+  @override
+  String get dailyOsNextCaptureIdleTalk => 'Tap to talk';
 
   @override
   String get dailyOsNextCaptureListening => 'LISTENING';
 
   @override
   String get dailyOsNextCaptureOpenTasks => 'Browse tasks';
+
+  @override
+  String dailyOsNextCapturePastPrompt(String date) {
+    return 'Anything you still want to track from $date?';
+  }
 
   @override
   String get dailyOsNextCaptureReconcileCta => 'Reconcile';
@@ -3116,6 +3123,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextCaptureTranscriptLabel => 'Review transcript';
 
   @override
+  String get dailyOsNextCaptureTypeInstead => 'Type instead';
+
+  @override
   String get dailyOsNextCaptureVoiceButtonReset => 'Start over';
 
   @override
@@ -3123,6 +3133,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureVoiceButtonStop => 'Stop listening';
+
+  @override
+  String get dailyOsNextCategoryFilterAll => 'All categories';
+
+  @override
+  String get dailyOsNextCategoryFilterDescription =>
+      'Only enabled categories are surfaced for Daily OS automated processing.';
+
+  @override
+  String get dailyOsNextCategoryFilterEmpty => 'No categories available yet.';
+
+  @override
+  String get dailyOsNextCategoryFilterIncludeAll => 'Include all';
+
+  @override
+  String get dailyOsNextCategoryFilterTitle => 'Processing categories';
+
+  @override
+  String get dailyOsNextCategoryFilterTooltip =>
+      'Choose Daily OS processing categories';
 
   @override
   String dailyOsNextCommitCapacityNote(String scheduled, String capacity) {
@@ -3230,6 +3260,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingHi => 'Hi 👋';
+
+  @override
+  String dailyOsNextGreetingHiName(String name) {
+    return 'Hi $name,';
+  }
 
   @override
   String get dailyOsNextGreetingMorning => 'Good morning.';
@@ -3465,6 +3500,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextTasksTitle => 'Tasks';
 
   @override
+  String get dailyOsNextTimelineActual => 'Actual';
+
+  @override
+  String get dailyOsNextTimelineBoth => 'Plan and actual';
+
+  @override
   String get dailyOsNextTimelineMeridiemAm => 'AM';
 
   @override
@@ -3477,9 +3518,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextTimelineMeridiemPmShort => 'pm';
 
   @override
+  String get dailyOsNextTimelinePlanned => 'Plan';
+
+  @override
   String dailyOsNextTimelineSessionOf(int index, int total) {
     return 'Session $index of $total';
   }
+
+  @override
+  String get dailyOsNextTimelineShowBoth => 'Show plan and actual together';
+
+  @override
+  String get dailyOsNextTimelineShowPaged => 'Show swipeable plan and actual';
+
+  @override
+  String get dailyOsNextTimelineSwipeHint =>
+      'Swipe for actual · pinch vertically to zoom';
+
+  @override
+  String get dailyOsNextTimeSpentEmpty => 'No recorded time for this day yet.';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    return '$duration recorded · $completedCount done';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'TIME SPENT';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Deferred';
@@ -5836,6 +5901,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAboutBuildType => 'Build Type';
+
+  @override
+  String get settingsAboutDailyOsPersonalizationTitle =>
+      'Daily OS personalization';
+
+  @override
+  String get settingsAboutDailyOsUserNameHelper =>
+      'Used only for the Daily OS greeting on this device.';
+
+  @override
+  String get settingsAboutDailyOsUserNameLabel => 'Your name';
 
   @override
   String get settingsAboutJournalEntries => 'Journal Entries';

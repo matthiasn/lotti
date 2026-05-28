@@ -653,6 +653,31 @@ void main() {
       ]);
     });
 
+    test('surfacePendingDecisions skips stale overdue tasks', () async {
+      final recentOverdue = _task(
+        id: 'task-recent-overdue',
+        title: 'Recent overdue',
+        status: _openStatus(),
+        due: DateTime(2026, 5, 20),
+      );
+      final staleOverdue = _task(
+        id: 'task-stale-overdue',
+        title: 'Stale overdue',
+        status: _openStatus(),
+        due: DateTime(2026, 5, 10),
+      );
+      when(() => journalDb.getTasksDueOnOrBefore(any())).thenAnswer(
+        (_) async => [staleOverdue, recentOverdue],
+      );
+
+      final items = await createService().surfacePendingDecisions(
+        agentId: _agentId,
+        dayId: 'dayplan-2026-05-25',
+      );
+
+      expect(items.map((item) => item.taskId), ['task-recent-overdue']);
+    });
+
     test('applyTriage done writes a completed task', () async {
       journalEntities['task-1'] = _task(
         id: 'task-1',

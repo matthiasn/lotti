@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -433,5 +434,11 @@ void main() {
 
     // Verify the blue color is used for in progress status in dark mode
     expect(chipWidget.backgroundColor, Colors.blue);
+  });
+
+  test('normalizes transitional/open status strings to canonical labels', () {
+    expect(normalizeTaskStatusString('Opening'), 'OPEN');
+    expect(normalizeTaskStatusString('inProgress'), 'IN PROGRESS');
+    expect(normalizeTaskStatusString('IN_PROGRESS'), 'IN PROGRESS');
   });
 }

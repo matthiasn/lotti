@@ -25,7 +25,6 @@ const _holidayCategoryId = 'holiday';
 const _tasksCategoryId = 'lotti-tasks';
 const _hikingCategoryId = 'hiking';
 const _meetingsCategoryId = 'meetings';
-const _previewUserName = 'Matthias';
 const _previewAvatar = AssetImage(
   'assets/design_system/avatar_placeholder.png',
 );
@@ -377,7 +376,7 @@ class _MyDailyHeader extends StatelessWidget {
               vertical: 9,
             ),
             child: _MyDailyGreetingRow(
-              userName: _previewUserName,
+              userName: '',
               onNotificationsPressed: widgetbookNoop,
             ),
           ),
