@@ -635,6 +635,46 @@ void main() {
     );
 
     test(
+      'burnUnboundVectorClock turns an outside-scope reservation into a burn',
+      () async {
+        final syncDb = MockSyncDatabase();
+        getIt.registerSingleton<SyncDatabase>(syncDb);
+        when(
+          () => syncDb.recordReservedSequenceCounter(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+          ),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => syncDb.markReservedSequenceCounterBurnPending(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await service.setNextAvailableCounter(900);
+        final host = (await service.getHost())!;
+        final burnt = <({String hostId, int counter})>[];
+        service.setBurnHandler((hostId, counter) async {
+          burnt.add((hostId: hostId, counter: counter));
+        });
+
+        final vc = await service.getNextVectorClock();
+        await service.burnUnboundVectorClock(vc, reason: 'write rejected');
+
+        verify(
+          () => syncDb.markReservedSequenceCounterBurnPending(
+            hostId: host,
+            counter: 900,
+          ),
+        ).called(1);
+        expect(burnt, [(hostId: host, counter: 900)]);
+
+        service.setBurnHandler(null);
+      },
+    );
+
+    test(
       'commit-on-write invariant: a scoped action that swallows a '
       'post-DB-write exception still commits — the counter is already '
       'on disk and the write carried it, so no burn broadcast',

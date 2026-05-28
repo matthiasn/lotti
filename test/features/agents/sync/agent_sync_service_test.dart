@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -397,6 +398,34 @@ void main() {
         ).called(1);
       });
 
+      test('records the agent entity sequence before enqueuing', () async {
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async {});
+        final service = AgentSyncService(
+          repository: mockRepository,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVectorClockService,
+          sequenceLogService: sequenceLog,
+        );
+
+        await service.upsertEntity(testEntity);
+
+        verifyInOrder([
+          () => sequenceLog.recordSentEntry(
+            entryId: testEntity.id,
+            vectorClock: testClock,
+            payloadType: SyncSequencePayloadType.agentEntity,
+          ),
+          () => mockOutboxService.enqueueMessage(any<SyncMessage>()),
+        ]);
+      });
+
       test('preserves original clock when fromSync is true', () async {
         final syncedEntity = testEntity.copyWith(
           vectorClock: const VectorClock({'remote': 42}),
@@ -523,6 +552,34 @@ void main() {
             ),
           ),
         ).called(1);
+      });
+
+      test('records the agent link sequence before enqueuing', () async {
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async {});
+        final service = AgentSyncService(
+          repository: mockRepository,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVectorClockService,
+          sequenceLogService: sequenceLog,
+        );
+
+        await service.upsertLink(testBasicLink);
+
+        verifyInOrder([
+          () => sequenceLog.recordSentEntry(
+            entryId: testBasicLink.id,
+            vectorClock: testClock,
+            payloadType: SyncSequencePayloadType.agentLink,
+          ),
+          () => mockOutboxService.enqueueMessage(any<SyncMessage>()),
+        ]);
       });
 
       test('preserves original clock when fromSync is true', () async {

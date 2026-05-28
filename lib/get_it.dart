@@ -553,6 +553,17 @@ Future<void> registerSingletons() async {
             subDomain: 'vc.burn.reconcile',
           );
         }
+        final reservedCounters = await syncSequenceLogService
+            .reservedCountersForHost(hostId: hostId);
+        if (reservedCounters.isNotEmpty) {
+          domainLogger.error(
+            LogDomains.sync,
+            'vc.reserved.audit host=$hostId '
+            'count=${reservedCounters.length} '
+            'counters=$reservedCounters',
+            subDomain: 'vc.reserved.audit',
+          );
+        }
       } catch (error, stackTrace) {
         domainLogger.error(
           LogDomains.sync,

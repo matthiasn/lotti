@@ -497,6 +497,12 @@ void main() {
       () => vectorClockService.getHost(),
     ).thenAnswer((_) async => 'test-host-id');
     when(
+      () => vectorClockService.burnUnboundVectorClock(
+        any<VectorClock?>(),
+        reason: any<String>(named: 'reason'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
       () => journalDb.addLabeled(any<JournalEntity>()),
     ).thenAnswer((_) async {});
     when(
@@ -688,6 +694,15 @@ void main() {
     expect(saved, isFalse);
     verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+    verify(
+      () => vectorClockService.burnUnboundVectorClock(
+        entity.meta.vectorClock,
+        reason: any<String>(
+          named: 'reason',
+          that: contains('createDbEntity write rejected id=entry-id'),
+        ),
+      ),
+    ).called(1);
   });
 
   glados.Glados(

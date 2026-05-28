@@ -43,6 +43,19 @@ class DescriptorDownloader {
       );
       final downloadedBytes = matrixFile.bytes;
       if (downloadedBytes.isEmpty) {
+        final purged = await _maybePurgeCachedDescriptor(
+          descriptorEvent,
+          jsonPath,
+        );
+        if (purged && attempt + 1 < maxDescriptorDownloadAttempts) {
+          onCachePurge?.call();
+          _logging.captureEvent(
+            'smart.fetch.empty_bytes.refresh path=$jsonPath',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          );
+          continue;
+        }
         throw const FileSystemException('empty attachment bytes');
       }
       final bytes = await decodeAttachmentBytes(

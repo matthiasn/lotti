@@ -238,34 +238,29 @@ class AgentRepository {
           r'''
             SELECT identity.*
             FROM agent_entities AS identity
-            INNER JOIN (
-              SELECT agent_id, serialized
-              FROM (
-                SELECT state.agent_id, state.serialized,
-                  ROW_NUMBER() OVER (
-                    PARTITION BY state.agent_id
-                    ORDER BY state.created_at DESC, state.id DESC
-                  ) AS rn
-                FROM agent_entities AS state
-                WHERE state.type = ?
-                  AND state.deleted_at IS NULL
+            INNER JOIN agent_entities AS state
+              ON state.id = (
+                SELECT latest_state.id
+                FROM agent_entities AS latest_state
+                WHERE latest_state.agent_id = identity.agent_id
+                  AND latest_state.type = ?
+                  AND latest_state.deleted_at IS NULL
+                ORDER BY latest_state.created_at DESC, latest_state.id DESC
+                LIMIT 1
               )
-              WHERE rn = 1
-                AND json_extract(serialized, '$.slots.activeDayId') = ?
-            ) AS latest_state
-              ON latest_state.agent_id = identity.agent_id
             WHERE identity.type = 'agent'
               AND identity.subtype = ?
               AND identity.deleted_at IS NULL
               AND json_extract(identity.serialized, '$.lifecycle') = ?
+              AND json_extract(state.serialized, '$.slots.activeDayId') = ?
             ORDER BY identity.created_at DESC, identity.agent_id DESC
             LIMIT 1
           ''',
           variables: [
             Variable.withString(AgentEntityTypes.agentState),
-            Variable.withString(activeDayId),
             Variable.withString(kind),
             Variable.withString(AgentLifecycle.active.name),
+            Variable.withString(activeDayId),
           ],
           readsFrom: {_db.agentEntities},
         )

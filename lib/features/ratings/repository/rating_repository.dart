@@ -7,6 +7,7 @@ import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -27,6 +28,31 @@ class RatingRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   final _uuid = const Uuid();
+
+  SyncSequenceLogService? get _sequenceLogService =>
+      getIt.isRegistered<SyncSequenceLogService>()
+      ? getIt<SyncSequenceLogService>()
+      : null;
+
+  Future<void> _recordLinkSequence(EntryLink link) async {
+    final service = _sequenceLogService;
+    final vectorClock = link.vectorClock;
+    if (service == null || vectorClock == null) return;
+    try {
+      await service.recordSentEntryLink(
+        linkId: link.id,
+        vectorClock: vectorClock,
+      );
+    } catch (error, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomains.sync,
+        'sequence record failed after rating link write; VC already committed',
+        error: error,
+        stackTrace: stackTrace,
+        subDomain: '_createRatingLink.recordSent',
+      );
+    }
+  }
 
   /// Creates or updates a rating for a target entry.
   ///
@@ -185,6 +211,7 @@ class RatingRepository {
 
         final res = await _journalDb.upsertEntryLink(link);
         if (res == 0) return false;
+        await _recordLinkSequence(link);
         getIt<UpdateNotifications>().notify({fromId, toId});
 
         // Enqueue sync message separately so a sync failure doesn't

@@ -13,6 +13,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -33,8 +34,56 @@ class PersistenceLogic {
   GeolocationService get _geolocationService => getIt<GeolocationService>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   LoggingService get _loggingService => getIt<LoggingService>();
+  SyncSequenceLogService? get _sequenceLogService =>
+      getIt.isRegistered<SyncSequenceLogService>()
+      ? getIt<SyncSequenceLogService>()
+      : null;
   final OutboxService outboxService = getIt<OutboxService>();
   final uuid = const Uuid();
+
+  Future<void> _recordJournalSequence(
+    JournalEntity entity, {
+    required String subDomain,
+  }) async {
+    final vectorClock = entity.meta.vectorClock;
+    final service = _sequenceLogService;
+    if (service == null || vectorClock == null) return;
+    try {
+      await service.recordSentEntry(
+        entryId: entity.meta.id,
+        vectorClock: vectorClock,
+      );
+    } catch (exception, stackTrace) {
+      _loggingService.captureException(
+        exception,
+        domain: 'SYNC_SEQUENCE',
+        subDomain: subDomain,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _recordEntryLinkSequence(
+    EntryLink link, {
+    required String subDomain,
+  }) async {
+    final vectorClock = link.vectorClock;
+    final service = _sequenceLogService;
+    if (service == null || vectorClock == null) return;
+    try {
+      await service.recordSentEntryLink(
+        linkId: link.id,
+        vectorClock: vectorClock,
+      );
+    } catch (exception, stackTrace) {
+      _loggingService.captureException(
+        exception,
+        domain: 'SYNC_SEQUENCE',
+        subDomain: subDomain,
+        stackTrace: stackTrace,
+      );
+    }
+  }
 
   /// Creates a [Metadata] object with either a random UUID v1 ID or a
   /// deterministic UUID v5 ID.
@@ -370,47 +419,53 @@ class PersistenceLogic {
     required String toId,
   }) async {
     // Invariant: once the link upsert hits disk, the VC counter is claimed on
-    // disk and MUST commit — otherwise a subsequent reservation could hand
-    // out the same counter to a different entity, producing a cross-entity
-    // collision. Only a pre-write exception (DB throws before we reach
-    // [upsertEntryLink]) releases the reservation.
-    return _vectorClockService.withVcScope<bool>(() async {
-      final now = DateTime.now();
+    // disk and MUST commit. If the upsert reports "no row changed", the
+    // counter has no payload and must be burnt instead.
+    return _vectorClockService.withVcScope<bool>(
+      () async {
+        final now = DateTime.now();
 
-      final link = EntryLink.basic(
-        id: uuid.v1(),
-        fromId: fromId,
-        toId: toId,
-        createdAt: now,
-        updatedAt: now,
-        hidden: false,
-        vectorClock: await _vectorClockService.getNextVectorClock(),
-      );
-
-      final res = await _journalDb.upsertEntryLink(link);
-      _updateNotifications.notify({link.fromId, link.toId});
-
-      try {
-        await outboxService.enqueueMessage(
-          SyncMessage.entryLink(
-            entryLink: link,
-            status: SyncEntryStatus.initial,
-          ),
+        final link = EntryLink.basic(
+          id: uuid.v1(),
+          fromId: fromId,
+          toId: toId,
+          createdAt: now,
+          updatedAt: now,
+          hidden: false,
+          vectorClock: await _vectorClockService.getNextVectorClock(),
         );
-      } catch (exception, stackTrace) {
-        // Swallow to preserve the commit-on-write invariant: the VC is
-        // already baked into the persisted link row and must not be
-        // rewound just because the outbox write failed transiently.
-        getIt<DomainLogger>().error(
-          LogDomains.sync,
-          'outbox enqueue failed after createLink; VC already committed',
-          error: exception,
-          stackTrace: stackTrace,
-          subDomain: 'createLink.enqueue',
+
+        final res = await _journalDb.upsertEntryLink(link);
+        if (res == 0) return false;
+        await _recordEntryLinkSequence(
+          link,
+          subDomain: 'createLink.recordSent',
         );
-      }
-      return res != 0;
-    });
+        _updateNotifications.notify({link.fromId, link.toId});
+
+        try {
+          await outboxService.enqueueMessage(
+            SyncMessage.entryLink(
+              entryLink: link,
+              status: SyncEntryStatus.initial,
+            ),
+          );
+        } catch (exception, stackTrace) {
+          // Swallow to preserve the commit-on-write invariant: the VC is
+          // already baked into the persisted link row and must not be
+          // rewound just because the outbox write failed transiently.
+          getIt<DomainLogger>().error(
+            LogDomains.sync,
+            'outbox enqueue failed after createLink; VC already committed',
+            error: exception,
+            stackTrace: stackTrace,
+            subDomain: 'createLink.enqueue',
+          );
+        }
+        return true;
+      },
+      commitWhen: (created) => created,
+    );
   }
 
   Future<bool?> createDbEntity(
@@ -420,10 +475,11 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      return await _vectorClockService.withVcScope<bool?>(
-        () async {
-          JournalEntity? linked;
+      JournalEntity? linked;
+      Set<String>? affectedIds;
 
+      final saved = await _vectorClockService.withVcScope<bool?>(
+        () async {
           if (linkedId != null) {
             linked = await _journalDb.journalEntityById(linkedId);
           }
@@ -441,6 +497,20 @@ class PersistenceLogic {
           );
 
           final saved = res.applied;
+
+          if (!saved) {
+            await _vectorClockService.burnUnboundVectorClock(
+              withContext.meta.vectorClock,
+              reason: 'createDbEntity write rejected id=${withContext.id}',
+            );
+          }
+
+          if (saved) {
+            await _recordJournalSequence(
+              withContext,
+              subDomain: 'createDbEntity.recordSent',
+            );
+          }
 
           if (saved && enqueueSync) {
             try {
@@ -469,40 +539,45 @@ class PersistenceLogic {
             }
           }
 
-          if (linked != null) {
-            await createLink(
-              fromId: linked.meta.id,
-              toId: withContext.meta.id,
-            );
-          }
-
-          final affectedIds = withContext.affectedIds;
+          affectedIds = withContext.affectedIds;
 
           if (linkedId != null) {
-            affectedIds.add(linkedId);
-          }
-
-          _updateNotifications.notify({
-            ...affectedIds,
-            labelUsageNotification,
-          });
-
-          await getIt<NotificationService>().updateBadge();
-
-          if (shouldAddGeolocation) {
-            addGeolocation(journalEntity.id);
+            affectedIds!.add(linkedId);
           }
 
           return saved;
         },
-        // Commit iff the LOCAL WRITE succeeded. A rejected write
-        // (applied=false) never touched disk, so releasing the reserved
-        // counter is safe and lets the next reservation reuse the slot.
-        // enqueueSync intentionally does NOT gate the commit — if the DB
-        // accepted the row, the VC is baked into persisted state and must
-        // advance regardless of whether sync was wired.
+        // Commit iff the local entity write succeeded. A rejected write never
+        // bound the input VC to this payload; that counter is burnt explicitly
+        // above and any scoped reservations are released by commitWhen=false.
+        // enqueueSync intentionally does not gate the commit: if the DB
+        // accepted the row, the VC is baked into persisted state.
         commitWhen: (saved) => saved ?? false,
       );
+
+      // Keep link creation outside the entity VC scope. A link write claims a
+      // separate counter and must be finalized by createLink's own scope even
+      // when the entity write above was skipped.
+      final linkedEntity = linked;
+      if (linkedEntity != null) {
+        await createLink(
+          fromId: linkedEntity.meta.id,
+          toId: journalEntity.meta.id,
+        );
+      }
+
+      _updateNotifications.notify({
+        ...?affectedIds,
+        labelUsageNotification,
+      });
+
+      await getIt<NotificationService>().updateBadge();
+
+      if (shouldAddGeolocation) {
+        addGeolocation(journalEntity.id);
+      }
+
+      return saved;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -823,6 +898,13 @@ class PersistenceLogic {
             overrideComparison: overrideComparison,
           );
           final applied = updateResult.applied;
+
+          if (applied) {
+            await _recordJournalSequence(
+              journalEntity,
+              subDomain: 'updateDbEntity.recordSent',
+            );
+          }
 
           if (applied && beforeNotify != null) {
             try {

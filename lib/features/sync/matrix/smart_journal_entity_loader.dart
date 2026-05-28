@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/matrix/descriptor_downloader.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:matrix/matrix.dart' show Event;
 
 /// Smart loader that ensures JSON presence/currency based on an incoming vector
 /// clock. It uses the AttachmentIndex to fetch missing/stale JSON and writes
@@ -248,14 +250,26 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       return;
     }
     try {
-      final file = await downloadAttachmentWithTimeout(ev, pathForError: rp);
-      final downloadedBytes = file.bytes;
-      if (downloadedBytes.isEmpty) {
-        throw const FileSystemException('empty attachment bytes');
+      Uint8List? downloadedBytes;
+      for (var attempt = 0; attempt < 2; attempt++) {
+        final file = await downloadAttachmentWithTimeout(ev, pathForError: rp);
+        if (file.bytes.isNotEmpty) {
+          downloadedBytes = file.bytes;
+          break;
+        }
+        final purged = await _maybePurgeCachedAttachment(ev, rp);
+        if (!purged || attempt == 1) {
+          throw const FileSystemException('empty attachment bytes');
+        }
+        _logging.captureEvent(
+          'smart.media.empty_bytes.refresh path=$rp',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetchMedia',
+        );
       }
       final bytes = await decodeAttachmentBytes(
         event: ev,
-        downloadedBytes: downloadedBytes,
+        downloadedBytes: downloadedBytes!,
         relativePath: rp,
         logging: _logging,
       );
@@ -273,6 +287,28 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         stackTrace: st,
       );
       _onMissingDescriptorPath?.call(descriptorKey);
+    }
+  }
+
+  Future<bool> _maybePurgeCachedAttachment(Event event, String path) async {
+    try {
+      final uri = event.attachmentOrThumbnailMxcUrl();
+      if (uri == null) return false;
+      await event.room.client.database.deleteFile(uri);
+      _logging.captureEvent(
+        'smart.media.empty_bytes.purge path=$path mxc=$uri',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetchMedia',
+      );
+      return true;
+    } catch (e, st) {
+      _logging.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SmartLoader.fetchMedia.purge',
+        stackTrace: st,
+      );
+      return false;
     }
   }
 }

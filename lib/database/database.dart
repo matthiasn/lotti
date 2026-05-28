@@ -50,6 +50,11 @@ const String _createIdxJournalTaskStatusPrivateSql =
     'private COLLATE BINARY ASC) '
     "WHERE type = 'Task' AND task = 1 AND deleted = FALSE";
 
+const String _createIdxJournalQuantLatestSql =
+    'CREATE INDEX idx_journal_quant_latest '
+    'ON journal(subtype COLLATE BINARY ASC, date_from COLLATE BINARY DESC) '
+    "WHERE type = 'QuantitativeEntry' AND deleted = FALSE";
+
 enum ConflictStatus {
   unresolved,
   resolved,
@@ -125,6 +130,14 @@ class JournalDb extends _$JournalDb {
       beforeOpen: (details) async {
         // PRAGMA is connection-local — must run on every connection.
         await customStatement('PRAGMA foreign_keys = ON');
+        if (await _tableExists('journal')) {
+          await customStatement(
+            _createIdxJournalQuantLatestSql.replaceFirst(
+              'CREATE INDEX ',
+              'CREATE INDEX IF NOT EXISTS ',
+            ),
+          );
+        }
       },
       onCreate: (Migrator m) async {
         return m.createAll();

@@ -835,15 +835,11 @@ class SyncDatabase extends _$SyncDatabase {
   /// Watches the count of actionable (pending + in-flight) outbox items.
   /// Used by the badge to show how many items still need to be sent.
   Stream<int> watchOutboxCount() {
-    final query = selectOnly(outbox)
-      ..addColumns([outbox.id.count()])
-      ..where(
-        outbox.status.isIn([
-          OutboxStatus.pending.index,
-          _outboxSendingStatus,
-        ]),
-      );
-    return query.watchSingle().map((row) => row.read(outbox.id.count()) ?? 0);
+    return customSelect(
+      'SELECT COUNT(id) AS cnt FROM outbox '
+      'WHERE status IN (${OutboxStatus.pending.index}, $_outboxSendingStatus)',
+      readsFrom: {outbox},
+    ).watchSingle().map((row) => row.read<int>('cnt'));
   }
 
   /// Delete a single outbox item by its ID.

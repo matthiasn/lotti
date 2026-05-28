@@ -97,7 +97,7 @@ class BackfillStatsState {
 /// without requiring the user to hit the manual refresh button. The
 /// stats aggregation ran 175 times per hour on a real desktop at the
 /// previous 2-second cadence and showed up as a top offender in the
-/// slow-query log, so the interval is now 5 s and we also pause the
+/// slow-query log, so the interval is now 30 s and we also pause the
 /// timer entirely when the app is backgrounded (no user there to
 /// watch the numbers move anyway).
 ///
@@ -106,7 +106,7 @@ class BackfillStatsState {
 /// firing the `ref.onDispose` that cancels this timer. Zero cost
 /// when the app is backgrounded: the `AppLifecycleListener` stops
 /// the timer on `onHide` and re-arms it on `onShow`.
-const Duration _autoRefreshInterval = Duration(seconds: 5);
+const Duration _autoRefreshInterval = Duration(seconds: 30);
 
 @riverpod
 class BackfillStatsController extends _$BackfillStatsController {

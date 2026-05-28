@@ -261,6 +261,79 @@ void main() {
       },
     );
 
+    test('purges cached media and retries after empty bytes', () async {
+      final fixedDate = DateTime(2024, 3, 15);
+      final image = JournalImage(
+        meta: Metadata(
+          id: 'img-empty-retry',
+          createdAt: fixedDate,
+          updatedAt: fixedDate,
+          dateFrom: fixedDate,
+          dateTo: fixedDate,
+        ),
+        data: ImageData(
+          imageId: 'img-empty-retry',
+          imageDirectory: '/images/2024-01-01/',
+          imageFile: 'retry.jpg',
+          capturedAt: fixedDate,
+        ),
+      );
+      final relJson = '${getRelativeImagePath(image)}.json';
+      final jsonPathImg = path.join(
+        tempDir.path,
+        stripLeadingSlashes(relJson),
+      );
+      File(jsonPathImg)
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(image.toJson()));
+
+      final relMedia = getRelativeImagePath(image);
+      final mediaFile = File(
+        path.join(tempDir.path, stripLeadingSlashes(relMedia)),
+      );
+      final index = AttachmentIndex();
+      final ev = MockEvent();
+      final room = MockRoom();
+      final client = MockMatrixClient();
+      final database = MockMatrixDatabase();
+      final mediaUri = Uri.parse('mxc://server/img-empty-retry');
+      when(() => ev.eventId).thenReturn('evt-img-empty-retry');
+      when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
+      when(() => ev.content).thenReturn({'relativePath': relMedia});
+      when(() => ev.room).thenReturn(room);
+      when(() => room.client).thenReturn(client);
+      when(() => client.database).thenReturn(database);
+      when(ev.attachmentOrThumbnailMxcUrl).thenReturn(mediaUri);
+      when(() => database.deleteFile(mediaUri)).thenAnswer((_) async => true);
+      var downloads = 0;
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+        downloads++;
+        return MatrixFile(
+          bytes: downloads == 1 ? Uint8List(0) : Uint8List.fromList([1, 2, 3]),
+          name: 'retry.jpg',
+        );
+      });
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      final loaded = await loader.load(jsonPath: relJson);
+
+      expect(loaded.meta.id, image.meta.id);
+      expect(downloads, 2);
+      expect(mediaFile.existsSync(), isTrue);
+      verify(() => database.deleteFile(mediaUri)).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('smart.media.empty_bytes.refresh path=$relMedia'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetchMedia',
+        ),
+      ).called(1);
+    });
+
     test('no-VC JSON fetch logs and throws on empty bytes', () async {
       const relJson = '/text_entries/2024-02-01/empty.text.json';
       final index = AttachmentIndex();
@@ -708,6 +781,73 @@ void main() {
         ),
       );
       expect(saved.existsSync(), isTrue);
+    });
+
+    test('purges cached descriptor and retries after empty bytes', () async {
+      const relJson = '/text_entries/2024-01-01/empty_first.text.json';
+      final index = AttachmentIndex(logging: loggingService);
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('evt-empty-first');
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.content).thenReturn({'relativePath': relJson});
+      final room = MockRoom();
+      final client = MockMatrixClient();
+      final database = MockMatrixDatabase();
+      final descriptorUri = Uri.parse('mxc://server/empty-first');
+      when(() => ev.room).thenReturn(room);
+      when(() => room.client).thenReturn(client);
+      when(() => client.database).thenReturn(database);
+      when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
+      when(
+        () => database.deleteFile(descriptorUri),
+      ).thenAnswer((_) async => true);
+
+      final fresh = JournalEntry(
+        meta: Metadata(
+          id: 'empty-first',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'n': 2}),
+        ),
+        entryText: const EntryText(plainText: 'fresh after empty'),
+      );
+      var downloads = 0;
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+        downloads++;
+        return MatrixFile(
+          bytes: downloads == 1
+              ? Uint8List(0)
+              : Uint8List.fromList(jsonEncode(fresh.toJson()).codeUnits),
+          name: 'entry.json',
+        );
+      });
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      var purges = 0;
+      loader.onCachePurge = () => purges++;
+
+      final loaded = await loader.load(
+        jsonPath: relJson,
+        incomingVectorClock: const VectorClock({'n': 2}),
+      );
+
+      expect(loaded.meta.id, fresh.meta.id);
+      expect(downloads, 2);
+      expect(purges, 1);
+      verify(() => database.deleteFile(descriptorUri)).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('smart.fetch.empty_bytes.refresh path=$relJson'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SmartLoader.fetch',
+        ),
+      ).called(1);
     });
 
     test('throws when descriptor remains stale after refresh', () async {
@@ -1419,7 +1559,7 @@ void main() {
             ),
           ),
         );
-        verify(() => database.deleteFile(descriptorUri)).called(1);
+        verify(() => database.deleteFile(descriptorUri)).called(2);
         verify(
           () => loggingService.captureException(
             any<Object>(),

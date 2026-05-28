@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   time rail, shows recorded journal time in the Actual lane, keeps task-backed
   agenda titles in sync, refreshes without whole-page loading flashes, and
   avoids surfacing weeks-old overdue tasks in daily proposals.
+- Sync diagnostics and backfill stats now put less pressure on the database:
+  outbox counts, latest quantitative entries, and active day-agent lookups use
+  indexed query shapes, while backfill stats refresh less aggressively.
+
+### Fixed
+- Sync now binds local journal, link, agent, project, and rating writes into
+  the sequence log before outbox enqueue and explicitly burns rejected
+  deterministic-create vector-clock counters, reducing unresolvable sync gaps.
+- Matrix sync now purges and retries empty cached JSON or media attachment
+  downloads instead of failing immediately on stale zero-byte cache entries.
 
 ## [0.9.1008]
 ### Added
