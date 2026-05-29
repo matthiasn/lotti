@@ -674,6 +674,12 @@ from the project context, linked task reports, and the latest changes.
 Use `record_observations` for private notes that should persist across wakes
 but are not shown in the user-facing report.
 
+## Tool Usage
+
+When several independent updates are warranted in one wake, issue them as
+parallel tool calls in a single turn rather than one per turn.
+`update_project_report` stays the separate, final step.
+
 ## Deferred Tools
 
 The `recommend_next_steps`, `update_project_status`, and `create_task` tools

@@ -1159,6 +1159,11 @@ Use this as high-level planning context:
   unnecessary tool call wastes a turn and clutters the audit log.
 - Only call tools when you have sufficient confidence in the change.
 - Do not call tools speculatively or redundantly.
+- **Batch independent calls**: when a wake warrants several updates that do not
+  depend on each other (e.g., labels, priority, due date, estimate, checklist
+  items), emit them as parallel tool calls in a single turn rather than one
+  tool per turn — fewer turns is faster. `update_report` stays the separate,
+  final step.
 - When a tool call fails, note the failure in observations and move on.
 - Each tool call is audited and must stay within the task's category scope.
 - **Learn from past decisions**: Review the `## Proposal Ledger` section in
