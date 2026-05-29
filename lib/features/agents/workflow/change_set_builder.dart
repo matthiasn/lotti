@@ -127,6 +127,15 @@ class ChangeSetBuilder {
   /// All items accumulated so far.
   List<ChangeItem> get items => List.unmodifiable(_items);
 
+  /// Structural fingerprints (`toolName + args`) of every item proposed this
+  /// wake. The workflow passes these to
+  /// `SuggestionRetractionService.applyStaged` so a retraction of an item the
+  /// agent is simultaneously re-proposing is suppressed — otherwise the
+  /// retract-then-re-add churn makes a stable suggestion vanish and reappear
+  /// under the user.
+  Set<String> get proposedFingerprints =>
+      _items.map(ChangeItem.fingerprint).toSet();
+
   /// Whether any deferred items have been added.
   bool get hasItems => _items.isNotEmpty;
 

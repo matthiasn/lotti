@@ -3706,7 +3706,10 @@ class _FakeRetractionService implements SuggestionRetractionService {
   }
 
   @override
-  Future<void> applyStaged(List<StagedRetraction> staged) async {
+  Future<void> applyStaged(
+    List<StagedRetraction> staged, {
+    Set<String> skipFingerprints = const {},
+  }) async {
     appliedStaged.add(staged);
   }
 }

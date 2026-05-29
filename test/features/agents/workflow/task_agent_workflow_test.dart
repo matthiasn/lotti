@@ -578,6 +578,146 @@ void main() {
         },
       );
 
+      test(
+        'churn guard: retraction of an item the agent re-proposes this wake is '
+        'suppressed, leaving the original untouched',
+        () async {
+          // An open proposal the agent will both re-propose AND retract in the
+          // same wake (the weaker-model churn pattern from the field logs).
+          const openItem = ChangeItem(
+            toolName: 'add_checklist_item',
+            args: {'title': 'Draft the spec'},
+            humanSummary: 'Add: "Draft the spec"',
+          );
+          final pendingSet = makeTestChangeSet(
+            id: 'cs-churn',
+            items: const [openItem],
+          );
+          final fingerprint = ChangeItem.fingerprint(openItem);
+
+          when(
+            () => mockSyncService.repository,
+          ).thenReturn(mockAgentRepository);
+          when(
+            () => mockAgentRepository.getPendingChangeSets(
+              agentId,
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [pendingSet]);
+          when(
+            () => mockAgentRepository.getEntity('cs-churn'),
+          ).thenAnswer((_) async => pendingSet);
+          // The build step consolidates against the still-open original.
+          when(
+            () => mockAgentRepository.getProposalLedger(
+              agentId,
+              taskId: any(named: 'taskId'),
+              changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+              resolvedLimit: any(named: 'resolvedLimit'),
+            ),
+          ).thenAnswer(
+            (_) async => ProposalLedger(
+              open: const [],
+              resolved: const [],
+              pendingSets: [pendingSet],
+            ),
+          );
+          // No real checklist titles on the task → the re-proposal is queued in
+          // the builder (so its fingerprint lands in proposedFingerprints).
+          when(
+            () => mockJournalDb.journalEntityById(any()),
+          ).thenAnswer((_) async => null);
+
+          final upserts = <AgentDomainEntity>[];
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            inv,
+          ) async {
+            upserts.add(inv.positionalArguments.single as AgentDomainEntity);
+          });
+
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      ChatCompletionMessageToolCall(
+                        id: 'repropose-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: TaskAgentToolNames.addMultipleChecklistItems,
+                          arguments: jsonEncode({
+                            'items': [
+                              {'title': 'Draft the spec'},
+                            ],
+                          }),
+                        ),
+                      ),
+                      ChatCompletionMessageToolCall(
+                        id: 'retract-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: TaskAgentToolNames.retractSuggestions,
+                          arguments: jsonEncode({
+                            'proposals': [
+                              {'fingerprint': fingerprint, 'reason': 'dup'},
+                            ],
+                          }),
+                        ),
+                      ),
+                      const ChatCompletionMessageToolCall(
+                        id: 'report-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'update_report',
+                          arguments:
+                              '{"oneLiner":"o","tldr":"t","content":"c"}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+
+          // The retraction targeted an item being re-proposed this wake, so it
+          // must be suppressed — no agent retraction is persisted, and the
+          // original proposal is never flipped to retracted.
+          final retractions = upserts.whereType<ChangeDecisionEntity>().where(
+            (d) =>
+                d.verdict == ChangeDecisionVerdict.retracted &&
+                d.actor == DecisionActor.agent,
+          );
+          expect(retractions, isEmpty);
+          final retractedSets = upserts.whereType<ChangeSetEntity>().where(
+            (s) => s.items.any(
+              (i) => i.status == ChangeItemStatus.retracted,
+            ),
+          );
+          expect(retractedSets, isEmpty);
+        },
+      );
+
       test('creates conversation, sends message, and persists state', () async {
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,

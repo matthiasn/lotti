@@ -72,6 +72,25 @@ class _GeneratedRetractionScenario {
   }
 }
 
+/// Scenario for the `applyStaged` churn guard: a list of staged item kinds
+/// (each in its own single-item change set) plus the kinds whose fingerprints
+/// are being re-proposed this wake and must therefore be skipped.
+class _GeneratedSkipScenario {
+  const _GeneratedSkipScenario({
+    required this.stagedKinds,
+    required this.skipKinds,
+  });
+
+  final List<_GeneratedRetractionItemKind> stagedKinds;
+  final List<_GeneratedRetractionItemKind> skipKinds;
+
+  @override
+  String toString() {
+    return '_GeneratedSkipScenario(stagedKinds: $stagedKinds, '
+        'skipKinds: $skipKinds)';
+  }
+}
+
 class _ExpectedRetractionResult {
   const _ExpectedRetractionResult({
     required this.fingerprint,
@@ -221,6 +240,23 @@ extension _AnyGeneratedSuggestionRetractionScenario on glados.Any {
           List<_GeneratedRetractionSetSpec> sets,
           List<_GeneratedRetractionRequestSlot> requests,
         ) => _GeneratedRetractionScenario(sets: sets, requests: requests),
+      );
+
+  glados.Generator<_GeneratedSkipScenario> get retractionSkipScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(0, 5, retractionItemKind),
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(0, 3, retractionItemKind),
+        (
+          List<_GeneratedRetractionItemKind> stagedKinds,
+          List<_GeneratedRetractionItemKind> skipKinds,
+        ) => _GeneratedSkipScenario(
+          stagedKinds: stagedKinds,
+          skipKinds: skipKinds,
+        ),
       );
 }
 
@@ -1496,5 +1532,174 @@ void main() {
         );
       },
     );
+
+    test(
+      'applyStaged skips a retraction whose item is being re-proposed this '
+      'wake (churn guard)',
+      () async {
+        final cs = setWith([priorityItem]);
+        stubPendingSets([cs]);
+        final plan = await service.plan(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [
+            RetractionRequest(
+              fingerprint: ChangeItem.fingerprint(priorityItem),
+              reason: 'r',
+            ),
+          ],
+        );
+
+        // The agent re-proposed this exact item this wake → skip it entirely.
+        await withClock(
+          testClock,
+          () => service.applyStaged(
+            plan.staged,
+            skipFingerprints: {ChangeItem.fingerprint(priorityItem)},
+          ),
+        );
+
+        // No decision, no flip — the original proposal is left untouched so it
+        // does not vanish and reappear under the user.
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'applyStaged applies only the retractions not in skipFingerprints',
+      () async {
+        final cs = setWith([priorityItem, titleItem]);
+        stubPendingSets([cs]);
+        final plan = await service.plan(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [
+            RetractionRequest(
+              fingerprint: ChangeItem.fingerprint(priorityItem),
+              reason: 'a',
+            ),
+            RetractionRequest(
+              fingerprint: ChangeItem.fingerprint(titleItem),
+              reason: 'b',
+            ),
+          ],
+        );
+        expect(plan.staged, hasLength(2));
+
+        // Re-proposing only the priority item → its retraction is skipped, the
+        // title retraction proceeds.
+        await withClock(
+          testClock,
+          () => service.applyStaged(
+            plan.staged,
+            skipFingerprints: {ChangeItem.fingerprint(priorityItem)},
+          ),
+        );
+
+        final upserts = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final decision = upserts.whereType<ChangeDecisionEntity>().single;
+        expect(decision.toolName, 'set_task_title');
+        final updated = upserts.whereType<ChangeSetEntity>().single;
+        expect(
+          updated.items[0].status,
+          ChangeItemStatus.pending,
+          reason: 're-proposed priority item is left open',
+        );
+        expect(updated.items[1].status, ChangeItemStatus.retracted);
+      },
+    );
+
+    glados.Glados(
+      glados.any.retractionSkipScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('applyStaged persists exactly the non-skipped staged items', (
+      scenario,
+    ) async {
+      final localSyncService = MockAgentSyncService();
+      final localRepository = MockAgentRepository();
+      final localDomainLogger = MockDomainLogger();
+      final localService = SuggestionRetractionService(
+        syncService: localSyncService,
+        domainLogger: localDomainLogger,
+      );
+
+      when(() => localSyncService.repository).thenReturn(localRepository);
+      // Re-read falls back to the staged snapshot (item still pending).
+      when(
+        () => localRepository.getEntity(any()),
+      ).thenAnswer((_) async => null);
+      final upserts = <AgentDomainEntity>[];
+      when(() => localSyncService.upsertEntity(any())).thenAnswer((inv) async {
+        upserts.add(inv.positionalArguments.single as AgentDomainEntity);
+      });
+      when(
+        () => localDomainLogger.log(
+          any(),
+          any(),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+
+      // Each staged item lives in its own single-item change set, so every
+      // target has a unique key (no dedupe collapsing) and one write each.
+      final staged = [
+        for (var i = 0; i < scenario.stagedKinds.length; i++)
+          StagedRetraction(
+            changeSet: makeTestChangeSet(
+              id: 'skip-cs-$i',
+              items: [scenario.stagedKinds[i].item()],
+            ),
+            itemIndex: 0,
+            item: scenario.stagedKinds[i].item(),
+            reason: 'reason-$i',
+          ),
+      ];
+      final skipFingerprints = {
+        for (final kind in scenario.skipKinds)
+          ChangeItem.fingerprint(kind.item()),
+      };
+
+      await withClock(
+        testClock,
+        () => localService.applyStaged(
+          staged,
+          skipFingerprints: skipFingerprints,
+        ),
+      );
+
+      final expectedApplied = [
+        for (final kind in scenario.stagedKinds)
+          if (!skipFingerprints.contains(ChangeItem.fingerprint(kind.item())))
+            kind,
+      ];
+      final decisions = upserts.whereType<ChangeDecisionEntity>().toList();
+      final sets = upserts.whereType<ChangeSetEntity>().toList();
+
+      // One decision + one set write per applied (non-skipped) staged item.
+      expect(decisions, hasLength(expectedApplied.length), reason: '$scenario');
+      expect(sets, hasLength(expectedApplied.length), reason: '$scenario');
+
+      // No persisted retraction may carry a skipped fingerprint.
+      for (final decision in decisions) {
+        final fingerprint = ChangeItem.fingerprintFromParts(
+          decision.toolName,
+          decision.args ?? const {},
+        );
+        expect(
+          skipFingerprints.contains(fingerprint),
+          isFalse,
+          reason: '$scenario',
+        );
+      }
+      for (final set in sets) {
+        expect(
+          set.items.single.status,
+          ChangeItemStatus.retracted,
+          reason: '$scenario',
+        );
+      }
+    }, tags: 'glados');
   });
 }

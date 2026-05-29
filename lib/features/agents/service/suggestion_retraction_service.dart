@@ -79,6 +79,11 @@ class StagedRetraction {
   /// to dedupe staging across multiple `retract_suggestions` calls in one wake
   /// and to dedupe application within [SuggestionRetractionService.applyStaged].
   String get key => '${changeSet.id}:$itemIndex';
+
+  /// Structural fingerprint of the target item (`toolName + args`). Lets the
+  /// workflow detect when the agent is retracting a proposal it is
+  /// simultaneously re-proposing this wake (retract-then-re-add churn).
+  String get fingerprint => ChangeItem.fingerprint(item);
 }
 
 /// Outcome of [SuggestionRetractionService.plan]: the per-request [results] to
@@ -301,16 +306,31 @@ class SuggestionRetractionService {
   /// re-read re-validates each target by **bounds, status, and fingerprint**, so
   /// an item a concurrent user confirm/reject already resolved — or one whose
   /// row moved or changed under us — is skipped rather than mis-retracted.
-  Future<void> applyStaged(List<StagedRetraction> staged) async {
+  ///
+  /// [skipFingerprints] suppresses retractions whose target item shares a
+  /// fingerprint with something the agent is **re-proposing in the same wake**.
+  /// Retracting an open proposal and re-adding an identical one is churn: it
+  /// makes a stable suggestion vanish and reappear under the user's finger.
+  /// Skipping the retraction keeps the original open; the matching new proposal
+  /// is then dropped by the builder's dedup against that still-open original.
+  /// Stale retractions (not re-proposed) and supersedes (different fingerprint,
+  /// e.g. `update_running_timer`) carry a different fingerprint and are applied
+  /// normally.
+  Future<void> applyStaged(
+    List<StagedRetraction> staged, {
+    Set<String> skipFingerprints = const {},
+  }) async {
     if (staged.isEmpty) return;
 
-    // Dedupe by target item, preserving first-seen order, and group by parent
-    // change set so each set is read and written exactly once.
+    // Dedupe by target item, preserving first-seen order, drop churn (an item
+    // being re-proposed this wake), and group by parent change set so each set
+    // is read and written exactly once.
     final seenKeys = <String>{};
     final deduped = <StagedRetraction>[];
     final order = <String>[];
     final byChangeSetId = <String, List<StagedRetraction>>{};
     for (final retraction in staged) {
+      if (skipFingerprints.contains(retraction.fingerprint)) continue;
       if (!seenKeys.add(retraction.key)) continue;
       deduped.add(retraction);
       byChangeSetId
@@ -320,6 +340,7 @@ class SuggestionRetractionService {
           })
           .add(retraction);
     }
+    if (deduped.isEmpty) return;
 
     // 1. Persist every decision first (in staged order) so we never leave a
     //    retracted item without a matching explanation — mirrors the

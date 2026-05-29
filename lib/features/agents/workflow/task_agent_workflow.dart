@@ -626,8 +626,18 @@ class TaskAgentWorkflow {
         // suggestion list for the seconds until this end-of-wake build landed
         // the replacements; staging closes that gap. Running before build also
         // lets the builder's dedup see the freshly-retracted statuses.
+        //
+        // Churn guard: weaker models routinely retract an open proposal AND
+        // re-propose an identical one in the same wake. That retract-then-re-add
+        // makes a stable suggestion vanish and reappear under the user's finger
+        // (and, when the user has just confirmed a sibling, looks like accepting
+        // one wipes the rest). Suppress retractions of anything being
+        // re-proposed this wake; the matching new proposal is then dropped by
+        // the builder's dedup against the still-open original, leaving it
+        // untouched.
         await retractionService.applyStaged(
           strategy.extractStagedRetractions(),
+          skipFingerprints: changeSetBuilder.proposedFingerprints,
         );
 
         // 10b. Persist deferred change set (if any items were accumulated).

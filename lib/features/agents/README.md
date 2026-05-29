@@ -652,9 +652,25 @@ proposals:
   idempotent without any intervening write.
 - `SuggestionRetractionService.applyStaged(...)` runs at end-of-wake inside the
   same transaction as `ChangeSetBuilder.build()` (and just before it, so the
-  builder's dedup sees the freshly-retracted statuses). For each staged item it
-  transitions it to `ChangeItemStatus.retracted` and persists a matching
+  builder's dedup sees the freshly-retracted statuses). It groups staged
+  retractions by parent change set and applies each set in a single re-read →
+  flip-all → write, re-validating every target by bounds, status, and
+  fingerprint (so a row a concurrent user action already resolved, or one that
+  moved under us, is skipped). For each surviving item it transitions it to
+  `ChangeItemStatus.retracted` and persists a matching
   `ChangeDecisionEntity{verdict: retracted, actor: agent, retractionReason}`.
+
+**Churn guard.** Weaker models routinely retract an open proposal AND
+re-propose an identical one in the same wake. Even committed atomically, that
+retract-then-re-add swaps a stable suggestion for a brand-new change item —
+which, when the user has just confirmed a sibling, looks like accepting one
+suggestion wipes the rest. The workflow therefore passes
+`ChangeSetBuilder.proposedFingerprints` as `applyStaged(..., skipFingerprints:
+…)`: any staged retraction whose target shares a fingerprint with something
+proposed this wake is dropped, and the matching new proposal is then dropped by
+the builder's dedup against the still-open original. The original proposal is
+left untouched. Stale retractions (not re-proposed) and supersedes (a different
+fingerprint, e.g. a new `update_running_timer` text) are unaffected.
 
 Deferring the write is what keeps the suggestion list from flashing empty: the
 old behavior persisted each retraction the instant the tool was called, so the
