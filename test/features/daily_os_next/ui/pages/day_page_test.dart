@@ -11,9 +11,11 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -297,6 +299,7 @@ void main() {
       await tester.pump();
 
       final messages = tester.element(find.byType(DayPage)).messages;
+      expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
       expect(find.text(messages.dailyOsNextDayRefineCta), findsOneWidget);
       expect(find.text(messages.dailyOsNextDayLockInCta), findsOneWidget);
       expect(find.text(messages.dailyOsNextDayWrapUpCta), findsNothing);
@@ -465,12 +468,10 @@ void main() {
     );
 
     testWidgets(
-      'tapping Refine beams to the DailyOS route for the plan date',
+      'tapping Refine opens the modal over the current day page',
       (tester) async {
         _setSurface(tester);
         final agent = _RecordingAgent();
-        String? route;
-        nav_service.beamToNamedOverride = (path) => route = path;
         final draft = _drafted();
         await tester.pumpWidget(
           _wrap(
@@ -483,12 +484,11 @@ void main() {
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextDayRefineCta));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
 
-        expect(
-          route,
-          dailyOsNextRoutePath(DailyOsNextRouteTarget.refine, draft.dayDate),
-        );
         expect(find.byType(DayPage), findsOneWidget);
+        expect(find.byType(RefineModalContent), findsOneWidget);
+        expect(find.text(messages.dailyOsNextRefineTitle), findsOneWidget);
       },
     );
 

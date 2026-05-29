@@ -3427,6 +3427,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Continuă să vorbești';
 
   @override
+  String get dailyOsNextRefineNoChanges =>
+      'Nu au venit modificări ale planului. Reformulați și încercați din nou.';
+
+  @override
   String get dailyOsNextRefineOverline => '🎤 REGLARE';
 
   @override

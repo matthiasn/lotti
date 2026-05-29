@@ -3416,6 +3416,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Seguir hablando';
 
   @override
+  String get dailyOsNextRefineNoChanges =>
+      'No llegaron cambios del plan. Reformúlalo e inténtalo de nuevo.';
+
+  @override
   String get dailyOsNextRefineOverline => '🎤 REFINAMIENTO';
 
   @override

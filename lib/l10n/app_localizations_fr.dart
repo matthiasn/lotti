@@ -3418,6 +3418,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Continuer à parler';
 
   @override
+  String get dailyOsNextRefineNoChanges =>
+      'Aucun changement de plan n\'est revenu. Reformule et réessaie.';
+
+  @override
   String get dailyOsNextRefineOverline => '🎤 AFFINEMENT';
 
   @override

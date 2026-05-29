@@ -4,6 +4,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -37,18 +38,23 @@ class ShutdownPage extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: asyncState.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
+        child: switch (asyncState) {
+          _ when asyncState.hasValue => _ShutdownBody(
+            forDate: forDate,
+            data: asyncState.requireValue,
+          ),
+          _ when asyncState.hasError => Center(
             child: Text(
-              context.messages.dailyOsNextReconcileError(error.toString()),
+              context.messages.dailyOsNextReconcileError(
+                asyncState.error.toString(),
+              ),
               style: tokens.typography.styles.body.bodyMedium.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           ),
-          data: (data) => _ShutdownBody(forDate: forDate, data: data),
-        ),
+          _ => const Center(child: CircularProgressIndicator()),
+        },
       ),
     );
   }
@@ -711,53 +717,49 @@ class _ShutdownFooter extends StatelessWidget {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
     final messages = context.messages;
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        border: Border(
-          top: BorderSide(color: tokens.colors.decorative.level01),
+    return DesignSystemGlassStrip(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step6,
+          vertical: tokens.spacing.step4,
         ),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step6,
-        vertical: tokens.spacing.step4,
-      ),
-      child: Row(
-        children: [
-          TextButton.icon(
-            icon: const Icon(Icons.arrow_back_rounded, size: 16),
-            label: Text(messages.dailyOsNextDayBack),
-            style: TextButton.styleFrom(
-              foregroundColor: tokens.colors.text.mediumEmphasis,
-            ),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-          const Spacer(),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: tokens.colors.text.mediumEmphasis,
-            ),
-            onPressed: () => Navigator.of(context).maybePop(),
-            child: Text(messages.dailyOsNextShutdownSaveAndClose),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          FilledButton.icon(
-            icon: const Icon(Icons.check_rounded, size: 14),
-            label: Text(messages.dailyOsNextShutdownCloseDay),
-            style: FilledButton.styleFrom(
-              backgroundColor: teal,
-              foregroundColor: tokens.colors.text.onInteractiveAlert,
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step5,
-                vertical: tokens.spacing.step3,
+        child: Row(
+          children: [
+            TextButton.icon(
+              icon: const Icon(Icons.arrow_back_rounded, size: 16),
+              label: Text(messages.dailyOsNextDayBack),
+              style: TextButton.styleFrom(
+                foregroundColor: tokens.colors.text.mediumEmphasis,
               ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(tokens.radii.m),
-              ),
+              onPressed: () => Navigator.of(context).maybePop(),
             ),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ],
+            const Spacer(),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: tokens.colors.text.mediumEmphasis,
+              ),
+              onPressed: () => Navigator.of(context).maybePop(),
+              child: Text(messages.dailyOsNextShutdownSaveAndClose),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            FilledButton.icon(
+              icon: const Icon(Icons.check_rounded, size: 14),
+              label: Text(messages.dailyOsNextShutdownCloseDay),
+              style: FilledButton.styleFrom(
+                backgroundColor: teal,
+                foregroundColor: tokens.colors.text.onInteractiveAlert,
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step5,
+                  vertical: tokens.spacing.step3,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(tokens.radii.m),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+          ],
+        ),
       ),
     );
   }

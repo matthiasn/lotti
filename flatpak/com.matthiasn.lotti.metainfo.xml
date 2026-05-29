@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1011" date="2026-05-30">
+      <description>
+          <p>Daily OS Next refine-by-voice now opens as a responsive Wolt modal over the current plan surface, and keeps the reviewed transcript visible with inline feedback when a proposal fails or produces no usable changes.</p>
+      </description>
+    </release>
     <release version="0.9.1010" date="2026-05-28">
       <description>
           <p>Daily OS Next now ships the full voice-first agentic surface — capture, reconcile, drafting, day-plan, refine-by-voice, commit, and shutdown screens — behind the existing feature flag, with localized copy in all supported languages.</p>

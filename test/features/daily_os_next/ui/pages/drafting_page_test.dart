@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/learning_cards.dart';
@@ -265,6 +266,47 @@ void main() {
       },
     );
 
+    testWidgets('keeps drafting body during provider refreshes', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      final agent = _FakeAgent();
+      await tester.pumpWidget(_wrap(_page(), agent: agent));
+      await tester.pump();
+
+      agent.learnings.complete([_card()]);
+      await tester.pump();
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DraftingPage)).messages;
+      expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
+      expect(find.byType(SkeletonAgenda), findsOneWidget);
+      expect(find.text('YESTERDAY'), findsOneWidget);
+
+      agent.learnings = Completer<List<LearningCard>>();
+      addTearDown(() {
+        if (!agent.learnings.isCompleted) agent.learnings.complete(const []);
+      });
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(DraftingPage)),
+      );
+      container.invalidate(
+        draftingControllerProvider(
+          DraftingParams(
+            captureId: const CaptureId('cap_x'),
+            decidedTaskIds: const ['task_1'],
+            decidedCaptureItemIds: const ['parsed_1'],
+            dayDate: DateTime(2026, 5, 26),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
+      expect(find.byType(SkeletonAgenda), findsOneWidget);
+      expect(find.text('YESTERDAY'), findsOneWidget);
+    });
+
     testWidgets('learnings failure renders an empty cards column gracefully', (
       tester,
     ) async {
@@ -334,7 +376,7 @@ void main() {
     );
 
     testWidgets(
-      'draft failure surfaces the error message via the page body',
+      'draft failure after the first body keeps stale drafting content mounted',
       (tester) async {
         _setSurface(tester);
         final agent = _FakeAgent();
@@ -349,9 +391,10 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // AsyncError branch in the page body shows the formatted reconcile
-        // error string with the exception interpolated.
-        expect(find.textContaining('drafting blew up'), findsOneWidget);
+        final messages = tester.element(find.byType(DraftingPage)).messages;
+        expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
+        expect(find.byType(SkeletonAgenda), findsOneWidget);
+        expect(find.textContaining('drafting blew up'), findsNothing);
       },
     );
   });

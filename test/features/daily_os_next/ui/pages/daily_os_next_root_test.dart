@@ -210,6 +210,60 @@ void main() {
     );
 
     testWidgets(
+      'keeps rendered day content during explicit provider refreshes',
+      (tester) async {
+        final plan = _draftPlan();
+        final pendingRefresh = Completer<DraftPlan?>();
+        var calls = 0;
+        addTearDown(() {
+          if (!pendingRefresh.isCompleted) pendingRefresh.complete(plan);
+        });
+        final realtimeService = MockRealtimeTranscriptionService();
+        when(
+          realtimeService.resolveRealtimeConfig,
+        ).thenAnswer((_) async => null);
+        when(realtimeService.dispose).thenAnswer((_) async {});
+
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(realtimeService: realtimeService),
+                ),
+                capturesForDateProvider.overrideWith(
+                  (ref, _) async => const [],
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) {
+                  calls += 1;
+                  return calls == 1 ? plan : pendingRefresh.future;
+                }),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(DayPage), findsOneWidget);
+          expect(find.text('Deep work'), findsOneWidget);
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(DailyOsNextRoot)),
+          );
+          container.invalidate(
+            currentDraftPlanProvider(DateTime(2026, 5, 26)),
+          );
+          await tester.pump();
+
+          expect(find.byType(DayPage), findsOneWidget);
+          expect(find.text('Deep work'), findsOneWidget);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        });
+      },
+    );
+
+    testWidgets(
       'prev chevron shifts the selected date back by one day',
       (tester) async {
         final requestedDates = <DateTime>[];

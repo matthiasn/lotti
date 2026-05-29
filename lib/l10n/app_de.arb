@@ -1653,6 +1653,7 @@
   "dailyOsNextRefineDiffDropped": "VERWORFEN",
   "dailyOsNextRefineDiffMoved": "VERSCHOBEN",
   "dailyOsNextRefineKeepTalking": "Weitersprechen",
+  "dailyOsNextRefineNoChanges": "Es kamen keine Planänderungen zurück. Formuliere es anders und versuch es nochmal.",
   "dailyOsNextRefineOverline": "🎤 ANPASSUNG",
   "dailyOsNextRefineRevert": "Zurück",
   "dailyOsNextRefineStatusAccepted": "Festgemacht.",

@@ -3403,6 +3403,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextRefineKeepTalking => 'Mluv dál';
 
   @override
+  String get dailyOsNextRefineNoChanges =>
+      'Nevrátily se žádné změny plánu. Zkus to přeformulovat a znovu odeslat.';
+
+  @override
   String get dailyOsNextRefineOverline => '🎤 ÚPRAVA';
 
   @override

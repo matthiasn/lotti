@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
@@ -81,37 +82,35 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   @override
   Widget build(BuildContext context) {
     final asyncPlan = ref.watch(currentDraftPlanProvider(_selectedDate));
-    return asyncPlan.when(
-      skipLoadingOnReload: true,
-      skipError: true,
-      loading: () => const _LoadingShell(),
-      error: (e, _) => _ErrorShell(error: '$e'),
-      data: (plan) {
-        final strip = _DateStrip(
-          selected: _selectedDate,
-          isToday: _isToday,
-          onPrev: () => _shiftDay(-1),
-          onNext: () => _shiftDay(1),
-          onPick: _pickDate,
-          onToday: _goToToday,
-        );
-        if (plan != null) {
-          return DayPage(
-            key: ValueKey(_selectedDate.toIso8601String()),
-            draft: plan,
-            dateStrip: strip,
-          );
-        }
-        // No plan for the selected date — drop into Capture so the
-        // user can start one for that day. Capture is keyed on
-        // [_selectedDate] so the submitted capture lands on the
-        // chosen day's day-agent.
-        return CapturePage(
-          key: ValueKey('capture-${_selectedDate.toIso8601String()}'),
-          forDate: _selectedDate,
-          dateStrip: strip,
-        );
-      },
+    if (asyncPlan.hasValue) return _buildSurface(asyncPlan.requireValue);
+    if (asyncPlan.hasError) return _ErrorShell(error: '${asyncPlan.error}');
+    return const _LoadingShell();
+  }
+
+  Widget _buildSurface(DraftPlan? plan) {
+    final strip = _DateStrip(
+      selected: _selectedDate,
+      isToday: _isToday,
+      onPrev: () => _shiftDay(-1),
+      onNext: () => _shiftDay(1),
+      onPick: _pickDate,
+      onToday: _goToToday,
+    );
+    if (plan != null) {
+      return DayPage(
+        key: ValueKey(_selectedDate.toIso8601String()),
+        draft: plan,
+        dateStrip: strip,
+      );
+    }
+    // No plan for the selected date — drop into Capture so the
+    // user can start one for that day. Capture is keyed on
+    // [_selectedDate] so the submitted capture lands on the
+    // chosen day's day-agent.
+    return CapturePage(
+      key: ValueKey('capture-${_selectedDate.toIso8601String()}'),
+      forDate: _selectedDate,
+      dateStrip: strip,
     );
   }
 }

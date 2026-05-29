@@ -9,11 +9,13 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -47,10 +49,13 @@ class DayPage extends ConsumerStatefulWidget {
 class _DayPageState extends ConsumerState<DayPage> {
   PlanView _view = PlanView.agenda;
 
-  void _openRefine() {
-    nav_service.beamToNamed(
-      dailyOsNextRoutePath(DailyOsNextRouteTarget.refine, widget.draft.dayDate),
+  Future<void> _openRefine() async {
+    final updatedPlan = await showRefineModal(
+      context: context,
+      draft: widget.draft,
     );
+    if (!mounted || updatedPlan == null) return;
+    ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
   }
 
   void _openCommit() {
@@ -261,33 +266,29 @@ class _DayFooter extends StatelessWidget {
       onShutdown: onShutdown,
       expand: !isDesktop,
     );
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        border: Border(
-          top: BorderSide(color: tokens.colors.decorative.level01),
+    return DesignSystemGlassStrip(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step6,
+          vertical: tokens.spacing.step4,
         ),
+        child: isDesktop
+            ? Row(
+                children: [
+                  Expanded(child: hint),
+                  SizedBox(width: tokens.spacing.step4),
+                  actions,
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  hint,
+                  SizedBox(height: tokens.spacing.step3),
+                  actions,
+                ],
+              ),
       ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step6,
-        vertical: tokens.spacing.step4,
-      ),
-      child: isDesktop
-          ? Row(
-              children: [
-                Expanded(child: hint),
-                SizedBox(width: tokens.spacing.step4),
-                actions,
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                hint,
-                SizedBox(height: tokens.spacing.step3),
-                actions,
-              ],
-            ),
     );
   }
 }

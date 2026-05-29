@@ -12,6 +12,42 @@ import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
+
+Future<DraftPlan?> showRefineModal({
+  required BuildContext context,
+  required DraftPlan draft,
+}) {
+  return ModalUtils.showSinglePageModal<DraftPlan>(
+    context: context,
+    title: context.messages.dailyOsNextRefineTitle,
+    padding: EdgeInsets.zero,
+    useRootNavigator: true,
+    builder: (_) => RefineModalContent(draft: draft),
+  );
+}
+
+class RefineModalContent extends ConsumerWidget {
+  const RefineModalContent({required this.draft, super.key});
+
+  final DraftPlan draft;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(refineControllerProvider(draft));
+    ref.listen<RefineState>(refineControllerProvider(draft), (previous, next) {
+      if (next.phase == RefinePhase.accepted) {
+        Navigator.of(context).pop(next.currentPlan);
+      }
+    });
+
+    return _RefinementPanel(
+      draft: draft,
+      state: state,
+      chrome: _RefinementChrome.modal,
+    );
+  }
+}
 
 /// Conversational refinement screen. Reuses the [DayTimeline] on the
 /// left with diff applied in place, and a teal-tinted panel on the
@@ -80,10 +116,15 @@ class RefinePage extends ConsumerWidget {
 }
 
 class _RefinementPanel extends ConsumerWidget {
-  const _RefinementPanel({required this.draft, required this.state});
+  const _RefinementPanel({
+    required this.draft,
+    required this.state,
+    this.chrome = _RefinementChrome.sidePanel,
+  });
 
   final DraftPlan draft;
   final RefineState state;
+  final _RefinementChrome chrome;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -114,78 +155,89 @@ class _RefinementPanel extends ConsumerWidget {
       }
     });
 
-    return Container(
-      decoration: BoxDecoration(
-        color: teal.withValues(alpha: 0.04),
-        border: Border(
-          left: BorderSide(color: teal.withValues(alpha: 0.18)),
-        ),
-      ),
-      padding: EdgeInsets.all(tokens.spacing.step5),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              messages.dailyOsNextRefineOverline,
-              style: tokens.typography.styles.others.overline.copyWith(
-                color: teal,
-              ),
+    final content = SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            messages.dailyOsNextRefineOverline,
+            style: tokens.typography.styles.others.overline.copyWith(
+              color: teal,
             ),
-            SizedBox(height: tokens.spacing.step4),
-            Center(
-              child: VoiceButton(
-                phase: _capturePhaseFor(state.phase, captureState.phase),
-                semanticLabel: _voiceLabel(context, state.phase),
-                size: 88,
-                onTap: () {
-                  _handleVoiceTap(
-                    refineState: state,
-                    refineNotifier: notifier,
-                    captureNotifier: captureNotifier,
-                  );
-                },
-              ),
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          Center(
+            child: VoiceButton(
+              phase: _capturePhaseFor(state.phase, captureState.phase),
+              semanticLabel: _voiceLabel(context, state.phase),
+              size: 88,
+              onTap: () {
+                _handleVoiceTap(
+                  refineState: state,
+                  refineNotifier: notifier,
+                  captureNotifier: captureNotifier,
+                );
+              },
             ),
-            SizedBox(height: tokens.spacing.step4),
-            _StatusLine(state: state),
-            if (state.phase == RefinePhase.listening) ...[
-              SizedBox(height: tokens.spacing.step3),
-              Center(
-                child: LiveWaveform(
-                  amplitudes: captureState.amplitudes,
-                  width: 180,
-                  height: 22,
-                ),
-              ),
-            ],
-            if (state.phase == RefinePhase.reviewing) ...[
-              SizedBox(height: tokens.spacing.step3),
-              _TranscriptReview(draft: draft, transcript: state.transcript),
-            ] else if (state.transcript.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.step3),
-              _TranscriptCard(
-                transcript: state.transcript,
-                listening: state.phase == RefinePhase.listening,
-              ),
-            ],
-            if (state.diff != null) ...[
-              SizedBox(height: tokens.spacing.step4),
-              for (final change in state.diff!.changes) ...[
-                DiffRow(
-                  change: change,
-                  decision: state.decisionFor(change),
-                  resolving: state.resolvingChangeId == change.id,
-                  onAccept: () => notifier.acceptChange(change.id),
-                  onReject: () => notifier.rejectChange(change.id),
-                ),
-                SizedBox(height: tokens.spacing.step3),
-              ],
-              _ActionRow(draft: draft),
-            ],
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          _StatusLine(state: state),
+          if (state.problem != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            _ProblemNotice(
+              problem: state.problem!,
+              detail: state.problemDetail,
+            ),
           ],
-        ),
+          if (state.phase == RefinePhase.listening) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Center(
+              child: LiveWaveform(
+                amplitudes: captureState.amplitudes,
+                width: 180,
+                height: 22,
+              ),
+            ),
+          ],
+          if (state.phase == RefinePhase.reviewing) ...[
+            SizedBox(height: tokens.spacing.step3),
+            _TranscriptReview(draft: draft, transcript: state.transcript),
+          ] else if (state.transcript.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.step3),
+            _TranscriptCard(
+              transcript: state.transcript,
+              listening: state.phase == RefinePhase.listening,
+            ),
+          ],
+          if (state.diff != null) ...[
+            SizedBox(height: tokens.spacing.step4),
+            for (final change in state.diff!.changes) ...[
+              DiffRow(
+                change: change,
+                decision: state.decisionFor(change),
+                resolving: state.resolvingChangeId == change.id,
+                onAccept: () => notifier.acceptChange(change.id),
+                onReject: () => notifier.rejectChange(change.id),
+              ),
+              SizedBox(height: tokens.spacing.step3),
+            ],
+            _ActionRow(draft: draft),
+          ],
+        ],
       ),
+    );
+
+    return Container(
+      decoration: chrome == _RefinementChrome.sidePanel
+          ? BoxDecoration(
+              color: teal.withValues(alpha: 0.04),
+              border: Border(
+                left: BorderSide(color: teal.withValues(alpha: 0.18)),
+              ),
+            )
+          : null,
+      padding: EdgeInsets.all(tokens.spacing.step5),
+      child: content,
     );
   }
 
@@ -245,6 +297,8 @@ class _RefinementPanel extends ConsumerWidget {
   }
 }
 
+enum _RefinementChrome { sidePanel, modal }
+
 class _StatusLine extends StatelessWidget {
   const _StatusLine({required this.state});
 
@@ -288,6 +342,46 @@ class _StatusLine extends StatelessWidget {
   }
 }
 
+class _ProblemNotice extends StatelessWidget {
+  const _ProblemNotice({
+    required this.problem,
+    required this.detail,
+  });
+
+  final RefineProblem problem;
+  final String? detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final message = switch (problem) {
+      RefineProblem.noChanges => context.messages.dailyOsNextRefineNoChanges,
+      RefineProblem.proposalFailed =>
+        context.messages.dailyOsNextReconcileError(
+          detail ?? '',
+        ),
+    };
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.alert.error.defaultColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        border: Border.all(
+          color: tokens.colors.alert.error.defaultColor.withValues(alpha: 0.36),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step3),
+        child: Text(
+          message,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.alert.error.defaultColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TranscriptReview extends ConsumerWidget {
   const _TranscriptReview({required this.draft, required this.transcript});
 
@@ -312,7 +406,7 @@ class _TranscriptReview extends ConsumerWidget {
           alignment: Alignment.centerRight,
           child: FilledButton.icon(
             onPressed: canSubmit
-                ? () => unawaited(notifier.finishWithTranscript(transcript))
+                ? () => unawaited(notifier.submitReviewedTranscript())
                 : null,
             icon: const Icon(Icons.arrow_forward_rounded, size: 16),
             label: Text(context.messages.dailyOsNextRefineTitle),

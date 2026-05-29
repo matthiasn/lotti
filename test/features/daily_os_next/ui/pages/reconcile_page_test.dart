@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -5,10 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
@@ -62,6 +66,36 @@ class _EmptyParsedAgent extends MockDayAgent {
   Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [];
 }
 
+class _RefreshBlockingAgent extends MockDayAgent {
+  _RefreshBlockingAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  final pendingParsedRefresh = Completer<List<ParsedItem>>();
+  var parseCalls = 0;
+  var pendingCalls = 0;
+
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) {
+    parseCalls += 1;
+    if (parseCalls == 1) return super.parseCaptureToItems(id);
+    return pendingParsedRefresh.future;
+  }
+
+  @override
+  Future<List<PendingItem>> surfacePendingDecisions({DateTime? forDate}) {
+    pendingCalls += 1;
+    if (pendingCalls == 1) {
+      return super.surfacePendingDecisions(forDate: forDate);
+    }
+    return Future.value(const <PendingItem>[]);
+  }
+}
+
 void main() {
   group('ReconcilePage', () {
     testWidgets('renders parsed and pending cards from the day agent', (
@@ -80,6 +114,44 @@ void main() {
       // Scripted mock returns 4 parsed + 3 pending items.
       expect(find.byType(ParsedCard), findsNWidgets(4));
       expect(find.byType(PendingCard), findsNWidgets(3));
+      expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
+    });
+
+    testWidgets('keeps parsed and pending cards during provider refreshes', (
+      tester,
+    ) async {
+      _setWideSurface(tester);
+      final agent = _RefreshBlockingAgent();
+      addTearDown(() {
+        if (!agent.pendingParsedRefresh.isCompleted) {
+          agent.pendingParsedRefresh.complete(const []);
+        }
+      });
+      final params = ReconcileParams(
+        captureId: const CaptureId('cap_x'),
+        dayDate: DateTime(2026, 5, 25),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          ReconcilePage(captureId: params.captureId, dayDate: params.dayDate),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.byType(ParsedCard), findsNWidgets(4));
+      expect(find.byType(PendingCard), findsNWidgets(3));
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ReconcilePage)),
+      );
+      container.invalidate(reconcileControllerProvider(params));
+      await tester.pump();
+
+      expect(find.byType(ParsedCard), findsNWidgets(4));
+      expect(find.byType(PendingCard), findsNWidgets(3));
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
     testWidgets('shows both column headers with their item counts', (

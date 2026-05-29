@@ -26,57 +26,52 @@ class _CapturesPanelState extends ConsumerState<CapturesPanel> {
   Widget build(BuildContext context) {
     final asyncCaptures = ref.watch(capturesForDateProvider(widget.date));
     final tokens = context.designTokens;
-    return asyncCaptures.maybeWhen(
-      skipLoadingOnReload: true,
-      skipError: true,
-      orElse: () => const SizedBox.shrink(),
-      data: (captures) {
-        if (captures.isEmpty) return const SizedBox.shrink();
-        return Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step5,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: tokens.colors.background.level02,
-              borderRadius: BorderRadius.circular(tokens.radii.l),
-              border: Border.all(color: tokens.colors.decorative.level01),
+    if (!asyncCaptures.hasValue) return const SizedBox.shrink();
+    final captures = asyncCaptures.requireValue;
+    if (captures.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step3,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: tokens.colors.background.level02,
+          borderRadius: BorderRadius.circular(tokens.radii.l),
+          border: Border.all(color: tokens.colors.decorative.level01),
+        ),
+        child: Column(
+          children: [
+            _Header(
+              count: captures.length,
+              expanded: _expanded,
+              onToggle: () => setState(() => _expanded = !_expanded),
             ),
-            child: Column(
-              children: [
-                _Header(
-                  count: captures.length,
-                  expanded: _expanded,
-                  onToggle: () => setState(() => _expanded = !_expanded),
-                ),
-                if (_expanded) ...[
-                  Divider(
+            if (_expanded) ...[
+              Divider(
+                height: 1,
+                color: tokens.colors.decorative.level01,
+              ),
+              // Cap the expanded list so a day with many captures
+              // does not push the agenda/timeline off-screen. The
+              // list scrolls internally when it overflows the cap.
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 320),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: captures.length,
+                  separatorBuilder: (_, _) => Divider(
                     height: 1,
                     color: tokens.colors.decorative.level01,
                   ),
-                  // Cap the expanded list so a day with many captures
-                  // does not push the agenda/timeline off-screen. The
-                  // list scrolls internally when it overflows the cap.
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 320),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      padding: EdgeInsets.zero,
-                      itemCount: captures.length,
-                      separatorBuilder: (_, _) => Divider(
-                        height: 1,
-                        color: tokens.colors.decorative.level01,
-                      ),
-                      itemBuilder: (_, i) => _CaptureRow(item: captures[i]),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
+                  itemBuilder: (_, i) => _CaptureRow(item: captures[i]),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

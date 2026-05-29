@@ -1653,6 +1653,7 @@
   "dailyOsNextRefineDiffDropped": "RETIRÉ",
   "dailyOsNextRefineDiffMoved": "DÉPLACÉ",
   "dailyOsNextRefineKeepTalking": "Continuer à parler",
+  "dailyOsNextRefineNoChanges": "Aucun changement de plan n'est revenu. Reformule et réessaie.",
   "dailyOsNextRefineOverline": "🎤 AFFINEMENT",
   "dailyOsNextRefineRevert": "Annuler",
   "dailyOsNextRefineStatusAccepted": "Verrouillé.",

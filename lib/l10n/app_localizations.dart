@@ -5742,6 +5742,12 @@ abstract class AppLocalizations {
   /// **'Keep talking'**
   String get dailyOsNextRefineKeepTalking;
 
+  /// No description provided for @dailyOsNextRefineNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No plan changes came back. Reword it and try again.'**
+  String get dailyOsNextRefineNoChanges;
+
   /// No description provided for @dailyOsNextRefineOverline.
   ///
   /// In en, this message translates to:

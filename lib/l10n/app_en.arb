@@ -1870,6 +1870,7 @@
   "dailyOsNextRefineDiffDropped": "DROPPED",
   "dailyOsNextRefineDiffMoved": "MOVED",
   "dailyOsNextRefineKeepTalking": "Keep talking",
+  "dailyOsNextRefineNoChanges": "No plan changes came back. Reword it and try again.",
   "dailyOsNextRefineOverline": "🎤 REFINEMENT",
   "dailyOsNextRefineRevert": "Revert",
   "dailyOsNextRefineStatusAccepted": "Locked in.",

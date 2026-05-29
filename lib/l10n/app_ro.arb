@@ -1653,6 +1653,7 @@
   "dailyOsNextRefineDiffDropped": "RENUNȚAT",
   "dailyOsNextRefineDiffMoved": "MUTAT",
   "dailyOsNextRefineKeepTalking": "Continuă să vorbești",
+  "dailyOsNextRefineNoChanges": "Nu au venit modificări ale planului. Reformulați și încercați din nou.",
   "dailyOsNextRefineOverline": "🎤 REGLARE",
   "dailyOsNextRefineRevert": "Anulează",
   "dailyOsNextRefineStatusAccepted": "Fixat.",

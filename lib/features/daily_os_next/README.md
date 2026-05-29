@@ -79,7 +79,10 @@ Runtime behavior:
   remains in control. Background agent or sync updates reload the current plan
   stale-while-revalidate: the root keeps rendering the last Capture or Day
   surface while the provider re-fetches, and only shows the loading shell for
-  the initial route load.
+  the initial route load. The same Riverpod contract applies inside
+  Reconcile, Drafting, Shutdown, and the Day captures panel: if an `AsyncValue`
+  still has a previous value, the UI renders that value instead of replacing
+  the section or page with a spinner.
 - `DailyOsPreferencesController` persists Daily OS personalization in
   `SettingsDb`. The user's display name is edited from Settings > Advanced >
   About and read by the Capture greeting. Category exclusions are edited from
@@ -101,6 +104,10 @@ Runtime behavior:
   scheduled minutes from the non-dropped blocks they render. Buffers count
   because they reserve real time; dropped blocks do not. This keeps stale
   persisted totals from making the capacity meter disagree with the agenda rows.
+- Sticky action bars on Day, Reconcile, and Shutdown use
+  `DesignSystemGlassStrip`, the same hairline, blur, and footer gradient used
+  by the task details action bar. The page-level buttons keep their own layout,
+  but the background treatment stays shared through the design system component.
 - Agenda rows resolve live task metadata through `taskLiveDataProvider` before
   rendering. `AgendaView` keeps draft/manual block timing as the source of truth,
   then passes the task title, status, estimate, category, `coverArtId`, and
@@ -194,11 +201,16 @@ Runtime behavior:
   as the initial capture screen. It never injects a scripted transcript; when
   transcription produces no text, the screen returns to idle without proposing
   a diff. Final refine transcripts stop in the same editable review field as
-  initial capture, and the edited text is what gets submitted to
-  `propose_plan_diff`. Proposed changes render as independent suggestion cards,
-  matching task-agent approval affordances: each row can be accepted or
-  rejected, then collapses to an applied/rejected confirmation pill while
-  unresolved rows stay actionable.
+  initial capture, and the controller submits its current reviewed text to
+  `propose_plan_diff` so stale widget parameters cannot drop the user's edits.
+  From Day, refinement opens in a Wolt modal over the existing plan surface
+  (bottom sheet on narrow screens, dialog on wider screens); the full
+  `RefinePage` remains as a direct-route fallback. Failed or empty proposals
+  keep the review field open and show inline feedback instead of silently
+  closing. Proposed changes render as independent suggestion cards, matching
+  task-agent approval affordances: each row can be accepted or rejected, then
+  collapses to an applied/rejected confirmation pill while unresolved rows stay
+  actionable.
 - `DayAgentPlanService.proposePlanDiff` persists each model-emitted change as
   a `ChangeItem` (tool name `move_block` / `add_block` / `drop_block`) on a
   new pending `ChangeSetEntity` keyed by the plan id. Optional

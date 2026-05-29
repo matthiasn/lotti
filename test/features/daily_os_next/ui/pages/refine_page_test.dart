@@ -1,5 +1,6 @@
 // ignore_for_file: cascade_invocations
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -349,6 +350,47 @@ void main() {
       },
     );
 
+    testWidgets('empty proposal keeps review open and explains no changes', (
+      tester,
+    ) async {
+      final draft = _emptyPlan();
+      final agent = _RecordingAgent(
+        diff: PlanDiff(
+          id: 'diff_empty',
+          transcript: 'make it lighter',
+          changes: const [],
+          updatedPlan: draft,
+        ),
+      );
+      await tester.pumpWidget(
+        _wrap(
+          RefinePage(draft: draft),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+
+      final notifier = _readNotifier(tester, draft);
+      notifier.reviewTranscript('make it lighter');
+      await tester.pump();
+
+      final messages = tester.element(find.byType(RefinePage)).messages;
+      await _tap(
+        tester,
+        find.widgetWithText(
+          FilledButton,
+          messages.dailyOsNextRefineTitle,
+        ),
+      );
+
+      expect(find.byType(DiffRow), findsNothing);
+      expect(find.text(messages.dailyOsNextRefineNoChanges), findsOneWidget);
+      expect(
+        find.byKey(const Key('daily_os_refine_transcript_editor')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('diffReady renders one DiffRow per change + action buttons', (
       tester,
     ) async {
@@ -608,6 +650,46 @@ void main() {
       final messages = tester.element(find.byType(RefinePage)).messages;
       expect(find.text(messages.dailyOsNextRefineStatusIdle), findsOneWidget);
       expect(find.byType(LiveWaveform), findsNothing);
+    });
+  });
+
+  group('showRefineModal', () {
+    testWidgets('opens modal content over the current surface', (tester) async {
+      final draft = _emptyPlan();
+      await tester.pumpWidget(
+        _wrap(
+          Scaffold(
+            body: Builder(
+              builder: (context) {
+                return Column(
+                  children: [
+                    const Text('Daily surface behind modal'),
+                    ElevatedButton(
+                      onPressed: () {
+                        unawaited(
+                          showRefineModal(context: context, draft: draft),
+                        );
+                      },
+                      child: const Text('Open refine'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Open refine'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      final messages = tester.element(find.byType(RefineModalContent)).messages;
+      expect(find.text('Daily surface behind modal'), findsOneWidget);
+      expect(find.byType(RefineModalContent), findsOneWidget);
+      expect(find.text(messages.dailyOsNextRefineTitle), findsOneWidget);
+      expect(find.byType(RefinePage), findsNothing);
     });
   });
 

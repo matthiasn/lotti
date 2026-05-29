@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/ui/pages/daily_os_page.dart';
 import 'package:lotti/features/daily_os/ui/pages/set_time_blocks_page.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
@@ -97,20 +98,22 @@ class _DailyOsNextRoutePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncPlan = ref.watch(currentDraftPlanProvider(date));
-    return asyncPlan.when(
-      loading: () => const _DailyOsNextRouteLoadingPage(),
-      error: (error, _) => _DailyOsNextRouteErrorPage(error: error),
-      data: (plan) {
-        if (plan == null) {
-          return CapturePage(forDate: date);
-        }
-        return switch (target) {
-          DailyOsNextRouteTarget.refine => RefinePage(draft: plan),
-          DailyOsNextRouteTarget.commit => CommitPage(draft: plan),
-          DailyOsNextRouteTarget.shutdown => ShutdownPage(forDate: date),
-        };
-      },
-    );
+    if (asyncPlan.hasValue) return _buildSurface(asyncPlan.requireValue);
+    if (asyncPlan.hasError) {
+      return _DailyOsNextRouteErrorPage(error: asyncPlan.error!);
+    }
+    return const _DailyOsNextRouteLoadingPage();
+  }
+
+  Widget _buildSurface(DraftPlan? plan) {
+    if (plan == null) {
+      return CapturePage(forDate: date);
+    }
+    return switch (target) {
+      DailyOsNextRouteTarget.refine => RefinePage(draft: plan),
+      DailyOsNextRouteTarget.commit => CommitPage(draft: plan),
+      DailyOsNextRouteTarget.shutdown => ShutdownPage(forDate: date),
+    };
   }
 }
 
