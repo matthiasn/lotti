@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Daily OS Next refine-by-voice now opens as a responsive Wolt modal over the
   current plan surface, and keeps the reviewed transcript visible with inline
   feedback when a proposal fails or produces no usable changes.
+- Daily OS Next measures the date controls, Agenda/Day switcher, and header
+  actions before placing them, keeping the switcher inline whenever it fits and
+  moving it below only on truly constrained widths.
 
 ## [0.9.1010]
 ### Changed

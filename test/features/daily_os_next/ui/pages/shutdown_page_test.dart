@@ -50,7 +50,7 @@ class _RefreshBlockingShutdownAgent extends MockDayAgent {
           ShutdownMetrics metrics,
         })
       >();
-  var shutdownCalls = 0;
+  int shutdownCalls = 0;
 
   @override
   Future<
@@ -138,10 +138,9 @@ void main() {
 
       expect(find.text('Deck review — Q2 leadership update'), findsOneWidget);
 
-      final container = ProviderScope.containerOf(
+      ProviderScope.containerOf(
         tester.element(find.byType(ShutdownPage)),
-      );
-      container.invalidate(shutdownControllerProvider(date));
+      ).invalidate(shutdownControllerProvider(date));
       await tester.pump();
 
       expect(find.text('Deck review — Q2 leadership update'), findsOneWidget);

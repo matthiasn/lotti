@@ -35,6 +35,7 @@
     <release version="0.9.1011" date="2026-05-30">
       <description>
           <p>Daily OS Next refine-by-voice now opens as a responsive Wolt modal over the current plan surface, and keeps the reviewed transcript visible with inline feedback when a proposal fails or produces no usable changes.</p>
+          <p>Daily OS Next measures the date controls, Agenda/Day switcher, and header actions before placing them, keeping the switcher inline whenever it fits and moving it below only on truly constrained widths.</p>
       </description>
     </release>
     <release version="0.9.1010" date="2026-05-28">

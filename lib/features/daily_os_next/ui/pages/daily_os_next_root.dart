@@ -153,24 +153,28 @@ class _DateStrip extends StatelessWidget {
           tooltip: material.previousPageTooltip,
           onPressed: onPrev,
         ),
-        InkWell(
-          onTap: onPick,
-          onLongPress: onToday,
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step3,
-              vertical: tokens.spacing.step2,
-            ),
-            child: Text(
-              _formatDate(
-                context,
-                selected,
-                isToday: isToday,
-                todayLabel: messages.dailyOsTodayButton,
+        Flexible(
+          child: InkWell(
+            onTap: onPick,
+            onLongPress: onToday,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step3,
+                vertical: tokens.spacing.step2,
               ),
-              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                color: tokens.colors.text.highEmphasis,
+              child: Text(
+                _formatDate(
+                  context,
+                  selected,
+                  isToday: isToday,
+                  todayLabel: messages.dailyOsTodayButton,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
               ),
             ),
           ),

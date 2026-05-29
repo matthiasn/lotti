@@ -228,11 +228,38 @@ Widget _wrap(
   );
 }
 
-void _setSurface(WidgetTester tester) {
+Widget _dateStripLike(String label) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      IconButton(
+        icon: const Icon(Icons.chevron_left_rounded),
+        onPressed: () {},
+      ),
+      Flexible(
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      IconButton(
+        icon: const Icon(Icons.chevron_right_rounded),
+        onPressed: () {},
+      ),
+    ],
+  );
+}
+
+void _setSurfaceSize(WidgetTester tester, Size size) {
   tester.view
-    ..physicalSize = const Size(1400, 1200)
+    ..physicalSize = size
     ..devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
+}
+
+void _setSurface(WidgetTester tester) {
+  _setSurfaceSize(tester, const Size(1400, 1200));
 }
 
 void main() {
@@ -271,6 +298,58 @@ void main() {
       expect(find.text('2026-05-26'), findsOneWidget);
     });
 
+    testWidgets('header keeps the plan toggle inline when it fits', (
+      tester,
+    ) async {
+      _setSurfaceSize(tester, const Size(640, 844));
+      const label = 'May 31, 2026';
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: _drafted(),
+            dateStrip: _dateStripLike(label),
+          ),
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(640, 844),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final dateTop = tester.getTopLeft(find.text(label)).dy;
+      final dateBottom = tester.getBottomLeft(find.text(label)).dy;
+      final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
+      final toggleBottom = tester.getBottomLeft(find.byType(PlanViewToggle)).dy;
+
+      expect(toggleTop, lessThan(dateBottom));
+      expect(toggleBottom, greaterThan(dateTop));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('header moves the plan toggle below only when it cannot fit', (
+      tester,
+    ) async {
+      _setSurfaceSize(tester, phoneMediaQueryData.size);
+      const label = 'May 31, 2026';
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: _drafted(),
+            dateStrip: _dateStripLike(label),
+          ),
+          mediaQueryData: phoneMediaQueryData,
+        ),
+      );
+      await tester.pump();
+
+      final dateBottom = tester.getBottomLeft(find.text(label)).dy;
+      final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
+
+      expect(find.text(label), findsOneWidget);
+      expect(toggleTop, greaterThan(dateBottom));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('toggling the plan view switches Agenda → DayTimeline', (
       tester,
     ) async {
@@ -281,8 +360,8 @@ void main() {
       expect(find.byType(AgendaView), findsOneWidget);
       expect(find.byType(DayTimeline), findsNothing);
 
-      // Drive the toggle directly; tapping its rendered chips is brittle
-      // because the toggle is in the AppBar actions slot.
+      // Drive the toggle directly; chip tap behavior is covered by
+      // PlanViewToggle's focused widget tests.
       final toggle = tester.widget<PlanViewToggle>(find.byType(PlanViewToggle));
       toggle.onChanged(PlanView.day);
       await tester.pump();
@@ -425,7 +504,7 @@ void main() {
     );
 
     testWidgets(
-      'AppBar back IconButton pops the navigator (no dateStrip)',
+      'header back IconButton pops the navigator (no dateStrip)',
       (tester) async {
         _setSurface(tester);
         final agent = _RecordingAgent();
@@ -455,7 +534,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 200));
 
-        // The AppBar shows a back button only when there's no dateStrip;
+        // The header shows a back button only when there's no dateStrip;
         // the popup-menu's more_vert icon stays in place.
         await tester.tap(find.byIcon(Icons.arrow_back_rounded));
         await tester.pump();

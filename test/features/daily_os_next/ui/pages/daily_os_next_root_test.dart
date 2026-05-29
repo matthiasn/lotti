@@ -248,10 +248,9 @@ void main() {
           expect(find.byType(DayPage), findsOneWidget);
           expect(find.text('Deep work'), findsOneWidget);
 
-          final container = ProviderScope.containerOf(
+          ProviderScope.containerOf(
             tester.element(find.byType(DailyOsNextRoot)),
-          );
-          container.invalidate(
+          ).invalidate(
             currentDraftPlanProvider(DateTime(2026, 5, 26)),
           );
           await tester.pump();

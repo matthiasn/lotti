@@ -287,10 +287,9 @@ void main() {
       addTearDown(() {
         if (!agent.learnings.isCompleted) agent.learnings.complete(const []);
       });
-      final container = ProviderScope.containerOf(
+      ProviderScope.containerOf(
         tester.element(find.byType(DraftingPage)),
-      );
-      container.invalidate(
+      ).invalidate(
         draftingControllerProvider(
           DraftingParams(
             captureId: const CaptureId('cap_x'),

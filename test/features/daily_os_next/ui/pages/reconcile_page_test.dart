@@ -76,8 +76,8 @@ class _RefreshBlockingAgent extends MockDayAgent {
       );
 
   final pendingParsedRefresh = Completer<List<ParsedItem>>();
-  var parseCalls = 0;
-  var pendingCalls = 0;
+  int parseCalls = 0;
+  int pendingCalls = 0;
 
   @override
   Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) {
@@ -143,10 +143,9 @@ void main() {
       expect(find.byType(ParsedCard), findsNWidgets(4));
       expect(find.byType(PendingCard), findsNWidgets(3));
 
-      final container = ProviderScope.containerOf(
+      ProviderScope.containerOf(
         tester.element(find.byType(ReconcilePage)),
-      );
-      container.invalidate(reconcileControllerProvider(params));
+      ).invalidate(reconcileControllerProvider(params));
       await tester.pump();
 
       expect(find.byType(ParsedCard), findsNWidgets(4));
