@@ -289,27 +289,158 @@ class SuggestionRetractionService {
   /// Intended to run at the end of a wake — ideally inside the same transaction
   /// that persists the wake's new proposals — so the suggestion list
   /// transitions straight from the old set to the new one without an empty
-  /// intermediate state. Each retraction re-reads the parent [ChangeSetEntity]
-  /// and skips the item if a concurrent user confirm/reject already resolved
-  /// it, so deferring the write is strictly safer than applying it
-  /// mid-conversation.
+  /// intermediate state.
+  ///
+  /// Decisions are persisted first (one per staged item, in order), then each
+  /// parent change set is re-read **once** and all of its retractions applied in
+  /// a single write. Grouping by change set keeps DB I/O proportional to the
+  /// number of distinct sets, not the number of items, and collapses what the
+  /// `AiSummaryCard` stream sees into one update per set.
+  ///
+  /// Applying at end-of-wake is also strictly safer than mid-conversation: the
+  /// re-read re-validates each target by **bounds, status, and fingerprint**, so
+  /// an item a concurrent user confirm/reject already resolved — or one whose
+  /// row moved or changed under us — is skipped rather than mis-retracted.
   Future<void> applyStaged(List<StagedRetraction> staged) async {
     if (staged.isEmpty) return;
 
-    // Defensive dedupe: never write two retractions for the same target item,
-    // even if a caller accumulated overlapping plans.
-    final applied = <String>{};
+    // Dedupe by target item, preserving first-seen order, and group by parent
+    // change set so each set is read and written exactly once.
+    final seenKeys = <String>{};
+    final deduped = <StagedRetraction>[];
+    final order = <String>[];
+    final byChangeSetId = <String, List<StagedRetraction>>{};
     for (final retraction in staged) {
-      if (!applied.add(retraction.key)) continue;
-      await _applyRetraction(
-        changeSet: retraction.changeSet,
-        itemIndex: retraction.itemIndex,
-        item: retraction.item,
-        agentId: retraction.changeSet.agentId,
-        taskId: retraction.changeSet.taskId,
-        reason: retraction.reason,
-      );
+      if (!seenKeys.add(retraction.key)) continue;
+      deduped.add(retraction);
+      byChangeSetId
+          .putIfAbsent(retraction.changeSet.id, () {
+            order.add(retraction.changeSet.id);
+            return <StagedRetraction>[];
+          })
+          .add(retraction);
     }
+
+    // 1. Persist every decision first (in staged order) so we never leave a
+    //    retracted item without a matching explanation — mirrors the
+    //    confirmation service ordering (see
+    //    ChangeSetConfirmationService.confirmItem).
+    for (final retraction in deduped) {
+      await _persistRetractionDecision(retraction);
+    }
+
+    // 2. Apply each set's retractions in a single re-read + write + notify.
+    for (final changeSetId in order) {
+      await _applyRetractionsToChangeSet(byChangeSetId[changeSetId]!);
+    }
+  }
+
+  Future<void> _persistRetractionDecision(StagedRetraction retraction) async {
+    final item = retraction.item;
+    _domainLogger?.log(
+      LogDomains.agentWorkflow,
+      'Retracting item ${retraction.itemIndex} (${item.toolName}) in change '
+      'set ${DomainLogger.sanitizeId(retraction.changeSet.id)}',
+      subDomain: _sub,
+    );
+
+    final decision =
+        AgentDomainEntity.changeDecision(
+              id: _uuid.v4(),
+              agentId: retraction.changeSet.agentId,
+              changeSetId: retraction.changeSet.id,
+              itemIndex: retraction.itemIndex,
+              toolName: item.toolName,
+              verdict: ChangeDecisionVerdict.retracted,
+              actor: DecisionActor.agent,
+              taskId: retraction.changeSet.taskId,
+              retractionReason: retraction.reason,
+              humanSummary: item.humanSummary,
+              args: item.args,
+              createdAt: clock.now(),
+              vectorClock: const VectorClock({}),
+            )
+            as ChangeDecisionEntity;
+    await _syncService.upsertEntity(decision);
+  }
+
+  /// Applies every retraction targeting one change set in a single read/write.
+  ///
+  /// All entries share the same `changeSet.id`. The set is re-read once, every
+  /// still-valid target item is flipped to `retracted` in memory, and the set
+  /// is persisted once (only if at least one flip survived validation).
+  Future<void> _applyRetractionsToChangeSet(
+    List<StagedRetraction> retractions,
+  ) async {
+    final snapshot = retractions.first.changeSet;
+    final latest = await _syncService.repository.getEntity(snapshot.id);
+    final current = latest is ChangeSetEntity ? latest : snapshot;
+
+    var items = current.items;
+    var changed = false;
+    for (final retraction in retractions) {
+      final itemIndex = retraction.itemIndex;
+      if (itemIndex < 0 || itemIndex >= items.length) {
+        // A concurrent writer truncated items between staging and this
+        // re-read. The decision was already persisted, so surface the orphan.
+        _domainLogger?.log(
+          LogDomains.agentWorkflow,
+          'Retraction bounds mismatch after re-read: itemIndex=$itemIndex, '
+          'items=${items.length}, '
+          'changeSet=${DomainLogger.sanitizeId(current.id)}',
+          subDomain: _sub,
+        );
+        continue;
+      }
+      final existing = items[itemIndex];
+      if (existing.status != ChangeItemStatus.pending) {
+        // The user confirmed/rejected the item between staging and this
+        // re-read. Do not overwrite their decision; the agent's retraction
+        // decision record stays persisted for the audit trail.
+        _domainLogger?.log(
+          LogDomains.agentWorkflow,
+          'Retraction lost race to user action: itemIndex=$itemIndex, '
+          'observedStatus=${existing.status.name}, '
+          'changeSet=${DomainLogger.sanitizeId(current.id)}',
+          subDomain: _sub,
+        );
+        continue;
+      }
+      if (ChangeItem.fingerprint(existing) !=
+          ChangeItem.fingerprint(retraction.item)) {
+        // The row at this index is no longer the item we staged (inserted,
+        // removed, reordered, or its args changed under us). Skip rather than
+        // retract the wrong proposal; the agent can re-stage on the next wake.
+        _domainLogger?.log(
+          LogDomains.agentWorkflow,
+          'Retraction skipped — item at index changed: itemIndex=$itemIndex, '
+          'changeSet=${DomainLogger.sanitizeId(current.id)}',
+          subDomain: _sub,
+        );
+        continue;
+      }
+
+      if (!changed) {
+        items = List<ChangeItem>.from(items);
+        changed = true;
+      }
+      items[itemIndex] = existing.copyWith(status: ChangeItemStatus.retracted);
+    }
+
+    if (!changed) return;
+
+    final newSetStatus = ChangeItem.deriveSetStatus(items);
+    final updated = current.copyWith(
+      items: items,
+      status: newSetStatus,
+      resolvedAt: ChangeItem.deriveResolvedAt(
+        newStatus: newSetStatus,
+        existingResolvedAt: current.resolvedAt,
+        now: clock.now(),
+      ),
+    );
+    await _syncService.upsertEntity(updated);
+    await _notifyChangeSetRetracted(updated);
   }
 
   /// Return every `(changeSet, itemIndex, item)` tuple whose item matches
@@ -328,100 +459,6 @@ class SuggestionRetractionService {
       }
     }
     return matches;
-  }
-
-  Future<void> _applyRetraction({
-    required ChangeSetEntity changeSet,
-    required int itemIndex,
-    required ChangeItem item,
-    required String agentId,
-    required String taskId,
-    required String reason,
-  }) async {
-    final now = clock.now();
-
-    _domainLogger?.log(
-      LogDomains.agentWorkflow,
-      'Retracting item $itemIndex (${item.toolName}) in change set '
-      '${DomainLogger.sanitizeId(changeSet.id)}',
-      subDomain: _sub,
-    );
-
-    // 1. Persist the decision record first so we never leave a retracted
-    //    item without a matching explanation — mirrors the confirmation
-    //    service ordering (see ChangeSetConfirmationService.confirmItem).
-    final decision =
-        AgentDomainEntity.changeDecision(
-              id: _uuid.v4(),
-              agentId: agentId,
-              changeSetId: changeSet.id,
-              itemIndex: itemIndex,
-              toolName: item.toolName,
-              verdict: ChangeDecisionVerdict.retracted,
-              actor: DecisionActor.agent,
-              taskId: taskId,
-              retractionReason: reason,
-              humanSummary: item.humanSummary,
-              args: item.args,
-              createdAt: now,
-              vectorClock: const VectorClock({}),
-            )
-            as ChangeDecisionEntity;
-    await _syncService.upsertEntity(decision);
-
-    // 2. Re-read the parent change set and transition the item + set status.
-    final latest = await _syncService.repository.getEntity(changeSet.id);
-    final current = latest is ChangeSetEntity ? latest : changeSet;
-    if (itemIndex < 0 || itemIndex >= current.items.length) {
-      // Rare: a concurrent writer truncated items between the initial
-      // locate and the re-read. The decision entity was already persisted,
-      // so surface the orphan so it is diagnosable if it ever happens.
-      _domainLogger?.log(
-        LogDomains.agentWorkflow,
-        'Retraction bounds mismatch after re-read: itemIndex=$itemIndex, '
-        'items=${current.items.length}, '
-        'changeSet=${DomainLogger.sanitizeId(changeSet.id)}, '
-        'decision=${DomainLogger.sanitizeId(decision.id)}',
-        subDomain: _sub,
-      );
-      return;
-    }
-    if (current.items[itemIndex].status != ChangeItemStatus.pending) {
-      // The user confirmed/rejected the item between the initial pending
-      // check in retract() and this re-read. Do not overwrite their
-      // decision. The agent's retraction decision record stays persisted
-      // so the audit trail shows both the agent's intent and the user's
-      // winning action.
-      _domainLogger?.log(
-        LogDomains.agentWorkflow,
-        'Retraction lost race to user action: itemIndex=$itemIndex, '
-        'observedStatus=${current.items[itemIndex].status.name}, '
-        'changeSet=${DomainLogger.sanitizeId(changeSet.id)}, '
-        'decision=${DomainLogger.sanitizeId(decision.id)}',
-        subDomain: _sub,
-      );
-      return;
-    }
-
-    final updatedItems = List<ChangeItem>.from(current.items);
-    updatedItems[itemIndex] = updatedItems[itemIndex].copyWith(
-      status: ChangeItemStatus.retracted,
-    );
-
-    final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
-    final resolvedAt = ChangeItem.deriveResolvedAt(
-      newStatus: newSetStatus,
-      existingResolvedAt: current.resolvedAt,
-      now: now,
-    );
-
-    final updated = current.copyWith(
-      items: updatedItems,
-      status: newSetStatus,
-      resolvedAt: resolvedAt,
-    );
-    await _syncService.upsertEntity(updated);
-    await _notifyChangeSetRetracted(updated);
   }
 
   Future<void> _notifyChangeSetRetracted(ChangeSetEntity changeSet) async {

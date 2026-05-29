@@ -422,13 +422,12 @@ void main() {
           'generated reason $index ${slot.name}';
 
       _ExpectedRetractionModel buildExpectedModel() {
-        final latestById = {for (final set in initialSets) set.id: set};
         final results = <_ExpectedRetractionResult>[];
-        final upsertKinds = <_ExpectedRetractionUpsertKind>[];
         final decisions = <_ExpectedRetractionDecision>[];
-        final updatedSets = <ChangeSetEntity>[];
         final retractedThisCall = <String>{};
 
+        // Phase 0 — replicate plan(): staging order is request-outer,
+        // match-inner; one staged decision per pending match.
         for (var i = 0; i < scenario.requests.length; i++) {
           final request = scenario.requests[i];
           final fingerprint = request.fingerprint;
@@ -474,7 +473,6 @@ void main() {
 
           final reason = reasonFor(i, request);
           for (final match in pendingMatches) {
-            upsertKinds.add(_ExpectedRetractionUpsertKind.decision);
             decisions.add(
               _ExpectedRetractionDecision(
                 changeSetId: match.changeSet.id,
@@ -483,33 +481,7 @@ void main() {
                 reason: reason,
               ),
             );
-
-            final reread = rereadEntity(match.changeSet, latestById);
-            final current = reread ?? match.changeSet;
-            if (match.itemIndex >= current.items.length) continue;
-            if (current.items[match.itemIndex].status !=
-                ChangeItemStatus.pending) {
-              continue;
-            }
-
-            final updatedItems = List<ChangeItem>.from(current.items);
-            updatedItems[match.itemIndex] = updatedItems[match.itemIndex]
-                .copyWith(status: ChangeItemStatus.retracted);
-            final newStatus = ChangeItem.deriveSetStatus(updatedItems);
-            final updatedSet = current.copyWith(
-              items: updatedItems,
-              status: newStatus,
-              resolvedAt: ChangeItem.deriveResolvedAt(
-                newStatus: newStatus,
-                existingResolvedAt: current.resolvedAt,
-                now: now,
-              ),
-            );
-            upsertKinds.add(_ExpectedRetractionUpsertKind.changeSet);
-            updatedSets.add(updatedSet);
-            latestById[updatedSet.id] = updatedSet;
           }
-
           retractedThisCall.add(fingerprint);
           final first = pendingMatches.first;
           results.add(
@@ -520,6 +492,71 @@ void main() {
               humanSummary: first.item.humanSummary,
             ),
           );
+        }
+
+        // Phase 1 — applyStaged persists every decision first, in staged order.
+        final upsertKinds = <_ExpectedRetractionUpsertKind>[
+          ...List.filled(
+            decisions.length,
+            _ExpectedRetractionUpsertKind.decision,
+          ),
+        ];
+
+        // Phase 2 — applyStaged then re-reads each change set ONCE (in
+        // first-seen order) and applies all of its still-valid flips in a
+        // single write. Each set is read before any write touches it, so the
+        // re-read always resolves against the static initial snapshot.
+        final staticInitialById = {for (final set in initialSets) set.id: set};
+        final updatedSets = <ChangeSetEntity>[];
+        final groupOrder = <String>[];
+        final groups = <String, List<_ExpectedRetractionDecision>>{};
+        for (final decision in decisions) {
+          groups
+              .putIfAbsent(decision.changeSetId, () {
+                groupOrder.add(decision.changeSetId);
+                return <_ExpectedRetractionDecision>[];
+              })
+              .add(decision);
+        }
+
+        for (final setId in groupOrder) {
+          final initial = initialSets.firstWhere((set) => set.id == setId);
+          final reread = rereadEntity(initial, staticInitialById);
+          final current = reread ?? initial;
+          var items = current.items;
+          var changed = false;
+          for (final decision in groups[setId]!) {
+            final index = decision.itemIndex;
+            if (index < 0 || index >= items.length) continue;
+            final existing = items[index];
+            if (existing.status != ChangeItemStatus.pending) continue;
+            if (ChangeItem.fingerprint(existing) !=
+                ChangeItem.fingerprint(decision.item)) {
+              continue;
+            }
+            if (!changed) {
+              items = List<ChangeItem>.from(items);
+              changed = true;
+            }
+            items[index] = existing.copyWith(
+              status: ChangeItemStatus.retracted,
+            );
+          }
+          if (!changed) continue;
+
+          final newStatus = ChangeItem.deriveSetStatus(items);
+          updatedSets.add(
+            current.copyWith(
+              items: items,
+              status: newStatus,
+              resolvedAt: ChangeItem.deriveResolvedAt(
+                newStatus: newStatus,
+                existingResolvedAt: current.resolvedAt,
+                now: now,
+              ),
+            ),
+          );
+          upsertKinds.add(_ExpectedRetractionUpsertKind.changeSet);
         }
 
         return _ExpectedRetractionModel(
@@ -1371,6 +1408,92 @@ void main() {
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured.whereType<ChangeDecisionEntity>().toList();
         expect(decisions, hasLength(1));
+      },
+    );
+
+    test(
+      'applyStaged writes a change set once even with multiple retractions '
+      'targeting it',
+      () async {
+        // Two distinct pending proposals in the SAME change set.
+        final cs = setWith([priorityItem, titleItem]);
+        stubPendingSets([cs]);
+
+        final plan = await service.plan(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [
+            RetractionRequest(
+              fingerprint: ChangeItem.fingerprint(priorityItem),
+              reason: 'a',
+            ),
+            RetractionRequest(
+              fingerprint: ChangeItem.fingerprint(titleItem),
+              reason: 'b',
+            ),
+          ],
+        );
+        expect(plan.staged, hasLength(2));
+
+        await withClock(testClock, () => service.applyStaged(plan.staged));
+
+        final upserts = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        // One decision per item, but the parent set is read and written once.
+        expect(upserts.whereType<ChangeDecisionEntity>(), hasLength(2));
+        final sets = upserts.whereType<ChangeSetEntity>().toList();
+        expect(
+          sets,
+          hasLength(1),
+          reason: 'batched: a change set is written exactly once per apply',
+        );
+        expect(sets.single.items[0].status, ChangeItemStatus.retracted);
+        expect(sets.single.items[1].status, ChangeItemStatus.retracted);
+        expect(sets.single.status, ChangeSetStatus.resolved);
+      },
+    );
+
+    test(
+      'applyStaged skips an item whose row changed under it but still records '
+      'the decision (fingerprint guard)',
+      () async {
+        final cs = setWith([priorityItem]);
+        stubPendingSets([cs]);
+
+        final plan = await service.plan(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [
+            RetractionRequest(
+              fingerprint: ChangeItem.fingerprint(priorityItem),
+              reason: 'r',
+            ),
+          ],
+        );
+        expect(plan.staged, hasLength(1));
+
+        // Between plan and apply, the row at index 0 is replaced by a different
+        // proposal (concurrent reorder/insert/args change). The re-read returns
+        // it; index alone would otherwise retract the wrong proposal.
+        when(
+          () => mockRepository.getEntity('cs-1'),
+        ).thenAnswer((_) async => cs.copyWith(items: const [titleItem]));
+
+        await withClock(testClock, () => service.applyStaged(plan.staged));
+
+        final upserts = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        // The decision is still persisted (audit trail), but the set is NOT
+        // flipped — the guard refuses to retract a non-matching row.
+        expect(upserts.whereType<ChangeDecisionEntity>(), hasLength(1));
+        expect(
+          upserts.whereType<ChangeSetEntity>(),
+          isEmpty,
+          reason:
+              'wrong-item guard: no change-set write when fingerprint moved',
+        );
       },
     );
   });
