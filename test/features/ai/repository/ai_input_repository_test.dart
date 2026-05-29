@@ -270,7 +270,8 @@ void main() {
               as ProjectEntry;
 
       test(
-        'returns project metadata plus latest full project report',
+        'returns project metadata plus compact report summary '
+        '(oneLiner/tldr, not full body)',
         () async {
           final report =
               AgentDomainEntity.agentReport(
@@ -279,6 +280,7 @@ void main() {
                     scope: 'current',
                     createdAt: projectDate,
                     vectorClock: null,
+                    oneLiner: 'Improving wake-cycle context quality.',
                     tldr: 'Project is focused on wake-cycle context quality.',
                     content:
                         '## Project Report\nFull project context goes here.',
@@ -305,20 +307,22 @@ void main() {
           );
           expect(decoded['project'], containsPair('status', 'ACTIVE'));
           expect(decoded['project'], containsPair('categoryId', 'cat-123'));
+
+          final reportJson =
+              decoded['latestProjectAgentReport'] as Map<String, dynamic>;
           expect(
-            decoded['latestProjectAgentReport'],
+            reportJson,
+            containsPair('oneLiner', 'Improving wake-cycle context quality.'),
+          );
+          expect(
+            reportJson,
             containsPair(
               'tldr',
               'Project is focused on wake-cycle context quality.',
             ),
           );
-          expect(
-            decoded['latestProjectAgentReport'],
-            containsPair(
-              'content',
-              '## Project Report\nFull project context goes here.',
-            ),
-          );
+          // Full body is intentionally omitted to keep wake prefill small.
+          expect(reportJson.containsKey('content'), isFalse);
         },
       );
 

@@ -2554,6 +2554,8 @@ void main() {
                     scope: 'current',
                     createdAt: DateTime(2024, 6, 14, 8),
                     vectorClock: null,
+                    oneLiner: 'Linked task is on track.',
+                    tldr: 'Linked task TLDR: integration nearly done.',
                     content: '## Linked Agent Report\nFrom task agent.',
                   )
                   as AgentReportEntity;
@@ -2584,8 +2586,15 @@ void main() {
           expect(message, isNotNull);
           expect(message, contains('## Linked Tasks'));
           expect(message, contains('Related'));
-          expect(message, contains('latestTaskAgentReport'));
-          expect(message, contains('From task agent.'));
+          expect(message, contains('latestTaskAgentReportTldr'));
+          // Compact summary is embedded…
+          expect(
+            message,
+            contains('Linked task TLDR: integration nearly done.'),
+          );
+          expect(message, contains('Linked task is on track.'));
+          // …but the full report body is trimmed out to save prefill.
+          expect(message, isNot(contains('From task agent.')));
           expect(message, isNot(contains('latestSummary')));
         },
       );
@@ -2626,6 +2635,7 @@ void main() {
                     scope: 'current',
                     createdAt: now,
                     vectorClock: null,
+                    tldr: 'Report B summary',
                     content: 'report-b',
                   )
                   as AgentReportEntity;
@@ -2636,6 +2646,7 @@ void main() {
                     scope: 'current',
                     createdAt: now,
                     vectorClock: null,
+                    tldr: 'Report A summary',
                     content: 'report-a',
                   )
                   as AgentReportEntity;
@@ -2662,12 +2673,13 @@ void main() {
           // `getLatestReportsByAgentIds` fetch followed by an
           // in-memory walk of the sorted links. Correctness contract
           // is the same — the first link in `orderedPrimaryFirst`
-          // order whose report has non-empty content wins — and is
-          // asserted here through the rendered message:
-          // `report-b` must show up, `report-a` must NOT.
+          // order whose report has non-empty content wins. Reports are
+          // now embedded as their compact tldr (not the full body), so
+          // the tie-break is asserted via the rendered summary:
+          // report B's tldr must show up, report A's must NOT.
           expect(message, isNotNull);
-          expect(message, contains('report-b'));
-          expect(message, isNot(contains('report-a')));
+          expect(message, contains('Report B summary'));
+          expect(message, isNot(contains('Report A summary')));
         },
       );
 

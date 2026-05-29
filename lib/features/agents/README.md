@@ -33,11 +33,17 @@ Startup does this:
 - Task agent wake prompts include:
   - current task JSON context
   - current report + recent observations
-  - parent project context with the latest project-agent `tldr` and full
-    report body when the task belongs to a project
+  - parent project context with the latest project-agent `oneLiner` and `tldr`
+    (the full report body is omitted to keep wake prefill small) when the task
+    belongs to a project
   - related tasks in the same parent project, capped to a lightweight
     sibling-task directory with stored task-agent `tldr` values only
   - linked task context
+  - these blocks are ordered stable-first — label/correction context,
+    parent-project and linked-task summaries, then current task context —
+    followed by the volatile tail (current report, agent journal, proposal
+    ledger, trigger tokens), so the stable header stays byte-identical across
+    wakes and a prompt prefix cache can restore it instead of re-prefilling
 - Task agents also expose a read-only `get_related_task_details` tool for
   on-demand drill-down into a sibling task that was included in the current
   related-task directory. The tool is scoped to the current wake's allowlist;
@@ -48,9 +54,10 @@ Startup does this:
   The shared model default remains unchanged.
 - Linked task context for agents is built directly in
   `TaskAgentWorkflow._buildLinkedTasksContextJson` (forked from
-  `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects
-  `latestTaskAgentReport` from each linked task's associated task agent (via
-  `agent_task` links + `agentReportHead`).
+  `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects a
+  compact summary (`latestTaskAgentReportOneLiner` / `latestTaskAgentReportTldr`)
+  of each linked task's associated task-agent report (via `agent_task` links +
+  `agentReportHead`) — not the full report body, to keep wake prefill small.
 - Linked-task `latestSummary` payloads are stripped before prompt submission
   and are not used for Task Agent execution.
 - Related-task directory rows are built in `AiInputRepository` from the
