@@ -31,9 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and JSON attachments arrive more reliably without manual retries.
 
 ### Changed
-- The task action bar's translucent pill and outline are slightly more
-  opaque so its icons stay readable when the body scrolling underneath the
-  glass strip is white (e.g. embedded screenshots or light-mode content).
+- Sticky glass footers in Tasks and Daily OS now use a token-backed scrim
+  so action controls stay readable when bright screenshots or light-mode
+  content scroll underneath them.
 - Tasks category filter and journal entry-type filter chips have a small
   extra nudge of space between the chip border and the label so the text
   no longer sits flush against the leading edge.

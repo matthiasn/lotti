@@ -199,7 +199,9 @@ Checklist content is modeled separately through checklist entities and linked ch
   trailing audio, checklist, image, or more-action affordances. The chip
   foregrounds rely on the glass fill and hairline border for contrast
   rather than glyph shadows, avoiding stale-looking shadow silhouettes
-  when the row repaints over blurred content.
+  when the row repaints over blurred content. The shared glass strip
+  adds a token-backed scrim over the blur so bright screenshots or
+  light embedded media cannot wash the row out.
   The page sets `Scaffold.extendBody: true` so body content paints
   behind the bar — that's what the `BackdropFilter` blurs. The mobile
   shell hides its bottom nav pill whenever the active beamer route is
