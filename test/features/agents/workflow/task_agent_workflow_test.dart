@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -32,6 +33,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../categories/test_utils.dart';
 import '../test_utils.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
@@ -2395,6 +2397,70 @@ void main() {
 
         return capturedMessage;
       }
+
+      test(
+        'injects label and correction-example context when available',
+        () async {
+          when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+            (_) async => Task(
+              data: TaskData(
+                status: TaskStatus.open(
+                  id: 'status_id',
+                  createdAt: DateTime(2024, 3, 15),
+                  utcOffset: 60,
+                ),
+                title: 'Labelled task',
+                statusHistory: const [],
+                dateTo: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+              ),
+              meta: Metadata(
+                id: taskId,
+                createdAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                categoryId: 'cat-001',
+              ),
+            ),
+          );
+          when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
+            (_) async => [
+              LabelDefinition(
+                id: 'lbl-bug',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                name: 'Bug',
+                color: '#FF0000',
+                vectorClock: null,
+                applicableCategoryIds: const ['cat-001'],
+              ),
+            ],
+          );
+          when(() => mockJournalDb.getCategoryById('cat-001')).thenAnswer(
+            (_) async => CategoryTestUtils.createTestCategory(
+              id: 'cat-001',
+              correctionExamples: [
+                ChecklistCorrectionExample(
+                  before: 'mac OS',
+                  after: 'macOS',
+                  capturedAt: DateTime(2024, 5, 2),
+                ),
+              ],
+            ),
+          );
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          // Label-context branch: available labels injected.
+          expect(message, contains('## Available Labels'));
+          expect(message, contains('Bug'));
+          // Correction-example branch: category examples injected.
+          expect(message, contains('## Correction Examples'));
+          expect(message, contains('macOS'));
+        },
+      );
 
       test('includes existing report in user message', () async {
         final report =
