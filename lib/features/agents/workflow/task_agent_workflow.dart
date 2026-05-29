@@ -388,6 +388,13 @@ class TaskAgentWorkflow {
         },
       );
 
+      final retractionService = SuggestionRetractionService(
+        syncService: syncService,
+        domainLogger: domainLogger,
+        onChangeSetRetracted:
+            changeSetNotificationService?.syncAfterAgentRetraction,
+      );
+
       final strategy = TaskAgentStrategy(
         executor: executor,
         syncService: syncService,
@@ -396,12 +403,7 @@ class TaskAgentWorkflow {
         runKey: runKey,
         taskId: taskId,
         changeSetBuilder: changeSetBuilder,
-        retractionService: SuggestionRetractionService(
-          syncService: syncService,
-          domainLogger: domainLogger,
-          onChangeSetRetracted:
-              changeSetNotificationService?.syncAfterAgentRetraction,
-        ),
+        retractionService: retractionService,
         resolveTaskMetadata: () =>
             ChangeProposalFilter.resolveTaskMetadata(journalDb, taskId),
         resolveCategoryId: (entityId) async {
@@ -616,6 +618,17 @@ class TaskAgentWorkflow {
             ),
           );
         }
+
+        // 10a. Apply any retractions the agent staged during the conversation.
+        // Deferred to here — and run before the build below — so the retraction
+        // and the new proposals commit in one transaction. Persisting
+        // retractions mid-conversation (their old behavior) emptied the
+        // suggestion list for the seconds until this end-of-wake build landed
+        // the replacements; staging closes that gap. Running before build also
+        // lets the builder's dedup see the freshly-retracted statuses.
+        await retractionService.applyStaged(
+          strategy.extractStagedRetractions(),
+        );
 
         // 10b. Persist deferred change set (if any items were accumulated).
         // Pass the full pending sets so the builder can merge into an
@@ -1273,15 +1286,26 @@ to keep the user-facing suggestion list clean and trustworthy:
      have a better timer description than an existing open
      `update_running_timer` proposal, retract the old proposal first and
      then propose the newer text.
-2. **Retract stale open proposals.** If an open proposal is no longer
-   relevant — for example the current task state already matches it
-   (`priority` is already `P1`), the user made the change manually, or
-   it duplicates another open proposal you want to keep — call
+2. **Retract an open proposal only when THAT proposal is itself stale.**
+   Valid reasons: the current task state already satisfies it (`priority`
+   is already `P1`), the user already made that exact change manually, or
+   it duplicates another open proposal you are keeping. Call
    `retract_suggestions` with the item's `fp=…` fingerprint and a short
-   one-sentence reason. The user is NOT prompted; the item simply
-   disappears from the active suggestion list and is recorded as
-   retracted in the ledger. Retraction is not a failure; it is how you
-   keep the user's trust in your proposals.
+   one-sentence reason. The user is NOT prompted; the item disappears from
+   the active suggestion list and is recorded as retracted in the ledger.
+   Retraction is how you keep the user's trust — but only when the
+   proposal is genuinely dead.
+   - **Never retract a proposal just because the user acted on a
+     DIFFERENT one.** Each open proposal stands on its own. When the user
+     confirms or rejects one checklist item (or any single suggestion),
+     the OTHER open proposals are still valid and the user may still want
+     them — leave them alone. A partially-acted-on batch is normal, not a
+     signal to withdraw the rest.
+   - **Prefer leaving a good proposal in place over retract-and-re-add.**
+     Do not retract an open proposal only to re-propose a near-identical
+     one; the churn is worse than a slightly imperfect summary. (The one
+     exception is the single-open-proposal rule for `update_running_timer`
+     above.)
 3. **Do not re-propose rejected or retracted items** unless the task
    context has materially changed. When you do re-propose after a
    rejection/retraction, justify the decision in your report.

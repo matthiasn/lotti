@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   delivery of local edits across devices.
 - Matrix sync now recovers automatically from stale empty downloads, so media
   and JSON attachments arrive more reliably without manual retries.
+- Agent task suggestions no longer flash empty when the agent revises them: a
+  wake's retractions and its new proposals now commit together, so acting on
+  one suggested checklist item no longer makes the others briefly disappear.
 
 ### Changed
 - Sticky glass footers in Tasks and Daily OS now use a token-backed scrim

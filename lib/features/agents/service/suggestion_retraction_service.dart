@@ -54,6 +54,45 @@ class RetractionResult {
   final String? humanSummary;
 }
 
+/// A retraction that has been validated and is queued for application at the
+/// end of the wake.
+///
+/// [SuggestionRetractionService.plan] produces these without touching the
+/// database; [SuggestionRetractionService.applyStaged] persists them. The
+/// snapshot ([changeSet], [itemIndex], [item]) lets the apply step re-read the
+/// latest persisted state and skip items a concurrent user action has already
+/// resolved.
+class StagedRetraction {
+  const StagedRetraction({
+    required this.changeSet,
+    required this.itemIndex,
+    required this.item,
+    required this.reason,
+  });
+
+  final ChangeSetEntity changeSet;
+  final int itemIndex;
+  final ChangeItem item;
+  final String reason;
+
+  /// Stable identity of the target item — `'<changeSetId>:<itemIndex>'`. Used
+  /// to dedupe staging across multiple `retract_suggestions` calls in one wake
+  /// and to dedupe application within [SuggestionRetractionService.applyStaged].
+  String get key => '${changeSet.id}:$itemIndex';
+}
+
+/// Outcome of [SuggestionRetractionService.plan]: the per-request [results] to
+/// feed back to the LLM, plus the [staged] retractions to persist later via
+/// [SuggestionRetractionService.applyStaged].
+class RetractionPlan {
+  const RetractionPlan({required this.results, required this.staged});
+
+  const RetractionPlan.empty() : results = const [], staged = const [];
+
+  final List<RetractionResult> results;
+  final List<StagedRetraction> staged;
+}
+
 typedef ChangeSetRetractionCallback =
     Future<void> Function(ChangeSetEntity changeSet);
 
@@ -66,6 +105,16 @@ typedef ChangeSetRetractionCallback =
 /// the target [ChangeItem] to [ChangeItemStatus.retracted] and persists a
 /// matching [ChangeDecisionEntity] whose `actor` is [DecisionActor.agent]
 /// and whose `retractionReason` carries the agent's justification.
+///
+/// Retraction is a two-phase operation so it can commit atomically with the
+/// wake's other writes:
+///  * [plan] validates the requested fingerprints against the current pending
+///    sets and returns the per-request outcomes (for the LLM) plus the staged
+///    retractions — it touches nothing on disk.
+///  * [applyStaged] persists those staged retractions. The workflow runs it at
+///    the end of the wake, in the same transaction as the new proposals, so the
+///    suggestion list never flashes empty between a retraction and its
+///    replacement.
 ///
 /// The service re-reads the parent [ChangeSetEntity] before mutating it so
 /// concurrent user confirmations are not overwritten — last writer wins,
@@ -84,15 +133,29 @@ class SuggestionRetractionService {
   static const _uuid = Uuid();
   static const _sub = 'SuggestionRetraction';
 
-  /// Retract every request in [requests] against the pending change sets for
-  /// `(agentId, taskId)`. Returns one [RetractionResult] per request, in the
-  /// same order.
-  Future<List<RetractionResult>> retract({
+  /// Validate [requests] against the current pending change sets for
+  /// `(agentId, taskId)` WITHOUT persisting anything.
+  ///
+  /// Returns a [RetractionPlan] whose [RetractionPlan.results] list (one entry
+  /// per request, in order) is the per-entry outcome report for the LLM, and
+  /// whose [RetractionPlan.staged] list holds the pending items that should be
+  /// retracted. The caller persists the staged retractions at the end of the
+  /// wake via [applyStaged] so they commit atomically with the wake's new
+  /// proposals — the suggestion list never flashes empty between a retraction
+  /// and its replacement.
+  ///
+  /// [alreadyStagedKeys] are item keys (`'<changeSetId>:<itemIndex>'`) staged
+  /// by earlier `retract_suggestions` calls in the same wake. Because nothing
+  /// is persisted between calls, those items still read as pending here; the
+  /// keys let a repeated request report `notOpen` and avoid staging the same
+  /// item twice.
+  Future<RetractionPlan> plan({
     required String agentId,
     required String taskId,
     required List<RetractionRequest> requests,
+    Set<String> alreadyStagedKeys = const {},
   }) async {
-    if (requests.isEmpty) return const [];
+    if (requests.isEmpty) return const RetractionPlan.empty();
 
     final pendingSets = await _syncService.repository.getPendingChangeSets(
       agentId,
@@ -100,6 +163,13 @@ class SuggestionRetractionService {
     );
 
     final results = <RetractionResult>[];
+    final staged = <StagedRetraction>[];
+    // Item keys staged so far (prior calls + this call). Prevents the same
+    // target item from being staged twice across `retract_suggestions` calls.
+    final stagedKeys = <String>{...alreadyStagedKeys};
+    // Fingerprints staged earlier in THIS call, so the same fingerprint passed
+    // twice yields `notOpen` on the second occurrence instead of re-staging.
+    final stagedThisCall = <String>{};
     Map<String, LedgerEntry>? resolvedByFingerprint;
 
     Future<LedgerEntry?> resolvedLedgerEntry(String fingerprint) async {
@@ -118,11 +188,6 @@ class SuggestionRetractionService {
       }
       return resolvedByFingerprint![fingerprint];
     }
-
-    // Fingerprints we have already retracted during this call — ensures
-    // the same fingerprint passed twice yields `notOpen` on the second
-    // occurrence rather than crashing on a stale snapshot.
-    final retractedThisCall = <String>{};
 
     for (final request in requests) {
       final matches = _locateAll(pendingSets, request.fingerprint);
@@ -148,12 +213,9 @@ class SuggestionRetractionService {
         continue;
       }
 
-      // If we already retracted this fingerprint earlier in the same
-      // call, the second pass is a no-op. The first pass swept every
-      // pending sibling; anything still matching this fingerprint is
-      // either already `retracted` or caught by the in-`_applyRetraction`
-      // bounds/status check.
-      if (retractedThisCall.contains(request.fingerprint)) {
+      // Already staged this fingerprint earlier in the same call — the second
+      // pass is a no-op (the first staged every pending sibling).
+      if (stagedThisCall.contains(request.fingerprint)) {
         final first = matches.first;
         results.add(
           RetractionResult(
@@ -167,11 +229,15 @@ class SuggestionRetractionService {
       }
 
       final pendingMatches = matches
-          .where((m) => m.item.status == ChangeItemStatus.pending)
+          .where(
+            (m) =>
+                m.item.status == ChangeItemStatus.pending &&
+                !stagedKeys.contains('${m.changeSet.id}:${m.itemIndex}'),
+          )
           .toList();
       if (pendingMatches.isEmpty) {
-        // Every match is already resolved — report the first so the
-        // LLM sees the item exists but is no longer actionable.
+        // Every match is already resolved or already staged — report the
+        // first so the LLM sees the item exists but is no longer actionable.
         final first = matches.first;
         results.add(
           RetractionResult(
@@ -184,22 +250,23 @@ class SuggestionRetractionService {
         continue;
       }
 
-      // Sibling sweep: retract every pending duplicate, not just the
-      // first. Multiple items can share a fingerprint when consecutive
-      // wakes wrote separate change sets before cross-set dedup caught
-      // them, and a single agent retraction intent should clear every
-      // open copy so the user doesn't keep seeing ghosts in the UI.
+      // Sibling sweep: stage every pending duplicate, not just the first.
+      // Multiple items can share a fingerprint when consecutive wakes wrote
+      // separate change sets before cross-set dedup caught them, and a single
+      // agent retraction intent should clear every open copy so the user
+      // doesn't keep seeing ghosts in the UI.
       for (final match in pendingMatches) {
-        await _applyRetraction(
-          changeSet: match.changeSet,
-          itemIndex: match.itemIndex,
-          item: match.item,
-          agentId: agentId,
-          taskId: taskId,
-          reason: request.reason,
+        staged.add(
+          StagedRetraction(
+            changeSet: match.changeSet,
+            itemIndex: match.itemIndex,
+            item: match.item,
+            reason: request.reason,
+          ),
         );
+        stagedKeys.add('${match.changeSet.id}:${match.itemIndex}');
       }
-      retractedThisCall.add(request.fingerprint);
+      stagedThisCall.add(request.fingerprint);
 
       // toolName / humanSummary are identical across matches (same
       // fingerprint) — use the first for the LLM response payload.
@@ -214,7 +281,35 @@ class SuggestionRetractionService {
       );
     }
 
-    return results;
+    return RetractionPlan(results: results, staged: staged);
+  }
+
+  /// Persist the [staged] retractions produced by [plan].
+  ///
+  /// Intended to run at the end of a wake — ideally inside the same transaction
+  /// that persists the wake's new proposals — so the suggestion list
+  /// transitions straight from the old set to the new one without an empty
+  /// intermediate state. Each retraction re-reads the parent [ChangeSetEntity]
+  /// and skips the item if a concurrent user confirm/reject already resolved
+  /// it, so deferring the write is strictly safer than applying it
+  /// mid-conversation.
+  Future<void> applyStaged(List<StagedRetraction> staged) async {
+    if (staged.isEmpty) return;
+
+    // Defensive dedupe: never write two retractions for the same target item,
+    // even if a caller accumulated overlapping plans.
+    final applied = <String>{};
+    for (final retraction in staged) {
+      if (!applied.add(retraction.key)) continue;
+      await _applyRetraction(
+        changeSet: retraction.changeSet,
+        itemIndex: retraction.itemIndex,
+        item: retraction.item,
+        agentId: retraction.changeSet.agentId,
+        taskId: retraction.changeSet.taskId,
+        reason: retraction.reason,
+      );
+    }
   }
 
   /// Return every `(changeSet, itemIndex, item)` tuple whose item matches

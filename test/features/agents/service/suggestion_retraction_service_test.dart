@@ -224,6 +224,29 @@ extension _AnyGeneratedSuggestionRetractionScenario on glados.Any {
       );
 }
 
+/// Runs the two-phase retraction (validate, then persist) the way the workflow
+/// does at end-of-wake, returning the LLM-facing results.
+///
+/// Most tests assert on this combined behavior — it is exactly what the old
+/// single-step `retract` did. Dedicated tests below exercise
+/// [SuggestionRetractionService.plan] and
+/// [SuggestionRetractionService.applyStaged] in isolation to lock in the
+/// read-only / persist split.
+Future<List<RetractionResult>> _planThenApply(
+  SuggestionRetractionService service, {
+  required String agentId,
+  required String taskId,
+  required List<RetractionRequest> requests,
+}) async {
+  final plan = await service.plan(
+    agentId: agentId,
+    taskId: taskId,
+    requests: requests,
+  );
+  await service.applyStaged(plan.staged);
+  return plan.results;
+}
+
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -295,7 +318,7 @@ void main() {
     ).thenAnswer((_) async => sets);
   }
 
-  group('SuggestionRetractionService.retract', () {
+  group('SuggestionRetractionService.plan + applyStaged', () {
     glados.Glados(
       glados.any.retractionScenario,
       glados.ExploreConfig(numRuns: 220),
@@ -561,14 +584,52 @@ void main() {
           ),
       ];
 
-      final results = await withClock(
+      final plan = await withClock(
         testClock,
-        () => localService.retract(
+        () => localService.plan(
           agentId: agentId,
           taskId: taskId,
           requests: requests,
         ),
       );
+
+      // plan() is read-only — validation must not persist anything.
+      expect(upserts, isEmpty, reason: 'plan() must not upsert: $scenario');
+
+      // One staged retraction per pending match, in request/match order —
+      // the exact set the apply step will later persist as decisions.
+      expect(
+        plan.staged,
+        hasLength(expected.decisions.length),
+        reason: '$scenario',
+      );
+      for (var i = 0; i < expected.decisions.length; i++) {
+        expect(
+          plan.staged[i].changeSet.id,
+          expected.decisions[i].changeSetId,
+          reason: '$scenario',
+        );
+        expect(
+          plan.staged[i].itemIndex,
+          expected.decisions[i].itemIndex,
+          reason: '$scenario',
+        );
+        expect(
+          plan.staged[i].reason,
+          expected.decisions[i].reason,
+          reason: '$scenario',
+        );
+        expect(
+          plan.staged[i].item.toolName,
+          expected.decisions[i].item.toolName,
+          reason: '$scenario',
+        );
+      }
+
+      final results = plan.results;
+
+      // Apply the staged retractions — this is where persistence happens.
+      await withClock(testClock, () => localService.applyStaged(plan.staged));
 
       expect(results, hasLength(expected.results.length), reason: '$scenario');
       for (var i = 0; i < expected.results.length; i++) {
@@ -638,7 +699,8 @@ void main() {
         final fp = ChangeItem.fingerprint(priorityItem);
         final results = await withClock(
           testClock,
-          () => service.retract(
+          () => _planThenApply(
+            service,
             agentId: 'agent-1',
             taskId: 'task-xyz',
             requests: [
@@ -696,7 +758,8 @@ void main() {
 
         final results = await withClock(
           testClock,
-          () => service.retract(
+          () => _planThenApply(
+            service,
             agentId: 'agent-1',
             taskId: 'task-xyz',
             requests: [
@@ -733,7 +796,8 @@ void main() {
 
         await withClock(
           testClock,
-          () => serviceWithCallback.retract(
+          () => _planThenApply(
+            serviceWithCallback,
             agentId: 'agent-1',
             taskId: 'task-xyz',
             requests: [
@@ -766,7 +830,8 @@ void main() {
 
         final results = await withClock(
           testClock,
-          () => serviceWithCallback.retract(
+          () => _planThenApply(
+            serviceWithCallback,
             agentId: 'agent-1',
             taskId: 'task-xyz',
             requests: [
@@ -797,7 +862,8 @@ void main() {
       ]);
       stubPendingSets([cs]);
 
-      final results = await service.retract(
+      final results = await _planThenApply(
+        service,
         agentId: 'agent-1',
         taskId: 'task-xyz',
         requests: [
@@ -821,7 +887,8 @@ void main() {
           setWith([titleItem]),
         ]);
 
-        final results = await service.retract(
+        final results = await _planThenApply(
+          service,
           agentId: 'agent-1',
           taskId: 'task-xyz',
           requests: [
@@ -873,7 +940,8 @@ void main() {
           ),
         );
 
-        final results = await service.retract(
+        final results = await _planThenApply(
+          service,
           agentId: 'agent-1',
           taskId: 'task-xyz',
           requests: [
@@ -942,7 +1010,8 @@ void main() {
           ),
         );
 
-        final results = await service.retract(
+        final results = await _planThenApply(
+          service,
           agentId: 'agent-1',
           taskId: 'task-xyz',
           requests: [
@@ -968,7 +1037,8 @@ void main() {
         final fp = ChangeItem.fingerprint(priorityItem);
         final results = await withClock(
           testClock,
-          () => service.retract(
+          () => _planThenApply(
+            service,
             agentId: 'agent-1',
             taskId: 'task-xyz',
             requests: [
@@ -996,7 +1066,8 @@ void main() {
     test(
       'returns empty list and makes no calls when given no requests',
       () async {
-        final results = await service.retract(
+        final results = await _planThenApply(
+          service,
           agentId: 'agent-1',
           taskId: 'task-xyz',
           requests: const [],
@@ -1029,7 +1100,8 @@ void main() {
 
         final results = await withClock(
           testClock,
-          () => service.retract(
+          () => _planThenApply(
+            service,
             agentId: 'agent-1',
             taskId: 'task-xyz',
             requests: [
@@ -1083,7 +1155,8 @@ void main() {
 
         final results = await withClock(
           testClock,
-          () => service.retract(
+          () => _planThenApply(
+            service,
             agentId: 'agent-1',
             taskId: 'task-xyz',
             requests: [
@@ -1124,7 +1197,8 @@ void main() {
         );
         stubPendingSets([a, b]);
 
-        final results = await service.retract(
+        final results = await _planThenApply(
+          service,
           agentId: 'agent-1',
           taskId: 'task-xyz',
           requests: [
@@ -1149,7 +1223,8 @@ void main() {
 
         await withClock(
           testClock,
-          () => service.retract(
+          () => _planThenApply(
+            service,
             agentId: 'agent-1',
             taskId: 'task-xyz',
             requests: [
@@ -1168,6 +1243,134 @@ void main() {
             subDomain: 'SuggestionRetraction',
           ),
         ).called(1);
+      },
+    );
+
+    test('plan() validates and stages without persisting anything', () async {
+      final cs = setWith([priorityItem, titleItem]);
+      stubPendingSets([cs]);
+
+      final plan = await service.plan(
+        agentId: 'agent-1',
+        taskId: 'task-xyz',
+        requests: [
+          RetractionRequest(
+            fingerprint: ChangeItem.fingerprint(priorityItem),
+            reason: 'stale',
+          ),
+        ],
+      );
+
+      expect(plan.results.single.outcome, RetractionOutcome.retracted);
+      expect(plan.results.single.toolName, 'update_task_priority');
+      expect(plan.staged, hasLength(1));
+      expect(plan.staged.single.changeSet.id, 'cs-1');
+      expect(plan.staged.single.itemIndex, 0);
+      expect(plan.staged.single.reason, 'stale');
+      expect(plan.staged.single.key, 'cs-1:0');
+      // The whole point of the split: nothing is written during planning.
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+    });
+
+    test(
+      'applyStaged() persists the decision and flips only the staged item',
+      () async {
+        final cs = setWith([priorityItem, titleItem]);
+        stubPendingSets([cs]);
+
+        final plan = await service.plan(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [
+            RetractionRequest(
+              fingerprint: ChangeItem.fingerprint(priorityItem),
+              reason: 'stale',
+            ),
+          ],
+        );
+        await withClock(testClock, () => service.applyStaged(plan.staged));
+
+        final upserts = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final decision = upserts.whereType<ChangeDecisionEntity>().single;
+        expect(decision.verdict, ChangeDecisionVerdict.retracted);
+        expect(decision.actor, DecisionActor.agent);
+        expect(decision.retractionReason, 'stale');
+        expect(decision.createdAt, DateTime(2026, 4, 18, 9, 30));
+
+        final updated = upserts.whereType<ChangeSetEntity>().single;
+        expect(updated.items[0].status, ChangeItemStatus.retracted);
+        expect(
+          updated.items[1].status,
+          ChangeItemStatus.pending,
+          reason: 'sibling proposals are untouched by an unrelated retraction',
+        );
+      },
+    );
+
+    test('applyStaged([]) is a no-op', () async {
+      await service.applyStaged(const []);
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+    });
+
+    test(
+      'alreadyStagedKeys keeps a repeat retraction idempotent across calls in '
+      'one wake (nothing is persisted between calls)',
+      () async {
+        final cs = setWith([priorityItem]);
+        stubPendingSets([cs]);
+        final fp = ChangeItem.fingerprint(priorityItem);
+
+        final first = await service.plan(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [RetractionRequest(fingerprint: fp, reason: 'first')],
+        );
+        expect(first.staged, hasLength(1));
+
+        // The item is staged but NOT yet persisted, so a second plan still
+        // sees it as pending. Without the staged key it would be staged again
+        // — leading to a duplicate retraction decision at apply time.
+        final second = await service.plan(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [RetractionRequest(fingerprint: fp, reason: 'second')],
+          alreadyStagedKeys: {first.staged.single.key},
+        );
+
+        expect(second.results.single.outcome, RetractionOutcome.notOpen);
+        expect(second.staged, isEmpty);
+      },
+    );
+
+    test(
+      'applyStaged dedupes overlapping staged retractions for the same item',
+      () async {
+        final cs = setWith([priorityItem]);
+        stubPendingSets([cs]);
+        final plan = await service.plan(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [
+            RetractionRequest(
+              fingerprint: ChangeItem.fingerprint(priorityItem),
+              reason: 'r',
+            ),
+          ],
+        );
+
+        // Apply the same staged item twice (defensive against overlapping
+        // accumulated plans) — only one decision must be written.
+        await withClock(
+          testClock,
+          () => service.applyStaged([...plan.staged, ...plan.staged]),
+        );
+
+        final decisions = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<ChangeDecisionEntity>().toList();
+        expect(decisions, hasLength(1));
       },
     );
   });
