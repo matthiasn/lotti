@@ -22,11 +22,17 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
 
   static EdgeInsets padding(BuildContext context) {
     final tokens = context.designTokens;
+    // Asymmetric vertical insets are intentional: top sits under the page
+    // content so step3 is enough, while the bottom must give the last
+    // button row a visible gap above the screen edge on platforms without
+    // a home-indicator inset (e.g. Android with 3-button nav). The
+    // SafeArea wrapping this padding stacks the home-indicator inset on
+    // top of step6 where one exists.
     return EdgeInsets.fromLTRB(
       tokens.spacing.step5,
       tokens.spacing.step3,
       tokens.spacing.step5,
-      tokens.spacing.step4,
+      tokens.spacing.step6,
     );
   }
 

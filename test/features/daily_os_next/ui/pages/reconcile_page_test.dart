@@ -10,15 +10,20 @@ import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 import '../../../../widget_test_utils.dart';
 
-Widget _wrap(Widget child, {List<Override> overrides = const []}) {
+Widget _wrap(
+  Widget child, {
+  List<Override> overrides = const [],
+  MediaQueryData mediaQueryData = const MediaQueryData(size: Size(1400, 900)),
+}) {
   return ProviderScope(
     overrides: overrides,
     child: makeTestableWidget2(
       child,
-      mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+      mediaQueryData: mediaQueryData,
     ),
   );
 }
@@ -26,6 +31,13 @@ Widget _wrap(Widget child, {List<Override> overrides = const []}) {
 void _setWideSurface(WidgetTester tester) {
   tester.view
     ..physicalSize = const Size(1400, 900)
+    ..devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
+
+void _setPhoneSurface(WidgetTester tester) {
+  tester.view
+    ..physicalSize = phoneMediaQueryData.size
     ..devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 }
@@ -156,6 +168,36 @@ void main() {
         );
       },
     );
+
+    testWidgets('mobile footer clears the bottom navigation hit area', (
+      tester,
+    ) async {
+      _setPhoneSurface(tester);
+      final agent = _fastAgent();
+      await tester.pumpWidget(
+        _wrap(
+          const ReconcilePage(captureId: CaptureId('cap_x')),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+          mediaQueryData: phoneMediaQueryData,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final context = tester.element(find.byType(ReconcilePage));
+      final messages = context.messages;
+      final bottomNavHeight = DesignSystemBottomNavigationBar.occupiedHeight(
+        context,
+      );
+      final ctaBottom = tester
+          .getBottomLeft(find.text(messages.dailyOsNextReconcileBuildDayCta))
+          .dy;
+
+      expect(
+        ctaBottom,
+        lessThan(phoneMediaQueryData.size.height - bottomNavHeight),
+      );
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+    });
 
     testWidgets(
       'AppBar back button pops the navigator (re-record from header)',
