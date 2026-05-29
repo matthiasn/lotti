@@ -5709,7 +5709,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextReconcileVoiceHint.
   ///
   /// In en, this message translates to:
-  /// **'\"Drop the invoices\" works here too'**
+  /// **'Review decisions before building your day'**
   String get dailyOsNextReconcileVoiceHint;
 
   /// No description provided for @dailyOsNextRefineAccept.

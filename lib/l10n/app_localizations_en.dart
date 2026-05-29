@@ -3341,7 +3341,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileVoiceHint =>
-      '\"Drop the invoices\" works here too';
+      'Review decisions before building your day';
 
   @override
   String get dailyOsNextRefineAccept => 'Accept';

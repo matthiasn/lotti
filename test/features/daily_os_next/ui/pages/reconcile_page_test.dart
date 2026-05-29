@@ -196,6 +196,7 @@ void main() {
         ctaBottom,
         lessThan(phoneMediaQueryData.size.height - bottomNavHeight),
       );
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
     });
 
     testWidgets(

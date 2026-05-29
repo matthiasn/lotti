@@ -3398,7 +3398,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileVoiceHint =>
-      '«Quita las facturas» también funciona aquí';
+      'Revisa las decisiones antes de armar tu día';
 
   @override
   String get dailyOsNextRefineAccept => 'Aceptar';

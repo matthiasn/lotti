@@ -3409,7 +3409,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileVoiceHint =>
-      '„Renunță la facturi” funcționează și aici';
+      'Revizuiți deciziile înainte de a vă construi ziua';
 
   @override
   String get dailyOsNextRefineAccept => 'Acceptă';

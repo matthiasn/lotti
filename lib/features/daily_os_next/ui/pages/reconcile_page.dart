@@ -6,6 +6,7 @@ import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -321,15 +322,26 @@ class _ReconcileFooter extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final isWide = MediaQuery.sizeOf(context).width >= 720;
-    final backButton = TextButton.icon(
-      icon: const Icon(Icons.arrow_back_rounded, size: 16),
+    final buttonShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+    );
+    final buttonPadding = EdgeInsets.symmetric(
+      horizontal: tokens.spacing.step5,
+      vertical: tokens.spacing.step3,
+    );
+    final retryButton = FilledButton.icon(
+      icon: Icon(Icons.mic_rounded, size: tokens.spacing.step4),
       label: Text(
         messages.dailyOsNextReconcileReRecord,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      style: TextButton.styleFrom(
-        foregroundColor: tokens.colors.text.mediumEmphasis,
+      style: FilledButton.styleFrom(
+        backgroundColor: tokens.colors.surface.focusPressed,
+        foregroundColor: tokens.colors.text.highEmphasis,
+        minimumSize: Size(0, tokens.spacing.step9),
+        padding: buttonPadding,
+        shape: buttonShape,
       ),
       onPressed: () => Navigator.of(context).maybePop(),
     );
@@ -364,47 +376,45 @@ class _ReconcileFooter extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: tokens.colors.interactive.enabled,
         foregroundColor: tokens.colors.text.onInteractiveAlert,
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step5,
-          vertical: tokens.spacing.step3,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-        ),
+        minimumSize: Size(0, tokens.spacing.step9),
+        padding: buttonPadding,
+        shape: buttonShape,
       ),
     );
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        border: Border(
-          top: BorderSide(color: tokens.colors.decorative.level01),
-        ),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step6,
-        vertical: tokens.spacing.step4,
-      ),
+    return DesignSystemGlassStrip(
       child: isWide
-          ? Row(
-              children: [
-                backButton,
-                Expanded(child: hint),
-                draftButton,
-              ],
+          ? Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step6,
+                vertical: tokens.spacing.step4,
+              ),
+              child: Row(
+                children: [
+                  retryButton,
+                  Expanded(child: hint),
+                  draftButton,
+                ],
+              ),
             )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                hint,
-                SizedBox(height: tokens.spacing.step3),
-                Row(
-                  children: [
-                    Expanded(child: backButton),
-                    SizedBox(width: tokens.spacing.step3),
-                    Expanded(child: draftButton),
-                  ],
-                ),
-              ],
+          : Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step5,
+                vertical: tokens.spacing.step4,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  hint,
+                  SizedBox(height: tokens.spacing.step3),
+                  Row(
+                    children: [
+                      Expanded(child: retryButton),
+                      SizedBox(width: tokens.spacing.step3),
+                      Expanded(child: draftButton),
+                    ],
+                  ),
+                ],
+              ),
             ),
     );
   }

@@ -3384,7 +3384,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextReconcileReRecord => 'Znovu nahrát';
 
   @override
-  String get dailyOsNextReconcileVoiceHint => '„Vyhoď faktury“ tu taky funguje';
+  String get dailyOsNextReconcileVoiceHint =>
+      'Zkontroluj rozhodnutí, než si poskládáš den';
 
   @override
   String get dailyOsNextRefineAccept => 'Přijmout';

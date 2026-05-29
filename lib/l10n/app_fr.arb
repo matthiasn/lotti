@@ -1647,7 +1647,7 @@
   "dailyOsNextReconcileHeardOverline": "VOILÀ CE QUE J'AI ENTENDU",
   "dailyOsNextReconcileLowConfidence": "confiance faible",
   "dailyOsNextReconcileReRecord": "Réenregistrer",
-  "dailyOsNextReconcileVoiceHint": "« Enlève les factures » fonctionne aussi ici",
+  "dailyOsNextReconcileVoiceHint": "Vérifie les décisions avant de construire ta journée",
   "dailyOsNextRefineAccept": "Accepter",
   "dailyOsNextRefineDiffAdded": "AJOUTÉ",
   "dailyOsNextRefineDiffDropped": "RETIRÉ",

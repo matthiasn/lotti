@@ -3400,7 +3400,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextReconcileVoiceHint =>
-      '« Enlève les factures » fonctionne aussi ici';
+      'Vérifie les décisions avant de construire ta journée';
 
   @override
   String get dailyOsNextRefineAccept => 'Accepter';
