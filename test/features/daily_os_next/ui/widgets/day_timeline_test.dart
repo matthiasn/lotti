@@ -6,6 +6,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -100,6 +101,8 @@ TimeBlock _timeBlock({
   required int startHour,
   required int endHour,
   TimeBlockState state = TimeBlockState.drafted,
+  TimeBlockType type = TimeBlockType.ai,
+  String? taskId,
 }) {
   final day = DateTime(2026, 5, 25);
   return TimeBlock(
@@ -107,10 +110,11 @@ TimeBlock _timeBlock({
     title: title,
     start: day.add(Duration(hours: startHour)),
     end: day.add(Duration(hours: endHour)),
-    type: TimeBlockType.ai,
+    type: type,
     state: state,
     category: _work,
     reason: 'Window selected for focused work.',
+    taskId: taskId,
   );
 }
 
@@ -125,6 +129,8 @@ Widget _wrap(
 }
 
 void main() {
+  tearDown(() => beamToNamedOverride = null);
+
   group('DayTimeline', () {
     testWidgets('renders each block from the draft without band label text', (
       tester,
@@ -149,6 +155,80 @@ void main() {
       expect(find.text('Buffer'), findsOneWidget);
       expect(find.text('Team sync'), findsOneWidget);
       expect(find.text('HIGH ENERGY'), findsNothing);
+    });
+
+    testWidgets('opens task-backed timeline blocks through app navigation', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1280, 1200)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      String? openedPath;
+      beamToNamedOverride = (path) => openedPath = path;
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                _timeBlock(
+                  id: 'plan-task',
+                  title: 'Openable plan block',
+                  startHour: 8,
+                  endHour: 9,
+                  taskId: 'task-1',
+                ),
+              ],
+            ),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('daily_os_day_block_plan-task')));
+      await tester.pump();
+
+      expect(openedPath, '/tasks/task-1');
+    });
+
+    testWidgets('leaves timeline blocks without task ids inert', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1280, 1200)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      String? openedPath;
+      beamToNamedOverride = (path) => openedPath = path;
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: [
+                _timeBlock(
+                  id: 'standalone',
+                  title: 'Standalone block',
+                  startHour: 8,
+                  endHour: 9,
+                  type: TimeBlockType.cal,
+                ),
+              ],
+            ),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('daily_os_day_block_standalone')));
+      await tester.pump();
+
+      expect(openedPath, isNull);
     });
 
     testWidgets('AI blocks render a WhyChip; cal and buffer blocks do not', (

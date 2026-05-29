@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// One row on the Agenda view.
 ///
 /// The row keeps the category stripe and order number visible while using a
-/// compact task-list rhythm: title first, then reason, estimate, and state as
-/// one caption-weight metadata line.
+/// compact task-list rhythm: title first, then reason, estimate, and state
+/// metadata as DS pills.
 class AgendaCard extends StatelessWidget {
   const AgendaCard({
     required this.index,
     required this.item,
     this.displayTitle,
     this.whyReason,
+    this.coverArtId,
+    this.coverArtCropX = 0.5,
     this.onTap,
     super.key,
   });
@@ -25,8 +29,14 @@ class AgendaCard extends StatelessWidget {
   final String? displayTitle;
 
   /// Reason for the first block linked to this agenda item, surfaced
-  /// in the WhyChip. Null when no AI placement backs the item.
+  /// in the Why pill. Null when no AI placement backs the item.
   final String? whyReason;
+
+  /// Linked task cover art image ID, when the backing task has one.
+  final String? coverArtId;
+
+  /// Horizontal crop for [coverArtId], matching the task cover-art crop.
+  final double coverArtCropX;
 
   /// Opens the backing task when `item.taskId` is available.
   final VoidCallback? onTap;
@@ -70,6 +80,8 @@ class AgendaCard extends StatelessWidget {
                     displayTitle: displayTitle,
                     category: category,
                     whyReason: whyReason,
+                    coverArtId: coverArtId,
+                    coverArtCropX: coverArtCropX,
                   ),
                   if (progress != null) ...[
                     SizedBox(height: tokens.spacing.step4),
@@ -85,7 +97,7 @@ class AgendaCard extends StatelessWidget {
     final callback = onTap;
     if (callback == null) return card;
     return Material(
-      color: Colors.transparent,
+      type: MaterialType.transparency,
       child: InkWell(
         onTap: callback,
         borderRadius: borderRadius,
@@ -104,6 +116,8 @@ class _AgendaCardTop extends StatelessWidget {
     required this.displayTitle,
     required this.category,
     required this.whyReason,
+    required this.coverArtId,
+    required this.coverArtCropX,
   });
 
   final int index;
@@ -111,6 +125,8 @@ class _AgendaCardTop extends StatelessWidget {
   final String? displayTitle;
   final Color category;
   final String? whyReason;
+  final String? coverArtId;
+  final double coverArtCropX;
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +134,12 @@ class _AgendaCardTop extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _NumberedCircle(index: index, color: category),
+        _AgendaLeading(
+          index: index,
+          color: category,
+          coverArtId: coverArtId,
+          coverArtCropX: coverArtCropX,
+        ),
         SizedBox(width: tokens.spacing.step4),
         Expanded(
           child: _AgendaContent(
@@ -147,6 +168,10 @@ class _AgendaContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isDesktop = isDesktopLayout(context);
+    final hasMeta =
+        whyReason != null ||
+        item.totalEstimateMinutes != null ||
+        item.state != AgendaItemState.open;
     final title = Text(
       displayTitle ?? item.title,
       style: tokens.typography.styles.subtitle.subtitle2.copyWith(
@@ -161,7 +186,7 @@ class _AgendaContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (isDesktop)
+        if (isDesktop && hasMeta)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -172,11 +197,13 @@ class _AgendaContent extends StatelessWidget {
           )
         else ...[
           title,
-          SizedBox(height: tokens.spacing.step2),
-          meta,
+          if (hasMeta) ...[
+            SizedBox(height: tokens.spacing.step3),
+            meta,
+          ],
         ],
         if (item.outcome != null) ...[
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step3),
           Text(
             item.outcome!,
             style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -189,28 +216,104 @@ class _AgendaContent extends StatelessWidget {
   }
 }
 
-class _NumberedCircle extends StatelessWidget {
-  const _NumberedCircle({required this.index, required this.color});
+class _AgendaLeading extends StatelessWidget {
+  const _AgendaLeading({
+    required this.index,
+    required this.color,
+    required this.coverArtId,
+    required this.coverArtCropX,
+  });
 
   final int index;
   final Color color;
+  final String? coverArtId;
+  final double coverArtCropX;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final imageId = coverArtId?.trim();
+    final size = tokens.spacing.step9;
+    if (imageId == null || imageId.isEmpty) {
+      return SizedBox(
+        width: size,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: _NumberedCircle(
+            index: index,
+            color: color,
+            size: tokens.spacing.step7,
+          ),
+        ),
+      );
+    }
+
+    return SizedBox.square(
+      dimension: size,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              child: CoverArtThumbnail(
+                imageId: imageId,
+                size: size,
+                cropX: coverArtCropX,
+              ),
+            ),
+          ),
+          Positioned(
+            left: tokens.spacing.step1,
+            bottom: tokens.spacing.step1,
+            child: _NumberedCircle(
+              index: index,
+              color: color,
+              size: tokens.spacing.step6,
+              solid: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NumberedCircle extends StatelessWidget {
+  const _NumberedCircle({
+    required this.index,
+    required this.color,
+    required this.size,
+    this.solid = false,
+  });
+
+  final int index;
+  final Color color;
+  final double size;
+  final bool solid;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final solidForeground =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? tokens.colors.text.highEmphasis
+        : tokens.colors.text.onInteractiveAlert;
     return Container(
-      width: tokens.spacing.step6,
-      height: tokens.spacing.step6,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
+        color: solid ? color : tokens.colors.surface.enabled,
         shape: BoxShape.circle,
+        border: solid
+            ? null
+            : Border.all(color: tokens.colors.decorative.level01),
       ),
       child: Text(
         '$index',
         style: tokens.typography.styles.others.caption.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
+          color: solid ? solidForeground : color,
+          fontWeight: tokens.typography.weight.bold,
         ),
       ),
     );
@@ -226,19 +329,19 @@ class _AgendaMetaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final children = <Widget>[
+      if (whyReason != null) _WhyMeta(reason: whyReason!),
+      if (item.totalEstimateMinutes != null)
+        _EstimateMeta(minutes: item.totalEstimateMinutes!),
+      if (item.state != AgendaItemState.open) _StateMeta(state: item.state),
+    ];
+    if (children.isEmpty) return const SizedBox.shrink();
+
     return Wrap(
       spacing: tokens.spacing.step2,
-      runSpacing: tokens.spacing.step1,
+      runSpacing: tokens.spacing.step2,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        if (whyReason != null) _WhyMeta(reason: whyReason!),
-        if (whyReason != null) const _MetaSeparator(),
-        if (item.totalEstimateMinutes != null) ...[
-          _EstimateMeta(minutes: item.totalEstimateMinutes!),
-          const _MetaSeparator(),
-        ],
-        _StateMeta(state: item.state),
-      ],
+      children: children,
     );
   }
 }
@@ -254,22 +357,15 @@ class _WhyMeta extends StatelessWidget {
     final color = tokens.colors.aiCard.accent;
     return Tooltip(
       message: reason,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.auto_awesome_rounded,
-            size: tokens.spacing.step3,
-            color: color,
-          ),
-          SizedBox(width: tokens.spacing.step1),
-          Text(
-            context.messages.dailyOsNextDayWhyChipLabel,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: color,
-            ),
-          ),
-        ],
+      child: DsPill(
+        variant: DsPillVariant.tinted,
+        color: color,
+        label: context.messages.dailyOsNextDayWhyChipLabel,
+        leading: Icon(
+          Icons.auto_awesome_rounded,
+          size: tokens.typography.size.caption,
+          color: color,
+        ),
       ),
     );
   }
@@ -284,36 +380,14 @@ class _EstimateMeta extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = tokens.colors.text.lowEmphasis;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.schedule_rounded,
-          size: tokens.spacing.step3,
-          color: color,
-        ),
-        SizedBox(width: tokens.spacing.step1),
-        Text(
-          context.messages.dailyOsNextEstimateMinutes(minutes),
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MetaSeparator extends StatelessWidget {
-  const _MetaSeparator();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Text(
-      '·',
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.text.lowEmphasis,
+    return DsPill(
+      variant: DsPillVariant.filled,
+      label: context.messages.dailyOsNextEstimateMinutes(minutes),
+      labelColor: tokens.colors.text.mediumEmphasis,
+      leading: Icon(
+        Icons.schedule_rounded,
+        size: tokens.typography.size.caption,
+        color: color,
       ),
     );
   }
@@ -345,11 +419,11 @@ class _StateMeta extends StatelessWidget {
         context.messages.dailyOsNextAgendaStateDone,
       ),
     };
-    return Text(
-      label,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: color,
-      ),
+    return DsPill(
+      variant: DsPillVariant.tinted,
+      color: color,
+      label: label,
+      labelColor: color,
     );
   }
 }
@@ -366,7 +440,7 @@ class _ProgressBar extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.xs),
       child: SizedBox(
-        height: 4,
+        height: tokens.spacing.step2,
         child: LinearProgressIndicator(
           value: progress.clamp(0.0, 1.0),
           valueColor: AlwaysStoppedAnimation<Color>(color),

@@ -486,6 +486,11 @@ The linked-task context is not only raw task metadata. The workflow also pulls
 in the latest task-agent report for linked tasks when available, so one task
 agent can consume another task agent's distilled report.
 
+Task-agent reports may include readable Markdown links to known task ids as
+`[Title](/tasks/<taskId>)` when the input context exposed the id and opening the
+task helps inspect proof of work. The trailing Links block remains reserved for
+external source URLs; internal task links belong inline in the report body.
+
 ### Tool Policy
 
 Task agents have two immediate local tools:
@@ -772,6 +777,11 @@ immediately through the orchestrator.
 8. persists token usage, final thought, report, observations, deferred
    change set, and updated state
 
+Project-agent reports follow the same inline task-link contract as task-agent
+reports. When linked-task context includes a task id, the report may point to
+that task with `/tasks/<taskId>` instead of relegating internal navigation to
+the external Links block.
+
 If a scheduled digest is due, a report already exists, and
 `pendingProjectActivityAt` is still `null`, the workflow rolls
 `scheduledWakeAt` forward and skips the model call. That is how project agents
@@ -1054,6 +1064,12 @@ yet compacted into summary messages.
 The runtime described above is consumed by three concrete UI widgets.
 None of them owns business logic — they all read from the providers in
 `state/agent_providers.dart` and dispatch through the same services.
+
+Agent markdown is rendered through `AgentMarkdownView`, which wires
+`handleMarkdownLinkTap` and `buildMarkdownLink` from `utils/markdown_link_utils`.
+That shared handler beams app-local routes such as `/tasks/<id>` or
+`lotti://tasks/<id>` through `NavService`; external URLs still use the platform
+launcher.
 
 ### `AiSummaryCard` — the task-details AI surface
 

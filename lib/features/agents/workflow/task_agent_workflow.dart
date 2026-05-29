@@ -1142,11 +1142,11 @@ The report MUST NOT contain:
 - "I noticed..." or "I decided to..." commentary
 - Debugging notes, failure analysis, or retry logs
 - Agent self-reflection or meta-commentary
-- Links to linked tasks (parent, child, follow-up) — these are already
-  shown in a dedicated "Linked Tasks" UI section below the report. Never
-  use internal task IDs or shortened hashes as link targets — they cannot
-  be opened and are meaningless to the user. Only include real external
-  URLs (GitHub, Stack Overflow, documentation, etc.) in a Links section.
+- Bare internal task IDs or shortened hashes as visible link text. When a
+  provided task context includes a task ID and linking helps the user inspect
+  proof of work, link the readable task title to `/tasks/<taskId>`. Keep the
+  Links section for real external URLs (GitHub, Stack Overflow,
+  documentation, etc.).
 
 Use `record_observations` for ALL internal notes. Observations are private
 and never shown to the user. They persist as your memory across wakes.''';
@@ -1223,12 +1223,12 @@ Use this as high-level planning context:
   When you detect a grievance signal (frustration, "you should have...",
   "why didn't you...", corrections, re-stating requests), record it
   IMMEDIATELY as a critical observation before continuing with other work.
-- **Links in reports**: NEVER link to linked tasks (parent, child,
-  follow-up) in the report. They are already shown in a dedicated UI
-  section. Never use internal task IDs or shortened hashes as link targets
-  — they cannot be opened and are meaningless to the user. Only include
-  real external URLs (GitHub PRs, issues, documentation, etc.).
-  When referencing a linked task by name, use plain text, not a link.
+- **Links in reports**: When a linked task's ID is present in the provided
+  context and a link would help the user inspect proof of work, format the
+  readable task title as `[Task title](/tasks/<taskId>)`. Never use bare
+  internal IDs or shortened hashes as visible link text, and never invent task
+  IDs. Keep the dedicated Links section for real external URLs (GitHub PRs,
+  issues, documentation, etc.).
 - **Title**: Only set the title when the task has no title yet. Do not
   change an existing title unless the user explicitly asks for it.
 - **Estimates**: Only set or update an estimate when the user explicitly

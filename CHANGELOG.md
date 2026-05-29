@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   time rail, shows recorded journal time in the Actual lane, keeps task-backed
   agenda titles in sync, refreshes without whole-page loading flashes, and
   avoids surfacing weeks-old overdue tasks in daily proposals.
+- Daily OS Next agenda rows now use a cleaner mobile-first layout with task
+  cover art thumbnails, tighter metadata pills, token-backed progress, and
+  task-backed Day timeline blocks and task-report links that open the linked
+  task inside the app.
 - Daily OS Next drafting now carries approved new capture items into planning,
   counts buffers as scheduled time while excluding dropped blocks, and labels
   due/overdue work relative to the selected plan date.

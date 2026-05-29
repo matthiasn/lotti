@@ -101,6 +101,12 @@ Runtime behavior:
   scheduled minutes from the non-dropped blocks they render. Buffers count
   because they reserve real time; dropped blocks do not. This keeps stale
   persisted totals from making the capacity meter disagree with the agenda rows.
+- Agenda rows resolve live task metadata through `taskLiveDataProvider` before
+  rendering. `AgendaView` keeps draft/manual block timing as the source of truth,
+  then passes the task title, status, estimate, category, `coverArtId`, and
+  `coverArtCropX` into `AgendaCard`. The row uses `CoverArtThumbnail` for the
+  square task image when one exists and falls back to the numbered category badge
+  when it does not, so the compact mobile list keeps a stable leading column.
 - `parse_capture_to_items` persists `ParsedItemEntity` rows and links them to
   the source capture. High-confidence matches (`>= 0.75`) auto-link to tasks,
   medium-confidence matches (`0.5..0.75`) auto-link with `lowConfidence`, and
@@ -146,7 +152,9 @@ Runtime behavior:
   Two-finger vertical pinch and trackpad pinch zoom both lanes together, while
   the toolbar/horizontal pinch toggles paged versus side-by-side comparison.
   The summary card above the tracks groups actual minutes by category and
-  counts completed task blocks.
+  counts completed task blocks. `DayBlock` opens `/tasks/<taskId>` for any
+  planned or actual block whose `TimeBlock.taskId` is present; standalone
+  calendar and buffer blocks stay inert.
 - `surface_pending_decisions` intentionally limits overdue carryover to the
   last seven days. Due-today tasks and in-progress work still surface, but
   weeks-old overdue rows are left out of daily proposals unless the user brings

@@ -5,6 +5,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/get_it.dart';
@@ -84,11 +85,14 @@ class _LiveAgendaCard extends ConsumerWidget {
         ? null
         : ref.watch(taskLiveDataProvider(taskId)).value;
     final liveTitle = task?.data.title.trim();
+    final coverArtId = task?.data.coverArtId?.trim();
     return AgendaCard(
       index: index,
       item: item,
       displayTitle: liveTitle == null || liveTitle.isEmpty ? null : liveTitle,
       whyReason: whyReason,
+      coverArtId: coverArtId == null || coverArtId.isEmpty ? null : coverArtId,
+      coverArtCropX: task?.data.coverArtCropX ?? 0.5,
       onTap: onTap,
     );
   }
@@ -107,6 +111,9 @@ class _StatStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final hasCategoryMix = draft.blocks.any(
+      (block) => block.state != TimeBlockState.dropped,
+    );
     final ratio = draft.capacityMinutes == 0
         ? 0.0
         : draft.scheduledMinutes / draft.capacityMinutes;
@@ -147,8 +154,10 @@ class _StatStrip extends StatelessWidget {
             scheduledMinutes: draft.scheduledMinutes,
             capacityMinutes: draft.capacityMinutes,
           ),
-          SizedBox(height: tokens.spacing.step3),
-          _CategoryMix(draft: draft),
+          if (hasCategoryMix) ...[
+            SizedBox(height: tokens.spacing.step3),
+            _CategoryMix(draft: draft),
+          ],
         ],
       ),
     );
@@ -204,26 +213,25 @@ class _CategoryLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = categoryColorFromHex(category.colorHex);
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    final duration = m == 0 ? '${h}h' : '${h}h ${m}m';
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
+    return DsPill(
+      variant: DsPillVariant.filled,
+      label: '${category.name} · ${_formatDuration(minutes)}',
+      labelColor: tokens.colors.text.lowEmphasis,
+      leading: SizedBox.square(
+        dimension: tokens.spacing.step2,
+        child: DecoratedBox(
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        SizedBox(width: tokens.spacing.step2),
-        Text(
-          '${category.name} · $duration',
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
-          ),
-        ),
-      ],
+      ),
     );
+  }
+
+  String _formatDuration(int minutes) {
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0) return '${m}m';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}m';
   }
 }
 

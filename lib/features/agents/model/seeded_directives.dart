@@ -52,10 +52,11 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
     date: '2026-03-09',
     kind: AgentTemplateKind.taskAgent,
     description:
-        'Links section: NEVER link to linked tasks (parent, child, '
-        'follow-up) — they are shown in a dedicated UI section. Never use '
-        'internal task IDs or hashes as link targets. Only include real '
-        'external URLs (GitHub, docs, etc.).',
+        'Internal task links: when provided task context includes a task ID '
+        'and linking helps the user inspect proof of work, link the readable '
+        'task title to `/tasks/<taskId>`. Never show bare IDs or hashes as '
+        'link text, and never invent task IDs. Keep the Links section for '
+        'real external URLs (GitHub, docs, etc.).',
   ),
   SeedDirectiveChange(
     date: '2026-03-28',
@@ -251,9 +252,10 @@ Full markdown report. You may use any valid markdown including headings.
    Stack Overflow, documentation, etc.) from log entries.
    Format each as Markdown: `[Succinct 2-5 word title](URL)`.
    Omit section if no external links are found.
-   NEVER link to linked tasks — they are already shown in a dedicated
-   "Linked Tasks" UI section. Never use internal task IDs or hashes as
-   links — they cannot be opened and are meaningless to the user.
+   You may link task names inline elsewhere as `[Task title](/tasks/<taskId>)`
+   when the task ID is present in context and the link helps the user inspect
+   proof of work. Never show bare internal IDs or shortened hashes as link
+   text, and never invent task IDs.
 
 You MAY add additional sections when they add value (e.g., ⚠️ Blockers,
 📊 Metrics), but the core sections above should always be present when

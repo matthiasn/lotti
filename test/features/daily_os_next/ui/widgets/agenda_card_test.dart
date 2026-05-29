@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../widget_test_utils.dart';
 
 Widget _wrap(Widget child) => makeTestableWidget2(
@@ -20,6 +24,25 @@ const _category = DayAgentCategory(
   name: 'Work',
   colorHex: '5ED4B7',
 );
+
+JournalImage _image({String id = 'image-1'}) {
+  final now = DateTime(2026, 5, 26, 9);
+  return JournalImage(
+    meta: Metadata(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      dateFrom: now,
+      dateTo: now,
+    ),
+    data: ImageData(
+      imageId: 'image-data-$id',
+      imageFile: '$id.jpg',
+      imageDirectory: '/covers/',
+      capturedAt: now,
+    ),
+  );
+}
 
 void main() {
   group('AgendaCard', () {
@@ -51,6 +74,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('120m'), findsOneWidget);
+      expect(find.text('Open'), findsNothing);
     });
 
     testWidgets('shows why metadata when a whyReason is provided', (
@@ -156,6 +180,40 @@ void main() {
       );
       expect(title.maxLines, greaterThan(1));
       expect(title.overflow, TextOverflow.fade);
+    });
+
+    testWidgets('renders task cover art as the leading visual', (
+      tester,
+    ) async {
+      final image = _image();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [createEntryControllerOverride(image)],
+          child: _wrapPhone(
+            const Material(
+              child: AgendaCard(
+                index: 3,
+                item: AgendaItem(
+                  id: 'a1',
+                  title: 'Task with cover art',
+                  category: _category,
+                  linkedBlockIds: ['b1'],
+                ),
+                coverArtId: 'image-1',
+                coverArtCropX: 0.25,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CoverArtThumbnail), findsOneWidget);
+      final thumbnail = tester.widget<CoverArtThumbnail>(
+        find.byType(CoverArtThumbnail),
+      );
+      expect(thumbnail.imageId, 'image-1');
+      expect(thumbnail.cropX, 0.25);
     });
   });
 }
