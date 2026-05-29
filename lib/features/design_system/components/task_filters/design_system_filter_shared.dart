@@ -76,11 +76,15 @@ class DesignSystemFilterPalette {
         priorityP1: const Color(0xFFFBA337),
         priorityP2: const Color(0xFF4AB6E8),
         priorityP3: const Color(0xFF7AB889),
-        // Figma "Apply filter" footer GLASS effect: transparent → ~19%
-        // white. Alpha pre-multiplied with the spec's 0.8 layer opacity
-        // so the overlay paints in a single pass (no Opacity widget).
-        glassFooterOverlayStart: const Color(0x00FFFFFF),
-        glassFooterOverlayEnd: const Color(0x31FFFFFF),
+        // Theme-aware glass scrim: keep the blur visible while capping
+        // bright content underneath, e.g. screenshots with large white
+        // regions behind a sticky footer.
+        glassFooterOverlayStart: tokens.colors.background.level02.withValues(
+          alpha: _darkGlassFooterStartAlpha,
+        ),
+        glassFooterOverlayEnd: tokens.colors.background.level02.withValues(
+          alpha: _darkGlassFooterEndAlpha,
+        ),
       );
     }
 
@@ -103,14 +107,22 @@ class DesignSystemFilterPalette {
       priorityP1: const Color(0xFFF19819),
       priorityP2: const Color(0xFF44AEEF),
       priorityP3: const Color(0xFF6C9E71),
-      // Figma's GLASS shine reads as white-on-near-white in the light
-      // sheet (#FFFCF8), so we keep the same overlay stops as dark for
-      // theme-architectural consistency. Light-mode visual is pending
-      // designer review — tweak these stops here, not at the call site.
-      glassFooterOverlayStart: const Color(0x00FFFFFF),
-      glassFooterOverlayEnd: const Color(0x31FFFFFF),
+      // Light mode uses the same semantic surface token instead of raw
+      // white so the footer remains legible over dark or high-contrast
+      // content while still reading as frosted glass.
+      glassFooterOverlayStart: tokens.colors.background.level02.withValues(
+        alpha: _lightGlassFooterStartAlpha,
+      ),
+      glassFooterOverlayEnd: tokens.colors.background.level02.withValues(
+        alpha: _lightGlassFooterEndAlpha,
+      ),
     );
   }
+
+  static const _darkGlassFooterStartAlpha = 0.72;
+  static const _darkGlassFooterEndAlpha = 0.9;
+  static const _lightGlassFooterStartAlpha = 0.78;
+  static const _lightGlassFooterEndAlpha = 0.94;
 
   final Color sheetBackground;
   final Color handleColor;
@@ -131,12 +143,10 @@ class DesignSystemFilterPalette {
   final Color priorityP2;
   final Color priorityP3;
 
-  /// Top stop of the sticky-footer "glass" gradient overlay (transparent).
+  /// Top stop of the sticky-footer "glass" gradient overlay.
   final Color glassFooterOverlayStart;
 
-  /// Bottom stop of the sticky-footer "glass" gradient overlay. Alpha is
-  /// pre-multiplied with the Figma layer opacity so the overlay can be
-  /// painted without an extra `Opacity` saveLayer.
+  /// Bottom stop of the sticky-footer "glass" gradient overlay.
   final Color glassFooterOverlayEnd;
 }
 
@@ -173,11 +183,9 @@ class DesignSystemFilterActionButton extends StatelessWidget {
           color: highlighted ? palette.accent : palette.pillFill,
           borderRadius: radius,
           // Non-highlighted pills carry a 1px border. Their `pillFill`
-          // is only ~4% of luminance away from the sheet background,
-          // and the glass-blur footer's gradient overlay (transparent
-          // → ~19% white) lifts the pill toward the overlay, so without
-          // the border the pill silhouette can wash out entirely on
-          // dark mode. The border uses the same divider token as the
+          // is only ~4% of luminance away from the sheet background, so
+          // the border keeps the pill silhouette readable inside the
+          // glass footer. The border uses the same divider token as the
           // sheet's hairline divider so the seam reads consistently.
           // Highlighted (Apply) pills are opaque accent — no border
           // needed.

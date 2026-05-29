@@ -11,12 +11,12 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// 2. a [BackdropFilter] that blurs whatever the page paints behind the
 ///    strip (host parents must keep that content visible — usually via
 ///    `Scaffold.extendBody: true`), and
-/// 3. a top→bottom white gradient overlay.
+/// 3. a top→bottom theme-aware scrim gradient.
 ///
 /// Glass overlay colors and the blur sigma currently live on
 /// [DesignSystemFilterPalette] — until the design-system token export
-/// surfaces dedicated `glass.*` tokens, this widget is the single
-/// consumer for new sticky bars and keeps the values out of caller
+/// surfaces dedicated `glass.*` tokens, this widget is the shared
+/// surface for new sticky bars and keeps the values out of caller
 /// widgets.
 class DesignSystemGlassStrip extends StatelessWidget {
   const DesignSystemGlassStrip({
