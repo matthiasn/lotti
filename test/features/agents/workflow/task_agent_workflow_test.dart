@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -32,6 +33,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../categories/test_utils.dart';
 import '../test_utils.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
@@ -2396,6 +2398,70 @@ void main() {
         return capturedMessage;
       }
 
+      test(
+        'injects label and correction-example context when available',
+        () async {
+          when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+            (_) async => Task(
+              data: TaskData(
+                status: TaskStatus.open(
+                  id: 'status_id',
+                  createdAt: DateTime(2024, 3, 15),
+                  utcOffset: 60,
+                ),
+                title: 'Labelled task',
+                statusHistory: const [],
+                dateTo: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+              ),
+              meta: Metadata(
+                id: taskId,
+                createdAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                categoryId: 'cat-001',
+              ),
+            ),
+          );
+          when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
+            (_) async => [
+              LabelDefinition(
+                id: 'lbl-bug',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                name: 'Bug',
+                color: '#FF0000',
+                vectorClock: null,
+                applicableCategoryIds: const ['cat-001'],
+              ),
+            ],
+          );
+          when(() => mockJournalDb.getCategoryById('cat-001')).thenAnswer(
+            (_) async => CategoryTestUtils.createTestCategory(
+              id: 'cat-001',
+              correctionExamples: [
+                ChecklistCorrectionExample(
+                  before: 'mac OS',
+                  after: 'macOS',
+                  capturedAt: DateTime(2024, 5, 2),
+                ),
+              ],
+            ),
+          );
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          // Label-context branch: available labels injected.
+          expect(message, contains('## Available Labels'));
+          expect(message, contains('Bug'));
+          // Correction-example branch: category examples injected.
+          expect(message, contains('## Correction Examples'));
+          expect(message, contains('macOS'));
+        },
+      );
+
       test('includes existing report in user message', () async {
         final report =
             AgentDomainEntity.agentReport(
@@ -2554,6 +2620,8 @@ void main() {
                     scope: 'current',
                     createdAt: DateTime(2024, 6, 14, 8),
                     vectorClock: null,
+                    oneLiner: 'Linked task is on track.',
+                    tldr: 'Linked task TLDR: integration nearly done.',
                     content: '## Linked Agent Report\nFrom task agent.',
                   )
                   as AgentReportEntity;
@@ -2584,8 +2652,15 @@ void main() {
           expect(message, isNotNull);
           expect(message, contains('## Linked Tasks'));
           expect(message, contains('Related'));
-          expect(message, contains('latestTaskAgentReport'));
-          expect(message, contains('From task agent.'));
+          expect(message, contains('latestTaskAgentReportTldr'));
+          // Compact summary is embedded…
+          expect(
+            message,
+            contains('Linked task TLDR: integration nearly done.'),
+          );
+          expect(message, contains('Linked task is on track.'));
+          // …but the full report body is trimmed out to save prefill.
+          expect(message, isNot(contains('From task agent.')));
           expect(message, isNot(contains('latestSummary')));
         },
       );
@@ -2626,6 +2701,7 @@ void main() {
                     scope: 'current',
                     createdAt: now,
                     vectorClock: null,
+                    tldr: 'Report B summary',
                     content: 'report-b',
                   )
                   as AgentReportEntity;
@@ -2636,6 +2712,7 @@ void main() {
                     scope: 'current',
                     createdAt: now,
                     vectorClock: null,
+                    tldr: 'Report A summary',
                     content: 'report-a',
                   )
                   as AgentReportEntity;
@@ -2662,12 +2739,13 @@ void main() {
           // `getLatestReportsByAgentIds` fetch followed by an
           // in-memory walk of the sorted links. Correctness contract
           // is the same — the first link in `orderedPrimaryFirst`
-          // order whose report has non-empty content wins — and is
-          // asserted here through the rendered message:
-          // `report-b` must show up, `report-a` must NOT.
+          // order whose report has non-empty content wins. Reports are
+          // now embedded as their compact tldr (not the full body), so
+          // the tie-break is asserted via the rendered summary:
+          // report B's tldr must show up, report A's must NOT.
           expect(message, isNotNull);
-          expect(message, contains('report-b'));
-          expect(message, isNot(contains('report-a')));
+          expect(message, contains('Report B summary'));
+          expect(message, isNot(contains('Report A summary')));
         },
       );
 

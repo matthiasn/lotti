@@ -229,8 +229,10 @@ class AiInputRepository {
 
   /// Build parent project context for a task-agent wake.
   ///
-  /// Returns `{}` when the task is not linked to a project or when no usable
-  /// current project-agent report exists.
+  /// Embeds the parent project agent's report as a compact `oneLiner`/`tldr`
+  /// summary rather than its full markdown body, to keep each wake's prompt
+  /// (and prefill cost) small. Returns `{}` when the task is not linked to a
+  /// project or when no usable current project-agent report exists.
   Future<String> buildProjectContextJsonForTask(String taskId) async {
     try {
       final project = await _projectRepository.getProjectForTask(taskId);
@@ -252,8 +254,12 @@ class AiInputRepository {
         'latestProjectAgentReport': <String, dynamic>{
           'agentId': report.agentId,
           'createdAt': report.createdAt.toIso8601String(),
+          'oneLiner': report.oneLiner,
           'tldr': report.tldr,
-          'content': report.content,
+          // Full `content` intentionally omitted: embedding another agent's
+          // full report body inflated every wake's prefill. The compact
+          // `oneLiner`/`tldr` carry current state; detail can be fetched on
+          // demand via a `read_full_report` tool if added later.
         },
       };
 

@@ -989,7 +989,9 @@ void main() {
         final taskReport = makeTestReport(
           agentId: 'task-agent-1',
           createdAt: DateTime(2024, 6, 21, 9, 30),
-          content: 'Task is 80% complete with 3 tests passing.',
+          oneLiner: 'Tests nearly done.',
+          tldr: 'Task is 80% complete with 3 tests passing.',
+          content: '## Full Body\nDetailed task report goes here.',
         );
 
         when(
@@ -1025,12 +1027,16 @@ void main() {
           threadId: threadId,
         );
 
+        // Compact summary (tldr/oneLiner) is embedded…
         expect(capturedMessage, contains('80% complete'));
+        expect(capturedMessage, contains('Tests nearly done.'));
         expect(capturedMessage, contains('task-agent-1'));
         expect(
           capturedMessage,
           contains(DateTime(2024, 6, 21, 9, 30).toIso8601String()),
         );
+        // …but the full report body is trimmed out to save prefill.
+        expect(capturedMessage, isNot(contains('Detailed task report')));
       });
 
       test('resolves observation payloads into user message', () async {
@@ -2386,6 +2392,7 @@ void main() {
 
         final newerReport = makeTestReport(
           agentId: 'new-agent',
+          tldr: 'Newer agent report.',
           content: 'Newer agent report.',
         );
 
@@ -2471,6 +2478,7 @@ void main() {
 
           final olderReport = makeTestReport(
             agentId: 'older-agent',
+            tldr: 'Older agent still has the useful report.',
             content: 'Older agent still has the useful report.',
           );
           when(

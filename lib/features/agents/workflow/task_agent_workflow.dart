@@ -1159,6 +1159,11 @@ Use this as high-level planning context:
   unnecessary tool call wastes a turn and clutters the audit log.
 - Only call tools when you have sufficient confidence in the change.
 - Do not call tools speculatively or redundantly.
+- **Batch independent calls**: when a wake warrants several updates that do not
+  depend on each other (e.g., labels, priority, due date, estimate, checklist
+  items), emit them as parallel tool calls in a single turn rather than one
+  tool per turn — fewer turns is faster. `update_report` stays the separate,
+  final step.
 - When a tool call fails, note the failure in observations and move on.
 - Each tool call is audited and must stay within the task's category scope.
 - **Learn from past decisions**: Review the `## Proposal Ledger` section in
@@ -1303,18 +1308,90 @@ to keep the user-facing suggestion list clean and trustworthy:
   }) async {
     final buffer = StringBuffer();
 
-    if (lastReport != null && lastReport.content.isNotEmpty) {
+    // Ordering is by volatility, least-volatile first: a stable header (label /
+    // correction context, parent-project + linked-task summaries, current task
+    // context) leads so oMLX's cross-wake prefix cache can restore it, and the
+    // volatile tail (report, journal, ledger, trigger tokens) follows.
+
+    // Inject label context and correction examples.
+    try {
+      final taskEntity = await journalDb.journalEntityById(taskId);
+      if (taskEntity is Task) {
+        // Label context for the assign_task_labels tool.
+        final labelContext = await TaskLabelHandler.buildLabelContext(
+          task: taskEntity,
+          journalDb: journalDb,
+        );
+        if (labelContext.isNotEmpty) {
+          buffer.write(labelContext);
+        }
+
+        // Correction examples for checklist item title accuracy.
+        final correctionContext = await CorrectionExamplesBuilder.buildContext(
+          task: taskEntity,
+          journalDb: journalDb,
+        );
+        if (correctionContext.isNotEmpty) {
+          buffer.write(correctionContext);
+        }
+      }
+    } catch (e, s) {
+      _logError(
+        'failed to build label/correction context',
+        error: e,
+        stackTrace: s,
+      );
+      // Non-fatal: continue without context.
+    }
+
+    if (projectContextJson.isNotEmpty && projectContextJson != '{}') {
       buffer
-        ..writeln('## Current Report')
-        ..writeln(lastReport.content)
+        ..writeln('## Parent Project Context')
+        ..writeln('```json')
+        ..writeln(projectContextJson)
+        ..writeln('```')
         ..writeln();
-    } else {
+    }
+
+    if (linkedTasksJson.isNotEmpty && linkedTasksJson != '{}') {
       buffer
-        ..writeln(
-          '## First Wake — No prior report exists. '
-          'Produce an initial report.',
-        )
+        ..writeln('## Linked Tasks')
+        ..writeln('```json')
+        ..writeln(linkedTasksJson)
+        ..writeln('```')
         ..writeln();
+    }
+
+    buffer
+      ..writeln('## Current Task Context')
+      ..writeln('```json')
+      ..writeln(taskDetailsJson)
+      ..writeln('```')
+      ..writeln();
+
+    // --- Volatile tail: changes most across wakes, so it follows the stable
+    // header above to keep that header byte-identical and prefix-cacheable. ---
+
+    final activeTimerSection = _buildActiveTimerSection(timeService, taskId);
+    if (activeTimerSection.isNotEmpty) {
+      buffer.write(activeTimerSection);
+    }
+
+    final editableTimeEntriesSection = await _buildEditableTimeEntriesSection(
+      timeService,
+      taskId,
+    );
+    if (editableTimeEntriesSection.isNotEmpty) {
+      buffer.write(editableTimeEntriesSection);
+    }
+
+    // Proposal ledger — a single status-sorted view of every suggestion the
+    // agent has ever produced for this task. Supersedes the older split
+    // between "recent user decisions" and "pending proposals": both are now
+    // different status slices of the same ledger, so the agent can reason
+    // about its own history without duplicated or conflicting sections.
+    if (!ledger.isEmpty) {
+      buffer.writeln(_formatProposalLedger(ledger));
     }
 
     if (journalObservations.isNotEmpty) {
@@ -1354,82 +1431,18 @@ to keep the user-facing suggestion list clean and trustworthy:
       buffer.writeln();
     }
 
-    buffer
-      ..writeln('## Current Task Context')
-      ..writeln('```json')
-      ..writeln(taskDetailsJson)
-      ..writeln('```')
-      ..writeln();
-
-    final activeTimerSection = _buildActiveTimerSection(timeService, taskId);
-    if (activeTimerSection.isNotEmpty) {
-      buffer.write(activeTimerSection);
-    }
-
-    final editableTimeEntriesSection = await _buildEditableTimeEntriesSection(
-      timeService,
-      taskId,
-    );
-    if (editableTimeEntriesSection.isNotEmpty) {
-      buffer.write(editableTimeEntriesSection);
-    }
-
-    if (projectContextJson.isNotEmpty && projectContextJson != '{}') {
+    if (lastReport != null && lastReport.content.isNotEmpty) {
       buffer
-        ..writeln('## Parent Project Context')
-        ..writeln('```json')
-        ..writeln(projectContextJson)
-        ..writeln('```')
+        ..writeln('## Current Report')
+        ..writeln(lastReport.content)
         ..writeln();
-    }
-
-    if (linkedTasksJson.isNotEmpty && linkedTasksJson != '{}') {
+    } else {
       buffer
-        ..writeln('## Linked Tasks')
-        ..writeln('```json')
-        ..writeln(linkedTasksJson)
-        ..writeln('```')
+        ..writeln(
+          '## First Wake — No prior report exists. '
+          'Produce an initial report.',
+        )
         ..writeln();
-    }
-
-    // Inject label context and correction examples.
-    try {
-      final taskEntity = await journalDb.journalEntityById(taskId);
-      if (taskEntity is Task) {
-        // Label context for the assign_task_labels tool.
-        final labelContext = await TaskLabelHandler.buildLabelContext(
-          task: taskEntity,
-          journalDb: journalDb,
-        );
-        if (labelContext.isNotEmpty) {
-          buffer.write(labelContext);
-        }
-
-        // Correction examples for checklist item title accuracy.
-        final correctionContext = await CorrectionExamplesBuilder.buildContext(
-          task: taskEntity,
-          journalDb: journalDb,
-        );
-        if (correctionContext.isNotEmpty) {
-          buffer.write(correctionContext);
-        }
-      }
-    } catch (e, s) {
-      _logError(
-        'failed to build label/correction context',
-        error: e,
-        stackTrace: s,
-      );
-      // Non-fatal: continue without context.
-    }
-
-    // Proposal ledger — a single status-sorted view of every suggestion the
-    // agent has ever produced for this task. Supersedes the older split
-    // between "recent user decisions" and "pending proposals": both are now
-    // different status slices of the same ledger, so the agent can reason
-    // about its own history without duplicated or conflicting sections.
-    if (!ledger.isEmpty) {
-      buffer.writeln(_formatProposalLedger(ledger));
     }
 
     if (triggerTokens.isNotEmpty) {
@@ -1527,7 +1540,9 @@ to keep the user-facing suggestion list clean and trustworthy:
   /// wake path:
   /// 1. Builds linked task context directly from linked task entities.
   /// 2. Removes legacy `latestSummary` fields.
-  /// 3. Injects the latest task-agent report for each linked task when present.
+  /// 3. Injects a compact summary (oneLiner/tldr) of the latest task-agent
+  ///    report for each linked task when present — not the full body, to keep
+  ///    wake prefill small.
   ///
   /// This keeps prompt context aligned with the Agent Capabilities architecture
   /// where task summaries are being phased out in favor of task-agent reports.
@@ -1614,11 +1629,13 @@ to keep the user-facing suggestion list clean and trustworthy:
           for (final link in links.orderedPrimaryFirst()) {
             final report = reportsByAgentId[link.fromId];
             if (report == null) continue;
-            final content = report.content.trim();
-            if (content.isEmpty) continue;
+            // Gate on a non-empty body so only "real" reports surface, but
+            // embed just the compact summary to keep wake prefill small.
+            if (report.content.trim().isEmpty) continue;
             reportByTaskId[taskId] = _LinkedTaskAgentReport(
               agentId: link.fromId,
-              content: content,
+              oneLiner: report.oneLiner,
+              tldr: report.tldr,
               createdAt: report.createdAt,
             );
             break;
@@ -1638,7 +1655,8 @@ to keep the user-facing suggestion list clean and trustworthy:
         }
 
         row['taskAgentId'] = linkedReport.agentId;
-        row['latestTaskAgentReport'] = linkedReport.content;
+        row['latestTaskAgentReportOneLiner'] = linkedReport.oneLiner;
+        row['latestTaskAgentReportTldr'] = linkedReport.tldr;
         row['latestTaskAgentReportCreatedAt'] = linkedReport.createdAt
             .toIso8601String();
       }
@@ -1932,12 +1950,14 @@ to keep the user-facing suggestion list clean and trustworthy:
 class _LinkedTaskAgentReport {
   const _LinkedTaskAgentReport({
     required this.agentId,
-    required this.content,
+    required this.oneLiner,
+    required this.tldr,
     required this.createdAt,
   });
 
   final String agentId;
-  final String content;
+  final String? oneLiner;
+  final String? tldr;
   final DateTime createdAt;
 }
 

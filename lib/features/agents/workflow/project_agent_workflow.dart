@@ -674,6 +674,12 @@ from the project context, linked task reports, and the latest changes.
 Use `record_observations` for private notes that should persist across wakes
 but are not shown in the user-facing report.
 
+## Tool Usage
+
+When several independent updates are warranted in one wake, issue them as
+parallel tool calls in a single turn rather than one per turn.
+`update_project_report` stays the separate, final step.
+
 ## Deferred Tools
 
 The `recommend_next_steps`, `update_project_status`, and `create_task` tools
@@ -788,20 +794,23 @@ immediately.''';
 
     _writeProjectContext(buf, projectEntity);
 
-    if (lastReport != null) {
-      buf
-        ..writeln()
-        ..writeln('## Previous Report')
-        ..writeln()
-        ..writeln(lastReport.content);
-    }
-
+    // Stable header first (project identity + linked-task summaries) so the
+    // cross-wake prefix cache can restore it; the volatile tail (previous
+    // report, observations, trigger tokens) follows.
     if (linkedTasksContext != '{}') {
       buf
         ..writeln()
         ..writeln('## Linked Tasks')
         ..writeln()
         ..writeln(linkedTasksContext);
+    }
+
+    if (lastReport != null) {
+      buf
+        ..writeln()
+        ..writeln('## Previous Report')
+        ..writeln()
+        ..writeln(lastReport.content);
     }
 
     if (observations.isNotEmpty) {
@@ -964,10 +973,12 @@ immediately.''';
           for (final link in taskLinks.orderedPrimaryFirst()) {
             final report = reportsByAgentId[link.fromId];
             if (report == null) continue;
-            final content = report.content.trim();
-            if (content.isEmpty) continue;
+            // Gate on a non-empty body so only "real" reports surface, but
+            // embed just the compact summary to keep wake prefill small.
+            if (report.content.trim().isEmpty) continue;
             row['taskAgentId'] = link.fromId;
-            row['latestTaskAgentReport'] = content;
+            row['latestTaskAgentReportOneLiner'] = report.oneLiner;
+            row['latestTaskAgentReportTldr'] = report.tldr;
             row['latestTaskAgentReportCreatedAt'] = report.createdAt
                 .toIso8601String();
             break;
