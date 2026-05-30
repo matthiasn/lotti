@@ -42,6 +42,7 @@
           <p>Sync diagnostics and backfill stats put less load on the database, reducing sync-related stalls and improving responsiveness on busy machines.</p>
           <p>Improved sync reliability: fewer unresolvable gaps and more dependable delivery of local edits across devices.</p>
           <p>Matrix sync now recovers automatically from stale empty downloads, so media and JSON attachments arrive more reliably without manual retries.</p>
+          <p>Fixed: agent task suggestions stay stable while the agent is working — they no longer flash empty or reshuffle as the agent revises them, and acting on one suggested checklist item no longer makes the others disappear.</p>
       </description>
     </release>
     <release version="0.9.1008" date="2026-05-22">

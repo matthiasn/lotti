@@ -638,14 +638,56 @@ confirm or reject; resolved entries (user verdicts and agent retractions)
 are kept in the LLM prompt within a bounded window so the agent learns
 from its own history.
 
-When an open proposal is no longer relevant the agent calls a dedicated
-immediate tool, `retract_suggestions`, with one or more
-`{fingerprint, reason}` entries. `SuggestionRetractionService` looks each
-one up across the task's pending change sets, transitions the item to
-`ChangeItemStatus.retracted`, and persists a matching
-`ChangeDecisionEntity{verdict: retracted, actor: agent, retractionReason}`.
-Retraction is **not user-gated** — the user simply sees the item leave the
-active list and surface in the ledger's resolved slice.
+When an open proposal is no longer relevant the agent calls
+`retract_suggestions` with one or more `{fingerprint, reason}` entries.
+Retraction is **two-phase** so it commits atomically with the wake's new
+proposals:
+
+- `SuggestionRetractionService.plan(...)` runs while the LLM is mid-turn. It
+  looks each fingerprint up across the task's pending change sets and returns
+  the per-entry outcomes (`retracted` / `notOpen` / `notFound`) for the LLM,
+  plus the matched items as `StagedRetraction`s. It **persists nothing**. The
+  strategy accumulates the staged retractions (`extractStagedRetractions`) and
+  feeds `plan` the keys staged so far so repeated calls in one wake stay
+  idempotent without any intervening write.
+- `SuggestionRetractionService.applyStaged(...)` runs at end-of-wake inside the
+  same transaction as `ChangeSetBuilder.build()` (and just before it, so the
+  builder's dedup sees the freshly-retracted statuses). It groups staged
+  retractions by parent change set and applies each set in a single re-read →
+  flip-all → write, re-validating every target by bounds, status, and
+  fingerprint (so a row a concurrent user action already resolved, or one that
+  moved under us, is skipped). For each surviving item it transitions it to
+  `ChangeItemStatus.retracted` and persists a matching
+  `ChangeDecisionEntity{verdict: retracted, actor: agent, retractionReason}`.
+
+**Churn guard.** Weaker models routinely retract an open proposal AND
+re-propose an identical one in the same wake. Even committed atomically, that
+retract-then-re-add swaps a stable suggestion for a brand-new change item —
+which, when the user has just confirmed a sibling, looks like accepting one
+suggestion wipes the rest. The workflow therefore passes
+`ChangeSetBuilder.proposedFingerprints` as `applyStaged(..., skipFingerprints:
+…)`: any staged retraction whose target shares a fingerprint with something
+proposed this wake is dropped, and the matching new proposal is then dropped by
+the builder's dedup against the still-open original. The original proposal is
+left untouched. Stale retractions (not re-proposed) and supersedes (a different
+fingerprint, e.g. a new `update_running_timer` text) are unaffected.
+
+Deferring the write is what keeps the suggestion list from flashing empty: the
+old behavior persisted each retraction the instant the tool was called, so the
+`AiSummaryCard` (which watches the agent update stream) dropped the retracted
+rows seconds before the wake's replacement proposals landed. Staging collapses
+that into a single end-of-wake update — the list transitions straight from the
+old set to the new one. Applying at end-of-wake is also strictly safer: each
+retraction re-reads the parent set and skips any item a concurrent user
+confirm/reject already resolved. Retraction is **not user-gated** — the user
+simply sees the item leave the active list and surface in the ledger's resolved
+slice.
+
+The agent is also instructed (see `taskAgentScaffoldTrailing` → *Suggestion
+Hygiene*) to retract an open proposal **only when that proposal itself is
+stale** — never to withdraw the rest of a batch just because the user acted on
+one sibling, and to prefer leaving a good proposal in place over
+retract-and-re-add churn.
 
 Ledger reads are defensive against stale snapshots. An item is only exposed
 as open when both the parent `ChangeSetEntity` is still `pending` or

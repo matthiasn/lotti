@@ -1055,6 +1055,30 @@ void main() {
       expect(builder.items[1].toolName, 'update_task_estimate');
     });
 
+    test('proposedFingerprints reflects every queued item', () async {
+      expect(builder.proposedFingerprints, isEmpty);
+
+      await builder.addItem(
+        toolName: 'set_task_title',
+        args: {'title': 'Fix bug'},
+        humanSummary: 'Set title',
+      );
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 60},
+        humanSummary: 'Set estimate',
+      );
+
+      // These are what the workflow passes as skipFingerprints so an in-flight
+      // retraction of an item being re-proposed this wake is suppressed.
+      expect(builder.proposedFingerprints, {
+        ChangeItem.fingerprintFromParts('set_task_title', {'title': 'Fix bug'}),
+        ChangeItem.fingerprintFromParts('update_task_estimate', {
+          'minutes': 60,
+        }),
+      });
+    });
+
     test(
       'keeps only the latest running timer update per timer queued in a wake',
       () async {

@@ -3225,6 +3225,141 @@ void main() {
       );
 
       test(
+        'stages retractions for end-of-wake application instead of '
+        'persisting mid-conversation',
+        () async {
+          final changeSet = makeTestChangeSet(id: 'cs-stage-1');
+          final fakeService = _FakeRetractionService(
+            responses: (requests) => [
+              RetractionResult(
+                fingerprint: requests.first.fingerprint,
+                outcome: RetractionOutcome.retracted,
+              ),
+            ],
+            staged: [
+              StagedRetraction(
+                changeSet: changeSet,
+                itemIndex: 0,
+                item: changeSet.items.first,
+                reason: 'stale',
+              ),
+            ],
+          );
+
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: [
+              ChatCompletionMessageToolCall(
+                id: 'call-retract-stage',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: TaskAgentToolNames.retractSuggestions,
+                  arguments: jsonEncode({
+                    'proposals': [
+                      {'fingerprint': 'fp-stage', 'reason': 'stale'},
+                    ],
+                  }),
+                ),
+              ),
+            ],
+            manager: mockManager,
+          );
+
+          // The retraction is staged for the workflow to apply at end-of-wake.
+          final staged = retractionStrategy.extractStagedRetractions();
+          expect(staged, hasLength(1));
+          expect(staged.single.changeSet.id, 'cs-stage-1');
+          expect(staged.single.reason, 'stale');
+          // It must NOT be persisted during the conversation — otherwise the
+          // suggestion list flashes empty until the end-of-wake proposals land.
+          expect(fakeService.appliedStaged, isEmpty);
+        },
+      );
+
+      test(
+        'passes already-staged keys to plan so repeat calls stay idempotent',
+        () async {
+          final changeSet = makeTestChangeSet(id: 'cs-stage-2');
+          final fakeService = _FakeRetractionService(
+            responses: (requests) => [
+              RetractionResult(
+                fingerprint: requests.first.fingerprint,
+                outcome: RetractionOutcome.retracted,
+              ),
+            ],
+            staged: [
+              StagedRetraction(
+                changeSet: changeSet,
+                itemIndex: 0,
+                item: changeSet.items.first,
+                reason: 'stale',
+              ),
+            ],
+          );
+
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          ChatCompletionMessageToolCall retractCall(String id) =>
+              ChatCompletionMessageToolCall(
+                id: id,
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: TaskAgentToolNames.retractSuggestions,
+                  arguments: jsonEncode({
+                    'proposals': [
+                      {'fingerprint': 'fp-stage', 'reason': 'stale'},
+                    ],
+                  }),
+                ),
+              );
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: [retractCall('call-1')],
+            manager: mockManager,
+          );
+          await retractionStrategy.processToolCalls(
+            toolCalls: [retractCall('call-2')],
+            manager: mockManager,
+          );
+
+          // First call stages with no prior keys; the second call must pass the
+          // key staged by the first so the service can stay idempotent without
+          // any persistence between calls.
+          expect(fakeService.capturedCalls, hasLength(2));
+          expect(fakeService.capturedCalls.first.alreadyStagedKeys, isEmpty);
+          expect(
+            fakeService.capturedCalls[1].alreadyStagedKeys,
+            contains('cs-stage-2:0'),
+          );
+        },
+      );
+
+      test(
         'malformed proposals payload surfaces a non-empty error without '
         'invoking the retraction service',
         () async {
@@ -3536,25 +3671,46 @@ void main() {
 
 /// Captures every call and returns a scripted response list.
 class _FakeRetractionService implements SuggestionRetractionService {
-  _FakeRetractionService({required this.responses});
+  _FakeRetractionService({required this.responses, this.staged = const []});
 
   final List<RetractionResult> Function(List<RetractionRequest>) responses;
+
+  /// Staged retractions returned from [plan], so tests can assert the strategy
+  /// accumulates them for end-of-wake application instead of persisting now.
+  final List<StagedRetraction> staged;
+
   final capturedCalls = <_CapturedRetract>[];
 
+  /// Records every [applyStaged] call so tests can assert it is NOT invoked
+  /// during the conversation (persistence is deferred to the workflow).
+  final appliedStaged = <List<StagedRetraction>>[];
+
   @override
-  Future<List<RetractionResult>> retract({
+  Future<RetractionPlan> plan({
     required String agentId,
     required String taskId,
     required List<RetractionRequest> requests,
+    Set<String> alreadyStagedKeys = const {},
   }) async {
     capturedCalls.add(
       _CapturedRetract(
         agentId: agentId,
         taskId: taskId,
         requests: requests,
+        // Snapshot the set: the strategy mutates the same instance after this
+        // call returns, so a live reference would reflect later state.
+        alreadyStagedKeys: Set<String>.of(alreadyStagedKeys),
       ),
     );
-    return responses(requests);
+    return RetractionPlan(results: responses(requests), staged: staged);
+  }
+
+  @override
+  Future<void> applyStaged(
+    List<StagedRetraction> staged, {
+    Set<String> skipFingerprints = const {},
+  }) async {
+    appliedStaged.add(staged);
   }
 }
 
@@ -3563,8 +3719,10 @@ class _CapturedRetract {
     required this.agentId,
     required this.taskId,
     required this.requests,
+    this.alreadyStagedKeys = const {},
   });
   final String agentId;
   final String taskId;
   final List<RetractionRequest> requests;
+  final Set<String> alreadyStagedKeys;
 }

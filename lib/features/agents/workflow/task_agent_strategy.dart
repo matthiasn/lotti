@@ -147,6 +147,21 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// single tool (e.g. calling `set_task_title` 4 times).
   final _usedDeferredTools = <String>{};
 
+  /// Retractions the agent requested via `retract_suggestions` this wake.
+  ///
+  /// They are validated immediately (so the LLM gets accurate per-entry
+  /// feedback) but their persistence is deferred to the end of the wake so it
+  /// commits atomically with the new proposals — otherwise the suggestion list
+  /// flashes empty for the seconds between a mid-wake retraction write and the
+  /// end-of-wake proposal write. Applied by the workflow via
+  /// [SuggestionRetractionService.applyStaged].
+  final _stagedRetractions = <StagedRetraction>[];
+
+  /// Target item keys (`'<changeSetId>:<itemIndex>'`) already staged this wake,
+  /// so repeated `retract_suggestions` calls don't stage the same item twice
+  /// (nothing is persisted between calls, so the item still reads as pending).
+  final _stagedRetractionKeys = <String>{};
+
   static const _uuid = Uuid();
 
   /// Tool name for the report publishing tool.
@@ -391,6 +406,14 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// are accumulated here as [ObservationRecord] instances.
   List<ObservationRecord> extractObservations() =>
       List.unmodifiable(_observations);
+
+  /// Returns the retractions staged via `retract_suggestions` during this wake.
+  ///
+  /// The workflow applies these at the end of the wake (inside the change-set
+  /// transaction) so the retraction and the new proposals land in a single
+  /// atomic update, never leaving the suggestion list momentarily empty.
+  List<StagedRetraction> extractStagedRetractions() =>
+      List.unmodifiable(_stagedRetractions);
 
   // ── Internal handlers ──────────────────────────────────────────────────
 
@@ -645,14 +668,23 @@ class TaskAgentStrategy extends ConversationStrategy {
       return;
     }
 
-    final results = await service.retract(
+    final plan = await service.plan(
       agentId: agentId,
       taskId: taskId,
       requests: requests,
+      alreadyStagedKeys: _stagedRetractionKeys,
     );
 
+    // Stage for end-of-wake application so the retraction commits atomically
+    // with this wake's new proposals — the suggestion list never flashes empty
+    // between a retraction and its replacement.
+    for (final retraction in plan.staged) {
+      _stagedRetractions.add(retraction);
+      _stagedRetractionKeys.add(retraction.key);
+    }
+
     final response = StringBuffer('Retraction results:');
-    for (final r in results) {
+    for (final r in plan.results) {
       final label = switch (r.outcome) {
         RetractionOutcome.retracted => 'retracted',
         RetractionOutcome.notOpen => 'not_open (already resolved)',
