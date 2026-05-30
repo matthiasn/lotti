@@ -47,6 +47,7 @@ void main() {
 
     // Register GetIt services used by providers
     GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
+    ensureDomainLoggerRegistered();
 
     final provider = AiConfigInferenceProvider(
       id: 'prov-g',

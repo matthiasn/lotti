@@ -67,6 +67,7 @@ void main() {
       if (!GetIt.instance.isRegistered<LoggingService>()) {
         GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
       }
+      ensureDomainLoggerRegistered();
 
       const state = JournalPageState(
         showTasks: true,

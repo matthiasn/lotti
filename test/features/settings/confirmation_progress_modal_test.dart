@@ -18,6 +18,7 @@ void main() {
     mockLoggingService = MockLoggingService();
 
     getIt.registerSingleton<LoggingService>(mockLoggingService);
+    ensureDomainLoggerRegistered();
   });
 
   tearDown(getIt.reset);

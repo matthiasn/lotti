@@ -229,6 +229,7 @@ void main() {
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<NavService>(mockNavService);
+    ensureDomainLoggerRegistered();
   });
 
   tearDown(() async {

@@ -121,6 +121,7 @@ void main() {
       mockLoggingService = MockLoggingService();
 
       GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
+      ensureDomainLoggerRegistered();
     });
 
     tearDown(() async {

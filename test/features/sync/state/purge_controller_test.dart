@@ -14,6 +14,7 @@ void main() {
 
   setUp(() {
     mockDb = MockJournalDb();
+    ensureDomainLoggerRegistered();
 
     container = ProviderContainer(
       overrides: [
@@ -24,7 +25,10 @@ void main() {
     controller = container.read(purgeControllerProvider.notifier);
   });
 
-  tearDown(() => container.dispose());
+  tearDown(() async {
+    container.dispose();
+    await tearDownTestGetIt();
+  });
 
   group('PurgeController', () {
     test('initial state should be correct', () {

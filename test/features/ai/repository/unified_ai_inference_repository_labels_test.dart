@@ -52,6 +52,7 @@ void main() {
     getIt
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<LoggingService>(mockLogging);
+    ensureDomainLoggerRegistered();
 
     container = ProviderContainer(
       overrides: [

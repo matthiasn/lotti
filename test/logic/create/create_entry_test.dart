@@ -111,6 +111,7 @@ void main() {
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<EntitiesCacheService>(MockEntitiesCacheService())
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());
+      ensureDomainLoggerRegistered();
     });
 
     tearDownAll(() async {

@@ -116,6 +116,7 @@ void main() {
       if (!GetIt.instance.isRegistered<LoggingService>()) {
         GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
       }
+      ensureDomainLoggerRegistered();
     });
 
     tearDown(() {
@@ -255,9 +256,7 @@ void main() {
     testWidgets('ambient pulse overlay toggles with streaming state', (
       tester,
     ) async {
-      if (!GetIt.instance.isRegistered<LoggingService>()) {
-        GetIt.instance.registerSingleton<LoggingService>(LoggingService());
-      }
+      ensureDomainLoggerRegistered();
 
       // First with streaming=true
       await _pumpChatModalPage(

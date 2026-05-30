@@ -7,8 +7,6 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_session_controller.da
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/assistant_settings_sheet.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -62,9 +60,7 @@ void main() {
   testWidgets('AssistantSettingsSheet lists models and toggles reasoning', (
     tester,
   ) async {
-    if (!getIt.isRegistered<LoggingService>()) {
-      getIt.registerSingleton<LoggingService>(LoggingService());
-    }
+    ensureDomainLoggerRegistered();
     final models = [_model('m1', 'A-Model'), _model('m2', 'B-Model')];
 
     await tester.pumpWidget(
@@ -92,10 +88,7 @@ void main() {
   testWidgets(
     'dropdown shows null when previously selected model is ineligible',
     (tester) async {
-      // Ensure LoggingService is available
-      if (!getIt.isRegistered<LoggingService>()) {
-        getIt.registerSingleton<LoggingService>(LoggingService());
-      }
+      ensureDomainLoggerRegistered();
 
       final models = [
         _model('m1', 'A-Model'),
@@ -137,9 +130,7 @@ void main() {
   testWidgets('dropdown and reasoning toggle disabled while streaming', (
     tester,
   ) async {
-    if (!getIt.isRegistered<LoggingService>()) {
-      getIt.registerSingleton<LoggingService>(LoggingService());
-    }
+    ensureDomainLoggerRegistered();
 
     final models = [_model('m1', 'A-Model'), _model('m2', 'B-Model')];
 

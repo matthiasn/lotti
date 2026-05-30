@@ -57,6 +57,7 @@ void main() {
       getIt.unregister<LoggingService>();
     }
     getIt.registerSingleton<LoggingService>(mockLoggingService);
+    ensureDomainLoggerRegistered();
 
     // Setup mock player
     when(() => mockPlayer.state).thenReturn(mockPlayerState);

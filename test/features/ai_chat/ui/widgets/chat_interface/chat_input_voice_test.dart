@@ -74,6 +74,7 @@ void main() {
   setUp(() async {
     await getIt.reset();
     getIt.registerSingleton<LoggingService>(_FakeLoggingService());
+    ensureDomainLoggerRegistered();
   });
 
   testWidgets(
