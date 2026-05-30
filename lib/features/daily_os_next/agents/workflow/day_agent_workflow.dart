@@ -656,7 +656,6 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     final payload = <String, Object?>{
       'dayId': dayId,
       'planDate': planDate.toIso8601String(),
-      'currentLocalTime': now.toIso8601String(),
       'triggerTokens': triggerTokens.toList()..sort(),
       if (captureContext != null) 'capture': captureContext.toJson(),
       if (draftingContext != null) 'drafting': draftingContext.toJson(),
@@ -670,6 +669,9 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
             ),
           },
       ],
+      // Keep the volatile wall-clock last so the rest of the payload stays a
+      // stable prefix across wakes, maximizing prompt prefix / KV-cache reuse.
+      'currentLocalTime': now.toIso8601String(),
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
   }

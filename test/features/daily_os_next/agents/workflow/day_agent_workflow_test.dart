@@ -371,6 +371,9 @@ void main() {
         expect(userPayload['dayId'], dayId);
         expect(userPayload['planDate'], '2026-05-25T00:00:00.000');
         expect(userPayload['currentLocalTime'], '2026-05-25T08:00:00.000');
+        // Volatile wall-clock must be the trailing key so the rest of the
+        // payload stays a stable prefix across wakes (prefix/KV-cache reuse).
+        expect(userPayload.keys.last, 'currentLocalTime');
         expect(userPayload['triggerTokens'], ['capture-1', dayId]);
         expect(
           userPayload['recentObservations'],
