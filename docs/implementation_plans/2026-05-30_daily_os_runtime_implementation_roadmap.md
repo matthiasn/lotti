@@ -33,12 +33,12 @@ Grouped into the six phases of §10. Each PR: **Goal · Depends on · Touches ·
 - **Done when:** analyze clean; Glados property tests pass (permutation-invariance, causal respect, deterministic `(hostId,id)` tiebreak, multi-head, two-device convergence).
 - **Realizes:** §4, §8; ADR 0016 rule 4. **→ detailed plan in the kernel-plan doc.**
 
-**PR 2 — Deterministic tiebreak hardening (existing sync)**
-- **Goal:** make the existing concurrent-branch LWW a true total order — break equal `updatedAt` by `(hostId, id)`.
-- **Depends on:** none (independent correctness fix; conceptually validated by PR 1's ordering).
-- **Touches:** `sync_event_processor_agent_handlers.dart` (and/or the comparator it uses) + concurrent-application tests.
-- **Defers:** HLC/bounded-drift for clock-skew (separate, only if skew bites).
-- **Done when:** two devices with equal-`updatedAt` concurrent writes deterministically agree; tests cover the tie.
+**PR 2 — Deterministic tiebreak hardening (existing sync)** — detailed plan: [`2026-05-30_deterministic_tiebreak_plan.md`](./2026-05-30_deterministic_tiebreak_plan.md).
+- **Goal:** make the existing concurrent-branch LWW a true total order. The handler already resolves vector-clock dominance (`a_gt_b`/`equal`/`b_gt_a`); only the `concurrent` case falls through to arrival-order. Break that tie deterministically using **metadata already present at the decision point** — `updatedAt` LWW first, then a replica-independent key derived from the two events' **vector clocks** (or the envelope's `originatingHostId`). This does **not** depend on a production per-entity `hostId`; the tiebreak-key source is settled in the PR 2 plan.
+- **Depends on:** none — independent of PR 1 *and* PR 3. (Conceptually validated by PR 1's total-order discipline, but PR 2 resolves *competing versions of one id*, where the vector clock — not PR 1's `(hostId, id)` order over *distinct* events — is the natural discriminator, so it needs nothing from PR 3's deferred `hostId` sourcing.)
+- **Touches:** a new pure `resolveConcurrent` comparator + `sync_event_processor_agent_handlers.dart` (the `concurrent` branch) + concurrent-application tests.
+- **Defers:** HLC/bounded-drift for clock-skew on the LWW primary (separate, only if skew bites); an authoring-`hostId` column (only if a true authoring host is later needed).
+- **Done when:** two devices applying the same concurrent pair in either arrival order deterministically agree; equal-`updatedAt` ties covered; non-concurrent branches unchanged.
 - **Realizes:** ADR 0018 rule 5; §8.
 
 **PR 3 — `messagePrev` wiring + shadow projection**

@@ -47,9 +47,9 @@ class AgentEvent extends Equatable {
     required this.vectorClock,
     required this.kind,
     List<String> causalParents = const [],
-  }) : causalParents = List.unmodifiable(
-         causalParents.toSet().toList()..sort(),
-       );
+  }) : causalParents = causalParents.isEmpty
+           ? const <String>[]
+           : List.unmodifiable(causalParents.toSet().toList()..sort());
 
   /// Stable, globally-unique identifier (a UUID in production).
   final String id;
