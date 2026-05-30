@@ -58,7 +58,7 @@ tiebreak.
    during a partition side effects must be **idempotent and reconciled on
    reconnect** (dedupe via content-address; reject stale fencing tokens), not
    assumed-unique. "Exactly one executes" is therefore a connected-case guarantee
-   plus an offline reconciliation contract — state both in the backend design.
+   plus an offline reconciliation contract — with both represented in the backend design.
 4. **For mutable-register entities only** — convergent projection rule: classify
    each pair with the vector clock (`a_gt_b`/`b_gt_a` honored by replay order;
    `concurrent` falls to a tiebreak); apply `updatedAt` LWW **only on the
@@ -82,9 +82,10 @@ tiebreak.
    linear extension (rule 1), so every device converges without a join.
 8. **Forks heal by lazy, capped join-by-continuation** — a continuation node
    linking (`messagePrev`) to all current heads, emitted **only when ≥2 heads
-   survive past one wake cycle**. Its **id is content-addressed** — `id =
-   hash(frontierDigest)` over the parent-head set — so two devices emitting the
-   join concurrently write the *same* log entry, which set-union merges into one
+   survive past one wake cycle**. Its **id is the `frontierDigest`** of the
+   parent-head set (already the content hash of that antichain's id-set, so no
+   extra hashing), so two devices emitting the join concurrently write the *same*
+   log entry, which set-union merges into one
    node; concurrent joins therefore can't form a new fork (no join storm). For that
    shared id to truly merge, the join's **payload must be fully deterministic** —
    the sorted set of parent-head ids plus a fixed kind, with **no wall-clock,
@@ -100,7 +101,7 @@ tiebreak.
    source-derived** identity — the source event id, the scheduled-wake *entity*
    id, or the shared (sync-replicated) trigger token — **never a per-run local
    UUID** (two devices minting local tokens for the same wake wouldn't dedup), and
-   not `scheduledFor` alone (two distinct causes can collide at the same instant). The key scopes to the **wake epoch**, not
+   not `scheduledFor` alone (two distinct causes can collide at the same instant). The key is scoped to the **wake epoch**, not
    just the frontier — otherwise a later time-sensitive wake (a scheduled re-plan
    or reminder) over an *unchanged* frontier would be wrongly suppressed. It
    collapses *the same wake executed on two devices*; the later projection
