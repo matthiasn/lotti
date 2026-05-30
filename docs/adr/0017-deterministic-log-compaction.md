@@ -42,19 +42,24 @@ arbitrary winner.
    tail**, defined as the **original, non-summary log events** not covered by it —
    *non-active summary/checkpoint events are excluded*, so the tail carries no
    derived text and nothing is double-counted. If several candidates cover the
-   **same** maximal frontier (concurrent summaries of the identical region), pick
-   one by `frontierDigest`. If there are **multiple incomparable maxima**
+   **same** maximal frontier (concurrent summaries of the identical region), they
+   share a `frontierDigest` — it identifies *coverage*, not text — so pick the
+   active one by a **separate content-level total order**: lowest
+   `(contentDigest, checkpointMessageId)` (a stable `(hostId, id)` also works). If there are **multiple incomparable maxima**
    (different frontiers, neither dominates), fall back to their **meet (common
    base)** and read the whole uncovered region verbatim; a lazy **merge-summary**
    then materializes one checkpoint over the joined frontier, which becomes the
    new unique maximum — so a merge-summary always eventually becomes active. (A
    "meet of *all* checkpoints" rule would starve the merge-summary forever, since
    the collapsed branches stay incomparable ancestors.) `frontierDigest` = hash of the
-   antichain's canonical id-set;
-   it keys dedup and the verification/replay hash, computed over a **canonical
-   serialization** (sorted keys, RFC 3339 UTC timestamps, normalized numbers,
-   UTF-8 canonical JSON / JCS) with a **versioned tag** (e.g. `sha256-v1`,
-   base64url). The lease (ADR 0018) only avoids *usually* summarizing twice; it
+   antichain's canonical id-set — it identifies **coverage only**. The summary
+   *artifact* is identified, deduped, and replay-verified by a separate
+   **`contentDigest`** over a **canonical serialization** of the summary text +
+   folded prior checkpoint + summarizer config (sorted keys, RFC 3339 UTC
+   timestamps, normalized numbers, UTF-8 canonical JSON / JCS) with a **versioned
+   tag** (e.g. `sha256-v1`, base64url); the checkpoint's full key is
+   `(frontierDigest, contentDigest)`, so distinct texts over the same frontier are
+   never collapsed. The lease (ADR 0018) only avoids *usually* summarizing twice; it
    is not required for convergence.
 4. Compaction preserves decisions, open commitments/negotiations, and
    non-negotiables; it discards redundant tool chatter.
