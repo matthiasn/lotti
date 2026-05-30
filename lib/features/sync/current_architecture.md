@@ -366,6 +366,53 @@ That order is deliberate. It is also why a bad "current vector clock" can
 create a large false gap even if some older counters were correctly marked as
 covered.
 
+### Terminal outcomes: `burned` vs `unresolvable` (Drift v24)
+
+Every "we will never get a payload here" outcome used to collapse into a single
+`unresolvable` status, which made the Backfill settings screen report mostly
+clean vector-clock burns as if they were data loss. As of schema v24 the
+terminal set is split:
+
+- **`burned`** — the authoritative non-event. The originating host confirms one
+  of its own counters carries no payload (a VC reservation released without a
+  write, or a value superseded before being recorded), and a peer maps an
+  incoming `unresolvable=true` backfill response to the same state because the
+  originator is authoritative for its own counters. Terminal; never reopened.
+- **`unresolvable`** — the receiver give-up. A `missing`/`requested` row that
+  exhausted backfill retries or aged past the 7-day amnesty. Its payload may
+  still exist on a peer, so it stays reopenable (`unresolvable -> requested` on
+  a later hint, `unresolvable -> missing` via "ask peers again").
+
+Both count as resolved for the contiguous-prefix watermark
+(`SyncSequenceStatusX.isResolved`, mirrored as the SQL literals `IN (0, 3, 4, 5,
+8)` in the watermark CTEs and the `idx_sync_sequence_log_resolved_host_counter`
+partial index). The wire format is unchanged — a backfill response still carries
+`unresolvable=true`; only the receiver's classification changed, so old and new
+peers interoperate. See `README.md` (Sequence Log And Backfill) for the full
+own-host lifecycle diagram.
+
+The v24 migration is index-only: it does **not** reclassify the existing backlog
+of `unresolvable`(5) rows, because their provenance (authoritative burn vs.
+receiver give-up) was never stored, so an old burn cannot be told apart from a
+genuine loss after the fact. Those rows keep status 5 — and the stats keep
+bucketing them as unresolvable — until the existing "Ask peers again for
+unresolvable" action (`resetAllUnresolvable`) flips them back to `missing` and
+re-asks: an authoritative `unresolvable=true` answer then self-classifies as
+`burned`, while a genuine loss retires back to `unresolvable`. So the burn/loss
+split is exact for new traffic and settles the historical backlog only as the
+user resets and the system re-converges. `burned`(8) is therefore the
+"going-forward" bucket.
+
+```mermaid
+stateDiagram-v2
+  BurnPending --> Burned: own-counter burn marker enqueued
+  Requested --> Burned: peer applies originator's unresolvable=true
+  Requested --> Unresolvable: backfill retries exhausted
+  Missing --> Unresolvable: amnesty aged out
+  Unresolvable --> Requested: later hint reopens
+  Burned --> [*]: terminal non-event
+```
+
 ## Code-Backed Failure Surfaces
 
 The sections below are not guesses without evidence. Each one is backed by

@@ -2975,7 +2975,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
   );
   late final Index idxSyncSequenceLogResolvedHostCounter = Index(
     'idx_sync_sequence_log_resolved_host_counter',
-    'CREATE INDEX idx_sync_sequence_log_resolved_host_counter ON sync_sequence_log (host_id, counter) WHERE status IN (0, 3, 4, 5)',
+    'CREATE INDEX idx_sync_sequence_log_resolved_host_counter ON sync_sequence_log (host_id, counter) WHERE status IN (0, 3, 4, 5, 8)',
   );
   late final Index idxSyncSequenceLogPayloadResolution = Index(
     'idx_sync_sequence_log_payload_resolution',

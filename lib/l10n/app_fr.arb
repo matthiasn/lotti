@@ -1110,6 +1110,7 @@
   "backfillSettingsSubtitle": "Gérer la récupération des écarts de synchronisation",
   "backfillSettingsTitle": "Rattrapage de synchronisation",
   "backfillStatsBackfilled": "Rattrapé",
+  "backfillStatsBurned": "Annulé",
   "backfillStatsDeleted": "Supprimé",
   "backfillStatsMissing": "Manquant",
   "backfillStatsNoData": "Aucune donnée de synchronisation disponible",

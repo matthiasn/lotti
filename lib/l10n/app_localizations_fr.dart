@@ -2289,6 +2289,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillStatsBackfilled => 'Rattrapé';
 
   @override
+  String get backfillStatsBurned => 'Annulé';
+
+  @override
   String get backfillStatsDeleted => 'Supprimé';
 
   @override

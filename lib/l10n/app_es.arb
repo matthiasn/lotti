@@ -1110,6 +1110,7 @@
   "backfillSettingsSubtitle": "Gestionar recuperación de brechas de sincronización",
   "backfillSettingsTitle": "Relleno de sincronización",
   "backfillStatsBackfilled": "Rellenado",
+  "backfillStatsBurned": "Anulado",
   "backfillStatsDeleted": "Eliminado",
   "backfillStatsMissing": "Faltante",
   "backfillStatsNoData": "No hay datos de sincronización disponibles",

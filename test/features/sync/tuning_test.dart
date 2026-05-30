@@ -1,55 +1,127 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart'
+    show
+        Any,
+        CombinableAny,
+        ExploreConfig,
+        Generator,
+        Glados,
+        IntAnys,
+        ListAnys,
+        any;
 import 'package:lotti/features/sync/tuning.dart';
 
+/// A generated [BackfillHostStats] scenario. Wrapping the raw counts in a named
+/// class (instead of generating [BackfillHostStats] directly) keeps Glados
+/// failure output legible — it prints this `toString()` rather than
+/// `Instance of 'BackfillHostStats'`.
+class _GeneratedHostStats {
+  const _GeneratedHostStats({
+    required this.received,
+    required this.missing,
+    required this.requested,
+    required this.backfilled,
+    required this.deleted,
+    required this.unresolvable,
+    required this.burned,
+  });
+
+  final int received;
+  final int missing;
+  final int requested;
+  final int backfilled;
+  final int deleted;
+  final int unresolvable;
+  final int burned;
+
+  BackfillHostStats toHostStats() => BackfillHostStats(
+    receivedCount: received,
+    missingCount: missing,
+    requestedCount: requested,
+    backfilledCount: backfilled,
+    deletedCount: deleted,
+    unresolvableCount: unresolvable,
+    burnedCount: burned,
+  );
+
+  @override
+  String toString() =>
+      '_GeneratedHostStats(received: $received, missing: $missing, '
+      'requested: $requested, backfilled: $backfilled, deleted: $deleted, '
+      'unresolvable: $unresolvable, burned: $burned)';
+}
+
+extension _AnyBackfillHostStats on Any {
+  Generator<_GeneratedHostStats> get backfillHostStats => combine7(
+    intInRange(0, 1000),
+    intInRange(0, 1000),
+    intInRange(0, 1000),
+    intInRange(0, 1000),
+    intInRange(0, 1000),
+    intInRange(0, 1000),
+    intInRange(0, 1000),
+    (
+      int received,
+      int missing,
+      int requested,
+      int backfilled,
+      int deleted,
+      int unresolvable,
+      int burned,
+    ) => _GeneratedHostStats(
+      received: received,
+      missing: missing,
+      requested: requested,
+      backfilled: backfilled,
+      deleted: deleted,
+      unresolvable: unresolvable,
+      burned: burned,
+    ),
+  );
+
+  Generator<List<_GeneratedHostStats>> get backfillHostStatsList =>
+      listWithLengthInRange(0, 8, backfillHostStats);
+}
+
 void main() {
-  group('BackfillStats', () {
-    test('fromHostStats creates stats from list', () {
-      const hostStats = [
-        BackfillHostStats(
-          receivedCount: 10,
-          missingCount: 2,
-          requestedCount: 1,
-          backfilledCount: 3,
-          deletedCount: 0,
-          unresolvableCount: 1,
-        ),
-        BackfillHostStats(
-          receivedCount: 5,
-          missingCount: 1,
-          requestedCount: 0,
-          backfilledCount: 2,
-          deletedCount: 1,
-          unresolvableCount: 0,
-        ),
-      ];
+  group('BackfillStats.fromHostStats', () {
+    Glados(any.backfillHostStatsList, ExploreConfig(numRuns: 150)).test(
+      'every total is the per-field fold and totalEntries sums all eight '
+      'buckets',
+      (generated) {
+        final hostStats = [for (final g in generated) g.toHostStats()];
+        final stats = BackfillStats.fromHostStats(hostStats);
 
-      final stats = BackfillStats.fromHostStats(hostStats);
+        int foldOf(int Function(BackfillHostStats) field) =>
+            hostStats.fold(0, (sum, h) => sum + field(h));
 
-      expect(stats.totalReceived, 15);
-      expect(stats.totalMissing, 3);
-      expect(stats.totalRequested, 1);
-      expect(stats.totalBackfilled, 5);
-      expect(stats.totalDeleted, 1);
-      expect(stats.totalUnresolvable, 1);
-      expect(stats.hostStats, hostStats);
-    });
+        expect(stats.totalReceived, foldOf((h) => h.receivedCount));
+        expect(stats.totalMissing, foldOf((h) => h.missingCount));
+        expect(stats.totalRequested, foldOf((h) => h.requestedCount));
+        expect(stats.totalBackfilled, foldOf((h) => h.backfilledCount));
+        expect(stats.totalDeleted, foldOf((h) => h.deletedCount));
+        expect(stats.totalUnresolvable, foldOf((h) => h.unresolvableCount));
+        expect(stats.totalBurned, foldOf((h) => h.burnedCount));
+        expect(stats.hostStats, hostStats);
 
-    test('totalEntries returns sum of all counts', () {
-      final stats = BackfillStats.fromHostStats(const [
-        BackfillHostStats(
-          receivedCount: 10,
-          missingCount: 5,
-          requestedCount: 3,
-          backfilledCount: 7,
-          deletedCount: 2,
-          unresolvableCount: 1,
-        ),
-      ]);
+        // totalEntries is exactly the sum of every per-status total, so a
+        // burned counter is counted once and never folded into unresolvable.
+        expect(
+          stats.totalEntries,
+          stats.totalReceived +
+              stats.totalMissing +
+              stats.totalRequested +
+              stats.totalBackfilled +
+              stats.totalDeleted +
+              stats.totalUnresolvable +
+              stats.totalBurned,
+          reason: '$generated',
+        );
+      },
+      tags: 'glados',
+    );
 
-      expect(stats.totalEntries, 28);
-    });
-
-    test('fromHostStats works with empty list', () {
+    test('is the additive identity for an empty host list', () {
       final stats = BackfillStats.fromHostStats(const []);
 
       expect(stats.totalReceived, 0);
@@ -58,8 +130,9 @@ void main() {
       expect(stats.totalBackfilled, 0);
       expect(stats.totalDeleted, 0);
       expect(stats.totalUnresolvable, 0);
-      expect(stats.hostStats, isEmpty);
+      expect(stats.totalBurned, 0);
       expect(stats.totalEntries, 0);
+      expect(stats.hostStats, isEmpty);
     });
   });
 

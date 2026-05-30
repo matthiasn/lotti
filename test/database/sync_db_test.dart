@@ -468,7 +468,8 @@ extension _SyncSequenceStatusModelX on SyncSequenceStatus {
       this == SyncSequenceStatus.received ||
       this == SyncSequenceStatus.backfilled ||
       this == SyncSequenceStatus.deleted ||
-      this == SyncSequenceStatus.unresolvable;
+      this == SyncSequenceStatus.unresolvable ||
+      this == SyncSequenceStatus.burned;
 }
 
 class _OutboxClaimModelRow {
@@ -2572,7 +2573,7 @@ void main() {
                   ROW_NUMBER() OVER (ORDER BY counter) AS rn
                 FROM sync_sequence_log
                 WHERE host_id = ?
-                  AND status IN (0, 3, 4, 5)
+                  AND status IN (0, 3, 4, 5, 8)
               )
               SELECT CASE
                 WHEN NOT EXISTS (
@@ -2960,6 +2961,46 @@ void main() {
     });
   });
 
+  group('SyncSequenceStatusX.isResolved', () {
+    // The resolved set is the single source of truth behind the watermark CTEs
+    // and the `idx_sync_sequence_log_resolved_host_counter` partial index,
+    // whose WHERE clauses inline these status indices as SQL literals.
+    const resolvedStatuses = {
+      SyncSequenceStatus.received,
+      SyncSequenceStatus.backfilled,
+      SyncSequenceStatus.deleted,
+      SyncSequenceStatus.unresolvable,
+      SyncSequenceStatus.burned,
+    };
+
+    Glados(any.choose(SyncSequenceStatus.values)).test(
+      'is true exactly for the documented resolved set',
+      (status) {
+        expect(
+          status.isResolved,
+          resolvedStatuses.contains(status),
+          reason: '$status',
+        );
+      },
+      tags: 'glados',
+    );
+
+    test('resolved indices match the SQL literals IN (0, 3, 4, 5, 8)', () {
+      final resolvedIndices = {
+        for (final status in SyncSequenceStatus.values)
+          if (status.isResolved) status.index,
+      };
+      expect(resolvedIndices, {0, 3, 4, 5, 8});
+    });
+
+    test('burned and burnPending sit on opposite sides of the split', () {
+      // burnPending is a transient own-host marker awaiting its broadcast;
+      // burned is its terminal, resolved successor.
+      expect(SyncSequenceStatus.burnPending.isResolved, isFalse);
+      expect(SyncSequenceStatus.burned.isResolved, isTrue);
+    });
+  });
+
   group('getBackfillStats Tests', () {
     setUp(() async {
       db = SyncDatabase(inMemoryDatabase: true);
@@ -3121,6 +3162,38 @@ void main() {
       expect(stats.hostStats.first.deletedCount, 1);
       expect(stats.totalUnresolvable, 2);
       expect(stats.totalDeleted, 1);
+    });
+
+    test('counts burned entries separately from unresolvable', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      Future<void> add(int counter, SyncSequenceStatus status) {
+        return database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(counter),
+            status: Value(status.index),
+            createdAt: Value(DateTime(2024, 3, counter)),
+            updatedAt: Value(DateTime(2024, 3, counter)),
+          ),
+        );
+      }
+
+      await add(1, SyncSequenceStatus.unresolvable);
+      await add(2, SyncSequenceStatus.burned);
+      await add(3, SyncSequenceStatus.burned);
+      await add(4, SyncSequenceStatus.burned);
+
+      final stats = await database.getBackfillStats();
+
+      expect(stats.hostStats, hasLength(1));
+      expect(stats.hostStats.first.unresolvableCount, 1);
+      expect(stats.hostStats.first.burnedCount, 3);
+      // Burned is its own bucket — it must NOT inflate unresolvable.
+      expect(stats.totalUnresolvable, 1);
+      expect(stats.totalBurned, 3);
+      expect(stats.totalEntries, 4);
     });
   });
 
@@ -5452,8 +5525,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 23', () {
-      expect(db.schemaVersion, 23);
+    test('schema version is 24', () {
+      expect(db.schemaVersion, 24);
     });
 
     test(
@@ -6570,7 +6643,7 @@ void main() {
 
     test(
       'recordOwnUnresolvableSequenceCounter inserts absent counters as '
-      'unresolvable with no payload mapping',
+      'burned with no payload mapping',
       () async {
         final database = SyncDatabase(inMemoryDatabase: true);
         try {
@@ -6588,7 +6661,7 @@ void main() {
             1,
           );
           expect(row, isNotNull);
-          expect(row!.status, SyncSequenceStatus.unresolvable.index);
+          expect(row!.status, SyncSequenceStatus.burned.index);
           expect(row.entryId, isNull);
           expect(row.payloadType, SyncSequencePayloadType.journalEntity.index);
           expect(await database.getLastCounterForHost('own-burn-host'), 1);
@@ -6630,7 +6703,7 @@ void main() {
             1,
           );
           expect(row, isNotNull);
-          expect(row!.status, SyncSequenceStatus.unresolvable.index);
+          expect(row!.status, SyncSequenceStatus.burned.index);
           expect(row.entryId, isNull);
           expect(row.payloadType, SyncSequencePayloadType.entryLink.index);
           expect(
@@ -6693,6 +6766,41 @@ void main() {
             );
             expect(row.updatedAt, createdAt, reason: '$status');
           }
+        } finally {
+          await database.close();
+        }
+      },
+    );
+
+    test(
+      'recordOwnUnresolvableSequenceCounter is idempotent on an already-burned '
+      'row — a repeat burn does not rewrite the row or churn updated_at',
+      () async {
+        final database = SyncDatabase(inMemoryDatabase: true);
+        try {
+          final now = DateTime(2026, 5, 24, 12);
+          final first = await database.recordOwnUnresolvableSequenceCounter(
+            hostId: 'own-burn-idempotent-host',
+            counter: 1,
+            now: now,
+          );
+          expect(first, isTrue);
+
+          final second = await database.recordOwnUnresolvableSequenceCounter(
+            hostId: 'own-burn-idempotent-host',
+            counter: 1,
+            now: now.add(const Duration(minutes: 5)),
+          );
+          // burned is in the isNotIn guard, so the repeat finds nothing to
+          // update and nothing to insert.
+          expect(second, isFalse);
+
+          final row = await database.getEntryByHostAndCounter(
+            'own-burn-idempotent-host',
+            1,
+          );
+          expect(row!.status, SyncSequenceStatus.burned.index);
+          expect(row.updatedAt, now);
         } finally {
           await database.close();
         }

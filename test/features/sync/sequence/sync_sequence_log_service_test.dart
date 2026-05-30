@@ -353,11 +353,15 @@ class _BackfillResponseStateScenario {
         _ => SyncSequenceStatus.deleted,
       },
       _BackfillResponseKind.unresolvable => switch (existingState) {
-        _GeneratedCounterState.absent => SyncSequenceStatus.unresolvable,
+        // Incoming `unresolvable=true` is authoritative for the originator's
+        // own counter, so the receiver records it as the terminal [burned]
+        // non-event — unless a strictly better local success state already
+        // won (received / backfilled / deleted), which is preserved.
+        _GeneratedCounterState.absent => SyncSequenceStatus.burned,
         _GeneratedCounterState.received => SyncSequenceStatus.received,
         _GeneratedCounterState.backfilled => SyncSequenceStatus.backfilled,
         _GeneratedCounterState.deleted => SyncSequenceStatus.deleted,
-        _ => SyncSequenceStatus.unresolvable,
+        _ => SyncSequenceStatus.burned,
       },
       _BackfillResponseKind.hint => switch (existingState) {
         _GeneratedCounterState.absent => SyncSequenceStatus.requested,
@@ -596,7 +600,8 @@ extension _SyncSequenceStatusX on SyncSequenceStatus {
       this == SyncSequenceStatus.received ||
       this == SyncSequenceStatus.backfilled ||
       this == SyncSequenceStatus.deleted ||
-      this == SyncSequenceStatus.unresolvable;
+      this == SyncSequenceStatus.unresolvable ||
+      this == SyncSequenceStatus.burned;
 }
 
 extension _AnySequenceGapScenario on glados.Any {
@@ -940,6 +945,79 @@ void main() {
   });
 
   group('recordReceivedEntry', () {
+    test(
+      "does not reopen a burned row for the originating host's own counter — "
+      'burned is terminal even against a contradictory re-send',
+      () async {
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+        try {
+          await bench.database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(aliceHostId),
+              counter: const Value(3),
+              entryId: const Value(null),
+              status: Value(SyncSequenceStatus.burned.index),
+              createdAt: Value(DateTime(2026, 5, 24, 10)),
+              updatedAt: Value(DateTime(2026, 5, 24, 10)),
+            ),
+          );
+
+          await bench.service.recordReceivedEntry(
+            entryId: 'late-alice-3',
+            vectorClock: const VectorClock({aliceHostId: 3}),
+            originatingHostId: aliceHostId,
+          );
+
+          final row = await bench.database.getEntryByHostAndCounter(
+            aliceHostId,
+            3,
+          );
+          expect(row?.status, SyncSequenceStatus.burned.index);
+          // The burn's empty payload mapping must survive.
+          expect(row?.entryId, isNull);
+        } finally {
+          await bench.close();
+        }
+      },
+    );
+
+    test(
+      'does not reopen a burned row that a different host entry merely covers '
+      'in its vector clock — no phantom cross-entity mapping',
+      () async {
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+        try {
+          await bench.database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(bobHostId),
+              counter: const Value(5),
+              entryId: const Value(null),
+              status: Value(SyncSequenceStatus.burned.index),
+              createdAt: Value(DateTime(2026, 5, 24, 10)),
+              updatedAt: Value(DateTime(2026, 5, 24, 10)),
+            ),
+          );
+
+          // Alice's entry carries bob:5 in its vector clock — a covering
+          // reference from a different entity, not bob's payload at counter 5.
+          await bench.service.recordReceivedEntry(
+            entryId: 'alice-entry-covering-bob-5',
+            vectorClock: const VectorClock({aliceHostId: 2, bobHostId: 5}),
+            originatingHostId: aliceHostId,
+          );
+
+          final bobRow = await bench.database.getEntryByHostAndCounter(
+            bobHostId,
+            5,
+          );
+          expect(bobRow?.status, SyncSequenceStatus.burned.index);
+          expect(bobRow?.entryId, isNull);
+        } finally {
+          await bench.close();
+        }
+      },
+    );
+
     test('records entry without gaps when sequential', () async {
       // Alice counter 1, first entry we've seen from Alice
       const vectorClock = VectorClock({aliceHostId: 1});
@@ -2718,9 +2796,9 @@ void main() {
     });
 
     test(
-      'upserts an unresolvable row when unresolvable=true and no row '
-      'exists yet — proactive burn broadcasts must land on peers that '
-      'never materialized (hostId, counter)',
+      'records a burned row when unresolvable=true and no row exists yet — '
+      'proactive burn broadcasts must land on peers that never materialized '
+      '(hostId, counter)',
       () async {
         when(
           () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
@@ -2751,7 +2829,7 @@ void main() {
                   .having(
                     (c) => c.status,
                     'status',
-                    Value(SyncSequenceStatus.unresolvable.index),
+                    Value(SyncSequenceStatus.burned.index),
                   ),
             ),
           ),
@@ -2821,7 +2899,7 @@ void main() {
                   .having(
                     (c) => c.status,
                     'status',
-                    Value(SyncSequenceStatus.unresolvable.index),
+                    Value(SyncSequenceStatus.burned.index),
                   ),
             ),
           ),
@@ -2976,6 +3054,53 @@ void main() {
       expect(captured.status.value, SyncSequenceStatus.requested.index);
       expect(captured.entryId.value, 'valid-hint-entry');
     });
+
+    test(
+      'unresolvable=true leaves an already-burned row untouched — burned is '
+      'terminal, so re-applying it would only churn updated_at',
+      () async {
+        when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            3,
+            status: SyncSequenceStatus.burned,
+          ),
+        );
+
+        await service.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          unresolvable: true,
+        );
+
+        verifyNever(() => mockDb.recordSequenceEntry(any()));
+        verifyNever(() => mockDb.updateSequenceStatus(any(), any(), any()));
+      },
+    );
+
+    test(
+      'a later hint never reopens a burned row — unlike an unresolvable '
+      'give-up, burned is the authoritative terminal non-event',
+      () async {
+        when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            3,
+            status: SyncSequenceStatus.burned,
+          ),
+        );
+
+        await service.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          entryId: 'late-hint-entry',
+        );
+
+        verifyNever(() => mockDb.recordSequenceEntry(any()));
+      },
+    );
 
     glados.Glados(
       _AnySequenceGapScenario(glados.any).backfillResponseStateScenario,
@@ -3256,6 +3381,7 @@ void main() {
           backfilledCount: 3,
           deletedCount: 0,
           unresolvableCount: 0,
+          burnedCount: 4,
         ),
       ]);
 

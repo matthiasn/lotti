@@ -103,11 +103,12 @@ class _GapEntriesView extends ListBase<({String hostId, int counter})> {
   }
 }
 
+// Delegates to [SyncSequenceStatusX.isResolved] (the single source of truth in
+// sync_db.dart) so the watermark "resolved" set is defined in exactly one place.
 bool _isResolvedSequenceStatusIndex(int status) =>
-    status == SyncSequenceStatus.received.index ||
-    status == SyncSequenceStatus.backfilled.index ||
-    status == SyncSequenceStatus.deleted.index ||
-    status == SyncSequenceStatus.unresolvable.index;
+    status >= 0 &&
+    status < SyncSequenceStatus.values.length &&
+    SyncSequenceStatus.values[status].isResolved;
 
 /// Service for managing the sync sequence log, which tracks received entries
 /// by (hostId, counter) pairs to detect gaps and enable backfill requests.
@@ -691,6 +692,23 @@ class SyncSequenceLogService {
           counter,
         );
 
+        if (existing != null &&
+            existing.status == SyncSequenceStatus.burned.index) {
+          // burned is the authoritative terminal non-event: never reopen it,
+          // and never overwrite its empty payload mapping with the received
+          // entity's id. The originator re-sending its own burnt counter is a
+          // contradiction we ignore. Mirrors the handleBackfillResponse hint
+          // guard so burned has no outgoing edges on any receive path. The row
+          // is already resolved, so the forward-only watermark-cache advance we
+          // skip here is a no-op.
+          _trace(
+            'recordReceivedEntry: burned preserved (originator) '
+            'hostId=$hostId counter=$counter',
+            subDomain: 'sequence.burnPreserved',
+          );
+          continue;
+        }
+
         // Determine the new status:
         // - If already received/backfilled → keep existing status (don't downgrade)
         // - If we explicitly requested this entry → backfilled (request fulfilled)
@@ -746,6 +764,22 @@ class SyncSequenceLogService {
           hostId,
           counter,
         );
+
+        if (existing != null &&
+            existing.status == SyncSequenceStatus.burned.index) {
+          // burned is the authoritative terminal non-event. A different host's
+          // entry that merely covers this counter in its vector clock must not
+          // reopen the burn or stamp its own entry id onto it (covering an
+          // own-host burn from a different entity is unsound). The row is
+          // already resolved, so skipping the forward-only watermark-cache
+          // advance below is a no-op.
+          _trace(
+            'recordReceivedEntry: burned preserved (covered) '
+            'hostId=$hostId counter=$counter',
+            subDomain: 'sequence.burnPreserved',
+          );
+          continue;
+        }
 
         // Determine the new status (same logic as for originator)
         final SyncSequenceStatus status;
@@ -1211,19 +1245,25 @@ class SyncSequenceLogService {
     }
 
     if (unresolvable) {
-      // Mark as unresolvable. Upsert (not update-only) because a proactive
-      // burn broadcast from the originator frequently arrives on a peer
-      // that has not yet materialized `(hostId, counter)` — gap detection
-      // hasn't run for this host yet, no covered-VC hint has referenced
-      // the counter, and so on. An `updateSequenceStatus` call would
-      // silently no-op in that common case and drop the authoritative
-      // marker, sending the peer back into reactive backfill later when
-      // the gap eventually surfaces.
+      // Classify the incoming `unresolvable=true` as [burned]: a backfill
+      // response carrying that flag is only ever sent by the originating host
+      // for its own counter (foreign-host requests get covering hints, never
+      // `unresolvable`), and the originator is authoritative for its own
+      // counters, so this is a clean non-event rather than a receiver give-up.
+      // Upsert (not update-only) because a proactive burn broadcast from the
+      // originator frequently arrives on a peer that has not yet materialized
+      // `(hostId, counter)` — gap detection hasn't run for this host yet, no
+      // covered-VC hint has referenced the counter, and so on. An
+      // `updateSequenceStatus` call would silently no-op in that common case
+      // and drop the authoritative marker, sending the peer back into reactive
+      // backfill later when the gap eventually surfaces.
       //
       // Do NOT downgrade rows that already have an authoritative success
       // state (received / backfilled / deleted) — if the peer obtained
       // the payload through another route, that's strictly better than
-      // the originator's unresolvable hint and should win.
+      // the originator's burn hint and should win. An already-[burned] row
+      // is likewise left alone: it is terminal, and re-writing it would only
+      // churn `updated_at` and re-emit a trace for an unchanged status.
       final existing = await _syncDatabase.getEntryByHostAndCounter(
         hostId,
         counter,
@@ -1231,7 +1271,8 @@ class SyncSequenceLogService {
       if (existing != null &&
           (existing.status == SyncSequenceStatus.received.index ||
               existing.status == SyncSequenceStatus.backfilled.index ||
-              existing.status == SyncSequenceStatus.deleted.index)) {
+              existing.status == SyncSequenceStatus.deleted.index ||
+              existing.status == SyncSequenceStatus.burned.index)) {
         _trace(
           'handleBackfillResponse: unresolvable ignored for '
           'hostId=$hostId counter=$counter — existing status='
@@ -1247,19 +1288,19 @@ class SyncSequenceLogService {
           hostId: Value(hostId),
           counter: Value(counter),
           // Clear any stale payload mapping for the same reason as in
-          // [markOwnCounterUnresolvable]: the unresolvable marker asserts
-          // no entity is bound to this counter, and a lingering entry_id
-          // would let later reset/verify paths reopen it.
+          // [markOwnCounterUnresolvable]: the burn marker asserts no entity is
+          // bound to this counter, so a lingering entry_id must not survive.
           entryId: const Value(null),
           payloadType: Value(payloadType.index),
-          status: Value(SyncSequenceStatus.unresolvable.index),
+          status: Value(SyncSequenceStatus.burned.index),
           createdAt: Value(existing?.createdAt ?? now),
           updatedAt: Value(now),
         ),
       );
 
       _trace(
-        'handleBackfillResponse hostId=$hostId counter=$counter unresolvable=true',
+        'handleBackfillResponse hostId=$hostId counter=$counter '
+        'unresolvable=true → burned',
         subDomain: 'sequence.backfillResponse',
       );
       return;
@@ -1296,10 +1337,14 @@ class SyncSequenceLogService {
       return;
     }
 
-    // Don't overwrite already received/backfilled/deleted entries
+    // Don't overwrite already received/backfilled/deleted entries, and never
+    // reopen a [burned] row: burned is the authoritative terminal non-event,
+    // and a later hint covering a *different* entity on our own counter must
+    // not resurrect it (see backfill_response_handler's covering-hint guard).
     if (existing.status == SyncSequenceStatus.received.index ||
         existing.status == SyncSequenceStatus.backfilled.index ||
-        existing.status == SyncSequenceStatus.deleted.index) {
+        existing.status == SyncSequenceStatus.deleted.index ||
+        existing.status == SyncSequenceStatus.burned.index) {
       _trace(
         'handleBackfillResponse: entry already has status=${SyncSequenceStatus.values[existing.status]} hostId=$hostId counter=$counter',
         subDomain: 'sequence.backfillResponse',

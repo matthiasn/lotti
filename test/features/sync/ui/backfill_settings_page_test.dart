@@ -39,6 +39,7 @@ void main() {
       backfilledCount: 11,
       deletedCount: 7,
       unresolvableCount: 3,
+      burnedCount: 9,
     ),
   ]);
 
@@ -140,7 +141,7 @@ void main() {
   });
 
   group('BackfillSettingsBody · sync statistics ledger', () {
-    testWidgets('renders all seven labelled rows', (tester) async {
+    testWidgets('renders all eight labelled rows', (tester) async {
       await pumpBody(tester);
       final messages = messagesOf(tester);
 
@@ -155,18 +156,48 @@ void main() {
       expect(find.text(messages.backfillStatsRequested), findsOneWidget);
       expect(find.text(messages.backfillStatsDeleted), findsOneWidget);
       expect(find.text(messages.backfillStatsUnresolvable), findsOneWidget);
+      expect(find.text(messages.backfillStatsBurned), findsOneWidget);
     });
 
     testWidgets('shows correct values for each stat', (tester) async {
       await pumpBody(tester);
 
-      // Total entries = 100 + 5 + 2 + 11 + 7 + 3 = 128
-      expect(find.text('128'), findsOneWidget);
+      // Total entries = 100 + 5 + 2 + 11 + 7 + 3 + 9 = 137
+      expect(find.text('137'), findsOneWidget);
       expect(find.text('100'), findsOneWidget); // received
       expect(find.text('11'), findsOneWidget); // backfilled
       expect(find.text('2'), findsOneWidget); // requested
       expect(find.text('7'), findsOneWidget); // deleted
       expect(find.text('3'), findsOneWidget); // unresolvable
+      expect(find.text('9'), findsOneWidget); // burned
+    });
+
+    testWidgets('Burned row uses the benign tone, not the error tone', (
+      tester,
+    ) async {
+      await pumpBody(tester);
+
+      Color? valueColorOf(String text) =>
+          tester.widget<Text>(find.text(text)).style?.color;
+
+      // populatedStats: burned = 9 and deleted = 7 are both benign
+      // (low-emphasis); unresolvable = 3 is > 0 so it escalates to the error
+      // tone. Burned must track the benign tone even though it is non-zero.
+      final burnedColor = valueColorOf('9');
+      final deletedColor = valueColorOf('7');
+      final unresolvableColor = valueColorOf('3');
+
+      expect(burnedColor, isNotNull);
+      expect(
+        burnedColor,
+        deletedColor,
+        reason: 'burned shares the benign low-emphasis tone with deleted',
+      );
+      expect(
+        burnedColor,
+        isNot(unresolvableColor),
+        reason: 'a non-zero burned count must not turn red like unresolvable',
+      );
     });
 
     testWidgets('formats values >= 1000 with thousands separators', (
@@ -181,6 +212,7 @@ void main() {
             backfilledCount: 34811,
             deletedCount: 201,
             unresolvableCount: 152601,
+            burnedCount: 0,
           ),
         ]),
       );
@@ -341,6 +373,7 @@ void main() {
               backfilledCount: 0,
               deletedCount: 0,
               unresolvableCount: 0,
+              burnedCount: 0,
             ),
           ]),
         );
@@ -372,6 +405,7 @@ void main() {
               backfilledCount: 0,
               deletedCount: 0,
               unresolvableCount: 0,
+              burnedCount: 0,
             ),
           ]),
         );
@@ -403,6 +437,7 @@ void main() {
               backfilledCount: 0,
               deletedCount: 0,
               unresolvableCount: 0,
+              burnedCount: 0,
             ),
           ]),
         );

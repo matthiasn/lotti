@@ -2296,6 +2296,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillStatsBackfilled => 'Completat';
 
   @override
+  String get backfillStatsBurned => 'Anulat';
+
+  @override
   String get backfillStatsDeleted => 'Șters';
 
   @override

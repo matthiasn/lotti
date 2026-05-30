@@ -55,9 +55,15 @@ enum SyncSequenceStatus {
   /// Responder confirmed the entry was purged/deleted
   deleted,
 
-  /// Originating host confirmed it cannot resolve its own counter.
-  /// This happens when a counter was superseded before being recorded
-  /// (e.g., rapid edits where intermediate versions were never persisted).
+  /// Receiver give-up: a `missing`/`requested` row that never resolved after
+  /// exhausting backfill retries (`retireExhaustedRequestedEntries`) or aging
+  /// past the amnesty window (`retireAgedOutRequestedEntries`). The payload's
+  /// fate is genuinely unknown — it may still be recoverable from a peer, so
+  /// the row stays reopenable: a later backfill hint flips it back to
+  /// [requested], and the "Ask peers again for unresolvable" action re-asks.
+  /// Counts as resolved for the watermark so a permanently lost counter does
+  /// not block the contiguous prefix forever. Distinct from the authoritative
+  /// [burned] non-event.
   unresolvable,
 
   /// Own-host counter was reserved but has not yet been bound to an outbound
@@ -67,16 +73,46 @@ enum SyncSequenceStatus {
   reserved,
 
   /// Own-host reservation was explicitly released without a payload, but the
-  /// durable unresolvable broadcast has not completed yet. Startup
-  /// reconciliation retries these rows.
+  /// durable broadcast has not completed yet. Startup reconciliation retries
+  /// these rows, upgrading each to a [burned] marker once the outbound
+  /// `unresolvable=true` broadcast is enqueued.
   burnPending,
+
+  /// Authoritative non-event: the originating host confirmed this counter
+  /// carries no payload — a vector-clock reservation released without a
+  /// write, or a value superseded before being recorded. Terminal and
+  /// benign, like a voided number in a monotonic invoice sequence: there is
+  /// nothing to fetch. Reached on the originator via
+  /// `recordOwnUnresolvableSequenceCounter` and on a peer when a backfill
+  /// response carries `unresolvable=true` (the originator is authoritative
+  /// for its own counters). Counts as resolved for the watermark so it never
+  /// blocks the contiguous prefix. Distinct from [unresolvable].
+  burned,
+}
+
+/// Terminal sequence states that satisfy the contiguous-prefix watermark.
+///
+/// Single source of truth for the "resolved" set. The watermark CTEs in
+/// [SyncDatabase] and the partial index
+/// `idx_sync_sequence_log_resolved_host_counter` inline the matching status
+/// indices as SQL literals (`IN (0, 3, 4, 5, 8)`); keep those aligned with
+/// this getter — a property test pins them together.
+extension SyncSequenceStatusX on SyncSequenceStatus {
+  /// Whether this status counts as resolved for the contiguous-prefix
+  /// watermark — i.e. it will never carry a future payload and so must not
+  /// block the prefix from advancing past its counter.
+  bool get isResolved =>
+      this == SyncSequenceStatus.received ||
+      this == SyncSequenceStatus.backfilled ||
+      this == SyncSequenceStatus.deleted ||
+      this == SyncSequenceStatus.unresolvable ||
+      this == SyncSequenceStatus.burned;
 }
 
 bool _isResolvedSequenceStatusIndex(int status) =>
-    status == SyncSequenceStatus.received.index ||
-    status == SyncSequenceStatus.backfilled.index ||
-    status == SyncSequenceStatus.deleted.index ||
-    status == SyncSequenceStatus.unresolvable.index;
+    status >= 0 &&
+    status < SyncSequenceStatus.values.length &&
+    SyncSequenceStatus.values[status].isResolved;
 
 @DataClassName('OutboxItem')
 @TableIndex.sql(
@@ -219,15 +255,17 @@ class Outbox extends Table {
   'ON sync_sequence_log (host_id, status)',
 )
 // Covers `getLastCounterForHost`. The watermark CTE only needs rows whose
-// status is terminal/resolved (`received`, `backfilled`, `deleted`, or
-// `unresolvable`) ordered by counter for a single host. A literal-status
-// partial index lets SQLite walk exactly that subset in `(host_id, counter)`
-// order instead of scanning every row for the host and filtering
-// `missing/requested` rows out inside the window function.
+// status is terminal/resolved (`received`, `backfilled`, `deleted`,
+// `unresolvable`, or `burned`) ordered by counter for a single host. A
+// literal-status partial index lets SQLite walk exactly that subset in
+// `(host_id, counter)` order instead of scanning every row for the host and
+// filtering `missing/requested` rows out inside the window function. The
+// status literals mirror [SyncSequenceStatusX.isResolved]; the v24 migration
+// rebuilds this index when `burned` (8) is appended to the resolved set.
 @TableIndex.sql(
   'CREATE INDEX idx_sync_sequence_log_resolved_host_counter '
   'ON sync_sequence_log (host_id, counter) '
-  'WHERE status IN (0, 3, 4, 5)',
+  'WHERE status IN (0, 3, 4, 5, 8)',
 )
 @TableIndex.sql(
   'CREATE INDEX idx_sync_sequence_log_payload_resolution '
@@ -1044,8 +1082,11 @@ class SyncDatabase extends _$SyncDatabase {
   /// The guard lives in the database layer so the authoritative-row check and
   /// write happen in one transaction. Rows already bound to a payload
   /// ([SyncSequenceStatus.received], [SyncSequenceStatus.backfilled], or
-  /// [SyncSequenceStatus.deleted]) are left untouched; other rows are converted
-  /// to [SyncSequenceStatus.unresolvable] with `entry_id` explicitly cleared.
+  /// [SyncSequenceStatus.deleted]) — and rows already
+  /// [SyncSequenceStatus.burned] — are left untouched (the latter makes a
+  /// repeat burn idempotent); other rows are converted to
+  /// [SyncSequenceStatus.burned] (the authoritative non-event) with `entry_id`
+  /// explicitly cleared. Returns whether a row was written.
   Future<bool> recordOwnUnresolvableSequenceCounter({
     required String hostId,
     required int counter,
@@ -1064,13 +1105,14 @@ class SyncDatabase extends _$SyncDatabase {
                         SyncSequenceStatus.received.index,
                         SyncSequenceStatus.backfilled.index,
                         SyncSequenceStatus.deleted.index,
+                        SyncSequenceStatus.burned.index,
                       ]),
                 ))
                 .write(
                   SyncSequenceLogCompanion(
                     entryId: const Value(null),
                     payloadType: Value(payloadType.index),
-                    status: Value(SyncSequenceStatus.unresolvable.index),
+                    status: Value(SyncSequenceStatus.burned.index),
                     updatedAt: Value(timestamp),
                   ),
                 );
@@ -1078,7 +1120,7 @@ class SyncDatabase extends _$SyncDatabase {
         await _refreshSequenceWatermark(
           hostId: hostId,
           counter: counter,
-          status: SyncSequenceStatus.unresolvable.index,
+          status: SyncSequenceStatus.burned.index,
         );
         return true;
       }
@@ -1091,7 +1133,7 @@ class SyncDatabase extends _$SyncDatabase {
           counter: Value(counter),
           entryId: const Value(null),
           payloadType: Value(payloadType.index),
-          status: Value(SyncSequenceStatus.unresolvable.index),
+          status: Value(SyncSequenceStatus.burned.index),
           createdAt: Value(timestamp),
           updatedAt: Value(timestamp),
         ),
@@ -1101,7 +1143,7 @@ class SyncDatabase extends _$SyncDatabase {
         await _refreshSequenceWatermark(
           hostId: hostId,
           counter: counter,
-          status: SyncSequenceStatus.unresolvable.index,
+          status: SyncSequenceStatus.burned.index,
         );
         return true;
       }
@@ -1312,7 +1354,7 @@ class SyncDatabase extends _$SyncDatabase {
           ROW_NUMBER() OVER (ORDER BY counter) AS rn
         FROM sync_sequence_log
         WHERE host_id = ?
-          AND status IN (0, 3, 4, 5)
+          AND status IN (0, 3, 4, 5, 8)
       )
       SELECT CASE
         WHEN NOT EXISTS (
@@ -1398,7 +1440,7 @@ class SyncDatabase extends _$SyncDatabase {
         FROM sync_sequence_log
         WHERE host_id = ?
           AND counter > ?
-          AND status IN (0, 3, 4, 5)
+          AND status IN (0, 3, 4, 5, 8)
       )
       SELECT COALESCE(
         (
@@ -1738,6 +1780,7 @@ class SyncDatabase extends _$SyncDatabase {
     final backfilled = SyncSequenceStatus.backfilled.index;
     final deleted = SyncSequenceStatus.deleted.index;
     final unresolvable = SyncSequenceStatus.unresolvable.index;
+    final burned = SyncSequenceStatus.burned.index;
 
     final hostIds = perHost.keys.toList()..sort();
     final hostStats = [
@@ -1749,6 +1792,7 @@ class SyncDatabase extends _$SyncDatabase {
           backfilledCount: perHost[host]![backfilled] ?? 0,
           deletedCount: perHost[host]![deleted] ?? 0,
           unresolvableCount: perHost[host]![unresolvable] ?? 0,
+          burnedCount: perHost[host]![burned] ?? 0,
         ),
     ];
 
@@ -2299,7 +2343,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration {
@@ -2729,6 +2773,24 @@ class SyncDatabase extends _$SyncDatabase {
           if (inboundQueueExists != null) {
             await customStatement(_idxInboundEventQueueActiveStatusRoom);
           }
+          await customStatement('ANALYZE');
+        }
+        if (from < 24) {
+          // burned(8) is a new terminal/resolved status (split out of
+          // unresolvable). Rebuild the resolved partial index so the watermark
+          // CTE can use it for burned rows, which become the largest resolved
+          // bucket. Drop + recreate because the partial WHERE changed
+          // (IN (0, 3, 4, 5) -> IN (0, 3, 4, 5, 8)); keep it aligned with
+          // [SyncSequenceStatusX.isResolved].
+          await customStatement(
+            'DROP INDEX IF EXISTS idx_sync_sequence_log_resolved_host_counter',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_resolved_host_counter '
+            'ON sync_sequence_log (host_id, counter) '
+            'WHERE status IN (0, 3, 4, 5, 8)',
+          );
           await customStatement('ANALYZE');
         }
       },

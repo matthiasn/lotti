@@ -2280,6 +2280,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backfillStatsBackfilled => 'Rellenado';
 
   @override
+  String get backfillStatsBurned => 'Anulado';
+
+  @override
   String get backfillStatsDeleted => 'Eliminado';
 
   @override
