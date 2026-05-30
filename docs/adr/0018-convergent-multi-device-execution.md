@@ -35,8 +35,9 @@ tiebreak.
 
 1. **Two merge laws, by entity class.** *Append-only event classes*
    (`AgentMessageEntity`, `AgentLink`, reports, observations, change decisions,
-   summaries/checkpoints) converge by **set-union + a deterministic DAG fold** —
-   no LWW. *Mutable registers* (the few genuinely in-place rows — user-authored
+   summaries/checkpoints) converge by **set-union + a deterministic DAG fold in a
+   canonical linear extension of the causal order** (`messagePrev`/VC
+   happens-before, ties broken by `hostId` then `id`) — no LWW. *Mutable registers* (the few genuinely in-place rows — user-authored
    document *heads* via `Version`/`Head`, journal-side in-place edits) converge by
    **LWW snapshot** (rule 4). Separately, **execution** (running behaviors + side
    effects) is gated by the lease. Most agent state is the first class; the LWW
@@ -77,9 +78,8 @@ tiebreak.
 7. **The projection is multi-head tolerant; forks are legal.** Two devices waking
    the same runtime from a shared prefix create a DAG fork (concurrent
    `messagePrev` children of a shared parent — ADR 0016). This is normal, not
-   corruption: context assembly reads across all current heads in the
-   deterministic linear extension (rule 4), so every device converges without a
-   join.
+   corruption: context assembly reads across all current heads in the canonical
+   linear extension (rule 1), so every device converges without a join.
 8. **Forks heal by lazy, capped join-by-continuation** — a continuation node
    linking (`messagePrev`) to all current heads, emitted **only when ≥2 heads
    survive past one wake cycle**, by the lowest-`hostId` head author (or the lease
@@ -103,8 +103,8 @@ tiebreak.
 flowchart TD
   Lease["Lease (side-effect boundary) + fencing"] --> A["Device A: runs behaviors + side effects"]
   A -->|append events| Sync["Sync: Matrix E2EE, vector-clocked"]
-  Sync -->|union merge| B["Device B: projection only"]
-  B -->|no execution without lease| Stop["execution suppressed"]
+  Sync -->|union merge| B["Device B: replica (connected case)"]
+  B -->|skips redundant execution while A holds lease| Stop["connected-case optimization; both act + converge under partition"]
 ```
 
 ## Consequences

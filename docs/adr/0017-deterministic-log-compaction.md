@@ -35,11 +35,14 @@ arbitrary winner.
    summary covers a *frontier* — an antichain `{e : prior < e ≤ frontier}`.
    Frontiers form a join-semilattice, but with a critical caveat: the **join of
    two candidate frontiers may have no materialized summary text** (no one
-   summarized that exact cut). So the **active checkpoint is the greatest
-   *materialized* frontier comparable to (≤) all current heads** — effectively
-   the meet of materialized candidates — and the **divergent region above it is
-   read verbatim** (plus any per-branch candidate summaries) until a lazy
-   **merge-summary behavior** materializes the joined frontier (the same
+   summarized that exact cut). So the **active checkpoint is the materialized
+   checkpoint whose frontier is a common ancestor of all current heads**
+   (causally ≤ every head); when several such checkpoints are incomparable, pick
+   deterministically by `frontierDigest`. Everything causally *after* it is read
+   **verbatim** — per-branch candidate summaries are **not** mixed into that
+   region, so coverage is a clean partition (one checkpoint + a verbatim tail, no
+   double-counting). A lazy **merge-summary** later collapses the verbatim tail
+   into a new materialized checkpoint over the joined frontier (the same
    lazy-capped pattern as the message-DAG join, ADR 0018). **Never** pick one
    candidate's text as *the* checkpoint when candidates are incomparable — that
    silently drops the other branch's history. `frontierDigest` = hash of the
