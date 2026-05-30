@@ -82,8 +82,10 @@ ShadowProjectionReport compareShadowProjection({
   required String? liveHeadId,
   String Function(AgentMessageEntity message)? hostIdOf,
 }) {
-  final events = agentEventsFromLog(messages, links, hostIdOf: hostIdOf);
   try {
+    // Inside the try: `messages`/`links` may be lazy (DB-backed) iterables and
+    // `hostIdOf` is caller-supplied, so building the events can throw too.
+    final events = agentEventsFromLog(messages, links, hostIdOf: hostIdOf);
     final projection = project(canonicalOrder(events));
     return ShadowProjectionReport(
       status: _statusFor(projection.headIds, liveHeadId),
@@ -111,11 +113,13 @@ ShadowProjectionStatus _statusFor(List<String> heads, String? liveHeadId) {
         ? ShadowProjectionStatus.empty
         : ShadowProjectionStatus.mismatch;
   }
-  // A non-empty projection with no live head pointer is a genuine mismatch —
-  // not the `forked` divergence, which is "live tracks one of several tips".
-  if (liveHeadId == null) return ShadowProjectionStatus.mismatch;
-  if (heads.length > 1) return ShadowProjectionStatus.forked;
-  return heads.single == liveHeadId
-      ? ShadowProjectionStatus.match
-      : ShadowProjectionStatus.mismatch;
+  // The live head must actually be one of the projected tips. A null live head,
+  // or one pointing at a non-tip (e.g. a stale parent), is a genuine mismatch —
+  // `forked`/`match` only apply when live tracks an actual tip.
+  if (liveHeadId == null || !heads.contains(liveHeadId)) {
+    return ShadowProjectionStatus.mismatch;
+  }
+  return heads.length > 1
+      ? ShadowProjectionStatus.forked
+      : ShadowProjectionStatus.match;
 }

@@ -104,6 +104,22 @@ void main() {
       expect(report.projectedHeadIds.toSet(), {'b', 'c'});
     });
 
+    test('a fork where live head tracks a non-tip (parent) → mismatch', () {
+      // Live tracks parent 'a', which is not one of the tips {b, c}.
+      final report = _compare(
+        [
+          makeTestMessage(id: 'a'),
+          makeTestMessage(id: 'b'),
+          makeTestMessage(id: 'c'),
+        ],
+        [_prevLink('b', 'a'), _prevLink('c', 'a')],
+        'a',
+      );
+
+      expect(report.status, ShadowProjectionStatus.mismatch);
+      expect(report.projectedHeadIds.toSet(), {'b', 'c'});
+    });
+
     test('reports are value-equal by their fields', () {
       final report = _compare([makeTestMessage(id: 'a')], const [], 'a');
 
@@ -171,26 +187,48 @@ void main() {
       tags: 'glados',
     );
 
-    glados.Glados(
+    glados.Glados2(
       glados.any.projectionDag,
-      glados.ExploreConfig(numRuns: 120),
-    ).test('match for the unique tip, forked for multiple tips', (dag) {
-      final heads = project(canonicalOrder(dag.events)).headIds;
-      if (heads.isEmpty) return; // empty log is covered by the example tests
+      glados.any.shuffleSeed,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('status classifies liveHeadId by its relation to the tips', (
+      dag,
+      selector,
+    ) {
+      final heads = project(canonicalOrder(dag.events)).headIds.toSet();
+      final present = {for (final e in dag.events) e.id};
+      final nonHeads = present.difference(heads);
+
+      // Vary the live head across the four meaningful categories; whichever
+      // category applies, the status is fully determined.
+      final String? liveHeadId;
+      final ShadowProjectionStatus expected;
+      switch (selector % 4) {
+        case 0 when heads.isNotEmpty: // an actual tip
+          liveHeadId = (heads.toList()..sort()).first;
+          expected = heads.length > 1
+              ? ShadowProjectionStatus.forked
+              : ShadowProjectionStatus.match;
+        case 1 when nonHeads.isNotEmpty: // present, but not a tip
+          liveHeadId = (nonHeads.toList()..sort()).first;
+          expected = ShadowProjectionStatus.mismatch;
+        case 2: // an id not in the log at all
+          liveHeadId = 'absent-id';
+          expected = ShadowProjectionStatus.mismatch;
+        default: // no live head
+          liveHeadId = null;
+          expected = heads.isEmpty
+              ? ShadowProjectionStatus.empty
+              : ShadowProjectionStatus.mismatch;
+      }
 
       final report = compareShadowProjection(
         messages: messagesOf(dag),
         links: linksOf(dag),
-        liveHeadId: heads.first,
+        liveHeadId: liveHeadId,
       );
 
-      expect(
-        report.status,
-        heads.length == 1
-            ? ShadowProjectionStatus.match
-            : ShadowProjectionStatus.forked,
-        reason: '$dag',
-      );
+      expect(report.status, expected, reason: 'sel=$selector $dag');
     }, tags: 'glados');
 
     glados.Glados2(
