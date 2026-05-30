@@ -44,25 +44,35 @@ context blob vs. per-source payloads.
    folds the log alone; it never re-reads the journal domain to reconstruct what
    an agent saw.
 
-2. **Per-source, content-addressed payloads.** Each distinct source — a task
-   description, each comment, each transcript, each image-analysis result — is
-   stored once as an `AgentMessagePayloadEntity` keyed by a `contentDigest` (the
+2. **Per-source, content-addressed payloads — provenance on the reference, not
+   the payload.** Each distinct source — a task description, each comment, each
+   transcript, each image-analysis result — is stored once as an
+   `AgentMessagePayloadEntity` keyed purely by its `contentDigest` (the
    canonical-form content hash defined in ADR 0017 / §6: sorted keys, RFC 3339
-   UTC, normalized numbers, canonical JSON, versioned tag), referenced by a
-   `messagePayload` link, with `contentEntryId` naming the originating journal
-   entity. Identical content across wakes *and* across agents dedupes to one
-   payload. Storage therefore grows with the number of *distinct versions the
-   agent observed*, not with the number of wakes.
+   UTC, normalized numbers, canonical JSON, versioned tag). The payload holds
+   **content only — no originating-entity identity** — so identical content
+   dedupes to a single row across wakes *and* across agents. **Provenance lives
+   on the reference**: the consuming message (and its `messagePayload` link)
+   carries `contentEntryId` → the originating journal entity. The same shared
+   payload is therefore pointed at by many links, each with its own provenance,
+   so multi-entity provenance is preserved — a single `contentEntryId` field on
+   the shared payload could not, and is deliberately *not* where it lives.
+   Storage grows with the number of *distinct content versions observed*, not
+   with wakes or agents.
 
 3. **Per-wake input frontier.** Each wake records the **ordered set** of source
    payload hashes it consumed (the `messagePayload` references on that wake's
    message). This frontier is what makes the model context reconstructible
    byte-for-byte for both replay and the prefix cache.
 
-4. **Canonical assembly order.** The rendered prompt context is assembled from
-   the frontier in a fixed, replica-independent order (source `createdAt` then
-   `id`) — never insertion or arrival order — so two devices and a replay
-   produce byte-identical prompts and the stable prefix keeps cache-hitting.
+4. **Canonical assembly order — from in-log metadata.** The rendered prompt
+   context is assembled from the frontier in a fixed, replica-independent order —
+   never insertion or arrival order — so two devices and a replay produce
+   byte-identical prompts and the stable prefix keeps cache-hitting. The sort key
+   is the source's `createdAt` then `id` **captured into the log at capture
+   time** (snapshotted onto the `messagePayload` link / message), **not** a live
+   read of the journal entity — which could be edited or deleted. Like the
+   content itself, the ordering is thus a pure function of the log (Decision 1).
 
 5. **Capture the rendered context, not unbounded raw history.** The agent
    captures the derived text it actually fed the model (a transcript, an
