@@ -1620,6 +1620,7 @@
       }
     }
   },
+  "dailyOsNextGenericError": "Une erreur est survenue. Réessaie dans un instant.",
   "dailyOsNextGreetingAfternoon": "Bon après-midi.",
   "dailyOsNextGreetingEvening": "Bonsoir.",
   "dailyOsNextGreetingHi": "Salut 👋",
@@ -1653,6 +1654,7 @@
   "dailyOsNextRefineDiffDropped": "RETIRÉ",
   "dailyOsNextRefineDiffMoved": "DÉPLACÉ",
   "dailyOsNextRefineKeepTalking": "Continuer à parler",
+  "dailyOsNextRefineNoChanges": "Aucun changement de plan n'est revenu. Reformule et réessaie.",
   "dailyOsNextRefineOverline": "🎤 AFFINEMENT",
   "dailyOsNextRefineRevert": "Annuler",
   "dailyOsNextRefineStatusAccepted": "Verrouillé.",

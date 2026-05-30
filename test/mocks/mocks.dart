@@ -70,6 +70,8 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -217,6 +219,69 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
 }
 
 class MockUserActivityService extends Mock implements UserActivityService {}
+
+class RefreshBlockingShutdownAgent extends MockDayAgent {
+  RefreshBlockingShutdownAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  final pendingShutdownRefresh =
+      Completer<
+        ({
+          List<CompletedItem> completed,
+          List<CarryoverItem> carryover,
+          ShutdownMetrics metrics,
+        })
+      >();
+  int shutdownCalls = 0;
+
+  @override
+  Future<
+    ({
+      List<CompletedItem> completed,
+      List<CarryoverItem> carryover,
+      ShutdownMetrics metrics,
+    })
+  >
+  surfaceShutdownData({required DateTime forDate}) {
+    shutdownCalls += 1;
+    if (shutdownCalls == 1) return super.surfaceShutdownData(forDate: forDate);
+    return pendingShutdownRefresh.future;
+  }
+
+  @override
+  Future<TomorrowNote> generateTomorrowNote({required DateTime forDate}) async {
+    return const TomorrowNote(body: 'Tomorrow stays queued.', maturity: 1);
+  }
+}
+
+class ThrowingShutdownAgent extends MockDayAgent {
+  ThrowingShutdownAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  @override
+  Future<
+    ({
+      List<CompletedItem> completed,
+      List<CarryoverItem> carryover,
+      ShutdownMetrics metrics,
+    })
+  >
+  surfaceShutdownData({required DateTime forDate}) async {
+    throw StateError('shutdown unavailable');
+  }
+}
 
 MockJournalDb mockJournalDbWithMeasurableTypes(
   List<MeasurableDataType> dataTypes,

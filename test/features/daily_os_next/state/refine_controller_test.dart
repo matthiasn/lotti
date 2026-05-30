@@ -56,29 +56,51 @@ void main() {
       expect(state.diff, isNull);
     });
 
-    test('failed diff proposal returns to idle with the transcript', () async {
-      final previousOnError = FlutterError.onError;
-      FlutterErrorDetails? reportedError;
-      FlutterError.onError = (details) => reportedError = details;
-      addTearDown(() => FlutterError.onError = previousOnError);
+    test(
+      'failed diff proposal keeps review open with the transcript',
+      () async {
+        final previousOnError = FlutterError.onError;
+        FlutterErrorDetails? reportedError;
+        FlutterError.onError = (details) => reportedError = details;
+        addTearDown(() => FlutterError.onError = previousOnError);
 
-      final container = makeContainer(overrideAgent: _ThrowingRefineAgent());
+        final container = makeContainer(overrideAgent: _ThrowingRefineAgent());
+        final notifier =
+            container.read(refineControllerProvider(draft).notifier)
+              ..beginListening(resetTranscript: true)
+              ..updateActiveTranscript('make the writing block longer');
+
+        await notifier.finishWithTranscript('make the writing block longer');
+
+        final state = container.read(refineControllerProvider(draft));
+        expect(state.phase, RefinePhase.reviewing);
+        expect(state.transcript, 'make the writing block longer');
+        expect(state.diff, isNull);
+        expect(state.problem, RefineProblem.proposalFailed);
+        expect(state.problemDetail, contains('refine rejected'));
+        expect(state.currentPlan, draft);
+        expect(reportedError?.exception, isA<StateError>());
+        expect(
+          reportedError?.context?.toDescription(),
+          'while proposing a plan refinement',
+        );
+      },
+    );
+
+    test('empty diff keeps review open with no-changes feedback', () async {
+      final container = makeContainer(overrideAgent: _EmptyDiffRefineAgent());
       final notifier = container.read(refineControllerProvider(draft).notifier)
         ..beginListening(resetTranscript: true)
-        ..updateActiveTranscript('make the writing block longer');
+        ..updateActiveTranscript('make the day easier');
 
-      await notifier.finishWithTranscript('make the writing block longer');
+      await notifier.finishWithTranscript('make the day easier');
 
       final state = container.read(refineControllerProvider(draft));
-      expect(state.phase, RefinePhase.idle);
-      expect(state.transcript, 'make the writing block longer');
+      expect(state.phase, RefinePhase.reviewing);
+      expect(state.transcript, 'make the day easier');
       expect(state.diff, isNull);
+      expect(state.problem, RefineProblem.noChanges);
       expect(state.currentPlan, draft);
-      expect(reportedError?.exception, isA<StateError>());
-      expect(
-        reportedError?.context?.toDescription(),
-        'while proposing a plan refinement',
-      );
     });
 
     test('captured transcript drives the diff proposal', () async {
@@ -317,5 +339,31 @@ class _ThrowingRefineAgent extends MockDayAgent {
     bool Function()? isCancelled,
   }) async {
     throw StateError('refine rejected');
+  }
+}
+
+class _EmptyDiffRefineAgent extends MockDayAgent {
+  _EmptyDiffRefineAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  @override
+  Future<PlanDiff> proposePlanDiff({
+    required DraftPlan currentPlan,
+    required String voiceTranscript,
+    bool Function()? isCancelled,
+  }) async {
+    return PlanDiff(
+      id: 'diff-empty',
+      transcript: voiceTranscript,
+      changes: const [],
+      updatedPlan: currentPlan,
+    );
   }
 }

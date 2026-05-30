@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../widget_test_utils.dart';
 
 Widget _wrap(Widget child) => makeTestableWidget2(
@@ -15,11 +21,41 @@ Widget _wrapPhone(Widget child) => makeTestableWidget2(
   mediaQueryData: const MediaQueryData(size: Size(390, 844)),
 );
 
+Widget _wrapWithTheme(
+  Widget child,
+  ThemeData theme, {
+  List<Override> overrides = const [],
+}) => makeTestableWidgetNoScroll(
+  child,
+  overrides: overrides,
+  mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+  theme: theme,
+);
+
 const _category = DayAgentCategory(
   id: 'cat_work',
   name: 'Work',
   colorHex: '5ED4B7',
 );
+
+JournalImage _image({String id = 'image-1'}) {
+  final now = DateTime(2026, 5, 26, 9);
+  return JournalImage(
+    meta: Metadata(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      dateFrom: now,
+      dateTo: now,
+    ),
+    data: ImageData(
+      imageId: 'image-data-$id',
+      imageFile: '$id.jpg',
+      imageDirectory: '/covers/',
+      capturedAt: now,
+    ),
+  );
+}
 
 void main() {
   group('AgendaCard', () {
@@ -51,6 +87,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('120m'), findsOneWidget);
+      expect(find.text('Open'), findsNothing);
     });
 
     testWidgets('shows why metadata when a whyReason is provided', (
@@ -156,6 +193,132 @@ void main() {
       );
       expect(title.maxLines, greaterThan(1));
       expect(title.overflow, TextOverflow.fade);
+    });
+
+    testWidgets('renders task cover art as the leading visual', (
+      tester,
+    ) async {
+      final image = _image();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [createEntryControllerOverride(image)],
+          child: _wrapPhone(
+            const Material(
+              child: AgendaCard(
+                index: 3,
+                item: AgendaItem(
+                  id: 'a1',
+                  title: 'Task with cover art',
+                  category: _category,
+                  linkedBlockIds: ['b1'],
+                ),
+                coverArtId: 'image-1',
+                coverArtCropX: 0.25,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CoverArtThumbnail), findsOneWidget);
+      final thumbnail = tester.widget<CoverArtThumbnail>(
+        find.byType(CoverArtThumbnail),
+      );
+      expect(thumbnail.imageId, 'image-1');
+      expect(thumbnail.cropX, 0.25);
+    });
+
+    testWidgets(
+      'solid cover number chooses dark text on light category colors',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrapWithTheme(
+            const Material(
+              child: AgendaCard(
+                index: 1,
+                item: AgendaItem(
+                  id: 'a1',
+                  title: 'Mint cover',
+                  category: _category,
+                  linkedBlockIds: ['b1'],
+                ),
+                coverArtId: 'image-1',
+              ),
+            ),
+            ThemeData.light(useMaterial3: true),
+            overrides: [createEntryControllerOverride(_image())],
+          ),
+        );
+        await tester.pump();
+
+        final indexText = tester.widget<Text>(find.text('1'));
+        expect(indexText.style?.color, dsTokensLight.colors.text.highEmphasis);
+      },
+    );
+
+    testWidgets(
+      'solid cover number chooses dark-theme contrast per category color',
+      (tester) async {
+        const blueCategory = DayAgentCategory(
+          id: 'cat_blue',
+          name: 'Blue',
+          colorHex: '4AB6E8',
+        );
+        await tester.pumpWidget(
+          _wrapWithTheme(
+            const Material(
+              child: AgendaCard(
+                index: 2,
+                item: AgendaItem(
+                  id: 'a1',
+                  title: 'Blue cover',
+                  category: blueCategory,
+                  linkedBlockIds: ['b1'],
+                ),
+                coverArtId: 'image-1',
+              ),
+            ),
+            ThemeData.dark(useMaterial3: true),
+            overrides: [createEntryControllerOverride(_image())],
+          ),
+        );
+        await tester.pump();
+
+        final indexText = tester.widget<Text>(find.text('2'));
+        expect(
+          indexText.style?.color,
+          dsTokensDark.colors.text.onInteractiveAlert,
+        );
+      },
+    );
+
+    testWidgets('renders non-open state and progress metadata', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const Material(
+            child: AgendaCard(
+              index: 4,
+              item: AgendaItem(
+                id: 'a1',
+                title: 'Close out shipped work',
+                category: _category,
+                linkedBlockIds: ['b1'],
+                state: AgendaItemState.done,
+                progress: 0.75,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Done'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      final indicator = tester.widget<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(indicator.value, 0.75);
     });
   });
 }

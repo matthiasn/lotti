@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -31,23 +32,15 @@ class CapacityMeter extends StatelessWidget {
         ? tokens.colors.alert.warning.defaultColor
         : tokens.colors.alert.error.defaultColor;
 
-    return Semantics(
-      label: context.messages.dailyOsNextAgendaSummary(
+    return DesignSystemProgressBar(
+      value: progress,
+      progressColor: color,
+      trackColor: tokens.colors.background.level03,
+      semanticsLabel: context.messages.dailyOsNextAgendaSummary(
         _formatHours(scheduledMinutes),
         _formatHours(capacityMinutes),
       ),
-      value: '${(progress * 100).round()}%',
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        child: SizedBox(
-          height: tokens.spacing.step2,
-          child: LinearProgressIndicator(
-            value: progress,
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-            backgroundColor: tokens.colors.background.level03,
-          ),
-        ),
-      ),
+      semanticsValue: '${(progress * 100).round()}%',
     );
   }
 

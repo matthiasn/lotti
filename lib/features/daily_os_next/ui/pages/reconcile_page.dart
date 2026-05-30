@@ -60,19 +60,22 @@ class ReconcilePage extends ConsumerWidget {
           padding: EdgeInsets.only(
             bottom: DesignSystemBottomNavigationBar.occupiedHeight(context),
           ),
-          child: state.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(
+          child: switch (state) {
+            _ when state.hasValue => _ReconcileBody(
+              params: params,
+              data: state.requireValue,
+            ),
+            _ when state.hasError => Center(
               child: Text(
-                context.messages.dailyOsNextReconcileError(error.toString()),
+                context.messages.dailyOsNextGenericError,
                 style: tokens.typography.styles.body.bodyMedium.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
                 ),
                 textAlign: TextAlign.center,
               ),
             ),
-            data: (data) => _ReconcileBody(params: params, data: data),
-          ),
+            _ => const Center(child: CircularProgressIndicator()),
+          },
         ),
       ),
     );
@@ -187,10 +190,9 @@ class _DecideColumn extends ConsumerWidget {
     final notifier = ref.read(reconcileControllerProvider(params).notifier);
     final decided = ref.watch(
       reconcileControllerProvider(params).select(
-        (asyncValue) => asyncValue.maybeWhen(
-          data: (data) => data.triageDecisions,
-          orElse: () => const <String, TriageResult>{},
-        ),
+        (asyncValue) => asyncValue.hasValue
+            ? asyncValue.requireValue.triageDecisions
+            : const <String, TriageResult>{},
       ),
     );
     return Column(

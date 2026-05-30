@@ -2,6 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
@@ -81,37 +83,47 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   @override
   Widget build(BuildContext context) {
     final asyncPlan = ref.watch(currentDraftPlanProvider(_selectedDate));
-    return asyncPlan.when(
-      skipLoadingOnReload: true,
-      skipError: true,
-      loading: () => const _LoadingShell(),
-      error: (e, _) => _ErrorShell(error: '$e'),
-      data: (plan) {
-        final strip = _DateStrip(
-          selected: _selectedDate,
-          isToday: _isToday,
-          onPrev: () => _shiftDay(-1),
-          onNext: () => _shiftDay(1),
-          onPick: _pickDate,
-          onToday: _goToToday,
-        );
-        if (plan != null) {
-          return DayPage(
-            key: ValueKey(_selectedDate.toIso8601String()),
-            draft: plan,
-            dateStrip: strip,
-          );
-        }
-        // No plan for the selected date — drop into Capture so the
-        // user can start one for that day. Capture is keyed on
-        // [_selectedDate] so the submitted capture lands on the
-        // chosen day's day-agent.
-        return CapturePage(
-          key: ValueKey('capture-${_selectedDate.toIso8601String()}'),
-          forDate: _selectedDate,
-          dateStrip: strip,
-        );
-      },
+    if (asyncPlan.hasValue) {
+      final plan = asyncPlan.requireValue;
+      if (plan != null) return _buildSurface(plan);
+
+      final actualBlocks = ref.watch(
+        dailyOsActualTimeBlocksProvider(_selectedDate),
+      );
+      return _buildSurface(null, actualBlocks: actualBlocks.value ?? const []);
+    }
+    if (asyncPlan.hasError) return _ErrorShell(error: '${asyncPlan.error}');
+    return const _LoadingShell();
+  }
+
+  Widget _buildSurface(
+    DraftPlan? plan, {
+    List<TimeBlock> actualBlocks = const [],
+  }) {
+    final strip = _DateStrip(
+      selected: _selectedDate,
+      isToday: _isToday,
+      onPrev: () => _shiftDay(-1),
+      onNext: () => _shiftDay(1),
+      onPick: _pickDate,
+      onToday: _goToToday,
+    );
+    if (plan != null) {
+      return DayPage(
+        key: ValueKey(_selectedDate.toIso8601String()),
+        draft: plan,
+        dateStrip: strip,
+      );
+    }
+    // No plan for the selected date — drop into Capture so the
+    // user can start one for that day. Capture is keyed on
+    // [_selectedDate] so the submitted capture lands on the
+    // chosen day's day-agent.
+    return CapturePage(
+      key: ValueKey('capture-${_selectedDate.toIso8601String()}'),
+      forDate: _selectedDate,
+      actualBlocks: actualBlocks,
+      dateStrip: strip,
     );
   }
 }
@@ -154,24 +166,28 @@ class _DateStrip extends StatelessWidget {
           tooltip: material.previousPageTooltip,
           onPressed: onPrev,
         ),
-        InkWell(
-          onTap: onPick,
-          onLongPress: onToday,
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step3,
-              vertical: tokens.spacing.step2,
-            ),
-            child: Text(
-              _formatDate(
-                context,
-                selected,
-                isToday: isToday,
-                todayLabel: messages.dailyOsTodayButton,
+        Flexible(
+          child: InkWell(
+            onTap: onPick,
+            onLongPress: onToday,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step3,
+                vertical: tokens.spacing.step2,
               ),
-              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                color: tokens.colors.text.highEmphasis,
+              child: Text(
+                _formatDate(
+                  context,
+                  selected,
+                  isToday: isToday,
+                  todayLabel: messages.dailyOsTodayButton,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
               ),
             ),
           ),

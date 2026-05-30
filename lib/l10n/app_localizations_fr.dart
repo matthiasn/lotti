@@ -3336,6 +3336,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextGenericError =>
+      'Une erreur est survenue. Réessaie dans un instant.';
+
+  @override
   String get dailyOsNextGreetingAfternoon => 'Bon après-midi.';
 
   @override
@@ -3416,6 +3420,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextRefineKeepTalking => 'Continuer à parler';
+
+  @override
+  String get dailyOsNextRefineNoChanges =>
+      'Aucun changement de plan n\'est revenu. Reformule et réessaie.';
 
   @override
   String get dailyOsNextRefineOverline => '🎤 AFFINEMENT';

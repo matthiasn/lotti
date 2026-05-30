@@ -27,6 +27,16 @@ enum RefinePhase {
   accepted,
 }
 
+/// Non-fatal feedback that should stay visible in the Refine UI.
+enum RefineProblem {
+  /// The agent returned a diff payload but none of its items could be shown
+  /// as supported plan changes.
+  noChanges,
+
+  /// The proposal request failed or timed out.
+  proposalFailed,
+}
+
 @immutable
 class RefineState {
   const RefineState({
@@ -36,6 +46,8 @@ class RefineState {
     this.decisions = const {},
     this.resolvingChangeId,
     this.diff,
+    this.problem,
+    this.problemDetail,
   });
 
   final RefinePhase phase;
@@ -44,6 +56,8 @@ class RefineState {
   final PlanDiff? diff;
   final Map<String, PlanDiffChangeDecision> decisions;
   final String? resolvingChangeId;
+  final RefineProblem? problem;
+  final String? problemDetail;
 
   RefineState copyWith({
     RefinePhase? phase,
@@ -52,8 +66,11 @@ class RefineState {
     PlanDiff? diff,
     Map<String, PlanDiffChangeDecision>? decisions,
     String? resolvingChangeId,
+    RefineProblem? problem,
+    String? problemDetail,
     bool clearDiff = false,
     bool clearResolvingChangeId = false,
+    bool clearProblem = false,
   }) {
     return RefineState(
       phase: phase ?? this.phase,
@@ -64,6 +81,10 @@ class RefineState {
       resolvingChangeId: clearResolvingChangeId
           ? null
           : (resolvingChangeId ?? this.resolvingChangeId),
+      problem: clearProblem ? null : (problem ?? this.problem),
+      problemDetail: clearProblem
+          ? null
+          : (problemDetail ?? this.problemDetail),
     );
   }
 
@@ -135,12 +156,18 @@ class RefineController extends Notifier<RefineState> {
       clearDiff: true,
       decisions: const {},
       clearResolvingChangeId: true,
+      clearProblem: true,
     );
   }
 
   void updateTranscript(String transcript) {
     if (state.phase != RefinePhase.reviewing) return;
-    state = state.copyWith(transcript: transcript);
+    state = state.copyWith(transcript: transcript, clearProblem: true);
+  }
+
+  Future<void> submitReviewedTranscript() async {
+    if (state.phase != RefinePhase.reviewing) return;
+    await finishWithTranscript(state.transcript);
   }
 
   Future<void> accept() async {
@@ -203,6 +230,7 @@ class RefineController extends Notifier<RefineState> {
       clearDiff: true,
       decisions: const {},
       clearResolvingChangeId: true,
+      clearProblem: true,
     );
   }
 
@@ -227,11 +255,12 @@ class RefineController extends Notifier<RefineState> {
     if (nextTranscript.isEmpty) {
       state = state.copyWith(
         phase: state.diff == null ? RefinePhase.idle : RefinePhase.diffReady,
+        clearProblem: true,
       );
       return;
     }
     final baselinePlan = state.currentPlan;
-    state = state.copyWith(phase: RefinePhase.thinking);
+    state = state.copyWith(phase: RefinePhase.thinking, clearProblem: true);
     final agent = ref.read(dayAgentProvider);
     final PlanDiff diff;
     try {
@@ -251,23 +280,31 @@ class RefineController extends Notifier<RefineState> {
       );
       if (!ref.mounted) return;
       state = state.copyWith(
-        phase: RefinePhase.idle,
+        phase: RefinePhase.reviewing,
         transcript: nextTranscript,
         clearDiff: true,
+        problem: RefineProblem.proposalFailed,
+        problemDetail: error.toString(),
         decisions: const {},
         clearResolvingChangeId: true,
       );
       return;
     }
     if (!ref.mounted) return;
-    // An empty diff has nothing to resolve — `accept()` would short-circuit
-    // and `_allResolved()` would never report done, leaving the screen
-    // stuck on the "Accept / Revert" UI with no rows. Treat it as already
-    // accepted so the controller pops back like a successful refine.
+    if (diff.changes.isEmpty) {
+      state = state.copyWith(
+        phase: RefinePhase.reviewing,
+        transcript: nextTranscript,
+        currentPlan: baselinePlan,
+        clearDiff: true,
+        problem: RefineProblem.noChanges,
+        decisions: const {},
+        clearResolvingChangeId: true,
+      );
+      return;
+    }
     state = state.copyWith(
-      phase: diff.changes.isEmpty
-          ? RefinePhase.accepted
-          : RefinePhase.diffReady,
+      phase: RefinePhase.diffReady,
       transcript: nextTranscript,
       diff: diff,
       currentPlan: diff.updatedPlan,
@@ -276,6 +313,7 @@ class RefineController extends Notifier<RefineState> {
           change.id: PlanDiffChangeDecision.pending,
       },
       clearResolvingChangeId: true,
+      clearProblem: true,
     );
   }
 

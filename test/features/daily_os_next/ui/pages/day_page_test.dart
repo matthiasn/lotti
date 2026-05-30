@@ -4,16 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
+    as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -49,6 +55,10 @@ DraftPlan _drafted({
 );
 
 class _RecordingAgent implements DayAgentInterface {
+  _RecordingAgent({this.diff, this.acceptedPlan});
+
+  final PlanDiff? diff;
+  final DraftPlan? acceptedPlan;
   DateTime? deletedFor;
   int deleteCount = 0;
 
@@ -110,16 +120,18 @@ class _RecordingAgent implements DayAgentInterface {
     required DraftPlan currentPlan,
     required String voiceTranscript,
     bool Function()? isCancelled,
-  }) async => PlanDiff(
-    id: 'd',
-    transcript: voiceTranscript,
-    changes: const [],
-    updatedPlan: currentPlan,
-  );
+  }) async =>
+      diff ??
+      PlanDiff(
+        id: 'd',
+        transcript: voiceTranscript,
+        changes: const [],
+        updatedPlan: currentPlan,
+      );
 
   @override
   Future<DraftPlan> acceptDiff(PlanDiff diff, {List<int>? itemIndices}) async =>
-      diff.updatedPlan;
+      acceptedPlan ?? diff.updatedPlan;
 
   @override
   Future<DraftPlan> revertDiff({
@@ -205,8 +217,10 @@ Widget _wrap(
   List<Override> overrides = const [],
   Size size = const Size(1400, 1200),
   MediaQueryData? mediaQueryData,
+  ThemeData? theme,
 }) {
-  return ProviderScope(
+  return makeTestableWidgetNoScroll(
+    child,
     overrides: [
       // CapturesPanel watches this; stub to empty so the panel collapses
       // to SizedBox.shrink instead of touching the DB.
@@ -219,18 +233,55 @@ Widget _wrap(
       captureControllerProvider.overrideWith(_stubCapture),
       ...overrides,
     ],
-    child: makeTestableWidget2(
-      child,
-      mediaQueryData: mediaQueryData ?? MediaQueryData(size: size),
-    ),
+    mediaQueryData: mediaQueryData ?? MediaQueryData(size: size),
+    theme: theme,
   );
 }
 
-void _setSurface(WidgetTester tester) {
+ThemeData _themeWithHeaderSpacing(double step2) {
+  final theme = resolveTestTheme();
+  final tokens = theme.extension<DsTokens>()!;
+  return theme.copyWith(
+    extensions: <ThemeExtension<dynamic>>[
+      tokens.copyWith(
+        spacing: tokens.spacing.copyWith(step2: step2),
+      ),
+    ],
+  );
+}
+
+Widget _dateStripLike(String label) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      IconButton(
+        icon: const Icon(Icons.chevron_left_rounded),
+        onPressed: () {},
+      ),
+      Flexible(
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      IconButton(
+        icon: const Icon(Icons.chevron_right_rounded),
+        onPressed: () {},
+      ),
+    ],
+  );
+}
+
+void _setSurfaceSize(WidgetTester tester, Size size) {
   tester.view
-    ..physicalSize = const Size(1400, 1200)
+    ..physicalSize = size
     ..devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
+}
+
+void _setSurface(WidgetTester tester) {
+  _setSurfaceSize(tester, const Size(1400, 1200));
 }
 
 void main() {
@@ -269,6 +320,97 @@ void main() {
       expect(find.text('2026-05-26'), findsOneWidget);
     });
 
+    testWidgets('header keeps the plan toggle inline when it fits', (
+      tester,
+    ) async {
+      _setSurfaceSize(tester, const Size(640, 844));
+      const label = 'May 31, 2026';
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: _drafted(),
+            dateStrip: _dateStripLike(label),
+          ),
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(640, 844),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final dateTop = tester.getTopLeft(find.text(label)).dy;
+      final dateBottom = tester.getBottomLeft(find.text(label)).dy;
+      final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
+      final toggleBottom = tester.getBottomLeft(find.byType(PlanViewToggle)).dy;
+
+      expect(toggleTop, lessThan(dateBottom));
+      expect(toggleBottom, greaterThan(dateTop));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('header moves the plan toggle below only when it cannot fit', (
+      tester,
+    ) async {
+      _setSurfaceSize(tester, phoneMediaQueryData.size);
+      const label = 'May 31, 2026';
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: _drafted(),
+            dateStrip: _dateStripLike(label),
+          ),
+          mediaQueryData: phoneMediaQueryData,
+        ),
+      );
+      await tester.pump();
+
+      final dateBottom = tester.getBottomLeft(find.text(label)).dy;
+      final toggleTop = tester.getTopLeft(find.byType(PlanViewToggle)).dy;
+
+      expect(find.text(label), findsOneWidget);
+      expect(toggleTop, greaterThan(dateBottom));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('header relayouts when design-system spacing changes', (
+      tester,
+    ) async {
+      _setSurfaceSize(tester, const Size(640, 844));
+      const label = 'May 31, 2026';
+      final mediaQueryData = phoneMediaQueryData.copyWith(
+        size: const Size(640, 844),
+      );
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: _drafted(),
+            dateStrip: _dateStripLike(label),
+          ),
+          mediaQueryData: mediaQueryData,
+          theme: _themeWithHeaderSpacing(20),
+        ),
+      );
+      await tester.pump();
+      final firstTop = tester.getTopLeft(find.text(label)).dy;
+
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(
+            draft: _drafted(),
+            dateStrip: _dateStripLike(label),
+          ),
+          mediaQueryData: mediaQueryData,
+          theme: _themeWithHeaderSpacing(32),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      final secondTop = tester.getTopLeft(find.text(label)).dy;
+
+      expect(secondTop, greaterThan(firstTop));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('toggling the plan view switches Agenda → DayTimeline', (
       tester,
     ) async {
@@ -279,8 +421,8 @@ void main() {
       expect(find.byType(AgendaView), findsOneWidget);
       expect(find.byType(DayTimeline), findsNothing);
 
-      // Drive the toggle directly; tapping its rendered chips is brittle
-      // because the toggle is in the AppBar actions slot.
+      // Drive the toggle directly; chip tap behavior is covered by
+      // PlanViewToggle's focused widget tests.
       final toggle = tester.widget<PlanViewToggle>(find.byType(PlanViewToggle));
       toggle.onChanged(PlanView.day);
       await tester.pump();
@@ -297,6 +439,7 @@ void main() {
       await tester.pump();
 
       final messages = tester.element(find.byType(DayPage)).messages;
+      expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
       expect(find.text(messages.dailyOsNextDayRefineCta), findsOneWidget);
       expect(find.text(messages.dailyOsNextDayLockInCta), findsOneWidget);
       expect(find.text(messages.dailyOsNextDayWrapUpCta), findsNothing);
@@ -383,6 +526,35 @@ void main() {
       expect(find.text(messages.dailyOsNextDayMenuDeletePlan), findsOneWidget);
     });
 
+    testWidgets('Inspect agent menu item resolves day-agent internals', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      await tester.pumpWidget(
+        _wrap(
+          DayPage(draft: _drafted()),
+          overrides: [
+            agent_providers.dayAgentProvider.overrideWith(
+              (ref, date) async => null,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final messages = tester.element(find.byType(DayPage)).messages;
+      await tester.tap(find.text(messages.dailyOsNextDayMenuInspectAgent));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(DayPage), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets(
       'Delete plan flow: confirm dialog → confirm calls agent with day date',
       (tester) async {
@@ -422,7 +594,7 @@ void main() {
     );
 
     testWidgets(
-      'AppBar back IconButton pops the navigator (no dateStrip)',
+      'header back IconButton pops the navigator (no dateStrip)',
       (tester) async {
         _setSurface(tester);
         final agent = _RecordingAgent();
@@ -452,7 +624,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 200));
 
-        // The AppBar shows a back button only when there's no dateStrip;
+        // The header shows a back button only when there's no dateStrip;
         // the popup-menu's more_vert icon stays in place.
         await tester.tap(find.byIcon(Icons.arrow_back_rounded));
         await tester.pump();
@@ -465,12 +637,10 @@ void main() {
     );
 
     testWidgets(
-      'tapping Refine beams to the DailyOS route for the plan date',
+      'tapping Refine opens the modal over the current day page',
       (tester) async {
         _setSurface(tester);
         final agent = _RecordingAgent();
-        String? route;
-        nav_service.beamToNamedOverride = (path) => route = path;
         final draft = _drafted();
         await tester.pumpWidget(
           _wrap(
@@ -483,12 +653,63 @@ void main() {
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextDayRefineCta));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
 
-        expect(
-          route,
-          dailyOsNextRoutePath(DailyOsNextRouteTarget.refine, draft.dayDate),
-        );
         expect(find.byType(DayPage), findsOneWidget);
+        expect(find.byType(RefineModalContent), findsOneWidget);
+        expect(find.text(messages.dailyOsNextRefineTitle), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'accepted refine modal invalidates the current draft and keeps day page',
+      (tester) async {
+        _setSurface(tester);
+        final draft = _drafted();
+        final acceptedPlan = draft.copyWith(scheduledMinutes: 210);
+        final diff = PlanDiff(
+          id: 'diff_day',
+          transcript: 'move one thing',
+          changes: const [
+            PlanDiffChange(
+              id: 'chg_day',
+              kind: PlanDiffChangeKind.moved,
+              title: 'Move focus',
+              category: _category,
+              reason: 'one change resolves the modal',
+              affectedBlockId: 'blk_1',
+            ),
+          ],
+          updatedPlan: acceptedPlan,
+        );
+        final agent = _RecordingAgent(diff: diff, acceptedPlan: acceptedPlan);
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(draft: draft),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextDayRefineCta));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+
+        final element = tester.element(find.byType(RefineModalContent));
+        final container = ProviderScope.containerOf(element);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        );
+        await notifier.finishWithTranscript('move one thing');
+        await tester.pump();
+
+        await tester.tap(find.text(messages.dailyOsNextRefineAccept));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+
+        expect(find.byType(DayPage), findsOneWidget);
+        expect(find.byType(RefineModalContent), findsNothing);
       },
     );
 

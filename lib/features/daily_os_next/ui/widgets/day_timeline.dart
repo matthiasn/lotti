@@ -10,6 +10,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 
 /// Hour-by-hour timeline rendering of a [DraftPlan]. Read-only in
 /// this milestone.
@@ -1592,7 +1593,10 @@ class _BlockPosition extends StatelessWidget {
       left: tokens.spacing.step3,
       right: tokens.spacing.step3,
       height: height,
-      child: DayBlock(block: block),
+      child: DayBlock(
+        key: Key('daily_os_day_block_${block.id}'),
+        block: block,
+      ),
     );
   }
 }
@@ -1609,6 +1613,10 @@ class DayBlock extends StatelessWidget {
     final category = _categoryColor();
     final isBuffer = block.type == TimeBlockType.buffer;
     final isDrafted = block.state == TimeBlockState.drafted;
+    final taskId = block.taskId?.trim();
+    final onTap = taskId == null || taskId.isEmpty
+        ? null
+        : () => beamToNamed('/tasks/$taskId');
 
     final fill = isBuffer
         ? Colors.transparent
@@ -1617,10 +1625,11 @@ class DayBlock extends StatelessWidget {
         ? tokens.colors.text.lowEmphasis.withValues(alpha: 0.32)
         : category;
 
-    return Container(
+    final borderRadius = BorderRadius.circular(tokens.radii.m);
+    final card = Ink(
       decoration: BoxDecoration(
         color: fill,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
+        borderRadius: borderRadius,
         border: isDrafted
             ? Border.all(
                 color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.20),
@@ -1650,6 +1659,25 @@ class DayBlock extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) {
+      return Material(
+        type: MaterialType.transparency,
+        child: card,
+      );
+    }
+
+    return Semantics(
+      button: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: borderRadius,
+          child: card,
+        ),
       ),
     );
   }

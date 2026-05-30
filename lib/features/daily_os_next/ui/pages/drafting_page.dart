@@ -87,19 +87,21 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
       body: SafeArea(
-        child: asyncState.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
+        child: switch (asyncState) {
+          _ when asyncState.hasValue => _DraftingBody(
+            state: asyncState.requireValue,
+          ),
+          _ when asyncState.hasError => Center(
             child: Text(
-              context.messages.dailyOsNextReconcileError(error.toString()),
+              context.messages.dailyOsNextGenericError,
               style: tokens.typography.styles.body.bodyMedium.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
               textAlign: TextAlign.center,
             ),
           ),
-          data: (state) => _DraftingBody(state: state),
-        ),
+          _ => const Center(child: CircularProgressIndicator()),
+        },
       ),
     );
   }

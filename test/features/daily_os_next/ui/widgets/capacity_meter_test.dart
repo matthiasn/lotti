@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -23,13 +24,15 @@ void main() {
       );
       await tester.pump();
 
-      final indicator = tester.widget<LinearProgressIndicator>(
-        find.byType(LinearProgressIndicator),
+      final indicator = tester.widget<DesignSystemProgressBar>(
+        find.byType(DesignSystemProgressBar),
       );
       expect(indicator.value, closeTo(315 / 480, 0.001));
     });
 
     testWidgets('clamps over-capacity progress to a full bar', (tester) async {
+      final semantics = tester.ensureSemantics();
+
       await tester.pumpWidget(
         _wrap(
           const Material(
@@ -39,10 +42,15 @@ void main() {
       );
       await tester.pump();
 
-      final indicator = tester.widget<LinearProgressIndicator>(
-        find.byType(LinearProgressIndicator),
+      final indicator = tester.widget<DesignSystemProgressBar>(
+        find.byType(DesignSystemProgressBar),
       );
       expect(indicator.value, 1);
+      expect(
+        tester.getSemantics(find.byType(DesignSystemProgressBar)).value,
+        '100%',
+      );
+      semantics.dispose();
     });
   });
 }

@@ -5592,6 +5592,12 @@ abstract class AppLocalizations {
   /// **'{minutes}m'**
   String dailyOsNextEstimateMinutes(int minutes);
 
+  /// No description provided for @dailyOsNextGenericError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Try again in a moment.'**
+  String get dailyOsNextGenericError;
+
   /// No description provided for @dailyOsNextGreetingAfternoon.
   ///
   /// In en, this message translates to:
@@ -5741,6 +5747,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep talking'**
   String get dailyOsNextRefineKeepTalking;
+
+  /// No description provided for @dailyOsNextRefineNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No plan changes came back. Reword it and try again.'**
+  String get dailyOsNextRefineNoChanges;
 
   /// No description provided for @dailyOsNextRefineOverline.
   ///

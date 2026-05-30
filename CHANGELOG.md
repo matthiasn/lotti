@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1011]
+### Changed
+- Daily OS Next refine-by-voice now opens as a responsive Wolt modal over the
+  current plan surface, and keeps the reviewed transcript visible with inline
+  feedback when a proposal fails or produces no usable changes.
+- Daily OS Next measures the date controls, Agenda/Day switcher, and header
+  actions before placing them, keeping the switcher inline whenever it fits and
+  moving it below only on truly constrained widths.
+
 ## [0.9.1010]
 ### Changed
 - Daily OS Next now personalizes the greeting from Settings > Advanced > About,
@@ -13,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   time rail, shows recorded journal time in the Actual lane, keeps task-backed
   agenda titles in sync, refreshes without whole-page loading flashes, and
   avoids surfacing weeks-old overdue tasks in daily proposals.
+- Daily OS Next agenda rows now use a cleaner mobile-first layout with task
+  cover art thumbnails, tighter metadata pills, token-backed progress, and
+  task-backed Day timeline blocks and task-report links that open the linked
+  task inside the app.
 - Daily OS Next drafting now carries approved new capture items into planning,
   counts buffers as scheduled time while excluding dropped blocks, and labels
   due/overdue work relative to the selected plan date.

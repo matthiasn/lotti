@@ -3,22 +3,28 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../widget_test_utils.dart';
 
-Widget _wrap(Widget child) => makeTestableWidgetNoScroll(
-  child,
-  mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
-);
+Widget _wrap(Widget child, {List<Override> overrides = const []}) =>
+    makeTestableWidgetNoScroll(
+      child,
+      overrides: overrides,
+      mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+    );
 
 const _category = DayAgentCategory(
   id: 'cat_work',
@@ -44,6 +50,25 @@ DraftPlan _draft({String? taskId}) {
         totalEstimateMinutes: 60,
       ),
     ],
+  );
+}
+
+JournalImage _image({String id = 'image-1'}) {
+  final now = DateTime(2026, 5, 26, 9);
+  return JournalImage(
+    meta: Metadata(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      dateFrom: now,
+      dateTo: now,
+    ),
+    data: ImageData(
+      imageId: 'image-data-$id',
+      imageFile: '$id.jpg',
+      imageDirectory: '/covers/',
+      capturedAt: now,
+    ),
   );
 }
 
@@ -118,6 +143,46 @@ void main() {
 
       expect(find.text('Renamed from task detail'), findsOneWidget);
       expect(find.text('Updated task title'), findsNothing);
+    });
+
+    testWidgets('passes linked task cover art through to agenda cards', (
+      tester,
+    ) async {
+      final updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final mocks = await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updates.stream);
+
+      final baseTask = TestTaskFactory.create(
+        id: 't1',
+        title: 'Task with cover art',
+      );
+      final task = baseTask.copyWith(
+        data: baseTask.data.copyWith(
+          coverArtId: 'image-1',
+          coverArtCropX: 0.25,
+        ),
+      );
+      when(() => mocks.journalDb.journalEntityById('t1')).thenAnswer(
+        (_) async => task,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          AgendaView(draft: _draft(taskId: 't1')),
+          overrides: [createEntryControllerOverride(_image())],
+        ),
+      );
+      await tester.pump();
+
+      final thumbnail = tester.widget<CoverArtThumbnail>(
+        find.byType(CoverArtThumbnail),
+      );
+      expect(thumbnail.imageId, 'image-1');
+      expect(thumbnail.cropX, 0.25);
     });
 
     testWidgets('comfortable capacity (< 90%) shows comfortable overline', (
@@ -279,7 +344,7 @@ void main() {
 
         // 90m of Work (dropped 60m excluded), 30m of Personal.
         expect(find.text('Work · 1h 30m'), findsOneWidget);
-        expect(find.text('Personal · 0h 30m'), findsOneWidget);
+        expect(find.text('Personal · 30m'), findsOneWidget);
       },
     );
 

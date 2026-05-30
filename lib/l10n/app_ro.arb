@@ -1620,6 +1620,7 @@
       }
     }
   },
+  "dailyOsNextGenericError": "Ceva nu a mers bine. Încercați din nou în câteva momente.",
   "dailyOsNextGreetingAfternoon": "Bună după-amiaza.",
   "dailyOsNextGreetingEvening": "Bună seara.",
   "dailyOsNextGreetingHi": "Salut 👋",
@@ -1653,6 +1654,7 @@
   "dailyOsNextRefineDiffDropped": "RENUNȚAT",
   "dailyOsNextRefineDiffMoved": "MUTAT",
   "dailyOsNextRefineKeepTalking": "Continuă să vorbești",
+  "dailyOsNextRefineNoChanges": "Nu au venit modificări ale planului. Reformulați și încercați din nou.",
   "dailyOsNextRefineOverline": "🎤 REGLARE",
   "dailyOsNextRefineRevert": "Anulează",
   "dailyOsNextRefineStatusAccepted": "Fixat.",

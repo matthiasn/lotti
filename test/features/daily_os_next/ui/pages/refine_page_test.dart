@@ -1,5 +1,6 @@
 // ignore_for_file: cascade_invocations
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -62,11 +63,15 @@ PlanDiff _diffWithTwoChanges(DraftPlan plan) => PlanDiff(
 /// Recording agent: returns canned diff/plan responses and remembers
 /// the args the controller passed in so tests can assert on them.
 class _RecordingAgent implements DayAgentInterface {
-  _RecordingAgent({required this.diff, DraftPlan? acceptedPlan})
-    : acceptedPlan = acceptedPlan ?? diff.updatedPlan;
+  _RecordingAgent({
+    required this.diff,
+    DraftPlan? acceptedPlan,
+    this.proposeError,
+  }) : acceptedPlan = acceptedPlan ?? diff.updatedPlan;
 
   final PlanDiff diff;
   final DraftPlan acceptedPlan;
+  final Error? proposeError;
 
   PlanDiff? capturedDiff;
   String? proposedTranscript;
@@ -83,6 +88,8 @@ class _RecordingAgent implements DayAgentInterface {
   }) async {
     proposeCount++;
     proposedTranscript = voiceTranscript;
+    final error = proposeError;
+    if (error != null) throw error;
     return diff;
   }
 
@@ -349,6 +356,91 @@ void main() {
       },
     );
 
+    testWidgets('empty proposal keeps review open and explains no changes', (
+      tester,
+    ) async {
+      final draft = _emptyPlan();
+      final agent = _RecordingAgent(
+        diff: PlanDiff(
+          id: 'diff_empty',
+          transcript: 'make it lighter',
+          changes: const [],
+          updatedPlan: draft,
+        ),
+      );
+      await tester.pumpWidget(
+        _wrap(
+          RefinePage(draft: draft),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+
+      final notifier = _readNotifier(tester, draft);
+      notifier.reviewTranscript('make it lighter');
+      await tester.pump();
+
+      final messages = tester.element(find.byType(RefinePage)).messages;
+      await _tap(
+        tester,
+        find.widgetWithText(
+          FilledButton,
+          messages.dailyOsNextRefineTitle,
+        ),
+      );
+
+      expect(find.byType(DiffRow), findsNothing);
+      expect(find.text(messages.dailyOsNextRefineNoChanges), findsOneWidget);
+      expect(
+        find.byKey(const Key('daily_os_refine_transcript_editor')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'proposal failure keeps review open and surfaces the localized error',
+      (tester) async {
+        final previousOnError = FlutterError.onError;
+        final reportedErrors = <FlutterErrorDetails>[];
+        FlutterError.onError = reportedErrors.add;
+        addTearDown(() => FlutterError.onError = previousOnError);
+
+        final draft = _emptyPlan();
+        final agent = _RecordingAgent(
+          diff: _diffWithTwoChanges(draft),
+          proposeError: StateError('proposal exploded'),
+        );
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        final notifier = _readNotifier(tester, draft);
+        notifier.reviewTranscript('move the workout earlier');
+        await tester.pump();
+
+        final messages = tester.element(find.byType(RefinePage)).messages;
+        await _tap(
+          tester,
+          find.widgetWithText(
+            FilledButton,
+            messages.dailyOsNextRefineTitle,
+          ),
+        );
+
+        expect(reportedErrors, isNotEmpty);
+        expect(find.text(messages.dailyOsNextGenericError), findsOneWidget);
+        expect(find.textContaining('proposal exploded'), findsNothing);
+        expect(
+          find.byKey(const Key('daily_os_refine_transcript_editor')),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('diffReady renders one DiffRow per change + action buttons', (
       tester,
     ) async {
@@ -608,6 +700,111 @@ void main() {
       final messages = tester.element(find.byType(RefinePage)).messages;
       expect(find.text(messages.dailyOsNextRefineStatusIdle), findsOneWidget);
       expect(find.byType(LiveWaveform), findsNothing);
+    });
+  });
+
+  group('showRefineModal', () {
+    testWidgets('opens modal content over the current surface', (tester) async {
+      final draft = _emptyPlan();
+      await tester.pumpWidget(
+        _wrap(
+          Scaffold(
+            body: Builder(
+              builder: (context) {
+                return Column(
+                  children: [
+                    const Text('Daily surface behind modal'),
+                    ElevatedButton(
+                      onPressed: () {
+                        unawaited(
+                          showRefineModal(context: context, draft: draft),
+                        );
+                      },
+                      child: const Text('Open refine'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Open refine'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      final messages = tester.element(find.byType(RefineModalContent)).messages;
+      expect(find.text('Daily surface behind modal'), findsOneWidget);
+      expect(find.byType(RefineModalContent), findsOneWidget);
+      expect(find.text(messages.dailyOsNextRefineTitle), findsOneWidget);
+      expect(find.byType(RefinePage), findsNothing);
+    });
+
+    testWidgets('returns the accepted plan when modal content accepts a diff', (
+      tester,
+    ) async {
+      final draft = _emptyPlan();
+      final acceptedPlan = draft.copyWith(scheduledMinutes: 42);
+      final diff = PlanDiff(
+        id: 'diff_modal',
+        transcript: 'move one thing',
+        changes: const [
+          PlanDiffChange(
+            id: 'chg_modal',
+            kind: PlanDiffChangeKind.moved,
+            title: 'Move one thing',
+            category: _category,
+            reason: 'one change resolves the modal',
+            affectedBlockId: 'blk_1',
+          ),
+        ],
+        updatedPlan: acceptedPlan,
+      );
+      final agent = _RecordingAgent(diff: diff, acceptedPlan: acceptedPlan);
+      DraftPlan? result;
+
+      await tester.pumpWidget(
+        _wrap(
+          Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () async {
+                    result = await showRefineModal(
+                      context: context,
+                      draft: draft,
+                    );
+                  },
+                  child: const Text('Open refine'),
+                );
+              },
+            ),
+          ),
+          overrides: [dayAgentProvider.overrideWithValue(agent)],
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Open refine'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      final element = tester.element(find.byType(RefineModalContent));
+      final container = ProviderScope.containerOf(element);
+      final notifier = container.read(
+        refineControllerProvider(draft).notifier,
+      );
+      await notifier.finishWithTranscript('move one thing');
+      await tester.pump();
+
+      final messages = element.messages;
+      await _tap(tester, find.text(messages.dailyOsNextRefineAccept));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(result?.scheduledMinutes, 42);
+      expect(find.byType(RefineModalContent), findsNothing);
     });
   });
 

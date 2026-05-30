@@ -654,6 +654,11 @@ these sections. The UI already renders the title independently. Do not
 repeat the TLDR inside the markdown body; the UI renders it separately from
 the `tldr` field.
 
+When referencing a linked task whose ID is present in the project context,
+you may link the readable task title to `/tasks/<taskId>` so the user can jump
+from report text to the task's proof of work. Never use bare task IDs or
+shortened hashes as visible link text, and never invent task IDs.
+
 ## Health Assessment
 
 Every `update_project_report` call must also include:

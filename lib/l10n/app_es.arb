@@ -1620,6 +1620,7 @@
       }
     }
   },
+  "dailyOsNextGenericError": "Algo salió mal. Inténtalo de nuevo en un momento.",
   "dailyOsNextGreetingAfternoon": "Buenas tardes.",
   "dailyOsNextGreetingEvening": "Buenas noches.",
   "dailyOsNextGreetingHi": "Hola 👋",
@@ -1653,6 +1654,7 @@
   "dailyOsNextRefineDiffDropped": "DESCARTADO",
   "dailyOsNextRefineDiffMoved": "MOVIDO",
   "dailyOsNextRefineKeepTalking": "Seguir hablando",
+  "dailyOsNextRefineNoChanges": "No llegaron cambios del plan. Reformúlalo e inténtalo de nuevo.",
   "dailyOsNextRefineOverline": "🎤 REFINAMIENTO",
   "dailyOsNextRefineRevert": "Deshacer",
   "dailyOsNextRefineStatusAccepted": "Confirmado.",

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -74,6 +76,69 @@ void main() {
 
       verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
     });
+
+    test('routes app-local task paths through NavService', () async {
+      getIt.pushNewScope();
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() async {
+        await getIt.resetScope();
+        await getIt.popScope();
+      });
+
+      await handleMarkdownLinkTap('/tasks/task-123', 'Task');
+
+      verify(() => mockNavService.beamToNamed('/tasks/task-123')).called(1);
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test('ignores bare relative paths instead of routing them', () async {
+      getIt.pushNewScope();
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() async {
+        await getIt.resetScope();
+        await getIt.popScope();
+      });
+
+      await handleMarkdownLinkTap('tasks/task-123', 'Task');
+
+      verifyNever(() => mockNavService.beamToNamed(any()));
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test('routes lotti task URLs through NavService', () async {
+      getIt.pushNewScope();
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() async {
+        await getIt.resetScope();
+        await getIt.popScope();
+      });
+
+      await handleMarkdownLinkTap('lotti://tasks/task-456', 'Task');
+
+      verify(() => mockNavService.beamToNamed('/tasks/task-456')).called(1);
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test(
+      'routes lotti URLs with a path but no host through NavService',
+      () async {
+        getIt.pushNewScope();
+        final mockNavService = MockNavService();
+        getIt.registerSingleton<NavService>(mockNavService);
+        addTearDown(() async {
+          await getIt.resetScope();
+          await getIt.popScope();
+        });
+
+        await handleMarkdownLinkTap('lotti:/tasks/task-789', 'Task');
+
+        verify(() => mockNavService.beamToNamed('/tasks/task-789')).called(1);
+        verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+      },
+    );
 
     test('handles URL with special characters', () async {
       when(
@@ -182,6 +247,29 @@ void main() {
       verify(
         () => mockUrlLauncher.launchUrl('https://example.com', any()),
       ).called(1);
+    });
+
+    testWidgets('tapping app-local task link routes inside the app', (
+      tester,
+    ) async {
+      getIt.pushNewScope();
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() async {
+        await getIt.resetScope();
+        await getIt.popScope();
+      });
+
+      await _pumpMarkdownLink(
+        tester,
+        text: 'Open task',
+        url: '/tasks/task-789',
+      );
+
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+
+      verify(() => mockNavService.beamToNamed('/tasks/task-789')).called(1);
     });
   });
 }

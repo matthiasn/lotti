@@ -1429,6 +1429,7 @@
       }
     }
   },
+  "dailyOsNextGenericError": "Něco se pokazilo. Zkus to za chvíli znovu.",
   "dailyOsNextGreetingAfternoon": "Dobré odpoledne.",
   "dailyOsNextGreetingEvening": "Dobrý večer.",
   "dailyOsNextGreetingHi": "Ahoj 👋",
@@ -1462,6 +1463,7 @@
   "dailyOsNextRefineDiffDropped": "ODSTRANĚNO",
   "dailyOsNextRefineDiffMoved": "PŘESUNUTO",
   "dailyOsNextRefineKeepTalking": "Mluv dál",
+  "dailyOsNextRefineNoChanges": "Nevrátily se žádné změny plánu. Zkus to přeformulovat a znovu odeslat.",
   "dailyOsNextRefineOverline": "🎤 ÚPRAVA",
   "dailyOsNextRefineRevert": "Vrátit",
   "dailyOsNextRefineStatusAccepted": "Uzamčeno.",

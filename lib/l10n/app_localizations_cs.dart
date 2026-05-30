@@ -3321,6 +3321,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextGenericError =>
+      'Něco se pokazilo. Zkus to za chvíli znovu.';
+
+  @override
   String get dailyOsNextGreetingAfternoon => 'Dobré odpoledne.';
 
   @override
@@ -3401,6 +3405,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextRefineKeepTalking => 'Mluv dál';
+
+  @override
+  String get dailyOsNextRefineNoChanges =>
+      'Nevrátily se žádné změny plánu. Zkus to přeformulovat a znovu odeslat.';
 
   @override
   String get dailyOsNextRefineOverline => '🎤 ÚPRAVA';
