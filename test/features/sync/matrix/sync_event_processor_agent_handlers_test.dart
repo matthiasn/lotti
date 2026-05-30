@@ -713,6 +713,40 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
       });
+
+      // Equal-timestamp link cases — exercise the canonical vector-clock
+      // tiebreak on the link path, mirroring the entity cases above.
+      test('equal updatedAt: a greater incoming link clock wins', () async {
+        when(() => mockAgentRepo.getLinkById('link-cc')).thenAnswer(
+          (_) async => linkWith(
+            vectorClock: vcLosesTie,
+            updatedAt: DateTime(2024, 3, 15),
+          ),
+        );
+        final incoming = linkWith(
+          vectorClock: vcWinsTie,
+          updatedAt: DateTime(2024, 3, 15),
+        );
+
+        await processLink(incoming);
+
+        verify(() => mockAgentRepo.upsertLink(incoming)).called(1);
+      });
+
+      test('equal updatedAt: a greater local link clock is kept', () async {
+        when(() => mockAgentRepo.getLinkById('link-cc')).thenAnswer(
+          (_) async => linkWith(
+            vectorClock: vcWinsTie,
+            updatedAt: DateTime(2024, 3, 15),
+          ),
+        );
+
+        await processLink(
+          linkWith(vectorClock: vcLosesTie, updatedAt: DateTime(2024, 3, 15)),
+        );
+
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+      });
     });
 
     test(
