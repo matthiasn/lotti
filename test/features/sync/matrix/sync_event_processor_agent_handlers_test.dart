@@ -557,6 +557,164 @@ void main() {
       ).called(1);
     });
 
+    group('concurrent-branch LWW resolution', () {
+      // Two concurrent clocks (each leads on a different host). In canonical
+      // host order `host-A` sorts first, so `vcWinsTie` (greater on host-A) is
+      // the deterministic winner whenever updatedAt ties.
+      const vcWinsTie = VectorClock({'host-A': 2, 'host-B': 1});
+      const vcLosesTie = VectorClock({'host-A': 1, 'host-B': 2});
+
+      AgentDomainEntity stateWith({
+        required VectorClock vectorClock,
+        required DateTime updatedAt,
+      }) => AgentDomainEntity.agentState(
+        id: 'state-cc',
+        agentId: 'agent-1',
+        revision: 1,
+        slots: const AgentSlots(),
+        updatedAt: updatedAt,
+        vectorClock: vectorClock,
+      );
+
+      AgentLink linkWith({
+        required VectorClock vectorClock,
+        required DateTime updatedAt,
+      }) => AgentLink.basic(
+        id: 'link-cc',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: DateTime(2024, 3),
+        updatedAt: updatedAt,
+        vectorClock: vectorClock,
+      );
+
+      Future<void> processEntity(AgentDomainEntity incoming) async {
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+        await processor.process(event: event, journalDb: journalDb);
+      }
+
+      Future<void> processLink(AgentLink incoming) async {
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentLink(
+              agentLink: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+        await processor.process(event: event, journalDb: journalDb);
+      }
+
+      test('applies incoming entity when its updatedAt is newer', () async {
+        when(() => mockAgentRepo.getEntity('state-cc')).thenAnswer(
+          (_) async => stateWith(
+            vectorClock: vcWinsTie,
+            updatedAt: DateTime(2024, 3, 15),
+          ),
+        );
+        final incoming = stateWith(
+          vectorClock: vcLosesTie,
+          updatedAt: DateTime(2024, 3, 16),
+        );
+
+        await processEntity(incoming);
+
+        // LWW: newer updatedAt wins even though the local clock is canonically
+        // greater.
+        verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
+      });
+
+      test('keeps local entity when its updatedAt is newer', () async {
+        when(() => mockAgentRepo.getEntity('state-cc')).thenAnswer(
+          (_) async => stateWith(
+            vectorClock: vcLosesTie,
+            updatedAt: DateTime(2024, 3, 16),
+          ),
+        );
+
+        await processEntity(
+          stateWith(vectorClock: vcWinsTie, updatedAt: DateTime(2024, 3, 15)),
+        );
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      });
+
+      // The next two feed the SAME concurrent pair from both device
+      // perspectives on an equal timestamp: the canonically-greater version
+      // wins whether it is the incoming payload or the already-stored row —
+      // i.e. both devices converge on the same winner.
+      test('equal updatedAt: a greater incoming clock is applied', () async {
+        when(() => mockAgentRepo.getEntity('state-cc')).thenAnswer(
+          (_) async => stateWith(
+            vectorClock: vcLosesTie,
+            updatedAt: DateTime(2024, 3, 15),
+          ),
+        );
+        final incoming = stateWith(
+          vectorClock: vcWinsTie,
+          updatedAt: DateTime(2024, 3, 15),
+        );
+
+        await processEntity(incoming);
+
+        verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
+      });
+
+      test('equal updatedAt: a greater local clock is kept', () async {
+        when(() => mockAgentRepo.getEntity('state-cc')).thenAnswer(
+          (_) async => stateWith(
+            vectorClock: vcWinsTie,
+            updatedAt: DateTime(2024, 3, 15),
+          ),
+        );
+
+        await processEntity(
+          stateWith(vectorClock: vcLosesTie, updatedAt: DateTime(2024, 3, 15)),
+        );
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      });
+
+      test('applies incoming link when its updatedAt is newer', () async {
+        when(() => mockAgentRepo.getLinkById('link-cc')).thenAnswer(
+          (_) async => linkWith(
+            vectorClock: vcWinsTie,
+            updatedAt: DateTime(2024, 3, 15),
+          ),
+        );
+        final incoming = linkWith(
+          vectorClock: vcLosesTie,
+          updatedAt: DateTime(2024, 3, 16),
+        );
+
+        await processLink(incoming);
+
+        verify(() => mockAgentRepo.upsertLink(incoming)).called(1);
+      });
+
+      test('keeps local link when its updatedAt is newer', () async {
+        when(() => mockAgentRepo.getLinkById('link-cc')).thenAnswer(
+          (_) async => linkWith(
+            vectorClock: vcLosesTie,
+            updatedAt: DateTime(2024, 3, 16),
+          ),
+        );
+
+        await processLink(
+          linkWith(vectorClock: vcWinsTie, updatedAt: DateTime(2024, 3, 15)),
+        );
+
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+      });
+    });
+
     test(
       'no-ops a legacy SyncAgentBundle envelope so the marker advances; '
       'children recover via the per-entity / per-link backfill path',
