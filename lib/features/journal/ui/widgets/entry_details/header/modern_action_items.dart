@@ -16,8 +16,8 @@ import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -324,12 +324,12 @@ void _captureMediaFileActionException(
   Object error,
   StackTrace stackTrace,
 ) {
-  if (getIt.isRegistered<LoggingService>()) {
-    getIt<LoggingService>().captureException(
+  if (getIt.isRegistered<DomainLogger>()) {
+    getIt<DomainLogger>().error(
+      LogDomain.persistence,
       error,
-      domain: 'journal',
-      subDomain: 'show_in_file_manager',
       stackTrace: stackTrace,
+      subDomain: 'show_in_file_manager',
     );
   }
 }

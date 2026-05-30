@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -249,7 +250,7 @@ InboundQueueEntry _buildEntry({
 void main() {
   late _MockSyncEventProcessor processor;
   late JournalDb journalDb;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late MockRoom room;
 
   setUpAll(() {
@@ -261,7 +262,7 @@ void main() {
   setUp(() {
     processor = _MockSyncEventProcessor();
     journalDb = JournalDb(inMemoryDatabase: true);
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     room = MockRoom();
     when(() => room.id).thenReturn('!r:example.org');
   });
@@ -284,7 +285,7 @@ void main() {
     (scenario) async {
       final localProcessor = _MockSyncEventProcessor();
       final localJournalDb = JournalDb(inMemoryDatabase: true);
-      final localLogging = MockLoggingService();
+      final localLogging = MockDomainLogger();
       final localRoom = MockRoom();
       when(() => localRoom.id).thenReturn('!r:example.org');
       final entry = _buildEntry(
@@ -483,11 +484,11 @@ void main() {
       final outcome = await build().bind()(entry, room);
       expect(outcome, ApplyOutcome.permanentSkip);
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).called(1);
     },

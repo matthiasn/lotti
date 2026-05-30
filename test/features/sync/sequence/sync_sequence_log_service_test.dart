@@ -816,7 +816,7 @@ class _RealSequenceLogTestBench {
       background: false,
     );
     final vcService = MockVectorClockService();
-    final logging = MockLoggingService();
+    final logging = MockDomainLogger();
     final bench = _RealSequenceLogTestBench._(
       database: database,
       service: SyncSequenceLogService(
@@ -831,18 +831,18 @@ class _RealSequenceLogTestBench {
 
     when(vcService.getHost).thenAnswer((_) async => myHostId);
     when(
-      () => logging.captureEvent(
+      () => logging.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
     when(
-      () => logging.captureException(
+      () => logging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -873,7 +873,7 @@ void main() {
 
   late MockSyncDatabase mockDb;
   late MockVectorClockService mockVcService;
-  late MockLoggingService mockLogging;
+  late MockDomainLogger mockLogging;
   late SyncSequenceLogService service;
 
   const myHostId = 'my-host-uuid';
@@ -898,13 +898,13 @@ void main() {
   setUp(() {
     mockDb = MockSyncDatabase();
     mockVcService = MockVectorClockService();
-    mockLogging = MockLoggingService();
+    mockLogging = MockDomainLogger();
 
     when(() => mockVcService.getHost()).thenAnswer((_) async => myHostId);
     when(
-      () => mockLogging.captureEvent(
+      () => mockLogging.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
@@ -1764,9 +1764,9 @@ void main() {
 
       // Verify backfill arrival was logged
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(that: contains('backfilled hostId=$aliceHostId')),
-          domain: LogDomains.sync,
           subDomain: 'sequence.backfillArrived',
         ),
       ).called(1);
@@ -1927,9 +1927,9 @@ void main() {
 
       // Verify non-originator backfill arrival was logged
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(that: contains('backfilled (non-originator)')),
-          domain: LogDomains.sync,
           subDomain: 'sequence.backfillArrived',
         ),
       ).called(1);
@@ -2025,9 +2025,9 @@ void main() {
 
       // Verify large gap was logged
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(that: contains('largeGapDetected')),
-          domain: LogDomains.sync,
           subDomain: 'sequence.largeGap',
         ),
       ).called(1);
@@ -2098,9 +2098,9 @@ void main() {
       expect(inserted[2], hasLength(7));
 
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(that: contains('extremeGapDetected')),
-          domain: LogDomains.sync,
           subDomain: 'sequence.extremeGap',
         ),
       ).called(1);
@@ -2181,9 +2181,9 @@ void main() {
 
       // Should NOT log largeGapDetected
       verifyNever(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(that: contains('largeGapDetected')),
-          domain: LogDomains.sync,
           subDomain: 'sequence.largeGap',
         ),
       );
@@ -2244,9 +2244,9 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
         when(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenReturn(null);
@@ -2272,9 +2272,9 @@ void main() {
         // incoming event dominated desktop log volume on hosts with a
         // permanent pre-history gap without adding new signal.
         verifyNever(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(that: contains('largeGapDetected')),
-            domain: LogDomains.sync,
             subDomain: 'sequence.largeGap',
           ),
         );
@@ -2334,9 +2334,9 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
         when(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenReturn(null);
@@ -2354,23 +2354,23 @@ void main() {
           () => mockDb.batchInsertSequenceEntries(any()),
         );
         verifyNever(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(that: contains('largeGapDetected')),
-            domain: LogDomains.sync,
             subDomain: 'sequence.largeGap',
           ),
         );
         verifyNever(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(that: contains('extremeGapDetected')),
-            domain: LogDomains.sync,
             subDomain: 'sequence.extremeGap',
           ),
         );
         verifyNever(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(that: contains('gapDetectedRange')),
-            domain: LogDomains.sync,
             subDomain: 'sequence.gapDetected',
           ),
         );
@@ -2447,9 +2447,9 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
         when(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenReturn(null);
@@ -2523,9 +2523,9 @@ void main() {
 
       // Should log that we skipped gap detection for charlie
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(that: contains('skipGapDetection')),
-          domain: LogDomains.sync,
           subDomain: 'sequence.skipGap',
         ),
       ).called(1);
@@ -2671,9 +2671,9 @@ void main() {
 
         // Should log skipGapDetection for charlie
         verify(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(that: contains('skipGapDetection')),
-            domain: LogDomains.sync,
             subDomain: 'sequence.skipGap',
           ),
         ).called(1);
@@ -3479,9 +3479,9 @@ void main() {
       await service.resetRequestCounts(entries);
 
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(that: contains('reset 2 entries')),
-          domain: LogDomains.sync,
           subDomain: 'sequence.reRequest',
         ),
       ).called(1);
@@ -4990,9 +4990,9 @@ void main() {
       );
 
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(that: contains('markCoveredCountersAsReceived')),
-          domain: LogDomains.sync,
           subDomain: 'sequence.coveredClocks',
         ),
       ).called(1);
@@ -5210,9 +5210,9 @@ void main() {
       await service.resetUnresolvableEntries();
 
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(that: contains('reset 5 entries')),
-          domain: LogDomains.sync,
           subDomain: 'sequence.resetUnresolvable',
         ),
       ).called(1);
@@ -5226,9 +5226,9 @@ void main() {
       await service.resetUnresolvableEntries();
 
       verifyNever(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(),
-          domain: LogDomains.sync,
           subDomain: 'sequence.resetUnresolvable',
         ),
       );
@@ -5245,9 +5245,9 @@ void main() {
           () => mockDb.resetAllUnresolvableEntries(),
         ).thenAnswer((_) async => 13);
         when(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenReturn(null);
@@ -5257,9 +5257,9 @@ void main() {
         expect(count, 13);
         verify(() => mockDb.resetAllUnresolvableEntries()).called(1);
         verify(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(that: contains('reset 13 entries')),
-            domain: LogDomains.sync,
             subDomain: 'sequence.resetAllUnresolvable',
           ),
         ).called(1);
@@ -5274,9 +5274,9 @@ void main() {
       await service.resetAllUnresolvableEntries();
 
       verifyNever(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(),
-          domain: LogDomains.sync,
           subDomain: 'sequence.resetAllUnresolvable',
         ),
       );
@@ -5365,9 +5365,9 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
         when(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenReturn(null);
@@ -5390,9 +5390,9 @@ void main() {
           ),
         ).thenAnswer((_) async => 12);
         when(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenReturn(null);
@@ -5401,9 +5401,9 @@ void main() {
 
         expect(count, 12);
         verify(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(that: contains('retired 12 entries')),
-            domain: LogDomains.sync,
             subDomain: 'sequence.retireExhausted',
           ),
         ).called(1);
@@ -5464,9 +5464,9 @@ void main() {
       await service.retireExhaustedRequestedEntries();
 
       verifyNever(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(),
-          domain: LogDomains.sync,
           subDomain: 'sequence.retireExhausted',
         ),
       );
@@ -5503,9 +5503,9 @@ void main() {
           ),
         ).thenAnswer((_) async => 9);
         when(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenReturn(null);
@@ -5513,9 +5513,9 @@ void main() {
         await service.retireAgedOutRequestedEntries();
 
         verify(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(that: contains('retired 9 entries')),
-            domain: LogDomains.sync,
             subDomain: 'sequence.retireAgedOut',
           ),
         ).called(1);
@@ -5532,9 +5532,9 @@ void main() {
       await service.retireAgedOutRequestedEntries();
 
       verifyNever(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(),
-          domain: LogDomains.sync,
           subDomain: 'sequence.retireAgedOut',
         ),
       );
@@ -6175,11 +6175,11 @@ void main() {
         }
 
         verify(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(
               that: contains('markOwnCounterUnresolvable skipped'),
             ),
-            domain: LogDomains.sync,
             subDomain: 'sequence.ownUnresolvable',
           ),
         ).called(3);
@@ -6199,7 +6199,8 @@ void main() {
 
       expect(counters, [4, 9]);
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(
             that: allOf(
               contains('reservedCountersForHost hostId=$aliceHostId'),
@@ -6207,7 +6208,6 @@ void main() {
               contains('counters=[4, 9]'),
             ),
           ),
-          domain: LogDomains.sync,
           subDomain: 'sequence.reservedCounters',
         ),
       ).called(1);
@@ -6224,7 +6224,8 @@ void main() {
 
       expect(counters, [7, 12]);
       verify(
-        () => mockLogging.captureEvent(
+        () => mockLogging.log(
+          LogDomain.sync,
           any<String>(
             that: allOf(
               contains('burnPendingCountersForHost hostId=$aliceHostId'),
@@ -6232,7 +6233,6 @@ void main() {
               contains('counters=[7, 12]'),
             ),
           ),
-          domain: LogDomains.sync,
           subDomain: 'sequence.burnPendingCounters',
         ),
       ).called(1);
@@ -6247,7 +6247,7 @@ void main() {
         final mockDomainLogger = MockDomainLogger();
         when(
           () => mockDomainLogger.log(
-            any<String>(),
+            any<LogDomain>(),
             any<String>(),
             subDomain: any<String>(named: 'subDomain'),
             level: any<InsightLevel>(named: 'level'),
@@ -6270,7 +6270,7 @@ void main() {
 
         verify(
           () => mockDomainLogger.log(
-            LogDomains.sync,
+            LogDomain.sync,
             any<String>(
               that: contains('resetUnresolvableEntries: reset 3 entries'),
             ),
@@ -6278,11 +6278,11 @@ void main() {
           ),
         ).called(1);
         verifyNever(
-          () => mockLogging.captureEvent(
+          () => mockLogging.log(
+            LogDomain.sync,
             any<String>(
               that: contains('resetUnresolvableEntries: reset 3 entries'),
             ),
-            domain: LogDomains.sync,
             subDomain: 'sequence.resetUnresolvable',
           ),
         );

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -1405,30 +1405,30 @@ data: [DONE]
       const model = 'magistral-medium-2509';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
-      late MockLoggingService mockLoggingService;
+      late MockDomainLogger mockDomainLogger;
 
       setUp(() {
-        mockLoggingService = MockLoggingService();
-        if (GetIt.instance.isRegistered<LoggingService>()) {
-          GetIt.instance.unregister<LoggingService>();
+        mockDomainLogger = MockDomainLogger();
+        if (GetIt.instance.isRegistered<DomainLogger>()) {
+          GetIt.instance.unregister<DomainLogger>();
         }
-        GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
+        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
       });
 
       tearDown(() {
-        if (GetIt.instance.isRegistered<LoggingService>()) {
-          GetIt.instance.unregister<LoggingService>();
+        if (GetIt.instance.isRegistered<DomainLogger>()) {
+          GetIt.instance.unregister<DomainLogger>();
         }
       });
 
       test('should log exception on unexpected error', () async {
         // Arrange
         when(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String?>(named: 'subDomain'),
           ),
         ).thenReturn(null);
 
@@ -1456,11 +1456,11 @@ data: [DONE]
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
             any<Object>(that: isA<StateError>()),
-            domain: 'MISTRAL',
-            subDomain: 'unexpected',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'unexpected',
           ),
         ).called(1);
       });

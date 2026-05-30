@@ -7,7 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -21,13 +21,13 @@ void main() {
 
   late MockJournalDb mockDb;
   late MockLabelsRepository mockRepo;
-  late MockLoggingService mockLogging;
+  late MockDomainLogger mockLogging;
   late LabelAssignmentProcessor processor;
 
   setUp(() {
     mockDb = MockJournalDb();
     mockRepo = MockLabelsRepository();
-    mockLogging = MockLoggingService();
+    mockLogging = MockDomainLogger();
 
     when(
       () => mockRepo.addLabels(
@@ -54,7 +54,7 @@ void main() {
 
     // Register mocks that LabelAssignmentProcessor may access indirectly
     getIt
-      ..registerSingleton<LoggingService>(mockLogging)
+      ..registerSingleton<DomainLogger>(mockLogging)
       ..registerSingleton<JournalDb>(mockDb);
 
     processor = LabelAssignmentProcessor(
@@ -88,12 +88,11 @@ void main() {
 
       // Assert captureEvent was called with JSON containing the fields
       final captured = verify(
-        () => mockLogging.captureEvent(
-          captureAny<dynamic>(),
-          domain: captureAny(named: 'domain'),
+        () => mockLogging.log(
+          any<LogDomain>(),
+          captureAny<String>(),
           subDomain: captureAny(named: 'subDomain'),
           level: any(named: 'level'),
-          type: any(named: 'type'),
         ),
       ).captured;
       expect(captured, isNotEmpty);

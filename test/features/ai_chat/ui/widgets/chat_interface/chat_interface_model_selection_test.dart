@@ -13,6 +13,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   setUp(() {
@@ -46,6 +47,7 @@ void main() {
 
     // Register GetIt services used by providers
     GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
+    ensureDomainLoggerRegistered();
 
     final provider = AiConfigInferenceProvider(
       id: 'prov-g',

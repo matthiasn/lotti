@@ -2,10 +2,9 @@ import 'dart:async';
 
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
-const _logDomain = 'sync';
 const _logSub = 'queue.bootstrap';
 
 /// [BootstrapSink] implementation that forwards each paginated page to
@@ -35,7 +34,7 @@ class QueueBootstrapSink implements BootstrapSink {
   }
 
   final InboundQueue _queue;
-  final LoggingService _logging;
+  final DomainLogger _logging;
   final int highWater;
   final Duration backPressureTimeout;
   final Future<void>? _cancelSignal;
@@ -56,7 +55,8 @@ class QueueBootstrapSink implements BootstrapSink {
     final enqueue = await _queue.appendBootstrapPage(events);
     _lastAcceptedCount = enqueue.accepted;
 
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.bootstrap.page '
       'page=${info.pageIndex} '
       'pageSize=${events.length} '
@@ -68,18 +68,17 @@ class QueueBootstrapSink implements BootstrapSink {
       'oldestTs=${info.oldestTimestampSoFar} '
       'serverHasMore=${info.serverHasMore} '
       'elapsedMs=${info.elapsed.inMilliseconds}',
-      domain: _logDomain,
       subDomain: _logSub,
     );
 
     try {
       await _waitForDrain();
     } on TimeoutException {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.bootstrap.backPressureTimeout '
         'timeoutMs=${backPressureTimeout.inMilliseconds} '
         'page=${info.pageIndex}',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       // Timing out on back-pressure is a "worker wedged" signal.

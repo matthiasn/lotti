@@ -14,7 +14,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -27,7 +26,7 @@ void main() {
   late MockVectorClockService mockVectorClock;
   late MockUpdateNotifications mockNotifications;
   late MockOutboxService mockOutbox;
-  late MockLoggingService mockLogging;
+  late MockDomainLogger mockDomainLogger;
 
   const testTimeEntryId = 'time-entry-1';
   final testDate = DateTime(2024, 3, 15, 10);
@@ -87,7 +86,7 @@ void main() {
     mockVectorClock = MockVectorClockService();
     mockNotifications = MockUpdateNotifications();
     mockOutbox = MockOutboxService();
-    mockLogging = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
 
     getIt
       ..registerSingleton<JournalDb>(mockDb)
@@ -95,7 +94,7 @@ void main() {
       ..registerSingleton<VectorClockService>(mockVectorClock)
       ..registerSingleton<UpdateNotifications>(mockNotifications)
       ..registerSingleton<OutboxService>(mockOutbox)
-      ..registerSingleton<LoggingService>(mockLogging);
+      ..registerSingleton<DomainLogger>(mockDomainLogger);
 
     repository = RatingRepository();
   });
@@ -386,11 +385,11 @@ void main() {
           ),
         ).thenThrow(Exception('DB error'));
         when(
-          () => mockLogging.captureException(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).thenAnswer((_) async {});
 
@@ -401,11 +400,11 @@ void main() {
 
         expect(result, isNull);
         verify(
-          () => mockLogging.captureException(
-            any<dynamic>(),
-            domain: 'RatingRepository',
+          () => mockDomainLogger.error(
+            LogDomain.ratings,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'createOrUpdateRating',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -524,13 +523,16 @@ void main() {
         ).thenAnswer((_) async {});
         when(
           () => mockDomainLogger.error(
-            any<String>(),
-            any<String>(),
-            error: any<dynamic>(named: 'error'),
+            any<LogDomain>(),
+            any<Object>(),
+            message: any<String>(named: 'message'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenReturn(null);
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
+        }
         getIt
           ..registerSingleton<SyncSequenceLogService>(mockSequenceLog)
           ..registerSingleton<DomainLogger>(mockDomainLogger);
@@ -600,11 +602,12 @@ void main() {
           expect(result, isA<RatingEntry>());
           verify(
             () => mockDomainLogger.error(
-              LogDomains.sync,
-              any<String>(
+              LogDomain.sync,
+              any<Object>(),
+              message: any<String>(
+                named: 'message',
                 that: contains('sequence record failed after rating link'),
               ),
-              error: any<dynamic>(named: 'error'),
               stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: '_createRatingLink.recordSent',
             ),
@@ -685,11 +688,11 @@ void main() {
 
           expect(result, isNull);
           verify(
-            () => mockLogging.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.ratings,
               any<Object>(),
-              domain: 'RatingRepository',
-              subDomain: '_createRating.linkCleanup',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: '_createRating.linkCleanup',
             ),
           ).called(1);
           // _softDeleteEntity issued the compensating updateDbEntity with a
@@ -722,11 +725,11 @@ void main() {
 
           expect(result, isNull);
           verify(
-            () => mockLogging.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.ratings,
               any<Object>(),
-              domain: 'RatingRepository',
-              subDomain: '_softDeleteEntity',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: '_softDeleteEntity',
             ),
           ).called(1);
         },
@@ -747,13 +750,16 @@ void main() {
           ).thenAnswer((_) async {});
           when(
             () => mockDomainLogger.error(
-              any<String>(),
-              any<String>(),
-              error: any<dynamic>(named: 'error'),
+              any<LogDomain>(),
+              any<Object>(),
+              message: any<String>(named: 'message'),
               stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: any<String>(named: 'subDomain'),
             ),
           ).thenReturn(null);
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt.unregister<DomainLogger>();
+          }
           getIt
             ..registerSingleton<SyncSequenceLogService>(mockSequenceLog)
             ..registerSingleton<DomainLogger>(mockDomainLogger);
@@ -774,11 +780,12 @@ void main() {
           expect(result, isA<RatingEntry>());
           verify(
             () => mockDomainLogger.error(
-              LogDomains.sync,
-              any<String>(
+              LogDomain.sync,
+              any<Object>(),
+              message: any<String>(
+                named: 'message',
                 that: contains('outbox enqueue failed after _createRatingLink'),
               ),
-              error: any<dynamic>(named: 'error'),
               stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: '_createRatingLink.enqueue',
             ),

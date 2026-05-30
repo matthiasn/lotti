@@ -7,6 +7,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 import '../../mocks/mocks.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,7 @@ void main() {
     mockLoggingService = MockLoggingService();
 
     getIt.registerSingleton<LoggingService>(mockLoggingService);
+    ensureDomainLoggerRegistered();
   });
 
   tearDown(getIt.reset);

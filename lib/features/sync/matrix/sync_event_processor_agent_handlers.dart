@@ -72,11 +72,11 @@ extension _AgentHandlers on SyncEventProcessor {
     try {
       file = resolveJsonCandidateFile(jp);
     } on FileSystemException catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'AGENT_SYNC',
-        subDomain: 'resolve.$typeName.invalidPath',
         stackTrace: st,
+        subDomain: 'resolve.$typeName.invalidPath',
       );
       return null;
     }
@@ -94,11 +94,11 @@ extension _AgentHandlers on SyncEventProcessor {
       try {
         return fromJson(json.decode(fetched) as Map<String, dynamic>);
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'AGENT_SYNC',
-          subDomain: 'resolve.$typeName.parseFetched',
           stackTrace: st,
+          subDomain: 'resolve.$typeName.parseFetched',
         );
         return null;
       }
@@ -113,11 +113,11 @@ extension _AgentHandlers on SyncEventProcessor {
       // and registers the pending descriptor path for catch-up.
       rethrow;
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'AGENT_SYNC',
-        subDomain: 'resolve.$typeName',
         stackTrace: st,
+        subDomain: 'resolve.$typeName',
       );
       return null;
     }
@@ -195,11 +195,11 @@ extension _AgentHandlers on SyncEventProcessor {
       );
       return jsonString;
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'AGENT_SYNC',
-        subDomain: 'resolve.$typeName.descriptorFetch',
         stackTrace: st,
+        subDomain: 'resolve.$typeName.descriptorFetch',
       );
       // Descriptor was found but download/decode failed — throw to prevent
       // falling back to potentially stale disk data. The pipeline will retry.
@@ -461,11 +461,11 @@ extension _AgentHandlers on SyncEventProcessor {
       );
       return true;
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'AGENT_SYNC',
-        subDomain: 'apply.$kind.vectorClockCompare',
         stackTrace: st,
+        subDomain: 'apply.$kind.vectorClockCompare',
       );
       return false;
     }
@@ -482,11 +482,11 @@ extension _AgentHandlers on SyncEventProcessor {
       final file = resolveJsonCandidateFile(jsonPath);
       await saveJson(file.path, jsonString);
     } on FileSystemException catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'AGENT_SYNC',
-        subDomain: 'apply.$kind.restoreDominantCache',
         stackTrace: st,
+        subDomain: 'apply.$kind.restoreDominantCache',
       );
       _trace(
         'apply.$kind.restoreDominantCacheFailed id=$id path=$jsonPath',
@@ -521,11 +521,11 @@ extension _AgentHandlers on SyncEventProcessor {
         );
       }
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'recordReceived',
         stackTrace: st,
+        subDomain: 'recordReceived',
       );
     }
   }
@@ -556,11 +556,11 @@ extension _AgentHandlers on SyncEventProcessor {
         );
       }
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'recordReceived',
         stackTrace: st,
+        subDomain: 'recordReceived',
       );
     }
   }

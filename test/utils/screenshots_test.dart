@@ -3,29 +3,16 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/screenshot_consts.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../helpers/fallbacks.dart';
+import '../mocks/mocks.dart';
 
 // Mocks
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
 
 class MockWindowManager extends Mock implements WindowManager {}
 
@@ -33,7 +20,7 @@ class MockDirectory extends Mock implements Directory {}
 
 void main() {
   group('Screenshot Tests', () {
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockLoggingService;
     late MockWindowManager mockWindowManager;
     late MockDirectory mockDirectory;
 
@@ -43,13 +30,13 @@ void main() {
     });
 
     setUp(() {
-      mockLoggingService = MockLoggingService();
+      mockLoggingService = MockDomainLogger();
       mockWindowManager = MockWindowManager();
       mockDirectory = MockDirectory();
 
       // Register mocks in GetIt
       getIt
-        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<DomainLogger>(mockLoggingService)
         ..registerSingleton<WindowManager>(mockWindowManager)
         ..registerSingleton<Directory>(mockDirectory);
 

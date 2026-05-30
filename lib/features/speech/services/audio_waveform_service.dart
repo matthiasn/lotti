@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'package:just_waveform/just_waveform.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:meta/meta.dart';
@@ -125,8 +125,8 @@ Future<Waveform> _defaultWaveformExtractor({
   required File waveOutFile,
   required WaveformZoom zoom,
 }) async {
-  final logging = getIt.isRegistered<LoggingService>()
-      ? getIt<LoggingService>()
+  final logging = getIt.isRegistered<DomainLogger>()
+      ? getIt<DomainLogger>()
       : null;
   try {
     Waveform? waveform;
@@ -145,10 +145,11 @@ Future<Waveform> _defaultWaveformExtractor({
     }
     return waveform;
   } catch (error, stackTrace) {
-    logging?.captureException(
+    logging?.error(
+      LogDomain.speech,
       error,
-      domain: 'audio_waveform_extractor',
       stackTrace: stackTrace,
+      subDomain: 'audio_waveform_extractor',
     );
     rethrow;
   } finally {
@@ -172,7 +173,7 @@ class AudioWaveformService {
   final AudioWaveformExtractor _extractor;
   final WaveformZoom _zoom;
 
-  LoggingService get _loggingService => getIt<LoggingService>();
+  DomainLogger get _loggingService => getIt<DomainLogger>();
 
   Directory get _documentsDirectory => getDocumentsDirectory();
 
@@ -190,9 +191,9 @@ class AudioWaveformService {
     final audioPath = await AudioUtils.getFullAudioPath(audio);
     final audioFile = File(audioPath);
     if (!audioFile.existsSync()) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.speech,
         'Audio file not found for waveform extraction: $audioPath',
-        domain: 'audio_waveform_service',
         subDomain: 'missing_source',
       );
       return null;
@@ -269,10 +270,11 @@ class AudioWaveformService {
       await _writeCache(cacheKey, payload);
       return data;
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         error,
-        domain: 'audio_waveform_service',
         stackTrace: stackTrace,
+        subDomain: 'audio_waveform_service',
       );
       return null;
     } finally {
@@ -333,18 +335,18 @@ class AudioWaveformService {
       if (decoded is Map<String, dynamic>) {
         return _AudioWaveformCachePayload.fromJson(decoded);
       }
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.speech,
         'Unexpected cache payload shape: $decoded',
-        domain: 'audio_waveform_service',
         subDomain: 'cache_read',
       );
       return null;
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         error,
-        domain: 'audio_waveform_service',
-        subDomain: 'cache_read',
         stackTrace: stackTrace,
+        subDomain: 'cache_read',
       );
       return null;
     }
@@ -359,11 +361,11 @@ class AudioWaveformService {
       cacheFile.writeAsStringSync(jsonEncode(payload.toJson()));
       await _pruneCacheIfNeeded();
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         error,
-        domain: 'audio_waveform_service',
-        subDomain: 'cache_write',
         stackTrace: stackTrace,
+        subDomain: 'cache_write',
       );
     }
   }
@@ -477,18 +479,18 @@ class AudioWaveformService {
         }
       }
       if (toRemove > 0) {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.speech,
           'Pruned $toRemove waveform cache files (now ${datedFiles.length - toRemove} entries)',
-          domain: 'audio_waveform_service',
           subDomain: 'cache_prune',
         );
       }
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         error,
-        domain: 'audio_waveform_service',
-        subDomain: 'cache_prune',
         stackTrace: stackTrace,
+        subDomain: 'cache_prune',
       );
     }
   }

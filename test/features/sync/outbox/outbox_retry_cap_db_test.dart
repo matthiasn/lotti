@@ -4,39 +4,18 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/services/logging_service.dart';
+
+import '../../../mocks/mocks.dart';
 // mocktail not used here
 
 class _SenderFalse implements OutboxMessageSender {
   @override
   Future<bool> send(SyncMessage message) async => false;
-}
-
-class _NoopLogging extends LoggingService {
-  @override
-  void captureEvent(
-    dynamic event, {
-    required String domain,
-    String? subDomain,
-    InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
-  }) {}
-
-  @override
-  void captureException(
-    dynamic exception, {
-    required String domain,
-    String? subDomain,
-    dynamic stackTrace,
-    InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
-  }) {}
 }
 
 void main() {
@@ -65,7 +44,7 @@ void main() {
 
     final repo = DatabaseOutboxRepository(db, maxRetries: cap);
     final sender = _SenderFalse();
-    final log = _NoopLogging();
+    final log = MockDomainLogger();
 
     final proc = OutboxProcessor(
       repository: repo,

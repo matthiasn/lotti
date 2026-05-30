@@ -4,7 +4,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 typedef LifecycleCallback = Future<void> Function();
@@ -30,7 +30,7 @@ class SyncLifecycleCoordinator {
   final MatrixSyncGateway _gateway;
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final SyncPipeline _pipeline;
 
   LifecycleCallback? _onLogin;
@@ -106,11 +106,11 @@ class SyncLifecycleCoordinator {
       _isInitialized = true;
     } catch (error, stackTrace) {
       _isInitialized = false;
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'SYNC_LIFECYCLE',
-        subDomain: 'initialize',
         stackTrace: stackTrace,
+        subDomain: 'initialize',
       );
       rethrow;
     }
@@ -157,9 +157,9 @@ class SyncLifecycleCoordinator {
   }
 
   Future<void> _activate() async {
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Entering logged-in lifecycle state.',
-      domain: 'SYNC_LIFECYCLE',
       subDomain: 'activate',
     );
 
@@ -174,11 +174,11 @@ class SyncLifecycleCoordinator {
       }
       _isActive = true;
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'SYNC_LIFECYCLE',
-        subDomain: 'activate',
         stackTrace: stackTrace,
+        subDomain: 'activate',
       );
       rethrow;
     }
@@ -206,9 +206,9 @@ class SyncLifecycleCoordinator {
   }
 
   Future<void> _deactivate() async {
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Entering logged-out lifecycle state.',
-      domain: 'SYNC_LIFECYCLE',
       subDomain: 'deactivate',
     );
 
@@ -218,11 +218,11 @@ class SyncLifecycleCoordinator {
         await _onLogout!();
       }
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'SYNC_LIFECYCLE',
-        subDomain: 'deactivate',
         stackTrace: stackTrace,
+        subDomain: 'deactivate',
       );
       // Surface teardown failures so callers can decide whether to retry or
       // halt – mirrors the activation path which also rethrows.

@@ -18,6 +18,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
+import '../../../../widget_test_utils.dart';
 
 /// Pumps an `AiChatIcon` inside a localised `MaterialApp` with an AppBar,
 /// using the given [controller] and optional extra provider overrides.
@@ -66,6 +67,7 @@ void main() {
       if (!GetIt.instance.isRegistered<LoggingService>()) {
         GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
       }
+      ensureDomainLoggerRegistered();
 
       const state = JournalPageState(
         showTasks: true,

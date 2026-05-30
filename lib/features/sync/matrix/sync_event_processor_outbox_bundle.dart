@@ -57,11 +57,11 @@ extension _OutboxBundleHandler on SyncEventProcessor {
     try {
       targetFile = resolveJsonCandidateFile(jp);
     } on FileSystemException catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'processor.resolve.outboxBundle.invalidPath',
         stackTrace: st,
+        subDomain: 'processor.resolve.outboxBundle.invalidPath',
       );
       return null;
     }
@@ -88,11 +88,11 @@ extension _OutboxBundleHandler on SyncEventProcessor {
       } on FileSystemException {
         rethrow;
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'processor.resolve.outboxBundle.diskRead',
           stackTrace: st,
+          subDomain: 'processor.resolve.outboxBundle.diskRead',
         );
         return null;
       }
@@ -110,11 +110,11 @@ extension _OutboxBundleHandler on SyncEventProcessor {
       final decoded = await decodeJsonStringMaybeIsolate(manifestJson);
       manifest = decoded! as Map<String, dynamic>;
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'processor.resolve.outboxBundle.parse',
         stackTrace: st,
+        subDomain: 'processor.resolve.outboxBundle.parse',
       );
       return null;
     }
@@ -122,10 +122,10 @@ extension _OutboxBundleHandler on SyncEventProcessor {
 
     final version = manifest['version'];
     if (version != SyncTuning.outboxBundleManifestVersion) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         'outboxBundle manifest version=$version unsupported '
         '(expected ${SyncTuning.outboxBundleManifestVersion}) — skipping',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'processor.resolve.outboxBundle.unknownVersion',
       );
       return null;
@@ -133,9 +133,9 @@ extension _OutboxBundleHandler on SyncEventProcessor {
 
     final rawEntries = manifest['entries'];
     if (rawEntries is! List) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         'outboxBundle manifest missing entries array',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'processor.resolve.outboxBundle.malformed',
       );
       return null;
@@ -154,11 +154,11 @@ extension _OutboxBundleHandler on SyncEventProcessor {
       try {
         envelope = SyncMessage.fromJson(envelopeJson);
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'processor.resolve.outboxBundle.envelopeParse',
           stackTrace: st,
+          subDomain: 'processor.resolve.outboxBundle.envelopeParse',
         );
         continue;
       }
@@ -237,12 +237,12 @@ extension _OutboxBundleHandler on SyncEventProcessor {
             // ack the bundle while the entity never reaches the local DB
             // (silent loss). Drop the whole bundle instead — peers can
             // recover the entry via the sequence-log backfill path.
-            _loggingService.captureException(
+            _loggingService.error(
+              LogDomain.sync,
               'outboxBundle entry missing payload for SyncJournalEntity '
               'id=${envelope.id} jsonPath=${envelope.jsonPath} — '
               'dropping the whole bundle so missing entries surface via '
               'the sequence-log backfill path instead of being lost',
-              domain: 'MATRIX_SERVICE',
               subDomain: 'processor.resolve.outboxBundle.missingPayload',
             );
             return null;
@@ -254,11 +254,11 @@ extension _OutboxBundleHandler on SyncEventProcessor {
         try {
           entityFile = resolveJsonCandidateFile(envelope.jsonPath);
         } on FileSystemException catch (e, st) {
-          _loggingService.captureException(
+          _loggingService.error(
+            LogDomain.sync,
             e,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'processor.resolve.outboxBundle.invalidEntryPath',
             stackTrace: st,
+            subDomain: 'processor.resolve.outboxBundle.invalidEntryPath',
           );
           return null;
         }

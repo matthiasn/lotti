@@ -42,7 +42,6 @@ import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -95,7 +94,7 @@ class SyncEventProcessor {
   }) : _journalEntityLoader =
            journalEntityLoader ?? const FileSyncJournalEntityLoader();
 
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
   final UpdateNotifications _updateNotifications;
   final AiConfigRepository _aiConfigRepository;
@@ -171,15 +170,15 @@ class SyncEventProcessor {
     final sub = subDomain ?? 'processor';
     final domainLogger = _domainLogger;
     if (domainLogger != null) {
-      domainLogger.log(LogDomains.sync, message, subDomain: sub);
+      domainLogger.log(LogDomain.sync, message, subDomain: sub);
       return;
     }
     // Fallback for callers that did not inject a DomainLogger (e.g. tests).
     // Emitting directly under the `sync` domain keeps sync-file routing in
-    // LoggingService working so the log line still lands in the sync file.
-    _loggingService.captureEvent(
+    // DomainLogger working so the log line still lands in the sync file.
+    _loggingService.log(
+      LogDomain.sync,
       message,
-      domain: LogDomains.sync,
       subDomain: sub,
     );
   }
@@ -274,11 +273,11 @@ class SyncEventProcessor {
       return await _prepareForMessage(event: event, syncMessage: syncMessage);
     } catch (error, stackTrace) {
       if (error is! FileSystemException) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SyncEventProcessor',
           stackTrace: stackTrace,
+          subDomain: 'SyncEventProcessor',
         );
       }
       rethrow;
@@ -305,11 +304,11 @@ class SyncEventProcessor {
       return diag;
     } catch (error, stackTrace) {
       if (error is! FileSystemException) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SyncEventProcessor',
           stackTrace: stackTrace,
+          subDomain: 'SyncEventProcessor',
         );
       }
       rethrow;
@@ -348,11 +347,11 @@ class SyncEventProcessor {
     try {
       _localHostId = await service.getHost();
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'processor.selfEcho.hostLookup',
         stackTrace: st,
+        subDomain: 'processor.selfEcho.hostLookup',
       );
       _localHostId = null;
     }
@@ -558,9 +557,9 @@ class SyncEventProcessor {
               'themingSync.ignored.stale incoming=$updatedAt local=$localUpdatedAt',
               subDomain: 'processor.apply',
             );
-            _loggingService.captureEvent(
+            _loggingService.log(
+              LogDomain.theming,
               'themingSync.ignored.stale incoming=$updatedAt local=$localUpdatedAt',
-              domain: 'THEMING_SYNC',
               subDomain: 'apply',
             );
             return null;
@@ -601,17 +600,17 @@ class SyncEventProcessor {
             'apply themingSelection light=$lightThemeName dark=$darkThemeName mode=$themeMode',
             subDomain: 'processor.apply',
           );
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.theming,
             'apply themingSelection light=$lightThemeName dark=$darkThemeName mode=$themeMode',
-            domain: 'THEMING_SYNC',
             subDomain: 'apply',
           );
         } catch (e, st) {
-          _loggingService.captureException(
+          _loggingService.error(
+            LogDomain.theming,
             e,
-            domain: 'THEMING_SYNC',
-            subDomain: 'apply',
             stackTrace: st,
+            subDomain: 'apply',
           );
         }
         return null;
@@ -686,11 +685,11 @@ class SyncEventProcessor {
             // eligible for retry. Swallowing here would silently drop peer
             // profile updates, which the pinning UI relies on to surface
             // capable devices.
-            _loggingService.captureException(
+            _loggingService.error(
+              LogDomain.sync,
               error,
-              domain: 'SYNC_NODE_PROFILE',
-              subDomain: 'apply.upsert',
               stackTrace: stackTrace,
+              subDomain: 'apply.upsert',
             );
             rethrow;
           }

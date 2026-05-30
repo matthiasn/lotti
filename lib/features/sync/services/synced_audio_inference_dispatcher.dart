@@ -62,9 +62,9 @@ class SyncedAudioInferenceDispatcher {
       await _maybeDispatch(id);
     } catch (error, stackTrace) {
       _domainLogger?.error(
-        LogDomains.sync,
-        'syncedAudioInferenceDispatcher threw on id=$id',
-        error: error,
+        LogDomain.sync,
+        error,
+        message: 'syncedAudioInferenceDispatcher threw on id=$id',
         stackTrace: stackTrace,
         subDomain: _subDomain,
       );
@@ -247,9 +247,9 @@ class SyncedAudioInferenceDispatcher {
       );
     } catch (error, stackTrace) {
       _domainLogger?.error(
-        LogDomains.sync,
-        'runTranscription threw for $id; will skip wake nudge',
-        error: error,
+        LogDomain.sync,
+        error,
+        message: 'runTranscription threw for $id; will skip wake nudge',
         stackTrace: stackTrace,
         subDomain: _subDomain,
       );
@@ -294,7 +294,7 @@ class SyncedAudioInferenceDispatcher {
 
   void _log(String decision, String id, String detail) {
     _domainLogger?.log(
-      LogDomains.sync,
+      LogDomain.sync,
       'syncedAudio $decision id=$id $detail',
       subDomain: _subDomain,
     );

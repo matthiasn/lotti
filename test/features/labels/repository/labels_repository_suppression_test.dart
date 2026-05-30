@@ -2,26 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
-import '../../../mocks/mocks.dart' hide MockLoggingService;
-
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
+import '../../../mocks/mocks.dart';
 
 void main() {
   setUpAll(() {
@@ -63,7 +47,7 @@ void main() {
     late MockJournalDb mockDb;
     late MockPersistenceLogic mockPl;
     late MockEntitiesCacheService mockCache;
-    late MockLoggingService mockLog;
+    late MockDomainLogger mockDomainLogger;
 
     late MockUpdateNotifications mockNotifications;
 
@@ -71,13 +55,13 @@ void main() {
       mockDb = MockJournalDb();
       mockPl = MockPersistenceLogic();
       mockCache = MockEntitiesCacheService();
-      mockLog = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
       mockNotifications = MockUpdateNotifications();
       repo = LabelsRepository(
         mockPl,
         mockDb,
         mockCache,
-        mockLog,
+        mockDomainLogger,
         mockNotifications,
       );
     });

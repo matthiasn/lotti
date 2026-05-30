@@ -27,8 +27,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
@@ -47,7 +47,7 @@ void main() {
   late ProviderContainer container;
   final containersToDispose = <ProviderContainer>[];
   late MockUnifiedAiInferenceRepository mockRepository;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockAiConfigRepository mockAiConfigRepository;
   late MockCategoryRepository mockCategoryRepository;
   late MockEditorStateService mockEditorStateService;
@@ -79,7 +79,7 @@ void main() {
 
   setUp(() {
     mockRepository = MockUnifiedAiInferenceRepository();
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockAiConfigRepository = MockAiConfigRepository();
     mockCategoryRepository = MockCategoryRepository();
     mockEditorStateService = MockEditorStateService();
@@ -93,10 +93,10 @@ void main() {
     ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     // Set up GetIt
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
     if (getIt.isRegistered<AiConfigRepository>()) {
       getIt.unregister<AiConfigRepository>();
@@ -138,19 +138,19 @@ void main() {
 
     // Mock logging methods
     when(
-      () => mockLoggingService.captureEvent(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => mockDomainLogger.log(
+        any<LogDomain>(),
+        any<String>(),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
 
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -444,11 +444,11 @@ void main() {
 
         // Verify error handling
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'UnifiedAiController',
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'runInference',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
 

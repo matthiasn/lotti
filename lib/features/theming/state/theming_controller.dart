@@ -13,7 +13,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -115,11 +115,11 @@ class ThemingController extends _$ThemingController {
     try {
       await _loadSelectedSchemes();
     } catch (e, st) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.theming,
         e,
-        domain: 'THEMING_CONTROLLER',
-        subDomain: 'init',
         stackTrace: st,
+        subDomain: 'init',
       );
       // Fallback is already set in build(), so we can continue
     }
@@ -133,11 +133,11 @@ class ThemingController extends _$ThemingController {
           try {
             await _loadSelectedSchemes();
           } catch (e, st) {
-            getIt<LoggingService>().captureException(
+            getIt<DomainLogger>().error(
+              LogDomain.theming,
               e,
-              domain: 'THEMING_CONTROLLER',
-              subDomain: 'theme_prefs_reload',
               stackTrace: st,
+              subDomain: 'theme_prefs_reload',
             );
             // Keep current theme if reload fails
           }
@@ -218,11 +218,11 @@ class ThemingController extends _$ThemingController {
             ),
           );
         } catch (e, st) {
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.theming,
             e,
-            domain: 'THEMING_SYNC',
-            subDomain: 'enqueue',
             stackTrace: st,
+            subDomain: 'enqueue',
           );
         }
       },

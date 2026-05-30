@@ -25,11 +25,10 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
-const _logDomain = 'sync';
 const _logSub = 'queue.coordinator';
 
 /// Top-level owner of the queue pipeline. Wires the four collaborators
@@ -57,7 +56,7 @@ class QueuePipelineCoordinator {
     required SyncEventProcessor eventProcessor,
     required this._sequenceLogService,
     required this._activityGate,
-    required LoggingService logging,
+    required DomainLogger logging,
     this._attachmentIndex,
     this._updateNotifications,
     this._attachmentIngestor,
@@ -121,7 +120,7 @@ class QueuePipelineCoordinator {
   final SyncRoomManager _roomManager;
   final SyncSequenceLogService _sequenceLogService;
   final UserActivityGate? _activityGate;
-  final LoggingService _logging;
+  final DomainLogger _logging;
   final AttachmentIndex? _attachmentIndex;
   final UpdateNotifications? _updateNotifications;
   final AttachmentIngestor? _attachmentIngestor;
@@ -238,11 +237,11 @@ class QueuePipelineCoordinator {
     try {
       await _bridge.bridgeNow();
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.startupBridge',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.startupBridge',
       );
     }
   }
@@ -262,16 +261,16 @@ class QueuePipelineCoordinator {
       await _seeder.seedIfAbsent(roomId);
       await _queue.pruneStrandedEntries(roomId);
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.onRoomChanged',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.onRoomChanged',
       );
     }
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.coordinator.onRoomChanged roomId=$roomId',
-      domain: _logDomain,
       subDomain: _logSub,
     );
   }
@@ -292,17 +291,17 @@ class QueuePipelineCoordinator {
         await _seeder.seedIfAbsent(roomId);
         await _queue.pruneStrandedEntries(roomId);
       } catch (error, stackTrace) {
-        _logging.captureException(
+        _logging.error(
+          LogDomain.sync,
           error,
-          domain: _logDomain,
-          subDomain: '$_logSub.start.seed',
           stackTrace: stackTrace,
+          subDomain: '$_logSub.start.seed',
         );
       }
     } else {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.coordinator.start.noRoom',
-        domain: _logDomain,
         subDomain: _logSub,
       );
     }
@@ -326,11 +325,11 @@ class QueuePipelineCoordinator {
       _syncSub = _sessionManager.client.onSync.stream.listen(
         (_) => _maybePostLoadCurrentRoom(),
         onError: (Object error, StackTrace stackTrace) {
-          _logging.captureException(
+          _logging.error(
+            LogDomain.sync,
             error,
-            domain: _logDomain,
-            subDomain: '$_logSub.syncSub',
             stackTrace: stackTrace,
+            subDomain: '$_logSub.syncSub',
           );
         },
       );
@@ -346,11 +345,11 @@ class QueuePipelineCoordinator {
       _attachmentPathSub = _attachmentIndex?.pathRecorded.listen(
         _onAttachmentPathRecorded,
         onError: (Object error, StackTrace stackTrace) {
-          _logging.captureException(
+          _logging.error(
+            LogDomain.sync,
             error,
-            domain: _logDomain,
-            subDomain: '$_logSub.pathRecorded',
             stackTrace: stackTrace,
+            subDomain: '$_logSub.pathRecorded',
           );
         },
       );
@@ -359,20 +358,20 @@ class QueuePipelineCoordinator {
           try {
             await _queue.resurrectByReason('missingBase');
           } catch (error, stackTrace) {
-            _logging.captureException(
+            _logging.error(
+              LogDomain.sync,
               error,
-              domain: _logDomain,
-              subDomain: '$_logSub.resurrectByReason',
               stackTrace: stackTrace,
+              subDomain: '$_logSub.resurrectByReason',
             );
           }
         },
         onError: (Object error, StackTrace stackTrace) {
-          _logging.captureException(
+          _logging.error(
+            LogDomain.sync,
             error,
-            domain: _logDomain,
-            subDomain: '$_logSub.journalUpdates',
             stackTrace: stackTrace,
+            subDomain: '$_logSub.journalUpdates',
           );
         },
       );
@@ -389,11 +388,11 @@ class QueuePipelineCoordinator {
         unawaited(_safeStartupBridge());
       }
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.start',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.start',
       );
       await _liveSub?.cancel();
       _liveSub = null;
@@ -432,9 +431,9 @@ class QueuePipelineCoordinator {
       rethrow;
     }
 
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.coordinator.started roomId=${roomId ?? 'null'}',
-      domain: _logDomain,
       subDomain: _logSub,
     );
   }
@@ -470,11 +469,11 @@ class QueuePipelineCoordinator {
         try {
           await _pen.flushInto(queue: _queue, room: room);
         } catch (error, stackTrace) {
-          _logging.captureException(
+          _logging.error(
+            LogDomain.sync,
             error,
-            domain: _logDomain,
-            subDomain: '$_logSub.drainUntilEmpty.pen',
             stackTrace: stackTrace,
+            subDomain: '$_logSub.drainUntilEmpty.pen',
           );
         }
       }
@@ -483,19 +482,19 @@ class QueuePipelineCoordinator {
       try {
         await _worker.drainToCompletion();
       } catch (error, stackTrace) {
-        _logging.captureException(
+        _logging.error(
+          LogDomain.sync,
           error,
-          domain: _logDomain,
-          subDomain: '$_logSub.drainUntilEmpty.drain',
           stackTrace: stackTrace,
+          subDomain: '$_logSub.drainUntilEmpty.drain',
         );
       }
 
       final stats = await _queue.stats();
       if (stats.total == 0 && _pen.size == 0) {
-        _logging.captureEvent(
+        _logging.log(
+          LogDomain.sync,
           'queue.coordinator.drainUntilEmpty.done',
-          domain: _logDomain,
           subDomain: _logSub,
         );
         return;
@@ -522,10 +521,10 @@ class QueuePipelineCoordinator {
       }
 
       if (!clock.now().isBefore(deadline)) {
-        _logging.captureEvent(
+        _logging.log(
+          LogDomain.sync,
           'queue.coordinator.drainUntilEmpty.timeout '
           'remaining=${stats.total} penSize=${_pen.size}',
-          domain: _logDomain,
           subDomain: _logSub,
         );
         return;
@@ -558,11 +557,11 @@ class QueuePipelineCoordinator {
       try {
         await action();
       } catch (error, stackTrace) {
-        _logging.captureException(
+        _logging.error(
+          LogDomain.sync,
           error,
-          domain: _logDomain,
-          subDomain: '$_logSub.stop.$stage',
           stackTrace: stackTrace,
+          subDomain: '$_logSub.stop.$stage',
         );
       }
     }
@@ -628,9 +627,9 @@ class QueuePipelineCoordinator {
       _started = false;
     }
 
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.coordinator.stopped drainFirst=$drainFirst',
-      domain: _logDomain,
       subDomain: _logSub,
     );
   }
@@ -716,11 +715,11 @@ class QueuePipelineCoordinator {
         scheduleDownload: true,
       );
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.attachmentIngestor',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.attachmentIngestor',
       );
     }
   }
@@ -733,9 +732,9 @@ class QueuePipelineCoordinator {
       final flushed = _suppressedSelfEchoes;
       _suppressedSelfEchoes = 0;
       _lastSuppressedLogAt = now;
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.coordinator.selfEchoSuppressed count=$flushed',
-        domain: _logDomain,
         subDomain: '$_logSub.selfEcho',
       );
     }
@@ -745,21 +744,21 @@ class QueuePipelineCoordinator {
     final wasPartial = room.partial;
     try {
       await room.postLoad();
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.coordinator.postLoad roomId=$roomId '
         'wasPartial=$wasPartial nowPartial=${room.partial}',
-        domain: _logDomain,
         subDomain: '$_logSub.postLoad',
       );
     } catch (error, stackTrace) {
       // If the post-load fails, drop the "done" marker so a later
       // event retries. Device discovery is important enough to retry.
       _postLoadedRoomIds.remove(roomId);
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.postLoad',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.postLoad',
       );
     }
   }
@@ -820,11 +819,11 @@ class QueuePipelineCoordinator {
     try {
       await _queue.resurrectByPaths(paths);
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.resurrectByPaths',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.resurrectByPaths',
       );
     }
   }
@@ -851,11 +850,11 @@ class QueuePipelineCoordinator {
     try {
       await _queue.enqueueLive(event);
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.enqueue',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.enqueue',
       );
     }
   }
@@ -957,10 +956,10 @@ class QueuePipelineCoordinator {
         _updateBarrenBridgeFlagForward(forward);
         return forward == _BootstrapOutcome.completed;
       }
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.bootstrap.forward.fallbackToBackward '
         'reason=anchorUnavailable anchor=${marker.lastAppliedEventId}',
-        domain: _logDomain,
         subDomain: '$_logSub.forward',
       );
     }
@@ -989,12 +988,12 @@ class QueuePipelineCoordinator {
       logging: _logging,
       anchorEventId: anchorEventId,
     );
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.bootstrap.forward.done '
       'anchor=$anchorEventId pages=${result.totalPages} '
       'events=${result.totalEvents} accepted=${countingSink.totalAccepted} '
       'stopReason=${result.stopReason.name}',
-      domain: _logDomain,
       subDomain: '$_logSub.forward',
     );
     return switch (result.stopReason) {
@@ -1068,11 +1067,11 @@ class QueuePipelineCoordinator {
         totalAccepted == 0;
     if (isBarren) {
       _lastBarrenBridgeAt = clock.now();
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.coordinator.bridgeBarren '
         'untilTimestamp=$untilTimestamp totalPages=${result.totalPages} '
         'totalEvents=${result.totalEvents}',
-        domain: _logDomain,
         subDomain: _logSub,
       );
     } else {
@@ -1134,16 +1133,16 @@ class QueuePipelineCoordinator {
     try {
       final room = await _resolveRoom();
       if (room == null) {
-        _logging.captureEvent(
+        _logging.log(
+          LogDomain.sync,
           'queue.coordinator.gapRecovery.skip reason=noRoom',
-          domain: _logDomain,
           subDomain: _logSub,
         );
         return;
       }
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.coordinator.gapRecovery.start',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       // Gap-recovery is specifically the "cache-wedged backward walk
@@ -1157,17 +1156,17 @@ class QueuePipelineCoordinator {
         room: room,
         untilTimestamp: null,
       );
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.coordinator.gapRecovery.done completed=$completed',
-        domain: _logDomain,
         subDomain: _logSub,
       );
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.gapRecovery',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.gapRecovery',
       );
     }
   }

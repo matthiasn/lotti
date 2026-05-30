@@ -172,7 +172,7 @@ class TaskAgentService {
       );
 
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'created task agent ${DomainLogger.sanitizeId(identity.agentId)} '
       'for task ${DomainLogger.sanitizeId(taskId)}'
       '${awaitContent ? ' (awaiting content)' : ''}',
@@ -217,7 +217,7 @@ class TaskAgentService {
     await syncService.upsertEntity(updatedIdentity);
 
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'updated profile for ${DomainLogger.sanitizeId(agentId)} '
       'to ${profileId != null ? DomainLogger.sanitizeId(profileId) : 'none'}',
       subDomain: 'lifecycle',
@@ -230,7 +230,7 @@ class TaskAgentService {
   /// assembly and conversation cycle, regardless of whether anything changed.
   void triggerReanalysis(String agentId) {
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'manual reanalysis triggered for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
@@ -246,7 +246,7 @@ class TaskAgentService {
   /// removes any queued subscription jobs — so no automatic wake will fire.
   void cancelScheduledWake(String agentId) {
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
@@ -282,7 +282,7 @@ class TaskAgentService {
     }
     await _hydrateThrottleDeadline(agentId);
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'restored ${links.length} subscriptions '
       'for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'restore',
@@ -335,7 +335,7 @@ class TaskAgentService {
   /// registers wake subscriptions for each.
   Future<void> restoreSubscriptions() async {
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'restoring task agent subscriptions...',
       subDomain: 'restore',
     );
@@ -368,9 +368,9 @@ class TaskAgentService {
             'for ${DomainLogger.sanitizeId(agent.agentId)}';
         if (domainLogger != null) {
           domainLogger!.error(
-            LogDomains.agentRuntime,
-            msg,
-            error: e,
+            LogDomain.agentRuntime,
+            e,
+            message: msg,
             stackTrace: s,
           );
         } else {
@@ -385,7 +385,7 @@ class TaskAgentService {
     }
 
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'restored $count task agent subscriptions',
       subDomain: 'restore',
     );

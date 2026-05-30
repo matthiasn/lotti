@@ -732,7 +732,7 @@ void main() {
         () => mockLogger.error(
           any(),
           any(),
-          error: any(named: 'error'),
+          message: any(named: 'message'),
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),
@@ -762,8 +762,11 @@ void main() {
       verify(
         () => mockLogger.error(
           any(),
-          any(that: contains('failed to mark project activity')),
-          error: any(named: 'error'),
+          any(),
+          message: any(
+            named: 'message',
+            that: contains('failed to mark project activity'),
+          ),
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),

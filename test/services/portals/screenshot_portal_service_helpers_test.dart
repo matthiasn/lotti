@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:dbus/dbus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -11,21 +11,21 @@ import '../../mocks/mocks.dart';
 
 void main() {
   group('ScreenshotPortalService helper functions', () {
-    late MockLoggingService mockLogging;
+    late MockDomainLogger mockLogging;
 
     setUpAll(() {
       registerFallbackValue(StackTrace.current);
     });
 
     setUp(() {
-      mockLogging = MockLoggingService();
-      getIt.registerSingleton<LoggingService>(mockLogging);
+      mockLogging = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(mockLogging);
       when(
-        () => mockLogging.captureException(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
+        () => mockLogging.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async {});
     });
@@ -120,11 +120,11 @@ void main() {
 
         expect(result, equals(bogusSource));
         verify(
-          () => mockLogging.captureException(
-            any<dynamic>(),
-            domain: 'ScreenshotPortalService',
-            subDomain: 'file_copy_error',
+          () => mockLogging.error(
+            LogDomain.screenshots,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'file_copy_error',
           ),
         ).called(1);
       });

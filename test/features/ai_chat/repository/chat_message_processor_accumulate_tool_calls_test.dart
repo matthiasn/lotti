@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -8,14 +9,14 @@ import '../../../mocks/mocks.dart';
 void main() {
   group('accumulateToolCalls', () {
     late ChatMessageProcessor processor;
-    late MockLoggingService logging;
+    late MockDomainLogger logging;
 
     setUp(() {
       processor = ChatMessageProcessor(
         aiConfigRepository: MockAiConfigRepository(),
         cloudInferenceRepository: MockCloudInferenceRepository(),
         taskSummaryRepository: MockTaskSummaryRepository(),
-        loggingService: logging = MockLoggingService(),
+        loggingService: logging = MockDomainLogger(),
       );
     });
 
@@ -90,9 +91,9 @@ void main() {
       expect(toolCalls, isEmpty);
 
       verify(
-        () => logging.captureEvent(
-          any<dynamic>(),
-          domain: 'ChatMessageProcessor',
+        () => logging.log(
+          LogDomain.chat,
+          any<String>(),
           subDomain: 'accumulateToolCalls',
         ),
       ).called(1);

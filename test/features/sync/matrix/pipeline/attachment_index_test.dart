@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -199,7 +200,7 @@ void main() {
     'record is idempotent per eventId — repeat observations are no-ops '
     'and emit no log',
     () {
-      final logging = MockLoggingService();
+      final logging = MockDomainLogger();
       final index = AttachmentIndex(logging: logging);
       final e = makeEvent(eventId: 'ev1', relativePath: 'images/a.jpg');
 
@@ -208,9 +209,9 @@ void main() {
       expect(index.record(e), isFalse);
 
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('attachmentIndex.record')),
-          domain: any<String>(named: 'domain'),
           subDomain: 'attachmentIndex.record',
         ),
       ).called(1);
@@ -221,7 +222,7 @@ void main() {
     'verboseLogging: false suppresses per-event record/find lines without '
     'changing behaviour',
     () {
-      final logging = MockLoggingService();
+      final logging = MockDomainLogger();
       final index = AttachmentIndex(logging: logging, verboseLogging: false);
       final e = makeEvent(eventId: 'ev1', relativePath: 'images/a.jpg');
 
@@ -231,9 +232,9 @@ void main() {
       expect(index.find('images/missing.jpg'), isNull);
 
       verifyNever(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('attachmentIndex.')),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
       );
@@ -244,7 +245,7 @@ void main() {
     'record does not thrash when multiple events share one relativePath — '
     'each eventId logs exactly once regardless of interleaving',
     () {
-      final logging = MockLoggingService();
+      final logging = MockDomainLogger();
       final index = AttachmentIndex(logging: logging);
       final a = makeEvent(eventId: 'A', relativePath: 'audio/x.m4a');
       final b = makeEvent(eventId: 'B', relativePath: 'audio/x.m4a');
@@ -258,9 +259,9 @@ void main() {
       expect(index.record(b), isFalse);
 
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('attachmentIndex.record')),
-          domain: any<String>(named: 'domain'),
           subDomain: 'attachmentIndex.record',
         ),
       ).called(2);
@@ -268,7 +269,7 @@ void main() {
   );
 
   test('record and find works with and without leading slash', () {
-    final logging = MockLoggingService();
+    final logging = MockDomainLogger();
     final index = AttachmentIndex(logging: logging);
     final e = MockEvent();
     when(() => e.attachmentMimetype).thenReturn('image/jpeg');
@@ -288,9 +289,9 @@ void main() {
     final miss = index.find('/images/missing.jpg');
     expect(miss, isNull);
     verify(
-      () => logging.captureEvent(
+      () => logging.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: 'attachmentIndex.find',
       ),
     ).called(greaterThanOrEqualTo(1));
@@ -301,7 +302,7 @@ void main() {
     'each first-time record so subscribers — notably the queue '
     'coordinator — can react the moment an attachment JSON lands',
     () async {
-      final logging = MockLoggingService();
+      final logging = MockDomainLogger();
       final index = AttachmentIndex(logging: logging);
       final paths = <String>[];
       final sub = index.pathRecorded.listen(paths.add);
@@ -341,7 +342,7 @@ void main() {
     'dispose closes the pathRecorded stream so app shutdown / test '
     'teardown does not leak the broadcast controller',
     () async {
-      final index = AttachmentIndex(logging: MockLoggingService());
+      final index = AttachmentIndex(logging: MockDomainLogger());
       var done = false;
       final sub = index.pathRecorded.listen(
         (_) {},
@@ -360,7 +361,7 @@ void main() {
     'generated record/find sequences preserve idempotency and path aliases',
     (scenario) async {
       final index = AttachmentIndex(
-        logging: MockLoggingService(),
+        logging: MockDomainLogger(),
         verboseLogging: false,
       );
       final model = _ExpectedAttachmentIndex();

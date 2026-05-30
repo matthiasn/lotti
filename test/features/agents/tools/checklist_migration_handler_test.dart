@@ -337,8 +337,8 @@ void main() {
       () => mockDomainLogger.error(
         any(),
         any(),
+        message: any(named: 'message'),
         subDomain: any(named: 'subDomain'),
-        error: any(named: 'error'),
         stackTrace: any(named: 'stackTrace'),
       ),
     ).thenReturn(null);
@@ -825,8 +825,8 @@ void main() {
             () => localDomainLogger.error(
               any(),
               any(),
+              message: any(named: 'message'),
               subDomain: any(named: 'subDomain'),
-              error: any(named: 'error'),
               stackTrace: any(named: 'stackTrace'),
             ),
           ).thenReturn(null);
@@ -1236,21 +1236,21 @@ void main() {
         // Verify structured logging was used for lookup and error.
         verify(
           () => mockDomainLogger.log(
-            LogDomains.agentWorkflow,
+            LogDomain.agentWorkflow,
             any(that: contains('Looking up target task')),
             subDomain: any(named: 'subDomain'),
           ),
         ).called(1);
         verify(
           () => mockDomainLogger.log(
-            LogDomains.agentWorkflow,
+            LogDomain.agentWorkflow,
             any(that: contains('Target task lookup result')),
             subDomain: any(named: 'subDomain'),
           ),
         ).called(1);
         verify(
           () => mockDomainLogger.error(
-            LogDomains.agentWorkflow,
+            LogDomain.agentWorkflow,
             any(
               that: allOf(
                 contains('Target task'),
@@ -1260,7 +1260,6 @@ void main() {
               ),
             ),
             subDomain: any(named: 'subDomain'),
-            error: any(named: 'error'),
             stackTrace: any(named: 'stackTrace'),
           ),
         ).called(1);
@@ -1325,14 +1324,14 @@ void main() {
         // Verify lookup logs (no error log on success).
         verify(
           () => mockDomainLogger.log(
-            LogDomains.agentWorkflow,
+            LogDomain.agentWorkflow,
             any(that: contains('Looking up target task')),
             subDomain: any(named: 'subDomain'),
           ),
         ).called(1);
         verify(
           () => mockDomainLogger.log(
-            LogDomains.agentWorkflow,
+            LogDomain.agentWorkflow,
             any(that: contains('Target task lookup result')),
             subDomain: any(named: 'subDomain'),
           ),
@@ -1341,8 +1340,8 @@ void main() {
           () => mockDomainLogger.error(
             any(),
             any(),
+            message: any(named: 'message'),
             subDomain: any(named: 'subDomain'),
-            error: any(named: 'error'),
             stackTrace: any(named: 'stackTrace'),
           ),
         );

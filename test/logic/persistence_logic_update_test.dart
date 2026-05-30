@@ -20,7 +20,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -431,7 +431,7 @@ void main() {
 
   late MockJournalDb journalDb;
   late MockUpdateNotifications updateNotifications;
-  late MockLoggingService loggingService;
+  late MockDomainLogger loggingService;
   late MockOutboxService outboxService;
   late MockFts5Db fts5Db;
   late MockNotificationService notificationService;
@@ -469,7 +469,7 @@ void main() {
     await getIt.reset();
     journalDb = MockJournalDb();
     updateNotifications = MockUpdateNotifications();
-    loggingService = MockLoggingService();
+    loggingService = MockDomainLogger();
     outboxService = MockOutboxService();
     fts5Db = MockFts5Db();
     notificationService = MockNotificationService();
@@ -520,7 +520,7 @@ void main() {
     getIt
       ..registerSingleton<JournalDb>(journalDb)
       ..registerSingleton<UpdateNotifications>(updateNotifications)
-      ..registerSingleton<LoggingService>(loggingService)
+      ..registerSingleton<DomainLogger>(loggingService)
       ..registerSingleton<OutboxService>(outboxService)
       ..registerSingleton<Fts5Db>(fts5Db)
       ..registerSingleton<NotificationService>(notificationService)
@@ -558,11 +558,11 @@ void main() {
 
       expect(result, isTrue);
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.persistence,
           any<Object>(),
-          domain: 'persistence_logic',
-          subDomain: 'updateDbEntity.beforeNotify',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'updateDbEntity.beforeNotify',
         ),
       ).called(1);
       verify(() => updateNotifications.notify(any<Set<String>>())).called(1);
@@ -630,11 +630,11 @@ void main() {
 
     expect(result, isNull);
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.persistence,
         any<Object>(),
-        domain: 'persistence_logic',
-        subDomain: 'updateDbEntity',
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'updateDbEntity',
       ),
     ).called(1);
   });
@@ -1145,11 +1145,11 @@ void main() {
 
         expect(result, isFalse);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.persistence,
             any<Object>(),
-            domain: 'persistence_logic',
-            subDomain: 'updateJournalEntityText',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'updateJournalEntityText',
           ),
         ).called(1);
       },
@@ -1287,11 +1287,11 @@ void main() {
 
       expect(result, isFalse);
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.persistence,
           any<Object>(),
-          domain: 'persistence_logic',
-          subDomain: 'updateJournalEntry',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'updateJournalEntry',
         ),
       ).called(1);
     });
@@ -1335,9 +1335,9 @@ void main() {
 
       expect(result, isTrue);
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.persistence,
           'not a task',
-          domain: 'persistence_logic',
           subDomain: 'updateTask',
         ),
       ).called(1);
@@ -1488,11 +1488,11 @@ void main() {
 
         expect(result, isTrue);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'updateDbEntity.recordSent',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'updateDbEntity.recordSent',
           ),
         ).called(1);
         verify(
@@ -1548,11 +1548,11 @@ void main() {
 
         expect(saved, isTrue);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'createDbEntity.recordSent',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'createDbEntity.recordSent',
           ),
         ).called(1);
       },
@@ -1602,11 +1602,11 @@ void main() {
 
         expect(created, isTrue);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'createLink.recordSent',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'createLink.recordSent',
           ),
         ).called(1);
       },
@@ -1645,9 +1645,9 @@ void main() {
 
       expect(result, isTrue);
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.persistence,
           'not an event',
-          domain: 'persistence_logic',
           subDomain: 'updateEvent',
         ),
       ).called(1);

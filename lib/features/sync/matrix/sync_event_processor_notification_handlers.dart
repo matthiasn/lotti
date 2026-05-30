@@ -127,11 +127,11 @@ extension _NotificationHandlers on SyncEventProcessor {
         );
       }
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'recordReceived',
         stackTrace: st,
+        subDomain: 'recordReceived',
       );
     }
   }
@@ -155,11 +155,11 @@ extension _NotificationHandlers on SyncEventProcessor {
         );
       }
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'recordReceived',
         stackTrace: st,
+        subDomain: 'recordReceived',
       );
     }
   }

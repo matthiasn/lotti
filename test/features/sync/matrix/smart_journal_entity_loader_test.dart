@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -24,7 +25,7 @@ void main() {
   String stripLeadingSlashes(String s) =>
       s.replaceFirst(RegExp(r'^[\\/]+'), '');
 
-  late MockLoggingService loggingService;
+  late MockDomainLogger loggingService;
 
   setUpAll(() {
     registerAllFallbackValues();
@@ -35,8 +36,7 @@ void main() {
     late Directory tempDir;
 
     setUp(() async {
-      loggingService = MockLoggingService();
-      stubLoggingService(loggingService);
+      loggingService = MockDomainLogger();
       await getIt.reset();
       getIt.allowReassignment = true;
       tempDir = await Directory.systemTemp.createTemp('smart_loader_test');
@@ -251,11 +251,11 @@ void main() {
         expect(loaded.meta.id, image.meta.id);
         expect(pendingPath, relMedia);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetchMedia',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'SmartLoader.fetchMedia',
           ),
         ).called(1);
       },
@@ -326,9 +326,11 @@ void main() {
       expect(mediaFile.existsSync(), isTrue);
       verify(() => database.deleteFile(mediaUri)).called(1);
       verify(
-        () => loggingService.captureEvent(
-          contains('smart.media.empty_bytes.refresh path=$relMedia'),
-          domain: 'MATRIX_SERVICE',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.media.empty_bytes.refresh path=$relMedia'),
+          ),
           subDomain: 'SmartLoader.fetchMedia',
         ),
       ).called(1);
@@ -401,11 +403,11 @@ void main() {
         expect(downloads, 1);
         expect(pendingPath, relMedia);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetchMedia.purge',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'SmartLoader.fetchMedia.purge',
           ),
         ).called(1);
       },
@@ -477,7 +479,8 @@ void main() {
         // Both attempts saw empty bytes → purge runs twice.
         verify(() => database.deleteFile(mediaUri)).called(2);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(
               that: isA<FileSystemException>().having(
                 (e) => e.message,
@@ -485,15 +488,16 @@ void main() {
                 contains('empty attachment bytes'),
               ),
             ),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetchMedia',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'SmartLoader.fetchMedia',
           ),
         ).called(1);
         verify(
-          () => loggingService.captureEvent(
-            contains('smart.media.empty_bytes.refresh path=$relMedia'),
-            domain: 'MATRIX_SERVICE',
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: contains('smart.media.empty_bytes.refresh path=$relMedia'),
+            ),
             subDomain: 'SmartLoader.fetchMedia',
           ),
         ).called(1);
@@ -521,11 +525,11 @@ void main() {
         throwsA(isA<FileSystemException>()),
       );
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SmartLoader.fetchJson.noVc',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'SmartLoader.fetchJson.noVc',
         ),
       ).called(1);
     });
@@ -570,9 +574,13 @@ void main() {
         expect(loaded.meta.id, image.meta.id);
         expect(pendingPath, getRelativeImagePath(image));
         verify(
-          () => loggingService.captureEvent(
-            contains('smart.media.miss path=${getRelativeImagePath(image)}'),
-            domain: 'MATRIX_SERVICE',
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: contains(
+                'smart.media.miss path=${getRelativeImagePath(image)}',
+              ),
+            ),
             subDomain: 'SmartLoader.fetchMedia',
           ),
         ).called(1);
@@ -628,11 +636,11 @@ void main() {
 
         expect(loaded.meta.id, 'corrupt');
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.localRead',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'SmartLoader.localRead',
           ),
         ).called(1);
       },
@@ -644,9 +652,9 @@ void main() {
         const relJson = '/text_entries/2024-01-01/no_descriptor.text.json';
         final index = AttachmentIndex(logging: loggingService);
         when(
-          () => loggingService.captureEvent(
-            any<Object>(),
-            domain: any<String>(named: 'domain'),
+          () => loggingService.log(
+            any<LogDomain>(),
+            any<String>(),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((_) {});
@@ -661,9 +669,9 @@ void main() {
           throwsA(isA<FileSystemException>()),
         );
         verify(
-          () => loggingService.captureEvent(
-            contains('smart.fetch.miss(noVc) path=$relJson'),
-            domain: 'MATRIX_SERVICE',
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('smart.fetch.miss(noVc) path=$relJson')),
             subDomain: 'SmartLoader.fetch',
           ),
         ).called(1);
@@ -831,9 +839,9 @@ void main() {
         loggingService: loggingService,
       );
       when(
-        () => loggingService.captureEvent(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
+        () => loggingService.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) {});
@@ -845,9 +853,9 @@ void main() {
         throwsA(isA<FileSystemException>()),
       );
       verify(
-        () => loggingService.captureEvent(
-          contains('smart.fetch.miss path=$relJson'),
-          domain: 'MATRIX_SERVICE',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('smart.fetch.miss path=$relJson')),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -927,16 +935,18 @@ void main() {
       verify(() => database.deleteFile(descriptorUri)).called(1);
       expect(purges, 1);
       verify(
-        () => loggingService.captureEvent(
-          contains('smart.fetch.stale_vc path=$relJson'),
-          domain: 'MATRIX_SERVICE',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('smart.fetch.stale_vc path=$relJson')),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
       verify(
-        () => loggingService.captureEvent(
-          contains('smart.fetch.stale_vc.refresh path=$relJson'),
-          domain: 'MATRIX_SERVICE',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.fetch.stale_vc.refresh path=$relJson'),
+          ),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -1008,9 +1018,11 @@ void main() {
       expect(purges, 1);
       verify(() => database.deleteFile(descriptorUri)).called(1);
       verify(
-        () => loggingService.captureEvent(
-          contains('smart.fetch.empty_bytes.refresh path=$relJson'),
-          domain: 'MATRIX_SERVICE',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.fetch.empty_bytes.refresh path=$relJson'),
+          ),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -1079,9 +1091,11 @@ void main() {
       expect(calls, 2);
       expect(purges, 1);
       verify(
-        () => loggingService.captureEvent(
-          contains('smart.fetch.stale_vc.pending path=$relJson'),
-          domain: 'MATRIX_SERVICE',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.fetch.stale_vc.pending path=$relJson'),
+          ),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -1106,9 +1120,9 @@ void main() {
         () => database.deleteFile(descriptorUri),
       ).thenAnswer((_) async => true);
       when(
-        () => loggingService.captureEvent(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
+        () => loggingService.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) {});
@@ -1166,9 +1180,11 @@ void main() {
       expect(purges, 2);
       verify(() => database.deleteFile(descriptorUri)).called(2);
       verify(
-        () => loggingService.captureEvent(
-          contains('smart.fetch.stale_vc.breaker path=$relJson'),
-          domain: 'MATRIX_SERVICE',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.fetch.stale_vc.breaker path=$relJson'),
+          ),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -1196,9 +1212,9 @@ void main() {
             () => database.deleteFile(descriptorUri),
           ).thenAnswer((_) async => true);
           when(
-            () => loggingService.captureEvent(
-              any<Object>(),
-              domain: any(named: 'domain'),
+            () => loggingService.log(
+              any<LogDomain>(),
+              any<String>(),
               subDomain: any(named: 'subDomain'),
             ),
           ).thenAnswer((_) {});
@@ -1307,9 +1323,9 @@ void main() {
         when(() => database.deleteFile(uriA)).thenAnswer((_) async => true);
         when(() => database.deleteFile(uriB)).thenAnswer((_) async => true);
         when(
-          () => loggingService.captureEvent(
-            any<Object>(),
-            domain: any(named: 'domain'),
+          () => loggingService.log(
+            any<LogDomain>(),
+            any<String>(),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenAnswer((_) {});
@@ -1396,9 +1412,9 @@ void main() {
         when(() => client.database).thenReturn(database);
         when(ev.attachmentOrThumbnailMxcUrl).thenReturn(null);
         when(
-          () => loggingService.captureEvent(
-            any<Object>(),
-            domain: any(named: 'domain'),
+          () => loggingService.log(
+            any<LogDomain>(),
+            any<String>(),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenAnswer((_) {});
@@ -1468,18 +1484,18 @@ void main() {
           () => database.deleteFile(descriptorUri),
         ).thenThrow(Exception('db failure'));
         when(
-          () => loggingService.captureEvent(
-            any<Object>(),
-            domain: any(named: 'domain'),
+          () => loggingService.log(
+            any<LogDomain>(),
+            any<String>(),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenAnswer((_) {});
         when(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
           ),
         ).thenAnswer((_) async {});
 
@@ -1528,11 +1544,11 @@ void main() {
         expect(purges, 0);
         verify(() => database.deleteFile(descriptorUri)).called(1);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.purge',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'SmartLoader.purge',
           ),
         ).called(1);
       });
@@ -1727,11 +1743,11 @@ void main() {
         );
         verify(() => database.deleteFile(descriptorUri)).called(2);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetchJson',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'SmartLoader.fetchJson',
           ),
         ).called(1);
       });
@@ -1775,11 +1791,11 @@ void main() {
           throwsA(isA<FormatException>()),
         );
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetchJson',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'SmartLoader.fetchJson',
           ),
         ).called(1);
       });

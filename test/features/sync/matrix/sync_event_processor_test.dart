@@ -268,11 +268,11 @@ void main() {
 
       // Prediction failure is logged with specific subDomain
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply.predictVectorClock',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'apply.predictVectorClock',
         ),
       ).called(1);
     },
@@ -548,9 +548,11 @@ void main() {
     await processor.process(event: event, journalDb: journalDb);
 
     verify(
-      () => loggingService.captureEvent(
-        contains('apply entryLink from=from-id to=to-id rows=1'),
-        domain: LogDomains.sync,
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(
+          that: contains('apply entryLink from=from-id to=to-id rows=1'),
+        ),
         subDomain: 'processor.apply.entryLink',
       ),
     ).called(1);
@@ -581,9 +583,9 @@ void main() {
 
       // No apply.entryLink log on rows=0
       verifyNever(
-        () => loggingService.captureEvent(
-          any<Object>(),
-          domain: 'MATRIX_SERVICE',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(),
           subDomain: 'apply.entryLink',
         ),
       );
@@ -616,9 +618,9 @@ void main() {
     when(() => event.text).thenReturn(encodeMessage(message));
     when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
     when(
-      () => loggingService.captureEvent(
-        any<Object>(),
-        domain: 'MATRIX_SERVICE',
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(),
         subDomain: 'apply.entryLink',
       ),
     ).thenThrow(Exception('logging failed'));
@@ -649,11 +651,11 @@ void main() {
         throwsA(isA<FileSystemException>()),
       );
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SyncEventProcessor.missingAttachment',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'SyncEventProcessor.missingAttachment',
         ),
       ).called(1);
       verifyNever(() => journalDb.updateJournalEntity(any()));
@@ -756,9 +758,9 @@ void main() {
         ),
       ).called(1);
       verify(
-        () => loggingService.captureEvent(
-          contains('apply.gapsDetected count=1'),
-          domain: LogDomains.sync,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('apply.gapsDetected count=1')),
           subDomain: 'processor.gapDetection',
         ),
       ).called(1);
@@ -799,11 +801,11 @@ void main() {
       throwsA(isA<FileSystemException>()),
     );
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.sync,
         any<Object>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SyncEventProcessor.missingAttachment',
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'SyncEventProcessor.missingAttachment',
       ),
     ).called(1);
   });
@@ -880,9 +882,9 @@ void main() {
 
       // Verify log contains stale message
       verify(
-        () => loggingService.captureEvent(
-          contains('themingSync.ignored.stale'),
-          domain: 'THEMING_SYNC',
+        () => loggingService.log(
+          LogDomain.theming,
+          any<String>(that: contains('themingSync.ignored.stale')),
           subDomain: 'apply',
         ),
       ).called(1);
@@ -995,11 +997,11 @@ void main() {
 
       // Verify exception logged
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.theming,
           any<Object>(),
-          domain: 'THEMING_SYNC',
-          subDomain: 'apply',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'apply',
         ),
       ).called(1);
     });
@@ -1019,9 +1021,9 @@ void main() {
 
       // Verify success logged
       verify(
-        () => loggingService.captureEvent(
-          contains('apply themingSelection'),
-          domain: 'THEMING_SYNC',
+        () => loggingService.log(
+          LogDomain.theming,
+          any<String>(that: contains('apply themingSelection')),
           subDomain: 'apply',
         ),
       ).called(1);
@@ -1442,7 +1444,7 @@ void main() {
         final domainLogger = MockDomainLogger();
         when(
           () => domainLogger.log(
-            any<String>(),
+            any<LogDomain>(),
             any<String>(),
             subDomain: any<String>(named: 'subDomain'),
             level: any<InsightLevel>(named: 'level'),
@@ -1466,7 +1468,7 @@ void main() {
 
         verify(
           () => domainLogger.log(
-            LogDomains.sync,
+            LogDomain.sync,
             any<String>(
               that: contains('skipping undeserializable sync message'),
             ),
@@ -1474,11 +1476,11 @@ void main() {
           ),
         ).called(1);
         verifyNever(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             any<String>(
               that: contains('skipping undeserializable sync message'),
             ),
-            domain: LogDomains.sync,
             subDomain: 'processor.skipUnrecoverable',
           ),
         );

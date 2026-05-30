@@ -110,7 +110,7 @@ void main() {
     );
 
     final controller = _PendingSyncController(pendingState);
-    final mockLoggingService = MockLoggingService();
+    final mockLoggingService = MockDomainLogger();
 
     await tester.pumpWidget(
       ProviderScope(

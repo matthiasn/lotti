@@ -57,9 +57,10 @@ class ProjectRepository {
       );
     } catch (error, stackTrace) {
       getIt<DomainLogger>().error(
-        LogDomains.sync,
-        'sequence record failed after project link write; VC already committed',
-        error: error,
+        LogDomain.sync,
+        error,
+        message:
+            'sequence record failed after project link write; VC already committed',
         stackTrace: stackTrace,
         subDomain: subDomain,
       );
@@ -364,10 +365,11 @@ class ProjectRepository {
           // the VC counter is claimed on disk — an outbox failure must not
           // release the reservation.
           getIt<DomainLogger>().error(
-            LogDomains.sync,
-            'outbox enqueue failed after linkTaskToProject; '
-            'VC already committed',
-            error: error,
+            LogDomain.sync,
+            error,
+            message:
+                'outbox enqueue failed after linkTaskToProject; '
+                'VC already committed',
             stackTrace: stackTrace,
             subDomain: 'linkTaskToProject.enqueue',
           );
@@ -502,9 +504,10 @@ class ProjectRepository {
           await _enqueueLinkSync(newLink, SyncEntryStatus.initial);
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
-            LogDomains.sync,
-            'outbox enqueue failed after _relinkTask; VCs already committed',
-            error: error,
+            LogDomain.sync,
+            error,
+            message:
+                'outbox enqueue failed after _relinkTask; VCs already committed',
             stackTrace: stackTrace,
             subDomain: '_relinkTask.enqueue',
           );
@@ -539,9 +542,10 @@ class ProjectRepository {
           await _enqueueLinkSync(deleted, SyncEntryStatus.update);
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
-            LogDomains.sync,
-            'outbox enqueue failed after _softDeleteLink; VC already committed',
-            error: error,
+            LogDomain.sync,
+            error,
+            message:
+                'outbox enqueue failed after _softDeleteLink; VC already committed',
             stackTrace: stackTrace,
             subDomain: '_softDeleteLink.enqueue',
           );

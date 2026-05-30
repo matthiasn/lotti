@@ -22,17 +22,14 @@ class LoggingService {
   static const String _generalLogStem = 'lotti';
   static const String _syncLogStem = 'sync';
 
+  /// File stem for the shared daily error log. Every exception and every
+  /// error-level event is mirrored here (in full) so all errors can be
+  /// inspected in one place. Under normal operation this file stays empty.
+  static const String _errorLogStem = 'error';
+
   /// Domains whose info-level events are routed to the sync log file instead
   /// of the general log. Exposed so `DomainLogger` can avoid duplicate writes.
-  static const Set<String> syncFileDomains = <String>{
-    'sync',
-    'MATRIX_SYNC',
-    'MATRIX_SERVICE',
-    'OUTBOX',
-    'AGENT_SYNC',
-    'SYNC_SEQUENCE',
-    'SYNC_BACKFILL',
-  };
+  static const Set<String> syncFileDomains = <String>{'sync'};
   final Map<String, List<String>> _pendingFileLinesByStem =
       <String, List<String>>{};
   final Map<String, Timer> _fileFlushTimers = <String, Timer>{};
@@ -237,6 +234,9 @@ class LoggingService {
         _appendToNamedFile(domainFileStem, line, forceFlush: forceFlush),
       );
     }
+    if (level == InsightLevel.error) {
+      writes.add(_appendToNamedFile(_errorLogStem, line, forceFlush: true));
+    }
     await Future.wait(writes);
   }
 
@@ -280,6 +280,7 @@ class LoggingService {
 
     final writes = <Future<void>>[
       _appendToNamedFile(_generalLogStem, line, forceFlush: true),
+      _appendToNamedFile(_errorLogStem, line, forceFlush: true),
     ];
     final domainFileStem = _domainFileStem(domain);
     if (domainFileStem != null) {

@@ -9,7 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/audio_import.dart';
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
@@ -33,7 +33,7 @@ class FakeDropItem extends Fake implements DropItem {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockJournalDb mockJournalDb;
   late Directory tempDir;
@@ -46,14 +46,14 @@ void main() {
   });
 
   setUp(() async {
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
 
     tempDir = await Directory.systemTemp.createTemp('audio_import_test_');
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
     if (getIt.isRegistered<PersistenceLogic>()) {
       getIt.unregister<PersistenceLogic>();
@@ -69,18 +69,18 @@ void main() {
     }
 
     getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<DomainLogger>(mockDomainLogger)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<Directory>(tempDir)
       ..registerSingleton<AudioMetadataReader>((_) async => Duration.zero);
 
     when(
-      () => mockLoggingService.captureException(
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -117,8 +117,8 @@ void main() {
       await tempDir.delete(recursive: true);
     } catch (_) {}
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
     if (getIt.isRegistered<PersistenceLogic>()) {
       getIt.unregister<PersistenceLogic>();
@@ -221,9 +221,9 @@ void main() {
       await importDroppedAudio(data: dropDetails);
 
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(that: contains('no extension')),
-          domain: AudioImportConstants.loggingDomain,
           subDomain: 'importDroppedAudio',
         ),
       ).called(1);
@@ -238,9 +238,9 @@ void main() {
       await importDroppedAudio(data: dropDetails);
 
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(that: contains('too large')),
-          domain: AudioImportConstants.loggingDomain,
           subDomain: 'importDroppedAudio',
         ),
       ).called(1);
@@ -322,11 +322,11 @@ void main() {
 
       // Should log the error for the bad file
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(),
-          domain: AudioImportConstants.loggingDomain,
-          subDomain: 'importDroppedAudio',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'importDroppedAudio',
         ),
       ).called(1);
 

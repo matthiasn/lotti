@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart';
@@ -63,7 +63,7 @@ class AudioRecorderRepository {
     : _audioRecorder = audioRecorder ?? AudioRecorder();
 
   final AudioRecorder _audioRecorder;
-  final LoggingService _loggingService = getIt<LoggingService>();
+  final DomainLogger _loggingService = getIt<DomainLogger>();
 
   /// Stream of amplitude updates for VU meter visualization.
   /// Emits amplitude values every 20ms while recording.
@@ -81,9 +81,9 @@ class AudioRecorderRepository {
       // No need for XDG Desktop Portal as there's no microphone portal yet
 
       if (Platform.isLinux && PortalService.isRunningInFlatpak) {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.speech,
           'Running in Flatpak - audio access via PulseAudio socket permissions',
-          domain: AudioRecorderConstants.domainName,
           subDomain: AudioRecorderConstants.hasPermissionSubdomain,
         );
         // In Flatpak, assume permission is available if PulseAudio socket is granted
@@ -93,11 +93,11 @@ class AudioRecorderRepository {
       // Check the standard recorder permission (works for both Flatpak and native)
       return await _audioRecorder.hasPermission();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         e,
-        domain: AudioRecorderConstants.domainName,
-        subDomain: AudioRecorderConstants.hasPermissionSubdomain,
         stackTrace: stackTrace,
+        subDomain: AudioRecorderConstants.hasPermissionSubdomain,
       );
       return false;
     }
@@ -109,9 +109,9 @@ class AudioRecorderRepository {
     try {
       return await _audioRecorder.isPaused();
     } catch (e) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         e,
-        domain: AudioRecorderConstants.domainName,
         subDomain: AudioRecorderConstants.isPausedSubdomain,
       );
       return false;
@@ -124,9 +124,9 @@ class AudioRecorderRepository {
     try {
       return await _audioRecorder.isRecording();
     } catch (e) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         e,
-        domain: AudioRecorderConstants.domainName,
         subDomain: AudioRecorderConstants.isRecordingSubdomain,
       );
       return false;
@@ -153,9 +153,9 @@ class AudioRecorderRepository {
       const sampleRate = 48000;
       const autoGain = true;
 
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.speech,
         'Starting audio recording: path=$filePath, sampleRate=$sampleRate, autoGain=$autoGain, isLinux=${Platform.isLinux}, isFlatpak=${PortalService.shouldUsePortal}',
-        domain: AudioRecorderConstants.domainName,
         subDomain: AudioRecorderConstants.startRecordingSubdomain,
       );
 
@@ -167,9 +167,9 @@ class AudioRecorderRepository {
         path: filePath,
       );
 
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.speech,
         'Audio recording started successfully',
-        domain: AudioRecorderConstants.domainName,
         subDomain: AudioRecorderConstants.startRecordingSubdomain,
       );
 
@@ -177,17 +177,17 @@ class AudioRecorderRepository {
     } catch (e, stackTrace) {
       // Log context information separately
       _loggingService
-        ..captureEvent(
+        ..log(
+          LogDomain.speech,
           'Recording error context: isLinux=${Platform.isLinux}, isFlatpak=${PortalService.shouldUsePortal}',
-          domain: AudioRecorderConstants.domainName,
           subDomain: AudioRecorderConstants.startRecordingSubdomain,
         )
         // Pass the original exception object
-        ..captureException(
+        ..error(
+          LogDomain.speech,
           e,
-          domain: AudioRecorderConstants.domainName,
-          subDomain: AudioRecorderConstants.startRecordingSubdomain,
           stackTrace: stackTrace,
+          subDomain: AudioRecorderConstants.startRecordingSubdomain,
         );
       return null;
     }
@@ -197,11 +197,11 @@ class AudioRecorderRepository {
     try {
       await _audioRecorder.stop();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         e,
-        domain: AudioRecorderConstants.domainName,
-        subDomain: AudioRecorderConstants.stopRecordingSubdomain,
         stackTrace: stackTrace,
+        subDomain: AudioRecorderConstants.stopRecordingSubdomain,
       );
     }
   }
@@ -210,11 +210,11 @@ class AudioRecorderRepository {
     try {
       await _audioRecorder.pause();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         e,
-        domain: AudioRecorderConstants.domainName,
-        subDomain: AudioRecorderConstants.pauseRecordingSubdomain,
         stackTrace: stackTrace,
+        subDomain: AudioRecorderConstants.pauseRecordingSubdomain,
       );
     }
   }
@@ -225,11 +225,11 @@ class AudioRecorderRepository {
     try {
       await _audioRecorder.resume();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         e,
-        domain: AudioRecorderConstants.domainName,
-        subDomain: AudioRecorderConstants.resumeRecordingSubdomain,
         stackTrace: stackTrace,
+        subDomain: AudioRecorderConstants.resumeRecordingSubdomain,
       );
     }
   }
@@ -240,11 +240,11 @@ class AudioRecorderRepository {
     try {
       await _audioRecorder.dispose();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         e,
-        domain: AudioRecorderConstants.domainName,
-        subDomain: AudioRecorderConstants.disposeSubdomain,
         stackTrace: stackTrace,
+        subDomain: AudioRecorderConstants.disposeSubdomain,
       );
     }
   }

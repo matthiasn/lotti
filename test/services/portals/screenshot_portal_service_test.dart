@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:dbus/dbus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -32,7 +32,7 @@ class FakeDBusSignature extends Fake implements DBusSignature {}
 void main() {
   group('ScreenshotPortalService', () {
     late ScreenshotPortalService service;
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockDomainLogger;
     late MockDBusClient mockDBusClient;
     late MockDBusRemoteObject mockDBusRemoteObject;
 
@@ -45,21 +45,21 @@ void main() {
     });
 
     setUp(() {
-      mockLoggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
       mockDBusClient = MockDBusClient();
       mockDBusRemoteObject = MockDBusRemoteObject();
 
-      getIt.registerSingleton<LoggingService>(mockLoggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       service = ScreenshotPortalService();
 
       // Setup default mock behaviors
       when(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async {});
 
@@ -76,7 +76,7 @@ void main() {
     test('mock objects are properly initialized', () {
       expect(mockDBusClient, isNotNull);
       expect(mockDBusRemoteObject, isNotNull);
-      expect(mockLoggingService, isNotNull);
+      expect(mockDomainLogger, isNotNull);
     });
 
     test('should be a singleton', () {
@@ -226,11 +226,11 @@ void main() {
 
         // Verify that exception was logged
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'ScreenshotPortalService',
+          () => mockDomainLogger.error(
+            LogDomain.screenshots,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'takeScreenshot',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
       });

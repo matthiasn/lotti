@@ -22,6 +22,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/fd_limits.dart';
@@ -67,18 +68,18 @@ Future<AppExitResponse> _handleAppExitRequested() async {
     } on TimeoutException {
       // Don't rethrow: a stuck close on one resource shouldn't block the
       // others from getting a chance to close cleanly before exit.
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.general,
         'close timed out after ${_closeTimeout.inSeconds}s',
-        domain: 'MAIN',
         subDomain: 'onExitRequested:$T',
         level: InsightLevel.error,
       );
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.general,
         e,
-        domain: 'MAIN',
-        subDomain: 'onExitRequested:$T',
         stackTrace: stackTrace,
+        subDomain: 'onExitRequested:$T',
       );
     }
   }
@@ -115,14 +116,23 @@ Future<void> main() async {
 
   await runZonedGuarded(
     () async {
-      getIt.registerSingleton<LoggingService>(
-        LoggingService(),
-        dispose: (service) => service.dispose(),
-      );
+      // Register DomainLogger immediately after its LoggingService sink so the
+      // startup diagnostics below — and the runZonedGuarded error handler — can
+      // resolve it before registerSingletons() runs. registerSingletons() then
+      // reuses this instance instead of re-registering.
+      final loggingService = LoggingService();
+      getIt
+        ..registerSingleton<LoggingService>(
+          loggingService,
+          dispose: (service) => service.dispose(),
+        )
+        ..registerSingleton<DomainLogger>(
+          DomainLogger(loggingService: loggingService),
+        );
 
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.general,
         fdAdjustment.toString(),
-        domain: 'MAIN',
         subDomain: 'fdLimits',
       );
 
@@ -130,9 +140,9 @@ Future<void> main() async {
       try {
         MediaKit.ensureInitialized();
       } catch (e) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.general,
           e,
-          domain: 'MAIN',
           subDomain:
               'MediaKit initialization failed - continuing without media support',
         );
@@ -176,11 +186,11 @@ Future<void> main() async {
       );
 
       FlutterError.onError = (FlutterErrorDetails details) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.general,
           details.exception,
-          domain: 'MAIN',
-          subDomain: details.library,
           stackTrace: details.stack,
+          subDomain: details.library,
         );
       };
 
@@ -202,12 +212,21 @@ Future<void> main() async {
       );
     },
     (Object error, StackTrace stackTrace) {
-      getIt<LoggingService>().captureException(
-        error,
-        domain: 'MAIN',
-        subDomain: 'runZonedGuarded',
-        stackTrace: stackTrace,
-      );
+      // Defensive: an error thrown before DomainLogger is registered must not be
+      // masked by a GetIt lookup failure in the handler itself.
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.general,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'runZonedGuarded',
+        );
+      } else {
+        debugPrint(
+          'Unhandled startup error before logging init: $error\n'
+          '$stackTrace',
+        );
+      }
     },
   );
 }

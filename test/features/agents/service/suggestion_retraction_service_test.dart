@@ -919,10 +919,13 @@ void main() {
         expect(results.single.outcome, RetractionOutcome.retracted);
         verify(
           () => mockDomainLogger.error(
-            LogDomains.agentWorkflow,
-            any(that: contains('Post-retraction notification sync failed')),
+            LogDomain.agentWorkflow,
+            any(),
+            message: any(
+              named: 'message',
+              that: contains('Post-retraction notification sync failed'),
+            ),
             subDomain: any(named: 'subDomain'),
-            error: any(named: 'error'),
             stackTrace: any(named: 'stackTrace'),
           ),
         ).called(1);

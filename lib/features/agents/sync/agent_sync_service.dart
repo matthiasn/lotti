@@ -88,9 +88,10 @@ class AgentSyncService {
       );
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
-        LogDomains.sync,
-        'sequence record failed after agent entity write; VC already committed',
-        error: exception,
+        LogDomain.sync,
+        exception,
+        message:
+            'sequence record failed after agent entity write; VC already committed',
         stackTrace: stackTrace,
         subDomain: 'agentSync.recordEntity',
       );
@@ -109,9 +110,10 @@ class AgentSyncService {
       );
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
-        LogDomains.sync,
-        'sequence record failed after agent link write; VC already committed',
-        error: exception,
+        LogDomain.sync,
+        exception,
+        message:
+            'sequence record failed after agent link write; VC already committed',
         stackTrace: stackTrace,
         subDomain: 'agentSync.recordLink',
       );
@@ -266,9 +268,9 @@ class AgentSyncService {
       await _outboxService.enqueueMessage(message);
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
-        LogDomains.sync,
-        'outbox enqueue failed after DB write; VC already committed',
-        error: exception,
+        LogDomain.sync,
+        exception,
+        message: 'outbox enqueue failed after DB write; VC already committed',
         stackTrace: stackTrace,
         subDomain: subDomain,
       );

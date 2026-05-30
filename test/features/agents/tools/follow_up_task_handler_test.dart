@@ -236,8 +236,8 @@ void main() {
       () => mockDomainLogger.error(
         any(),
         any(),
+        message: any(named: 'message'),
         subDomain: any(named: 'subDomain'),
-        error: any(named: 'error'),
         stackTrace: any(named: 'stackTrace'),
       ),
     ).thenReturn(null);
@@ -706,7 +706,7 @@ void main() {
 
           verify(
             () => mockDomainLogger.log(
-              LogDomains.agentWorkflow,
+              LogDomain.agentWorkflow,
               any(
                 that: allOf(
                   contains('Created task'),
@@ -752,8 +752,10 @@ void main() {
 
           verify(
             () => mockDomainLogger.error(
-              LogDomains.agentWorkflow,
-              any(
+              LogDomain.agentWorkflow,
+              any(),
+              message: any(
+                named: 'message',
                 that: allOf(
                   contains('Failed to link source'),
                   isNot(contains(sourceTaskId)),
@@ -761,7 +763,6 @@ void main() {
                   isNot(contains('Error Task')),
                 ),
               ),
-              error: any(named: 'error'),
               subDomain: any(named: 'subDomain'),
               stackTrace: any(named: 'stackTrace'),
             ),

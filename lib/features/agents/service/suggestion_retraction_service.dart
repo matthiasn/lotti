@@ -359,7 +359,7 @@ class SuggestionRetractionService {
   Future<void> _persistRetractionDecision(StagedRetraction retraction) async {
     final item = retraction.item;
     _domainLogger?.log(
-      LogDomains.agentWorkflow,
+      LogDomain.agentWorkflow,
       'Retracting item ${retraction.itemIndex} (${item.toolName}) in change '
       'set ${DomainLogger.sanitizeId(retraction.changeSet.id)}',
       subDomain: _sub,
@@ -405,7 +405,7 @@ class SuggestionRetractionService {
         // A concurrent writer truncated items between staging and this
         // re-read. The decision was already persisted, so surface the orphan.
         _domainLogger?.log(
-          LogDomains.agentWorkflow,
+          LogDomain.agentWorkflow,
           'Retraction bounds mismatch after re-read: itemIndex=$itemIndex, '
           'items=${items.length}, '
           'changeSet=${DomainLogger.sanitizeId(current.id)}',
@@ -419,7 +419,7 @@ class SuggestionRetractionService {
         // re-read. Do not overwrite their decision; the agent's retraction
         // decision record stays persisted for the audit trail.
         _domainLogger?.log(
-          LogDomains.agentWorkflow,
+          LogDomain.agentWorkflow,
           'Retraction lost race to user action: itemIndex=$itemIndex, '
           'observedStatus=${existing.status.name}, '
           'changeSet=${DomainLogger.sanitizeId(current.id)}',
@@ -433,7 +433,7 @@ class SuggestionRetractionService {
         // removed, reordered, or its args changed under us). Skip rather than
         // retract the wrong proposal; the agent can re-stage on the next wake.
         _domainLogger?.log(
-          LogDomains.agentWorkflow,
+          LogDomain.agentWorkflow,
           'Retraction skipped — item at index changed: itemIndex=$itemIndex, '
           'changeSet=${DomainLogger.sanitizeId(current.id)}',
           subDomain: _sub,
@@ -490,11 +490,12 @@ class SuggestionRetractionService {
       await callback(changeSet);
     } catch (error, stackTrace) {
       _domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Post-retraction notification sync failed for change set '
-        '${DomainLogger.sanitizeId(changeSet.id)}',
+        LogDomain.agentWorkflow,
+        error,
+        message:
+            'Post-retraction notification sync failed for change set '
+            '${DomainLogger.sanitizeId(changeSet.id)}',
         subDomain: _sub,
-        error: error,
         stackTrace: stackTrace,
       );
     }

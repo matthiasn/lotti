@@ -4894,6 +4894,75 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkExistingTask => 'Propojit existující úkol...';
 
   @override
+  String get loggingDomainAgentRuntime => 'Běh agentů';
+
+  @override
+  String get loggingDomainAgentWorkflow => 'Pracovní postup agentů';
+
+  @override
+  String get loggingDomainAi => 'AI';
+
+  @override
+  String get loggingDomainCalendar => 'Kalendář a čas';
+
+  @override
+  String get loggingDomainChat => 'Chat';
+
+  @override
+  String get loggingDomainDailyOs => 'Daily OS';
+
+  @override
+  String get loggingDomainDatabase => 'Databáze';
+
+  @override
+  String get loggingDomainGeneral => 'Obecné';
+
+  @override
+  String get loggingDomainHabits => 'Návyky';
+
+  @override
+  String get loggingDomainHealth => 'Zdraví';
+
+  @override
+  String get loggingDomainLabels => 'Štítky';
+
+  @override
+  String get loggingDomainLocation => 'Poloha';
+
+  @override
+  String get loggingDomainNavigation => 'Navigace';
+
+  @override
+  String get loggingDomainNotifications => 'Oznámení';
+
+  @override
+  String get loggingDomainPersistence => 'Perzistence';
+
+  @override
+  String get loggingDomainRatings => 'Hodnocení';
+
+  @override
+  String get loggingDomainScreenshots => 'Snímky obrazovky';
+
+  @override
+  String get loggingDomainSettings => 'Nastavení';
+
+  @override
+  String get loggingDomainSpeech => 'Řeč a zvuk';
+
+  @override
+  String get loggingDomainSync => 'Synchronizace';
+
+  @override
+  String get loggingDomainTasks => 'Úkoly a seznamy';
+
+  @override
+  String get loggingDomainTheming => 'Motivy';
+
+  @override
+  String get loggingDomainWhatsNew => 'Novinky';
+
+  @override
   String get maintenanceDeleteAgentDb => 'Smazat databázi agentů';
 
   @override
@@ -6337,20 +6406,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get settingsLoggingAgentRuntime => 'Agent Runtime';
-
-  @override
-  String get settingsLoggingAgentRuntimeSubtitle =>
-      'Wake orchestrator decisions and dispatch';
-
-  @override
-  String get settingsLoggingAgentWorkflow => 'Agent Workflow';
-
-  @override
-  String get settingsLoggingAgentWorkflowSubtitle =>
-      'Conversation execution and tool calls';
-
-  @override
   String get settingsLoggingDomainsSubtitle =>
       'Control which domains write to the log';
 
@@ -6370,12 +6425,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
       'Pomalé dotazy se zapisují do slow_queries-YYYY-MM-DD.log';
-
-  @override
-  String get settingsLoggingSync => 'Sync';
-
-  @override
-  String get settingsLoggingSyncSubtitle => 'Cross-device sync operations';
 
   @override
   String get settingsMaintenanceTitle => 'Údržba';

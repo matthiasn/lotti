@@ -5,6 +5,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -121,21 +122,21 @@ void main() {
     registerFallbackValue(StackTrace.empty);
   });
 
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late MockEvent event;
   late List<String> traces;
   late OutboxBundleUnpacker unpacker;
 
   setUp(() {
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     event = MockEvent();
     traces = <String>[];
     when(
-      () => logging.captureException(
+      () => logging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -256,11 +257,11 @@ void main() {
           throwsA(isA<FileSystemException>()),
         );
         verifyNever(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
           ),
         );
       },
@@ -296,11 +297,11 @@ void main() {
             .toList();
         expect(ids, ['before', 'after']);
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            LogDomain.sync,
             any<Object>(that: isA<StateError>()),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'processor.resolve.outboxBundle.child',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'processor.resolve.outboxBundle.child',
           ),
         ).called(1);
       },
@@ -440,11 +441,11 @@ void main() {
 
         expect(applied, ['before', 'after']);
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            LogDomain.sync,
             any<Object>(that: isA<StateError>()),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'processor.apply.outboxBundle.child',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'processor.apply.outboxBundle.child',
           ),
         ).called(1);
       },
@@ -482,11 +483,11 @@ void main() {
         // child after the failure is not reached on this pass.
         expect(applied, ['first']);
         verifyNever(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
           ),
         );
       },
@@ -506,11 +507,11 @@ void main() {
 
         expect(calls, 0);
         verifyNever(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
           ),
         );
       },

@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -29,7 +30,7 @@ class SpySyncController extends SyncMaintenanceController {
 
 void main() {
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late AppLocalizations messages;
 
   setUpAll(() {
@@ -40,7 +41,7 @@ void main() {
 
   setUp(() {
     mockSyncMaintenanceRepository = MockSyncMaintenanceRepository();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
     messages = AppLocalizationsEn(); // Using English for tests
 
     const totalsByStep = <SyncStep, int>{
@@ -170,11 +171,11 @@ void main() {
 
     // Stub logging service methods (optional, but good practice)
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => mockLoggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) async {});
 

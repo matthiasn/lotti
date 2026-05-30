@@ -20,6 +20,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 class MockJournalRepository2 extends Mock implements JournalRepository {}
 
@@ -51,6 +52,7 @@ void main() {
     getIt
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<LoggingService>(mockLogging);
+    ensureDomainLoggerRegistered();
 
     container = ProviderContainer(
       overrides: [

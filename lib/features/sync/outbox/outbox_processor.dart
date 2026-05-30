@@ -8,7 +8,6 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 
 abstract class OutboxMessageSender {
   Future<bool> send(SyncMessage message);
@@ -49,7 +48,7 @@ class OutboxProcessor {
 
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
   final int bundleMaxSize;
   final Duration retryDelay;
@@ -59,7 +58,7 @@ class OutboxProcessor {
   final Duration claimLease;
 
   void _syncLog(String message, {String? subDomain}) {
-    _domainLogger?.log(LogDomains.sync, message, subDomain: subDomain);
+    _domainLogger?.log(LogDomain.sync, message, subDomain: subDomain);
   }
 
   // Diagnostics for repeated failures on the same head-of-queue subject.
@@ -130,17 +129,17 @@ class OutboxProcessor {
           _lastFailedRepeats = 1;
         }
         try {
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'sendFailed subject=${claimedItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
-            domain: 'OUTBOX',
             subDomain: 'retry',
           );
         } catch (_) {}
         if (nextAttempts >= maxRetriesForDiagnostics) {
           try {
-            _loggingService.captureEvent(
+            _loggingService.log(
+              LogDomain.sync,
               'retryCapReached subject=${claimedItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
-              domain: 'OUTBOX',
               subDomain: 'retry.cap',
             );
           } catch (_) {}
@@ -154,11 +153,11 @@ class OutboxProcessor {
       markedSent = true;
       final elapsedMs = DateTime.now().difference(sendStart).inMilliseconds;
       final hasMore = await _repository.hasMorePending();
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'sent type=${syncMessage.runtimeType} subject=${claimedItem.subject} '
         'retries=${claimedItem.retries} ms=$elapsedMs '
         'pending=${hasMore ? 2 : 1}',
-        domain: 'OUTBOX',
         subDomain: 'outbox.send',
       );
       // Reset repeat tracker on success for this subject.
@@ -171,11 +170,11 @@ class OutboxProcessor {
           ? OutboxProcessingResult.schedule(Duration.zero)
           : OutboxProcessingResult.none;
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'OUTBOX',
-        subDomain: 'sendNext',
         stackTrace: stackTrace,
+        subDomain: 'sendNext',
       );
       // If the row is already sent, the exception happened in the post-send
       // observability path (hasMorePending/logging). Swallow it here — we do
@@ -192,17 +191,17 @@ class OutboxProcessor {
         _lastFailedRepeats = 1;
       }
       try {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'sendException subject=${claimedItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${errorDelay.inMilliseconds}',
-          domain: 'OUTBOX',
           subDomain: 'retry',
         );
       } catch (_) {}
       if (nextAttempts >= maxRetriesForDiagnostics) {
         try {
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'retryCapReached subject=${claimedItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
-            domain: 'OUTBOX',
             subDomain: 'retry.cap',
           );
         } catch (_) {}
@@ -258,11 +257,11 @@ class OutboxProcessor {
           _lastFailedRepeats = 1;
         }
         try {
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'bundleSendFailed size=$bundleSize headSubject=$headSubject '
             'attempts=$nextAttempts repeats=$_lastFailedRepeats '
             'backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
-            domain: 'OUTBOX',
             subDomain: 'retry',
           );
         } catch (_) {}
@@ -274,10 +273,10 @@ class OutboxProcessor {
         );
         if (capReached) {
           try {
-            _loggingService.captureEvent(
+            _loggingService.log(
+              LogDomain.sync,
               'retryCapReached headSubject=$headSubject size=$bundleSize '
               'attempts=$nextAttempts status=error → skip/head-advance',
-              domain: 'OUTBOX',
               subDomain: 'retry.cap',
             );
           } catch (_) {}
@@ -290,10 +289,10 @@ class OutboxProcessor {
       markedSent = true;
       final elapsedMs = DateTime.now().difference(sendStart).inMilliseconds;
       final hasMore = await _repository.hasMorePending();
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'bundleSent size=$bundleSize headSubject=$headSubject '
         'ms=$elapsedMs pending=${hasMore ? 2 : 1}',
-        domain: 'OUTBOX',
         subDomain: 'outbox.send',
       );
       if (_lastFailedSubject == headSubject) {
@@ -305,11 +304,11 @@ class OutboxProcessor {
           ? OutboxProcessingResult.schedule(Duration.zero)
           : OutboxProcessingResult.none;
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'OUTBOX',
-        subDomain: 'sendNext.bundle',
         stackTrace: stackTrace,
+        subDomain: 'sendNext.bundle',
       );
       if (markedSent) {
         return OutboxProcessingResult.schedule(Duration.zero);
@@ -323,11 +322,11 @@ class OutboxProcessor {
         _lastFailedRepeats = 1;
       }
       try {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'bundleSendException size=$bundleSize headSubject=$headSubject '
           'attempts=$nextAttempts repeats=$_lastFailedRepeats '
           'backoffMs=${errorDelay.inMilliseconds}',
-          domain: 'OUTBOX',
           subDomain: 'retry',
         );
       } catch (_) {}
@@ -336,10 +335,10 @@ class OutboxProcessor {
       );
       if (capReached) {
         try {
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'retryCapReached headSubject=$headSubject size=$bundleSize '
             'attempts=$nextAttempts status=error → skip/head-advance',
-            domain: 'OUTBOX',
             subDomain: 'retry.cap',
           );
         } catch (_) {}

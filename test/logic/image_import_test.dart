@@ -9,7 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
@@ -35,7 +35,7 @@ class FakeDropItem extends Fake implements DropItem {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockJournalDb mockJournalDb;
   late Directory tempDir;
@@ -48,14 +48,14 @@ void main() {
   });
 
   setUp(() async {
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
 
     tempDir = await Directory.systemTemp.createTemp('image_import_test_');
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
     if (getIt.isRegistered<PersistenceLogic>()) {
       getIt.unregister<PersistenceLogic>();
@@ -68,17 +68,17 @@ void main() {
     }
 
     getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<DomainLogger>(mockDomainLogger)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<Directory>(tempDir);
 
     when(
-      () => mockLoggingService.captureException(
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -115,8 +115,8 @@ void main() {
       await tempDir.delete(recursive: true);
     } catch (_) {}
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
     if (getIt.isRegistered<PersistenceLogic>()) {
       getIt.unregister<PersistenceLogic>();
@@ -184,9 +184,9 @@ void main() {
       );
 
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.ai,
           any<Object>(that: contains('too large')),
-          domain: ImageImportConstants.loggingDomain,
           subDomain: 'importPastedImages',
         ),
       ).called(1);
@@ -207,9 +207,9 @@ void main() {
       }
 
       verifyNever(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.ai,
           any<Object>(that: contains('too large')),
-          domain: ImageImportConstants.loggingDomain,
           subDomain: 'importPastedImages',
         ),
       );
@@ -311,9 +311,9 @@ void main() {
       await importDroppedImages(data: dropDetails);
 
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.ai,
           any<Object>(that: contains('too large')),
-          domain: ImageImportConstants.loggingDomain,
           subDomain: 'importDroppedImages',
         ),
       ).called(1);
@@ -371,11 +371,11 @@ void main() {
 
       // The bad file causes an error, but the good file still gets imported
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.ai,
           any<Object>(),
-          domain: ImageImportConstants.loggingDomain,
-          subDomain: 'importDroppedImages',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'importDroppedImages',
         ),
       ).called(1);
 
@@ -404,9 +404,9 @@ void main() {
 
       expect(result, isNull);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.ai,
           any<Object>(that: contains('too large')),
-          domain: ImageImportConstants.loggingDomain,
           subDomain: 'importGeneratedImageBytes',
         ),
       ).called(1);

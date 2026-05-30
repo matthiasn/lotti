@@ -10,6 +10,7 @@ import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/services/system_message_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -42,7 +43,7 @@ void main() {
     late MockAiConfigRepository mockAiConfigRepository;
     late MockCloudInferenceRepository mockCloudInferenceRepository;
     late MockTaskSummaryRepository mockTaskSummaryRepository;
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockDomainLogger;
 
     const testCategoryId = 'test-category-123';
     const testMessage = 'Hello AI assistant';
@@ -52,7 +53,7 @@ void main() {
       mockAiConfigRepository = MockAiConfigRepository();
       mockCloudInferenceRepository = MockCloudInferenceRepository();
       mockTaskSummaryRepository = MockTaskSummaryRepository();
-      mockLoggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
 
       repository = ChatRepository(
         cloudInferenceRepository: mockCloudInferenceRepository,
@@ -61,7 +62,7 @@ void main() {
         systemMessageService: SystemMessageService(
           now: () => DateTime(2024, 3, 15),
         ),
-        loggingService: mockLoggingService,
+        loggingService: mockDomainLogger,
       );
     });
 
@@ -106,9 +107,9 @@ void main() {
 
           // Verify logging was called after dispatch
           verify(
-            () => mockLoggingService.captureEvent(
+            () => mockDomainLogger.log(
+              LogDomain.chat,
               'Starting chat message processing',
-              domain: 'ChatRepository',
               subDomain: 'sendMessage',
             ),
           ).called(1);
@@ -146,11 +147,11 @@ void main() {
 
           // Verify error logging
           verify(
-            () => mockLoggingService.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.chat,
               any<Exception>(),
-              domain: 'ChatRepository',
-              subDomain: 'sendMessage',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'sendMessage',
             ),
           ).called(1);
           sub.cancel();
@@ -460,9 +461,9 @@ void main() {
         } catch (_) {}
 
         final captured = verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            LogDomain.chat,
             'Starting chat message processing',
-            domain: 'ChatRepository',
             subDomain: 'sendMessage',
           ),
         ).callCount; // ensure path executed
@@ -588,9 +589,9 @@ void main() {
 
         // Verify the repository logged the start of processing
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            LogDomain.chat,
             'Starting chat message processing',
-            domain: 'ChatRepository',
             subDomain: 'sendMessage',
           ),
         ).called(1);
@@ -687,9 +688,9 @@ void main() {
 
           // Verify interactions
           verify(
-            () => mockLoggingService.captureEvent(
+            () => mockDomainLogger.log(
+              LogDomain.chat,
               'Starting chat message processing',
-              domain: 'ChatRepository',
               subDomain: 'sendMessage',
             ),
           ).called(1);

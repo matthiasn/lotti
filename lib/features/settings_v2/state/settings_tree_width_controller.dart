@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Persisted settings key — intentionally distinct from the shared
 /// `PANE_WIDTH_LIST` used by Tasks/Projects/Dashboards so dragging
@@ -85,11 +85,11 @@ class SettingsTreeNavWidth extends Notifier<double> {
       );
     } catch (error, stackTrace) {
       if (_disposed) return;
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.settings,
         error,
-        domain: 'SETTINGS_TREE_NAV',
-        subDomain: 'loadPersistedWidth',
         stackTrace: stackTrace,
+        subDomain: 'loadPersistedWidth',
       );
     }
   }
@@ -168,11 +168,11 @@ class SettingsTreeNavWidth extends Notifier<double> {
       );
     } catch (error, stackTrace) {
       if (_disposed) return;
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.settings,
         error,
-        domain: 'SETTINGS_TREE_NAV',
-        subDomain: 'persist',
         stackTrace: stackTrace,
+        subDomain: 'persist',
       );
     }
   }

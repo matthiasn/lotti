@@ -15,7 +15,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -28,7 +28,7 @@ void main() {
     late MockOutboxService outboxService;
     late MockSettingsDb settingsDb;
     late MockJournalDb journalDb;
-    late MockLoggingService loggingService;
+    late MockDomainLogger mockDomainLogger;
     late MockUpdateNotifications mockUpdateNotifications;
     late StreamController<bool> tooltipController;
     late StreamController<Set<String>> notificationsController;
@@ -56,7 +56,7 @@ void main() {
       outboxService = MockOutboxService();
       settingsDb = MockSettingsDb();
       journalDb = MockJournalDb();
-      loggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
       mockUpdateNotifications = MockUpdateNotifications();
 
       tooltipController = StreamController<bool>.broadcast();
@@ -91,11 +91,11 @@ void main() {
         () => outboxService.enqueueMessage(any<SyncMessage>()),
       ).thenAnswer((_) async {});
       when(
-        () => loggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
@@ -104,7 +104,7 @@ void main() {
         ..registerSingleton<OutboxService>(outboxService)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<JournalDb>(journalDb)
-        ..registerSingleton<LoggingService>(loggingService);
+        ..registerSingleton<DomainLogger>(mockDomainLogger);
 
       container = ProviderContainer();
     });
@@ -425,11 +425,11 @@ void main() {
 
           // Verify error was captured
           verify(
-            () => loggingService.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.theming,
               any<Object>(),
-              domain: 'THEMING_CONTROLLER',
-              subDomain: 'init',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'init',
             ),
           ).called(1);
         });
@@ -518,11 +518,11 @@ void main() {
 
           // Verify error was logged
           verify(
-            () => loggingService.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.theming,
               any<Object>(),
-              domain: 'THEMING_CONTROLLER',
-              subDomain: 'theme_prefs_reload',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'theme_prefs_reload',
             ),
           ).called(1);
 
@@ -551,11 +551,11 @@ void main() {
 
           // Verify error was logged
           verify(
-            () => loggingService.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.theming,
               any<Object>(),
-              domain: 'THEMING_SYNC',
-              subDomain: 'enqueue',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'enqueue',
             ),
           ).called(1);
         });

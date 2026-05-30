@@ -34,6 +34,7 @@ import '../../features/agents/test_utils.dart';
 import '../../helpers/fallbacks.dart';
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -110,6 +111,7 @@ void main() {
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<EntitiesCacheService>(MockEntitiesCacheService())
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());
+      ensureDomainLoggerRegistered();
     });
 
     tearDownAll(() async {

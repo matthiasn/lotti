@@ -12,7 +12,7 @@ import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
@@ -137,7 +137,7 @@ extension _AnyGeneratedMediaDropScenario on glados.Any {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockJournalDb mockJournalDb;
   late Directory tempDir;
@@ -151,14 +151,14 @@ void main() {
   });
 
   setUp(() async {
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
 
     tempDir = await Directory.systemTemp.createTemp('media_import_test_');
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
     if (getIt.isRegistered<PersistenceLogic>()) {
       getIt.unregister<PersistenceLogic>();
@@ -174,18 +174,18 @@ void main() {
     }
 
     getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<DomainLogger>(mockLoggingService)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<Directory>(tempDir)
       ..registerSingleton<AudioMetadataReader>((_) async => Duration.zero);
 
     when(
-      () => mockLoggingService.captureException(
+      () => mockLoggingService.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -231,8 +231,8 @@ void main() {
       await tempDir.delete(recursive: true);
     } catch (_) {}
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
     if (getIt.isRegistered<PersistenceLogic>()) {
       getIt.unregister<PersistenceLogic>();

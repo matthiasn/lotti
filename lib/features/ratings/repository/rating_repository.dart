@@ -12,7 +12,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
@@ -45,9 +44,10 @@ class RatingRepository {
       );
     } catch (error, stackTrace) {
       getIt<DomainLogger>().error(
-        LogDomains.sync,
-        'sequence record failed after rating link write; VC already committed',
-        error: error,
+        LogDomain.sync,
+        error,
+        message:
+            'sequence record failed after rating link write; VC already committed',
         stackTrace: stackTrace,
         subDomain: '_createRatingLink.recordSent',
       );
@@ -90,11 +90,11 @@ class RatingRepository {
         categoryId: targetEntry?.meta.categoryId,
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.ratings,
         exception,
-        domain: 'RatingRepository',
-        subDomain: 'createOrUpdateRating',
         stackTrace: stackTrace,
+        subDomain: 'createOrUpdateRating',
       );
       return null;
     }
@@ -149,11 +149,11 @@ class RatingRepository {
         toId: targetId,
       );
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.ratings,
         e,
-        domain: 'RatingRepository',
-        subDomain: '_createRating.linkCleanup',
         stackTrace: stackTrace,
+        subDomain: '_createRating.linkCleanup',
       );
       await _softDeleteEntity(journalEntity);
       return null;
@@ -227,10 +227,11 @@ class RatingRepository {
           );
         } catch (e, stackTrace) {
           getIt<DomainLogger>().error(
-            LogDomains.sync,
-            'outbox enqueue failed after _createRatingLink; '
-            'VC already committed',
-            error: e,
+            LogDomain.sync,
+            e,
+            message:
+                'outbox enqueue failed after _createRatingLink; '
+                'VC already committed',
             stackTrace: stackTrace,
             subDomain: '_createRatingLink.enqueue',
           );
@@ -255,11 +256,11 @@ class RatingRepository {
         ),
       );
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.ratings,
         e,
-        domain: 'RatingRepository',
-        subDomain: '_softDeleteEntity',
         stackTrace: stackTrace,
+        subDomain: '_softDeleteEntity',
       );
     }
   }

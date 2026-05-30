@@ -21,7 +21,7 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' as rec;
@@ -80,7 +80,7 @@ _fakeRealtimeConfig = (
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockAudioRecorderRepository mockAudioRecorderRepository;
   late MockPlayer mockPlayer;
   late MockPlayerState mockPlayerState;
@@ -138,7 +138,7 @@ void main() {
   });
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockAudioRecorderRepository = MockAudioRecorderRepository();
     mockPlayer = MockPlayer();
     mockPlayerState = MockPlayerState();
@@ -193,10 +193,10 @@ void main() {
     ).thenAnswer((_) async {});
 
     // Register mocks with GetIt
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
     // Create container with overridden providers
     container = ProviderContainer(
@@ -338,9 +338,9 @@ void main() {
 
         // Assert - Verify no permission event was logged
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            LogDomain.speech,
             any<String>(that: startsWith('No audio recording permission')),
-            domain: 'recorder_controller',
             subDomain: 'record_permission_denied',
           ),
         ).called(1);
@@ -540,10 +540,11 @@ void main() {
         // Assert - Since there's no audio note, no exception should be logged
         // If there was an audio note and repository threw exception, it would be logged
         verifyNever(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'recorder_controller',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recorder_controller',
           ),
         );
       });
@@ -731,10 +732,11 @@ void main() {
 
         // Assert
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
             testException,
-            domain: 'recorder_controller',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recorder_controller',
           ),
         ).called(1);
       });
@@ -830,10 +832,11 @@ void main() {
         // Assert
         expect(result, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
             testException,
-            domain: 'recorder_controller',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recorder_controller',
           ),
         ).called(1);
       });
@@ -984,9 +987,9 @@ void main() {
 
       // Verify that the no permission event was logged
       verify(
-        () => mockLoggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.speech,
           any<String>(that: startsWith('No audio recording permission')),
-          domain: 'recorder_controller',
           subDomain: 'record_permission_denied',
         ),
       ).called(1);
@@ -1341,9 +1344,9 @@ void main() {
 
         verify(() => mockRecorder.dispose()).called(1);
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            any<LogDomain>(),
             any<String>(that: contains('No audio recording permission')),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(1);
@@ -1366,11 +1369,11 @@ void main() {
         expect(state.isRealtimeMode, isFalse);
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(1);
       });
@@ -1442,11 +1445,11 @@ void main() {
         await controller.cancelRealtime();
 
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            any<LogDomain>(),
             any<String>(
               that: contains('Realtime recording cancelled'),
             ),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(1);
@@ -1461,9 +1464,9 @@ void main() {
 
         // Now make captureEvent throw so the cancel path hits the catch
         when(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenThrow(Exception('logging failed'));
@@ -1472,11 +1475,11 @@ void main() {
         await controller.cancelRealtime();
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
             any<Object>(),
-            domain: 'recorder_controller',
-            subDomain: 'cancelRealtime',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'cancelRealtime',
           ),
         ).called(1);
       });
@@ -1508,14 +1511,14 @@ void main() {
         expect(state.progress, Duration.zero);
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(
               named: 'subDomain',
               that: equals('stopRealtime'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -1653,11 +1656,11 @@ void main() {
 
         // Verify logging
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            any<LogDomain>(),
             any<String>(
               that: contains('Realtime recording stopped'),
             ),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(
               named: 'subDomain',
               that: equals('stopRealtime'),

@@ -280,7 +280,7 @@ void main() {
       syncService: mockSyncService,
       templateService: mockTemplateService,
       domainLogger: DomainLogger(loggingService: LoggingService())
-        ..enabledDomains.add(LogDomains.agentWorkflow),
+        ..enabledDomains.add(LogDomain.agentWorkflow),
     );
   });
 
@@ -2287,7 +2287,7 @@ void main() {
             syncService: mockSyncService,
             templateService: mockTemplateService,
             domainLogger: DomainLogger(loggingService: LoggingService())
-              ..enabledDomains.add(LogDomains.agentWorkflow),
+              ..enabledDomains.add(LogDomain.agentWorkflow),
             embeddingStore: mockEmbeddingStore,
             embeddingRepository: mockEmbeddingRepository,
           );

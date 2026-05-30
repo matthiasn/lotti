@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -68,7 +69,7 @@ void main() {
   });
 
   late _MockMatrixSyncGateway gateway;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late _MockSettingsDb settingsDb;
   late _MockSyncEventProcessor eventProcessor;
   late _MockSecureStorage secureStorage;
@@ -138,7 +139,7 @@ void main() {
 
   setUp(() {
     gateway = _MockMatrixSyncGateway();
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     settingsDb = _MockSettingsDb();
     eventProcessor = _MockSyncEventProcessor();
     secureStorage = _MockSecureStorage();
@@ -211,11 +212,11 @@ void main() {
       await service.forceRescan();
 
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'forceRescan.triggerBridge',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'forceRescan.triggerBridge',
         ),
       ).called(1);
     },
@@ -241,11 +242,11 @@ void main() {
       await service.retryNow();
 
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'retryNow.triggerBridge',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'retryNow.triggerBridge',
         ),
       ).called(1);
     },
@@ -286,11 +287,11 @@ void main() {
         async.elapse(const Duration(milliseconds: 10));
 
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: 'saveRoom.bootstrap',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'saveRoom.bootstrap',
           ),
         ).called(1);
       });
@@ -386,11 +387,11 @@ void main() {
       await service.dispose();
 
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'queue.dispose',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'queue.dispose',
         ),
       ).called(1);
       verify(() => sessionManager.dispose()).called(1);
@@ -423,11 +424,11 @@ void main() {
           throwsA(isA<StateError>()),
         );
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: 'queue.init',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'queue.init',
           ),
         ).called(1);
       },
@@ -526,11 +527,11 @@ void main() {
         expect(map['queueActive'], 0);
         expect(map['queueApplied'], 0);
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: 'metrics.queueStats',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'metrics.queueStats',
           ),
         ).called(1);
       },

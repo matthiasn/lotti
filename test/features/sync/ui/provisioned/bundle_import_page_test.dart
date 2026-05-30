@@ -45,6 +45,7 @@ void main() {
     mockMatrixService = MockMatrixService();
     mockLoggingService = MockLoggingService();
     pageIndexNotifier = ValueNotifier(0);
+    ensureDomainLoggerRegistered();
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
     when(
@@ -78,8 +79,9 @@ void main() {
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     pageIndexNotifier.dispose();
+    await tearDownTestGetIt();
   });
 
   List<Override> defaultOverrides() => [

@@ -14,7 +14,7 @@ import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -185,7 +185,7 @@ void main() {
     setUp(() async {
       await getIt.reset();
 
-      final mockLoggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       final mockSettingsDb = MockSettingsDb();
       final mockBackfill = MockBackfillRequestService();
       final mockEmbeddingService = MockEmbeddingService();
@@ -198,7 +198,7 @@ void main() {
       when(mockMatrix.dispose).thenAnswer((_) async {});
 
       getIt
-        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<DomainLogger>(mockDomainLogger)
         ..registerSingleton<SettingsDb>(mockSettingsDb)
         ..registerSingleton<BackfillRequestService>(mockBackfill)
         ..registerSingleton<EmbeddingService>(mockEmbeddingService)

@@ -10,6 +10,7 @@ import 'package:lotti/features/labels/constants/label_assignment_constants.dart'
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -362,13 +363,13 @@ void main() {
     registerFallbackValue(InsightType.log);
   });
   late MockLabelsRepository mockRepo;
-  late MockLoggingService mockLogging;
+  late MockDomainLogger mockLogging;
   late MockJournalDb mockDb;
   late LabelAssignmentProcessor processor;
 
   setUp(() {
     mockRepo = MockLabelsRepository();
-    mockLogging = MockLoggingService();
+    mockLogging = MockDomainLogger();
     mockDb = MockJournalDb();
     getIt.registerSingleton<LabelAssignmentEventService>(
       LabelAssignmentEventService(),
@@ -401,12 +402,11 @@ void main() {
 
     // Verify a max_total_reached event was logged with expected marker
     final logged = verify(
-      () => mockLogging.captureEvent(
-        captureAny<dynamic>(),
-        domain: 'labels_ai_assignment',
+      () => mockLogging.log(
+        LogDomain.labels,
+        captureAny<String>(),
         subDomain: 'processor',
         level: any<InsightLevel>(named: 'level'),
-        type: any<InsightType>(named: 'type'),
       ),
     ).captured;
     expect(logged, isNotEmpty);
@@ -422,7 +422,7 @@ void main() {
     (scenario) async {
       final localDb = MockJournalDb();
       final localRepo = MockLabelsRepository();
-      final localLogging = MockLoggingService();
+      final localLogging = MockDomainLogger();
       final localProcessor = LabelAssignmentProcessor(
         db: localDb,
         repository: localRepo,
@@ -450,15 +450,14 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
       when(
-        () => localLogging.captureEvent(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
+        () => localLogging.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any<String?>(named: 'subDomain'),
           level: any<InsightLevel>(named: 'level'),
-          type: any<InsightType>(named: 'type'),
         ),
       ).thenAnswer((invocation) {
-        final event = invocation.positionalArguments.first;
+        final event = invocation.positionalArguments[1];
         if (event is String && event.startsWith('{')) {
           telemetry.add(event);
         } else {

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -13,30 +13,16 @@ import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../helpers/fallbacks.dart';
+import '../mocks/mocks.dart';
 
 // Mocks
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
-
 class MockWindowManager extends Mock implements WindowManager {}
 
 class MockProcess extends Mock implements Process {}
 
 void main() {
   group('Platform-specific Screenshot Tests', () {
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockLoggingService;
     late MockWindowManager mockWindowManager;
     late Directory testTempDir;
 
@@ -55,11 +41,11 @@ void main() {
     });
 
     setUp(() {
-      mockLoggingService = MockLoggingService();
+      mockLoggingService = MockDomainLogger();
       mockWindowManager = MockWindowManager();
 
       getIt
-        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<DomainLogger>(mockLoggingService)
         ..registerSingleton<WindowManager>(mockWindowManager)
         ..registerSingleton<Directory>(testTempDir);
 
@@ -67,19 +53,19 @@ void main() {
       when(() => mockWindowManager.show()).thenAnswer((_) async {});
 
       when(
-        () => mockLoggingService.captureEvent(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
+        () => mockLoggingService.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any(named: 'subDomain'),
         ),
       ).thenReturn(null);
 
       when(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
+        () => mockLoggingService.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async {});
     });

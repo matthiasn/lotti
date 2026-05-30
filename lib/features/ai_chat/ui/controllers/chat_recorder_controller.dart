@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart' as record;
 
@@ -273,9 +273,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       });
 
       // Log start
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.chat,
         'chat_recording_started',
-        domain: 'ChatRecorderController',
         subDomain: 'start',
       );
     } catch (e) {
@@ -305,10 +305,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       await _ampSub?.cancel();
       await _recorder!.stop();
     } catch (e, s) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
         e,
         stackTrace: s,
-        domain: 'ChatRecorderController',
         subDomain: 'stopAndTranscribe.stop',
       );
     }
@@ -370,10 +370,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     try {
       await _ampSub?.cancel();
     } catch (e, s) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
         e,
         stackTrace: s,
-        domain: 'ChatRecorderController',
         subDomain: 'cancel.ampSub',
       );
     }
@@ -384,10 +384,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         await _realtimeAmpSub?.cancel();
         _realtimeAmpSub = null;
       } catch (e, s) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.chat,
           e,
           stackTrace: s,
-          domain: 'ChatRecorderController',
           subDomain: 'cancel.realtimeAmpSub',
         );
       }
@@ -396,10 +396,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     try {
       await _recorder?.stop();
     } catch (e, s) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
         e,
         stackTrace: s,
-        domain: 'ChatRecorderController',
         subDomain: 'cancel.recorder',
       );
     }
@@ -506,9 +506,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         }
       });
 
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.chat,
         'chat_realtime_recording_started',
-        domain: 'ChatRecorderController',
         subDomain: 'startRealtime',
       );
     } catch (e) {
@@ -553,10 +553,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       await _realtimeAmpSub?.cancel();
       _realtimeAmpSub = null;
     } catch (e, s) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
         e,
         stackTrace: s,
-        domain: 'ChatRecorderController',
         subDomain: 'stopRealtime.cancelSubs',
       );
     }
@@ -586,12 +586,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         );
       }
 
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.chat,
         'chat_realtime_recording_stopped: '
         'transcriptLen=${result.transcript.length}, '
         'audioFile=${result.audioFilePath}, '
         'usedFallback=${result.usedTranscriptFallback}',
-        domain: 'ChatRecorderController',
         subDomain: 'stopRealtime',
       );
     } catch (e) {
@@ -635,10 +635,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       chunkCount++;
       buffer.write(chunk);
 
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.chat,
         'chat_transcription_chunk_received: chunk=$chunkCount, '
         'chunkLen=${chunk.length}, totalLen=${buffer.length}',
-        domain: 'ChatRecorderController',
         subDomain: 'transcribe',
       );
 
@@ -652,10 +652,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       }
     }
 
-    getIt<LoggingService>().captureEvent(
+    getIt<DomainLogger>().log(
+      LogDomain.chat,
       'chat_transcription_completed: totalChunks=$chunkCount, '
       'totalLen=${buffer.length}',
-      domain: 'ChatRecorderController',
       subDomain: 'transcribe',
     );
     return buffer.toString();
@@ -684,20 +684,20 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       await _ampSub?.cancel();
       _ampSub = null;
     } catch (e, s) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
         e,
         stackTrace: s,
-        domain: 'ChatRecorderController',
         subDomain: 'cleanup.ampSub',
       );
     }
     try {
       await _recorder?.dispose();
     } catch (e, s) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
         e,
         stackTrace: s,
-        domain: 'ChatRecorderController',
         subDomain: 'cleanup.recorder',
       );
     }
@@ -713,19 +713,19 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
           );
         } on PathNotFoundException catch (e, s) {
           // Log and continue; file already gone
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.chat,
             e,
             stackTrace: s,
-            domain: 'ChatRecorderController',
             subDomain: 'cleanup.fileNotFound',
           );
         }
       }
     } catch (e) {
       // Log cleanup errors instead of surfacing to user state
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
         e,
-        domain: 'ChatRecorderController',
         subDomain: 'cleanup',
       );
     }
@@ -737,19 +737,19 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
               .timeout(const Duration(seconds: _cleanupTimeoutSeconds));
         } on PathNotFoundException catch (e, s) {
           // Log and continue; directory already gone
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.chat,
             e,
             stackTrace: s,
-            domain: 'ChatRecorderController',
             subDomain: 'cleanup.tempDirNotFound',
           );
         }
       }
     } catch (e, s) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
         e,
         stackTrace: s,
-        domain: 'ChatRecorderController',
         subDomain: 'cleanup.tempDir',
       );
     }

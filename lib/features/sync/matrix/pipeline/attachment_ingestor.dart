@@ -6,13 +6,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/database/logging_types.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/fd_limits.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -112,7 +111,7 @@ class AttachmentIngestor {
   /// otherwise.
   Future<bool> process({
     required Event event,
-    required LoggingService logging,
+    required DomainLogger logging,
     required AttachmentIndex? attachmentIndex,
     bool scheduleDownload = false,
   }) async {
@@ -157,9 +156,9 @@ class AttachmentIngestor {
                 content.containsKey('uri');
             final hasEnc = content.containsKey('file');
             final msgType = content['msgtype'];
-            logging.captureEvent(
+            logging.log(
+              LogDomain.sync,
               'attachmentEvent id=${event.eventId} path=$rpAny mime=$mime msgtype=$msgType hasUrl=$hasUrl hasFile=$hasEnc',
-              domain: syncLoggingDomain,
               subDomain: 'attachment.observe',
             );
           } catch (_) {
@@ -228,7 +227,7 @@ class AttachmentIngestor {
   void _scheduleDownload({
     required Event event,
     required String relativePath,
-    required LoggingService logging,
+    required DomainLogger logging,
   }) {
     if (_disposed ||
         documentsDirectory == null ||
@@ -353,7 +352,7 @@ class AttachmentIngestor {
   Future<bool> _saveAttachment({
     required Event event,
     required String relativePath,
-    required LoggingService logging,
+    required DomainLogger logging,
   }) async {
     final docDir = documentsDirectory;
     if (docDir == null) {
@@ -375,9 +374,9 @@ class AttachmentIngestor {
     try {
       final file = _targetFile(relativePath);
       if (file == null) {
-        logging.captureEvent(
+        logging.log(
+          LogDomain.sync,
           'pathTraversal.blocked path=$relativePath',
-          domain: syncLoggingDomain,
           subDomain: 'attachment.save',
         );
         return false;
@@ -408,9 +407,9 @@ class AttachmentIngestor {
           );
           if (dominates) {
             if (verboseLogging) {
-              logging.captureEvent(
+              logging.log(
+                LogDomain.sync,
                 'skip.localVcDominates path=$relativePath',
-                domain: syncLoggingDomain,
                 subDomain: 'attachment.download.skip',
               );
             }
@@ -419,11 +418,11 @@ class AttachmentIngestor {
         } catch (e, st) {
           // Dominance check is an optimization; a failure must not
           // block the download. Log and fall through.
-          logging.captureException(
+          logging.error(
+            LogDomain.sync,
             e,
-            domain: syncLoggingDomain,
-            subDomain: 'attachment.download.skip',
             stackTrace: st,
+            subDomain: 'attachment.download.skip',
           );
         }
       }
@@ -445,9 +444,9 @@ class AttachmentIngestor {
         }
       }
 
-      logging.captureEvent(
+      logging.log(
+        LogDomain.sync,
         'downloading $relativePath',
-        domain: syncLoggingDomain,
         subDomain: 'attachment.download',
       );
 
@@ -457,9 +456,9 @@ class AttachmentIngestor {
       );
       final downloadedBytes = matrixFile.bytes;
       if (downloadedBytes.isEmpty) {
-        logging.captureEvent(
+        logging.log(
+          LogDomain.sync,
           'emptyBytes path=$relativePath',
-          domain: syncLoggingDomain,
           subDomain: 'attachment.download',
         );
         return false;
@@ -479,9 +478,9 @@ class AttachmentIngestor {
         subDomain: 'attachment.write',
       );
 
-      logging.captureEvent(
+      logging.log(
+        LogDomain.sync,
         'wrote file $relativePath bytes=${bytes.length}',
-        domain: syncLoggingDomain,
         subDomain: 'attachment.save',
       );
       return true;
@@ -494,9 +493,9 @@ class AttachmentIngestor {
       // a newer event for the same path arrives.
       if (_isCacheEvictedError(e)) {
         _recordCacheEvictedEvent(event.eventId);
-        logging.captureEvent(
+        logging.log(
+          LogDomain.sync,
           'cacheEvicted path=$relativePath eventId=${event.eventId}',
-          domain: syncLoggingDomain,
           subDomain: 'attachment.save.cacheEvicted',
         );
         return false;
@@ -505,19 +504,19 @@ class AttachmentIngestor {
       // Log but don't throw - SmartJournalEntityLoader can retry later
       if (e is FileSystemException && e.osError?.errorCode == 24) {
         final limits = readFileDescriptorLimits();
-        logging.captureEvent(
+        logging.log(
+          LogDomain.sync,
           'emfile path=$relativePath '
           'fd.soft=${limits?.soft ?? '?'} fd.hard=${limits?.hard ?? '?'}',
-          domain: syncLoggingDomain,
           subDomain: 'attachment.save.emfile',
           level: InsightLevel.warn,
         );
       }
-      logging.captureException(
+      logging.error(
+        LogDomain.sync,
         e,
-        domain: syncLoggingDomain,
-        subDomain: 'attachment.save',
         stackTrace: st,
+        subDomain: 'attachment.save',
       );
       return false;
     }
@@ -569,5 +568,5 @@ class _DownloadRequest {
 
   final Event event;
   final String relativePath;
-  final LoggingService logging;
+  final DomainLogger logging;
 }

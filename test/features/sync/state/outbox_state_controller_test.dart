@@ -444,7 +444,7 @@ void main() {
 
   group('inboundQueueDepthProvider — _inboundQueueDepthStream', () {
     late SyncDatabase db;
-    late MockLoggingService logging;
+    late MockDomainLogger logging;
     late InboundQueue queue;
 
     setUpAll(() {
@@ -453,7 +453,7 @@ void main() {
 
     setUp(() {
       db = SyncDatabase(inMemoryDatabase: true);
-      logging = MockLoggingService();
+      logging = MockDomainLogger();
       queue = InboundQueue(
         db: db,
         logging: logging,

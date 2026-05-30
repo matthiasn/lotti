@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -86,25 +88,33 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
-    final mockLoggingService = MockLoggingService();
+    final mockLoggingService = MockDomainLogger();
     when(
-      () => mockLoggingService.captureException(
+      () => mockLoggingService.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
+    }
+    getIt.registerSingleton<DomainLogger>(mockLoggingService);
 
     container = ProviderContainer(
       overrides: [
         matrixServiceProvider.overrideWithValue(mockMatrixService),
-        loggingServiceProvider.overrideWithValue(mockLoggingService),
       ],
     );
   });
 
-  tearDown(() => container.dispose());
+  tearDown(() {
+    container.dispose();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
+    }
+  });
 
   group('ProvisioningController', () {
     group('decodeBundle', () {

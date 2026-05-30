@@ -9,7 +9,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'checklist_repository.g.dart';
@@ -23,10 +23,8 @@ class ChecklistRepository {
   ChecklistRepository();
 
   final JournalDb _journalDb = getIt<JournalDb>();
-  final LoggingService _loggingService = getIt<LoggingService>();
+  final DomainLogger _loggingService = getIt<DomainLogger>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
-
-  static const String _callingDomain = 'ChecklistRepository';
 
   /// Creates a new checklist and optionally populates it with items.
   ///
@@ -125,11 +123,11 @@ class ChecklistRepository {
 
       return (checklist: newChecklist, createdItems: createdItemsList);
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createChecklistEntry',
         stackTrace: stackTrace,
+        subDomain: 'createChecklistEntry',
       );
       return (
         checklist: null,
@@ -163,11 +161,11 @@ class ChecklistRepository {
 
       return newChecklistItem;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createChecklistEntry',
         stackTrace: stackTrace,
+        subDomain: 'createChecklistEntry',
       );
       return null;
     }
@@ -195,18 +193,18 @@ class ChecklistRepository {
 
           await _persistenceLogic.updateDbEntity(updatedChecklist);
         },
-        orElse: () async => _loggingService.captureException(
+        orElse: () async => _loggingService.error(
+          LogDomain.persistence,
           'not a checklist',
-          domain: 'persistence_logic',
           subDomain: 'updateChecklist',
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateChecklist',
         stackTrace: stackTrace,
+        subDomain: 'updateChecklist',
       );
     }
     return true;
@@ -236,18 +234,18 @@ class ChecklistRepository {
             linkedId: taskId,
           );
         },
-        orElse: () async => _loggingService.captureException(
+        orElse: () async => _loggingService.error(
+          LogDomain.persistence,
           'not a checklist item',
-          domain: 'persistence_logic',
           subDomain: 'updateChecklistItem',
         ),
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateChecklistItem',
         stackTrace: stackTrace,
+        subDomain: 'updateChecklistItem',
       );
     }
     return true;
@@ -281,9 +279,9 @@ class ChecklistRepository {
       final checklist = await _journalDb.journalEntityById(checklistId);
 
       if (checklist is! Checklist) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.persistence,
           'Entity is not a checklist',
-          domain: 'persistence_logic',
           subDomain: 'addItemToChecklist',
         );
         return null;
@@ -301,11 +299,11 @@ class ChecklistRepository {
 
       return newItem;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'addItemToChecklist',
         stackTrace: stackTrace,
+        subDomain: 'addItemToChecklist',
       );
       return null;
     }
@@ -339,11 +337,11 @@ class ChecklistRepository {
           itemIds.addAll(entity.data.linkedChecklistItems);
         }
       } catch (error, stackTrace) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.tasks,
           error,
-          domain: _callingDomain,
-          subDomain: 'getChecklistItemsForTask',
           stackTrace: stackTrace,
+          subDomain: 'getChecklistItemsForTask',
         );
       }
     }
@@ -363,11 +361,11 @@ class ChecklistRepository {
           items.add(entity);
         }
       } catch (error, stackTrace) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.tasks,
           error,
-          domain: _callingDomain,
-          subDomain: 'getChecklistItemsForTask',
           stackTrace: stackTrace,
+          subDomain: 'getChecklistItemsForTask',
         );
       }
     }

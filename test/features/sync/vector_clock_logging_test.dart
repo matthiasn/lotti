@@ -1,17 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
+import '../../mocks/mocks.dart';
 
 void main() {
-  // LoggingService disables logging in test environments, so we use the real
+  // DomainLogger disables logging in test environments, so we use the real
   // instance and verify the function completes without errors. The function's
   // purpose is purely side-effectful (logging), so exercising its code paths
   // is the main value.
-  late LoggingService loggingService;
+  late DomainLogger loggingService;
 
   setUp(() {
-    loggingService = LoggingService();
+    loggingService = MockDomainLogger();
   });
 
   group('vectorClockLogDomain', () {

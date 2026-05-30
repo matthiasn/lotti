@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:dbus/dbus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -85,7 +85,7 @@ class TestPortalService extends PortalService {
 void main() {
   group('PortalService', () {
     late TestPortalService service;
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockDomainLogger;
     late MockDBusClient mockDBusClient;
     late MockDBusRemoteObject mockDBusRemoteObject;
 
@@ -95,20 +95,20 @@ void main() {
     });
 
     setUp(() {
-      mockLoggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
       mockDBusClient = MockDBusClient();
       mockDBusRemoteObject = MockDBusRemoteObject();
 
-      getIt.registerSingleton<LoggingService>(mockLoggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
       service = TestPortalService();
 
       // Setup default mock behaviors
       when(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async {});
 
@@ -174,17 +174,44 @@ void main() {
         'should handle initialization errors with logging service not registered',
         () async {
           // Unregister logging service temporarily
-          await getIt.unregister<LoggingService>();
+          await getIt.unregister<DomainLogger>();
 
           // Create a new service that will fail on initialization
           final failingService = TestPortalService();
 
           // Re-register logging service for other tests
-          getIt.registerSingleton<LoggingService>(mockLoggingService);
+          getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
           // Service should still initialize even if logging fails
           await failingService.initialize();
           expect(failingService.isInitialized, isTrue);
+        },
+      );
+
+      test(
+        'logs error via DomainLogger when DBusClient initialization fails '
+        'in Flatpak environment',
+        () async {
+          if (!PortalService.shouldUsePortal) {
+            return; // Lines 60-61 only reachable in Flatpak environment
+          }
+
+          // In a Flatpak environment with DomainLogger registered,
+          // if DBusClient.session() throws the error is logged.
+          // We attempt initialization; if D-Bus is unavailable it throws
+          // and the logger records it. If D-Bus IS available, nothing is logged.
+          try {
+            await service.initialize();
+          } catch (e) {
+            // DBusClient.session() threw → verify the logger was called
+            verify(
+              () => mockDomainLogger.error(
+                LogDomain.screenshots,
+                any<Object>(),
+                subDomain: PortalConstants.initializationSubdomain,
+              ),
+            ).called(1);
+          }
         },
       );
     });
@@ -427,10 +454,10 @@ void main() {
 
         // Verify no exception logging since method returns early
         verifyNever(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'TestService',
-            subDomain: 'isAvailable',
+          () => mockDomainLogger.error(
+            LogDomain.screenshots,
+            any<Object>(),
+            subDomain: any(named: 'subDomain'),
           ),
         );
       });
@@ -451,13 +478,45 @@ void main() {
 
         // Verify no exception logging since method returns early
         verifyNever(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'TestService',
-            subDomain: 'isAvailable',
+          () => mockDomainLogger.error(
+            LogDomain.screenshots,
+            any<Object>(),
+            subDomain: any(named: 'subDomain'),
           ),
         );
       });
+
+      test(
+        'logs error and returns false when introspect throws in Flatpak',
+        () async {
+          if (!PortalService.shouldUsePortal) {
+            return; // Lines 210-214 only reachable in Flatpak environment
+          }
+
+          service
+            ..setMockClient(mockDBusClient)
+            ..setMockRemoteObject(mockDBusRemoteObject);
+
+          when(
+            () => mockDBusRemoteObject.introspect(),
+          ).thenThrow(Exception('D-Bus introspection failed'));
+
+          final available = await PortalService.isInterfaceAvailable(
+            'org.freedesktop.portal.Screenshot',
+            service,
+            'ScreenshotPortalService',
+          );
+
+          expect(available, isFalse);
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.screenshots,
+              any<Object>(),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should handle empty interfaces list', () async {
         if (PortalService.shouldUsePortal) {

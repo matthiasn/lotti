@@ -4,11 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -25,38 +23,13 @@ class FakeLabelsRepository extends Fake implements LabelsRepository {
   }
 }
 
-class TestLoggingService extends LoggingService {
-  @override
-  void captureEvent(
-    dynamic event, {
-    required String domain,
-    String? subDomain,
-    InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
-  }) {
-    // no-op for tests
-  }
-
-  @override
-  void captureException(
-    dynamic exception, {
-    required String domain,
-    String? subDomain,
-    dynamic stackTrace,
-    InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
-  }) {
-    // no-op for tests
-  }
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('processor skips out-of-scope labels and assigns in-scope', () async {
     final db = MockJournalDb();
     final repo = FakeLabelsRepository();
-    final logging = TestLoggingService();
+    final logging = MockDomainLogger();
     final validator = LabelValidator(db: db);
 
     // Task with category cat1

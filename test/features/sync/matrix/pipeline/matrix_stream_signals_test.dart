@@ -6,6 +6,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_signals.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -166,7 +167,7 @@ void main() {
       fakeAsync((async) {
         final sessionManager = _MockSessionManager();
         final roomManager = _MockRoomManager();
-        final logging = MockLoggingService();
+        final logging = MockDomainLogger();
         final client = MockMatrixClient();
         final syncController = CachedStreamController<SyncUpdate>();
         final loggedMessages = <String>[];
@@ -177,20 +178,20 @@ void main() {
         when(() => client.onSync).thenReturn(syncController);
         when(() => roomManager.currentRoomId).thenAnswer((_) => currentRoomId);
         when(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((invocation) {
-          loggedMessages.add(invocation.positionalArguments.first as String);
+          loggedMessages.add(invocation.positionalArguments[1] as String);
         });
         when(
-          () => logging.captureException(
-            any<dynamic>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((_) async {
           streamErrors++;

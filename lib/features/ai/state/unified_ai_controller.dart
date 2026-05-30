@@ -22,7 +22,7 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// State object for unified AI inference
 @immutable
@@ -191,14 +191,14 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
   }
 
   Future<void> runInference({String? linkedEntityId}) async {
-    final loggingService = getIt<LoggingService>();
+    final loggingService = getIt<DomainLogger>();
 
     if (_activeInferenceFuture != null) {
-      loggingService.captureEvent(
+      loggingService.log(
+        LogDomain.ai,
         'Unified AI inference already running for $entityId (prompt: $promptId). '
         'Joining existing run $_activeRunId (incoming linked: $linkedEntityId, active linked: $_activeLinkedEntityId).',
         subDomain: 'runInference',
-        domain: 'UnifiedAiController',
       );
       return _activeInferenceFuture!;
     }
@@ -216,11 +216,11 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
     try {
       await future;
     } finally {
-      loggingService.captureEvent(
+      loggingService.log(
+        LogDomain.ai,
         'Unified AI inference finished for $entityId (prompt: $promptId). '
         'Run $runId completed with linked: $linkedEntityId.',
         subDomain: 'runInference',
-        domain: 'UnifiedAiController',
       );
       if (identical(_activeInferenceFuture, future)) {
         _activeInferenceFuture = null;
@@ -231,13 +231,13 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
   }
 
   Future<void> _performInference({
-    required LoggingService loggingService,
+    required DomainLogger loggingService,
     String? linkedEntityId,
   }) async {
-    loggingService.captureEvent(
+    loggingService.log(
+      LogDomain.ai,
       'Starting unified AI inference for $entityId (prompt: $promptId, linked: $linkedEntityId, run $_activeRunId)',
       subDomain: 'runInference',
-      domain: 'UnifiedAiController',
     );
 
     try {
@@ -328,10 +328,10 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
       try {
         final config = await ref.read(aiConfigByIdProvider(promptId).future);
         if (config != null && config is AiConfigPrompt) {
-          loggingService.captureEvent(
+          loggingService.log(
+            LogDomain.ai,
             'Setting inference status to ERROR for ${config.aiResponseType}',
             subDomain: 'runInference',
-            domain: 'UnifiedAiController',
           );
           _updateInferenceStatus(
             InferenceStatus.error,
@@ -343,11 +343,11 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
         // Ignore errors when setting status
       }
 
-      loggingService.captureException(
-        inferenceError.originalError ?? e,
-        domain: 'UnifiedAiController',
-        subDomain: 'runInference',
+      loggingService.error(
+        LogDomain.ai,
+        (inferenceError.originalError ?? e) as Object,
         stackTrace: stackTrace,
+        subDomain: 'runInference',
       );
     }
   }
@@ -464,7 +464,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
         // Keep alive until completion so fire-and-forget callers don't
         // cause the provider to be disposed mid-execution.
         final link = ref.keepAlive();
-        final loggingService = getIt<LoggingService>();
+        final loggingService = getIt<DomainLogger>();
         try {
           developer.log(
             'triggerSkill: entityId=${params.entityId}, '
@@ -477,9 +477,9 @@ final triggerSkillProvider = FutureProvider.autoDispose
               .where((s) => s.id == params.skillId)
               .firstOrNull;
           if (skill == null) {
-            loggingService.captureEvent(
+            loggingService.log(
+              LogDomain.ai,
               'Skill not found: ${params.skillId}',
-              domain: 'UnifiedAiController',
               subDomain: 'triggerSkillProvider',
             );
             return;
@@ -491,10 +491,10 @@ final triggerSkillProvider = FutureProvider.autoDispose
           // bug — fail loudly rather than silently no-op.
           if (params.linkedTaskId == null &&
               skill.contextPolicy == ContextPolicy.fullTask) {
-            loggingService.captureEvent(
+            loggingService.log(
+              LogDomain.ai,
               'Skipping ${params.skillId} for ${params.entityId}: '
               'skill requires full task context but no linked task',
-              domain: 'UnifiedAiController',
               subDomain: 'triggerSkillProvider',
             );
             return;
@@ -515,10 +515,10 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 .journalEntityById(params.entityId);
             final categoryId = entity?.categoryId;
             if (categoryId == null) {
-              loggingService.captureEvent(
+              loggingService.log(
+                LogDomain.ai,
                 'Skipping ${params.skillId} for ${params.entityId}: '
                 'no linked task and entry has no category',
-                domain: 'UnifiedAiController',
                 subDomain: 'triggerSkillProvider',
               );
               return;
@@ -527,10 +527,10 @@ final triggerSkillProvider = FutureProvider.autoDispose
           }
 
           if (resolvedProfile == null) {
-            loggingService.captureEvent(
+            loggingService.log(
+              LogDomain.ai,
               'Skipping ${params.skillId} for ${params.entityId} '
               '(linkedTaskId=${params.linkedTaskId}): no profile configured',
-              domain: 'UnifiedAiController',
               subDomain: 'triggerSkillProvider',
             );
             return;
@@ -594,11 +594,11 @@ final triggerSkillProvider = FutureProvider.autoDispose
             name: 'UnifiedAiController',
           );
         } catch (error, stackTrace) {
-          loggingService.captureException(
+          loggingService.error(
+            LogDomain.ai,
             error,
-            domain: 'UnifiedAiController',
-            subDomain: 'triggerSkillProvider',
             stackTrace: stackTrace,
+            subDomain: 'triggerSkillProvider',
           );
         } finally {
           link.close();

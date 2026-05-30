@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 /// Custom state event type used to identify Lotti sync rooms.
@@ -62,7 +62,7 @@ class SyncRoomDiscoveryService {
     required this._loggingService,
   });
 
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
 
   /// Maximum number of rooms to evaluate concurrently.
   /// Bounded to avoid overwhelming the Matrix SDK with parallel timeline fetches.
@@ -110,9 +110,9 @@ class SyncRoomDiscoveryService {
       return bCreated.compareTo(aCreated);
     });
 
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Discovered ${candidates.length} potential sync rooms',
-      domain: 'SYNC_ROOM_DISCOVERY',
       subDomain: 'discover',
     );
 
@@ -187,9 +187,9 @@ class SyncRoomDiscoveryService {
 
       return false;
     } catch (e) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Error checking room ${room.id} for sync content: $e',
-        domain: 'SYNC_ROOM_DISCOVERY',
         subDomain: 'hasLottiSyncContent',
       );
       return false;
@@ -253,17 +253,17 @@ class SyncRoomDiscoveryService {
           'marked_at': DateTime.now().toIso8601String(),
         },
       );
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Marked room ${room.id} as Lotti sync room',
-        domain: 'SYNC_ROOM_DISCOVERY',
         subDomain: 'markRoom',
       );
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_ROOM_DISCOVERY',
-        subDomain: 'markRoom',
         stackTrace: st,
+        subDomain: 'markRoom',
       );
     }
   }

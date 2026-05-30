@@ -219,8 +219,8 @@ void main() {
       () => mockDomainLogger.error(
         any(),
         any(),
+        message: any(named: 'message'),
         subDomain: any(named: 'subDomain'),
-        error: any(named: 'error'),
         stackTrace: any(named: 'stackTrace'),
       ),
     ).thenReturn(null);
@@ -418,10 +418,9 @@ void main() {
             );
             verify(
               () => mockDomainLogger.error(
-                LogDomains.agentWorkflow,
+                LogDomain.agentWorkflow,
                 any(that: contains('Failed to revert item 0')),
                 subDomain: any(named: 'subDomain'),
-                error: any(named: 'error'),
                 stackTrace: any(named: 'stackTrace'),
               ),
             ).called(1);
@@ -682,10 +681,9 @@ void main() {
             );
             verify(
               () => mockDomainLogger.error(
-                LogDomains.agentWorkflow,
+                LogDomain.agentWorkflow,
                 any(that: contains('Failed to mark item 0')),
                 subDomain: any(named: 'subDomain'),
-                error: any(named: 'error'),
                 stackTrace: any(named: 'stackTrace'),
               ),
             ).called(1);
@@ -883,10 +881,13 @@ void main() {
           expect(result.success, isTrue);
           verify(
             () => mockDomainLogger.error(
-              LogDomains.agentWorkflow,
-              any(that: contains('Post-resolution notification sync failed')),
+              LogDomain.agentWorkflow,
+              any(),
+              message: any(
+                named: 'message',
+                that: contains('Post-resolution notification sync failed'),
+              ),
               subDomain: any(named: 'subDomain'),
-              error: any(named: 'error'),
               stackTrace: any(named: 'stackTrace'),
             ),
           ).called(1);
@@ -2169,7 +2170,7 @@ void main() {
 
           verify(
             () => mockDomainLogger.log(
-              LogDomains.agentWorkflow,
+              LogDomain.agentWorkflow,
               any(that: contains('Skipping item 0')),
               subDomain: any(named: 'subDomain'),
             ),
@@ -2213,7 +2214,7 @@ void main() {
           final captured =
               verify(
                     () => mockDomainLogger.log(
-                      LogDomains.agentWorkflow,
+                      LogDomain.agentWorkflow,
                       captureAny(that: contains('Confirming item 0')),
                       subDomain: any(named: 'subDomain'),
                     ),
@@ -2249,10 +2250,9 @@ void main() {
 
           verify(
             () => mockDomainLogger.error(
-              LogDomains.agentWorkflow,
+              LogDomain.agentWorkflow,
               any(that: contains('Tool dispatch failed for item 0')),
               subDomain: any(named: 'subDomain'),
-              error: any(named: 'error'),
               stackTrace: any(named: 'stackTrace'),
             ),
           ).called(1);
@@ -2276,7 +2276,7 @@ void main() {
 
           verify(
             () => mockDomainLogger.log(
-              LogDomains.agentWorkflow,
+              LogDomain.agentWorkflow,
               any(that: contains('Skipping reject for item 0')),
               subDomain: any(named: 'subDomain'),
             ),
@@ -2296,7 +2296,7 @@ void main() {
 
           verify(
             () => mockDomainLogger.log(
-              LogDomains.agentWorkflow,
+              LogDomain.agentWorkflow,
               any(that: contains('Rejecting item 0')),
               subDomain: any(named: 'subDomain'),
             ),
@@ -2340,7 +2340,7 @@ void main() {
 
             verify(
               () => mockDomainLogger.log(
-                LogDomains.agentWorkflow,
+                LogDomain.agentWorkflow,
                 any(that: contains('Captured placeholder resolution')),
                 subDomain: any(named: 'subDomain'),
               ),
@@ -2388,7 +2388,7 @@ void main() {
 
             verify(
               () => mockDomainLogger.log(
-                LogDomains.agentWorkflow,
+                LogDomain.agentWorkflow,
                 any(that: contains('Cascade-rejecting migration item')),
                 subDomain: any(named: 'subDomain'),
               ),
@@ -2442,7 +2442,7 @@ void main() {
 
             verify(
               () => mockDomainLogger.log(
-                LogDomains.agentWorkflow,
+                LogDomain.agentWorkflow,
                 any(that: contains('Persisted resolved targetTaskId')),
                 subDomain: any(named: 'subDomain'),
               ),

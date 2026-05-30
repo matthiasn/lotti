@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -573,7 +574,7 @@ class _GeneratedBackfillResponseBench {
     final journalDb = MockJournalDb();
     final sequenceService = MockSyncSequenceLogService();
     final outboxService = MockOutboxService();
-    final logging = MockLoggingService();
+    final logging = MockDomainLogger();
     final vcService = MockVectorClockService();
     final agentRepository = MockAgentRepository();
     final notificationsDb = MockNotificationsDb();
@@ -596,18 +597,18 @@ class _GeneratedBackfillResponseBench {
     );
 
     when(
-      () => logging.captureEvent(
+      () => logging.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
     when(
-      () => logging.captureException(
+      () => logging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
     when(() => vcService.initialized).thenAnswer(Future<void>.value);

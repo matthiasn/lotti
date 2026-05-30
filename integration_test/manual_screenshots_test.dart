@@ -219,7 +219,7 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
     inMemoryDatabase: true,
     background: false,
     readPool: 0,
-    loggingService: loggingService,
+    loggingService: DomainLogger(loggingService: loggingService),
     documentsDirectory: documentsDirectory,
   );
   final fts5Db = Fts5Db(inMemoryDatabase: true);
@@ -273,7 +273,7 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
   );
   final geolocationService = GeolocationService(
     journalDb: journalDb,
-    loggingService: loggingService,
+    loggingService: DomainLogger(loggingService: loggingService),
     metadataService: metadataService,
   );
   final entitiesCacheService = EntitiesCacheService(

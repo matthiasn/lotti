@@ -8,7 +8,7 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_stream_parser.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_stream_utils.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,7 +21,7 @@ part 'chat_session_controller.g.dart';
 /// streaming placeholders for assistant messages.
 @riverpod
 class ChatSessionController extends _$ChatSessionController {
-  final LoggingService _loggingService = getIt<LoggingService>();
+  final DomainLogger _loggingService = getIt<DomainLogger>();
   // Cap moved to ChatStreamUtils.maxStreamingContentSize
   String? _currentStreamingMessageId;
   // Tracks if the current streaming message (if any) represents a visible
@@ -56,11 +56,11 @@ class ChatSessionController extends _$ChatSessionController {
 
       state = ChatSessionUiModel.fromDomain(session);
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionController',
-        subDomain: 'initializeSession',
         stackTrace: stackTrace,
+        subDomain: 'initializeSession',
       );
       if (!ref.mounted) return;
       state = state.copyWith(error: 'Failed to initialize session: $e');
@@ -200,11 +200,11 @@ class ChatSessionController extends _$ChatSessionController {
       // Save the updated session to the repository
       await _saveCurrentSession();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionController',
-        subDomain: 'sendMessage',
         stackTrace: stackTrace,
+        subDomain: 'sendMessage',
       );
 
       if (!ref.mounted) return;
@@ -311,11 +311,11 @@ class ChatSessionController extends _$ChatSessionController {
         state = state.copyWith(id: domainSession.id);
       }
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionController',
-        subDomain: '_saveCurrentSession',
         stackTrace: stackTrace,
+        subDomain: '_saveCurrentSession',
       );
       // Don't show error to user for save failures, just log them
     }
@@ -332,11 +332,11 @@ class ChatSessionController extends _$ChatSessionController {
       if (!ref.mounted) return;
       state = ChatSessionUiModel.fromDomain(newSession);
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionController',
-        subDomain: 'clearChat',
         stackTrace: stackTrace,
+        subDomain: 'clearChat',
       );
       if (!ref.mounted) return;
       // Fallback to empty session
@@ -357,11 +357,11 @@ class ChatSessionController extends _$ChatSessionController {
       // Create a new empty session
       await clearChat();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionController',
-        subDomain: 'deleteSession',
         stackTrace: stackTrace,
+        subDomain: 'deleteSession',
       );
       if (!ref.mounted) return;
       state = state.copyWith(error: 'Failed to delete session: $e');
@@ -414,11 +414,11 @@ class ChatSessionController extends _$ChatSessionController {
       await chatRepository.saveSession(domainSession);
       if (!ref.mounted) return;
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionController',
-        subDomain: 'setModel',
         stackTrace: stackTrace,
+        subDomain: 'setModel',
       );
       if (!ref.mounted) return;
       // Revert UI state to maintain consistency

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:matrix/matrix.dart';
 
@@ -19,7 +19,7 @@ class SyncReadMarkerService {
   });
 
   final SettingsDb _settingsDb;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
 
   /// Updates the read marker to [eventId] for the provided [room].
   ///
@@ -45,9 +45,9 @@ class SyncReadMarkerService {
   }) async {
     final isServerEventId = isServerAssignedMatrixEventId(eventId);
     if (!isServerEventId) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'marker.remote.skip(nonServerId) id=$eventId',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'setReadMarker.guard',
       );
       return;
@@ -66,15 +66,15 @@ class SyncReadMarkerService {
           final remoteId = room.fullyRead;
           if (remoteId != eventId) {
             if (remoteId.isEmpty) {
-              _loggingService.captureEvent(
+              _loggingService.log(
+                LogDomain.sync,
                 'marker.remote.allow(emptyRemote) id=$eventId',
-                domain: 'MATRIX_SERVICE',
                 subDomain: 'setReadMarker.guard',
               );
             } else if (timeline == null) {
-              _loggingService.captureEvent(
+              _loggingService.log(
+                LogDomain.sync,
                 'marker.remote.allow(noTimeline) id=$eventId (remote=$remoteId)',
-                domain: 'MATRIX_SERVICE',
                 subDomain: 'setReadMarker.guard',
               );
             } else {
@@ -96,18 +96,18 @@ class SyncReadMarkerService {
                     latestEventId: base.eventId,
                   );
                   if (!newer) {
-                    _loggingService.captureEvent(
+                    _loggingService.log(
+                      LogDomain.sync,
                       'marker.remote.skip id=$eventId (remoteAhead=$remoteId)',
-                      domain: 'MATRIX_SERVICE',
                       subDomain: 'setReadMarker.guard',
                     );
                     return; // Guard clause: block regression
                   }
                 } else {
                   // If either event is not visible, prefer sending.
-                  _loggingService.captureEvent(
+                  _loggingService.log(
+                    LogDomain.sync,
                     'marker.remote.allow(unseen) id=$eventId (remote=$remoteId)',
-                    domain: 'MATRIX_SERVICE',
                     subDomain: 'setReadMarker.guard',
                   );
                 }
@@ -120,16 +120,16 @@ class SyncReadMarkerService {
 
         // Prefer room-level API to avoid coupling to a snapshot timeline.
         await room.setReadMarker(eventId);
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'marker.remote room=${room.id} id=$eventId',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'setReadMarker',
         );
       } catch (error, stackTrace) {
         if (error is MatrixException && error.errcode == 'M_UNKNOWN') {
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'marker.remote.missingEvent id=$eventId (M_UNKNOWN)',
-            domain: 'MATRIX_SERVICE',
             subDomain: 'setReadMarker',
           );
           return;
@@ -138,9 +138,9 @@ class SyncReadMarkerService {
         if (timeline != null) {
           try {
             await timeline.setReadMarker(eventId: eventId);
-            _loggingService.captureEvent(
+            _loggingService.log(
+              LogDomain.sync,
               'marker.remote.timeline room=${room.id} id=$eventId',
-              domain: 'MATRIX_SERVICE',
               subDomain: 'setReadMarker.timeline',
             );
             return;
@@ -148,11 +148,11 @@ class SyncReadMarkerService {
             // Fall through to log the original error below.
           }
         }
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'setReadMarker ${client.deviceName}',
           stackTrace: stackTrace,
+          subDomain: 'setReadMarker ${client.deviceName}',
         );
       }
     }

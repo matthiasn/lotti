@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/services/dev_logger.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
@@ -117,7 +117,7 @@ class KeyVerificationRunner {
 Future<StreamSubscription<KeyVerification>?>
 listenForKeyVerificationRequestsWithSubscription({
   required MatrixService service,
-  required LoggingService loggingService,
+  required DomainLogger loggingService,
   Stream<KeyVerification>? requests,
 }) async {
   try {
@@ -148,11 +148,11 @@ listenForKeyVerificationRequestsWithSubscription({
       error: e,
       stackTrace: stackTrace,
     );
-    loggingService.captureException(
+    loggingService.error(
+      LogDomain.sync,
       e,
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'listen',
       stackTrace: stackTrace,
+      subDomain: 'listen',
     );
     return null;
   }

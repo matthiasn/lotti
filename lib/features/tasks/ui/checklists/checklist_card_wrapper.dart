@@ -16,7 +16,7 @@ import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/share_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -63,12 +63,12 @@ class ChecklistCardWrapper extends ConsumerWidget {
               checklistItemControllerProvider((id: id, taskId: taskId)).future,
             )
             .catchError((Object error, StackTrace stackTrace) {
-              if (getIt.isRegistered<LoggingService>()) {
-                getIt<LoggingService>().captureException(
+              if (getIt.isRegistered<DomainLogger>()) {
+                getIt<DomainLogger>().error(
+                  LogDomain.tasks,
                   'Failed to resolve checklist item $id: $error',
-                  domain: 'ChecklistCardWrapper',
-                  subDomain: '_resolveItems',
                   stackTrace: stackTrace,
+                  subDomain: '_resolveItems',
                 );
               }
               return null;
@@ -236,12 +236,12 @@ class ChecklistCardWrapper extends ConsumerWidget {
                 subject: checklist.data.title,
               );
             } catch (error, stackTrace) {
-              if (getIt.isRegistered<LoggingService>()) {
-                getIt<LoggingService>().captureException(
+              if (getIt.isRegistered<DomainLogger>()) {
+                getIt<DomainLogger>().error(
+                  LogDomain.tasks,
                   'Failed to share checklist: $error',
-                  domain: 'ChecklistCardWrapper',
-                  subDomain: 'onShareMarkdown',
                   stackTrace: stackTrace,
+                  subDomain: 'onShareMarkdown',
                 );
               }
             }

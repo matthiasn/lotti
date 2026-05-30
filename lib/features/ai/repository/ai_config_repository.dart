@@ -8,7 +8,7 @@ import 'package:lotti/features/ai/util/provider_type_utils.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ai_config_repository.g.dart';
@@ -129,12 +129,12 @@ class AiConfigRepository {
           providerName: providerName,
         );
       } catch (error, stackTrace) {
-        if (getIt.isRegistered<LoggingService>()) {
-          getIt<LoggingService>().captureException(
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt<DomainLogger>().error(
+            LogDomain.ai,
             error,
-            domain: 'AiConfigRepository',
-            subDomain: 'deleteInferenceProviderWithModels',
             stackTrace: stackTrace,
+            subDomain: 'deleteInferenceProviderWithModels',
           );
         }
         rethrow; // Re-throw to let the caller handle the error

@@ -4919,6 +4919,75 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkExistingTask => 'Lier une tâche existante...';
 
   @override
+  String get loggingDomainAgentRuntime => 'Exécution des agents';
+
+  @override
+  String get loggingDomainAgentWorkflow => 'Flux des agents';
+
+  @override
+  String get loggingDomainAi => 'IA';
+
+  @override
+  String get loggingDomainCalendar => 'Calendrier et temps';
+
+  @override
+  String get loggingDomainChat => 'Chat';
+
+  @override
+  String get loggingDomainDailyOs => 'Daily OS';
+
+  @override
+  String get loggingDomainDatabase => 'Base de données';
+
+  @override
+  String get loggingDomainGeneral => 'Général';
+
+  @override
+  String get loggingDomainHabits => 'Habitudes';
+
+  @override
+  String get loggingDomainHealth => 'Santé';
+
+  @override
+  String get loggingDomainLabels => 'Étiquettes';
+
+  @override
+  String get loggingDomainLocation => 'Localisation';
+
+  @override
+  String get loggingDomainNavigation => 'Navigation';
+
+  @override
+  String get loggingDomainNotifications => 'Notifications';
+
+  @override
+  String get loggingDomainPersistence => 'Persistance';
+
+  @override
+  String get loggingDomainRatings => 'Évaluations';
+
+  @override
+  String get loggingDomainScreenshots => 'Captures d\'écran';
+
+  @override
+  String get loggingDomainSettings => 'Paramètres';
+
+  @override
+  String get loggingDomainSpeech => 'Voix et audio';
+
+  @override
+  String get loggingDomainSync => 'Synchronisation';
+
+  @override
+  String get loggingDomainTasks => 'Tâches et listes';
+
+  @override
+  String get loggingDomainTheming => 'Thèmes';
+
+  @override
+  String get loggingDomainWhatsNew => 'Nouveautés';
+
+  @override
   String get maintenanceDeleteAgentDb =>
       'Supprimer la base de données des agents';
 
@@ -6374,20 +6443,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get settingsLoggingAgentRuntime => 'Exécution de l\'agent';
-
-  @override
-  String get settingsLoggingAgentRuntimeSubtitle =>
-      'Décisions et répartition de l\'orchestrateur de réveil';
-
-  @override
-  String get settingsLoggingAgentWorkflow => 'Flux de travail de l\'agent';
-
-  @override
-  String get settingsLoggingAgentWorkflowSubtitle =>
-      'Exécution des conversations et appels d\'outils';
-
-  @override
   String get settingsLoggingDomainsSubtitle =>
       'Contrôle quels domaines écrivent dans le journal';
 
@@ -6407,13 +6462,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
       'Les requêtes lentes sont écrites dans slow_queries-YYYY-MM-DD.log';
-
-  @override
-  String get settingsLoggingSync => 'Synchronisation';
-
-  @override
-  String get settingsLoggingSyncSubtitle =>
-      'Opérations de synchronisation entre appareils';
 
   @override
   String get settingsMaintenanceTitle => 'Maintenance';

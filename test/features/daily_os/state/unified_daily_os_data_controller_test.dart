@@ -15,8 +15,8 @@ import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.d
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -32,7 +32,7 @@ void main() {
   late MockPersistenceLogic mockPersistenceLogic;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockEntitiesCacheService mockEntitiesCacheService;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockDayPlanRepository mockDayPlanRepository;
   late MockTimeService mockTimeService;
   late StreamController<Set<String>> updateStreamController;
@@ -151,7 +151,7 @@ void main() {
     mockPersistenceLogic = MockPersistenceLogic();
     mockUpdateNotifications = MockUpdateNotifications();
     mockEntitiesCacheService = MockEntitiesCacheService();
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockDayPlanRepository = MockDayPlanRepository();
     mockTimeService = MockTimeService();
     updateStreamController = StreamController<Set<String>>.broadcast();
@@ -187,7 +187,7 @@ void main() {
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<DomainLogger>(mockDomainLogger)
       ..registerSingleton<TimeService>(mockTimeService);
 
     container = ProviderContainer(

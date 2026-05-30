@@ -14,7 +14,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -41,9 +41,9 @@ class Maintenance {
     bool includeAgentEntities = true,
   }) async {
     if (!includeJournalEntities && !includeAgentEntities) {
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.database,
         'reSyncInterval skipped — both entity-type filters disabled',
-        domain: 'MAINTENANCE',
         subDomain: 'reSyncInterval',
       );
       return;
@@ -179,9 +179,9 @@ class Maintenance {
       if (shmFile.existsSync()) shmFile.deleteSync();
       if (walFile.existsSync()) walFile.deleteSync();
     } else {
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.database,
         'Database file $agentDbFileName does not exist',
-        domain: 'MAINTENANCE',
         subDomain: 'deleteAgentDb',
       );
     }
@@ -192,9 +192,9 @@ class Maintenance {
     if (file.existsSync()) {
       file.deleteSync();
     } else {
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.database,
         'Database file $editorDbFileName does not exist',
-        domain: 'MAINTENANCE',
         subDomain: 'deleteEditorDb',
       );
     }
@@ -205,9 +205,9 @@ class Maintenance {
     if (file.existsSync()) {
       file.deleteSync();
     } else {
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.database,
         'Database file $syncDbFileName does not exist',
-        domain: 'MAINTENANCE',
         subDomain: 'deleteSyncDb',
       );
     }
@@ -244,11 +244,11 @@ class Maintenance {
       onProgress: onProgress,
       now: now,
     );
-    getIt<LoggingService>().captureEvent(
+    getIt<DomainLogger>().log(
+      LogDomain.database,
       'purgeSentOutbox removed=$deleted '
       'retentionDays=${retention.inDays} '
       'chunkSize=$chunkSize',
-      domain: 'MAINTENANCE',
       subDomain: 'purgeSentOutbox',
     );
     return deleted;
@@ -261,17 +261,17 @@ class Maintenance {
       file.deleteSync();
       deleted = true;
     } else {
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.database,
         'Database file $fts5DbFileName does not exist',
-        domain: 'MAINTENANCE',
         subDomain: 'deleteFts5Db',
       );
     }
 
     if (deleted) {
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.database,
         'FTS5 database DELETED',
-        domain: 'MAINTENANCE',
         subDomain: 'recreateFts5',
       );
     }
@@ -281,11 +281,11 @@ class Maintenance {
     try {
       await deleteFts5Db();
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.database,
         e,
-        domain: 'MAINTENANCE',
-        subDomain: 'deleteFts5Db',
         stackTrace: stackTrace,
+        subDomain: 'deleteFts5Db',
       );
     }
 
@@ -327,9 +327,9 @@ class Maintenance {
           // Add a small delay to make the progress visible
           await Future<void>.delayed(const Duration(milliseconds: 10));
 
-          getIt<LoggingService>().captureEvent(
+          getIt<DomainLogger>().log(
+            LogDomain.database,
             'Progress: $currentPercentage%, $completed/$entryCount',
-            domain: 'MAINTENANCE',
             subDomain: 'recreateFts5',
           );
         }

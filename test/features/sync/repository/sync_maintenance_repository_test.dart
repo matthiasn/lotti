@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart'
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -56,7 +57,7 @@ class FakeHabitDefinition extends Fake implements HabitDefinition {
 void main() {
   late MockJournalDb mockJournalDb;
   late MockOutboxService mockOutboxService;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late MockAiConfigRepository mockAiConfigRepository;
   late MockAgentRepository mockAgentRepository;
   late MockVectorClockService mockVectorClockService;
@@ -98,16 +99,16 @@ void main() {
   setUp(() {
     mockJournalDb = MockJournalDb();
     mockOutboxService = MockOutboxService();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
     mockAiConfigRepository = MockAiConfigRepository();
     mockAgentRepository = MockAgentRepository();
     mockVectorClockService = MockVectorClockService();
 
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-        domain: any(named: 'domain'),
+      () => mockLoggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
@@ -519,10 +520,10 @@ void main() {
       );
 
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLoggingService.error(
+          LogDomain.sync,
           exception,
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-          domain: 'SYNC_SERVICE',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: 'syncAiSettings_fetch',
         ),
       ).called(1);
@@ -624,11 +625,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockLoggingService.error(
+            LogDomain.sync,
             testException,
-            domain: 'SYNC_SERVICE',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'syncMeasurables',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -644,11 +645,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockLoggingService.error(
+            LogDomain.sync,
             testException,
-            domain: 'SYNC_SERVICE',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'syncCategories',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -664,11 +665,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockLoggingService.error(
+            LogDomain.sync,
             testException,
-            domain: 'SYNC_SERVICE',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'syncDashboards',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -686,11 +687,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockLoggingService.error(
+            LogDomain.sync,
             testException,
-            domain: 'SYNC_SERVICE',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'syncHabits',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -897,14 +898,15 @@ void main() {
   group('syncMaintenanceRepositoryProvider', () {
     test('constructs repository from shared service providers', () async {
       await getIt.reset();
-      getIt.registerSingleton<VectorClockService>(mockVectorClockService);
+      getIt
+        ..registerSingleton<VectorClockService>(mockVectorClockService)
+        ..registerSingleton<DomainLogger>(mockLoggingService);
       addTearDown(getIt.reset);
 
       final container = ProviderContainer(
         overrides: [
           journalDbProvider.overrideWithValue(mockJournalDb),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          loggingServiceProvider.overrideWithValue(mockLoggingService),
           aiConfigRepositoryProvider.overrideWithValue(
             mockAiConfigRepository,
           ),

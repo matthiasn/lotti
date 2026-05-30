@@ -8,7 +8,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -18,7 +18,7 @@ class MockUnifiedAiInferenceRepository extends Mock
 
 void main() {
   late MockUnifiedAiInferenceRepository mockRepository;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late AiConfigPrompt asrPromptConfig;
   late AiConfigPrompt taskSummaryPromptConfig;
 
@@ -30,29 +30,29 @@ void main() {
 
   setUp(() {
     mockRepository = MockUnifiedAiInferenceRepository();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
 
     // Set up GetIt
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockLoggingService);
 
     // Mock logging methods
     when(
-      () => mockLoggingService.captureEvent(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => mockLoggingService.log(
+        any<LogDomain>(),
+        any<String>(),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
 
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => mockLoggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) async {});
 
@@ -93,8 +93,8 @@ void main() {
   });
 
   tearDown(() {
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
   });
 
@@ -180,13 +180,13 @@ void main() {
 
         // Verify logging includes linkedEntityId
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockLoggingService.log(
+            LogDomain.ai,
             any<String>(
               that: contains(
                 'Starting unified AI inference for $audioEntryId (prompt: $asrPromptId, linked: $linkedTaskId',
               ),
             ),
-            domain: 'UnifiedAiController',
             subDomain: 'runInference',
           ),
         ).called(1);

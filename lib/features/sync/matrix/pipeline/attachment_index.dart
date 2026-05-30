@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 /// Lightweight, in-memory index mapping relativePath -> latest attachment event.
@@ -16,7 +15,7 @@ import 'package:matrix/matrix.dart';
 class AttachmentIndex {
   AttachmentIndex({this._logging, this.verboseLogging = true});
 
-  final LoggingService? _logging;
+  final DomainLogger? _logging;
 
   /// When true, emits per-event `attachmentIndex.record`, `attachmentIndex.hit`,
   /// and `attachmentIndex.miss` lines. Production disables this; tests keep
@@ -74,9 +73,9 @@ class AttachmentIndex {
         // case callers use that form.
         _byPath[noSlash] = e;
         if (verboseLogging) {
-          _logging?.captureEvent(
+          _logging?.log(
+            LogDomain.sync,
             'attachmentIndex.record path=$key mime=$mimetype id=${eventId ?? '?'}',
-            domain: syncLoggingDomain,
             subDomain: 'attachmentIndex.record',
           );
         }
@@ -86,9 +85,9 @@ class AttachmentIndex {
         return true;
       }
     } catch (err) {
-      _logging?.captureEvent(
+      _logging?.log(
+        LogDomain.sync,
         'attachmentIndex.record failed: $err',
-        domain: syncLoggingDomain,
         subDomain: 'attachmentIndex',
       );
     }
@@ -115,11 +114,11 @@ class AttachmentIndex {
         : '/$relativePath';
     final hit = _byPath[key1] ?? _byPath[key2];
     if (verboseLogging) {
-      _logging?.captureEvent(
+      _logging?.log(
+        LogDomain.sync,
         hit == null
             ? 'attachmentIndex.miss path=$relativePath alt=$key2'
             : 'attachmentIndex.hit path=$relativePath id=${_safeEventId(hit) ?? '?'}',
-        domain: syncLoggingDomain,
         subDomain: 'attachmentIndex.find',
       );
     }

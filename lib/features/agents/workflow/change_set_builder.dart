@@ -589,10 +589,11 @@ class ChangeSetBuilder {
       );
     } catch (e, st) {
       domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Failed to fire change-set notification for task '
-        '${DomainLogger.sanitizeId(taskId)}',
-        error: e,
+        LogDomain.agentWorkflow,
+        e,
+        message:
+            'Failed to fire change-set notification for task '
+            '${DomainLogger.sanitizeId(taskId)}',
         stackTrace: st,
         subDomain: 'ChangeSetBuilder',
       );
@@ -807,10 +808,11 @@ class ChangeSetBuilder {
       return await resolver(itemId);
     } catch (e, s) {
       domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'failed to resolve checklist item state for '
-        '${DomainLogger.sanitizeId(itemId)}',
-        error: e,
+        LogDomain.agentWorkflow,
+        e,
+        message:
+            'failed to resolve checklist item state for '
+            '${DomainLogger.sanitizeId(itemId)}',
         stackTrace: s,
       );
       return null;
@@ -831,15 +833,15 @@ class ChangeSetBuilder {
         // Copy to a mutable set so callers can add in-wake titles.
         _cachedExistingTitles = {...await resolver()};
         domainLogger?.log(
-          LogDomains.agentWorkflow,
+          LogDomain.agentWorkflow,
           'resolved ${_cachedExistingTitles!.length} existing checklist '
           'title(s) for dedup',
         );
       } catch (e, s) {
         domainLogger?.error(
-          LogDomains.agentWorkflow,
-          'failed to resolve existing checklist titles',
-          error: e,
+          LogDomain.agentWorkflow,
+          e,
+          message: 'failed to resolve existing checklist titles',
           stackTrace: s,
         );
         _cachedExistingTitles = {};
@@ -947,9 +949,9 @@ class ChangeSetBuilder {
         _cachedExistingLabelIds = {...await resolver()};
       } catch (e, s) {
         domainLogger?.error(
-          LogDomains.agentWorkflow,
-          'failed to resolve existing label IDs',
-          error: e,
+          LogDomain.agentWorkflow,
+          e,
+          message: 'failed to resolve existing label IDs',
           stackTrace: s,
         );
         _cachedExistingLabelIds = {};
@@ -1004,10 +1006,11 @@ class ChangeSetBuilder {
       return await resolver(labelId);
     } catch (e, s) {
       domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'failed to resolve label name for '
-        '${DomainLogger.sanitizeId(labelId)}',
-        error: e,
+        LogDomain.agentWorkflow,
+        e,
+        message:
+            'failed to resolve label name for '
+            '${DomainLogger.sanitizeId(labelId)}',
         stackTrace: s,
       );
       return null;

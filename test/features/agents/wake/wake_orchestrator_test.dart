@@ -4363,7 +4363,7 @@ void main() {
           () => mockDomainLogger.error(
             any(),
             any(),
-            error: any(named: 'error'),
+            message: any(named: 'message'),
             stackTrace: any(named: 'stackTrace'),
           ),
         ).thenReturn(null);
@@ -4408,9 +4408,12 @@ void main() {
 
         verify(
           () => mockDomainLogger.error(
-            LogDomains.agentRuntime,
-            any(that: contains('insertWakeRun failed')),
-            error: any(named: 'error'),
+            LogDomain.agentRuntime,
+            any(),
+            message: any(
+              named: 'message',
+              that: contains('insertWakeRun failed'),
+            ),
             stackTrace: any(named: 'stackTrace'),
           ),
         ).called(1);

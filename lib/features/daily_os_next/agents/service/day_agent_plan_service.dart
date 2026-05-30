@@ -90,9 +90,9 @@ class DayAgentPlanService {
       return DayAgentDirectToolResult.failure(e.message);
     } catch (e, s) {
       domainLogger.error(
-        LogDomains.agentWorkflow,
-        'day-agent plan tool failed',
-        error: e,
+        LogDomain.agentWorkflow,
+        e,
+        message: 'day-agent plan tool failed',
         stackTrace: s,
       );
       return DayAgentDirectToolResult.failure(e.toString());

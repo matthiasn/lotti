@@ -10,7 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -30,7 +30,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late ProviderContainer container;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockPlayer mockPlayer;
   late MockPlayerState mockPlayerState;
   late MockPlayerStream mockPlayerStream;
@@ -45,7 +45,7 @@ void main() {
   });
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockPlayer = MockPlayer();
     mockPlayerState = MockPlayerState();
     mockPlayerStream = MockPlayerStream();
@@ -54,10 +54,10 @@ void main() {
     completedController = StreamController<bool>.broadcast();
 
     // Register mocks with GetIt (handle already registered case)
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
     // AudioUtils.getFullAudioPath -> getDocumentsDirectory() -> getIt<Directory>
     if (getIt.isRegistered<Directory>()) {
@@ -1215,7 +1215,7 @@ void main() {
 
     test('play catches and logs exceptions', () async {
       // Create isolated mocks for this test
-      final localLoggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       final localPlayer = MockPlayer();
       final localPlayerState = MockPlayerState();
       final localPlayerStream = MockPlayerStream();
@@ -1243,10 +1243,10 @@ void main() {
       when(localPlayer.play).thenThrow(Exception('Play failed'));
 
       // Register local logging service
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt.unregister<LoggingService>();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
       }
-      getIt.registerSingleton<LoggingService>(localLoggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       final localContainer = ProviderContainer(
         overrides: [
@@ -1260,11 +1260,11 @@ void main() {
       await controller.play();
 
       verify(
-        () => localLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(),
-          domain: 'audio_player_controller',
-          subDomain: 'play',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'play',
         ),
       ).called(1);
 
@@ -1277,11 +1277,11 @@ void main() {
     test(
       'ensurePlayer catches and logs exceptions when factory throws',
       () async {
-        final localLoggingService = MockLoggingService();
-        if (getIt.isRegistered<LoggingService>()) {
-          getIt.unregister<LoggingService>();
+        final mockDomainLogger = MockDomainLogger();
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
         }
-        getIt.registerSingleton<LoggingService>(localLoggingService);
+        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
         final errorContainer = ProviderContainer(
           overrides: [
@@ -1298,11 +1298,11 @@ void main() {
             .ensurePlayerForTest();
 
         verify(
-          () => localLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
             any<Object>(),
-            domain: 'audio_player_controller',
-            subDomain: 'ensurePlayer',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'ensurePlayer',
           ),
         ).called(1);
 
@@ -1312,7 +1312,7 @@ void main() {
 
     test('pause catches and logs exceptions', () async {
       // Create isolated mocks for this test
-      final localLoggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       final localPlayer = MockPlayer();
       final localPlayerState = MockPlayerState();
       final localPlayerStream = MockPlayerStream();
@@ -1339,10 +1339,10 @@ void main() {
       when(localPlayer.pause).thenThrow(Exception('Pause failed'));
 
       // Register local logging service
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt.unregister<LoggingService>();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
       }
-      getIt.registerSingleton<LoggingService>(localLoggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       final localContainer = ProviderContainer(
         overrides: [
@@ -1356,11 +1356,11 @@ void main() {
       await controller.pause();
 
       verify(
-        () => localLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(),
-          domain: 'audio_player_controller',
-          subDomain: 'pause',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'pause',
         ),
       ).called(1);
 
@@ -1372,7 +1372,7 @@ void main() {
 
     test('seek catches and logs exceptions', () async {
       // Create isolated mocks for this test
-      final localLoggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       final localPlayer = MockPlayer();
       final localPlayerState = MockPlayerState();
       final localPlayerStream = MockPlayerStream();
@@ -1399,10 +1399,10 @@ void main() {
       when(() => localPlayer.seek(any())).thenThrow(Exception('Seek failed'));
 
       // Register local logging service
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt.unregister<LoggingService>();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
       }
-      getIt.registerSingleton<LoggingService>(localLoggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       final localContainer = ProviderContainer(
         overrides: [
@@ -1416,11 +1416,11 @@ void main() {
       await controller.seek(const Duration(seconds: 30));
 
       verify(
-        () => localLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(),
-          domain: 'audio_player_controller',
-          subDomain: 'seek',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'seek',
         ),
       ).called(1);
 
@@ -1432,7 +1432,7 @@ void main() {
 
     test('setSpeed catches and logs exceptions', () async {
       // Create isolated mocks for this test
-      final localLoggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       final localPlayer = MockPlayer();
       final localPlayerState = MockPlayerState();
       final localPlayerStream = MockPlayerStream();
@@ -1461,10 +1461,10 @@ void main() {
       ).thenThrow(Exception('SetRate failed'));
 
       // Register local logging service
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt.unregister<LoggingService>();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
       }
-      getIt.registerSingleton<LoggingService>(localLoggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       final localContainer = ProviderContainer(
         overrides: [
@@ -1478,11 +1478,11 @@ void main() {
       await controller.setSpeed(1.5);
 
       verify(
-        () => localLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(),
-          domain: 'audio_player_controller',
-          subDomain: 'setSpeed',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'setSpeed',
         ),
       ).called(1);
 
@@ -1494,7 +1494,7 @@ void main() {
 
     test('setAudioNote catches and logs exceptions', () async {
       // Create isolated mocks for this test
-      final localLoggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       final localPlayer = MockPlayer();
       final localPlayerState = MockPlayerState();
       final localPlayerStream = MockPlayerStream();
@@ -1523,10 +1523,10 @@ void main() {
       ).thenThrow(Exception('Open failed'));
 
       // Register local logging service
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt.unregister<LoggingService>();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
       }
-      getIt.registerSingleton<LoggingService>(localLoggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       final localContainer = ProviderContainer(
         overrides: [
@@ -1558,11 +1558,11 @@ void main() {
       await controller.setAudioNote(audioNote);
 
       verify(
-        () => localLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(),
-          domain: 'audio_player_controller',
-          subDomain: 'setAudioNote',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'setAudioNote',
         ),
       ).called(1);
 

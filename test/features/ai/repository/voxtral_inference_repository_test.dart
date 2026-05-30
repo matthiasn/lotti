@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -964,31 +964,31 @@ data: [DONE]
       const model = 'mistralai/Voxtral-Mini-3B-2507';
       const baseUrl = 'http://localhost:11344';
       const audioBase64 = 'base64_audio_data';
-      late MockLoggingService mockLoggingService;
+      late MockDomainLogger mockDomainLogger;
 
       setUp(() {
-        mockLoggingService = MockLoggingService();
+        mockDomainLogger = MockDomainLogger();
         // Register LoggingService in GetIt
-        if (GetIt.instance.isRegistered<LoggingService>()) {
-          GetIt.instance.unregister<LoggingService>();
+        if (GetIt.instance.isRegistered<DomainLogger>()) {
+          GetIt.instance.unregister<DomainLogger>();
         }
-        GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
+        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
       });
 
       tearDown(() {
-        if (GetIt.instance.isRegistered<LoggingService>()) {
-          GetIt.instance.unregister<LoggingService>();
+        if (GetIt.instance.isRegistered<DomainLogger>()) {
+          GetIt.instance.unregister<DomainLogger>();
         }
       });
 
       test('should log exception when model is not available', () async {
         // Arrange
         when(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String?>(named: 'subDomain'),
           ),
         ).thenReturn(null);
 
@@ -1010,11 +1010,11 @@ data: [DONE]
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
             any<Object>(that: isA<VoxtralModelNotAvailableException>()),
-            domain: 'VOXTRAL',
-            subDomain: 'model_not_available',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'model_not_available',
           ),
         ).called(1);
       });
@@ -1022,11 +1022,11 @@ data: [DONE]
       test('should log exception on HTTP error', () async {
         // Arrange
         when(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String?>(named: 'subDomain'),
           ),
         ).thenReturn(null);
 
@@ -1048,11 +1048,11 @@ data: [DONE]
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
             any<Object>(that: isA<VoxtralInferenceException>()),
-            domain: 'VOXTRAL',
-            subDomain: 'http_error',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'http_error',
           ),
         ).called(1);
       });
@@ -1060,11 +1060,11 @@ data: [DONE]
       test('should log exception on unexpected error', () async {
         // Arrange
         when(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String?>(named: 'subDomain'),
           ),
         ).thenReturn(null);
 
@@ -1092,11 +1092,11 @@ data: [DONE]
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
             any<Object>(that: isA<StateError>()),
-            domain: 'VOXTRAL',
-            subDomain: 'unexpected',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'unexpected',
           ),
         ).called(1);
       });

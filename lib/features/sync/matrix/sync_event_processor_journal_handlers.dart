@@ -43,11 +43,11 @@ extension _JournalHandlers on SyncEventProcessor {
         }
         affectedIds.addAll({link.fromId, link.toId});
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply.entryLink.embedded',
           stackTrace: st,
+          subDomain: 'apply.entryLink.embedded',
         );
         if (rethrowOnError) rethrow;
       }
@@ -72,11 +72,11 @@ extension _JournalHandlers on SyncEventProcessor {
     try {
       existing = await journalDb.journalEntityById(syncMessage.id);
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'apply.staleDescriptor.lookup',
         stackTrace: st,
+        subDomain: 'apply.staleDescriptor.lookup',
       );
       return null;
     }
@@ -88,11 +88,11 @@ extension _JournalHandlers on SyncEventProcessor {
     try {
       status = VectorClock.compare(existingVc, incomingVc);
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'apply.staleDescriptor.compare',
         stackTrace: st,
+        subDomain: 'apply.staleDescriptor.compare',
       );
       return null;
     }
@@ -140,11 +140,11 @@ extension _JournalHandlers on SyncEventProcessor {
           );
         }
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'recordReceived',
           stackTrace: st,
+          subDomain: 'recordReceived',
         );
       }
     }
@@ -189,11 +189,11 @@ extension _JournalHandlers on SyncEventProcessor {
           deferredStaleDescriptorError: error,
         );
       }
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SyncEventProcessor.missingAttachment',
         stackTrace: stackTrace,
+        subDomain: 'SyncEventProcessor.missingAttachment',
       );
       rethrow;
     }
@@ -224,9 +224,9 @@ extension _JournalHandlers on SyncEventProcessor {
         return skipped;
       }
       // Not superseded — log and rethrow for retry.
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         deferredStaleError,
-        domain: 'MATRIX_SERVICE',
         subDomain: 'SyncEventProcessor.missingAttachment',
       );
       throw deferredStaleError;
@@ -271,11 +271,11 @@ extension _JournalHandlers on SyncEventProcessor {
           jsonPath: syncMessage.jsonPath,
         );
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'duplicateRecord',
           stackTrace: st,
+          subDomain: 'duplicateRecord',
         );
       }
     }
@@ -329,11 +329,11 @@ extension _JournalHandlers on SyncEventProcessor {
           predictedStatus = VectorClock.compare(vcA, vcB0);
         }
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply.predictVectorClock',
           stackTrace: st,
+          subDomain: 'apply.predictVectorClock',
         );
         predictedStatus = VclockStatus.b_gt_a;
       }
@@ -374,11 +374,11 @@ extension _JournalHandlers on SyncEventProcessor {
       updateResult = tx.$1;
       processedLinksCount = tx.$2;
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'apply.persistJournalEntity',
         stackTrace: stackTrace,
+        subDomain: 'apply.persistJournalEntity',
       );
       rethrow;
     }
@@ -438,11 +438,11 @@ extension _JournalHandlers on SyncEventProcessor {
             );
           }
         } catch (e, st) {
-          _loggingService.captureException(
+          _loggingService.error(
+            LogDomain.sync,
             e,
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordReceived',
             stackTrace: st,
+            subDomain: 'recordReceived',
           );
         }
       }
@@ -517,11 +517,11 @@ extension _JournalHandlers on SyncEventProcessor {
             );
           }
         } catch (e, st) {
-          _loggingService.captureException(
+          _loggingService.error(
+            LogDomain.sync,
             e,
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordReceived',
             stackTrace: st,
+            subDomain: 'recordReceived',
           );
         }
       }

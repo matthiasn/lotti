@@ -72,9 +72,9 @@ void main() {
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       verify(
-        () => loggingService.captureEvent(
-          any<Object>(that: contains('agentEntity')),
-          domain: LogDomains.sync,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('agentEntity')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -543,9 +543,9 @@ void main() {
 
       verify(() => mockAgentRepo.upsertLink(link)).called(1);
       verify(
-        () => loggingService.captureEvent(
-          any<Object>(that: contains('agentLink')),
-          domain: LogDomains.sync,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('agentLink')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -900,9 +900,9 @@ void main() {
 
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
       verify(
-        () => loggingService.captureEvent(
-          any<Object>(that: contains('ignored')),
-          domain: LogDomains.sync,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('ignored')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -930,9 +930,9 @@ void main() {
 
       verifyNever(() => mockAgentRepo.upsertLink(any()));
       verify(
-        () => loggingService.captureEvent(
-          any<Object>(that: contains('ignored')),
-          domain: LogDomains.sync,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('ignored')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -971,11 +971,11 @@ void main() {
       );
 
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).called(1);
     });
@@ -1006,13 +1006,121 @@ void main() {
       );
 
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).called(1);
+    });
+
+    group('_localAgentPayloadDominates error handling', () {
+      // Tests for lines 444-448: the catch block in _localAgentPayloadDominates
+      // fires when VectorClock.compare throws VclockException (e.g. a VC with
+      // a negative counter is invalid).  The processor logs the error and
+      // treats the dominance check as false, so it falls through to upsert.
+
+      test(
+        'logs error and falls through to upsert when incoming VC is invalid '
+        '(VclockException — lines 444-448)',
+        () async {
+          // Local entity has a valid VC so dominance check is attempted.
+          final local = AgentDomainEntity.agentState(
+            id: 'state-invalid-vc',
+            agentId: 'agent-1',
+            revision: 2,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2024, 3, 16),
+            vectorClock: const VectorClock({'host-A': 1}),
+          );
+          // Incoming entity has an invalid VC (negative counter) — this causes
+          // VectorClock.compare to throw VclockException.
+          final incoming = AgentDomainEntity.agentState(
+            id: 'state-invalid-vc',
+            agentId: 'agent-1',
+            revision: 3,
+            slots: const AgentSlots(),
+            updatedAt: DateTime(2024, 3, 17),
+            vectorClock: const VectorClock({'host-A': -1}),
+          );
+          when(
+            () => mockAgentRepo.getEntity('state-invalid-vc'),
+          ).thenAnswer((_) async => local);
+
+          final message = SyncMessage.agentEntity(
+            agentEntity: incoming,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          // The catch block in _localAgentPayloadDominates logs and returns
+          // false, so the entity is upserted anyway.
+          verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
+          verify(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: any<String>(
+                named: 'subDomain',
+                that: contains('vectorClockCompare'),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'logs error and falls through to upsert when link VC is invalid '
+        '(VclockException — lines 444-448)',
+        () async {
+          final local = AgentLink.basic(
+            id: 'link-invalid-vc',
+            fromId: 'agent-1',
+            toId: 'state-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 16),
+            vectorClock: const VectorClock({'host-A': 1}),
+          );
+          final incoming = AgentLink.basic(
+            id: 'link-invalid-vc',
+            fromId: 'agent-1',
+            toId: 'state-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 17),
+            vectorClock: const VectorClock({'host-A': -1}),
+          );
+          when(
+            () => mockAgentRepo.getLinkById('link-invalid-vc'),
+          ).thenAnswer((_) async => local);
+
+          final message = SyncMessage.agentLink(
+            agentLink: incoming,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          // Dominance check failed (VclockException caught), falls through to
+          // upsert.
+          verify(() => mockAgentRepo.upsertLink(incoming)).called(1);
+          verify(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: any<String>(
+                named: 'subDomain',
+                that: contains('vectorClockCompare'),
+              ),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('agent entity sequence log recording', () {
@@ -1342,9 +1450,11 @@ void main() {
         await proc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => loggingService.captureEvent(
-            contains('apply.agentEntity.gapsDetected count=1'),
-            domain: LogDomains.sync,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: contains('apply.agentEntity.gapsDetected count=1'),
+            ),
             subDomain: 'processor.gapDetection',
           ),
         ).called(1);
@@ -1398,11 +1508,11 @@ void main() {
         // Entity should still be upserted despite seq log error
         verify(() => mockAgentRepoSeq.upsertEntity(entity)).called(1);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordReceived',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordReceived',
           ),
         ).called(1);
       });
@@ -1503,9 +1613,9 @@ void main() {
         await proc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => loggingService.captureEvent(
-            contains('apply.agentLink.gapsDetected count=2'),
-            domain: LogDomains.sync,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('apply.agentLink.gapsDetected count=2')),
             subDomain: 'processor.gapDetection',
           ),
         ).called(1);
@@ -1553,11 +1663,11 @@ void main() {
         // Link should still be upserted despite seq log error.
         verify(() => mockAgentRepoSeq.upsertLink(link)).called(1);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordReceived',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordReceived',
           ),
         ).called(1);
       });
@@ -2140,9 +2250,9 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
-          () => loggingService.captureEvent(
-            any<Object>(that: contains('no payload and no jsonPath')),
-            domain: LogDomains.sync,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('no payload and no jsonPath')),
             subDomain: 'processor.resolve',
           ),
         ).called(1);
@@ -2158,9 +2268,9 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
-          () => loggingService.captureEvent(
-            any<Object>(that: contains('no payload and no jsonPath')),
-            domain: LogDomains.sync,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('no payload and no jsonPath')),
             subDomain: 'processor.resolve',
           ),
         ).called(1);
@@ -2177,11 +2287,11 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve.agentEntity.invalidPath',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'resolve.agentEntity.invalidPath',
           ),
         ).called(1);
       });
@@ -2197,11 +2307,11 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve.agentLink.invalidPath',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'resolve.agentLink.invalidPath',
           ),
         ).called(1);
       });
@@ -2255,11 +2365,11 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve.agentEntity',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'resolve.agentEntity',
           ),
         ).called(1);
       });
@@ -2492,11 +2602,11 @@ void main() {
 
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
           verify(
-            () => loggingService.captureException(
+            () => loggingService.error(
+              LogDomain.sync,
               any<Object>(),
-              domain: 'AGENT_SYNC',
-              subDomain: 'resolve.agentEntity.parseFetched',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'resolve.agentEntity.parseFetched',
             ),
           ).called(1);
         });
@@ -2519,13 +2629,129 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve.agentLink',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'resolve.agentLink',
           ),
         ).called(1);
+      });
+
+      group('_restoreDominantAgentCache FileSystemException (lines 465-469)', () {
+        setUpAll(() {
+          registerFallbackValue(const FileSystemException('fallback'));
+        });
+
+        // When local VC dominates AND jsonPath resolves outside the documents
+        // directory (path-traversal after normalisation), resolveJsonCandidateFile
+        // throws FileSystemException.  _restoreDominantAgentCache catches it and
+        // logs at lines 465-469 without propagating.
+
+        test(
+          'logs FileSystemException when jsonPath escapes the documents '
+          'directory during cache restore for an agent entity',
+          () async {
+            const localVc = VectorClock({'host-A': 2});
+            const incomingVc = VectorClock({'host-A': 1});
+            final local = AgentDomainEntity.agentState(
+              id: 'state-restore-fail',
+              agentId: 'agent-1',
+              revision: 2,
+              slots: const AgentSlots(),
+              updatedAt: DateTime(2024, 3, 16),
+              vectorClock: localVc,
+            );
+            final stale = AgentDomainEntity.agentState(
+              id: 'state-restore-fail',
+              agentId: 'agent-1',
+              revision: 1,
+              slots: const AgentSlots(),
+              updatedAt: DateTime(2024, 3, 15),
+              vectorClock: incomingVc,
+            );
+            when(
+              () => mockAgentRepo.getEntity('state-restore-fail'),
+            ).thenAnswer((_) async => local);
+
+            // Use a path-traversal jsonPath — resolveJsonCandidateFile throws
+            // FileSystemException which _restoreDominantAgentCache catches.
+            final message = SyncMessage.agentEntity(
+              agentEntity: stale,
+              status: SyncEntryStatus.update,
+              jsonPath: '../../etc/evil.json',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
+            // Should complete without throwing.
+            await processor.process(event: event, journalDb: journalDb);
+
+            // Local dominates → entity NOT upserted.
+            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+            // The FileSystemException is caught and logged at lines 465-469.
+            verify(
+              () => loggingService.error(
+                LogDomain.sync,
+                any<FileSystemException>(),
+                stackTrace: any<StackTrace>(named: 'stackTrace'),
+                subDomain: any<String>(
+                  named: 'subDomain',
+                  that: contains('restoreDominantCache'),
+                ),
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'logs FileSystemException when jsonPath escapes the documents '
+          'directory during cache restore for an agent link',
+          () async {
+            const localVc = VectorClock({'host-B': 3});
+            const incomingVc = VectorClock({'host-B': 2});
+            final local = AgentLink.basic(
+              id: 'link-restore-fail',
+              fromId: 'agent-1',
+              toId: 'state-1',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 16),
+              vectorClock: localVc,
+            );
+            final stale = AgentLink.basic(
+              id: 'link-restore-fail',
+              fromId: 'agent-1',
+              toId: 'state-1',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              vectorClock: incomingVc,
+            );
+            when(
+              () => mockAgentRepo.getLinkById('link-restore-fail'),
+            ).thenAnswer((_) async => local);
+
+            final message = SyncMessage.agentLink(
+              agentLink: stale,
+              status: SyncEntryStatus.update,
+              jsonPath: '../../etc/evil.json',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
+            await processor.process(event: event, journalDb: journalDb);
+
+            verifyNever(() => mockAgentRepo.upsertLink(any()));
+            verify(
+              () => loggingService.error(
+                LogDomain.sync,
+                any<FileSystemException>(),
+                stackTrace: any<StackTrace>(named: 'stackTrace'),
+                subDomain: any<String>(
+                  named: 'subDomain',
+                  that: contains('restoreDominantCache'),
+                ),
+              ),
+            ).called(1);
+          },
+        );
       });
     });
   });
@@ -2539,11 +2765,11 @@ void main() {
     );
 
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.sync,
         any<Object>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SyncEventProcessor',
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'SyncEventProcessor',
       ),
     ).called(1);
   });
@@ -2568,11 +2794,11 @@ void main() {
     );
 
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.sync,
         any<Object>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SyncEventProcessor',
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'SyncEventProcessor',
       ),
     ).called(1);
   });
@@ -2594,11 +2820,11 @@ void main() {
     await processor.process(event: event, journalDb: journalDb);
 
     verify(
-      () => loggingService.captureEvent(
-        any<Object>(
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(
           that: contains('skipping undeserializable sync message'),
         ),
-        domain: LogDomains.sync,
         subDomain: 'processor.skipUnrecoverable',
       ),
     ).called(1);
@@ -2627,11 +2853,11 @@ void main() {
       // If it threw, it's a non-deserialization error that rethrows → also ok,
       // but verify the outer catch logged it.
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SyncEventProcessor',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'SyncEventProcessor',
         ),
       ).called(1);
     }
@@ -2648,11 +2874,11 @@ void main() {
     await processor.process(event: event, journalDb: journalDb);
 
     verify(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        LogDomain.sync,
         any<String>(
           that: contains('skipping undeserializable sync message'),
         ),
-        domain: LogDomains.sync,
         subDomain: 'processor.skipUnrecoverable',
       ),
     ).called(1);

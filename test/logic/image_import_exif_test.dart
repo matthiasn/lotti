@@ -8,7 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -305,7 +305,7 @@ void main() {
       ..registerSingleton<UpdateNotifications>(MockUpdateNotifications())
       ..registerSingleton<NotificationService>(MockNotificationService())
       ..registerSingleton<TimeService>(MockTimeService())
-      ..registerSingleton<LoggingService>(MockLoggingService());
+      ..registerSingleton<DomainLogger>(MockDomainLogger());
   });
 
   tearDownAll(() async {
@@ -509,7 +509,7 @@ void main() {
 
   group('File Size Validation', () {
     test('rejects images exceeding size limit', () async {
-      final loggingService = getIt<LoggingService>();
+      final loggingService = getIt<DomainLogger>();
 
       // Create oversized image (> 50MB)
       final oversizedData = Uint8List(51 * 1024 * 1024);
@@ -521,9 +521,9 @@ void main() {
 
       // Verify logging was called for oversized file
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.ai,
           any<String>(),
-          domain: ImageImportConstants.loggingDomain,
           subDomain: 'importPastedImages',
         ),
       ).called(1);
@@ -660,7 +660,7 @@ void main() {
 
   group('EXIF Parsing Error Handling', () {
     test('logs exception when EXIF parsing fails', () async {
-      final loggingService = getIt<LoggingService>();
+      final loggingService = getIt<DomainLogger>();
 
       // Trigger EXIF parsing with minimal/invalid data
       final invalidExif = Uint8List.fromList([
@@ -679,11 +679,11 @@ void main() {
       // Verify logging was called for EXIF parsing error
       // Note: May be called multiple times if both EXIF reading and parsing fail
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: ImageImportConstants.loggingDomain,
-          subDomain: 'extractImageTimestamp',
+        () => loggingService.error(
+          LogDomain.ai,
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'extractImageTimestamp',
         ),
       ).called(greaterThan(0));
     });

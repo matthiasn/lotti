@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/utils/consts.dart';
 
 void main() {
@@ -63,9 +64,6 @@ void main() {
         enableSessionRatingsFlag: false,
         enableSyncActorFlag: false,
         enableProjectsFlag: false,
-        logAgentRuntimeFlag: true,
-        logAgentWorkflowFlag: true,
-        logSyncFlag: false,
         logSlowQueriesFlag: false,
         enableEmbeddingsFlag: false,
         enableVectorSearchFlag: false,
@@ -97,6 +95,23 @@ void main() {
         );
       }
     });
+
+    test(
+      'seeds one flag per LogDomain with its default-enabled status',
+      () async {
+        await initConfigFlags(db, inMemoryDatabase: true);
+
+        for (final domain in LogDomain.values) {
+          final flag = await db.getConfigFlagByName(domain.flagName);
+          expect(flag, isNotNull, reason: 'missing flag: ${domain.flagName}');
+          expect(
+            flag!.status,
+            domain.defaultEnabled,
+            reason: 'default mismatch for ${domain.flagName}',
+          );
+        }
+      },
+    );
 
     test('preserves existing flag status when re-run', () async {
       await initConfigFlags(db, inMemoryDatabase: true);

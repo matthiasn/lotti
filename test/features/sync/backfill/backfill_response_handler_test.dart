@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,7 +22,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockSyncSequenceLogService mockSequenceService;
   late MockOutboxService mockOutboxService;
-  late MockLoggingService mockLogging;
+  late MockDomainLogger mockLogging;
   late MockVectorClockService mockVcService;
   late MockAgentRepository mockAgentRepository;
   late BackfillResponseHandler handler;
@@ -68,22 +69,22 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockSequenceService = MockSyncSequenceLogService();
     mockOutboxService = MockOutboxService();
-    mockLogging = MockLoggingService();
+    mockLogging = MockDomainLogger();
     mockVcService = MockVectorClockService();
 
     when(
-      () => mockLogging.captureEvent(
+      () => mockLogging.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
     when(
-      () => mockLogging.captureException(
+      () => mockLogging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
     when(() => mockVcService.initialized).thenAnswer((_) async {});
@@ -898,11 +899,11 @@ void main() {
 
       // Should log the exception
       verify(
-        () => mockLogging.captureException(
+        () => mockLogging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
     });
@@ -1242,11 +1243,11 @@ void main() {
 
       // Should log the exception
       verify(
-        () => mockLogging.captureException(
+        () => mockLogging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
     });

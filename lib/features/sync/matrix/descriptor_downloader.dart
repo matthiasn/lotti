@@ -5,7 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 class DescriptorDownloadResult {
@@ -20,14 +20,14 @@ class DescriptorDownloadResult {
 
 class DescriptorDownloader {
   DescriptorDownloader({
-    required LoggingService loggingService,
+    required DomainLogger loggingService,
     required this._validator,
     this.onCachePurge,
   }) : _logging = loggingService;
 
   static const int maxDescriptorDownloadAttempts = 2;
 
-  final LoggingService _logging;
+  final DomainLogger _logging;
   final VectorClockValidator _validator;
   void Function()? onCachePurge;
 
@@ -49,9 +49,9 @@ class DescriptorDownloader {
         );
         if (purged && attempt + 1 < maxDescriptorDownloadAttempts) {
           onCachePurge?.call();
-          _logging.captureEvent(
+          _logging.log(
+            LogDomain.sync,
             'smart.fetch.empty_bytes.refresh path=$jsonPath',
-            domain: 'MATRIX_SERVICE',
             subDomain: 'SmartLoader.fetch',
           );
           continue;
@@ -90,9 +90,9 @@ class DescriptorDownloader {
           if (purged) {
             onCachePurge?.call();
           }
-          _logging.captureEvent(
+          _logging.log(
+            LogDomain.sync,
             'smart.fetch.stale_vc.refresh path=$jsonPath',
-            domain: 'MATRIX_SERVICE',
             subDomain: 'SmartLoader.fetch',
           );
           continue;
@@ -119,26 +119,26 @@ class DescriptorDownloader {
     try {
       final uri = event.attachmentOrThumbnailMxcUrl();
       if (uri == null) {
-        _logging.captureEvent(
+        _logging.log(
+          LogDomain.sync,
           'smart.fetch.stale_vc.purge.skipped path=$jsonPath reason=no_mxc',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'SmartLoader.fetch',
         );
         return false;
       }
       await event.room.client.database.deleteFile(uri);
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'smart.fetch.stale_vc.purge path=$jsonPath mxc=$uri',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'SmartLoader.fetch',
       );
       return true;
     } catch (e, st) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SmartLoader.purge',
         stackTrace: st,
+        subDomain: 'SmartLoader.purge',
       );
       return false;
     }

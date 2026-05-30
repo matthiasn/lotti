@@ -3,53 +3,53 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/util/audio_converter_channel.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
-class _FakeLoggingService extends LoggingService {
+class _FakeDomainLogger extends Fake implements DomainLogger {
   String? lastEvent;
 
   @override
-  void captureEvent(
-    dynamic event, {
-    required String domain,
+  void log(
+    LogDomain domain,
+    String message, {
     String? subDomain,
     InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
   }) {
-    lastEvent = event.toString();
+    lastEvent = message;
   }
 
   @override
-  void captureException(
-    dynamic exception, {
-    required String domain,
+  void error(
+    LogDomain domain,
+    Object error, {
+    StackTrace? stackTrace,
     String? subDomain,
-    dynamic stackTrace,
-    InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
-  }) {}
+    String? message,
+  }) {
+    lastEvent = message ?? '$error';
+  }
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const channel = MethodChannel('com.matthiasn.lotti/audio_converter');
-  late _FakeLoggingService fakeLogging;
+  late _FakeDomainLogger fakeLogging;
 
   group('AudioConverterChannel', () {
     setUp(() {
-      fakeLogging = _FakeLoggingService();
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt.unregister<LoggingService>();
+      fakeLogging = _FakeDomainLogger();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
       }
-      getIt.registerSingleton<LoggingService>(fakeLogging);
+      getIt.registerSingleton<DomainLogger>(fakeLogging);
     });
 
     tearDown(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, null);
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt.unregister<LoggingService>();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
       }
     });
 

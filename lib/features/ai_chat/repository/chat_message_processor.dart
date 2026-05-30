@@ -7,7 +7,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// A clock function used for time-dependent logic.
@@ -52,7 +52,7 @@ class ChatMessageProcessor {
   final AiConfigRepository aiConfigRepository;
   final CloudInferenceRepository cloudInferenceRepository;
   final TaskSummaryRepository taskSummaryRepository;
-  final LoggingService loggingService;
+  final DomainLogger loggingService;
 
   // Cache for AI configuration per model
   static const Duration configCacheDuration = Duration(minutes: 5);
@@ -242,9 +242,9 @@ class ChatMessageProcessor {
                 ? 'tool_${toolCallDelta.index}'
                 : null);
         if (toolId == null) {
-          loggingService.captureEvent(
+          loggingService.log(
+            LogDomain.chat,
             'Malformed tool call stream: missing id and index. delta: $toolCallDelta',
-            domain: 'ChatMessageProcessor',
             subDomain: 'accumulateToolCalls',
           );
           continue;
@@ -303,9 +303,9 @@ class ChatMessageProcessor {
     List<ChatCompletionMessageToolCall> toolCalls,
     String categoryId,
   ) async {
-    loggingService.captureEvent(
+    loggingService.log(
+      LogDomain.chat,
       'Processing ${toolCalls.length} tool calls',
-      domain: 'ChatMessageProcessor',
       subDomain: 'processToolCalls',
     );
 
@@ -341,9 +341,9 @@ class ChatMessageProcessor {
 
       final request = TaskSummaryRequest.fromJson(args);
 
-      loggingService.captureEvent(
+      loggingService.log(
+        LogDomain.chat,
         'Processing task summary tool call',
-        domain: 'ChatMessageProcessor',
         subDomain: 'processTaskSummaryTool',
       );
 
@@ -389,11 +389,11 @@ class ChatMessageProcessor {
         },
       });
     } catch (e, stackTrace) {
-      loggingService.captureException(
+      loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatMessageProcessor',
-        subDomain: 'processTaskSummaryTool',
         stackTrace: stackTrace,
+        subDomain: 'processTaskSummaryTool',
       );
 
       return jsonEncode({

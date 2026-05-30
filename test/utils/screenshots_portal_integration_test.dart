@@ -1,38 +1,22 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
-import 'package:lotti/utils/screenshot_consts.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../helpers/fallbacks.dart';
-
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
+import '../mocks/mocks.dart';
 
 class MockWindowManager extends Mock implements WindowManager {}
 
 void main() {
   group('Screenshots Portal Integration', () {
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockLoggingService;
     late MockWindowManager mockWindowManager;
 
     setUpAll(() {
@@ -41,12 +25,12 @@ void main() {
     });
 
     setUp(() {
-      mockLoggingService = MockLoggingService();
+      mockLoggingService = MockDomainLogger();
       mockWindowManager = MockWindowManager();
 
       // Register mocks in GetIt
       getIt
-        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<DomainLogger>(mockLoggingService)
         ..registerSingleton<WindowManager>(mockWindowManager);
 
       // Setup default mock behaviors
@@ -109,9 +93,9 @@ void main() {
 
         // Mock logging to ensure no portal fallback is logged
         when(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: screenshotDomain,
+          () => mockLoggingService.error(
+            LogDomain.screenshots,
+            any<Object>(),
             subDomain: 'portal_fallback',
           ),
         ).thenAnswer((_) async {});
@@ -126,9 +110,9 @@ void main() {
 
         // Verify portal fallback was NOT logged (because we're not in Flatpak)
         verifyNever(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: screenshotDomain,
+          () => mockLoggingService.error(
+            LogDomain.screenshots,
+            any<Object>(),
             subDomain: 'portal_fallback',
           ),
         );
@@ -167,9 +151,9 @@ void main() {
 
         // Mock logging to capture any exceptions
         when(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: screenshotDomain,
+          () => mockLoggingService.error(
+            LogDomain.screenshots,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).thenAnswer((_) async {});
@@ -182,9 +166,9 @@ void main() {
 
         // Verify that the exception was logged (but NOT as portal_fallback)
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: screenshotDomain,
+          () => mockLoggingService.error(
+            LogDomain.screenshots,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);

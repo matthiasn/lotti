@@ -17,7 +17,7 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart' as rec;
@@ -48,7 +48,7 @@ const double vuReferenceLevelDbfs = -18;
 class AudioRecorderController extends _$AudioRecorderController {
   late final AudioRecorderRepository _recorderRepository;
   StreamSubscription<Amplitude>? _amplitudeSub;
-  late final LoggingService _loggingService;
+  late final DomainLogger _loggingService;
   String? _linkedId;
   String? _categoryId;
   AudioNote? _audioNote;
@@ -77,7 +77,7 @@ class AudioRecorderController extends _$AudioRecorderController {
   @override
   AudioRecorderState build() {
     _recorderRepository = ref.watch(audioRecorderRepositoryProvider);
-    _loggingService = getIt<LoggingService>();
+    _loggingService = getIt<DomainLogger>();
 
     // Don't initialize AudioPlayerCubit here - it depends on MediaKit which might fail
     // We'll get it lazily when needed
@@ -130,20 +130,20 @@ class AudioRecorderController extends _$AudioRecorderController {
       // Check if disposed before logging
       if (_disposed) return;
 
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.speech,
         'Audio recorder initialization: hasPermissions=$hasPermissions',
-        domain: 'recorder_controller',
         subDomain: 'initialize',
       );
     } catch (e, stackTrace) {
       // Check if disposed before logging
       if (_disposed) return;
 
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         e,
-        domain: 'recorder_controller',
-        subDomain: 'initialize',
         stackTrace: stackTrace,
+        subDomain: 'initialize',
       );
     }
     // No state updates needed - we start in stopped state
@@ -219,19 +219,20 @@ class AudioRecorderController extends _$AudioRecorderController {
           }
         }
       } else {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.speech,
           'No audio recording permission available. Flatpak=${PortalService.isRunningInFlatpak}',
-          domain: 'recorder_controller',
           subDomain: 'record_permission_denied',
         );
         // User will see no recording starts - this is the expected behavior
         // The UI remains available for user interaction
       }
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         exception,
-        domain: 'recorder_controller',
         stackTrace: stackTrace,
+        subDomain: 'recorder_controller',
       );
     }
   }
@@ -289,10 +290,11 @@ class AudioRecorderController extends _$AudioRecorderController {
         return entryId;
       }
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         exception,
-        domain: 'recorder_controller',
         stackTrace: stackTrace,
+        subDomain: 'recorder_controller',
       );
       // Ensure state is updated even if an error occurs during stop/save
       _dbfsBuffer.clear();
@@ -363,9 +365,9 @@ class AudioRecorderController extends _$AudioRecorderController {
       if (!hasPerm) {
         await recorder.dispose();
         _realtimeRecorder = null;
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.speech,
           'No audio recording permission for realtime',
-          domain: 'recorder_controller',
           subDomain: 'recordRealtime_permission_denied',
         );
         return;
@@ -418,9 +420,9 @@ class AudioRecorderController extends _$AudioRecorderController {
         },
       );
 
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.speech,
         'Realtime recording started',
-        domain: 'recorder_controller',
         subDomain: 'recordRealtime',
       );
     } catch (exception, stackTrace) {
@@ -431,11 +433,11 @@ class AudioRecorderController extends _$AudioRecorderController {
         isRealtimeMode: false,
         partialTranscript: null,
       );
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         exception,
-        domain: 'recorder_controller',
-        subDomain: 'recordRealtime',
         stackTrace: stackTrace,
+        subDomain: 'recordRealtime',
       );
     }
   }
@@ -549,22 +551,22 @@ class AudioRecorderController extends _$AudioRecorderController {
       _realtimeModelName = null;
       _realtimeProviderName = null;
 
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.speech,
         'Realtime recording stopped: '
         'transcriptLen=${result.transcript.length}, '
         'audioFile=${result.audioFilePath}, '
         'usedFallback=${result.usedTranscriptFallback}',
-        domain: 'recorder_controller',
         subDomain: 'stopRealtime',
       );
 
       return entryId;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         exception,
-        domain: 'recorder_controller',
-        subDomain: 'stopRealtime',
         stackTrace: stackTrace,
+        subDomain: 'stopRealtime',
       );
       _dbfsBuffer.clear();
       await _cleanupRealtime();
@@ -605,17 +607,17 @@ class AudioRecorderController extends _$AudioRecorderController {
         partialTranscript: null,
       );
 
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.speech,
         'Realtime recording cancelled',
-        domain: 'recorder_controller',
         subDomain: 'cancelRealtime',
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.speech,
         exception,
-        domain: 'recorder_controller',
-        subDomain: 'cancelRealtime',
         stackTrace: stackTrace,
+        subDomain: 'cancelRealtime',
       );
     }
   }
@@ -702,9 +704,9 @@ class AudioRecorderController extends _$AudioRecorderController {
         await ref.read(audioPlayerControllerProvider.notifier).pause();
       }
     } catch (e) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.speech,
         'Audio player not available, continuing without audio pause: $e',
-        domain: 'recorder_controller',
         subDomain: 'pauseAudioPlayer',
       );
     }

@@ -6,7 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -24,24 +24,24 @@ void main() {
   group('AutoChecklistService Tests', () {
     late AutoChecklistService service;
     late MockChecklistRepository mockChecklistRepository;
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockDomainLogger;
     late MockJournalDb mockJournalDb;
 
     setUp(() {
       mockChecklistRepository = MockChecklistRepository();
-      mockLoggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
       mockJournalDb = MockJournalDb();
 
       // Register mock services with GetIt
       getIt
         ..reset()
         ..registerSingleton<ChecklistRepository>(mockChecklistRepository)
-        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<DomainLogger>(mockDomainLogger)
         ..registerSingleton<JournalDb>(mockJournalDb);
 
       service = AutoChecklistService(
         journalDb: mockJournalDb,
-        loggingService: mockLoggingService,
+        loggingService: mockDomainLogger,
         checklistRepository: mockChecklistRepository,
       );
     });
@@ -88,11 +88,11 @@ void main() {
         // Assert
         expect(result, isFalse);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.tasks,
             any<Exception>(),
-            domain: 'auto_checklist_service',
-            subDomain: 'shouldAutoCreate',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'shouldAutoCreate',
           ),
         ).called(1);
       });
@@ -194,9 +194,9 @@ void main() {
             ),
           ).called(1);
           verify(
-            () => mockLoggingService.captureEvent(
+            () => mockDomainLogger.log(
+              LogDomain.tasks,
               'auto_checklist_created: taskId=$taskId, checklistId=checklist-123, itemCount=2',
-              domain: 'auto_checklist_service',
               subDomain: 'autoCreateChecklist',
             ),
           ).called(1);
@@ -343,11 +343,11 @@ void main() {
             ),
           ).called(1);
           verify(
-            () => mockLoggingService.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.tasks,
               exception,
-              domain: 'auto_checklist_service',
-              subDomain: 'autoCreateChecklist',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'autoCreateChecklist',
             ),
           ).called(1);
         },
@@ -480,9 +480,9 @@ void main() {
 
         // Verify success logging (lines 81-85 in source)
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            LogDomain.tasks,
             'auto_checklist_created: taskId=$taskId, checklistId=checklist-456, itemCount=2',
-            domain: 'auto_checklist_service',
             subDomain: 'autoCreateChecklist',
           ),
         ).called(1);

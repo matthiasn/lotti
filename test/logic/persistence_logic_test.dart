@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -13,19 +14,24 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/utils.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -146,7 +152,9 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)
-        ..registerSingleton<LoggingService>(LoggingService())
+        ..registerSingleton<DomainLogger>(
+          DomainLogger(loggingService: LoggingService()),
+        )
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<NotificationService>(mockNotificationService)
@@ -159,7 +167,7 @@ void main() {
         ..registerSingleton<GeolocationService>(
           GeolocationService(
             journalDb: journalDb,
-            loggingService: getIt<LoggingService>(),
+            loggingService: getIt<DomainLogger>(),
             metadataService: getIt<MetadataService>(),
             deviceLocation: mockDeviceLocation,
           ),
@@ -1329,6 +1337,512 @@ void main() {
         clearLabelIds: true,
       );
       expect(metaCleared.labelIds, isNull);
+    });
+  });
+
+  // Error-path coverage for the `_loggingService.error(...)` calls inside the
+  // catch blocks of PersistenceLogic. These run against fully mocked
+  // dependencies so the wrapped operation can be made to throw on demand,
+  // exercising each catch branch and asserting the documented failure result.
+  group('Error path logging - ', () {
+    late MockJournalDb journalDb;
+    late MockUpdateNotifications updateNotifications;
+    late MockDomainLogger loggingService;
+    late MockOutboxService outboxService;
+    late MockFts5Db fts5Db;
+    late MockNotificationService notificationService;
+    late MockVectorClockService vectorClockService;
+    late PersistenceLogic logic;
+
+    const boom = 'boom';
+
+    JournalEntity buildEntry({
+      String id = 'entry-id',
+      VectorClock? clock,
+    }) {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          vectorClock: clock,
+        ),
+        entryText: const EntryText(plainText: 'text'),
+      );
+    }
+
+    /// Verifies a single `_loggingService.error(domain, ..., subDomain: X)`
+    /// call was routed through the DomainLogger for the given catch branch.
+    void verifyLogged(LogDomain domain, String subDomain) {
+      verify(
+        () => loggingService.error(
+          domain,
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: subDomain,
+        ),
+      ).called(1);
+    }
+
+    setUpAll(() {
+      registerFallbackValue(const VectorClock({'host': 0}));
+      registerFallbackValue(
+        EntryLink.basic(
+          id: 'fallback-link',
+          fromId: 'fallback-from',
+          toId: 'fallback-to',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        ),
+      );
+    });
+
+    setUp(() async {
+      await getIt.reset();
+      journalDb = MockJournalDb();
+      updateNotifications = MockUpdateNotifications();
+      loggingService = MockDomainLogger();
+      outboxService = MockOutboxService();
+      fts5Db = MockFts5Db();
+      notificationService = MockNotificationService();
+      vectorClockService = MockVectorClockService();
+
+      when(
+        () => fts5Db.insertText(
+          any<JournalEntity>(),
+          removePrevious: any<bool>(named: 'removePrevious'),
+        ),
+      ).thenAnswer((_) async {});
+      when(notificationService.updateBadge).thenAnswer((_) async {});
+      when(
+        () => updateNotifications.notify(any<Set<String>>()),
+      ).thenReturn(null);
+      when(
+        () => outboxService.enqueueMessage(any<SyncMessage>()),
+      ).thenAnswer((_) async {});
+      when(
+        () => vectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'host': 1}));
+      when(
+        () => vectorClockService.getNextVectorClock(
+          previous: any<VectorClock?>(named: 'previous'),
+        ),
+      ).thenAnswer((_) async => const VectorClock({'host': 1}));
+      when(
+        () => vectorClockService.getHost(),
+      ).thenAnswer((_) async => 'test-host-id');
+      when(
+        () => vectorClockService.burnUnboundVectorClock(
+          any<VectorClock?>(),
+          reason: any<String>(named: 'reason'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => journalDb.addLabeled(any<JournalEntity>()),
+      ).thenAnswer((_) async {});
+      when(
+        () => journalDb.parentLinkedEntityIds(any<String>()),
+      ).thenReturn(MockSelectable<String>([]));
+
+      getIt
+        ..registerSingleton<JournalDb>(journalDb)
+        ..registerSingleton<UpdateNotifications>(updateNotifications)
+        ..registerSingleton<DomainLogger>(loggingService)
+        ..registerSingleton<OutboxService>(outboxService)
+        ..registerSingleton<Fts5Db>(fts5Db)
+        ..registerSingleton<NotificationService>(notificationService)
+        ..registerSingleton<VectorClockService>(vectorClockService)
+        ..registerSingleton<MetadataService>(
+          MetadataService(vectorClockService: vectorClockService),
+        );
+
+      logic = PersistenceLogic();
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    /// Makes metadata creation throw so every `create*` method enters its
+    /// catch block right where `createMetadata(...)` is awaited.
+    void stubCreateMetadataThrows() {
+      when(
+        () => vectorClockService.getNextVectorClock(),
+      ).thenThrow(StateError(boom));
+    }
+
+    test('createQuantitativeEntry logs and returns null on failure', () async {
+      stubCreateMetadataThrows();
+
+      final result = await logic.createQuantitativeEntry(
+        QuantitativeData.discreteQuantityData(
+          dateFrom: DateTime(2024, 3, 15, 10),
+          dateTo: DateTime(2024, 3, 15, 10),
+          value: 1,
+          dataType: 'type',
+          unit: 'unit',
+        ),
+      );
+
+      expect(result, isNull);
+      verifyLogged(LogDomain.persistence, 'createQuantitativeEntry');
+    });
+
+    test('createWorkoutEntry logs and returns null on failure', () async {
+      stubCreateMetadataThrows();
+
+      final result = await logic.createWorkoutEntry(
+        WorkoutData(
+          dateFrom: DateTime(2024, 3, 15, 10),
+          dateTo: DateTime(2024, 3, 15, 11),
+          id: 'workout-id',
+          workoutType: 'RUNNING',
+          energy: 100,
+          distance: 1000,
+          source: 'test',
+        ),
+      );
+
+      expect(result, isNull);
+      verifyLogged(LogDomain.persistence, 'createWorkoutEntry');
+    });
+
+    test('createSurveyEntry logs and still returns true on failure', () async {
+      stubCreateMetadataThrows();
+
+      final taskResult = RPTaskResult(identifier: 'survey')
+        ..startDate = DateTime(2024, 3, 15, 10)
+        ..endDate = DateTime(2024, 3, 15, 10, 5);
+
+      final result = await logic.createSurveyEntry(
+        data: SurveyData(
+          taskResult: taskResult,
+          scoreDefinitions: const {},
+          calculatedScores: const {},
+        ),
+      );
+
+      // Documented contract: createSurveyEntry returns true even on failure.
+      expect(result, isTrue);
+      verifyLogged(LogDomain.persistence, 'createSurveyEntry');
+    });
+
+    test('createMeasurementEntry logs and returns null on failure', () async {
+      stubCreateMetadataThrows();
+
+      final result = await logic.createMeasurementEntry(
+        data: MeasurementData(
+          dateFrom: DateTime(2024, 3, 15, 10),
+          dateTo: DateTime(2024, 3, 15, 10),
+          value: 1,
+          dataTypeId: 'data-type-id',
+        ),
+        private: false,
+      );
+
+      expect(result, isNull);
+      verifyLogged(LogDomain.persistence, 'createMeasurementEntry');
+    });
+
+    test(
+      'createHabitCompletionEntry logs and returns null on failure',
+      () async {
+        stubCreateMetadataThrows();
+
+        final result = await logic.createHabitCompletionEntry(
+          data: HabitCompletionData(
+            dateFrom: DateTime(2024, 3, 15, 10),
+            dateTo: DateTime(2024, 3, 15, 10),
+            habitId: 'habit-id',
+          ),
+          habitDefinition: null,
+        );
+
+        expect(result, isNull);
+        // Note: the source reuses the 'createMeasurementEntry' subDomain here.
+        verifyLogged(LogDomain.persistence, 'createMeasurementEntry');
+      },
+    );
+
+    test('createTaskEntry logs and returns null on failure', () async {
+      stubCreateMetadataThrows();
+
+      final result = await logic.createTaskEntry(
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-id',
+            createdAt: DateTime(2024, 3, 15, 10),
+            utcOffset: 60,
+          ),
+          title: 'title',
+          statusHistory: const [],
+          dateTo: DateTime(2024, 3, 15, 10),
+          dateFrom: DateTime(2024, 3, 15, 10),
+        ),
+        entryText: const EntryText(plainText: 'task text'),
+      );
+
+      expect(result, isNull);
+      verifyLogged(LogDomain.persistence, 'createTaskEntry');
+    });
+
+    test('createAiResponseEntry logs and returns null on failure', () async {
+      stubCreateMetadataThrows();
+
+      final result = await logic.createAiResponseEntry(
+        data: const AiResponseData(
+          model: 'model',
+          systemMessage: 'system',
+          prompt: 'prompt',
+          thoughts: 'thoughts',
+          response: 'response',
+        ),
+        dateFrom: DateTime(2024, 3, 15, 10),
+      );
+
+      expect(result, isNull);
+      verifyLogged(LogDomain.persistence, 'createAiResponseEntry');
+    });
+
+    test('createEventEntry logs and returns null on failure', () async {
+      stubCreateMetadataThrows();
+
+      final result = await logic.createEventEntry(
+        data: const EventData(
+          status: EventStatus.tentative,
+          title: 'Event',
+          stars: 1,
+        ),
+        entryText: const EntryText(plainText: 'event text'),
+      );
+
+      expect(result, isNull);
+      verifyLogged(LogDomain.persistence, 'createEventEntry');
+    });
+
+    test('createDbEntity logs and returns null on failure', () async {
+      when(
+        () => journalDb.updateJournalEntity(
+          any<JournalEntity>(),
+          overrideComparison: any<bool>(named: 'overrideComparison'),
+          overwrite: any<bool>(named: 'overwrite'),
+        ),
+      ).thenThrow(StateError(boom));
+
+      final result = await logic.createDbEntity(
+        buildEntry(clock: const VectorClock({'host': 1})),
+        shouldAddGeolocation: false,
+      );
+
+      expect(result, isNull);
+      verifyLogged(LogDomain.persistence, 'createDbEntity');
+    });
+
+    test('updateJournalEntityText logs and returns false on failure', () async {
+      when(
+        () => journalDb.journalEntityById(any<String>()),
+      ).thenThrow(StateError(boom));
+
+      final result = await logic.updateJournalEntityText(
+        'entry-id',
+        const EntryText(plainText: 'new text'),
+        DateTime(2024, 3, 15, 10, 35),
+      );
+
+      expect(result, isFalse);
+      verifyLogged(LogDomain.persistence, 'updateJournalEntityText');
+    });
+
+    test('updateJournalEntry logs and returns false on failure', () async {
+      when(
+        () => journalDb.journalEntityById(any<String>()),
+      ).thenThrow(StateError(boom));
+
+      final result = await logic.updateJournalEntry(
+        journalEntityId: 'entry-id',
+        entryText: const EntryText(plainText: 'new text'),
+      );
+
+      expect(result, isFalse);
+      verifyLogged(LogDomain.persistence, 'updateJournalEntry');
+    });
+
+    test('updateTask logs and returns true on failure', () async {
+      when(
+        () => journalDb.journalEntityById(any<String>()),
+      ).thenThrow(StateError(boom));
+
+      final result = await logic.updateTask(
+        journalEntityId: 'entry-id',
+        taskData: TaskData(
+          status: TaskStatus.open(
+            id: 'status-id',
+            createdAt: DateTime(2024, 3, 15, 10),
+            utcOffset: 60,
+          ),
+          title: 'title',
+          statusHistory: const [],
+          dateTo: DateTime(2024, 3, 15, 10),
+          dateFrom: DateTime(2024, 3, 15, 10),
+        ),
+      );
+
+      // Documented contract: updateTask returns true even when the lookup
+      // throws and the failure is logged.
+      expect(result, isTrue);
+      verifyLogged(LogDomain.persistence, 'updateTask');
+    });
+
+    test('updateEvent logs and returns true on failure', () async {
+      when(
+        () => journalDb.journalEntityById(any<String>()),
+      ).thenThrow(StateError(boom));
+
+      final result = await logic.updateEvent(
+        journalEntityId: 'entry-id',
+        data: const EventData(
+          status: EventStatus.tentative,
+          title: 'Event',
+          stars: 1,
+        ),
+      );
+
+      expect(result, isTrue);
+      verifyLogged(LogDomain.persistence, 'updateEvent');
+    });
+
+    test('updateJournalEntity logs and returns false on failure', () async {
+      // updateMetadata runs inside the VC scope; making the increment throw
+      // propagates out of the scope into the outer catch block.
+      when(
+        () => vectorClockService.getNextVectorClock(
+          previous: any<VectorClock?>(named: 'previous'),
+        ),
+      ).thenThrow(StateError(boom));
+
+      final entry = buildEntry(clock: const VectorClock({'host': 1}));
+      final result = await logic.updateJournalEntity(entry, entry.meta);
+
+      expect(result, isFalse);
+      verifyLogged(LogDomain.persistence, 'updateJournalEntity');
+    });
+
+    test('updateDbEntity logs and returns null on failure', () async {
+      when(
+        () => journalDb.updateJournalEntity(
+          any<JournalEntity>(),
+          overrideComparison: any<bool>(named: 'overrideComparison'),
+          overwrite: any<bool>(named: 'overwrite'),
+        ),
+      ).thenThrow(StateError(boom));
+
+      final result = await logic.updateDbEntity(
+        buildEntry(clock: const VectorClock({'host': 1})),
+      );
+
+      expect(result, isNull);
+      verifyLogged(LogDomain.persistence, 'updateDbEntity');
+    });
+
+    test(
+      'updateDbEntity logs beforeNotify failure and still applies the write',
+      () async {
+        when(
+          () => journalDb.updateJournalEntity(
+            any<JournalEntity>(),
+            overrideComparison: any<bool>(named: 'overrideComparison'),
+            overwrite: any<bool>(named: 'overwrite'),
+          ),
+        ).thenAnswer((_) async => JournalUpdateResult.applied());
+
+        final result = await logic.updateDbEntity(
+          // Null vectorClock keeps `_recordJournalSequence` a no-op so the
+          // only failing step is `beforeNotify`.
+          buildEntry(),
+          beforeNotify: () async => throw StateError(boom),
+        );
+
+        // The applied write still propagates (returns true); only the
+        // beforeNotify side effect failed and was logged.
+        expect(result, isTrue);
+        verifyLogged(LogDomain.persistence, 'updateDbEntity.beforeNotify');
+      },
+    );
+
+    group('sequence-log integration - ', () {
+      late MockSyncSequenceLogService sequenceLog;
+
+      setUp(() {
+        sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => sequenceLog.recordSentEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenAnswer((_) async {});
+        getIt.registerSingleton<SyncSequenceLogService>(sequenceLog);
+      });
+
+      test(
+        'createDbEntity swallows and logs recordSentEntry failure',
+        () async {
+          when(
+            () => journalDb.updateJournalEntity(
+              any<JournalEntity>(),
+              overrideComparison: any<bool>(named: 'overrideComparison'),
+              overwrite: any<bool>(named: 'overwrite'),
+            ),
+          ).thenAnswer((_) async => JournalUpdateResult.applied());
+          when(
+            () => sequenceLog.recordSentEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+            ),
+          ).thenThrow(StateError(boom));
+
+          final saved = await logic.createDbEntity(
+            buildEntry(clock: const VectorClock({'host': 7})),
+            shouldAddGeolocation: false,
+          );
+
+          // The sequence-record failure is swallowed; the write still commits.
+          expect(saved, isTrue);
+          verifyLogged(LogDomain.sync, 'createDbEntity.recordSent');
+        },
+      );
+
+      test(
+        'createLink swallows and logs recordSentEntryLink failure',
+        () async {
+          when(
+            () => journalDb.upsertEntryLink(any<EntryLink>()),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => sequenceLog.recordSentEntryLink(
+              linkId: any(named: 'linkId'),
+              vectorClock: any(named: 'vectorClock'),
+            ),
+          ).thenThrow(StateError(boom));
+
+          final created = await logic.createLink(
+            fromId: 'from-id',
+            toId: 'to-id',
+          );
+
+          expect(created, isTrue);
+          verifyLogged(LogDomain.sync, 'createLink.recordSent');
+        },
+      );
     });
   });
 }

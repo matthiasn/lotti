@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -162,6 +163,9 @@ void main() {
       getIt
         ..registerSingleton<Directory>(sharedDocumentsDirectory)
         ..registerSingleton<LoggingService>(sharedLoggingService)
+        ..registerSingleton<DomainLogger>(
+          DomainLogger(loggingService: sharedLoggingService),
+        )
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<UserActivityService>(sharedUserActivityService)
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
@@ -232,7 +236,7 @@ void main() {
       final alice = await createMatrixService(
         config: aliceConfig,
         gateway: aliceGateway,
-        loggingService: sharedLoggingService,
+        loggingService: getIt<DomainLogger>(),
         journalDb: aliceDb,
         settingsDb: aliceSettingsDb,
         secureStorage: secureStorageMock,
@@ -269,7 +273,7 @@ void main() {
       final bob = await createMatrixService(
         config: bobConfig,
         gateway: bobGateway,
-        loggingService: sharedLoggingService,
+        loggingService: getIt<DomainLogger>(),
         journalDb: bobDb,
         settingsDb: bobSettingsDb,
         secureStorage: secureStorageMock,

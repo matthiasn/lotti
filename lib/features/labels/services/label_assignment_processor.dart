@@ -9,7 +9,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 class LabelAssignmentResult {
   LabelAssignmentResult({
@@ -57,15 +57,15 @@ class LabelAssignmentProcessor {
   LabelAssignmentProcessor({
     JournalDb? db,
     LabelsRepository? repository,
-    LoggingService? logging,
+    DomainLogger? logging,
     LabelValidator? validator,
   }) : _repository = repository ?? getIt<LabelsRepository>(),
-       _logging = logging ?? getIt<LoggingService>(),
+       _logging = logging ?? getIt<DomainLogger>(),
        _validator = validator ?? LabelValidator(db: db),
        _db = db;
 
   final LabelsRepository _repository;
-  final LoggingService _logging;
+  final DomainLogger _logging;
   final LabelValidator _validator;
   final JournalDb? _db;
 
@@ -83,9 +83,9 @@ class LabelAssignmentProcessor {
   }) async {
     // Phase 2: Do not assign if task already has >= 3 labels
     if (existingIds.length >= 3) {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.labels,
         'max_total_reached: existing labels >= 3 for task $taskId',
-        domain: 'labels_ai_assignment',
         subDomain: 'processor',
       );
       return LabelAssignmentResult(
@@ -143,11 +143,11 @@ class LabelAssignmentProcessor {
         effectiveCategoryId = entity?.meta.categoryId;
       } catch (e, st) {
         // fall back to treating only global labels as valid and log for diagnostics
-        _logging.captureException(
+        _logging.error(
+          LogDomain.labels,
           'label_assignment.category_lookup_failed: $e',
-          domain: 'labels_ai_assignment',
-          subDomain: 'processor',
           stackTrace: st,
+          subDomain: 'processor',
         );
         effectiveCategoryId = null;
       }
@@ -187,11 +187,11 @@ class LabelAssignmentProcessor {
       } catch (e, st) {
         // On lookup error, keep all as invalid and log for diagnostics
         invalid.addAll(validation.invalid);
-        _logging.captureException(
+        _logging.error(
+          LogDomain.labels,
           'label_assignment.invalid_classification_failed: $e',
-          domain: 'labels_ai_assignment',
-          subDomain: 'processor',
           stackTrace: st,
+          subDomain: 'processor',
         );
       }
     }
@@ -245,9 +245,9 @@ class LabelAssignmentProcessor {
       'confidenceBreakdown': ?confidenceBreakdown,
       'phase': 2,
     });
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.labels,
       telemetry,
-      domain: 'labels_ai_assignment',
       subDomain: 'processor',
     );
 

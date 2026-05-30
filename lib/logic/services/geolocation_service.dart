@@ -4,7 +4,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/location.dart';
 
 /// Callback type for persisting a journal entity.
@@ -31,7 +31,7 @@ class GeolocationService {
   });
 
   final JournalDb _journalDb;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final MetadataService _metadataService;
 
   /// Optional device location provider. Null on platforms without location
@@ -87,9 +87,9 @@ class GeolocationService {
       try {
         geolocation = await deviceLocation?.getCurrentGeoLocation();
       } catch (e) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.location,
           e,
-          domain: 'geolocation_service',
           subDomain: 'getCurrentGeoLocation',
         );
       }
@@ -117,11 +117,11 @@ class GeolocationService {
 
       return journalEntity?.geolocation;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.location,
         exception,
-        domain: 'geolocation_service',
-        subDomain: 'addGeolocation',
         stackTrace: stackTrace,
+        subDomain: 'addGeolocation',
       );
       return null;
     } finally {

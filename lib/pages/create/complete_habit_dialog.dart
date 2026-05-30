@@ -10,8 +10,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
@@ -324,9 +324,9 @@ class HabitDescription extends StatelessWidget {
       if (uri != null && await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        getIt<LoggingService>().captureEvent(
+        getIt<DomainLogger>().log(
+          LogDomain.habits,
           'Could not launch $uri',
-          domain: 'HABIT_COMPLETION',
           subDomain: 'Click Link in Description',
         );
         DevLogger.warning(

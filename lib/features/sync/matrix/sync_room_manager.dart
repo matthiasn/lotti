@@ -5,7 +5,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 const int kSyncRoomLoadMaxAttempts = 4;
@@ -42,7 +42,7 @@ class SyncRoomManager {
 
   final MatrixSyncGateway _gateway;
   final SettingsDb _settingsDb;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final SyncRoomDiscoveryService? _discoveryService;
 
   final StreamController<SyncRoomInvite> _inviteController =
@@ -104,9 +104,9 @@ class SyncRoomManager {
       await _discoveryService.markRoomAsLottiSync(room);
     }
 
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Created sync room $roomId (invitees: ${inviteUserIds?.length ?? 0})',
-      domain: 'SYNC_ROOM_MANAGER',
       subDomain: 'createRoom',
     );
     return roomId;
@@ -163,9 +163,9 @@ class SyncRoomManager {
       _currentRoom = null;
       _currentRoomId = null;
 
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Left sync room $roomId and cleared persisted state.',
-        domain: 'SYNC_ROOM_MANAGER',
         subDomain: 'leaveRoom',
       );
     } catch (error, stackTrace) {
@@ -177,11 +177,11 @@ class SyncRoomManager {
         notInRoom = code == 'M_FORBIDDEN' || code == 'M_NOT_FOUND';
       }
 
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'SYNC_ROOM_MANAGER',
-        subDomain: notInRoom ? 'leaveRoom.notInRoom' : 'leaveRoom',
         stackTrace: stackTrace,
+        subDomain: notInRoom ? 'leaveRoom.notInRoom' : 'leaveRoom',
       );
 
       if (notInRoom) {
@@ -189,17 +189,17 @@ class SyncRoomManager {
           await _settingsDb.removeSettingsItem(matrixRoomKey);
           _currentRoom = null;
           _currentRoomId = null;
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'Cleared persisted state for $roomId (server says not in room).',
-            domain: 'SYNC_ROOM_MANAGER',
             subDomain: 'leaveRoom.localClear',
           );
         } catch (e, st) {
-          _loggingService.captureException(
+          _loggingService.error(
+            LogDomain.sync,
             e,
-            domain: 'SYNC_ROOM_MANAGER',
-            subDomain: 'leaveRoom.localClear',
             stackTrace: st,
+            subDomain: 'leaveRoom.localClear',
           );
           rethrow; // surface local clear failure
         }
@@ -211,10 +211,10 @@ class SyncRoomManager {
 
   /// Accepts a pending invite by joining the room and persisting the room ID.
   Future<void> acceptInvite(SyncRoomInvite invite) async {
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Accepting invite to ${invite.roomId} from ${invite.senderId} '
       '(matchesExistingRoom: ${invite.matchesExistingRoom})',
-      domain: 'SYNC_ROOM_MANAGER',
       subDomain: 'acceptInvite',
     );
     await joinRoom(invite.roomId);
@@ -228,9 +228,9 @@ class SyncRoomManager {
     await _settingsDb.removeSettingsItem(matrixRoomKey);
     _currentRoom = null;
     _currentRoomId = null;
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Cleared persisted sync room (was: ${previous ?? 'none'}).',
-      domain: 'SYNC_ROOM_MANAGER',
       subDomain: subDomain,
     );
   }
@@ -254,9 +254,9 @@ class SyncRoomManager {
   Future<void> hydrateRoomSnapshot({required Client client}) async {
     final savedRoomId = await loadPersistedRoomId();
     if (savedRoomId == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'No saved room ID found during hydrateRoomSnapshot.',
-        domain: 'SYNC_ROOM_MANAGER',
         subDomain: 'hydrate',
       );
       return;
@@ -276,22 +276,22 @@ class SyncRoomManager {
         final delay = Duration(
           milliseconds: kSyncRoomLoadBaseDelayMs * (1 << attempt),
         );
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'Room $savedRoomId not yet available, retrying in '
           '${delay.inMilliseconds}ms (attempt ${attempt + 1}/'
           '$kSyncRoomLoadMaxAttempts)',
-          domain: 'SYNC_ROOM_MANAGER',
           subDomain: 'hydrate',
         );
         await Future<void>.delayed(delay);
       }
     }
 
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Failed to resolve room $savedRoomId after '
       '$kSyncRoomLoadMaxAttempts attempts. Room may not exist or invite '
       'acceptance pending.',
-      domain: 'SYNC_ROOM_MANAGER',
       subDomain: 'hydrate',
     );
   }
@@ -306,23 +306,23 @@ class SyncRoomManager {
     }
     try {
       final roomId = _currentRoomId;
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Inviting $userId to room ${roomId ?? '(unknown)'}',
-        domain: 'SYNC_ROOM_MANAGER',
         subDomain: 'inviteUser',
       );
       await room.invite(userId);
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Invite sent to $userId for room ${roomId ?? '(unknown)'}',
-        domain: 'SYNC_ROOM_MANAGER',
         subDomain: 'inviteUser',
       );
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_ROOM_MANAGER',
-        subDomain: 'inviteUser',
         stackTrace: st,
+        subDomain: 'inviteUser',
       );
       rethrow;
     }
@@ -339,9 +339,9 @@ class SyncRoomManager {
     _currentRoom = _gateway.getRoomById(roomId);
 
     if (_currentRoom == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Joined room $roomId but gateway has not yet hydrated a Room snapshot.',
-        domain: 'SYNC_ROOM_MANAGER',
         subDomain: 'resolveRoom',
       );
     }
@@ -351,20 +351,20 @@ class SyncRoomManager {
 
   void _handleInvite(RoomInviteEvent event) {
     if (!_isValidRoomId(event.roomId)) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Discarding invite with invalid roomId ${event.roomId} from '
         '${event.senderId}',
-        domain: 'SYNC_ROOM_MANAGER',
         subDomain: 'inviteFiltered',
       );
       return;
     }
 
     final matchesExisting = _currentRoomId == event.roomId;
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Received invite for room ${event.roomId} from ${event.senderId} '
       '(matchesExistingRoom: $matchesExisting)',
-      domain: 'SYNC_ROOM_MANAGER',
       subDomain: 'inviteReceived',
     );
 
@@ -387,9 +387,9 @@ class SyncRoomManager {
   }) {
     final room = _gateway.getRoomById(roomId);
     if (room == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Persisted room $roomId not yet available from gateway.',
-        domain: 'SYNC_ROOM_MANAGER',
         subDomain: subDomain,
       );
       return null;

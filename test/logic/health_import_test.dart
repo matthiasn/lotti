@@ -8,8 +8,8 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/health_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
@@ -805,10 +805,10 @@ void main() {
 
     test('should catch and log exceptions', () async {
       final mobileImport = createMobileHealthImport();
-      final mockLoggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
 
       await getIt.reset();
-      getIt.registerSingleton<LoggingService>(mockLoggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
       addTearDown(getIt.reset);
 
       when(
@@ -831,9 +831,9 @@ void main() {
       );
 
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'HEALTH_IMPORT',
+        () => mockDomainLogger.error(
+          LogDomain.health,
+          any<Object>(),
           subDomain: 'fetchHealthData',
         ),
       ).called(1);

@@ -6,10 +6,10 @@ import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/linux_geoclue_client.dart';
 import 'package:lotti/services/linux_location_portal.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/platform.dart';
@@ -104,9 +104,9 @@ class DeviceLocation {
     } catch (e) {
       // Location services not available (e.g., in flatpak environment)
       // This is expected, we'll use IP-based fallback
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.location,
         e,
-        domain: 'LOCATION_SERVICE',
         subDomain: 'initialization',
       );
       return;
@@ -143,9 +143,9 @@ class DeviceLocation {
       try {
         nativeLocation = await getCurrentGeoLocationLinux();
       } catch (e) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.location,
           e,
-          domain: 'LOCATION_SERVICE',
           subDomain: 'linux_native_fallback',
         );
       }
@@ -179,9 +179,9 @@ class DeviceLocation {
             );
           }
         } catch (e) {
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.location,
             e,
-            domain: 'LOCATION_SERVICE',
             subDomain: 'native_location_fallback',
           );
         }
@@ -223,9 +223,9 @@ class DeviceLocation {
       try {
         await backend.close();
       } catch (e) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.location,
           e,
-          domain: 'LOCATION_SERVICE',
           subDomain: 'linux_backend_close',
         );
       }

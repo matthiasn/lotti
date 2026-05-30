@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 /// Carrier for a fully-resolved [SyncOutboxBundle]: each child has been
@@ -51,7 +51,7 @@ class OutboxBundleUnpacker {
     required this.trace,
   });
 
-  final LoggingService loggingService;
+  final DomainLogger loggingService;
   final OutboxBundleTrace trace;
 
   /// Reconstructs the children of [msg] (downloading the sidecar attachment
@@ -101,11 +101,11 @@ class OutboxBundleUnpacker {
         // that the parent pipeline already knows how to back off on.
         rethrow;
       } catch (error, stackTrace) {
-        loggingService.captureException(
+        loggingService.error(
+          LogDomain.sync,
           error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'processor.resolve.outboxBundle.child',
           stackTrace: stackTrace,
+          subDomain: 'processor.resolve.outboxBundle.child',
         );
       }
     }
@@ -135,11 +135,11 @@ class OutboxBundleUnpacker {
         // path is idempotent on (id, vectorClock).
         rethrow;
       } catch (error, stackTrace) {
-        loggingService.captureException(
+        loggingService.error(
+          LogDomain.sync,
           error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'processor.apply.outboxBundle.child',
           stackTrace: stackTrace,
+          subDomain: 'processor.apply.outboxBundle.child',
         );
       }
     }

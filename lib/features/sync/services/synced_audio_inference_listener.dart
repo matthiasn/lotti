@@ -41,9 +41,9 @@ class SyncedAudioInferenceListener {
           (_) {},
           onError: (Object error, StackTrace stackTrace) {
             _domainLogger?.error(
-              LogDomains.sync,
-              'syncUpdateStream emitted an error',
-              error: error,
+              LogDomain.sync,
+              error,
+              message: 'syncUpdateStream emitted an error',
               stackTrace: stackTrace,
               subDomain: 'syncedAudioInferenceListener',
             );

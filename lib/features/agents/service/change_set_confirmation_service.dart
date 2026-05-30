@@ -91,7 +91,7 @@ class ChangeSetConfirmationService {
 
     if (item.status != ChangeItemStatus.pending) {
       _domainLogger?.log(
-        LogDomains.agentWorkflow,
+        LogDomain.agentWorkflow,
         'Skipping item $itemIndex (${item.toolName}) — already '
         '${item.status.name}',
         subDomain: _sub,
@@ -118,7 +118,7 @@ class ChangeSetConfirmationService {
     }
 
     _domainLogger?.log(
-      LogDomains.agentWorkflow,
+      LogDomain.agentWorkflow,
       'Confirming item $itemIndex (${item.toolName}) in change set '
       '${DomainLogger.sanitizeId(current.id)}, '
       '${_describeArgsForLog(dispatchArgs)}',
@@ -164,10 +164,10 @@ class ChangeSetConfirmationService {
     } catch (error, stackTrace) {
       dispatchThrew = true;
       _domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Tool dispatch threw for item $itemIndex (${item.toolName})',
+        LogDomain.agentWorkflow,
+        error,
+        message: 'Tool dispatch threw for item $itemIndex (${item.toolName})',
         subDomain: _sub,
-        error: error,
         stackTrace: stackTrace,
       );
       result = ToolExecutionResult(
@@ -184,7 +184,7 @@ class ChangeSetConfirmationService {
         dispatchThrew: dispatchThrew,
       );
       _domainLogger?.error(
-        LogDomains.agentWorkflow,
+        LogDomain.agentWorkflow,
         'Tool dispatch failed for item $itemIndex (${item.toolName}): '
         'failureKind=${_failureKindForLog(result)} — '
         '${shouldAutoRetract ? 'auto-retracting' : 'reverting to pending'}',
@@ -208,7 +208,7 @@ class ChangeSetConfirmationService {
         );
         if (retractedSet == null) {
           _domainLogger?.error(
-            LogDomains.agentWorkflow,
+            LogDomain.agentWorkflow,
             'Failed to mark item $itemIndex (${item.toolName}) as retracted '
             'after dispatch failure',
             subDomain: _sub,
@@ -229,7 +229,7 @@ class ChangeSetConfirmationService {
         );
         if (revertedSet == null) {
           _domainLogger?.error(
-            LogDomains.agentWorkflow,
+            LogDomain.agentWorkflow,
             'Failed to revert item $itemIndex (${item.toolName}) to pending '
             'after dispatch failure',
             subDomain: _sub,
@@ -259,11 +259,12 @@ class ChangeSetConfirmationService {
         );
       } catch (e, s) {
         _domainLogger?.error(
-          LogDomains.agentWorkflow,
-          'Post-confirmation handling failed for item $itemIndex '
-          '(${item.toolName}) — reverting to pending',
+          LogDomain.agentWorkflow,
+          e,
+          message:
+              'Post-confirmation handling failed for item $itemIndex '
+              '(${item.toolName}) — reverting to pending',
           subDomain: _sub,
-          error: e,
           stackTrace: s,
         );
         await _updateChangeSetItemStatus(
@@ -360,7 +361,7 @@ class ChangeSetConfirmationService {
 
     if (item.status != ChangeItemStatus.pending) {
       _domainLogger?.log(
-        LogDomains.agentWorkflow,
+        LogDomain.agentWorkflow,
         'Skipping reject for item $itemIndex (${item.toolName}) — already '
         '${item.status.name}',
         subDomain: _sub,
@@ -369,7 +370,7 @@ class ChangeSetConfirmationService {
     }
 
     _domainLogger?.log(
-      LogDomains.agentWorkflow,
+      LogDomain.agentWorkflow,
       'Rejecting item $itemIndex (${item.toolName}) in change set '
       '${DomainLogger.sanitizeId(current.id)}',
       subDomain: _sub,
@@ -534,7 +535,7 @@ class ChangeSetConfirmationService {
     if (changed) {
       await _syncService.upsertEntity(fresh.copyWith(items: updatedItems));
       _domainLogger?.log(
-        LogDomains.agentWorkflow,
+        LogDomain.agentWorkflow,
         'Persisted resolved targetTaskId '
         '(${DomainLogger.sanitizeId(actualId)}) to sibling migration items '
         'in change set ${DomainLogger.sanitizeId(fresh.id)}',
@@ -559,7 +560,7 @@ class ChangeSetConfirmationService {
           sibling.status == ChangeItemStatus.pending &&
           sibling.args['targetTaskId'] == placeholderId) {
         _domainLogger?.log(
-          LogDomains.agentWorkflow,
+          LogDomain.agentWorkflow,
           'Cascade-rejecting migration item $i — target task rejected',
           subDomain: _sub,
         );
@@ -594,7 +595,7 @@ class ChangeSetConfirmationService {
     if (placeholderId is String && actualId != null && actualId.isNotEmpty) {
       _resolvedIds[placeholderId] = actualId;
       _domainLogger?.log(
-        LogDomains.agentWorkflow,
+        LogDomain.agentWorkflow,
         'Captured placeholder resolution: '
         '${DomainLogger.sanitizeId(placeholderId)} → '
         '${DomainLogger.sanitizeId(actualId)}',
@@ -687,11 +688,12 @@ class ChangeSetConfirmationService {
       await callback(await _freshChangeSet(fallback));
     } catch (error, stackTrace) {
       _domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Post-resolution notification sync failed for change set '
-        '${DomainLogger.sanitizeId(fallback.id)}',
+        LogDomain.agentWorkflow,
+        error,
+        message:
+            'Post-resolution notification sync failed for change set '
+            '${DomainLogger.sanitizeId(fallback.id)}',
         subDomain: _sub,
-        error: error,
         stackTrace: stackTrace,
       );
     }

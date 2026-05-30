@@ -16,7 +16,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -24,31 +24,29 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 // Fakes & Mocks
 // ---------------------------------------------------------------------------
 
-class _FakeLoggingService extends Fake implements LoggingService {
+class _FakeDomainLogger extends Fake implements DomainLogger {
   final events = <String>[];
   final exceptions = <Object>[];
 
   @override
-  void captureEvent(
-    dynamic event, {
-    required String domain,
+  void log(
+    LogDomain domain,
+    String message, {
     String? subDomain,
     InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
   }) {
-    events.add('$domain/$subDomain: $event');
+    events.add('${domain.name}/$subDomain: $message');
   }
 
   @override
-  void captureException(
-    dynamic exception, {
-    required String domain,
+  void error(
+    LogDomain domain,
+    Object error, {
+    StackTrace? stackTrace,
     String? subDomain,
-    dynamic stackTrace,
-    InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
+    String? message,
   }) {
-    exceptions.add(exception as Object);
+    exceptions.add(error);
   }
 }
 
@@ -406,19 +404,19 @@ class _TestBench {
 Uint8List _pcmSilence(int bytes) => Uint8List(bytes);
 
 void main() {
-  late _FakeLoggingService fakeLogging;
+  late _FakeDomainLogger fakeLogging;
 
   setUp(() {
-    fakeLogging = _FakeLoggingService();
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    fakeLogging = _FakeDomainLogger();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(fakeLogging);
+    getIt.registerSingleton<DomainLogger>(fakeLogging);
   });
 
   tearDown(() {
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
   });
 

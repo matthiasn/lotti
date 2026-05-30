@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/matrix/descriptor_downloader.dart';
 import 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,7 +20,7 @@ void main() {
   });
 
   group('DescriptorDownloader', () {
-    late MockLoggingService logging;
+    late MockDomainLogger logging;
     late VectorClockValidator validator;
     late DescriptorDownloader downloader;
     late MockEvent descriptorEvent;
@@ -28,8 +29,7 @@ void main() {
     late MockMatrixDatabase database;
 
     setUp(() {
-      logging = MockLoggingService();
-      stubLoggingService(logging);
+      logging = MockDomainLogger();
       validator = VectorClockValidator(loggingService: logging);
       downloader = DescriptorDownloader(
         loggingService: logging,
@@ -127,9 +127,11 @@ void main() {
       expect(purges, 1);
       verify(() => database.deleteFile(any<Uri>())).called(1);
       verify(
-        () => logging.captureEvent(
-          contains('smart.fetch.stale_vc.refresh path=/path.json'),
-          domain: 'MATRIX_SERVICE',
+        () => logging.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.fetch.stale_vc.refresh path=/path.json'),
+          ),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -179,9 +181,11 @@ void main() {
         ),
       );
       verify(
-        () => logging.captureEvent(
-          contains('smart.fetch.stale_vc.breaker path=/path.json'),
-          domain: 'MATRIX_SERVICE',
+        () => logging.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.fetch.stale_vc.breaker path=/path.json'),
+          ),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);

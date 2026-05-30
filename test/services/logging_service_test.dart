@@ -136,6 +136,60 @@ void main() {
     });
   });
 
+  test('captureException is mirrored to the daily error log', () {
+    fakeAsync((async) {
+      logging.captureException(
+        'kaboom',
+        domain: 'DB',
+        subDomain: 'insert',
+        stackTrace: 'trace',
+      );
+
+      async.flushMicrotasks();
+
+      final errorFile = _findLogFile(tempDocs, prefix: 'error-');
+      expect(errorFile, isNotNull, reason: 'error-*.log should exist');
+      expect(
+        errorFile!.readAsStringSync(),
+        contains(' [ERROR] DB insert: kaboom trace'),
+      );
+    });
+  });
+
+  test('error-level captureEvent is mirrored to the daily error log', () {
+    fakeAsync((async) {
+      logging.captureEvent(
+        'something bad',
+        domain: 'DB',
+        subDomain: 'query',
+        level: InsightLevel.error,
+      );
+
+      async.flushMicrotasks();
+
+      final errorFile = _findLogFile(tempDocs, prefix: 'error-');
+      expect(errorFile, isNotNull, reason: 'error-*.log should exist');
+      expect(
+        errorFile!.readAsStringSync(),
+        contains(' [ERROR] DB query: something bad'),
+      );
+    });
+  });
+
+  test('info-level captureEvent does not write to the daily error log', () {
+    fakeAsync((async) {
+      logging.captureEvent('all good', domain: 'DB', subDomain: 'query');
+
+      async.flushMicrotasks();
+
+      expect(
+        _findLogFile(tempDocs, prefix: 'error-'),
+        isNull,
+        reason: 'info events must not reach the error log',
+      );
+    });
+  });
+
   test('captureException writes file line with stack trace text', () {
     fakeAsync((async) {
       logging.captureException(
@@ -569,7 +623,7 @@ void main() {
     test('sync-family info events are routed to sync log only', () async {
       bufferedLogging.captureEvent(
         'timeline callback',
-        domain: 'MATRIX_SYNC',
+        domain: 'sync',
         subDomain: 'signal',
       );
 
@@ -582,7 +636,7 @@ void main() {
       expect(syncFile, isNotNull, reason: 'Sync log should exist');
       expect(
         syncFile!.readAsStringSync(),
-        contains('[INFO] MATRIX_SYNC signal: timeline callback'),
+        contains('[INFO] sync signal: timeline callback'),
       );
     });
 
@@ -591,7 +645,7 @@ void main() {
       () async {
         bufferedLogging.captureException(
           'sync blew up',
-          domain: 'MATRIX_SYNC',
+          domain: 'sync',
           subDomain: 'liveScan',
           stackTrace: 'trace',
         );
@@ -605,11 +659,11 @@ void main() {
         expect(syncFile, isNotNull, reason: 'Sync log should exist');
         expect(
           generalFile!.readAsStringSync(),
-          contains('[ERROR] MATRIX_SYNC liveScan: sync blew up trace'),
+          contains('[ERROR] sync liveScan: sync blew up trace'),
         );
         expect(
           syncFile!.readAsStringSync(),
-          contains('[ERROR] MATRIX_SYNC liveScan: sync blew up trace'),
+          contains('[ERROR] sync liveScan: sync blew up trace'),
         );
       },
     );

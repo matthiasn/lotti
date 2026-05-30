@@ -4,9 +4,11 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -242,14 +244,13 @@ extension _AnyAttachmentIngestorScenario on glados.Any {
 
 Future<void> _withFreshAttachmentIngestorState(
   Future<void> Function(
-    MockLoggingService logging,
+    MockDomainLogger logging,
     AttachmentIndex index,
     Directory tempDir,
   )
   body,
 ) async {
-  final logging = MockLoggingService();
-  stubLoggingService(logging);
+  final logging = MockDomainLogger();
   final index = AttachmentIndex(logging: logging, verboseLogging: false);
   final tempDir = Directory.systemTemp.createTempSync('lotti_attach_ingest_');
 
@@ -266,15 +267,17 @@ Future<void> _withFreshAttachmentIngestorState(
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(
+      const FileSystemException('fallback'),
+    );
   });
 
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late AttachmentIndex index;
   late Directory tempDir;
 
   setUp(() {
-    logging = MockLoggingService();
-    stubLoggingService(logging);
+    logging = MockDomainLogger();
     index = AttachmentIndex(logging: logging, verboseLogging: false);
     tempDir = Directory.systemTemp.createTempSync('lotti_attach_ingest_');
   });
@@ -341,9 +344,9 @@ void main() {
         );
 
         verify(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(that: contains('attachmentEvent id=ev1')),
-            domain: any<String>(named: 'domain'),
             subDomain: 'attachment.observe',
           ),
         ).called(1);
@@ -458,9 +461,9 @@ void main() {
       );
       expect(wrote, isFalse);
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('pathTraversal.blocked')),
-          domain: any<String>(named: 'domain'),
           subDomain: 'attachment.save',
         ),
       ).called(1);
@@ -478,9 +481,9 @@ void main() {
       expect(wrote, isFalse);
       // No path traversal, no observe-only state — just nothing written.
       verifyNever(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('pathTraversal.blocked')),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
       );
@@ -537,9 +540,9 @@ void main() {
       expect(wrote, isFalse);
       expect(dominanceChecks, 1);
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('skip.localVcDominates')),
-          domain: any<String>(named: 'domain'),
           subDomain: 'attachment.download.skip',
         ),
       ).called(1);
@@ -565,11 +568,11 @@ void main() {
 
       expect(wrote, isFalse);
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'attachment.download.skip',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'attachment.download.skip',
         ),
       ).called(1);
     });
@@ -591,17 +594,16 @@ void main() {
           final skipLogs = <String>[];
 
           when(
-            () => logging.captureEvent(
-              any<Object>(),
-              domain: any<String>(named: 'domain'),
+            () => logging.log(
+              any<LogDomain>(),
+              any<String>(),
               subDomain: any<String>(named: 'subDomain'),
               level: any(named: 'level'),
-              type: any(named: 'type'),
             ),
           ).thenAnswer((invocation) {
             if (invocation.namedArguments[#subDomain] ==
                 'attachment.download.skip') {
-              skipLogs.add(invocation.positionalArguments.single.toString());
+              skipLogs.add(invocation.positionalArguments[1].toString());
             }
           });
 
@@ -715,6 +717,134 @@ void main() {
         // Nothing should be queued or in flight when the cap is zero, so
         // whenIdle resolves synchronously.
         await ingestor.whenIdle().timeout(const Duration(seconds: 1));
+      },
+    );
+  });
+
+  group('AttachmentIngestor._saveAttachment — download result branches', () {
+    // These tests exercise the catch block in _saveAttachment (lines 487-522)
+    // and the empty-bytes guard (line 459) that are otherwise unreachable
+    // through the existing test paths.
+
+    test(
+      'logs and returns false when download returns empty bytes (line 459)',
+      () async {
+        // Provide empty bytes from the download to hit the emptiness guard.
+        final e = _makeEvent(
+          eventId: 'ev-empty-bytes',
+          relativePath: 'attachments/file.json',
+          mime: 'application/json',
+          downloadBytes: <int>[], // empty
+        );
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tempDir);
+
+        final wrote = await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+        );
+
+        expect(wrote, isFalse);
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any<String>(that: contains('emptyBytes')),
+            subDomain: 'attachment.download',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'logs cacheEvicted and returns false when download throws '
+      '"File is no longer cached" (line 496)',
+      () async {
+        const cacheEvictedMsg =
+            'Can not try to send again. File is no longer cached.';
+        final e = _makeEvent(
+          eventId: 'ev-cache-evicted',
+          relativePath: 'attachments/evicted.json',
+          mime: 'application/json',
+        );
+        when(e.downloadAndDecryptAttachment).thenAnswer(
+          (_) async => throw Exception(cacheEvictedMsg),
+        );
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tempDir);
+
+        final wrote = await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+        );
+
+        expect(wrote, isFalse);
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any<String>(that: contains('cacheEvicted')),
+            subDomain: 'attachment.save.cacheEvicted',
+          ),
+        ).called(1);
+        // General error log must NOT be emitted for a cacheEvicted error.
+        verifyNever(
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'attachment.save',
+          ),
+        );
+      },
+    );
+
+    test(
+      'logs emfile details and general error when download throws '
+      'FileSystemException with errorCode 24 (lines 507-508)',
+      () async {
+        const osError = OSError('Too many open files', 24);
+        const fse = FileSystemException(
+          'Cannot download attachment',
+          'attachments/emfile.json',
+          osError,
+        );
+        final e = _makeEvent(
+          eventId: 'ev-emfile',
+          relativePath: 'attachments/emfile.json',
+          mime: 'application/json',
+        );
+        when(e.downloadAndDecryptAttachment).thenAnswer(
+          (_) async => throw fse,
+        );
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tempDir);
+
+        final wrote = await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+        );
+
+        expect(wrote, isFalse);
+        // EMFILE-specific log (lines 507-508)
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any<String>(that: contains('emfile')),
+            subDomain: 'attachment.save.emfile',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        // General error log (line 515)
+        verify(
+          () => logging.error(
+            LogDomain.sync,
+            any<FileSystemException>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'attachment.save',
+          ),
+        ).called(1);
       },
     );
   });

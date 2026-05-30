@@ -486,7 +486,7 @@ Future<void> _withFreshInboundQueue(
   final db = SyncDatabase(inMemoryDatabase: true);
   final queue = InboundQueue(
     db: db,
-    logging: MockLoggingService(),
+    logging: MockDomainLogger(),
     leaseDuration: const Duration(seconds: 1),
   );
 
@@ -500,7 +500,7 @@ Future<void> _withFreshInboundQueue(
 
 void main() {
   late SyncDatabase db;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late InboundQueue queue;
   const roomA = '!roomA:example.org';
   const roomB = '!roomB:example.org';
@@ -511,7 +511,7 @@ void main() {
 
   setUp(() {
     db = SyncDatabase(inMemoryDatabase: true);
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     queue = InboundQueue(
       db: db,
       logging: logging,

@@ -13,7 +13,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media/exif_data_extractor.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -184,9 +184,9 @@ Future<void> importDroppedImages({
       // Validate file size
       final fileSize = await File(srcPath).length();
       if (fileSize > ImageImportConstants.maxFileSizeBytes) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.ai,
           'Image file too large: $fileSize bytes',
-          domain: ImageImportConstants.loggingDomain,
           subDomain: 'importDroppedImages',
         );
         continue;
@@ -219,11 +219,11 @@ Future<void> importDroppedImages({
         ),
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.ai,
         exception,
-        domain: ImageImportConstants.loggingDomain,
-        subDomain: 'importDroppedImages',
         stackTrace: stackTrace,
+        subDomain: 'importDroppedImages',
       );
       // Continue processing other files even if one fails
     }
@@ -243,11 +243,11 @@ Future<DateTime> _extractImageTimestamp(Uint8List data) async {
     }
   } catch (exception, stackTrace) {
     // Log but don't fail - return current time as fallback
-    getIt<LoggingService>().captureException(
+    getIt<DomainLogger>().error(
+      LogDomain.ai,
       exception,
-      domain: ImageImportConstants.loggingDomain,
-      subDomain: 'extractImageTimestamp',
       stackTrace: stackTrace,
+      subDomain: 'extractImageTimestamp',
     );
   }
 
@@ -294,11 +294,11 @@ Future<Geolocation?> extractGpsCoordinates(
     return ExifDataExtractor.extractGpsCoordinates(exifData, createdAt);
   } catch (exception, stackTrace) {
     // Log but don't fail - missing/invalid GPS is common
-    getIt<LoggingService>().captureException(
+    getIt<DomainLogger>().error(
+      LogDomain.ai,
       exception,
-      domain: ImageImportConstants.loggingDomain,
-      subDomain: 'extractGpsCoordinates',
       stackTrace: stackTrace,
+      subDomain: 'extractGpsCoordinates',
     );
     return null;
   }
@@ -318,9 +318,9 @@ Future<void> importPastedImages({
 }) async {
   // Validate file size
   if (data.length > ImageImportConstants.maxFileSizeBytes) {
-    getIt<LoggingService>().captureException(
+    getIt<DomainLogger>().error(
+      LogDomain.ai,
       'Pasted image too large: ${data.length} bytes',
-      domain: ImageImportConstants.loggingDomain,
       subDomain: 'importPastedImages',
     );
     return;
@@ -378,9 +378,9 @@ Future<String?> importGeneratedImageBytes({
 }) async {
   // Validate file size
   if (data.length > ImageImportConstants.maxFileSizeBytes) {
-    getIt<LoggingService>().captureException(
+    getIt<DomainLogger>().error(
+      LogDomain.ai,
       'Generated image too large: ${data.length} bytes',
-      domain: ImageImportConstants.loggingDomain,
       subDomain: 'importGeneratedImageBytes',
     );
     return null;

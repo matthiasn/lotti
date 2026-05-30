@@ -7,7 +7,7 @@ import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 /// Outcome the [InboundApplyFn] returns to the worker per entry.
@@ -57,7 +57,6 @@ typedef InboundPrepareBatchFn =
       Room room,
     );
 
-const _logDomain = 'sync';
 const _logSub = 'queue.worker';
 
 /// Drains [InboundQueue] under the single-worker contract from
@@ -97,7 +96,7 @@ class InboundWorker {
   final Future<Room?> Function() _resolveRoom;
   final InboundApplyFn _apply;
   final InboundPrepareBatchFn? _prepareBatch;
-  final LoggingService _logging;
+  final DomainLogger _logging;
   final UserActivityGate? _activityGate;
   final PendingDecryptionPen? _decryptionPen;
   final Duration _idleTick;
@@ -184,11 +183,11 @@ class InboundWorker {
         await _runBatch(batch);
       }
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.loop',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.loop',
       );
     } finally {
       // Clear `_running` even when the loop exits via the catch block
@@ -216,9 +215,9 @@ class InboundWorker {
   Future<int> _runBatch(List<InboundQueueEntry> batch) async {
     final room = await _resolveRoom();
     if (room == null) {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.worker.noRoom batch=${batch.length}',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       // Release the lease so another drain cycle can retry once the
@@ -255,11 +254,11 @@ class InboundWorker {
           // adapter already classifies prepare failures per entry, so
           // a throw here is an adapter bug. Log and continue: the
           // per-entry `_apply` call falls back to inline prepare.
-          _logging.captureException(
+          _logging.error(
+            LogDomain.sync,
             error,
-            domain: _logDomain,
-            subDomain: '$_logSub.prepareBatch',
             stackTrace: stackTrace,
+            subDomain: '$_logSub.prepareBatch',
           );
         }
       }
@@ -307,11 +306,11 @@ class InboundWorker {
     try {
       return await _apply(entry, room);
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.apply',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.apply',
       );
       return ApplyOutcome.retriable;
     }

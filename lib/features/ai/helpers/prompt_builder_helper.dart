@@ -11,8 +11,8 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 
 /// Maximum number of correction examples to inject into prompts.
 /// Examples beyond this limit are not injected (but remain stored for future use).
@@ -54,8 +54,8 @@ class PromptBuilderHelper {
   final AiInputRepository aiInputRepository;
   final JournalRepository journalRepository;
   final TaskSummaryResolver taskSummaryResolver;
-  LoggingService? get _loggingService =>
-      getIt.isRegistered<LoggingService>() ? getIt<LoggingService>() : null;
+  DomainLogger? get _loggingService =>
+      getIt.isRegistered<DomainLogger>() ? getIt<DomainLogger>() : null;
 
   /// Get effective message from prompt config, using preconfigured if tracking is enabled
   String getEffectiveMessage({
@@ -619,11 +619,11 @@ class PromptBuilderHelper {
     String? context,
   }) {
     final suffix = (context == null || context.isEmpty) ? '' : ' $context';
-    _loggingService?.captureException(
+    _loggingService?.error(
+      LogDomain.ai,
       'Failed to inject {{$placeholder}} for entity=${entity.id}$suffix: $error',
-      domain: 'prompt_builder_helper',
-      subDomain: 'placeholder_injection',
       stackTrace: stackTrace,
+      subDomain: 'placeholder_injection',
     );
   }
 }

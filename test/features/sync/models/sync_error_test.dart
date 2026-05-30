@@ -1,12 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/models/sync_error.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
+import '../../../mocks/mocks.dart';
 
 void main() {
-  late LoggingService loggingService;
+  late DomainLogger loggingService;
 
   setUp(() {
-    loggingService = LoggingService();
+    loggingService = MockDomainLogger();
   });
 
   group('SyncErrorType', () {
@@ -116,7 +117,7 @@ void main() {
       });
 
       test('logs the exception via logging service without error', () {
-        // LoggingService is a no-op in test env, but we verify it does not throw
+        // DomainLogger is a no-op in test env, but we verify it does not throw
         SyncError.fromException(
           Exception('test error'),
           StackTrace.current,
@@ -129,7 +130,6 @@ void main() {
           Exception('test error'),
           StackTrace.current,
           loggingService,
-          domain: 'CUSTOM_DOMAIN',
         );
       });
 

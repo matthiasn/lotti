@@ -430,7 +430,15 @@ void stubLoggingService(MockLoggingService mock) {
   ).thenAnswer((_) {});
 }
 
-class MockDomainLogger extends Mock implements DomainLogger {}
+class MockDomainLogger extends Mock implements DomainLogger {
+  MockDomainLogger() {
+    // Fallbacks for `any()` matchers on log/error parameters. `LogDomain` is an
+    // enum, so (unlike String) mocktail has no built-in fallback for it.
+    registerFallbackValue(LogDomain.general);
+    registerFallbackValue(InsightLevel.info);
+    registerFallbackValue(StackTrace.empty);
+  }
+}
 
 class MockEditorDb extends Mock implements EditorDb {}
 

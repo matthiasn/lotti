@@ -48,7 +48,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -160,13 +159,13 @@ void main() {
         overrides: [
           loggingServiceProvider.overrideWithValue(LoggingService()),
           configFlagProvider(
-            logAgentRuntimeFlag,
+            LogDomain.agentRuntime.flagName,
           ).overrideWith((ref) => Stream.value(true)),
           configFlagProvider(
-            logAgentWorkflowFlag,
+            LogDomain.agentWorkflow.flagName,
           ).overrideWith((ref) => Stream.value(false)),
           configFlagProvider(
-            logSyncFlag,
+            LogDomain.sync.flagName,
           ).overrideWith((ref) => Stream.value(true)),
         ],
       );
@@ -183,9 +182,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await container.pump();
 
-      expect(logger.enabledDomains, contains(LogDomains.agentRuntime));
-      expect(logger.enabledDomains, isNot(contains(LogDomains.agentWorkflow)));
-      expect(logger.enabledDomains, contains(LogDomains.sync));
+      expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
+      expect(logger.enabledDomains, isNot(contains(LogDomain.agentWorkflow)));
+      expect(logger.enabledDomains, contains(LogDomain.sync));
     });
 
     test('updates enabledDomains when config flags change', () async {
@@ -200,13 +199,13 @@ void main() {
         overrides: [
           loggingServiceProvider.overrideWithValue(LoggingService()),
           configFlagProvider(
-            logAgentRuntimeFlag,
+            LogDomain.agentRuntime.flagName,
           ).overrideWith((ref) => runtimeController.stream),
           configFlagProvider(
-            logAgentWorkflowFlag,
+            LogDomain.agentWorkflow.flagName,
           ).overrideWith((ref) => workflowController.stream),
           configFlagProvider(
-            logSyncFlag,
+            LogDomain.sync.flagName,
           ).overrideWith((ref) => syncController.stream),
         ],
       );
@@ -226,9 +225,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await container.pump();
 
-      expect(logger.enabledDomains, contains(LogDomains.agentRuntime));
-      expect(logger.enabledDomains, contains(LogDomains.agentWorkflow));
-      expect(logger.enabledDomains, isNot(contains(LogDomains.sync)));
+      expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
+      expect(logger.enabledDomains, contains(LogDomain.agentWorkflow));
+      expect(logger.enabledDomains, isNot(contains(LogDomain.sync)));
 
       // Toggle: agent_runtime off, sync on.
       runtimeController.add(false);
@@ -236,9 +235,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await container.pump();
 
-      expect(logger.enabledDomains, isNot(contains(LogDomains.agentRuntime)));
-      expect(logger.enabledDomains, contains(LogDomains.agentWorkflow));
-      expect(logger.enabledDomains, contains(LogDomains.sync));
+      expect(logger.enabledDomains, isNot(contains(LogDomain.agentRuntime)));
+      expect(logger.enabledDomains, contains(LogDomain.agentWorkflow));
+      expect(logger.enabledDomains, contains(LogDomain.sync));
     });
 
     test('uses registered DomainLogger and seeds prewarmed flags', () async {
@@ -256,27 +255,27 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           configFlagProvider(
-            logAgentRuntimeFlag,
+            LogDomain.agentRuntime.flagName,
           ).overrideWith((ref) => runtimeController.stream),
           configFlagProvider(
-            logAgentWorkflowFlag,
+            LogDomain.agentWorkflow.flagName,
           ).overrideWith((ref) => workflowController.stream),
           configFlagProvider(
-            logSyncFlag,
+            LogDomain.sync.flagName,
           ).overrideWith((ref) => syncController.stream),
         ],
       );
       addTearDown(container.dispose);
       final runtimeSub = container.listen(
-        configFlagProvider(logAgentRuntimeFlag),
+        configFlagProvider(LogDomain.agentRuntime.flagName),
         (_, _) {},
       );
       final workflowSub = container.listen(
-        configFlagProvider(logAgentWorkflowFlag),
+        configFlagProvider(LogDomain.agentWorkflow.flagName),
         (_, _) {},
       );
       final syncSub = container.listen(
-        configFlagProvider(logSyncFlag),
+        configFlagProvider(LogDomain.sync.flagName),
         (_, _) {},
       );
       addTearDown(runtimeSub.close);
@@ -291,7 +290,7 @@ void main() {
       final logger = container.read(domainLoggerProvider);
 
       expect(logger, same(registeredLogger));
-      expect(logger.enabledDomains, contains(LogDomains.agentRuntime));
+      expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
     });
   });
 

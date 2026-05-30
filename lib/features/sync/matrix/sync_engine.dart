@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 typedef SyncEngineHook = Future<void> Function();
 
@@ -26,7 +26,7 @@ class SyncEngine {
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
   final SyncLifecycleCoordinator _lifecycleCoordinator;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
 
   bool _initialized = false;
   Future<void>? _initialization;
@@ -97,11 +97,11 @@ class SyncEngine {
           try {
             await _lifecycleCoordinator.reconcileLifecycleState();
           } catch (error, stackTrace) {
-            _loggingService.captureException(
+            _loggingService.error(
+              LogDomain.sync,
               error,
-              domain: 'SYNC_ENGINE',
-              subDomain: 'connect.backgroundLifecycle',
               stackTrace: stackTrace,
+              subDomain: 'connect.backgroundLifecycle',
             );
           }
         }());
@@ -142,11 +142,11 @@ class SyncEngine {
       try {
         loginState = client.onLoginStateChanged.value.toString();
       } catch (error, stackTrace) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           error,
-          domain: 'SYNC_ENGINE',
-          subDomain: 'diagnostics.loginState',
           stackTrace: stackTrace,
+          subDomain: 'diagnostics.loginState',
         );
         loginState = null;
       }
@@ -164,11 +164,11 @@ class SyncEngine {
         'loginState': loginState,
       };
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'SYNC_ENGINE',
-        subDomain: 'diagnostics.snapshot',
         stackTrace: stackTrace,
+        subDomain: 'diagnostics.snapshot',
       );
       info = <String, dynamic>{
         'error': error.toString(),
@@ -178,9 +178,9 @@ class SyncEngine {
     }
 
     if (log) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Sync diagnostics: ${json.encode(info)}',
-        domain: 'SYNC_ENGINE',
         subDomain: 'diagnostics',
       );
     }

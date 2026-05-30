@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 final purgeControllerProvider = NotifierProvider<PurgeController, PurgeState>(
   PurgeController.new,
@@ -52,14 +54,12 @@ class PurgeController extends Notifier<PurgeState> {
         state = state.copyWith(progress: progress);
       }
     } catch (e, stackTrace) {
-      ref
-          .read(loggingServiceProvider)
-          .captureException(
-            e,
-            domain: 'PurgeController',
-            subDomain: 'purgeDeleted',
-            stackTrace: stackTrace,
-          );
+      getIt<DomainLogger>().error(
+        LogDomain.database,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'PurgeController.purgeDeleted',
+      );
       state = state.copyWith(
         isPurging: false,
         progress: 0,

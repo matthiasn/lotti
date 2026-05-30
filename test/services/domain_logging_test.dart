@@ -2,23 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
+import '../mocks/mocks.dart';
 
 class _GeneratedId {
   const _GeneratedId({
@@ -53,6 +39,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(InsightLevel.info);
     registerFallbackValue(InsightType.log);
+    registerFallbackValue(StackTrace.empty);
   });
 
   group('DomainLogger.sanitizeId', () {
@@ -93,39 +80,116 @@ void main() {
     }, tags: 'glados');
   });
 
+  group('LogDomain', () {
+    test('wireName equals the enum name', () {
+      expect(LogDomain.agentRuntime.wireName, 'agentRuntime');
+      expect(LogDomain.sync.wireName, 'sync');
+    });
+
+    test('only sync routes to the shared sync file and defaults off', () {
+      for (final domain in LogDomain.values) {
+        expect(
+          domain.routesToSyncFile,
+          domain == LogDomain.sync,
+          reason: '${domain.name} routesToSyncFile',
+        );
+        expect(
+          domain.defaultEnabled,
+          domain != LogDomain.sync,
+          reason: '${domain.name} defaultEnabled',
+        );
+      }
+    });
+
+    test('every domain has a log_ flag name and a non-empty label', () {
+      for (final domain in LogDomain.values) {
+        expect(domain.flagName, startsWith('log_'), reason: domain.name);
+        expect(domain.label.trim(), isNotEmpty, reason: domain.name);
+      }
+    });
+
+    test('historical flag names are preserved', () {
+      expect(LogDomain.sync.flagName, 'log_sync');
+      expect(LogDomain.agentRuntime.flagName, 'log_agent_runtime');
+      expect(LogDomain.agentWorkflow.flagName, 'log_agent_workflow');
+    });
+  });
+
+  group('DomainLogger error description builders', () {
+    test('full description includes the raw error and message', () {
+      final exception = Exception('secret user content');
+      expect(
+        DomainLogger.fullErrorDescription(exception, 'wake failed'),
+        'wake failed: Exception: secret user content',
+      );
+      expect(
+        DomainLogger.fullErrorDescription(exception, null),
+        'Exception: secret user content',
+      );
+    });
+
+    test(
+      'safe description records only the error type, never the raw text',
+      () {
+        final exception = Exception('secret user content');
+        final safe = DomainLogger.safeErrorDescription(
+          exception,
+          'wake failed',
+        );
+        expect(safe, contains('wake failed'));
+        expect(safe, contains('errorType='));
+        expect(safe, isNot(contains('secret user content')));
+
+        expect(
+          DomainLogger.safeErrorDescription(exception, null),
+          isNot(contains('secret user content')),
+        );
+      },
+    );
+  });
+
   group('DomainLogger.log', () {
     late MockLoggingService mockLoggingService;
     late DomainLogger logger;
 
     setUp(() {
       mockLoggingService = MockLoggingService();
+      stubLoggingService(mockLoggingService);
       logger = DomainLogger(loggingService: mockLoggingService);
     });
 
     test('delegates to LoggingService when domain is enabled', () {
-      logger.enabledDomains.add(LogDomains.agentRuntime);
+      logger.enabledDomains.add(LogDomain.agentRuntime);
 
-      logger.log(LogDomains.agentRuntime, 'test message');
+      logger.log(LogDomain.agentRuntime, 'test message');
 
       verify(
         () => mockLoggingService.captureEvent(
           'test message',
-          domain: LogDomains.agentRuntime,
+          domain: 'agentRuntime',
         ),
       ).called(1);
     });
 
     test('is a no-op when domain is not enabled', () {
-      logger.log(LogDomains.agentRuntime, 'should not log');
+      logger.log(LogDomain.agentRuntime, 'should not log');
 
-      verifyZeroInteractions(mockLoggingService);
+      verifyNever(
+        () => mockLoggingService.captureEvent(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          level: any(named: 'level'),
+          type: any(named: 'type'),
+        ),
+      );
     });
 
     test('passes subDomain and level through', () {
-      logger.enabledDomains.add(LogDomains.agentWorkflow);
+      logger.enabledDomains.add(LogDomain.agentWorkflow);
 
       logger.log(
-        LogDomains.agentWorkflow,
+        LogDomain.agentWorkflow,
         'wake started',
         subDomain: 'execute',
         level: InsightLevel.warn,
@@ -134,7 +198,7 @@ void main() {
       verify(
         () => mockLoggingService.captureEvent(
           'wake started',
-          domain: LogDomains.agentWorkflow,
+          domain: 'agentWorkflow',
           subDomain: 'execute',
           level: InsightLevel.warn,
         ),
@@ -142,19 +206,26 @@ void main() {
     });
 
     test('only enabled domains pass through', () {
-      logger.enabledDomains.add(LogDomains.agentRuntime);
+      logger.enabledDomains.add(LogDomain.agentRuntime);
 
       logger
-        ..log(LogDomains.agentWorkflow, 'disabled domain')
-        ..log(LogDomains.agentRuntime, 'enabled domain');
+        ..log(LogDomain.agentWorkflow, 'disabled domain')
+        ..log(LogDomain.agentRuntime, 'enabled domain');
 
       verify(
         () => mockLoggingService.captureEvent(
           'enabled domain',
-          domain: LogDomains.agentRuntime,
+          domain: 'agentRuntime',
         ),
       ).called(1);
-      verifyNoMoreInteractions(mockLoggingService);
+      verifyNever(
+        () => mockLoggingService.captureEvent(
+          'disabled domain',
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          level: any(named: 'level'),
+        ),
+      );
     });
   });
 
@@ -164,38 +235,33 @@ void main() {
 
     setUp(() {
       mockLoggingService = MockLoggingService();
+      stubLoggingService(mockLoggingService);
       logger = DomainLogger(loggingService: mockLoggingService);
     });
 
     test('always logs regardless of enabledDomains', () {
-      logger.error(LogDomains.agentRuntime, 'something broke');
+      logger.error(LogDomain.agentRuntime, 'something broke');
 
       verify(
         () => mockLoggingService.captureException(
           'something broke',
-          domain: LogDomains.agentRuntime,
+          domain: 'agentRuntime',
         ),
       ).called(1);
     });
 
-    test('includes error type without raw exception message', () {
-      final exception = Exception('secret user content');
+    test('combines message and full error for the full error log', () {
+      final exception = Exception('boom');
       logger.error(
-        LogDomains.agentRuntime,
-        'wake failed',
-        error: exception,
+        LogDomain.agentRuntime,
+        exception,
+        message: 'wake failed',
       );
 
       verify(
         () => mockLoggingService.captureException(
-          any<String>(
-            that: allOf(
-              contains('wake failed'),
-              contains('errorType='),
-              isNot(contains('secret user content')),
-            ),
-          ),
-          domain: LogDomains.agentRuntime,
+          'wake failed: Exception: boom',
+          domain: 'agentRuntime',
         ),
       ).called(1);
     });
@@ -203,7 +269,7 @@ void main() {
     test('passes stackTrace and subDomain through', () {
       final stackTrace = StackTrace.current;
       logger.error(
-        LogDomains.agentWorkflow,
+        LogDomain.agentWorkflow,
         'execution error',
         stackTrace: stackTrace,
         subDomain: 'execute',
@@ -212,7 +278,7 @@ void main() {
       verify(
         () => mockLoggingService.captureException(
           'execution error',
-          domain: LogDomains.agentWorkflow,
+          domain: 'agentWorkflow',
           subDomain: 'execute',
           stackTrace: stackTrace,
         ),

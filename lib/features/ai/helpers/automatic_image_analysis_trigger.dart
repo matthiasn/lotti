@@ -1,7 +1,7 @@
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'automatic_image_analysis_trigger.g.dart';
@@ -18,7 +18,7 @@ class AutomaticImageAnalysisTrigger {
   });
 
   final Ref ref;
-  final LoggingService loggingService;
+  final DomainLogger loggingService;
 
   /// Triggers automatic image analysis via profile-driven automation.
   ///
@@ -31,10 +31,10 @@ class AutomaticImageAnalysisTrigger {
   }) async {
     try {
       if (linkedTaskId == null) {
-        loggingService.captureEvent(
+        loggingService.log(
+          LogDomain.ai,
           'No linked task for image $imageEntryId — skipping automatic '
           'image analysis',
-          domain: 'automatic_image_analysis_trigger',
           subDomain: 'triggerAutomaticImageAnalysis',
         );
         return;
@@ -46,19 +46,19 @@ class AutomaticImageAnalysisTrigger {
       );
 
       if (!result.handled) {
-        loggingService.captureEvent(
+        loggingService.log(
+          LogDomain.ai,
           'Profile automation did not handle image analysis for '
           'task $linkedTaskId',
-          domain: 'automatic_image_analysis_trigger',
           subDomain: 'triggerAutomaticImageAnalysis',
         );
         return;
       }
 
-      loggingService.captureEvent(
+      loggingService.log(
+        LogDomain.ai,
         'Profile-driven image analysis for task $linkedTaskId '
         'using skill "${result.skill!.id}"',
-        domain: 'automatic_image_analysis_trigger',
         subDomain: 'triggerAutomaticImageAnalysis',
       );
 
@@ -69,11 +69,11 @@ class AutomaticImageAnalysisTrigger {
         linkedTaskId: linkedTaskId,
       );
     } catch (exception, stackTrace) {
-      loggingService.captureException(
+      loggingService.error(
+        LogDomain.ai,
         exception,
-        domain: 'automatic_image_analysis_trigger',
-        subDomain: 'triggerAutomaticImageAnalysis',
         stackTrace: stackTrace,
+        subDomain: 'triggerAutomaticImageAnalysis',
       );
     }
   }
@@ -88,6 +88,6 @@ class AutomaticImageAnalysisTrigger {
 AutomaticImageAnalysisTrigger automaticImageAnalysisTrigger(Ref ref) {
   return AutomaticImageAnalysisTrigger(
     ref: ref,
-    loggingService: getIt<LoggingService>(),
+    loggingService: getIt<DomainLogger>(),
   );
 }

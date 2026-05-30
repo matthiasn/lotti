@@ -12,7 +12,7 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
 /// Record type for checklist parameters.
@@ -113,11 +113,11 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
           }
         }
       } catch (exception, stackTrace) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.tasks,
           'Failed to remove checklist ID ($id) from task ($taskId): $exception',
-          domain: 'ChecklistController',
-          subDomain: 'delete',
           stackTrace: stackTrace,
+          subDomain: 'delete',
         );
         // Design decision: We log but don't fail/rollback for these reasons:
         // 1. The checklist IS successfully deleted (soft-delete with deletedAt)

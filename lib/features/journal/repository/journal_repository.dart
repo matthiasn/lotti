@@ -11,7 +11,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -83,11 +82,11 @@ class JournalRepository {
         ),
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.persistence,
         exception,
-        domain: 'JournalRepository',
-        subDomain: 'updateCategoryId',
         stackTrace: stackTrace,
+        subDomain: 'updateCategoryId',
       );
     }
     return true;
@@ -129,11 +128,11 @@ class JournalRepository {
 
       await getIt<NotificationService>().updateBadge();
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.persistence,
         exception,
-        domain: 'JournalRepository',
-        subDomain: 'deleteJournalEntity',
         stackTrace: stackTrace,
+        subDomain: 'deleteJournalEntity',
       );
     }
 
@@ -147,11 +146,11 @@ class JournalRepository {
         updated.meta,
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.persistence,
         exception,
-        domain: 'JournalRepository',
-        subDomain: 'updateJournalEntity',
         stackTrace: stackTrace,
+        subDomain: 'updateJournalEntity',
       );
       return false;
     }
@@ -184,11 +183,11 @@ class JournalRepository {
       await persistenceLogic.updateDbEntity(updated);
       getIt<TimeService>().updateCurrent(updated);
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.persistence,
         exception,
-        domain: 'JournalRepository',
-        subDomain: 'updateJournalEntityDate',
         stackTrace: stackTrace,
+        subDomain: 'updateJournalEntityDate',
       );
     }
     return true;
@@ -216,11 +215,11 @@ class JournalRepository {
 
       return journalEntity;
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.persistence,
         exception,
-        domain: 'JournalRepository',
-        subDomain: 'createTextEntry',
         stackTrace: stackTrace,
+        subDomain: 'createTextEntry',
       );
       return null;
     }
@@ -265,11 +264,11 @@ class JournalRepository {
 
       return journalEntity;
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.persistence,
         exception,
-        domain: 'JournalRepository',
-        subDomain: 'createImageEntry',
         stackTrace: stackTrace,
+        subDomain: 'createImageEntry',
       );
     }
 
@@ -308,9 +307,10 @@ class JournalRepository {
           );
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
-            LogDomains.sync,
-            'outbox enqueue failed after updateLink; VC already committed',
-            error: error,
+            LogDomain.sync,
+            error,
+            message:
+                'outbox enqueue failed after updateLink; VC already committed',
             stackTrace: stackTrace,
             subDomain: 'updateLink.enqueue',
           );

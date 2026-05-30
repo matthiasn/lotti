@@ -4,6 +4,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -150,7 +151,7 @@ extension _AnyGeneratedSessionScenario on glados.Any {
 void main() {
   late _MockGateway gateway;
   late _MockRoomManager roomManager;
-  late MockLoggingService loggingService;
+  late MockDomainLogger loggingService;
   late MockMatrixClient client;
   late MatrixSessionManager sessionManager;
 
@@ -176,20 +177,20 @@ void main() {
     client = MockMatrixClient();
     gateway = _MockGateway(client);
     roomManager = _MockRoomManager();
-    loggingService = MockLoggingService();
+    loggingService = MockDomainLogger();
     when(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenReturn(null);
     when(
-      () => loggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
+      () => loggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -272,7 +273,7 @@ void main() {
           final client = MockMatrixClient();
           final gateway = _MockGateway(client);
           final roomManager = _MockRoomManager();
-          final loggingService = MockLoggingService();
+          final loggingService = MockDomainLogger();
           final sessionManager = MatrixSessionManager(
             gateway: gateway,
             roomManager: roomManager,
@@ -282,18 +283,18 @@ void main() {
           var loginCalled = false;
 
           when(
-            () => loggingService.captureEvent(
+            () => loggingService.log(
+              any<LogDomain>(),
               any<String>(),
-              domain: any<String>(named: 'domain'),
               subDomain: any<String>(named: 'subDomain'),
             ),
           ).thenReturn(null);
           when(
-            () => loggingService.captureException(
-              any<dynamic>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain'),
+            () => loggingService.error(
+              any<LogDomain>(),
+              any<Object>(),
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: any<String>(named: 'subDomain'),
             ),
           ).thenAnswer((_) async {});
 

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
@@ -12,7 +12,7 @@ class MockAudioRecorder extends Mock implements AudioRecorder {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockAudioRecorder mockAudioRecorder;
   late AudioRecorderRepository repository;
 
@@ -23,18 +23,18 @@ void main() {
   });
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockAudioRecorder = MockAudioRecorder();
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
     repository = AudioRecorderRepository(mockAudioRecorder);
 
     // Setup default mock behaviors
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -52,9 +52,9 @@ void main() {
       expect(result, isTrue);
       verify(() => mockAudioRecorder.hasPermission()).called(1);
       verifyNever(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
           subDomain: any(named: 'subDomain'),
         ),
       );
@@ -70,11 +70,11 @@ void main() {
       expect(result, isFalse);
       verify(() => mockAudioRecorder.hasPermission()).called(1);
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_recorder_repository',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: 'hasPermission',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -107,9 +107,9 @@ void main() {
       expect(result, isFalse);
       verify(() => mockAudioRecorder.isPaused()).called(1);
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_recorder_repository',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
           subDomain: 'isPaused',
         ),
       ).called(1);
@@ -145,9 +145,9 @@ void main() {
       expect(result, isFalse);
       verify(() => mockAudioRecorder.isRecording()).called(1);
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_recorder_repository',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
           subDomain: 'isRecording',
         ),
       ).called(1);
@@ -170,11 +170,11 @@ void main() {
         expect(result, isNull);
         // Verify that exception was logged due to directory creation failure
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'audio_recorder_repository',
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'startRecording',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
       },
@@ -192,11 +192,11 @@ void main() {
 
       expect(result, isNull);
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_recorder_repository',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: 'startRecording',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -215,11 +215,11 @@ void main() {
 
       await expectLater(repository.stopRecording(), completes);
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_recorder_repository',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: 'stopRecording',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -236,11 +236,11 @@ void main() {
 
       await expectLater(repository.pauseRecording(), completes);
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_recorder_repository',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: 'pauseRecording',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -259,11 +259,11 @@ void main() {
 
       await expectLater(repository.resumeRecording(), completes);
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_recorder_repository',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: 'resumeRecording',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -282,11 +282,11 @@ void main() {
 
       await expectLater(repository.dispose(), completes);
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_recorder_repository',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: 'dispose',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });

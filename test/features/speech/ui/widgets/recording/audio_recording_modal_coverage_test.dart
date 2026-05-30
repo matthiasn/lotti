@@ -36,6 +36,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
@@ -296,6 +297,7 @@ void main() {
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<NavService>(mockNavService);
+    ensureDomainLoggerRegistered();
   });
 
   tearDown(() async {

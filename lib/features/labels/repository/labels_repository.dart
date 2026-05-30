@@ -8,8 +8,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:uuid/uuid.dart';
 
@@ -18,7 +18,7 @@ final labelsRepositoryProvider = Provider<LabelsRepository>((ref) {
     getIt<PersistenceLogic>(),
     getIt<JournalDb>(),
     getIt<EntitiesCacheService>(),
-    getIt<LoggingService>(),
+    getIt<DomainLogger>(),
     getIt<UpdateNotifications>(),
   );
 });
@@ -28,14 +28,14 @@ class LabelsRepository {
     this._persistenceLogic,
     this._journalDb,
     this._entitiesCacheService,
-    this._loggingService,
+    this._domainLogger,
     this._updateNotifications,
   );
 
   final PersistenceLogic _persistenceLogic;
   final JournalDb _journalDb;
   final EntitiesCacheService _entitiesCacheService;
-  final LoggingService _loggingService;
+  final DomainLogger _domainLogger;
   final UpdateNotifications _updateNotifications;
   final _uuid = const Uuid();
 
@@ -185,11 +185,11 @@ class LabelsRepository {
 
       await _persistenceLogic.upsertEntityDefinition(deleted);
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _domainLogger.error(
+        LogDomain.labels,
         error,
-        domain: 'labels_repository',
-        subDomain: 'deleteLabel',
         stackTrace: stackTrace,
+        subDomain: 'deleteLabel',
       );
     }
   }
@@ -247,11 +247,11 @@ class LabelsRepository {
           ) ??
           false;
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _domainLogger.error(
+        LogDomain.labels,
         error,
-        domain: 'labels_repository',
-        subDomain: 'suppressLabelOnTask',
         stackTrace: stackTrace,
+        subDomain: 'suppressLabelOnTask',
       );
       return false;
     }
@@ -297,11 +297,11 @@ class LabelsRepository {
         journalEntity.copyWith(meta: updatedMetadata),
       );
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _domainLogger.error(
+        LogDomain.labels,
         error,
-        domain: 'labels_repository',
-        subDomain: 'addLabels',
         stackTrace: stackTrace,
+        subDomain: 'addLabels',
       );
       return false;
     }
@@ -343,11 +343,11 @@ class LabelsRepository {
         journalEntity.copyWith(meta: updatedMetadata),
       );
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _domainLogger.error(
+        LogDomain.labels,
         error,
-        domain: 'labels_repository',
-        subDomain: 'removeLabel',
         stackTrace: stackTrace,
+        subDomain: 'removeLabel',
       );
       return false;
     }
@@ -438,11 +438,11 @@ class LabelsRepository {
         overrideComparison: true,
       );
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _domainLogger.error(
+        LogDomain.labels,
         error,
-        domain: 'labels_repository',
-        subDomain: 'setLabels',
         stackTrace: stackTrace,
+        subDomain: 'setLabels',
       );
       return false;
     }

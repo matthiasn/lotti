@@ -300,10 +300,11 @@ class DayAgentStrategy extends ConversationStrategy {
       );
     } catch (e, s) {
       domainLogger.error(
-        LogDomains.agentWorkflow,
-        'failed to record day-agent action message '
-        'for ${DomainLogger.sanitizeId(agentId)}',
-        error: e,
+        LogDomain.agentWorkflow,
+        e,
+        message:
+            'failed to record day-agent action message '
+            'for ${DomainLogger.sanitizeId(agentId)}',
         stackTrace: s,
       );
     }
@@ -336,12 +337,13 @@ class DayAgentStrategy extends ConversationStrategy {
 
   void _logPersistenceError(String entityKind, Object error, StackTrace stack) {
     domainLogger.error(
-      LogDomains.agentWorkflow,
-      'failed to record day-agent $entityKind message '
-      'for agent=${DomainLogger.sanitizeId(agentId)}, '
-      'thread=${DomainLogger.sanitizeId(threadId)}, '
-      'run=${DomainLogger.sanitizeId(runKey)}',
-      error: error,
+      LogDomain.agentWorkflow,
+      error,
+      message:
+          'failed to record day-agent $entityKind message '
+          'for agent=${DomainLogger.sanitizeId(agentId)}, '
+          'thread=${DomainLogger.sanitizeId(threadId)}, '
+          'run=${DomainLogger.sanitizeId(runKey)}',
       stackTrace: stack,
     );
   }

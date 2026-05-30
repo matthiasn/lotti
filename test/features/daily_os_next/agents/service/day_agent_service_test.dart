@@ -86,7 +86,7 @@ void main() {
       () => domainLogger.error(
         any(),
         any(),
-        error: any(named: 'error'),
+        message: any(named: 'message'),
         stackTrace: any(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
       ),
@@ -935,8 +935,8 @@ void main() {
             verify(
                   () => domainLogger.error(
                     any(),
-                    captureAny(),
-                    error: any(named: 'error'),
+                    any(),
+                    message: captureAny(named: 'message'),
                     stackTrace: any(named: 'stackTrace'),
                     subDomain: any(named: 'subDomain'),
                   ),

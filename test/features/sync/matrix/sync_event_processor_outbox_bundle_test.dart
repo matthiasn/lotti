@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
@@ -184,7 +185,8 @@ void main() {
 
           expect(resolved, isNull);
           verify(
-            () => loggingService.captureException(
+            () => loggingService.error(
+              LogDomain.sync,
               any<Object>(
                 that: isA<String>().having(
                   (msg) => msg,
@@ -192,9 +194,8 @@ void main() {
                   contains('manifest version=99 unsupported'),
                 ),
               ),
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'processor.resolve.outboxBundle.unknownVersion',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'processor.resolve.outboxBundle.unknownVersion',
             ),
           ).called(1);
         },
@@ -236,7 +237,8 @@ void main() {
 
           expect(resolved, isNull);
           verify(
-            () => loggingService.captureException(
+            () => loggingService.error(
+              LogDomain.sync,
               any<Object>(
                 that: isA<String>().having(
                   (msg) => msg,
@@ -244,9 +246,8 @@ void main() {
                   contains('missing payload for SyncJournalEntity'),
                 ),
               ),
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'processor.resolve.outboxBundle.missingPayload',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'processor.resolve.outboxBundle.missingPayload',
             ),
           ).called(1);
         },
@@ -379,11 +380,11 @@ void main() {
 
           expect(resolved, isNull);
           verify(
-            () => loggingService.captureException(
+            () => loggingService.error(
+              LogDomain.sync,
               any<Object>(that: isA<FileSystemException>()),
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'processor.resolve.outboxBundle.invalidEntryPath',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'processor.resolve.outboxBundle.invalidEntryPath',
             ),
           ).called(1);
         },
@@ -412,7 +413,8 @@ void main() {
 
           expect(resolved, isNull);
           verify(
-            () => loggingService.captureException(
+            () => loggingService.error(
+              LogDomain.sync,
               any<Object>(
                 that: isA<String>().having(
                   (msg) => msg,
@@ -420,9 +422,8 @@ void main() {
                   contains('manifest missing entries array'),
                 ),
               ),
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'processor.resolve.outboxBundle.malformed',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'processor.resolve.outboxBundle.malformed',
             ),
           ).called(1);
         },
@@ -487,11 +488,11 @@ void main() {
           // its own subDomain — at least once, exactly for the rotten
           // runtimeType entry above.
           verify(
-            () => loggingService.captureException(
+            () => loggingService.error(
+              LogDomain.sync,
               any<Object>(),
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'processor.resolve.outboxBundle.envelopeParse',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'processor.resolve.outboxBundle.envelopeParse',
             ),
           ).called(1);
         },

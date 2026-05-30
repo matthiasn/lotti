@@ -9,7 +9,7 @@ import 'package:lotti/features/sync/ui/widgets/outbox/outbox_volume_chart.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
@@ -79,11 +79,11 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       if (!mounted) return;
       setState(() => _items = items);
     } catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.sync,
         error,
-        domain: 'OUTBOX',
-        subDomain: 'fetch',
         stackTrace: stackTrace,
+        subDomain: 'fetch',
       );
       if (!mounted) return;
       // Surface the failure to the user — on the initial load, this is
@@ -130,11 +130,11 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         title: context.messages.outboxMonitorRetryQueued,
       );
     } catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.sync,
         error,
-        domain: 'OUTBOX',
-        subDomain: 'retry_item',
         stackTrace: stackTrace,
+        subDomain: 'retry_item',
       );
       if (!context.mounted) {
         return;
@@ -166,11 +166,11 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         title: context.messages.outboxMonitorDeleteSuccess,
       );
     } catch (error, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.sync,
         error,
-        domain: 'OUTBOX',
-        subDomain: 'delete_item',
         stackTrace: stackTrace,
+        subDomain: 'delete_item',
       );
       if (!context.mounted) {
         return;

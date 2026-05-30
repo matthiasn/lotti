@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -82,30 +83,30 @@ void main() {
   });
   late MockMatrixGateway gateway;
   late MockSettingsDb settingsDb;
-  late MockLoggingService loggingService;
+  late MockDomainLogger loggingService;
   late StreamController<RoomInviteEvent> inviteController;
   late SyncRoomManager manager;
 
   setUp(() {
     gateway = MockMatrixGateway();
     settingsDb = MockSettingsDb();
-    loggingService = MockLoggingService();
+    loggingService = MockDomainLogger();
     inviteController = StreamController<RoomInviteEvent>.broadcast();
 
     when(() => gateway.invites).thenAnswer((_) => inviteController.stream);
     when(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String?>(named: 'subDomain'),
       ),
     ).thenReturn(null);
     when(
-      () => loggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
+      () => loggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any<String?>(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) async {});
     when(
@@ -184,7 +185,7 @@ void main() {
       fakeAsync((async) {
         final gateway = MockMatrixGateway();
         final settingsDb = MockSettingsDb();
-        final loggingService = MockLoggingService();
+        final loggingService = MockDomainLogger();
         final inviteController = StreamController<RoomInviteEvent>.broadcast();
         when(() => gateway.invites).thenAnswer((_) => inviteController.stream);
         final manager = SyncRoomManager(
@@ -198,9 +199,9 @@ void main() {
         var resolveCalls = 0;
 
         when(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String?>(named: 'subDomain'),
           ),
         ).thenReturn(null);
@@ -290,9 +291,9 @@ void main() {
 
     expect(invites, isEmpty);
     verify(
-      () => loggingService.captureEvent(
-        contains('Discarding invite'),
-        domain: 'SYNC_ROOM_MANAGER',
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(that: contains('Discarding invite')),
         subDomain: 'inviteFiltered',
       ),
     ).called(1);

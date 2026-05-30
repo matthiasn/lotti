@@ -5,17 +5,15 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/assistant_settings_sheet.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/chat_header.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   testWidgets('ChatHeader displays title + sessionTitle and opens settings', (
     tester,
   ) async {
     // Minimal logging service stub so ChatSessionController can construct
-    if (!getIt.isRegistered<LoggingService>()) {
-      getIt.registerSingleton<LoggingService>(LoggingService());
-    }
+    ensureDomainLoggerRegistered();
 
     // Mock models to avoid overflow from too many items
     final testModel = AiConfigModel(

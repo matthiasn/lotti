@@ -38,7 +38,7 @@ class ProjectActivityMonitor {
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       message,
       subDomain: subDomain,
     );
@@ -47,9 +47,9 @@ class ProjectActivityMonitor {
   void _logError(String message, {Object? error, StackTrace? stackTrace}) {
     if (domainLogger != null) {
       domainLogger!.error(
-        LogDomains.agentRuntime,
-        message,
-        error: error,
+        LogDomain.agentRuntime,
+        error ?? message,
+        message: error != null ? message : null,
         stackTrace: stackTrace,
       );
     } else {

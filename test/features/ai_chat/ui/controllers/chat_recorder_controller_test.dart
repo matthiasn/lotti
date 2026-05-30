@@ -17,7 +17,7 @@ import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 // ignore_for_file: unnecessary_lambdas
 import 'package:record/record.dart' as record;
@@ -37,27 +37,6 @@ class _MockRealtimeService extends Mock
 
 class _InMemoryAiConfigRepo extends AiConfigRepository {
   _InMemoryAiConfigRepo() : super(AiConfigDb(inMemoryDatabase: true));
-}
-
-class _FakeLoggingService extends LoggingService {
-  @override
-  void captureEvent(
-    dynamic event, {
-    required String domain,
-    String? subDomain,
-    InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
-  }) {}
-
-  @override
-  void captureException(
-    dynamic exception, {
-    required String domain,
-    String? subDomain,
-    dynamic stackTrace,
-    InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
-  }) {}
 }
 
 class _ThrowingCancelSubscription
@@ -174,16 +153,16 @@ void main() {
   setUp(() {
     // Ensure logging is available to avoid getIt lookup errors.
     // Always reset to _FakeLoggingService to ensure consistent state.
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
+    getIt.registerSingleton<DomainLogger>(MockDomainLogger());
   });
 
   tearDown(() {
     // Clean up GetIt state to prevent cross-test contamination
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
   });
 
@@ -659,10 +638,10 @@ void main() {
   });
 
   test('stopAndTranscribe logs when recorder.stop throws', () async {
-    final mockLogger = MockLoggingService();
+    final mockLogger = MockDomainLogger();
     // Replace the fake with a mock for verification
-    getIt.unregister<LoggingService>();
-    getIt.registerSingleton<LoggingService>(mockLogger);
+    getIt.unregister<DomainLogger>();
+    getIt.registerSingleton<DomainLogger>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();
@@ -707,20 +686,20 @@ void main() {
     await controller.stopAndTranscribe();
 
     verify(
-      () => mockLogger.captureException(
-        any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-        domain: 'ChatRecorderController',
+      () => mockLogger.error(
+        LogDomain.chat,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: 'stopAndTranscribe.stop',
       ),
     ).called(1);
   });
 
   test('cancel logs when ampSub.cancel and recorder.stop throw', () async {
-    final mockLogger = MockLoggingService();
+    final mockLogger = MockDomainLogger();
     // Replace the fake with a mock for verification
-    getIt.unregister<LoggingService>();
-    getIt.registerSingleton<LoggingService>(mockLogger);
+    getIt.unregister<DomainLogger>();
+    getIt.registerSingleton<DomainLogger>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();
@@ -766,28 +745,28 @@ void main() {
     await controller.cancel();
 
     verify(
-      () => mockLogger.captureException(
-        any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-        domain: 'ChatRecorderController',
+      () => mockLogger.error(
+        LogDomain.chat,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: 'cancel.ampSub',
       ),
     ).called(1);
     verify(
-      () => mockLogger.captureException(
-        any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-        domain: 'ChatRecorderController',
+      () => mockLogger.error(
+        LogDomain.chat,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: 'cancel.recorder',
       ),
     ).called(1);
   });
 
   test('cleanup logs when file/dir are missing (PathNotFound)', () async {
-    final mockLogger = MockLoggingService();
+    final mockLogger = MockDomainLogger();
     // Replace the fake with a mock for verification
-    getIt.unregister<LoggingService>();
-    getIt.registerSingleton<LoggingService>(mockLogger);
+    getIt.unregister<DomainLogger>();
+    getIt.registerSingleton<DomainLogger>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();
@@ -842,9 +821,10 @@ void main() {
     // We accept either specific PathNotFound logs or the generic cleanup log,
     // depending on platform exception types.
     verify(
-      () => mockLogger.captureException(
-        any<dynamic>(),
-        domain: 'ChatRecorderController',
+      () => mockLogger.error(
+        LogDomain.chat,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any<String>(
           named: 'subDomain',
           that: predicate(
@@ -855,7 +835,6 @@ void main() {
                 s == 'cleanup.tempDir',
           ),
         ),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).called(greaterThanOrEqualTo(1));
   });
@@ -2041,28 +2020,25 @@ void main() {
   group('cancel error paths for realtime subscriptions', () {
     test('logs error when deltaSub.cancel throws during cancel', () async {
       // Replace LoggingService with a mock to verify logging
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt.unregister<LoggingService>();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
       }
-      final mockLogging = MockLoggingService();
-      getIt.registerSingleton<LoggingService>(mockLogging);
+      final mockLogging = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(mockLogging);
       when(
-        () => mockLogging.captureEvent(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
+        () => mockLogging.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any<String>(named: 'subDomain'),
           level: any<InsightLevel>(named: 'level'),
-          type: any<InsightType>(named: 'type'),
         ),
       ).thenReturn(null);
       when(
-        () => mockLogging.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
+        () => mockLogging.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-          level: any<InsightLevel>(named: 'level'),
-          type: any<InsightType>(named: 'type'),
         ),
       ).thenAnswer((_) async {});
 
@@ -2115,19 +2091,404 @@ void main() {
 
       // Verify that captureException was called for the cancel error
       verify(
-        () => mockLogging.captureException(
-          any<dynamic>(),
-          domain: 'ChatRecorderController',
+        () => mockLogging.error(
+          LogDomain.chat,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any<String>(
             named: 'subDomain',
             that: contains('cancel'),
           ),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-          level: any<InsightLevel>(named: 'level'),
-          type: any<InsightType>(named: 'type'),
         ),
       ).called(greaterThan(0));
     });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Error-path coverage for stopRealtime / _cleanupInternal
+  // ─────────────────────────────────────────────────────────────────────────
+
+  group('stopRealtime error paths', () {
+    test(
+      'logs error when _realtimeAmpSub.cancel() throws (line 556)',
+      () async {
+        final mockLogger = MockDomainLogger();
+        getIt.unregister<DomainLogger>();
+        getIt.registerSingleton<DomainLogger>(mockLogger);
+
+        when(
+          () => mockLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any<String>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenReturn(null);
+        when(
+          () => mockLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final mockRecorder = _MockAudioRecorder();
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+        when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+        when(
+          () => mockRecorder.startStream(any<record.RecordConfig>()),
+        ).thenAnswer((_) async => Stream<Uint8List>.empty());
+
+        final mockRealtime = _MockRealtimeService();
+        // amplitudeStream returns a subscription whose cancel() throws
+        when(
+          () => mockRealtime.amplitudeStream,
+        ).thenAnswer((_) => _ThrowOnCancelDoubleStream());
+        when(
+          () => mockRealtime.startRealtimeTranscription(
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRealtime.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer(
+          (_) async => const RealtimeStopResult(
+            transcript: 'ok',
+            audioFilePath: '/tmp/audio.m4a',
+          ),
+        );
+        when(() => mockRealtime.dispose()).thenAnswer((_) async {});
+
+        final container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                tempDirectoryProvider: () async => Directory.systemTemp,
+                realtimeTranscriptionService: mockRealtime,
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+        await controller.startRealtime();
+
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.realtimeRecording,
+        );
+
+        // stopRealtime() tries _realtimeAmpSub?.cancel() → throws → line 556
+        await controller.stopRealtime();
+
+        verify(
+          () => mockLogger.error(
+            LogDomain.chat,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'stopRealtime.cancelSubs',
+          ),
+        ).called(1);
+        // Despite the error, the controller ends up idle (stop still runs)
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.idle,
+        );
+      },
+    );
+  });
+
+  group('_cleanupInternal error paths', () {
+    test(
+      'logs cleanup.recorder when recorder.dispose() throws (line 697)',
+      () async {
+        final mockLogger = MockDomainLogger();
+        getIt.unregister<DomainLogger>();
+        getIt.registerSingleton<DomainLogger>(mockLogger);
+
+        when(
+          () => mockLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any<String>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenReturn(null);
+        when(
+          () => mockLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final baseTemp = await Directory.systemTemp.createTemp('rec_697_');
+        final mockRecorder = _MockAudioRecorder();
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        // dispose() throws — this is what triggers line 697
+        when(
+          () => mockRecorder.dispose(),
+        ).thenThrow(Exception('dispose error'));
+        when(
+          () => mockRecorder.onAmplitudeChanged(any()),
+        ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+        when(
+          () => mockRecorder.start(
+            any<record.RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).thenAnswer((invocation) async {
+          final path = invocation.namedArguments[#path] as String;
+          await File(path).create(recursive: true);
+        });
+        when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+        final container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                tempDirectoryProvider: () async => baseTemp,
+                config: const ChatRecorderConfig(maxSeconds: 10),
+              ),
+            ),
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+        await controller.start();
+        await controller.cancel();
+
+        verify(
+          () => mockLogger.error(
+            LogDomain.chat,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'cleanup.recorder',
+          ),
+        ).called(1);
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.idle,
+        );
+      },
+    );
+
+    test(
+      'logs cleanup when file delete throws non-PathNotFoundException (line 726)',
+      () async {
+        final mockLogger = MockDomainLogger();
+        getIt.unregister<DomainLogger>();
+        getIt.registerSingleton<DomainLogger>(mockLogger);
+
+        when(
+          () => mockLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any<String>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenReturn(null);
+        when(
+          () => mockLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final baseTemp = await Directory.systemTemp.createTemp('rec_726_');
+        const now = 9999000726;
+
+        final mockRecorder = _MockAudioRecorder();
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+        when(
+          () => mockRecorder.onAmplitudeChanged(any()),
+        ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+        when(
+          () => mockRecorder.start(
+            any<record.RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).thenAnswer((invocation) async {
+          // Create a DIRECTORY where the audio FILE is expected.
+          // File(dirPath).delete() will throw FileSystemException (EISDIR),
+          // which is NOT PathNotFoundException → triggers outer catch (line 726).
+          final path = invocation.namedArguments[#path] as String;
+          await Directory(path).create(recursive: true);
+        });
+        when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+        final container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                nowMillisProvider: () => now,
+                tempDirectoryProvider: () async => baseTemp,
+                config: const ChatRecorderConfig(maxSeconds: 10),
+              ),
+            ),
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+        await controller.start();
+        await controller.cancel();
+
+        verify(
+          () => mockLogger.error(
+            LogDomain.chat,
+            any<Object>(),
+            subDomain: 'cleanup',
+          ),
+        ).called(1);
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.idle,
+        );
+      },
+    );
+
+    test(
+      'logs cleanup.tempDir when tempDir delete throws non-PathNotFoundException'
+      ' (line 749)',
+      () async {
+        final mockLogger = MockDomainLogger();
+        getIt.unregister<DomainLogger>();
+        getIt.registerSingleton<DomainLogger>(mockLogger);
+
+        when(
+          () => mockLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any<String>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenReturn(null);
+        when(
+          () => mockLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final baseTemp = await Directory.systemTemp.createTemp('rec_749_');
+        const now = 9999000749;
+
+        final mockRecorder = _MockAudioRecorder();
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+        when(
+          () => mockRecorder.onAmplitudeChanged(any()),
+        ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+        when(
+          () => mockRecorder.start(
+            any<record.RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).thenAnswer((invocation) async {
+          // Write a real file so start() succeeds and _filePath is set.
+          final path = invocation.namedArguments[#path] as String;
+          await File(path).create(recursive: true);
+        });
+        when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+        final container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                nowMillisProvider: () => now,
+                tempDirectoryProvider: () async => baseTemp,
+                config: const ChatRecorderConfig(maxSeconds: 10),
+              ),
+            ),
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+        await controller.start();
+
+        // The controller creates `${baseTemp}/lotti_chat_rec` as _tempDir.
+        // Add a locked (mode=000) subdirectory inside it so that
+        // Directory.delete(recursive: true) throws PathAccessException (EPERM),
+        // which is NOT a PathNotFoundException → outer catch fires → line 749.
+        final tempSubdir = Directory('${baseTemp.path}/lotti_chat_rec');
+        final locked = Directory('${tempSubdir.path}/locked');
+        await locked.create(recursive: true);
+        await File('${locked.path}/secret.txt').create();
+        await Process.run('chmod', ['000', locked.path]);
+        addTearDown(
+          () async =>
+              Process.run('chmod', ['755', locked.path]).then((_) async {
+                try {
+                  await locked.delete(recursive: true);
+                } catch (_) {}
+              }),
+        );
+
+        await controller.cancel();
+
+        verify(
+          () => mockLogger.error(
+            LogDomain.chat,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'cleanup.tempDir',
+          ),
+        ).called(greaterThanOrEqualTo(1));
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.idle,
+        );
+      },
+    );
   });
 
   group('realtimeAvailableProvider', () {

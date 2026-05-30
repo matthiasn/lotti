@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:dbus/dbus.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
@@ -102,9 +102,9 @@ class ScreenshotPortalService extends PortalService {
                   ? 'Screenshot cancelled by user'
                   : 'Screenshot portal returned error code: $code';
 
-              getIt<LoggingService>().captureException(
+              getIt<DomainLogger>().error(
+                LogDomain.screenshots,
                 errorMessage,
-                domain: 'ScreenshotPortalService',
                 subDomain: 'portal_error',
               );
               completer.complete(null);
@@ -113,9 +113,9 @@ class ScreenshotPortalService extends PortalService {
             completer.complete(null);
           }
         } catch (e) {
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.screenshots,
             e,
-            domain: 'ScreenshotPortalService',
             subDomain: 'signal_error',
           );
           if (!completer.isCompleted) {
@@ -148,11 +148,11 @@ class ScreenshotPortalService extends PortalService {
         await signalSubscription.cancel();
       }
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.screenshots,
         e,
-        domain: 'ScreenshotPortalService',
-        subDomain: 'takeScreenshot',
         stackTrace: stackTrace,
+        subDomain: 'takeScreenshot',
       );
       rethrow;
     }
@@ -215,11 +215,11 @@ class ScreenshotPortalService extends PortalService {
 
       return targetPath;
     } catch (e, st) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.screenshots,
         e,
-        domain: 'ScreenshotPortalService',
-        subDomain: 'file_copy_error',
         stackTrace: st,
+        subDomain: 'file_copy_error',
       );
       return screenshotPath;
     }

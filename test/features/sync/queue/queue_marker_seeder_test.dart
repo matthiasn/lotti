@@ -132,7 +132,7 @@ extension _AnyQueueMarkerSeedScenario on glados.Any {
 void main() {
   late SyncDatabase syncDb;
   late MockSettingsDb settingsDb;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   const roomId = '!roomA:example.org';
 
   setUpAll(() {
@@ -142,7 +142,7 @@ void main() {
   setUp(() {
     syncDb = SyncDatabase(inMemoryDatabase: true);
     settingsDb = MockSettingsDb();
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
   });
 
   tearDown(() async {
@@ -239,7 +239,7 @@ void main() {
     (scenario) async {
       final generatedDb = SyncDatabase(inMemoryDatabase: true);
       final generatedSettingsDb = MockSettingsDb();
-      final generatedLogging = MockLoggingService();
+      final generatedLogging = MockDomainLogger();
       when(
         () => generatedSettingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => scenario.legacyEventId);

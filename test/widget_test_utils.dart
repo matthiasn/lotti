@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -25,12 +26,14 @@ class TestGetItMocks {
     required this.updateNotifications,
     required this.settingsDb,
     required this.loggingService,
+    required this.domainLogger,
   });
 
   final MockJournalDb journalDb;
   final MockUpdateNotifications updateNotifications;
   final MockSettingsDb settingsDb;
   final LoggingService loggingService;
+  final DomainLogger domainLogger;
 }
 
 /// Sets up GetIt with common mocks for widget tests.
@@ -57,6 +60,7 @@ Future<TestGetItMocks> setUpTestGetIt({
   final mockJournalDb = MockJournalDb();
   final mockSettingsDb = MockSettingsDb();
   final loggingService = LoggingService();
+  final domainLogger = DomainLogger(loggingService: loggingService);
 
   when(
     () => mockUpdateNotifications.updateStream,
@@ -81,6 +85,7 @@ Future<TestGetItMocks> setUpTestGetIt({
     ..registerSingleton<JournalDb>(mockJournalDb)
     ..registerSingleton<SettingsDb>(mockSettingsDb)
     ..registerSingleton<LoggingService>(loggingService)
+    ..registerSingleton<DomainLogger>(domainLogger)
     ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
     ..registerSingleton<OllamaEmbeddingRepository>(
       MockOllamaEmbeddingRepository(),
@@ -93,6 +98,7 @@ Future<TestGetItMocks> setUpTestGetIt({
     updateNotifications: mockUpdateNotifications,
     settingsDb: mockSettingsDb,
     loggingService: loggingService,
+    domainLogger: domainLogger,
   );
 }
 
@@ -100,6 +106,26 @@ Future<TestGetItMocks> setUpTestGetIt({
 /// Call this in tearDown() to clean up registrations.
 Future<void> tearDownTestGetIt() async {
   await getIt.reset();
+}
+
+/// Registers a [DomainLogger] in GetIt if one is not already registered,
+/// backed by the currently registered [LoggingService] (registering a fresh
+/// one when absent).
+///
+/// Migrated production code resolves `getIt<DomainLogger>()` rather than
+/// `getIt<LoggingService>()`. Tests that set up GetIt by hand and only register
+/// a (mock) [LoggingService] must call this afterwards so the logger resolves.
+/// It is idempotent — safe under reset-based, guard-based, and
+/// unregister/re-register setups, and across the shared CI isolate.
+void ensureDomainLoggerRegistered() {
+  if (!getIt.isRegistered<LoggingService>()) {
+    getIt.registerSingleton<LoggingService>(LoggingService());
+  }
+  if (!getIt.isRegistered<DomainLogger>()) {
+    getIt.registerSingleton<DomainLogger>(
+      DomainLogger(loggingService: getIt<LoggingService>()),
+    );
+  }
 }
 
 /// Ensures core services required by ThemingController are registered.
@@ -131,6 +157,12 @@ void ensureThemingServicesRegistered() {
 
   if (!getIt.isRegistered<LoggingService>()) {
     getIt.registerSingleton<LoggingService>(LoggingService());
+  }
+
+  if (!getIt.isRegistered<DomainLogger>()) {
+    getIt.registerSingleton<DomainLogger>(
+      DomainLogger(loggingService: getIt<LoggingService>()),
+    );
   }
 }
 

@@ -82,7 +82,7 @@ class ProjectRecommendationService {
     });
 
     _domainLogger?.log(
-      LogDomains.agentWorkflow,
+      LogDomain.agentWorkflow,
       'Recorded ${steps.length} active project recommendations for '
       '${DomainLogger.sanitizeId(changeSet.taskId)}',
       subDomain: _sub,
@@ -130,7 +130,7 @@ class ProjectRecommendationService {
     );
 
     _domainLogger?.log(
-      LogDomains.agentWorkflow,
+      LogDomain.agentWorkflow,
       'Marked project recommendation '
       '${DomainLogger.sanitizeId(recommendation.id)} as ${status.name}',
       subDomain: _sub,

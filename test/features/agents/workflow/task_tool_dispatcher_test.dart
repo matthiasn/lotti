@@ -8,7 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -713,15 +713,15 @@ void main() {
     });
 
     group('dispatch — handlers requiring getIt', () {
-      late MockLoggingService mockLoggingService;
+      late MockDomainLogger mockLoggingService;
 
       setUp(() {
-        mockLoggingService = MockLoggingService();
+        mockLoggingService = MockDomainLogger();
 
         // Register getIt dependencies needed by internal handlers.
         getIt
           ..registerSingleton<JournalDb>(mockJournalDb)
-          ..registerSingleton<LoggingService>(mockLoggingService);
+          ..registerSingleton<DomainLogger>(mockLoggingService);
 
         when(
           () => mockJournalDb.journalEntityById(taskId),
@@ -729,18 +729,18 @@ void main() {
 
         // Common stubs for logging service.
         when(
-          () => mockLoggingService.captureEvent(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
+          () => mockLoggingService.log(
+            any<LogDomain>(),
+            any<String>(),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenReturn(null);
         when(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
+          () => mockLoggingService.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).thenAnswer((_) async {});
       });

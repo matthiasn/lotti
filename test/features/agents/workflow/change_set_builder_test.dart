@@ -1361,12 +1361,14 @@ void main() {
 
     test('logs error via DomainLogger when resolver throws', () async {
       final mockLogger = MockDomainLogger();
-      when(() => mockLogger.enabledDomains).thenReturn({'agent_workflow'});
+      when(
+        () => mockLogger.enabledDomains,
+      ).thenReturn({LogDomain.agentWorkflow});
       when(
         () => mockLogger.error(
           any(),
           any(),
-          error: any(named: 'error'),
+          message: any(named: 'message'),
           stackTrace: any(named: 'stackTrace'),
         ),
       ).thenReturn(null);
@@ -1393,9 +1395,12 @@ void main() {
       // Verify logger was called with the error.
       verify(
         () => mockLogger.error(
-          'agent_workflow',
-          any(that: contains('failed to resolve checklist item state')),
-          error: any(named: 'error'),
+          LogDomain.agentWorkflow,
+          any(),
+          message: any(
+            named: 'message',
+            that: contains('failed to resolve checklist item state'),
+          ),
           stackTrace: any(named: 'stackTrace'),
         ),
       ).called(1);
@@ -1881,7 +1886,7 @@ void main() {
         () => mockLogger.error(
           any(),
           any(),
-          error: any(named: 'error'),
+          message: any(named: 'message'),
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),
@@ -1917,9 +1922,9 @@ void main() {
       expect(entity, isNotNull);
       final captured = verify(
         () => mockLogger.error(
-          LogDomains.agentWorkflow,
-          captureAny(),
-          error: any(named: 'error'),
+          LogDomain.agentWorkflow,
+          any(),
+          message: captureAny(named: 'message'),
           stackTrace: any(named: 'stackTrace'),
           subDomain: 'ChangeSetBuilder',
         ),
@@ -3510,7 +3515,9 @@ void main() {
 
     test('logs resolved title count via domainLogger', () async {
       final mockLogger = MockDomainLogger();
-      when(() => mockLogger.enabledDomains).thenReturn({'agent_workflow'});
+      when(
+        () => mockLogger.enabledDomains,
+      ).thenReturn({LogDomain.agentWorkflow});
       when(
         () => mockLogger.log(
           any(),
@@ -3540,7 +3547,7 @@ void main() {
 
       verify(
         () => mockLogger.log(
-          LogDomains.agentWorkflow,
+          LogDomain.agentWorkflow,
           any(that: contains('resolved 2 existing checklist')),
           subDomain: any(named: 'subDomain'),
         ),

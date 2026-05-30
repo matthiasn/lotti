@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -125,25 +126,25 @@ extension _AnyGeneratedRoomDiscoveryScenario on glados.Any {
 }
 
 void main() {
-  late MockLoggingService loggingService;
+  late MockDomainLogger loggingService;
   late SyncRoomDiscoveryService service;
 
   setUp(() {
-    loggingService = MockLoggingService();
+    loggingService = MockDomainLogger();
 
     when(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String?>(named: 'subDomain'),
       ),
     ).thenReturn(null);
     when(
-      () => loggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
+      () => loggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any<String?>(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) async {});
 
@@ -216,9 +217,9 @@ void main() {
 
       expect(results, isEmpty);
       verify(
-        () => loggingService.captureEvent(
-          contains('Discovered 0'),
-          domain: 'SYNC_ROOM_DISCOVERY',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('Discovered 0')),
           subDomain: 'discover',
         ),
       ).called(1);
@@ -541,9 +542,9 @@ void main() {
       ).called(1);
 
       verify(
-        () => loggingService.captureEvent(
-          contains('Marked room'),
-          domain: 'SYNC_ROOM_DISCOVERY',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('Marked room')),
           subDomain: 'markRoom',
         ),
       ).called(1);
@@ -567,11 +568,11 @@ void main() {
       await service.markRoomAsLottiSync(room);
 
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'SYNC_ROOM_DISCOVERY',
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: 'markRoom',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -671,9 +672,9 @@ void main() {
       // Should not crash, just log and skip
       expect(results, isEmpty);
       verify(
-        () => loggingService.captureEvent(
-          contains('Error checking room'),
-          domain: 'SYNC_ROOM_DISCOVERY',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('Error checking room')),
           subDomain: 'hasLottiSyncContent',
         ),
       ).called(1);

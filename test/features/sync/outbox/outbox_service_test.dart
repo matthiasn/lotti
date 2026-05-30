@@ -32,6 +32,7 @@ import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -342,7 +343,7 @@ void main() {
   });
 
   late MockSyncDatabase syncDatabase;
-  late MockLoggingService loggingService;
+  late MockDomainLogger loggingService;
   late MockOutboxRepository repository;
   late MockOutboxMessageSender messageSender;
   late MockOutboxProcessor processor;
@@ -356,7 +357,7 @@ void main() {
 
   setUp(() {
     syncDatabase = MockSyncDatabase();
-    loggingService = MockLoggingService();
+    loggingService = MockDomainLogger();
     repository = MockOutboxRepository();
     messageSender = MockOutboxMessageSender();
     processor = MockOutboxProcessor();
@@ -379,7 +380,6 @@ void main() {
     when(
       () => processor.processQueue(),
     ).thenAnswer((_) async => OutboxProcessingResult.none);
-    stubLoggingService(loggingService);
     when(
       () => vectorClockService.getHostHash(),
     ).thenAnswer((_) async => 'hhash');
@@ -470,9 +470,9 @@ void main() {
     await service.enqueueMessage(def);
 
     verify(
-      () => loggingService.captureEvent(
-        contains('type=SyncEntityDefinition'),
-        domain: 'OUTBOX',
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(that: contains('type=SyncEntityDefinition')),
         subDomain: 'enqueueMessage',
       ),
     ).called(1);
@@ -494,13 +494,15 @@ void main() {
     await service.enqueueMessage(link);
 
     verify(
-      () => loggingService.captureEvent(
-        allOf([
-          contains('type=SyncEntryLink'),
-          contains('from=A'),
-          contains('to=B'),
-        ]),
-        domain: 'OUTBOX',
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(
+          that: allOf([
+            contains('type=SyncEntryLink'),
+            contains('from=A'),
+            contains('to=B'),
+          ]),
+        ),
         subDomain: 'enqueueMessage',
       ),
     ).called(1);
@@ -592,9 +594,9 @@ void main() {
       await service.enqueueMessage(message);
 
       verify(
-        () => loggingService.captureEvent(
-          contains('enqueueMessage.missingEntity id=$id'),
-          domain: 'MATRIX_SERVICE',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('enqueueMessage.missingEntity id=$id')),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -652,13 +654,13 @@ void main() {
     await failingService.enqueueMessage(message);
 
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.sync,
         any<Object>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'enqueueMessage.refreshJson',
         stackTrace: any<StackTrace?>(
           named: 'stackTrace',
         ),
+        subDomain: 'enqueueMessage.refreshJson',
       ),
     ).called(1);
     verify(() => syncDatabase.addOutboxItem(any())).called(1);
@@ -769,11 +771,11 @@ void main() {
       );
 
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'recordSent',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'recordSent',
         ),
       ).called(1);
     },
@@ -795,11 +797,11 @@ void main() {
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
       );
       verify(
-        () => loggingService.captureEvent(
+        () => loggingService.log(
+          LogDomain.sync,
           any<String>(
             that: contains('enqueue.skip invalid notification payload path'),
           ),
-          domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -856,9 +858,9 @@ void main() {
     await service.enqueueMessage(cfg);
 
     verify(
-      () => loggingService.captureEvent(
-        contains('type=SyncAiConfig'),
-        domain: 'OUTBOX',
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(that: contains('type=SyncAiConfig')),
         subDomain: 'enqueueMessage',
       ),
     ).called(1);
@@ -870,9 +872,9 @@ void main() {
     await service.enqueueMessage(del);
 
     verify(
-      () => loggingService.captureEvent(
-        contains('type=SyncAiConfigDelete'),
-        domain: 'OUTBOX',
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(that: contains('type=SyncAiConfigDelete')),
         subDomain: 'enqueueMessage',
       ),
     ).called(1);
@@ -1973,6 +1975,565 @@ void main() {
         );
       },
     );
+
+    test(
+      'journal merge whose update affects zero rows (row no longer pending) '
+      'logs MERGE-MISS and inserts a fresh row with the merged data',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 5});
+        const newVc = VectorClock({'hostA': 7});
+
+        const oldMessage = SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: '/entries/test.json',
+          vectorClock: oldVc,
+          status: SyncEntryStatus.update,
+        );
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:5',
+          filePath: null,
+          outboxEntryId: 'entry-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => existingItem);
+        // Row was sent out from under us between the SELECT and UPDATE.
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 0);
+        OutboxCompanion? insertedCompanion;
+        when(() => syncDatabase.addOutboxItem(any())).thenAnswer((invocation) {
+          insertedCompanion =
+              invocation.positionalArguments.single as OutboxCompanion;
+          return Future<int>.value(2);
+        });
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
+
+        final journalEntity = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'entry-id',
+            createdAt: sampleDate,
+            updatedAt: sampleDate,
+            dateFrom: sampleDate,
+            dateTo: sampleDate,
+            vectorClock: newVc,
+          ),
+          entryText: const EntryText(plainText: 'Updated text'),
+        );
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: jsonPath,
+            vectorClock: newVc,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf([
+                contains('MERGE-MISS'),
+                contains('type=SyncJournalEntity'),
+                contains('id=entry-id'),
+              ]),
+            ),
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+        // Fresh row carries the merged subject + the original entry id.
+        expect(insertedCompanion, isNotNull);
+        expect(insertedCompanion!.subject.value, 'hhash:7');
+        expect(insertedCompanion!.outboxEntryId.value, 'entry-id');
+      },
+    );
+
+    test(
+      'a throw from recordSentEntry during a journal MERGE is caught and '
+      'logged under recordSent so a broken sequence log never breaks the '
+      'merge, and the merge still completes',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 5});
+        const newVc = VectorClock({'hostA': 7});
+
+        const oldMessage = SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: '/entries/test.json',
+          vectorClock: oldVc,
+          status: SyncEntryStatus.update,
+        );
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:5',
+          filePath: null,
+          outboxEntryId: 'entry-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => existingItem);
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 1);
+
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence log gone'));
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          sequenceLogService: sequenceLog,
+        );
+
+        final journalEntity = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'entry-id',
+            createdAt: sampleDate,
+            updatedAt: sampleDate,
+            dateFrom: sampleDate,
+            dateTo: sampleDate,
+            vectorClock: newVc,
+          ),
+          entryText: const EntryText(plainText: 'Updated text'),
+        );
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: jsonPath,
+            vectorClock: newVc,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordSent',
+          ),
+        ).called(1);
+        // The merge still completed despite the sequence-log failure.
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 1,
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a throw from recordSentEntry on the non-merge journal path is caught '
+      'and logged under recordSent so the fresh enqueue still succeeds',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const newVc = VectorClock({'hostA': 7});
+
+        // No existing pending item → fresh-insert path (not a merge).
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => null);
+
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence log gone'));
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          sequenceLogService: sequenceLog,
+        );
+
+        final journalEntity = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'entry-id',
+            createdAt: sampleDate,
+            updatedAt: sampleDate,
+            dateFrom: sampleDate,
+            dateTo: sampleDate,
+            vectorClock: newVc,
+          ),
+          entryText: const EntryText(plainText: 'Fresh text'),
+        );
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: jsonPath,
+            vectorClock: newVc,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordSent',
+          ),
+        ).called(1);
+        // The fresh outbox row was still inserted.
+        verify(() => syncDatabase.addOutboxItem(any())).called(1);
+      },
+    );
+
+    test(
+      'entry-link merge whose update affects zero rows logs MERGE-MISS and '
+      'inserts a fresh row carrying the merged subject and link id',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 3});
+        const newVc = VectorClock({'hostA': 5});
+
+        final oldLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: oldVc,
+        );
+        final oldMessage = SyncMessage.entryLink(
+          entryLink: oldLink,
+          status: SyncEntryStatus.update,
+        );
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:link:3',
+          filePath: null,
+          outboxEntryId: 'link-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('link-id'),
+        ).thenAnswer((_) async => existingItem);
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 0);
+        OutboxCompanion? insertedCompanion;
+        when(() => syncDatabase.addOutboxItem(any())).thenAnswer((invocation) {
+          insertedCompanion =
+              invocation.positionalArguments.single as OutboxCompanion;
+          return Future<int>.value(2);
+        });
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
+
+        final newLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: newVc,
+        );
+
+        await testService.enqueueMessage(
+          SyncMessage.entryLink(
+            entryLink: newLink,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf([
+                contains('MERGE-MISS'),
+                contains('type=SyncEntryLink'),
+                contains('id=link-id'),
+              ]),
+            ),
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+        expect(insertedCompanion, isNotNull);
+        expect(insertedCompanion!.subject.value, 'hhash:link:5');
+        expect(insertedCompanion!.outboxEntryId.value, 'link-id');
+      },
+    );
+
+    test(
+      'a throw from recordSentEntryLink during an entry-link MERGE is caught '
+      'and logged under recordSent without breaking the merge',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 3});
+        const newVc = VectorClock({'hostA': 5});
+
+        final oldLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: oldVc,
+        );
+        final oldMessage = SyncMessage.entryLink(
+          entryLink: oldLink,
+          status: SyncEntryStatus.update,
+        );
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:link:3',
+          filePath: null,
+          outboxEntryId: 'link-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('link-id'),
+        ).thenAnswer((_) async => existingItem);
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 1);
+
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence log gone'));
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          sequenceLogService: sequenceLog,
+        );
+
+        final newLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: newVc,
+        );
+
+        await testService.enqueueMessage(
+          SyncMessage.entryLink(
+            entryLink: newLink,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordSent',
+          ),
+        ).called(1);
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 1,
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'an entry-link merge whose existing row holds undecodable JSON is '
+      'caught under enqueueMessage.merge and falls through to a fresh insert',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const newVc = VectorClock({'hostA': 5});
+
+        // Existing pending link row with a corrupt message body so the
+        // merge `SyncMessage.fromJson` throws inside the link merge try.
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: 'not-valid-json{{{',
+          subject: 'hhash:link:3',
+          filePath: null,
+          outboxEntryId: 'link-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('link-id'),
+        ).thenAnswer((_) async => existingItem);
+        when(
+          () => syncDatabase.addOutboxItem(any()),
+        ).thenAnswer((_) async => 2);
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
+
+        final newLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: newVc,
+        );
+
+        await testService.enqueueMessage(
+          SyncMessage.entryLink(
+            entryLink: newLink,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'enqueueMessage.merge',
+          ),
+        ).called(1);
+        // The corrupt-merge fall-through still enqueues the link fresh.
+        verify(() => syncDatabase.addOutboxItem(any())).called(1);
+        verifyNever(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        );
+      },
+    );
   });
 
   group('sendNext', () {
@@ -2132,11 +2693,11 @@ void main() {
       await svc.sendNext();
 
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           exception,
-          domain: 'OUTBOX',
-          subDomain: 'sendNext',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'sendNext',
         ),
       ).called(1);
       expect(svc.enqueueCalls, 1);
@@ -2794,9 +3355,9 @@ void main() {
       // runner to log the instrumentation line.
       await Future<void>.delayed(const Duration(milliseconds: 200));
       verify(
-        () => loggingService.captureEvent(
-          startsWith('activityGate.wait ms='),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: startsWith('activityGate.wait ms=')),
           subDomain: 'activityGate',
         ),
       ).called(greaterThanOrEqualTo(1));
@@ -2870,9 +3431,9 @@ void main() {
           // Allow pending tasks and the post-drain settle (250ms)
           ..elapse(const Duration(milliseconds: 300));
         verify(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             'watchdog: pending+loggedIn idleQueue → enqueue',
-            domain: 'OUTBOX',
             subDomain: 'watchdog',
           ),
         ).called(1);
@@ -2950,9 +3511,9 @@ void main() {
           // Now watchdog fires while the queue is active
           ..elapse(const Duration(seconds: 10));
         verifyNever(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             'watchdog: pending+loggedIn idleQueue → enqueue',
-            domain: 'OUTBOX',
             subDomain: 'watchdog',
           ),
         );
@@ -3019,9 +3580,9 @@ void main() {
         );
         async.elapse(const Duration(seconds: 10));
         verifyNever(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             'watchdog: pending+loggedIn idleQueue → enqueue',
-            domain: 'OUTBOX',
             subDomain: 'watchdog',
           ),
         );
@@ -3072,11 +3633,11 @@ void main() {
         );
         async.elapse(const Duration(seconds: 10));
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'OUTBOX',
-            subDomain: 'watchdog',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'watchdog',
           ),
         ).called(1);
         unawaited(svc.dispose());
@@ -3143,9 +3704,9 @@ void main() {
         // Further elapse should not trigger watchdog again
         async.elapse(const Duration(seconds: 20));
         verify(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             'watchdog: pending+loggedIn idleQueue → enqueue',
-            domain: 'OUTBOX',
             subDomain: 'watchdog',
           ),
         ).called(1);
@@ -3190,9 +3751,9 @@ void main() {
           ..elapse(const Duration(milliseconds: 60))
           ..flushMicrotasks();
         verify(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             'dbNudge count=5 → enqueue',
-            domain: 'OUTBOX',
             subDomain: 'dbNudge',
           ),
         ).called(1);
@@ -3255,9 +3816,9 @@ void main() {
             ..flushMicrotasks();
 
           final logged = verify(
-            () => loggingService.captureEvent(
+            () => loggingService.log(
+              LogDomain.sync,
               captureAny<String>(that: startsWith('dbNudge count=')),
-              domain: 'OUTBOX',
               subDomain: 'dbNudge',
             ),
           ).captured;
@@ -3313,9 +3874,9 @@ void main() {
           ..elapse(const Duration(milliseconds: 100))
           ..flushMicrotasks();
         verifyNever(
-          () => loggingService.captureEvent(
-            startsWith('dbNudge'),
-            domain: any(named: 'domain'),
+          () => loggingService.log(
+            any<LogDomain>(),
+            any<String>(that: startsWith('dbNudge')),
             subDomain: any(named: 'subDomain'),
           ),
         );
@@ -3359,9 +3920,9 @@ void main() {
           ..elapse(const Duration(milliseconds: 100))
           ..flushMicrotasks();
         verifyNever(
-          () => loggingService.captureEvent(
-            startsWith('dbNudge'),
-            domain: any(named: 'domain'),
+          () => loggingService.log(
+            any<LogDomain>(),
+            any<String>(that: startsWith('dbNudge')),
             subDomain: any(named: 'subDomain'),
           ),
         );
@@ -3511,9 +4072,9 @@ void main() {
         verify(() => processor.processQueue()).called(2);
         // Watchdog must not enqueue when queue active → no watchdog enqueue log
         verifyNever(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             'watchdog: pending+loggedIn idleQueue → enqueue',
-            domain: 'OUTBOX',
             subDomain: 'watchdog',
           ),
         );
@@ -3618,9 +4179,9 @@ void main() {
           // callbacks (connectivity + login) = 4 drains total. Not 6+.
           verify(() => processor.processQueue()).called(lessThanOrEqualTo(4));
           verifyNever(
-            () => loggingService.captureEvent(
+            () => loggingService.log(
+              LogDomain.sync,
               'watchdog: pending+loggedIn idleQueue → enqueue',
-              domain: 'OUTBOX',
               subDomain: 'watchdog',
             ),
           );
@@ -3752,14 +4313,16 @@ void main() {
       await service.enqueueMessage(message);
 
       verify(
-        () => loggingService.captureEvent(
-          allOf([
-            contains('type=SyncThemingSelection'),
-            contains('light=Indigo'),
-            contains('dark=Shark'),
-            contains('mode=dark'),
-          ]),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf([
+              contains('type=SyncThemingSelection'),
+              contains('light=Indigo'),
+              contains('dark=Shark'),
+              contains('mode=dark'),
+            ]),
+          ),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -3815,14 +4378,16 @@ void main() {
         await service.enqueueMessage(message);
 
         verify(
-          () => loggingService.captureEvent(
-            allOf([
-              contains('type=SyncSyncNodeProfile'),
-              contains('hostId=host-uuid-xyz'),
-              contains('name=Linux Box'),
-              contains('caps=1'),
-            ]),
-            domain: 'OUTBOX',
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf([
+                contains('type=SyncSyncNodeProfile'),
+                contains('hostId=host-uuid-xyz'),
+                contains('name=Linux Box'),
+                contains('caps=1'),
+              ]),
+            ),
             subDomain: 'enqueueMessage',
           ),
         ).called(1);
@@ -3893,22 +4458,26 @@ void main() {
 
       // Verify logging shows embedded links count
       verify(
-        () => loggingService.captureEvent(
-          contains(
-            'enqueueMessage.attachedLinks id=$entryId count=2 embedded=2 from=1 to=1',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains(
+              'enqueueMessage.attachedLinks id=$entryId count=2 embedded=2 from=1 to=1',
+            ),
           ),
-          domain: 'OUTBOX',
           subDomain: 'enqueueMessage.attachLinks',
         ),
       ).called(1);
 
       verify(
-        () => loggingService.captureEvent(
-          allOf([
-            contains('type=SyncJournalEntity'),
-            contains('embeddedLinks=2'),
-          ]),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf([
+              contains('type=SyncJournalEntity'),
+              contains('embeddedLinks=2'),
+            ]),
+          ),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -3970,11 +4539,11 @@ void main() {
 
       // Verify exception was logged
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Exception>(),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage.fetchLinks',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'enqueueMessage.fetchLinks',
         ),
       ).called(1);
 
@@ -4034,30 +4603,32 @@ void main() {
 
       // Verify attachedLinks log was NOT called (no links to attach)
       verifyNever(
-        () => loggingService.captureEvent(
-          contains('enqueueMessage.attachedLinks'),
-          domain: any(named: 'domain'),
+        () => loggingService.log(
+          any<LogDomain>(),
+          any<String>(that: contains('enqueueMessage.attachedLinks')),
           subDomain: any(named: 'subDomain'),
         ),
       );
 
       // Verify no-links log was emitted
       verify(
-        () => loggingService.captureEvent(
-          contains('enqueueMessage.noLinks id=$entryId'),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('enqueueMessage.noLinks id=$entryId')),
           subDomain: 'enqueueMessage.attachLinks',
         ),
       ).called(1);
 
       // Verify embeddedLinks=0 in the log
       verify(
-        () => loggingService.captureEvent(
-          allOf([
-            contains('type=SyncJournalEntity'),
-            contains('embeddedLinks=0'),
-          ]),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf([
+              contains('type=SyncJournalEntity'),
+              contains('embeddedLinks=0'),
+            ]),
+          ),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -4203,11 +4774,11 @@ void main() {
 
       // Verify exception was logged
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'recordSent',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'recordSent',
         ),
       ).called(1);
     });
@@ -4247,9 +4818,9 @@ void main() {
       // sequenceLogService is null so this is effectively a no-op test
       // Verify the message was still enqueued (logging event)
       verify(
-        () => loggingService.captureEvent(
-          contains('type=SyncEntryLink'),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('type=SyncEntryLink')),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -4477,11 +5048,11 @@ void main() {
 
         // Verify exception was logged
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordSent',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordSent',
           ),
         ).called(1);
       },
@@ -4539,9 +5110,9 @@ void main() {
       expect(companion.subject.value, 'backfillRequest:batch:0');
 
       verify(
-        () => loggingService.captureEvent(
-          contains('entries=0'),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('entries=0')),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -4578,14 +5149,16 @@ void main() {
       await service.enqueueMessage(message);
 
       verify(
-        () => loggingService.captureEvent(
-          allOf([
-            contains('type=SyncBackfillResponse'),
-            contains('hostId=host-abc'),
-            contains('counter=42'),
-            contains('deleted=true'),
-          ]),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf([
+              contains('type=SyncBackfillResponse'),
+              contains('hostId=host-abc'),
+              contains('counter=42'),
+              contains('deleted=true'),
+            ]),
+          ),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -4610,9 +5183,9 @@ void main() {
       expect(companion.subject.value, 'backfillResponse:host-abc:42');
 
       verify(
-        () => loggingService.captureEvent(
-          contains('deleted=false'),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('deleted=false')),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -4636,12 +5209,14 @@ void main() {
       await service.enqueueMessage(message);
 
       verify(
-        () => loggingService.captureEvent(
-          allOf([
-            contains('type=SyncAiConfig'),
-            contains('id=config-xyz-789'),
-          ]),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf([
+              contains('type=SyncAiConfig'),
+              contains('id=config-xyz-789'),
+            ]),
+          ),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -4655,12 +5230,14 @@ void main() {
       await service.enqueueMessage(message);
 
       verify(
-        () => loggingService.captureEvent(
-          allOf([
-            contains('type=SyncAiConfigDelete'),
-            contains('id=config-to-delete-456'),
-          ]),
-          domain: 'OUTBOX',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf([
+              contains('type=SyncAiConfigDelete'),
+              contains('id=config-to-delete-456'),
+            ]),
+          ),
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -4683,11 +5260,11 @@ void main() {
       await service.enqueueMessage(message);
 
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'enqueueMessage',
         ),
       ).called(1);
     });
@@ -5042,12 +5619,14 @@ void main() {
         expect(storedMessage.jsonPath, '/agent_entities/agent-xyz.json');
 
         verify(
-          () => loggingService.captureEvent(
-            allOf([
-              contains('type=SyncAgentEntity'),
-              contains('subject=agentEntity:agent-xyz'),
-            ]),
-            domain: 'OUTBOX',
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf([
+                contains('type=SyncAgentEntity'),
+                contains('subject=agentEntity:agent-xyz'),
+              ]),
+            ),
             subDomain: 'enqueueMessage',
           ),
         ).called(1);
@@ -5432,12 +6011,14 @@ void main() {
         expect(storedMessage.jsonPath, '/agent_links/link-abc.json');
 
         verify(
-          () => loggingService.captureEvent(
-            allOf([
-              contains('type=SyncAgentLink'),
-              contains('subject=agentLink:link-abc'),
-            ]),
-            domain: 'OUTBOX',
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf([
+                contains('type=SyncAgentLink'),
+                contains('subject=agentLink:link-abc'),
+              ]),
+            ),
             subDomain: 'enqueueMessage',
           ),
         ).called(1);
@@ -5455,9 +6036,9 @@ void main() {
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
       );
       verify(
-        () => loggingService.captureEvent(
+        () => loggingService.log(
+          LogDomain.sync,
           'enqueue.skip agentEntity is null',
-          domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -5474,9 +6055,9 @@ void main() {
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
       );
       verify(
-        () => loggingService.captureEvent(
+        () => loggingService.log(
+          LogDomain.sync,
           'enqueue.skip agentLink is null',
-          domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
@@ -5585,16 +6166,143 @@ void main() {
 
       // Error was logged
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage.saveAgentPayload',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'enqueueMessage.saveAgentPayload',
         ),
       ).called(1);
 
       await failingService.dispose();
     });
+
+    test(
+      'an agent entity whose id escapes the documents root is skipped and '
+      'logged — the unencoded agent path builder makes a traversal id reach '
+      'the !isWithin guard, unlike notification paths which are URL-encoded',
+      () async {
+        // `relativeAgentEntityPath` does NOT URL-encode the id, so an id
+        // with `../` segments produces a path that normalizes outside the
+        // docs root and trips the `!p.isWithin` guard.
+        final entity = AgentDomainEntity.agent(
+          id: '../../escape',
+          agentId: '../../escape',
+          kind: 'task_agent',
+          displayName: 'Escape',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        await service.enqueueMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: contains('enqueue.skip invalid agent payload path'),
+            ),
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+        // Nothing was persisted: the row is never created for an
+        // out-of-root payload path.
+        verifyNever(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()));
+      },
+    );
+
+    test(
+      'an agent merge whose existing row holds undecodable JSON is caught '
+      'under enqueueMessage.agentMerge, logs the (no VC merge) fallback, and '
+      'still updates the pending row',
+      () async {
+        const newVc = VectorClock({'hostA': 5});
+
+        // Existing pending agent row with a corrupt message body so the
+        // VC-merge `SyncMessage.fromJson` throws inside the agent merge try.
+        when(() => syncDatabase.findPendingByEntryId('agent-xyz')).thenAnswer(
+          (_) async => OutboxItem(
+            id: 42,
+            message: 'corrupt-agent-json{{{',
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            subject: 'agentEntity:agent-xyz',
+            priority: OutboxPriority.low.index,
+          ),
+        );
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 1);
+
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-xyz',
+          agentId: 'agent-xyz',
+          kind: 'task_agent',
+          displayName: 'Updated',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-2',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: newVc,
+        );
+
+        await service.enqueueMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'enqueueMessage.agentMerge',
+          ),
+        ).called(1);
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('(no VC merge)')),
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+        // The merge still proceeds (without merged covered clocks) and
+        // updates the existing pending row rather than inserting fresh.
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 42,
+            newMessage: any(named: 'newMessage'),
+            newSubject: 'agentEntity:agent-xyz',
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('sent-outbox prune', () {
@@ -5660,11 +6368,11 @@ void main() {
             ),
           ).called(1);
           verify(
-            () => loggingService.captureEvent(
+            () => loggingService.log(
+              LogDomain.sync,
               any<String>(
                 that: contains('prune.sent removed=42'),
               ),
-              domain: 'OUTBOX',
               subDomain: 'prune',
             ),
           ).called(1);
@@ -5791,9 +6499,9 @@ void main() {
             ),
           ).called(1);
           verifyNever(
-            () => loggingService.captureEvent(
+            () => loggingService.log(
+              LogDomain.sync,
               any<String>(),
-              domain: 'OUTBOX',
               subDomain: 'prune',
             ),
           );
@@ -5839,11 +6547,11 @@ void main() {
             ..flushMicrotasks();
 
           verify(
-            () => loggingService.captureException(
+            () => loggingService.error(
+              LogDomain.sync,
               any<Object>(),
-              domain: 'OUTBOX',
-              subDomain: 'prune',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'prune',
             ),
           ).called(1);
         });

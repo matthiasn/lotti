@@ -6,6 +6,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -201,7 +202,7 @@ Future<void> _drainBridgeCoordinatorMicrotasks() async {
 
 void main() {
   late SyncDatabase db;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late InboundQueue queue;
   late MockMatrixClient client;
   late CachedStreamController<SyncUpdate> syncCtl;
@@ -213,7 +214,7 @@ void main() {
 
   setUp(() {
     db = SyncDatabase(inMemoryDatabase: true);
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     queue = InboundQueue(db: db, logging: logging);
     client = MockMatrixClient();
     syncCtl = CachedStreamController<SyncUpdate>();
@@ -255,9 +256,9 @@ void main() {
     syncCtl.add(_nonLimitedSyncFor(roomId));
     await Future<void>.delayed(Duration.zero);
     verifyNever(
-      () => logging.captureEvent(
+      () => logging.log(
+        any<LogDomain>(),
         any<String>(that: contains('queue.bridge.skip reason=noRoom')),
-        domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
       ),
     );
@@ -272,9 +273,9 @@ void main() {
       syncCtl.add(_limitedSyncFor(roomId));
       await Future<void>.delayed(Duration.zero);
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('queue.bridge.skip reason=noRoom')),
-          domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
@@ -299,9 +300,9 @@ void main() {
       expect(runner.calls.single.room, same(room));
       expect(runner.calls.single.untilTimestamp, isNull);
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('queue.bridge.start mode=fresh')),
-          domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
@@ -331,11 +332,11 @@ void main() {
       expect(runner.calls.single.untilTimestamp, 5000);
       expect(runner.calls.single.anchorEventId, r'$anchor-event');
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(
             that: contains('queue.bridge.start mode=reconnect.forward'),
           ),
-          domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
@@ -358,11 +359,11 @@ void main() {
       expect(runner.calls.single.untilTimestamp, 1000);
       expect(runner.calls.single.anchorEventId, isNull);
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(
             that: contains('queue.bridge.start mode=reconnect.backward'),
           ),
-          domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
@@ -392,11 +393,11 @@ void main() {
       );
       await coordinator.bridgeNow();
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain', that: contains('bootstrap')),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain', that: contains('bootstrap')),
         ),
       ).called(1);
       await retried.future.timeout(const Duration(seconds: 2));
@@ -410,9 +411,9 @@ void main() {
     syncCtl.add(_limitedSyncFor('!wrongRoom:example.org'));
     await Future<void>.delayed(Duration.zero);
     verifyNever(
-      () => logging.captureEvent(
+      () => logging.log(
+        any<LogDomain>(),
         any<String>(that: contains('queue.bridge.skip')),
-        domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
       ),
     );
@@ -439,14 +440,14 @@ void main() {
       syncCtl.addError(StateError('sync pipe broken'), StackTrace.empty);
       await Future<void>.delayed(Duration.zero);
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any(named: 'domain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any(
             named: 'subDomain',
             that: contains('subscription'),
           ),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
       ).called(1);
       await coordinator.stop();
@@ -507,11 +508,11 @@ void main() {
       );
       await coordinator.bridgeNow();
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(
             that: contains('queue.bridge.skip reason=roomChanged'),
           ),
-          domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
@@ -527,7 +528,7 @@ void main() {
     (scenario) async {
       final generatedClient = MockMatrixClient();
       final generatedSyncCtl = CachedStreamController<SyncUpdate>();
-      final generatedLogging = MockLoggingService();
+      final generatedLogging = MockDomainLogger();
       final generatedRoom = MockRoom();
       final runner = _RecordingRunner();
       when(() => generatedClient.onSync).thenReturn(generatedSyncCtl);
@@ -611,11 +612,11 @@ void main() {
         await coordinator.bridgeNow();
         expect(runner.calls, hasLength(1));
         verifyNever(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(
               that: contains('queue.bridge.incomplete'),
             ),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         );
@@ -645,9 +646,9 @@ void main() {
         await retryCompleted.future.timeout(const Duration(seconds: 2));
         expect(callCount, greaterThanOrEqualTo(2));
         verify(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(that: contains('queue.bridge.incomplete.retry')),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).called(greaterThanOrEqualTo(1));
@@ -667,9 +668,9 @@ void main() {
           maxIncompleteRetries: 2,
         );
         when(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(that: contains('queue.bridge.incomplete.giveUp')),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).thenAnswer((_) {
@@ -678,9 +679,9 @@ void main() {
         await coordinator.bridgeNow();
         await gaveUp.future.timeout(const Duration(seconds: 2));
         verify(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(that: contains('queue.bridge.incomplete.giveUp')),
-            domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
         ).called(greaterThanOrEqualTo(1));
@@ -857,14 +858,14 @@ void main() {
         await coordinator.bridgeNow();
 
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(
               named: 'subDomain',
               that: endsWith('.onCompleted'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
 

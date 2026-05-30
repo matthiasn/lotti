@@ -5,11 +5,10 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
-const _logDomain = 'sync';
 const _logSub = 'queue.apply';
 
 /// Bridges [InboundWorker] to the existing
@@ -40,7 +39,7 @@ class QueueApplyAdapter {
 
   final SyncEventProcessor _processor;
   final JournalDb _journalDb;
-  final LoggingService _logging;
+  final DomainLogger _logging;
 
   /// Cached prepare outcomes keyed by `eventId`, populated by
   /// [_prepareBatch] and drained one entry at a time by [_applyOne].
@@ -111,11 +110,11 @@ class QueueApplyAdapter {
     try {
       event = entry.toEvent(room);
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.deserialise',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.deserialise',
       );
       return const _PreparedState.terminal(ApplyOutcome.permanentSkip);
     }
@@ -143,19 +142,19 @@ class QueueApplyAdapter {
       prepared = await _processor.prepare(event: event);
     } on IOException catch (error, stackTrace) {
       if (_looksLikePendingAttachment(error)) {
-        _logging.captureException(
+        _logging.error(
+          LogDomain.sync,
           error,
-          domain: _logDomain,
-          subDomain: '$_logSub.prepare.pendingAttachment',
           stackTrace: stackTrace,
+          subDomain: '$_logSub.prepare.pendingAttachment',
         );
         return const _PreparedState.terminal(ApplyOutcome.pendingAttachment);
       }
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.prepare.retriable',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.prepare.retriable',
       );
       return const _PreparedState.terminal(ApplyOutcome.retriable);
     } catch (error, stackTrace) {
@@ -163,18 +162,18 @@ class QueueApplyAdapter {
       // …) are not transient; retrying them just burns attempts and
       // keeps the entry in the queue until maxAttempts gives up. Treat
       // them as permanent so a logic bug does not stall the worker.
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.prepare.failed',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.prepare.failed',
       );
       return const _PreparedState.terminal(ApplyOutcome.permanentSkip);
     }
     if (prepared == null) {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.apply.undeserialisable eventId=${entry.eventId}',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       return const _PreparedState.terminal(ApplyOutcome.permanentSkip);
@@ -234,27 +233,27 @@ class QueueApplyAdapter {
       return ApplyOutcome.applied;
     } on IOException catch (error, stackTrace) {
       if (_looksLikePendingAttachment(error)) {
-        _logging.captureException(
+        _logging.error(
+          LogDomain.sync,
           error,
-          domain: _logDomain,
-          subDomain: '$_logSub.apply.pendingAttachment',
           stackTrace: stackTrace,
+          subDomain: '$_logSub.apply.pendingAttachment',
         );
         return ApplyOutcome.pendingAttachment;
       }
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.apply.retriable',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.apply.retriable',
       );
       return ApplyOutcome.retriable;
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.apply.retriable',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.apply.retriable',
       );
       return ApplyOutcome.retriable;
     }

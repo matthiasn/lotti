@@ -15,6 +15,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 const _categoryId = 'cat-1';
 
 /// Pumps a [ChatInterface] wrapped in the required providers and localization.
@@ -72,6 +74,7 @@ void main() {
   setUp(() async {
     await getIt.reset();
     getIt.registerSingleton<LoggingService>(_FakeLoggingService());
+    ensureDomainLoggerRegistered();
   });
 
   testWidgets(

@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -25,7 +26,7 @@ void main() {
     late MockAiConfigRepository mockAiConfigRepository;
     late MockCloudInferenceRepository mockCloudInferenceRepository;
     late MockTaskSummaryRepository mockTaskSummaryRepository;
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockDomainLogger;
 
     final testDate = DateTime(2024);
     const testCategoryId = 'test-category-123';
@@ -34,13 +35,13 @@ void main() {
       mockAiConfigRepository = MockAiConfigRepository();
       mockCloudInferenceRepository = MockCloudInferenceRepository();
       mockTaskSummaryRepository = MockTaskSummaryRepository();
-      mockLoggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
 
       processor = ChatMessageProcessor(
         aiConfigRepository: mockAiConfigRepository,
         cloudInferenceRepository: mockCloudInferenceRepository,
         taskSummaryRepository: mockTaskSummaryRepository,
-        loggingService: mockLoggingService,
+        loggingService: mockDomainLogger,
       );
     });
 
@@ -228,11 +229,11 @@ void main() {
         final decoded = jsonDecode(result) as Map<String, dynamic>;
         expect(decoded['error'], contains('Failed to retrieve task summaries'));
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.chat,
             any<Exception>(),
-            domain: 'ChatMessageProcessor',
-            subDomain: 'processTaskSummaryTool',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'processTaskSummaryTool',
           ),
         ).called(1);
       });
@@ -280,11 +281,11 @@ void main() {
             contains('invalid'),
           );
           verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'ChatMessageProcessor',
+            () => mockDomainLogger.error(
+              LogDomain.chat,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: 'processTaskSummaryTool',
-              stackTrace: any<dynamic>(named: 'stackTrace'),
             ),
           ).called(1);
         },
@@ -333,11 +334,11 @@ void main() {
             contains('invalid'),
           );
           verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'ChatMessageProcessor',
+            () => mockDomainLogger.error(
+              LogDomain.chat,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: 'processTaskSummaryTool',
-              stackTrace: any<dynamic>(named: 'stackTrace'),
             ),
           ).called(1);
         },
@@ -367,11 +368,11 @@ void main() {
         final decoded = jsonDecode(result) as Map<String, dynamic>;
         expect(decoded['error'], contains('Failed to retrieve task summaries'));
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'ChatMessageProcessor',
+          () => mockDomainLogger.error(
+            LogDomain.chat,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'processTaskSummaryTool',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -764,9 +765,9 @@ void main() {
         // The toolCallId is correctly passed in processTaskSummaryTool test
 
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            LogDomain.chat,
             'Processing 1 tool calls',
-            domain: 'ChatMessageProcessor',
             subDomain: 'processToolCalls',
           ),
         ).called(1);
@@ -1261,7 +1262,7 @@ void main() {
           aiConfigRepository: mockAiConfigRepository,
           cloudInferenceRepository: mockCloudInferenceRepository,
           taskSummaryRepository: mockTaskSummaryRepository,
-          loggingService: mockLoggingService,
+          loggingService: mockDomainLogger,
         );
 
         when(

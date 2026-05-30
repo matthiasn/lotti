@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:media_kit/media_kit.dart';
@@ -53,7 +53,7 @@ class AudioPlayerController extends _$AudioPlayerController {
 
   Player? _audioPlayer;
   bool _hasOpenAudio = false;
-  LoggingService? _loggingService;
+  DomainLogger? _loggingService;
   Duration _completionDelay = const Duration(
     milliseconds: AudioPlayerConstants.completionDelayMs,
   );
@@ -75,9 +75,9 @@ class AudioPlayerController extends _$AudioPlayerController {
 
   void _initLogging() {
     try {
-      _loggingService = getIt<LoggingService>();
+      _loggingService = getIt<DomainLogger>();
     } catch (_) {
-      // No LoggingService registered — nothing we can log this miss to.
+      // No DomainLogger registered — nothing we can log this miss to.
       // Production startup always registers it, so this catch is purely
       // defensive against test/dev edge cases where the controller is
       // constructed before service wiring.
@@ -109,11 +109,11 @@ class AudioPlayerController extends _$AudioPlayerController {
       if (createdPlayer != null) {
         unawaited(createdPlayer.dispose());
       }
-      _loggingService?.captureException(
+      _loggingService?.error(
+        LogDomain.speech,
         exception,
-        domain: 'audio_player_controller',
-        subDomain: 'ensurePlayer',
         stackTrace: stackTrace,
+        subDomain: 'ensurePlayer',
       );
       return null;
     }
@@ -232,11 +232,11 @@ class AudioPlayerController extends _$AudioPlayerController {
       final totalDuration = player.state.duration;
       state = state.copyWith(totalDuration: totalDuration);
     } catch (exception, stackTrace) {
-      _loggingService?.captureException(
+      _loggingService?.error(
+        LogDomain.speech,
         exception,
-        domain: 'audio_player_controller',
-        subDomain: 'setAudioNote',
         stackTrace: stackTrace,
+        subDomain: 'setAudioNote',
       );
     }
   }
@@ -283,11 +283,11 @@ class AudioPlayerController extends _$AudioPlayerController {
       await player.play();
       state = state.copyWith(status: AudioPlayerStatus.playing);
     } catch (exception, stackTrace) {
-      _loggingService?.captureException(
+      _loggingService?.error(
+        LogDomain.speech,
         exception,
-        domain: 'audio_player_controller',
-        subDomain: 'play',
         stackTrace: stackTrace,
+        subDomain: 'play',
       );
     }
   }
@@ -320,11 +320,11 @@ class AudioPlayerController extends _$AudioPlayerController {
         buffered: newBuffered,
       );
     } catch (exception, stackTrace) {
-      _loggingService?.captureException(
+      _loggingService?.error(
+        LogDomain.speech,
         exception,
-        domain: 'audio_player_controller',
-        subDomain: 'seek',
         stackTrace: stackTrace,
+        subDomain: 'seek',
       );
     }
   }
@@ -338,11 +338,11 @@ class AudioPlayerController extends _$AudioPlayerController {
       await player.setRate(speed);
       state = state.copyWith(speed: speed);
     } catch (exception, stackTrace) {
-      _loggingService?.captureException(
+      _loggingService?.error(
+        LogDomain.speech,
         exception,
-        domain: 'audio_player_controller',
-        subDomain: 'setSpeed',
         stackTrace: stackTrace,
+        subDomain: 'setSpeed',
       );
     }
   }
@@ -359,11 +359,11 @@ class AudioPlayerController extends _$AudioPlayerController {
         pausedAt: state.progress,
       );
     } catch (exception, stackTrace) {
-      _loggingService?.captureException(
+      _loggingService?.error(
+        LogDomain.speech,
         exception,
-        domain: 'audio_player_controller',
-        subDomain: 'pause',
         stackTrace: stackTrace,
+        subDomain: 'pause',
       );
     }
   }

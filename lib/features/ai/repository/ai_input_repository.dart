@@ -267,9 +267,9 @@ class AiInputRepository {
       return encoder.convert(data);
     } catch (error, stackTrace) {
       _domainLogger?.error(
-        LogDomains.ai,
-        'buildProjectContextJsonForTask failed',
-        error: error,
+        LogDomain.ai,
+        error,
+        message: 'buildProjectContextJsonForTask failed',
         stackTrace: stackTrace,
         subDomain: 'AiInputRepository',
       );
@@ -340,9 +340,9 @@ class AiInputRepository {
       });
     } catch (error, stackTrace) {
       _domainLogger?.error(
-        LogDomains.ai,
-        'buildRelatedProjectTasksJson failed',
-        error: error,
+        LogDomain.ai,
+        error,
+        message: 'buildRelatedProjectTasksJson failed',
         stackTrace: stackTrace,
         subDomain: 'AiInputRepository',
       );
@@ -407,9 +407,9 @@ class AiInputRepository {
       });
     } catch (error, stackTrace) {
       _domainLogger?.error(
-        LogDomains.ai,
-        'buildRelatedTaskDetailsJson failed',
-        error: error,
+        LogDomain.ai,
+        error,
+        message: 'buildRelatedTaskDetailsJson failed',
         stackTrace: stackTrace,
         subDomain: 'AiInputRepository',
       );

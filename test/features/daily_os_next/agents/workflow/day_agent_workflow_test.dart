@@ -112,7 +112,7 @@ void main() {
       () => domainLogger.error(
         any(),
         any(),
-        error: any(named: 'error'),
+        message: any(named: 'message'),
         stackTrace: any(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
       ),
@@ -1451,8 +1451,8 @@ void main() {
       verify(
         () => domainLogger.error(
           any(),
-          'failed to persist day-agent user message',
-          error: any(named: 'error'),
+          any(),
+          message: 'failed to persist day-agent user message',
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),
@@ -1589,8 +1589,8 @@ void main() {
       verify(
         () => domainLogger.error(
           any(),
-          'day-agent wake failed',
-          error: any(named: 'error'),
+          any(),
+          message: 'day-agent wake failed',
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),
@@ -1618,8 +1618,8 @@ void main() {
       verify(
         () => domainLogger.error(
           any(),
-          'day-agent wake failed',
-          error: any(named: 'error'),
+          any(),
+          message: 'day-agent wake failed',
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),
@@ -1627,8 +1627,8 @@ void main() {
       verify(
         () => domainLogger.error(
           any(),
-          'failed to update day-agent failure count',
-          error: any(named: 'error'),
+          any(),
+          message: 'failed to update day-agent failure count',
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),

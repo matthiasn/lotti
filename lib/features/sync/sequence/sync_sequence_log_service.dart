@@ -8,7 +8,6 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:meta/meta.dart';
 
@@ -122,7 +121,7 @@ class SyncSequenceLogService {
 
   final SyncDatabase _syncDatabase;
   final VectorClockService _vectorClockService;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
   void Function()? onMissingEntriesDetected;
   int _deferredMissingEntriesDepth = 0;
@@ -132,15 +131,15 @@ class SyncSequenceLogService {
     final sub = subDomain ?? 'sequence';
     final domainLogger = _domainLogger;
     if (domainLogger != null) {
-      domainLogger.log(LogDomains.sync, message, subDomain: sub);
+      domainLogger.log(LogDomain.sync, message, subDomain: sub);
       return;
     }
     // Fallback for callers that did not inject a DomainLogger (e.g. tests).
     // Emitting directly under the `sync` domain keeps sync-file routing in
-    // LoggingService working so the log line still lands in the sync file.
-    _loggingService.captureEvent(
+    // DomainLogger working so the log line still lands in the sync file.
+    _loggingService.log(
+      LogDomain.sync,
       message,
-      domain: LogDomains.sync,
       subDomain: sub,
     );
   }
@@ -166,11 +165,11 @@ class SyncSequenceLogService {
     try {
       callback();
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'missingEntriesDetected',
         stackTrace: st,
+        subDomain: 'missingEntriesDetected',
       );
     }
   }

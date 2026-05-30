@@ -13,6 +13,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
@@ -56,6 +57,7 @@ void main() {
       getIt.unregister<LoggingService>();
     }
     getIt.registerSingleton<LoggingService>(mockLoggingService);
+    ensureDomainLoggerRegistered();
 
     // Setup mock player
     when(() => mockPlayer.state).thenReturn(mockPlayerState);

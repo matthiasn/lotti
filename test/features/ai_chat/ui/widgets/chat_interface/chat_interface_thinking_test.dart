@@ -11,7 +11,7 @@ import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -92,7 +92,7 @@ Future<void> _sendMessage(WidgetTester tester, String text) async {
 
 void main() {
   late MockChatRepository mockRepo;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
 
   setUpAll(() {
     registerFallbackValue(FakeChatSession());
@@ -101,15 +101,15 @@ void main() {
   setUp(() {
     GetIt.instance.pushNewScope();
     mockRepo = MockChatRepository();
-    mockLoggingService = MockLoggingService();
-    GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
+    mockLoggingService = MockDomainLogger();
+    GetIt.instance.registerSingleton<DomainLogger>(mockLoggingService);
 
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
+      () => mockLoggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any<String?>(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) async {});
   });

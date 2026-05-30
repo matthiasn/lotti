@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -17,7 +18,7 @@ class MockMatrixClient extends Mock implements Client {}
 void main() {
   late MockMatrixSyncGateway mockGateway;
   late MockSettingsDb mockSettingsDb;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late SyncRoomManager manager;
   late StreamController<RoomInviteEvent> inviteController;
   late MockRoom mockRoom;
@@ -27,7 +28,7 @@ void main() {
     registerFallbackValue(StackTrace.empty);
     mockGateway = MockMatrixSyncGateway();
     mockSettingsDb = MockSettingsDb();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
     inviteController = StreamController<RoomInviteEvent>.broadcast();
     mockRoom = MockRoom();
     mockClient = MockMatrixClient();
@@ -38,18 +39,18 @@ void main() {
       () => mockSettingsDb.itemByKey(any<String>()),
     ).thenAnswer((_) async => null);
     when(
-      () => mockLoggingService.captureEvent(
+      () => mockLoggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) {});
     when(
-      () => mockLoggingService.captureException(
+      () => mockLoggingService.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -300,9 +301,9 @@ void main() {
       await manager.hydrateRoomSnapshot(client: mockClient);
 
       verify(
-        () => mockLoggingService.captureEvent(
+        () => mockLoggingService.log(
+          LogDomain.sync,
           'No saved room ID found during hydrateRoomSnapshot.',
-          domain: 'SYNC_ROOM_MANAGER',
           subDomain: 'hydrate',
         ),
       ).called(1);
@@ -344,9 +345,9 @@ void main() {
       });
 
       verify(
-        () => mockLoggingService.captureEvent(
-          contains('Failed to resolve room !missing:room'),
-          domain: 'SYNC_ROOM_MANAGER',
+        () => mockLoggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('Failed to resolve room !missing:room')),
           subDomain: 'hydrate',
         ),
       ).called(1);
@@ -379,11 +380,11 @@ void main() {
       expect(manager.currentRoomId, '!room:server');
       verifyNever(() => mockSettingsDb.removeSettingsItem(matrixRoomKey));
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLoggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'SYNC_ROOM_MANAGER',
-          subDomain: 'leaveRoom',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'leaveRoom',
         ),
       ).called(1);
     });

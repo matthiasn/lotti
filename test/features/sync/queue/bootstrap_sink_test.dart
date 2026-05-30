@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/queue/bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -187,7 +188,7 @@ extension _AnyGeneratedBootstrapScenario on glados.Any {
 
 void main() {
   late SyncDatabase db;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late InboundQueue queue;
 
   setUpAll(() {
@@ -197,7 +198,7 @@ void main() {
 
   setUp(() {
     db = SyncDatabase(inMemoryDatabase: true);
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     queue = InboundQueue(db: db, logging: logging);
   });
 
@@ -313,16 +314,16 @@ void main() {
     'generated pages preserve accepted counts, cancellation, and timeouts',
     (scenario) async {
       final generatedQueue = MockInboundQueue();
-      final generatedLogging = MockLoggingService();
+      final generatedLogging = MockDomainLogger();
       final cancelCompleter = Completer<void>();
       final appendedPages = <List<String>>[];
       final drainTimeouts = <bool>[];
       final expectedPageOperations = <_GeneratedBootstrapOperation>[];
 
       when(
-        () => generatedLogging.captureEvent(
+        () => generatedLogging.log(
+          any<LogDomain>(),
           any<String>(),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenReturn(null);

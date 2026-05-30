@@ -11,13 +11,13 @@ import '../../mocks/mocks.dart';
 void main() {
   late MockJournalDb mockDb;
   late MockLabelsRepository mockRepo;
-  late MockLoggingService mockLogging;
+  late MockDomainLogger mockLogging;
   late LabelAssignmentProcessor processor;
 
   setUp(() {
     mockDb = MockJournalDb();
     mockRepo = MockLabelsRepository();
-    mockLogging = MockLoggingService();
+    mockLogging = MockDomainLogger();
     getIt.registerSingleton<LabelAssignmentEventService>(
       LabelAssignmentEventService(),
     );

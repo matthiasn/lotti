@@ -142,7 +142,7 @@ class RunningTimerUpdateHandler {
     );
 
     _domainLogger?.log(
-      LogDomains.agentWorkflow,
+      LogDomain.agentWorkflow,
       'Updated running timer ${DomainLogger.sanitizeId(timerId)} text '
       'linked to ${DomainLogger.sanitizeId(sourceTaskId)}',
       subDomain: _sub,

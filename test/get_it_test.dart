@@ -8,7 +8,7 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mocks.dart';
@@ -33,23 +33,24 @@ void main() {
 
   group('safeLog', () {
     test('delegates to logging service on success messages', () {
-      final loggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       when(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          any<LogDomain>(),
           any<String>(),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) {});
 
-      getIt.registerSingleton<LoggingService>(loggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       safeLogForTesting('hello', isError: false);
 
       verify(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.settings,
           'hello',
-          domain: 'SERVICE_REGISTRATION',
+          subDomain: 'SERVICE_REGISTRATION',
         ),
       ).called(1);
     });
@@ -70,16 +71,16 @@ void main() {
     });
 
     test('uses DevLogger when logging service throws', () {
-      final loggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       when(
-        () => loggingService.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
           subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenThrow(Exception('fail'));
 
-      getIt.registerSingleton<LoggingService>(loggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       DevLogger.clear();
 
@@ -100,23 +101,24 @@ void main() {
 
   group('registerLazyServiceForTesting', () {
     test('registers lazy singleton and logs lifecycle events', () {
-      final loggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       when(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          any<LogDomain>(),
           any<String>(),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) {});
 
-      getIt.registerSingleton<LoggingService>(loggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       registerLazyServiceForTesting<String>(() => 'value', 'TestService');
 
       verify(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.settings,
           'Successfully registered lazy TestService',
-          domain: 'SERVICE_REGISTRATION',
+          subDomain: 'SERVICE_REGISTRATION',
         ),
       ).called(1);
 
@@ -124,24 +126,25 @@ void main() {
 
       expect(resolved, 'value');
       verify(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.settings,
           'Successfully created lazy instance of TestService',
-          domain: 'SERVICE_REGISTRATION',
+          subDomain: 'SERVICE_REGISTRATION',
         ),
       ).called(1);
     });
 
     test('logs and rethrows when factory fails', () {
-      final loggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       when(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          any<LogDomain>(),
           any<String>(),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) {});
 
-      getIt.registerSingleton<LoggingService>(loggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       registerLazyServiceForTesting<int>(
         () => throw StateError('broken'),
@@ -157,36 +160,36 @@ void main() {
       );
 
       verify(
-        () => loggingService.captureEvent(
-          any<String>(
+        () => mockDomainLogger.error(
+          LogDomain.settings,
+          any<Object>(
             that: contains('Failed to create lazy instance of BrokenService'),
           ),
-          domain: 'SERVICE_REGISTRATION',
           subDomain: 'error',
         ),
       ).called(1);
     });
 
     test('logs registration failure when duplicate service detected', () {
-      final loggingService = MockLoggingService();
+      final mockDomainLogger = MockDomainLogger();
       when(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          any<LogDomain>(),
           any<String>(),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) {});
 
-      getIt.registerSingleton<LoggingService>(loggingService);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       registerLazyServiceForTesting<String>(() => 'first', 'DupService');
 
       registerLazyServiceForTesting<String>(() => 'second', 'DupService');
 
       final captured = verify(
-        () => loggingService.captureEvent(
-          captureAny<String>(),
-          domain: 'SERVICE_REGISTRATION',
+        () => mockDomainLogger.error(
+          LogDomain.settings,
+          captureAny<Object>(),
           subDomain: 'error',
         ),
       ).captured;
@@ -201,7 +204,7 @@ void main() {
   });
 
   group('checkAndPopulateSequenceLogForTesting', () {
-    late MockLoggingService loggingService;
+    late MockDomainLogger mockDomainLogger;
     late MockSettingsDb settingsDb;
     late MockSyncDatabase syncDatabase;
     late MockJournalDb journalDb;
@@ -211,7 +214,7 @@ void main() {
     const settingsKey = 'maintenance_sequenceLogPopulatedV2';
 
     setUp(() {
-      loggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
       settingsDb = MockSettingsDb();
       syncDatabase = MockSyncDatabase();
       journalDb = MockJournalDb();
@@ -219,23 +222,23 @@ void main() {
       sequenceLogService = MockSyncSequenceLogService();
 
       when(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          any<LogDomain>(),
           any<String>(),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) {});
       when(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
       getIt
-        ..registerSingleton<LoggingService>(loggingService)
+        ..registerSingleton<DomainLogger>(mockDomainLogger)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<SyncDatabase>(syncDatabase)
         ..registerSingleton<JournalDb>(journalDb)
@@ -434,16 +437,16 @@ void main() {
       ).called(1);
       // Verify logging events
       verify(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.database,
           any<String>(that: contains('Starting automatic sequence log')),
-          domain: 'MAINTENANCE',
           subDomain: 'sequenceLogPopulation',
         ),
       ).called(1);
       verify(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.database,
           any<String>(that: contains('(V2) completed')),
-          domain: 'MAINTENANCE',
           subDomain: 'sequenceLogPopulation',
         ),
       ).called(1);

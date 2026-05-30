@@ -2,53 +2,55 @@ import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 
-/// Domain constants for structured logging.
-///
-/// Each domain corresponds to a config flag that can be toggled
-/// independently in Settings > Advanced > Logging Domains.
-abstract final class LogDomains {
-  static const agentRuntime = 'agent_runtime';
-  static const agentWorkflow = 'agent_workflow';
-  static const sync = 'sync';
-  static const ai = 'ai';
-}
+export 'package:lotti/services/logging_domains.dart';
 
-/// Lightweight domain-specific logging layer on top of [LoggingService].
+/// Domain-aware logging layer on top of [LoggingService].
 ///
-/// Provides:
-/// - PII-safe sanitization helpers for entity IDs.
-/// - Per-domain enabled check (reads from [enabledDomains]).
-/// - Delegates to [LoggingService] for the main file sink.
-/// - Writes an additional **per-domain log file** at
-///   `{documentsDir}/logs/{domain}-YYYY-MM-DD.log` so each domain's
-///   telemetry can be reviewed in isolation.
+/// `DomainLogger` is the single logging entry point for app code. It:
+/// - gates info-level [log] calls on a per-domain enabled flag
+///   ([enabledDomains]), populated from config flags;
+/// - delegates to [LoggingService] (the low-level file sink) for the general
+///   and per-domain log files, plus the daily **full** error log;
+/// - writes a second, **PII-safe** error log (`error-safe-*.log`) that records
+///   the error's runtime type only — never the raw exception string — so it
+///   can be shared/inspected without leaking user-authored content;
+/// - writes a per-domain file at `{documentsDir}/logs/{domain}-YYYY-MM-DD.log`
+///   so each domain's telemetry can be reviewed in isolation ([LogDomain.sync]
+///   routes to the shared `sync-*.log` instead).
 ///
-/// Callers must treat messages as telemetry, not content: never include task
-/// titles, notes, timer summaries, tool argument values, prompt text, model
-/// output, or other user-authored content. Error values are intentionally
-/// logged by type only because arbitrary exception strings can contain the
-/// same content.
+/// Callers must treat [log] messages as telemetry, not content: never include
+/// task titles, notes, timer summaries, tool argument values, prompt text,
+/// model output, or other user-authored content. Exception objects passed to
+/// [error] are recorded in full in the general + daily error log (matching the
+/// historical `captureException` behavior) but only by runtime type in the
+/// PII-safe error log.
 class DomainLogger {
   DomainLogger({required this._loggingService});
 
   final LoggingService _loggingService;
   static final _dateFmt = DateFormat('yyyy-MM-dd');
 
-  /// Set of currently enabled domain names.
+  /// File stem for the daily PII-safe error log.
+  static const String errorSafeLogStem = 'error-safe';
+
+  /// Set of currently enabled domains.
   ///
-  /// Managed externally (e.g. via config flag watchers). When empty, [log]
-  /// is disabled for all domains, while [error] still logs.
-  final Set<String> enabledDomains = {};
+  /// Managed externally (e.g. via config flag watchers in
+  /// `domainLoggerProvider`). When a domain is absent, [log] is a no-op for it,
+  /// while [error] still logs. Mutated in place by `domainLoggerProvider` as
+  /// config flags toggle.
+  final Set<LogDomain> enabledDomains = <LogDomain>{};
 
   /// Log a domain-specific message at the given [level].
   ///
   /// No-op if [domain] is not in [enabledDomains].
   void log(
-    String domain,
+    LogDomain domain,
     String message, {
     String? subDomain,
     InsightLevel level = InsightLevel.info,
@@ -56,68 +58,126 @@ class DomainLogger {
     if (!enabledDomains.contains(domain)) return;
     _loggingService.captureEvent(
       message,
-      domain: domain,
+      domain: domain.wireName,
       subDomain: subDomain,
       level: level,
     );
-    if (_usesCentralFileRouting(domain)) {
-      return;
-    }
+    if (domain.routesToSyncFile) return;
     _appendToDomainFile(
-      domain: domain,
+      domain: domain.wireName,
       level: level.name.toUpperCase(),
       subDomain: subDomain,
       message: message,
     );
   }
 
-  /// Log an error with optional exception and stack trace.
+  /// Log an [error] (with optional [stackTrace] and human-readable [message]).
   ///
-  /// Always logs regardless of [enabledDomains] — errors should never be
-  /// silently swallowed. The error object is recorded by runtime type only so
-  /// arbitrary exception messages cannot leak user-authored content.
+  /// Always logs regardless of [enabledDomains] — errors are never silently
+  /// swallowed. Two destinations:
+  /// - the general + daily **full** error log via [LoggingService], recording
+  ///   the full error string for diagnostics;
+  /// - the daily **PII-safe** error log, recording the error's runtime type
+  ///   only so it can be shared without leaking user-authored content.
   void error(
-    String domain,
-    String message, {
-    Object? error,
+    LogDomain domain,
+    Object error, {
     StackTrace? stackTrace,
     String? subDomain,
+    String? message,
   }) {
-    final fullMessage =
-        '$message'
-        '${error != null ? ' (errorType=${error.runtimeType})' : ''}';
+    // Full, diagnostic description for the general + daily full error log.
+    final fullDescription = fullErrorDescription(error, message);
     _loggingService.captureException(
-      fullMessage,
-      domain: domain,
+      fullDescription,
+      domain: domain.wireName,
       subDomain: subDomain,
       stackTrace: stackTrace,
     );
-    if (_usesCentralFileRouting(domain)) {
-      return;
-    }
-    _appendToDomainFile(
-      domain: domain,
+
+    // PII-safe description: never includes the raw error string. The stack
+    // trace is intentionally omitted — frames can contain absolute paths with
+    // the user's system username, which would leak into this shareable log.
+    final safeDescription = safeErrorDescription(error, message);
+    _appendToSharedFile(
+      fileStem: errorSafeLogStem,
+      domain: domain.wireName,
       level: 'ERROR',
       subDomain: subDomain,
-      message: fullMessage,
+      message: safeDescription,
+    );
+
+    // Per-domain file (skipped for sync, which routes to the shared sync log).
+    if (domain.routesToSyncFile) return;
+    _appendToDomainFile(
+      domain: domain.wireName,
+      level: 'ERROR',
+      subDomain: subDomain,
+      message: fullDescription,
       stackTrace: stackTrace,
     );
   }
 
-  // ── Per-domain file sink ────────────────────────────────────────────────
+  /// Full, diagnostic description of an error: `'<message>: <error>'`, or just
+  /// `'<error>'` when no message is given. Includes the raw error string and is
+  /// only written to the general + daily **full** error log.
+  static String fullErrorDescription(Object error, String? message) {
+    final hasMessage = message != null && message.isNotEmpty;
+    return hasMessage ? '$message: $error' : '$error';
+  }
 
-  bool _usesCentralFileRouting(String domain) =>
-      LoggingService.syncFileDomains.contains(domain);
+  /// PII-safe description of an error: `'<message> (errorType=<Type>)'`, or just
+  /// `'errorType=<Type>'` when no message is given. Never includes the raw
+  /// error string, so it is safe for the shared `error-safe-*.log`.
+  static String safeErrorDescription(Object error, String? message) {
+    final hasMessage = message != null && message.isNotEmpty;
+    final type = 'errorType=${error.runtimeType}';
+    return hasMessage ? '$message ($type)' : type;
+  }
+
+  // ── File sinks ──────────────────────────────────────────────────────────
 
   /// Appends a formatted line to `{documentsDir}/logs/{domain}-YYYY-MM-DD.log`.
-  ///
-  /// Best-effort: file-sink errors are swallowed so logging never interferes
-  /// with app flows. Skipped entirely in test environments.
   void _appendToDomainFile({
     required String domain,
     required String level,
     required String message,
     String? subDomain,
+    StackTrace? stackTrace,
+  }) {
+    final sd = (subDomain == null || subDomain.isEmpty) ? '' : ' $subDomain';
+    _writeLine(
+      fileStem: domain,
+      line: '${_now()} [$level]$sd: $message',
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Appends a formatted line to a shared (multi-domain) log file, including
+  /// the [domain] in the line since the file is not domain-scoped.
+  void _appendToSharedFile({
+    required String fileStem,
+    required String domain,
+    required String level,
+    required String message,
+    String? subDomain,
+    StackTrace? stackTrace,
+  }) {
+    final sd = (subDomain == null || subDomain.isEmpty) ? '' : ' $subDomain';
+    _writeLine(
+      fileStem: fileStem,
+      line: '${_now()} [$level] $domain$sd: $message',
+      stackTrace: stackTrace,
+    );
+  }
+
+  String _now() => DateTime.now().toIso8601String();
+
+  /// Best-effort synchronous append. File-sink errors are swallowed so logging
+  /// never interferes with app flows. Skipped entirely in test environments.
+  void _writeLine({
+    required String fileStem,
+    required String line,
     StackTrace? stackTrace,
   }) {
     if (isTestEnv) return;
@@ -128,10 +188,7 @@ class DomainLogger {
         logDir.createSync(recursive: true);
       }
       final date = _dateFmt.format(DateTime.now());
-      final file = File('${logDir.path}/$domain-$date.log');
-      final ts = DateTime.now().toIso8601String();
-      final sd = (subDomain == null || subDomain.isEmpty) ? '' : ' $subDomain';
-      final line = '$ts [$level]$sd: $message';
+      final file = File('${logDir.path}/$fileStem-$date.log');
       final buffer = StringBuffer(line)..writeln();
       if (stackTrace != null) {
         buffer.writeln(stackTrace);

@@ -341,7 +341,7 @@ class VectorClockService {
     // service (e.g. unit test seeding the SettingsDb counter) does not crash.
     if (getIt.isRegistered<DomainLogger>()) {
       getIt<DomainLogger>().error(
-        LogDomains.sync,
+        LogDomain.sync,
         'VC counter burnt host=$hostId counter=$counter '
         '(reservation released; counter already persisted)',
         subDomain: 'vc.burn',
@@ -354,10 +354,11 @@ class VectorClockService {
     } catch (error, stackTrace) {
       if (getIt.isRegistered<DomainLogger>()) {
         getIt<DomainLogger>().error(
-          LogDomains.sync,
-          'VC burn broadcast handler threw — counter $counter will fall back '
-          'to reactive backfill resolution',
-          error: error,
+          LogDomain.sync,
+          error,
+          message:
+              'VC burn broadcast handler threw — counter $counter will fall back '
+              'to reactive backfill resolution',
           stackTrace: stackTrace,
           subDomain: 'vc.burn.handler',
         );
@@ -395,7 +396,7 @@ class VectorClockService {
 
     if (getIt.isRegistered<DomainLogger>()) {
       getIt<DomainLogger>().error(
-        LogDomains.sync,
+        LogDomain.sync,
         'VC counter burnt host=$hostId counter=$counter '
         '(unbound vector clock; $reason)',
         subDomain: 'vc.burn.unbound',
@@ -416,10 +417,11 @@ class VectorClockService {
     } catch (error, stackTrace) {
       if (getIt.isRegistered<DomainLogger>()) {
         getIt<DomainLogger>().error(
-          LogDomains.sync,
-          'VC reservation ledger write failed host=$hostId counter=$counter; '
-          'counter already persisted and will fall back to reactive backfill',
-          error: error,
+          LogDomain.sync,
+          error,
+          message:
+              'VC reservation ledger write failed host=$hostId counter=$counter; '
+              'counter already persisted and will fall back to reactive backfill',
           stackTrace: stackTrace,
           subDomain: 'vc.reserve.ledger',
         );
@@ -438,10 +440,11 @@ class VectorClockService {
     } catch (error, stackTrace) {
       if (getIt.isRegistered<DomainLogger>()) {
         getIt<DomainLogger>().error(
-          LogDomains.sync,
-          'VC burn-pending ledger write failed host=$hostId counter=$counter; '
-          'counter already persisted and will fall back to reactive backfill',
-          error: error,
+          LogDomain.sync,
+          error,
+          message:
+              'VC burn-pending ledger write failed host=$hostId counter=$counter; '
+              'counter already persisted and will fall back to reactive backfill',
           stackTrace: stackTrace,
           subDomain: 'vc.burn.ledger',
         );

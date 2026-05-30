@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -244,7 +245,7 @@ void main() {
   late MockSyncDatabase mockSyncDatabase;
   late MockOutboxService mockOutboxService;
   late MockVectorClockService mockVcService;
-  late MockLoggingService mockLogging;
+  late MockDomainLogger mockLogging;
 
   const myHostId = 'my-host-uuid';
   const aliceHostId = 'alice-host-uuid';
@@ -269,7 +270,7 @@ void main() {
     mockSyncDatabase = MockSyncDatabase();
     mockOutboxService = MockOutboxService();
     mockVcService = MockVectorClockService();
-    mockLogging = MockLoggingService();
+    mockLogging = MockDomainLogger();
 
     when(() => mockVcService.getHost()).thenAnswer((_) async => myHostId);
     // Default: no pending backfill entries in outbox
@@ -296,18 +297,18 @@ void main() {
       ),
     ).thenAnswer((_) async => 0);
     when(
-      () => mockLogging.captureEvent(
+      () => mockLogging.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any(named: 'domain'),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
     when(
-      () => mockLogging.captureException(
+      () => mockLogging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -1150,11 +1151,11 @@ void main() {
 
         // Should log the exception
         verify(
-          () => mockLogging.captureException(
+          () => mockLogging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
           ),
         ).called(1);
 
@@ -1164,11 +1165,11 @@ void main() {
 
         // Exception should be logged again (timer still firing)
         verify(
-          () => mockLogging.captureException(
+          () => mockLogging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
           ),
         ).called(1);
 
@@ -1711,11 +1712,11 @@ void main() {
 
           // Should log the exception
           verify(
-            () => mockLogging.captureException(
+            () => mockLogging.error(
+              any<LogDomain>(),
               any<Object>(),
-              domain: any(named: 'domain'),
-              subDomain: any(named: 'subDomain'),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: any(named: 'subDomain'),
             ),
           ).called(1);
 
