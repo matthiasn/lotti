@@ -139,5 +139,59 @@ void main() {
         );
       }
     }, tags: 'glados');
+
+    glados.Glados2(
+      glados.any.projectionDag,
+      glados.any.shuffleSeed,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'deleted and non-messagePrev links never affect causalParents',
+      (
+        dag,
+        seed,
+      ) {
+        if (dag.events.isEmpty) return;
+        final messages = [
+          for (final e in dag.events)
+            makeTestMessage(id: e.id, vectorClock: e.vectorClock),
+        ];
+        final cleanLinks = [
+          for (final e in dag.events)
+            for (final parent in e.causalParents) _prevLink(e.id, parent),
+        ];
+
+        // Noise the adapter must ignore: a *deleted* messagePrev edge and a
+        // non-messagePrev (agentTask) edge between two real messages.
+        final a = dag.events[seed % dag.events.length].id;
+        final b = dag.events[(seed + 1) % dag.events.length].id;
+        final noise = [
+          _prevLink(a, b, deletedAt: DateTime(2024)),
+          AgentLink.agentTask(
+            id: 'noise-$a-$b',
+            fromId: a,
+            toId: b,
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+          ),
+        ];
+
+        String parentsOf(List<AgentLink> links, String id) =>
+            agentEventsFromLog(
+              messages,
+              links,
+            ).firstWhere((e) => e.id == id).causalParents.join(',');
+
+        // Adding the noise leaves every event's causalParents unchanged.
+        for (final e in dag.events) {
+          expect(
+            parentsOf([...cleanLinks, ...noise], e.id),
+            parentsOf(cleanLinks, e.id),
+            reason: '$dag',
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 }
