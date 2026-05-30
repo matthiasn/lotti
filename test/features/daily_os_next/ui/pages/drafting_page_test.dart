@@ -195,6 +195,20 @@ class _FakeAgent implements DayAgentInterface {
   }) async => const [];
 }
 
+class _ThrowingDraftAgent extends _FakeAgent {
+  @override
+  Future<DraftPlan> draftDayPlan({
+    required CaptureId captureId,
+    required List<String> decidedTaskIds,
+    required DateTime dayDate,
+    List<String> decidedCaptureItemIds = const [],
+    List<TimeBlock> calendarBlocks = const [],
+    bool Function()? isCancelled,
+  }) {
+    throw StateError('drafting unavailable');
+  }
+}
+
 DraftingPage _page({
   bool returnToRootOnReady = false,
 }) => DraftingPage(
@@ -324,6 +338,25 @@ void main() {
       expect(find.byType(SkeletonAgenda), findsOneWidget);
       // The learning cards column either isn't built or renders no cards.
       expect(find.text('YESTERDAY'), findsNothing);
+    });
+
+    testWidgets('initial controller failure renders localized error copy', (
+      tester,
+    ) async {
+      _setSurface(tester);
+      await tester.pumpWidget(_wrap(_page(), agent: _ThrowingDraftAgent()));
+      await tester.pump();
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DraftingPage)).messages;
+      expect(
+        find.text(
+          messages.dailyOsNextReconcileError(
+            'Bad state: drafting unavailable',
+          ),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('narrow layout (< 900) stacks left + right in a Column', (

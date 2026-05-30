@@ -10,6 +10,8 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -69,6 +71,29 @@ class _RefreshBlockingShutdownAgent extends MockDayAgent {
   @override
   Future<TomorrowNote> generateTomorrowNote({required DateTime forDate}) async {
     return const TomorrowNote(body: 'Tomorrow stays queued.', maturity: 1);
+  }
+}
+
+class _ThrowingShutdownAgent extends MockDayAgent {
+  _ThrowingShutdownAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  @override
+  Future<
+    ({
+      List<CompletedItem> completed,
+      List<CarryoverItem> carryover,
+      ShutdownMetrics metrics,
+    })
+  >
+  surfaceShutdownData({required DateTime forDate}) async {
+    throw StateError('shutdown unavailable');
   }
 }
 
@@ -145,6 +170,99 @@ void main() {
 
       expect(find.text('Deck review — Q2 leadership update'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('renders a localized error when shutdown loading fails', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1280, 1100)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _wrap(
+          ShutdownPage(forDate: DateTime(2026, 5, 25)),
+          overrides: [
+            dayAgentProvider.overrideWithValue(_ThrowingShutdownAgent()),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final messages = tester.element(find.byType(ShutdownPage)).messages;
+      expect(
+        find.text(
+          messages.dailyOsNextReconcileError(
+            'Bad state: shutdown unavailable',
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('footer actions all pop the shutdown route', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1280, 1100)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final cases = <Finder Function(AppLocalizations)>[
+        (messages) => find.widgetWithText(
+          TextButton,
+          messages.dailyOsNextDayBack,
+        ),
+        (messages) => find.widgetWithText(
+          TextButton,
+          messages.dailyOsNextShutdownSaveAndClose,
+        ),
+        (messages) => find.widgetWithText(
+          FilledButton,
+          messages.dailyOsNextShutdownCloseDay,
+        ),
+      ];
+
+      for (final finderFor in cases) {
+        final agent = _fastAgent();
+        var popped = false;
+        await tester.pumpWidget(
+          _wrap(
+            Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () async {
+                    await Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ShutdownPage(
+                          forDate: DateTime(2026, 5, 25),
+                        ),
+                      ),
+                    );
+                    popped = true;
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final messages = tester.element(find.byType(ShutdownPage)).messages;
+        final control = finderFor(messages);
+        await tester.ensureVisible(control);
+        await tester.tap(control);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(popped, isTrue);
+        expect(find.byType(ShutdownPage), findsNothing);
+      }
     });
 
     testWidgets(

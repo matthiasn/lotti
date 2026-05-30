@@ -107,6 +107,24 @@ void main() {
       verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
     });
 
+    test(
+      'routes lotti URLs with a path but no host through NavService',
+      () async {
+        getIt.pushNewScope();
+        final mockNavService = MockNavService();
+        getIt.registerSingleton<NavService>(mockNavService);
+        addTearDown(() async {
+          await getIt.resetScope();
+          await getIt.popScope();
+        });
+
+        await handleMarkdownLinkTap('lotti:/tasks/task-789', 'Task');
+
+        verify(() => mockNavService.beamToNamed('/tasks/task-789')).called(1);
+        verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+      },
+    );
+
     test('handles URL with special characters', () async {
       when(
         () => mockUrlLauncher.launchUrl(any(), any()),

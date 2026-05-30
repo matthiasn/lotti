@@ -66,6 +66,21 @@ class _EmptyParsedAgent extends MockDayAgent {
   Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [];
 }
 
+class _ThrowingReconcileAgent extends MockDayAgent {
+  _ThrowingReconcileAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async {
+    throw StateError('reconcile unavailable');
+  }
+}
+
 class _RefreshBlockingAgent extends MockDayAgent {
   _RefreshBlockingAgent()
     : super(
@@ -200,6 +215,31 @@ void main() {
       );
       expect(find.byType(ParsedCard), findsNothing);
       expect(find.byType(PendingCard), findsNWidgets(3));
+    });
+
+    testWidgets('renders localized error copy when reconcile loading fails', (
+      tester,
+    ) async {
+      _setWideSurface(tester);
+      await tester.pumpWidget(
+        _wrap(
+          const ReconcilePage(captureId: CaptureId('cap_x')),
+          overrides: [
+            dayAgentProvider.overrideWithValue(_ThrowingReconcileAgent()),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final messages = tester.element(find.byType(ReconcilePage)).messages;
+      expect(
+        find.text(
+          messages.dailyOsNextReconcileError(
+            'Bad state: reconcile unavailable',
+          ),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets(

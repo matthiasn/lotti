@@ -215,5 +215,33 @@ void main() {
       expect(thumbnail.imageId, 'image-1');
       expect(thumbnail.cropX, 0.25);
     });
+
+    testWidgets('renders non-open state and progress metadata', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const Material(
+            child: AgendaCard(
+              index: 4,
+              item: AgendaItem(
+                id: 'a1',
+                title: 'Close out shipped work',
+                category: _category,
+                linkedBlockIds: ['b1'],
+                state: AgendaItemState.done,
+                progress: 0.75,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Done'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      final indicator = tester.widget<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(indicator.value, 0.75);
+    });
   });
 }
