@@ -391,6 +391,18 @@ partial index). The wire format is unchanged — a backfill response still carri
 peers interoperate. See `README.md` (Sequence Log And Backfill) for the full
 own-host lifecycle diagram.
 
+The v24 migration is index-only: it does **not** reclassify the existing backlog
+of `unresolvable`(5) rows, because their provenance (authoritative burn vs.
+receiver give-up) was never stored, so an old burn cannot be told apart from a
+genuine loss after the fact. Those rows keep status 5 — and the stats keep
+bucketing them as unresolvable — until the existing "Ask peers again for
+unresolvable" action (`resetAllUnresolvable`) flips them back to `missing` and
+re-asks: an authoritative `unresolvable=true` answer then self-classifies as
+`burned`, while a genuine loss retires back to `unresolvable`. So the burn/loss
+split is exact for new traffic and settles the historical backlog only as the
+user resets and the system re-converges. `burned`(8) is therefore the
+"going-forward" bucket.
+
 ```mermaid
 stateDiagram-v2
   BurnPending --> Burned: own-counter burn marker enqueued

@@ -692,6 +692,23 @@ class SyncSequenceLogService {
           counter,
         );
 
+        if (existing != null &&
+            existing.status == SyncSequenceStatus.burned.index) {
+          // burned is the authoritative terminal non-event: never reopen it,
+          // and never overwrite its empty payload mapping with the received
+          // entity's id. The originator re-sending its own burnt counter is a
+          // contradiction we ignore. Mirrors the handleBackfillResponse hint
+          // guard so burned has no outgoing edges on any receive path. The row
+          // is already resolved, so the forward-only watermark-cache advance we
+          // skip here is a no-op.
+          _trace(
+            'recordReceivedEntry: burned preserved (originator) '
+            'hostId=$hostId counter=$counter',
+            subDomain: 'sequence.burnPreserved',
+          );
+          continue;
+        }
+
         // Determine the new status:
         // - If already received/backfilled → keep existing status (don't downgrade)
         // - If we explicitly requested this entry → backfilled (request fulfilled)
@@ -747,6 +764,22 @@ class SyncSequenceLogService {
           hostId,
           counter,
         );
+
+        if (existing != null &&
+            existing.status == SyncSequenceStatus.burned.index) {
+          // burned is the authoritative terminal non-event. A different host's
+          // entry that merely covers this counter in its vector clock must not
+          // reopen the burn or stamp its own entry id onto it (covering an
+          // own-host burn from a different entity is unsound). The row is
+          // already resolved, so skipping the forward-only watermark-cache
+          // advance below is a no-op.
+          _trace(
+            'recordReceivedEntry: burned preserved (covered) '
+            'hostId=$hostId counter=$counter',
+            subDomain: 'sequence.burnPreserved',
+          );
+          continue;
+        }
 
         // Determine the new status (same logic as for originator)
         final SyncSequenceStatus status;

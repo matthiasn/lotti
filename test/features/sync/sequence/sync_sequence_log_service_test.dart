@@ -945,6 +945,79 @@ void main() {
   });
 
   group('recordReceivedEntry', () {
+    test(
+      "does not reopen a burned row for the originating host's own counter — "
+      'burned is terminal even against a contradictory re-send',
+      () async {
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+        try {
+          await bench.database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(aliceHostId),
+              counter: const Value(3),
+              entryId: const Value(null),
+              status: Value(SyncSequenceStatus.burned.index),
+              createdAt: Value(DateTime(2026, 5, 24, 10)),
+              updatedAt: Value(DateTime(2026, 5, 24, 10)),
+            ),
+          );
+
+          await bench.service.recordReceivedEntry(
+            entryId: 'late-alice-3',
+            vectorClock: const VectorClock({aliceHostId: 3}),
+            originatingHostId: aliceHostId,
+          );
+
+          final row = await bench.database.getEntryByHostAndCounter(
+            aliceHostId,
+            3,
+          );
+          expect(row?.status, SyncSequenceStatus.burned.index);
+          // The burn's empty payload mapping must survive.
+          expect(row?.entryId, isNull);
+        } finally {
+          await bench.close();
+        }
+      },
+    );
+
+    test(
+      'does not reopen a burned row that a different host entry merely covers '
+      'in its vector clock — no phantom cross-entity mapping',
+      () async {
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+        try {
+          await bench.database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(bobHostId),
+              counter: const Value(5),
+              entryId: const Value(null),
+              status: Value(SyncSequenceStatus.burned.index),
+              createdAt: Value(DateTime(2026, 5, 24, 10)),
+              updatedAt: Value(DateTime(2026, 5, 24, 10)),
+            ),
+          );
+
+          // Alice's entry carries bob:5 in its vector clock — a covering
+          // reference from a different entity, not bob's payload at counter 5.
+          await bench.service.recordReceivedEntry(
+            entryId: 'alice-entry-covering-bob-5',
+            vectorClock: const VectorClock({aliceHostId: 2, bobHostId: 5}),
+            originatingHostId: aliceHostId,
+          );
+
+          final bobRow = await bench.database.getEntryByHostAndCounter(
+            bobHostId,
+            5,
+          );
+          expect(bobRow?.status, SyncSequenceStatus.burned.index);
+          expect(bobRow?.entryId, isNull);
+        } finally {
+          await bench.close();
+        }
+      },
+    );
+
     test('records entry without gaps when sequential', () async {
       // Alice counter 1, first entry we've seen from Alice
       const vectorClock = VectorClock({aliceHostId: 1});

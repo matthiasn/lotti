@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Backfill sync now distinguishes intentionally burned vector-clock counters
   (benign voided numbers in the monotonic sequence) from genuinely unresolvable
-  entries, and the Backfill settings screen shows a separate "Burned" count, so
-  the diagnostics no longer flag voided counters as data loss.
+  entries, with a separate "Burned" count in the Backfill settings screen, so
+  newly burned counters are no longer reported as data loss. Entries already
+  marked unresolvable keep that label until they settle into the correct bucket
+  as peers are re-asked.
 - Daily OS Next refine-by-voice now opens as a responsive Wolt modal over the
   current plan surface, and keeps the reviewed transcript visible with inline
   feedback when a proposal fails or produces no usable changes.
