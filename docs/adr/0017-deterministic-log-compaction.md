@@ -49,7 +49,11 @@ arbitrary winner.
    (different frontiers, neither dominates), fall back to their **meet (common
    base)** and read the whole uncovered region verbatim; a lazy **merge-summary**
    then materializes one checkpoint over the joined frontier, which becomes the
-   new unique maximum — so a merge-summary always eventually becomes active. (A
+   new unique maximum — so a merge-summary always eventually becomes active. When that verbatim fallback region would exceed
+   the model's context budget (deeply diverged, multiply-compacted branches), the
+   merge-summary fires **eagerly** rather than lazily — and, as a last resort, the
+   oldest uncovered span is emergency-summarized — so the fallback can never
+   overflow the on-device window. (A
    "meet of *all* checkpoints" rule would starve the merge-summary forever, since
    the collapsed branches stay incomparable ancestors.) `frontierDigest` = hash of the
    antichain's canonical id-set — it identifies **coverage only**. The summary

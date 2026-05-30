@@ -42,7 +42,11 @@ hypothetical.
    projected graph during the `draft → agreed` transition — not by instructing
    the LLM. The minimal constraint language is recurrence + preemption priority
    (e.g. "gym 3×/week may pre-empt"). Compliance is checked against real actuals,
-   including `WorkoutEntry`/`QuantitativeEntry` from health import.
+   including `WorkoutEntry`/`QuantitativeEntry` from health import. Because sensor
+   actuals can lag or miss (sync delay, dead battery, untracked activity), the
+   verifier supports **manual override / self-report / bypass**: a sensor gap
+   surfaces as a confirmable prompt, never a hard block on `draft → agreed`, so it
+   cannot wrongly block or nag.
 5. **"Ask when in doubt" = value-of-information.** Raise a `ChangeSet`/
    `ChangeDecision` only when the expected value of the user's answer exceeds the
    interruption cost; low-VOI conflicts auto-resolve and are logged **only for

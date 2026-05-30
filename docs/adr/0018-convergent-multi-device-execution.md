@@ -82,10 +82,12 @@ tiebreak.
    linear extension (rule 1), so every device converges without a join.
 8. **Forks heal by lazy, capped join-by-continuation** — a continuation node
    linking (`messagePrev`) to all current heads, emitted **only when ≥2 heads
-   survive past one wake cycle**, by the lowest-`hostId` head author (or the lease
-   holder if present). The join is **idempotent** (keyed by `frontierDigest`), so
-   concurrent joins of the same fork dedup — no storm. This bounds context and
-   re-warms the on-device prefix; it is *not* required for correctness.
+   survive past one wake cycle**. Its **id is content-addressed** — `id =
+   hash(frontierDigest)` over the parent-head set — so two devices emitting the
+   join concurrently write the *same* log entry, which set-union merges into one
+   node; concurrent joins therefore can't form a new fork (no join storm). This
+   bounds context and re-warms the on-device prefix; it is *not* required for
+   correctness.
 9. **Side effects carry an idempotency key** `agentId + behaviorKind +
    frontierDigest + toolName`; the later projection dedups/suppresses duplicates
    (reuse ChangeSet dedup, ADR 0009). Truly irreversible external effects (a sent
