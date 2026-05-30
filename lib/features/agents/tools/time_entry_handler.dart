@@ -197,7 +197,7 @@ class TimeEntryHandler {
         await _timeService.start(journalEntity, sourceEntity);
       } catch (e, _) {
         _domainLogger?.log(
-          LogDomains.agentWorkflow,
+          LogDomain.agentWorkflow,
           'Time entry ${DomainLogger.sanitizeId(createdId)} persisted but '
           'timer start failed (errorType=${e.runtimeType})',
           subDomain: _sub,
@@ -214,7 +214,7 @@ class TimeEntryHandler {
     }
 
     _domainLogger?.log(
-      LogDomains.agentWorkflow,
+      LogDomain.agentWorkflow,
       'Created time entry ${DomainLogger.sanitizeId(createdId)} '
       '(${isRunningTimer ? "running timer" : "completed session"}) '
       'linked to ${DomainLogger.sanitizeId(sourceTaskId)}',

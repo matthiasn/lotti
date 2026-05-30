@@ -270,10 +270,11 @@ class ProjectToolDispatcher {
       return (await persistenceLogic.updateDbEntity(deletedTask)) ?? false;
     } catch (error, stackTrace) {
       domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Failed to roll back created task '
-        '${DomainLogger.sanitizeId(task.meta.id)}',
-        error: error,
+        LogDomain.agentWorkflow,
+        error,
+        message:
+            'Failed to roll back created task '
+            '${DomainLogger.sanitizeId(task.meta.id)}',
         stackTrace: stackTrace,
         subDomain: _sub,
       );
@@ -303,10 +304,11 @@ class ProjectToolDispatcher {
       );
     } catch (error, stackTrace) {
       domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Failed to auto-assign task agent for project-created task '
-        '${DomainLogger.sanitizeId(task.meta.id)}',
-        error: error,
+        LogDomain.agentWorkflow,
+        error,
+        message:
+            'Failed to auto-assign task agent for project-created task '
+            '${DomainLogger.sanitizeId(task.meta.id)}',
         stackTrace: stackTrace,
         subDomain: _sub,
       );

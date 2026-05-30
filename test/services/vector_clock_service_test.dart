@@ -397,11 +397,12 @@ void main() {
         expect(await service.getNextAvailableCounter(), 61);
         verify(
           () => domainLogger.error(
-            LogDomains.sync,
-            any<String>(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(
+              named: 'message',
               that: contains('VC reservation ledger write failed'),
             ),
-            error: any<dynamic>(named: 'error'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'vc.reserve.ledger',
           ),
@@ -446,11 +447,12 @@ void main() {
         expect(burnt, [70]);
         verify(
           () => domainLogger.error(
-            LogDomains.sync,
-            any<String>(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(
+              named: 'message',
               that: contains('VC burn-pending ledger write failed'),
             ),
-            error: any<dynamic>(named: 'error'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'vc.burn.ledger',
           ),
@@ -675,9 +677,8 @@ void main() {
         expect(burnt, [(hostId: host, counter: 900)]);
         verify(
           () => domainLogger.error(
-            LogDomains.sync,
-            any<String>(that: contains('unbound vector clock')),
-            error: any<dynamic>(named: 'error'),
+            LogDomain.sync,
+            any<Object>(that: contains('unbound vector clock')),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'vc.burn.unbound',
           ),
@@ -884,11 +885,12 @@ void main() {
         expect(applied, isFalse);
         verify(
           () => domainLogger.error(
-            LogDomains.sync,
-            any<String>(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(
+              named: 'message',
               that: contains('VC burn broadcast handler threw'),
             ),
-            error: any<dynamic>(named: 'error'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'vc.burn.handler',
           ),
@@ -903,9 +905,9 @@ void main() {
 void _stubDomainLoggerError(MockDomainLogger domainLogger) {
   when(
     () => domainLogger.error(
-      any<String>(),
-      any<String>(),
-      error: any<dynamic>(named: 'error'),
+      any<LogDomain>(),
+      any<Object>(),
+      message: any<String>(named: 'message'),
       stackTrace: any<StackTrace>(named: 'stackTrace'),
       subDomain: any<String>(named: 'subDomain'),
     ),

@@ -387,10 +387,10 @@ void main() {
         ).thenThrow(Exception('DB error'));
         when(
           () => mockLogging.captureException(
-            any<dynamic>(),
+            any<Object>(),
             domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).thenAnswer((_) async {});
 
@@ -402,10 +402,10 @@ void main() {
         expect(result, isNull);
         verify(
           () => mockLogging.captureException(
-            any<dynamic>(),
+            any<Object>(),
             domain: 'RatingRepository',
             subDomain: 'createOrUpdateRating',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -524,9 +524,9 @@ void main() {
         ).thenAnswer((_) async {});
         when(
           () => mockDomainLogger.error(
-            any<String>(),
-            any<String>(),
-            error: any<dynamic>(named: 'error'),
+            any<LogDomain>(),
+            any<Object>(),
+            message: any<String>(named: 'message'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(named: 'subDomain'),
           ),
@@ -600,11 +600,12 @@ void main() {
           expect(result, isA<RatingEntry>());
           verify(
             () => mockDomainLogger.error(
-              LogDomains.sync,
-              any<String>(
+              LogDomain.sync,
+              any<Object>(),
+              message: any<String>(
+                named: 'message',
                 that: contains('sequence record failed after rating link'),
               ),
-              error: any<dynamic>(named: 'error'),
               stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: '_createRatingLink.recordSent',
             ),
@@ -747,9 +748,9 @@ void main() {
           ).thenAnswer((_) async {});
           when(
             () => mockDomainLogger.error(
-              any<String>(),
-              any<String>(),
-              error: any<dynamic>(named: 'error'),
+              any<LogDomain>(),
+              any<Object>(),
+              message: any<String>(named: 'message'),
               stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: any<String>(named: 'subDomain'),
             ),
@@ -774,11 +775,12 @@ void main() {
           expect(result, isA<RatingEntry>());
           verify(
             () => mockDomainLogger.error(
-              LogDomains.sync,
-              any<String>(
+              LogDomain.sync,
+              any<Object>(),
+              message: any<String>(
+                named: 'message',
                 that: contains('outbox enqueue failed after _createRatingLink'),
               ),
-              error: any<dynamic>(named: 'error'),
               stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: '_createRatingLink.enqueue',
             ),

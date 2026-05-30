@@ -184,7 +184,7 @@ void main() {
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
       domainLogger: DomainLogger(loggingService: LoggingService())
-        ..enabledDomains.add(LogDomains.agentRuntime),
+        ..enabledDomains.add(LogDomain.agentRuntime),
       onPersistedStateChanged: notifiedAgentIds.add,
     );
   });

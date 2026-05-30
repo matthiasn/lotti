@@ -4920,6 +4920,75 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkExistingTask => 'Leagă o sarcină existentă...';
 
   @override
+  String get loggingDomainAgentRuntime => 'Rulare agenți';
+
+  @override
+  String get loggingDomainAgentWorkflow => 'Flux de lucru agenți';
+
+  @override
+  String get loggingDomainAi => 'IA';
+
+  @override
+  String get loggingDomainCalendar => 'Calendar și timp';
+
+  @override
+  String get loggingDomainChat => 'Chat';
+
+  @override
+  String get loggingDomainDailyOs => 'Daily OS';
+
+  @override
+  String get loggingDomainDatabase => 'Bază de date';
+
+  @override
+  String get loggingDomainGeneral => 'General';
+
+  @override
+  String get loggingDomainHabits => 'Obiceiuri';
+
+  @override
+  String get loggingDomainHealth => 'Sănătate';
+
+  @override
+  String get loggingDomainLabels => 'Etichete';
+
+  @override
+  String get loggingDomainLocation => 'Locație';
+
+  @override
+  String get loggingDomainNavigation => 'Navigare';
+
+  @override
+  String get loggingDomainNotifications => 'Notificări';
+
+  @override
+  String get loggingDomainPersistence => 'Persistență';
+
+  @override
+  String get loggingDomainRatings => 'Evaluări';
+
+  @override
+  String get loggingDomainScreenshots => 'Capturi de ecran';
+
+  @override
+  String get loggingDomainSettings => 'Setări';
+
+  @override
+  String get loggingDomainSpeech => 'Voce și audio';
+
+  @override
+  String get loggingDomainSync => 'Sincronizare';
+
+  @override
+  String get loggingDomainTasks => 'Sarcini și liste';
+
+  @override
+  String get loggingDomainTheming => 'Teme';
+
+  @override
+  String get loggingDomainWhatsNew => 'Noutăți';
+
+  @override
   String get maintenanceDeleteAgentDb => 'Șterge baza de date a agenților';
 
   @override
@@ -6359,20 +6428,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get settingsLoggingAgentRuntime => 'Execuția agentului';
-
-  @override
-  String get settingsLoggingAgentRuntimeSubtitle =>
-      'Deciziile și distribuția orchestratorului de activare';
-
-  @override
-  String get settingsLoggingAgentWorkflow => 'Fluxul de lucru al agentului';
-
-  @override
-  String get settingsLoggingAgentWorkflowSubtitle =>
-      'Execuția conversațiilor și apelurile de instrumente';
-
-  @override
   String get settingsLoggingDomainsSubtitle =>
       'Controlați ce domenii scriu în jurnal';
 
@@ -6392,13 +6447,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
       'Interogările lente sunt scrise în slow_queries-YYYY-MM-DD.log';
-
-  @override
-  String get settingsLoggingSync => 'Sincronizare';
-
-  @override
-  String get settingsLoggingSyncSubtitle =>
-      'Operațiuni de sincronizare între dispozitive';
 
   @override
   String get settingsMaintenanceTitle => 'Mentenanță';

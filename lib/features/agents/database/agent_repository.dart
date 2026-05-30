@@ -1312,10 +1312,11 @@ class AgentRepository {
     } on SqliteException catch (e, st) {
       if (e.resultCode == 19) {
         _domainLogger?.error(
-          LogDomains.agentRuntime,
-          'agent_links unique constraint violated for '
-          'toId=${DomainLogger.sanitizeId(link.toId)}',
-          error: e,
+          LogDomain.agentRuntime,
+          e,
+          message:
+              'agent_links unique constraint violated for '
+              'toId=${DomainLogger.sanitizeId(link.toId)}',
           stackTrace: st,
           subDomain: 'AgentRepository.insertLinkExclusive',
         );
@@ -1494,10 +1495,11 @@ class AgentRepository {
     } on SqliteException catch (e, st) {
       if (e.resultCode == 19) {
         _domainLogger?.error(
-          LogDomains.agentRuntime,
-          'wake_run_log unique constraint violated for '
-          'runKey=${DomainLogger.sanitizeId(entry.runKey)}',
-          error: e,
+          LogDomain.agentRuntime,
+          e,
+          message:
+              'wake_run_log unique constraint violated for '
+              'runKey=${DomainLogger.sanitizeId(entry.runKey)}',
           stackTrace: st,
           subDomain: 'AgentRepository.insertWakeRun',
         );
@@ -1695,10 +1697,11 @@ class AgentRepository {
     } on SqliteException catch (e, st) {
       if (e.resultCode == 19) {
         _domainLogger?.error(
-          LogDomains.agentRuntime,
-          'saga_log unique constraint violated for '
-          'operationId=${DomainLogger.sanitizeId(entry.operationId)}',
-          error: e,
+          LogDomain.agentRuntime,
+          e,
+          message:
+              'saga_log unique constraint violated for '
+              'operationId=${DomainLogger.sanitizeId(entry.operationId)}',
           stackTrace: st,
           subDomain: 'AgentRepository.insertSagaOp',
         );

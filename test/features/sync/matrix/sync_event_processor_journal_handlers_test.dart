@@ -67,7 +67,7 @@ void main() {
             contains(
               'apply entryLink.embedded from=${link1.fromId} to=${link1.toId}',
             ),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'processor.apply.entryLink.embedded',
           ),
         ).called(1);
@@ -77,7 +77,7 @@ void main() {
             contains(
               'apply entryLink.embedded from=${link2.fromId} to=${link2.toId}',
             ),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'processor.apply.entryLink.embedded',
           ),
         ).called(1);
@@ -86,7 +86,7 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             contains('embeddedLinks=2/2'),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'processor.apply',
           ),
         ).called(1);
@@ -165,7 +165,7 @@ void main() {
           contains(
             'apply entryLink.embedded from=${link.fromId} to=${link.toId}',
           ),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'processor.apply.entryLink.embedded',
         ),
       ).called(1);
@@ -174,7 +174,7 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('embeddedLinks=1/1'),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -278,7 +278,7 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('embeddedLinks=0/0'),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -326,7 +326,7 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('embeddedLinks=0/1'),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -486,7 +486,7 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             contains('apply.entryLink.gapsDetected count=2'),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'processor.gapDetection',
           ),
         ).called(1);

@@ -74,7 +74,7 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<Object>(that: contains('agentEntity')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -545,7 +545,7 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<Object>(that: contains('agentLink')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -710,7 +710,7 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<Object>(that: contains('ignored')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -740,7 +740,7 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<Object>(that: contains('ignored')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -1152,7 +1152,7 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             contains('apply.agentEntity.gapsDetected count=1'),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'processor.gapDetection',
           ),
         ).called(1);
@@ -1313,7 +1313,7 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             contains('apply.agentLink.gapsDetected count=2'),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'processor.gapDetection',
           ),
         ).called(1);
@@ -1950,7 +1950,7 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             any<Object>(that: contains('no payload and no jsonPath')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'processor.resolve',
           ),
         ).called(1);
@@ -1968,7 +1968,7 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             any<Object>(that: contains('no payload and no jsonPath')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'processor.resolve',
           ),
         ).called(1);
@@ -2406,7 +2406,7 @@ void main() {
         any<Object>(
           that: contains('skipping undeserializable sync message'),
         ),
-        domain: LogDomains.sync,
+        domain: LogDomain.sync.wireName,
         subDomain: 'processor.skipUnrecoverable',
       ),
     ).called(1);
@@ -2460,7 +2460,7 @@ void main() {
         any<String>(
           that: contains('skipping undeserializable sync message'),
         ),
-        domain: LogDomains.sync,
+        domain: LogDomain.sync.wireName,
         subDomain: 'processor.skipUnrecoverable',
       ),
     ).called(1);

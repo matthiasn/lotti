@@ -234,7 +234,7 @@ void main() {
       await loggingBroadcaster.broadcastIfChanged();
       verify(
         () => logger.log(
-          LogDomains.sync,
+          LogDomain.sync,
           any(that: contains('broadcast issued')),
           subDomain: any(named: 'subDomain'),
         ),
@@ -244,7 +244,7 @@ void main() {
       await loggingBroadcaster.broadcastIfChanged();
       verify(
         () => logger.log(
-          LogDomains.sync,
+          LogDomain.sync,
           any(that: contains('skipped: unchanged')),
           subDomain: any(named: 'subDomain'),
         ),
@@ -274,7 +274,7 @@ void main() {
 
       verify(
         () => logger.log(
-          LogDomains.sync,
+          LogDomain.sync,
           any(that: contains('no host id')),
           subDomain: any(named: 'subDomain'),
         ),

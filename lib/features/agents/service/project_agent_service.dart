@@ -157,7 +157,7 @@ class ProjectAgentService {
     );
 
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'created project agent ${DomainLogger.sanitizeId(identity.agentId)} '
       'for project ${DomainLogger.sanitizeId(projectId)}',
       subDomain: 'lifecycle',
@@ -186,7 +186,7 @@ class ProjectAgentService {
   /// Trigger a manual re-analysis wake for [agentId].
   void triggerReanalysis(String agentId) {
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'manual reanalysis triggered for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
@@ -204,7 +204,7 @@ class ProjectAgentService {
   /// header's cancel × has the same semantics as the task AI summary one.
   void cancelScheduledWake(String agentId) {
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
@@ -218,7 +218,7 @@ class ProjectAgentService {
   /// activity remains schedule-driven via pending-project-activity markers.
   Future<void> restoreSubscriptions() async {
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'restoring project agent runtime state...',
       subDomain: 'restore',
     );
@@ -247,9 +247,9 @@ class ProjectAgentService {
             'for ${DomainLogger.sanitizeId(agent.agentId)}';
         if (domainLogger != null) {
           domainLogger!.error(
-            LogDomains.agentRuntime,
-            msg,
-            error: e,
+            LogDomain.agentRuntime,
+            e,
+            message: msg,
             stackTrace: s,
           );
         } else {
@@ -264,7 +264,7 @@ class ProjectAgentService {
     }
 
     domainLogger?.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'restored $count project agent(s)',
       subDomain: 'restore',
     );

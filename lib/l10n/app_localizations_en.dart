@@ -4838,6 +4838,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkExistingTask => 'Link existing task...';
 
   @override
+  String get loggingDomainAgentRuntime => 'Agent runtime';
+
+  @override
+  String get loggingDomainAgentWorkflow => 'Agent workflow';
+
+  @override
+  String get loggingDomainAi => 'AI';
+
+  @override
+  String get loggingDomainCalendar => 'Calendar & time';
+
+  @override
+  String get loggingDomainChat => 'Chat';
+
+  @override
+  String get loggingDomainDailyOs => 'Daily OS';
+
+  @override
+  String get loggingDomainDatabase => 'Database';
+
+  @override
+  String get loggingDomainGeneral => 'General';
+
+  @override
+  String get loggingDomainHabits => 'Habits';
+
+  @override
+  String get loggingDomainHealth => 'Health';
+
+  @override
+  String get loggingDomainLabels => 'Labels';
+
+  @override
+  String get loggingDomainLocation => 'Location';
+
+  @override
+  String get loggingDomainNavigation => 'Navigation';
+
+  @override
+  String get loggingDomainNotifications => 'Notifications';
+
+  @override
+  String get loggingDomainPersistence => 'Persistence';
+
+  @override
+  String get loggingDomainRatings => 'Ratings';
+
+  @override
+  String get loggingDomainScreenshots => 'Screenshots';
+
+  @override
+  String get loggingDomainSettings => 'Settings';
+
+  @override
+  String get loggingDomainSpeech => 'Speech & audio';
+
+  @override
+  String get loggingDomainSync => 'Sync';
+
+  @override
+  String get loggingDomainTasks => 'Tasks & checklists';
+
+  @override
+  String get loggingDomainTheming => 'Theming';
+
+  @override
+  String get loggingDomainWhatsNew => 'What\'s new';
+
+  @override
   String get maintenanceDeleteAgentDb => 'Delete Agents Database';
 
   @override
@@ -6222,20 +6291,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsLoggingAgentRuntime => 'Agent Runtime';
-
-  @override
-  String get settingsLoggingAgentRuntimeSubtitle =>
-      'Wake orchestrator decisions and dispatch';
-
-  @override
-  String get settingsLoggingAgentWorkflow => 'Agent Workflow';
-
-  @override
-  String get settingsLoggingAgentWorkflowSubtitle =>
-      'Conversation execution and tool calls';
-
-  @override
   String get settingsLoggingDomainsSubtitle =>
       'Control which domains write to the log';
 
@@ -6255,12 +6310,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
       'Writes slow queries to slow_queries-YYYY-MM-DD.log';
-
-  @override
-  String get settingsLoggingSync => 'Sync';
-
-  @override
-  String get settingsLoggingSyncSubtitle => 'Cross-device sync operations';
 
   @override
   String get settingsMaintenanceTitle => 'Maintenance';

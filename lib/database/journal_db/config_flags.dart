@@ -1,4 +1,5 @@
 import 'package:lotti/database/database.dart';
+import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/utils/consts.dart';
 
 Future<void> initConfigFlags(
@@ -130,29 +131,19 @@ Future<void> initConfigFlags(
     ),
   );
 
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: logAgentRuntimeFlag,
-      description: 'Log agent runtime (wake orchestrator)',
-      status: true,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: logAgentWorkflowFlag,
-      description: 'Log agent workflow execution',
-      status: true,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: logSyncFlag,
-      description: 'Log sync operations',
-      status: false,
-    ),
-  );
+  // One toggle per logging domain. Flag names for sync / agentRuntime /
+  // agentWorkflow deliberately match the historical log_sync /
+  // log_agent_runtime / log_agent_workflow flags so existing preferences
+  // survive. Errors are always logged regardless of these flags.
+  for (final domain in LogDomain.values) {
+    await db.insertFlagIfNotExists(
+      ConfigFlag(
+        name: domain.flagName,
+        description: 'Log ${domain.label}',
+        status: domain.defaultEnabled,
+      ),
+    );
+  }
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(

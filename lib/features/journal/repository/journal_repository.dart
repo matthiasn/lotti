@@ -308,9 +308,10 @@ class JournalRepository {
           );
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
-            LogDomains.sync,
-            'outbox enqueue failed after updateLink; VC already committed',
-            error: error,
+            LogDomain.sync,
+            error,
+            message:
+                'outbox enqueue failed after updateLink; VC already committed',
             stackTrace: stackTrace,
             subDomain: 'updateLink.enqueue',
           );

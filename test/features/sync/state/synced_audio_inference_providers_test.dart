@@ -167,14 +167,12 @@ void main() {
       () async {
         await setUpTestGetIt(
           additionalSetup: () {
-            getIt
-              ..registerSingleton<VectorClockService>(
-                MockVectorClockService(),
-              )
-              // Register DomainLogger too — exercises the
-              // `getIt.isRegistered<DomainLogger>() ? getIt<...>() : null`
-              // true-branch in the dispatcher builder.
-              ..registerSingleton<DomainLogger>(MockDomainLogger());
+            getIt.registerSingleton<VectorClockService>(
+              MockVectorClockService(),
+            );
+            // setUpTestGetIt already registers a DomainLogger, which exercises
+            // the `getIt.isRegistered<DomainLogger>() ? getIt<...>() : null`
+            // true-branch in the dispatcher builder.
           },
         );
         addTearDown(tearDownTestGetIt);

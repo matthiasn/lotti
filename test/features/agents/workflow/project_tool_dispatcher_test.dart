@@ -417,7 +417,7 @@ void main() {
           () => domainLogger.error(
             any(),
             any(),
-            error: any(named: 'error'),
+            message: any(named: 'message'),
             stackTrace: any(named: 'stackTrace'),
             subDomain: any(named: 'subDomain'),
           ),
@@ -440,9 +440,9 @@ void main() {
         );
         final captured = verify(
           () => domainLogger.error(
-            LogDomains.agentWorkflow,
-            captureAny(),
-            error: any(named: 'error'),
+            LogDomain.agentWorkflow,
+            any(),
+            message: captureAny(named: 'message'),
             stackTrace: any(named: 'stackTrace'),
             subDomain: any(named: 'subDomain'),
           ),
@@ -790,7 +790,7 @@ void main() {
         () => domainLogger.error(
           any(),
           any(),
-          error: any(named: 'error'),
+          message: any(named: 'message'),
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),
@@ -807,9 +807,9 @@ void main() {
       expect(result.errorMessage, contains('rollback failed'));
       final captured = verify(
         () => domainLogger.error(
-          LogDomains.agentWorkflow,
-          captureAny(),
-          error: any(named: 'error'),
+          LogDomain.agentWorkflow,
+          any(),
+          message: captureAny(named: 'message'),
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),

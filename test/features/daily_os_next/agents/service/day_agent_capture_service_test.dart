@@ -917,9 +917,9 @@ void main() {
         expect(result.output, contains('boom'));
         verify(
           () => domainLogger.error(
-            LogDomains.agentWorkflow,
-            'day-agent capture tool failed',
-            error: any(named: 'error'),
+            LogDomain.agentWorkflow,
+            any(),
+            message: 'day-agent capture tool failed',
             stackTrace: any(named: 'stackTrace'),
           ),
         ).called(1);

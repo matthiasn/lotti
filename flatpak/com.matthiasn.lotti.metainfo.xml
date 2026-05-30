@@ -34,6 +34,7 @@
   <releases>
     <release version="0.9.1011" date="2026-05-30">
       <description>
+          <p>Settings → Advanced → Logging now has an individual on/off switch for every logging domain (sync, AI, chat, speech, persistence, database, agents, tasks, health, habits, and more), replacing the previous three fixed toggles. Errors are always logged regardless of these switches, and are mirrored into two daily files: a full error log and a PII-safe error log that records the error type only.</p>
           <p>Backfill sync now distinguishes intentionally burned vector-clock counters (benign voided numbers in the monotonic sequence) from genuinely unresolvable entries, with a separate "Burned" count in the Backfill settings screen, so newly burned counters are no longer reported as data loss. Entries already marked unresolvable keep that label until they settle into the correct bucket as peers are re-asked.</p>
           <p>Daily OS Next refine-by-voice now opens as a responsive Wolt modal over the current plan surface, and keeps the reviewed transcript visible with inline feedback when a proposal fails or produces no usable changes.</p>
           <p>Daily OS Next measures the date controls, Agenda/Day switcher, and header actions before placing them, keeping the switcher inline whenever it fits and moving it below only on truly constrained widths.</p>

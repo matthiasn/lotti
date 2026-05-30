@@ -32,7 +32,6 @@ import 'package:lotti/providers/service_providers.dart'
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 export 'package:lotti/features/agents/state/agent_query_providers.dart';
@@ -94,8 +93,8 @@ DomainLogger domainLogger(Ref ref) {
       : DomainLogger(loggingService: ref.watch(loggingServiceProvider));
 
   // Mutate enabledDomains in-place on flag changes — no provider rebuild.
-  void listenFlag(String flagName, String domain) {
-    ref.listen(configFlagProvider(flagName), (_, next) {
+  void listenDomain(LogDomain domain) {
+    ref.listen(configFlagProvider(domain.flagName), (_, next) {
       if (next.value ?? false) {
         logger.enabledDomains.add(domain);
       } else {
@@ -104,15 +103,13 @@ DomainLogger domainLogger(Ref ref) {
     });
 
     // Seed the initial value synchronously from the current state.
-    final initial = ref.read(configFlagProvider(flagName));
+    final initial = ref.read(configFlagProvider(domain.flagName));
     if (initial.value ?? false) {
       logger.enabledDomains.add(domain);
     }
   }
 
-  listenFlag(logAgentRuntimeFlag, LogDomains.agentRuntime);
-  listenFlag(logAgentWorkflowFlag, LogDomains.agentWorkflow);
-  listenFlag(logSyncFlag, LogDomains.sync);
+  LogDomain.values.forEach(listenDomain);
   return logger;
 }
 

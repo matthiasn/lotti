@@ -448,7 +448,7 @@ Future<void> registerSingletons() async {
         existingStatus == SyncSequenceStatus.backfilled.index ||
         existingStatus == SyncSequenceStatus.deleted.index) {
       domainLogger.log(
-        LogDomains.sync,
+        LogDomain.sync,
         'vc.burn.broadcast.skipBound host=$hostId counter=$counter '
         'status=$existingStatus',
         subDomain: 'vc.burn.broadcast',
@@ -495,16 +495,17 @@ Future<void> registerSingletons() async {
         counter: counter,
       );
       domainLogger.log(
-        LogDomains.sync,
+        LogDomain.sync,
         'vc.burn.broadcast host=$hostId counter=$counter',
         subDomain: 'vc.burn.broadcast',
       );
     } catch (error, stackTrace) {
       domainLogger.error(
-        LogDomains.sync,
-        'vc burn broadcast failed; counter $counter will fall back to '
-        'reactive backfill resolution',
-        error: error,
+        LogDomain.sync,
+        error,
+        message:
+            'vc burn broadcast failed; counter $counter will fall back to '
+            'reactive backfill resolution',
         stackTrace: stackTrace,
         subDomain: 'vc.burn.broadcast',
       );
@@ -535,10 +536,11 @@ Future<void> registerSingletons() async {
             reconciled++;
           } catch (error, stackTrace) {
             domainLogger.error(
-              LogDomains.sync,
-              'vc burn reconciliation failed for host=$hostId '
-              'counter=$counter; continuing',
-              error: error,
+              LogDomain.sync,
+              error,
+              message:
+                  'vc burn reconciliation failed for host=$hostId '
+                  'counter=$counter; continuing',
               stackTrace: stackTrace,
               subDomain: 'vc.burn.reconcile',
             );
@@ -546,7 +548,7 @@ Future<void> registerSingletons() async {
         }
         if (counters.isNotEmpty) {
           domainLogger.log(
-            LogDomains.sync,
+            LogDomain.sync,
             'vc.burn.reconcile host=$hostId count=$reconciled '
             'attempted=${counters.length} '
             'counters=$counters',
@@ -557,7 +559,7 @@ Future<void> registerSingletons() async {
             .reservedCountersForHost(hostId: hostId);
         if (reservedCounters.isNotEmpty) {
           domainLogger.error(
-            LogDomains.sync,
+            LogDomain.sync,
             'vc.reserved.audit host=$hostId '
             'count=${reservedCounters.length} '
             'counters=$reservedCounters',
@@ -566,10 +568,11 @@ Future<void> registerSingletons() async {
         }
       } catch (error, stackTrace) {
         domainLogger.error(
-          LogDomains.sync,
-          'vc burn reconciliation failed; burn-pending counters will retry '
-          'on the next startup or reactive backfill',
-          error: error,
+          LogDomain.sync,
+          error,
+          message:
+              'vc burn reconciliation failed; burn-pending counters will retry '
+              'on the next startup or reactive backfill',
           stackTrace: stackTrace,
           subDomain: 'vc.burn.reconcile',
         );

@@ -80,7 +80,7 @@ class SyncNodeProfileBroadcaster {
     final hostId = await _vectorClockService.getHost();
     if (hostId == null) {
       _domainLogger?.log(
-        LogDomains.sync,
+        LogDomain.sync,
         'syncNodeProfile.broadcast skipped: no host id',
         subDomain: 'broadcaster',
       );
@@ -104,7 +104,7 @@ class SyncNodeProfileBroadcaster {
         existingSelf != null &&
         _contentMatches(existingSelf, probed)) {
       _domainLogger?.log(
-        LogDomains.sync,
+        LogDomain.sync,
         'syncNodeProfile.broadcast skipped: unchanged',
         subDomain: 'broadcaster',
       );
@@ -116,7 +116,7 @@ class SyncNodeProfileBroadcaster {
       SyncMessage.syncNodeProfile(profile: probed),
     );
     _domainLogger?.log(
-      LogDomains.sync,
+      LogDomain.sync,
       'syncNodeProfile.broadcast issued '
       'hostId=$hostId name=${probed.displayName} '
       'caps=${probed.capabilities.length}',

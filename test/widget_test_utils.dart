@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -25,12 +26,14 @@ class TestGetItMocks {
     required this.updateNotifications,
     required this.settingsDb,
     required this.loggingService,
+    required this.domainLogger,
   });
 
   final MockJournalDb journalDb;
   final MockUpdateNotifications updateNotifications;
   final MockSettingsDb settingsDb;
   final LoggingService loggingService;
+  final DomainLogger domainLogger;
 }
 
 /// Sets up GetIt with common mocks for widget tests.
@@ -57,6 +60,7 @@ Future<TestGetItMocks> setUpTestGetIt({
   final mockJournalDb = MockJournalDb();
   final mockSettingsDb = MockSettingsDb();
   final loggingService = LoggingService();
+  final domainLogger = DomainLogger(loggingService: loggingService);
 
   when(
     () => mockUpdateNotifications.updateStream,
@@ -81,6 +85,7 @@ Future<TestGetItMocks> setUpTestGetIt({
     ..registerSingleton<JournalDb>(mockJournalDb)
     ..registerSingleton<SettingsDb>(mockSettingsDb)
     ..registerSingleton<LoggingService>(loggingService)
+    ..registerSingleton<DomainLogger>(domainLogger)
     ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
     ..registerSingleton<OllamaEmbeddingRepository>(
       MockOllamaEmbeddingRepository(),
@@ -93,6 +98,7 @@ Future<TestGetItMocks> setUpTestGetIt({
     updateNotifications: mockUpdateNotifications,
     settingsDb: mockSettingsDb,
     loggingService: loggingService,
+    domainLogger: domainLogger,
   );
 }
 
@@ -131,6 +137,12 @@ void ensureThemingServicesRegistered() {
 
   if (!getIt.isRegistered<LoggingService>()) {
     getIt.registerSingleton<LoggingService>(LoggingService());
+  }
+
+  if (!getIt.isRegistered<DomainLogger>()) {
+    getIt.registerSingleton<DomainLogger>(
+      DomainLogger(loggingService: getIt<LoggingService>()),
+    );
   }
 }
 

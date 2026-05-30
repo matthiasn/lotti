@@ -455,9 +455,10 @@ class PersistenceLogic {
           // already baked into the persisted link row and must not be
           // rewound just because the outbox write failed transiently.
           getIt<DomainLogger>().error(
-            LogDomains.sync,
-            'outbox enqueue failed after createLink; VC already committed',
-            error: exception,
+            LogDomain.sync,
+            exception,
+            message:
+                'outbox enqueue failed after createLink; VC already committed',
             stackTrace: stackTrace,
             subDomain: 'createLink.enqueue',
           );
@@ -529,10 +530,11 @@ class PersistenceLogic {
               // the counter to a different entity. Log and move on; the
               // receiver will observe a transient gap that backfill fills.
               getIt<DomainLogger>().error(
-                LogDomains.sync,
-                'outbox enqueue failed after createDbEntity; '
-                'VC already committed',
-                error: exception,
+                LogDomain.sync,
+                exception,
+                message:
+                    'outbox enqueue failed after createDbEntity; '
+                    'VC already committed',
                 stackTrace: stackTrace,
                 subDomain: 'createDbEntity.enqueue',
               );
@@ -981,10 +983,11 @@ class PersistenceLogic {
               // the counter (that would let a subsequent reservation reuse
               // the same counter for a different entity).
               getIt<DomainLogger>().error(
-                LogDomains.sync,
-                'outbox enqueue failed after updateDbEntity; '
-                'VC already committed',
-                error: exception,
+                LogDomain.sync,
+                exception,
+                message:
+                    'outbox enqueue failed after updateDbEntity; '
+                    'VC already committed',
                 stackTrace: stackTrace,
                 subDomain: 'updateDbEntity.enqueue',
               );

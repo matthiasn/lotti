@@ -663,7 +663,7 @@ void main() {
           () => logger.error(
             any(),
             any(),
-            error: any(named: 'error'),
+            message: any(named: 'message'),
             stackTrace: any(named: 'stackTrace'),
             subDomain: any(named: 'subDomain'),
           ),
@@ -676,9 +676,12 @@ void main() {
 
         verify(
           () => logger.error(
-            LogDomains.sync,
-            any(that: contains('threw on id=$_kAudioId')),
-            error: any(named: 'error'),
+            LogDomain.sync,
+            any(),
+            message: any(
+              named: 'message',
+              that: contains('threw on id=$_kAudioId'),
+            ),
             stackTrace: any(named: 'stackTrace'),
             subDomain: any(named: 'subDomain'),
           ),
@@ -787,7 +790,7 @@ void main() {
           () => logger.error(
             any(),
             any(),
-            error: any(named: 'error'),
+            message: any(named: 'message'),
             stackTrace: any(named: 'stackTrace'),
             subDomain: any(named: 'subDomain'),
           ),
@@ -797,9 +800,12 @@ void main() {
 
         verify(
           () => logger.error(
-            LogDomains.sync,
-            any(that: contains('runTranscription threw for $_kAudioId')),
-            error: any(named: 'error'),
+            LogDomain.sync,
+            any(),
+            message: any(
+              named: 'message',
+              that: contains('runTranscription threw for $_kAudioId'),
+            ),
             stackTrace: any(named: 'stackTrace'),
             subDomain: any(named: 'subDomain'),
           ),

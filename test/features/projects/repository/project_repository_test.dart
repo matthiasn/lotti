@@ -1001,9 +1001,9 @@ void main() {
       ).thenAnswer((_) async {});
       when(
         () => mockDomainLogger.error(
-          any<String>(),
-          any<String>(),
-          error: any<dynamic>(named: 'error'),
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String>(named: 'message'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any<String>(named: 'subDomain'),
         ),
@@ -1147,11 +1147,12 @@ void main() {
         expect(result, isTrue);
         verify(
           () => mockDomainLogger.error(
-            LogDomains.sync,
-            any<String>(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(
+              named: 'message',
               that: contains('sequence record failed after project link'),
             ),
-            error: any<dynamic>(named: 'error'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'linkTaskToProject.recordSent',
           ),

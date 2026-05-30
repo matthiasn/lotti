@@ -8496,6 +8496,144 @@ abstract class AppLocalizations {
   /// **'Link existing task...'**
   String get linkExistingTask;
 
+  /// No description provided for @loggingDomainAgentRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent runtime'**
+  String get loggingDomainAgentRuntime;
+
+  /// No description provided for @loggingDomainAgentWorkflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent workflow'**
+  String get loggingDomainAgentWorkflow;
+
+  /// No description provided for @loggingDomainAi.
+  ///
+  /// In en, this message translates to:
+  /// **'AI'**
+  String get loggingDomainAi;
+
+  /// No description provided for @loggingDomainCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar & time'**
+  String get loggingDomainCalendar;
+
+  /// No description provided for @loggingDomainChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get loggingDomainChat;
+
+  /// No description provided for @loggingDomainDailyOs.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS'**
+  String get loggingDomainDailyOs;
+
+  /// No description provided for @loggingDomainDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Database'**
+  String get loggingDomainDatabase;
+
+  /// No description provided for @loggingDomainGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get loggingDomainGeneral;
+
+  /// No description provided for @loggingDomainHabits.
+  ///
+  /// In en, this message translates to:
+  /// **'Habits'**
+  String get loggingDomainHabits;
+
+  /// No description provided for @loggingDomainHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get loggingDomainHealth;
+
+  /// No description provided for @loggingDomainLabels.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get loggingDomainLabels;
+
+  /// No description provided for @loggingDomainLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get loggingDomainLocation;
+
+  /// No description provided for @loggingDomainNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get loggingDomainNavigation;
+
+  /// No description provided for @loggingDomainNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get loggingDomainNotifications;
+
+  /// No description provided for @loggingDomainPersistence.
+  ///
+  /// In en, this message translates to:
+  /// **'Persistence'**
+  String get loggingDomainPersistence;
+
+  /// No description provided for @loggingDomainRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings'**
+  String get loggingDomainRatings;
+
+  /// No description provided for @loggingDomainScreenshots.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshots'**
+  String get loggingDomainScreenshots;
+
+  /// No description provided for @loggingDomainSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get loggingDomainSettings;
+
+  /// No description provided for @loggingDomainSpeech.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech & audio'**
+  String get loggingDomainSpeech;
+
+  /// No description provided for @loggingDomainSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get loggingDomainSync;
+
+  /// No description provided for @loggingDomainTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks & checklists'**
+  String get loggingDomainTasks;
+
+  /// No description provided for @loggingDomainTheming.
+  ///
+  /// In en, this message translates to:
+  /// **'Theming'**
+  String get loggingDomainTheming;
+
+  /// No description provided for @loggingDomainWhatsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new'**
+  String get loggingDomainWhatsNew;
+
   /// No description provided for @maintenanceDeleteAgentDb.
   ///
   /// In en, this message translates to:
@@ -10744,30 +10882,6 @@ abstract class AppLocalizations {
   /// **'Used on {count, plural, =1{1 task} other{{count} tasks}}'**
   String settingsLabelsUsageCount(int count);
 
-  /// No description provided for @settingsLoggingAgentRuntime.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent Runtime'**
-  String get settingsLoggingAgentRuntime;
-
-  /// No description provided for @settingsLoggingAgentRuntimeSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Wake orchestrator decisions and dispatch'**
-  String get settingsLoggingAgentRuntimeSubtitle;
-
-  /// No description provided for @settingsLoggingAgentWorkflow.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent Workflow'**
-  String get settingsLoggingAgentWorkflow;
-
-  /// No description provided for @settingsLoggingAgentWorkflowSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Conversation execution and tool calls'**
-  String get settingsLoggingAgentWorkflowSubtitle;
-
   /// No description provided for @settingsLoggingDomainsSubtitle.
   ///
   /// In en, this message translates to:
@@ -10803,18 +10917,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Writes slow queries to slow_queries-YYYY-MM-DD.log'**
   String get settingsLoggingSlowQueriesSubtitle;
-
-  /// No description provided for @settingsLoggingSync.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync'**
-  String get settingsLoggingSync;
-
-  /// No description provided for @settingsLoggingSyncSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Cross-device sync operations'**
-  String get settingsLoggingSyncSubtitle;
 
   /// No description provided for @settingsMaintenanceTitle.
   ///

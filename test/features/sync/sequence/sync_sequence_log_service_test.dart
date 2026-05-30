@@ -1766,7 +1766,7 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('backfilled hostId=$aliceHostId')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.backfillArrived',
         ),
       ).called(1);
@@ -1929,7 +1929,7 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('backfilled (non-originator)')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.backfillArrived',
         ),
       ).called(1);
@@ -2027,7 +2027,7 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('largeGapDetected')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.largeGap',
         ),
       ).called(1);
@@ -2100,7 +2100,7 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('extremeGapDetected')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.extremeGap',
         ),
       ).called(1);
@@ -2183,7 +2183,7 @@ void main() {
       verifyNever(
         () => mockLogging.captureEvent(
           any<String>(that: contains('largeGapDetected')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.largeGap',
         ),
       );
@@ -2274,7 +2274,7 @@ void main() {
         verifyNever(
           () => mockLogging.captureEvent(
             any<String>(that: contains('largeGapDetected')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.largeGap',
           ),
         );
@@ -2356,21 +2356,21 @@ void main() {
         verifyNever(
           () => mockLogging.captureEvent(
             any<String>(that: contains('largeGapDetected')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.largeGap',
           ),
         );
         verifyNever(
           () => mockLogging.captureEvent(
             any<String>(that: contains('extremeGapDetected')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.extremeGap',
           ),
         );
         verifyNever(
           () => mockLogging.captureEvent(
             any<String>(that: contains('gapDetectedRange')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.gapDetected',
           ),
         );
@@ -2525,7 +2525,7 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('skipGapDetection')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.skipGap',
         ),
       ).called(1);
@@ -2673,7 +2673,7 @@ void main() {
         verify(
           () => mockLogging.captureEvent(
             any<String>(that: contains('skipGapDetection')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.skipGap',
           ),
         ).called(1);
@@ -3481,7 +3481,7 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('reset 2 entries')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.reRequest',
         ),
       ).called(1);
@@ -4992,7 +4992,7 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('markCoveredCountersAsReceived')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.coveredClocks',
         ),
       ).called(1);
@@ -5212,7 +5212,7 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('reset 5 entries')),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.resetUnresolvable',
         ),
       ).called(1);
@@ -5228,7 +5228,7 @@ void main() {
       verifyNever(
         () => mockLogging.captureEvent(
           any<String>(),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.resetUnresolvable',
         ),
       );
@@ -5259,7 +5259,7 @@ void main() {
         verify(
           () => mockLogging.captureEvent(
             any<String>(that: contains('reset 13 entries')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.resetAllUnresolvable',
           ),
         ).called(1);
@@ -5276,7 +5276,7 @@ void main() {
       verifyNever(
         () => mockLogging.captureEvent(
           any<String>(),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.resetAllUnresolvable',
         ),
       );
@@ -5403,7 +5403,7 @@ void main() {
         verify(
           () => mockLogging.captureEvent(
             any<String>(that: contains('retired 12 entries')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.retireExhausted',
           ),
         ).called(1);
@@ -5466,7 +5466,7 @@ void main() {
       verifyNever(
         () => mockLogging.captureEvent(
           any<String>(),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.retireExhausted',
         ),
       );
@@ -5515,7 +5515,7 @@ void main() {
         verify(
           () => mockLogging.captureEvent(
             any<String>(that: contains('retired 9 entries')),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.retireAgedOut',
           ),
         ).called(1);
@@ -5534,7 +5534,7 @@ void main() {
       verifyNever(
         () => mockLogging.captureEvent(
           any<String>(),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.retireAgedOut',
         ),
       );
@@ -6179,7 +6179,7 @@ void main() {
             any<String>(
               that: contains('markOwnCounterUnresolvable skipped'),
             ),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.ownUnresolvable',
           ),
         ).called(3);
@@ -6207,7 +6207,7 @@ void main() {
               contains('counters=[4, 9]'),
             ),
           ),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.reservedCounters',
         ),
       ).called(1);
@@ -6232,7 +6232,7 @@ void main() {
               contains('counters=[7, 12]'),
             ),
           ),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'sequence.burnPendingCounters',
         ),
       ).called(1);
@@ -6247,7 +6247,7 @@ void main() {
         final mockDomainLogger = MockDomainLogger();
         when(
           () => mockDomainLogger.log(
-            any<String>(),
+            any<LogDomain>(),
             any<String>(),
             subDomain: any<String>(named: 'subDomain'),
             level: any<InsightLevel>(named: 'level'),
@@ -6270,7 +6270,7 @@ void main() {
 
         verify(
           () => mockDomainLogger.log(
-            LogDomains.sync,
+            LogDomain.sync,
             any<String>(
               that: contains('resetUnresolvableEntries: reset 3 entries'),
             ),
@@ -6282,7 +6282,7 @@ void main() {
             any<String>(
               that: contains('resetUnresolvableEntries: reset 3 entries'),
             ),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'sequence.resetUnresolvable',
           ),
         );

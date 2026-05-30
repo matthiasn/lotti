@@ -45,9 +45,10 @@ class RatingRepository {
       );
     } catch (error, stackTrace) {
       getIt<DomainLogger>().error(
-        LogDomains.sync,
-        'sequence record failed after rating link write; VC already committed',
-        error: error,
+        LogDomain.sync,
+        error,
+        message:
+            'sequence record failed after rating link write; VC already committed',
         stackTrace: stackTrace,
         subDomain: '_createRatingLink.recordSent',
       );
@@ -227,10 +228,11 @@ class RatingRepository {
           );
         } catch (e, stackTrace) {
           getIt<DomainLogger>().error(
-            LogDomains.sync,
-            'outbox enqueue failed after _createRatingLink; '
-            'VC already committed',
-            error: e,
+            LogDomain.sync,
+            e,
+            message:
+                'outbox enqueue failed after _createRatingLink; '
+                'VC already committed',
             stackTrace: stackTrace,
             subDomain: '_createRatingLink.enqueue',
           );

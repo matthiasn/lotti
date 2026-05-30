@@ -133,7 +133,7 @@ class TaskAgentWorkflow {
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(
-      LogDomains.agentWorkflow,
+      LogDomain.agentWorkflow,
       message,
       subDomain: subDomain,
     );
@@ -142,9 +142,9 @@ class TaskAgentWorkflow {
   void _logError(String message, {Object? error, StackTrace? stackTrace}) {
     if (domainLogger != null) {
       domainLogger!.error(
-        LogDomains.agentWorkflow,
-        message,
-        error: error,
+        LogDomain.agentWorkflow,
+        error ?? message,
+        message: error != null ? message : null,
         stackTrace: stackTrace,
       );
     } else {

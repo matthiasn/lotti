@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1011]
+### Added
+- Settings → Advanced → Logging now has an individual on/off switch for every
+  logging domain (sync, AI, chat, speech, persistence, database, agent runtime,
+  agent workflow, tasks, labels, health, habits, location, screenshots,
+  calendar, navigation, theming, notifications, what's new, settings, ratings,
+  Daily OS, general), replacing the previous three fixed toggles. Sync stays off
+  by default; the rest are on while the master logging switch is enabled. Errors
+  are always logged regardless of these switches.
+- Errors are now mirrored into two daily files for quick inspection:
+  `error-YYYY-MM-DD.log` with full detail, and a PII-safe
+  `error-safe-YYYY-MM-DD.log` that records the error type only (never the raw
+  exception text), so the safe file can be shared without leaking content. Under
+  normal operation both stay empty.
+
 ### Changed
 - Backfill sync now distinguishes intentionally burned vector-clock counters
   (benign voided numbers in the monotonic sequence) from genuinely unresolvable

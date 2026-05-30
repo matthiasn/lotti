@@ -140,7 +140,7 @@ class DayAgentService {
     );
 
     domainLogger.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'created day agent ${DomainLogger.sanitizeId(identity.agentId)} '
       'for ${DomainLogger.sanitizeId(dayId)}',
       subDomain: 'lifecycle',
@@ -185,7 +185,7 @@ class DayAgentService {
     final agent = await getDayAgentForDate(dayDate);
     if (agent == null) {
       domainLogger.log(
-        LogDomains.agentRuntime,
+        LogDomain.agentRuntime,
         'no day agent for '
         '${DomainLogger.sanitizeId(dayAgentIdForDate(dayDate))}; '
         'drafting wake not enqueued',
@@ -205,7 +205,7 @@ class DayAgentService {
           dayAgentDecidedCaptureItemToken(parsedItemId.trim()),
     };
     domainLogger.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'drafting wake enqueued for '
       '${DomainLogger.sanitizeId(agent.agentId)} / '
       '${DomainLogger.sanitizeId(dayId)}',
@@ -240,7 +240,7 @@ class DayAgentService {
     final agent = await getDayAgentForDate(dayDate);
     if (agent == null) {
       domainLogger.log(
-        LogDomains.agentRuntime,
+        LogDomain.agentRuntime,
         'no day agent for '
         '${DomainLogger.sanitizeId(dayAgentIdForDate(dayDate))}; '
         'refine wake not enqueued',
@@ -254,7 +254,7 @@ class DayAgentService {
         plan.deletedAt != null ||
         plan.agentId != agent.agentId) {
       domainLogger.log(
-        LogDomains.agentRuntime,
+        LogDomain.agentRuntime,
         'no editable plan for '
         '${DomainLogger.sanitizeId(dayId)}; refine wake not enqueued',
         subDomain: 'refine',
@@ -284,7 +284,7 @@ class DayAgentService {
     }
 
     domainLogger.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'refine wake enqueued for '
       '${DomainLogger.sanitizeId(agent.agentId)} / '
       '${DomainLogger.sanitizeId(dayId)}'
@@ -302,7 +302,7 @@ class DayAgentService {
   /// Trigger a manual wake for [agentId].
   void triggerReanalysis(String agentId) {
     domainLogger.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'manual day-agent reanalysis triggered for '
       '${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
@@ -316,7 +316,7 @@ class DayAgentService {
   /// Cancel a pending or scheduled wake for [agentId].
   void cancelScheduledWake(String agentId) {
     domainLogger.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'day-agent scheduled wake cancelled for '
       '${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
@@ -327,7 +327,7 @@ class DayAgentService {
   /// Restore in-memory runtime state for active day agents at app startup.
   Future<void> restoreSubscriptions() async {
     domainLogger.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'restoring day-agent runtime state...',
       subDomain: 'restore',
     );
@@ -347,16 +347,16 @@ class DayAgentService {
             'failed to restore day-agent runtime state for '
             '${DomainLogger.sanitizeId(agent.agentId)}';
         domainLogger.error(
-          LogDomains.agentRuntime,
-          msg,
-          error: e,
+          LogDomain.agentRuntime,
+          e,
+          message: msg,
           stackTrace: s,
         );
       }
     }
 
     domainLogger.log(
-      LogDomains.agentRuntime,
+      LogDomain.agentRuntime,
       'restored $count day agent(s)',
       subDomain: 'restore',
     );

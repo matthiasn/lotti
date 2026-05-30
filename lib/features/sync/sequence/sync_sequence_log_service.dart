@@ -132,7 +132,7 @@ class SyncSequenceLogService {
     final sub = subDomain ?? 'sequence';
     final domainLogger = _domainLogger;
     if (domainLogger != null) {
-      domainLogger.log(LogDomains.sync, message, subDomain: sub);
+      domainLogger.log(LogDomain.sync, message, subDomain: sub);
       return;
     }
     // Fallback for callers that did not inject a DomainLogger (e.g. tests).
@@ -140,7 +140,7 @@ class SyncSequenceLogService {
     // LoggingService working so the log line still lands in the sync file.
     _loggingService.captureEvent(
       message,
-      domain: LogDomains.sync,
+      domain: LogDomain.sync.wireName,
       subDomain: sub,
     );
   }

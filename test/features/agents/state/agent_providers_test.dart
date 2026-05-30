@@ -183,9 +183,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await container.pump();
 
-      expect(logger.enabledDomains, contains(LogDomains.agentRuntime));
-      expect(logger.enabledDomains, isNot(contains(LogDomains.agentWorkflow)));
-      expect(logger.enabledDomains, contains(LogDomains.sync));
+      expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
+      expect(logger.enabledDomains, isNot(contains(LogDomain.agentWorkflow)));
+      expect(logger.enabledDomains, contains(LogDomain.sync));
     });
 
     test('updates enabledDomains when config flags change', () async {
@@ -226,9 +226,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await container.pump();
 
-      expect(logger.enabledDomains, contains(LogDomains.agentRuntime));
-      expect(logger.enabledDomains, contains(LogDomains.agentWorkflow));
-      expect(logger.enabledDomains, isNot(contains(LogDomains.sync)));
+      expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
+      expect(logger.enabledDomains, contains(LogDomain.agentWorkflow));
+      expect(logger.enabledDomains, isNot(contains(LogDomain.sync)));
 
       // Toggle: agent_runtime off, sync on.
       runtimeController.add(false);
@@ -236,9 +236,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await container.pump();
 
-      expect(logger.enabledDomains, isNot(contains(LogDomains.agentRuntime)));
-      expect(logger.enabledDomains, contains(LogDomains.agentWorkflow));
-      expect(logger.enabledDomains, contains(LogDomains.sync));
+      expect(logger.enabledDomains, isNot(contains(LogDomain.agentRuntime)));
+      expect(logger.enabledDomains, contains(LogDomain.agentWorkflow));
+      expect(logger.enabledDomains, contains(LogDomain.sync));
     });
 
     test('uses registered DomainLogger and seeds prewarmed flags', () async {
@@ -291,7 +291,7 @@ void main() {
       final logger = container.read(domainLoggerProvider);
 
       expect(logger, same(registeredLogger));
-      expect(logger.enabledDomains, contains(LogDomains.agentRuntime));
+      expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
     });
   });
 

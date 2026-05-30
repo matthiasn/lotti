@@ -24,6 +24,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -45,8 +46,8 @@ final Set<String> expectedActiveFlagNames = {
   privateFlag,
   enableTooltipFlag,
   enableAiStreamingFlag,
-  logAgentRuntimeFlag,
-  logAgentWorkflowFlag,
+  for (final domain in LogDomain.values)
+    if (domain.defaultEnabled) domain.flagName,
 };
 
 final expectedFlags = <ConfigFlag>{
@@ -136,21 +137,12 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable Projects?',
     status: false,
   ),
-  const ConfigFlag(
-    name: logAgentRuntimeFlag,
-    description: 'Log agent runtime (wake orchestrator)',
-    status: true,
-  ),
-  const ConfigFlag(
-    name: logAgentWorkflowFlag,
-    description: 'Log agent workflow execution',
-    status: true,
-  ),
-  const ConfigFlag(
-    name: logSyncFlag,
-    description: 'Log sync operations',
-    status: false,
-  ),
+  for (final domain in LogDomain.values)
+    ConfigFlag(
+      name: domain.flagName,
+      description: 'Log ${domain.label}',
+      status: domain.defaultEnabled,
+    ),
   const ConfigFlag(
     name: logSlowQueriesFlag,
     description: 'Log slow database queries',

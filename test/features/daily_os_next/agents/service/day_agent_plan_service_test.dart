@@ -539,7 +539,7 @@ void main() {
         () => domainLogger.error(
           any(),
           any(),
-          error: any(named: 'error'),
+          message: any(named: 'message'),
           stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),
@@ -560,9 +560,9 @@ void main() {
       expect(result.output, contains('boom'));
       verify(
         () => domainLogger.error(
-          LogDomains.agentWorkflow,
-          'day-agent plan tool failed',
-          error: any(named: 'error'),
+          LogDomain.agentWorkflow,
+          any(),
+          message: 'day-agent plan tool failed',
           stackTrace: any(named: 'stackTrace'),
         ),
       ).called(1);

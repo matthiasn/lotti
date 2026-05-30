@@ -136,7 +136,7 @@ class FollowUpTaskHandler {
     // Verify the task is actually persisted and readable.
     final verifyTask = await _journalDb.journalEntityById(newTaskId);
     _domainLogger?.log(
-      LogDomains.agentWorkflow,
+      LogDomain.agentWorkflow,
       'Created task ${DomainLogger.sanitizeId(newTaskId)} — verify lookup: '
       '${verifyTask?.runtimeType} (found: ${verifyTask != null})',
       subDomain: _sub,
@@ -166,10 +166,11 @@ class FollowUpTaskHandler {
       }
     } catch (e) {
       _domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Failed to link source ${DomainLogger.sanitizeId(sourceTaskId)} → '
-        '${DomainLogger.sanitizeId(newTaskId)}',
-        error: e,
+        LogDomain.agentWorkflow,
+        e,
+        message:
+            'Failed to link source ${DomainLogger.sanitizeId(sourceTaskId)} → '
+            '${DomainLogger.sanitizeId(newTaskId)}',
         subDomain: _sub,
       );
       warnings.add('Warning: failed to link source task');
@@ -242,7 +243,7 @@ class FollowUpTaskHandler {
       );
       if (!inherited) {
         _domainLogger?.log(
-          LogDomains.agentWorkflow,
+          LogDomain.agentWorkflow,
           'No project to inherit from '
           '${DomainLogger.sanitizeId(sourceTaskId)} for '
           '${DomainLogger.sanitizeId(newTaskId)}',
@@ -251,11 +252,12 @@ class FollowUpTaskHandler {
       }
     } catch (e) {
       _domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Failed to inherit project from '
-        '${DomainLogger.sanitizeId(sourceTaskId)} → '
-        '${DomainLogger.sanitizeId(newTaskId)}',
-        error: e,
+        LogDomain.agentWorkflow,
+        e,
+        message:
+            'Failed to inherit project from '
+            '${DomainLogger.sanitizeId(sourceTaskId)} → '
+            '${DomainLogger.sanitizeId(newTaskId)}',
         subDomain: _sub,
       );
       warnings.add('Warning: failed to inherit project');
@@ -289,10 +291,11 @@ class FollowUpTaskHandler {
       );
     } catch (e) {
       _domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Failed to auto-assign agent for follow-up '
-        '${DomainLogger.sanitizeId(newTask.meta.id)}',
-        error: e,
+        LogDomain.agentWorkflow,
+        e,
+        message:
+            'Failed to auto-assign agent for follow-up '
+            '${DomainLogger.sanitizeId(newTask.meta.id)}',
         subDomain: _sub,
       );
       warnings.add('Warning: failed to auto-assign agent');

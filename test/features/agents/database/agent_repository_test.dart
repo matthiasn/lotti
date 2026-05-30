@@ -6825,9 +6825,9 @@ void main() {
 
       verify(
         () => mockLogger.error(
-          LogDomains.agentRuntime,
-          any(that: contains('agent_links')),
-          error: any(named: 'error', that: isA<SqliteException>()),
+          LogDomain.agentRuntime,
+          any(that: isA<SqliteException>()),
+          message: any(named: 'message', that: contains('agent_links')),
           stackTrace: any(named: 'stackTrace', that: isNotNull),
           subDomain: 'AgentRepository.insertLinkExclusive',
         ),
@@ -6845,9 +6845,9 @@ void main() {
 
       verify(
         () => mockLogger.error(
-          LogDomains.agentRuntime,
-          any(that: contains('wake_run_log')),
-          error: any(named: 'error', that: isA<SqliteException>()),
+          LogDomain.agentRuntime,
+          any(that: isA<SqliteException>()),
+          message: any(named: 'message', that: contains('wake_run_log')),
           stackTrace: any(named: 'stackTrace', that: isNotNull),
           subDomain: 'AgentRepository.insertWakeRun',
         ),
@@ -6864,9 +6864,9 @@ void main() {
 
       verify(
         () => mockLogger.error(
-          LogDomains.agentRuntime,
-          any(that: contains('saga_log')),
-          error: any(named: 'error', that: isA<SqliteException>()),
+          LogDomain.agentRuntime,
+          any(that: isA<SqliteException>()),
+          message: any(named: 'message', that: contains('saga_log')),
           stackTrace: any(named: 'stackTrace', that: isNotNull),
           subDomain: 'AgentRepository.insertSagaOp',
         ),

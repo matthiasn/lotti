@@ -24,6 +24,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/logging_domains.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -106,6 +107,11 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackAiConfig);
   registerFallbackValue(fallbackNotificationEntity);
   registerFallbackValue(fallbackConfigFlag);
+
+  // Logging
+  registerFallbackValue(LogDomain.general);
+  registerFallbackValue(InsightLevel.info);
+  registerFallbackValue(StackTrace.empty);
 
   // Fake classes from mocks.dart
   registerFallbackValue(FakeMetadata());

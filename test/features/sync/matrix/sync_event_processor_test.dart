@@ -550,7 +550,7 @@ void main() {
     verify(
       () => loggingService.captureEvent(
         contains('apply entryLink from=from-id to=to-id rows=1'),
-        domain: LogDomains.sync,
+        domain: LogDomain.sync.wireName,
         subDomain: 'processor.apply.entryLink',
       ),
     ).called(1);
@@ -758,7 +758,7 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('apply.gapsDetected count=1'),
-          domain: LogDomains.sync,
+          domain: LogDomain.sync.wireName,
           subDomain: 'processor.gapDetection',
         ),
       ).called(1);
@@ -1442,7 +1442,7 @@ void main() {
         final domainLogger = MockDomainLogger();
         when(
           () => domainLogger.log(
-            any<String>(),
+            any<LogDomain>(),
             any<String>(),
             subDomain: any<String>(named: 'subDomain'),
             level: any<InsightLevel>(named: 'level'),
@@ -1466,7 +1466,7 @@ void main() {
 
         verify(
           () => domainLogger.log(
-            LogDomains.sync,
+            LogDomain.sync,
             any<String>(
               that: contains('skipping undeserializable sync message'),
             ),
@@ -1478,7 +1478,7 @@ void main() {
             any<String>(
               that: contains('skipping undeserializable sync message'),
             ),
-            domain: LogDomains.sync,
+            domain: LogDomain.sync.wireName,
             subDomain: 'processor.skipUnrecoverable',
           ),
         );

@@ -52,7 +52,7 @@ class MatrixMessageSender {
 
   void _trace(String message, {String? subDomain}) {
     _domainLogger?.log(
-      LogDomains.sync,
+      LogDomain.sync,
       message,
       subDomain: subDomain ?? 'matrix.send',
     );

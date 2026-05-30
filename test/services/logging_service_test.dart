@@ -136,6 +136,60 @@ void main() {
     });
   });
 
+  test('captureException is mirrored to the daily error log', () {
+    fakeAsync((async) {
+      logging.captureException(
+        'kaboom',
+        domain: 'DB',
+        subDomain: 'insert',
+        stackTrace: 'trace',
+      );
+
+      async.flushMicrotasks();
+
+      final errorFile = _findLogFile(tempDocs, prefix: 'error-');
+      expect(errorFile, isNotNull, reason: 'error-*.log should exist');
+      expect(
+        errorFile!.readAsStringSync(),
+        contains(' [ERROR] DB insert: kaboom trace'),
+      );
+    });
+  });
+
+  test('error-level captureEvent is mirrored to the daily error log', () {
+    fakeAsync((async) {
+      logging.captureEvent(
+        'something bad',
+        domain: 'DB',
+        subDomain: 'query',
+        level: InsightLevel.error,
+      );
+
+      async.flushMicrotasks();
+
+      final errorFile = _findLogFile(tempDocs, prefix: 'error-');
+      expect(errorFile, isNotNull, reason: 'error-*.log should exist');
+      expect(
+        errorFile!.readAsStringSync(),
+        contains(' [ERROR] DB query: something bad'),
+      );
+    });
+  });
+
+  test('info-level captureEvent does not write to the daily error log', () {
+    fakeAsync((async) {
+      logging.captureEvent('all good', domain: 'DB', subDomain: 'query');
+
+      async.flushMicrotasks();
+
+      expect(
+        _findLogFile(tempDocs, prefix: 'error-'),
+        isNull,
+        reason: 'info events must not reach the error log',
+      );
+    });
+  });
+
   test('captureException writes file line with stack trace text', () {
     fakeAsync((async) {
       logging.captureException(

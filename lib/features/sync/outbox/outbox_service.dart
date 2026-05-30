@@ -226,7 +226,7 @@ class OutboxService {
   static const Duration _coalescedLogMinInterval = Duration(seconds: 30);
 
   void _syncLog(String message, {String? subDomain}) {
-    _domainLogger?.log(LogDomains.sync, message, subDomain: subDomain);
+    _domainLogger?.log(LogDomain.sync, message, subDomain: subDomain);
   }
 
   void _startRunner() {

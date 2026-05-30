@@ -430,7 +430,25 @@ void stubLoggingService(MockLoggingService mock) {
   ).thenAnswer((_) {});
 }
 
-class MockDomainLogger extends Mock implements DomainLogger {}
+class MockDomainLogger extends Mock implements DomainLogger {
+  MockDomainLogger() {
+    // Fallbacks for `any()` matchers on log/error parameters. `LogDomain` is an
+    // enum, so (unlike String) mocktail has no built-in fallback for it.
+    registerFallbackValue(LogDomain.general);
+    registerFallbackValue(InsightLevel.info);
+    registerFallbackValue(StackTrace.empty);
+  }
+}
+
+/// Registers the fallback values needed for `any()` matchers on a
+/// [MockDomainLogger]. Constructing a [MockDomainLogger] already registers
+/// these; this helper is kept for tests that prefer an explicit `setUp` call.
+/// The `log`/`error` methods are void, so unstubbed calls are already no-ops.
+void stubDomainLogger(MockDomainLogger mock) {
+  registerFallbackValue(LogDomain.general);
+  registerFallbackValue(InsightLevel.info);
+  registerFallbackValue(StackTrace.empty);
+}
 
 class MockEditorDb extends Mock implements EditorDb {}
 

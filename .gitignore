@@ -208,3 +208,4 @@ test/.test_optimizer.dart
 
 logs/
 
+.claude/projects/

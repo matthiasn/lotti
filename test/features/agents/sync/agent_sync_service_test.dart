@@ -348,7 +348,7 @@ void main() {
     // Register a fake DomainLogger so _enqueuePostWrite can log swallowed
     // outbox errors without blowing up on an unregistered GetIt lookup.
     if (!getIt.isRegistered<DomainLogger>()) {
-      getIt.registerSingleton<DomainLogger>(_FakeDomainLogger());
+      getIt.registerSingleton<DomainLogger>(MockDomainLogger());
     }
 
     mockRepository = MockAgentRepository();
@@ -1360,30 +1360,4 @@ void main() {
       );
     });
   });
-}
-
-/// Minimal DomainLogger double — no-op for both the gated info channel and
-/// the always-on error channel. The tests don't assert on logs; they just
-/// need the singleton lookup in AgentSyncService._enqueuePostWrite to
-/// succeed so the swallow-outbox-error path completes.
-class _FakeDomainLogger implements DomainLogger {
-  @override
-  final Set<String> enabledDomains = {};
-
-  @override
-  void log(
-    String domain,
-    String message, {
-    String? subDomain,
-    dynamic level,
-  }) {}
-
-  @override
-  void error(
-    String domain,
-    String message, {
-    Object? error,
-    StackTrace? stackTrace,
-    String? subDomain,
-  }) {}
 }
