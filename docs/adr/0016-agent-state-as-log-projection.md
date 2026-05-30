@@ -35,8 +35,13 @@ derive state from the durable log instead of trusting mutable replicated state.
    pattern (`SoulDocumentVersionEntity`/`Head`, `AgentTemplateVersionEntity`/
    `Head`). Generalize that pattern; do not add new in-place mutable synced rows
    for derived state.
-4. The projection fold is order-stable and deterministic across devices; the
-   merge/ordering rule is specified in ADR 0018.
+4. The log is a **causal DAG** — causality is the `AgentLink.messagePrev` edge
+   set, and the scalar `prevMessageId` is a denormalized primary-parent
+   convenience, never authoritative. "Current head" and the summary pointers are
+   derived by **reverse-indexing `messagePrev`**, not stored as fields. The
+   projection fold is a **deterministic linear extension** of that DAG (ordering
+   rule in ADR 0018), order-stable across devices and **tolerant of multiple
+   heads** — concurrent branches are legal, not corruption.
 
 ## Projection Loop
 

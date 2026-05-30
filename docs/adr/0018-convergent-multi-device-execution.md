@@ -1,4 +1,4 @@
-# ADR 0018: Single-Writer Execution via Per-User Lease and Fencing Tokens
+# ADR 0018: Convergent Multi-Device Execution — Lease, Fencing, and Fork Reconciliation
 
 - Status: Proposed
 - Date: 2026-05-30
@@ -20,6 +20,12 @@ unless the *local* vector clock dominates — so `concurrent` writes are applied
 by arrival order. Matrix provides causal/eventual delivery, **not** a
 linearizable primitive, so a hard lease cannot be assumed for free.
 
+**The lease is secondary to convergence.** Correctness comes from the convergent
+DAG projection (rules 4 and 7–10 below; ADR 0016) — branches are legal and must converge whether or not
+the lease held. The lease only reduces duplicate expensive/user-visible work and
+guards irreversible external effects; it is never the thing preventing
+corruption.
+
 "Vector clock + last-write-wins" must also be applied correctly. A vector clock
 can detect true concurrency (which a scalar/hybrid logical clock cannot), so LWW
 should apply only on the concurrent branch — and only that branch needs a
@@ -30,10 +36,13 @@ tiebreak.
 1. Separate **facts** (log appends, recorded model/tool responses — replicate
    freely, converge via CRDT semantics) from **execution** (running behaviors
    and their side effects).
-2. Side-effecting actions serialize behind a **per-user leader lease + a
-   monotonically increasing fencing token**; the resource side rejects any write
-   carrying a lower token. A bare lease is insufficient — a paused holder can
-   issue a stale write past expiry.
+2. Side-effecting actions serialize behind a **leader lease keyed to the
+   side-effect boundary** — `(agentId, behaviorKind)` for per-agent
+   execution/compaction, `(userId, dayId, planner)` for the shared day planner;
+   *not* per-user (too coarse) nor bare per-agent (wrong boundary). The lease
+   carries a **monotonically increasing fencing token**; the resource side
+   rejects any write carrying a lower token. A bare lease is insufficient — a
+   paused holder can issue a stale write past expiry.
 3. Exactly one device executes at a time **while connected to the lease
    coordinator**; others project the resulting events. This is **not** a free
    extension of the in-process `WakeRunner` lock — it requires a real lease
@@ -58,12 +67,34 @@ tiebreak.
 6. Keep the vector clock — it detects concurrency, which the human gate needs in
    order to know a real conflict exists. A hybrid logical clock may optionally
    harden the concurrent-branch tiebreak but does not replace the vector clock.
+7. **The projection is multi-head tolerant; forks are legal.** Two devices waking
+   the same runtime from a shared prefix create a DAG fork (concurrent
+   `messagePrev` children of a shared parent — ADR 0016). This is normal, not
+   corruption: context assembly reads across all current heads in the
+   deterministic linear extension (rule 4), so every device converges without a
+   join.
+8. **Forks heal by lazy, capped join-by-continuation** — a continuation node
+   linking (`messagePrev`) to all current heads, emitted **only when ≥2 heads
+   survive past one wake cycle**, by the lowest-`hostId` head author (or the lease
+   holder if present). The join is **idempotent** (keyed by `frontierDigest`), so
+   concurrent joins of the same fork dedup — no storm. This bounds context and
+   re-warms the on-device prefix; it is *not* required for correctness.
+9. **Side effects carry an idempotency key** `agentId + behaviorKind +
+   frontierDigest + toolName`; the later projection dedups/suppresses duplicates
+   (reuse ChangeSet dedup, ADR 0009). Truly irreversible external effects (a sent
+   email, a created calendar event) cannot be undone — they stay behind the lease
+   + the human gate (ADR 0019), and that set is kept minimal; where no external
+   key can be stored, log both and reconcile visibly.
+10. **Silent vs visible reconciliation.** Derived/internal divergence converges
+    silently by canonical pick; divergent *user-facing commitments* surface as a
+    `ChangeSet` ("your devices disagreed — here's the reconcile"), never silently
+    overwritten.
 
 ## Execution Topology
 
 ```mermaid
 flowchart TD
-  Lease["Per-user lease + fencing token"] --> A["Device A: runs behaviors + side effects"]
+  Lease["Lease (side-effect boundary) + fencing"] --> A["Device A: runs behaviors + side effects"]
   A -->|append events| Sync["Sync: Matrix E2EE, vector-clocked"]
   Sync -->|union merge| B["Device B: projection only"]
   B -->|no execution without lease| Stop["execution suppressed"]
@@ -75,7 +106,9 @@ flowchart TD
   coordinator**; under partition, uniqueness degrades to
   *idempotent-and-reconciled* (stale fencing tokens rejected on reconnect). The
   planner commits a schedule in one place in the connected case.
-- Convergent, deterministic projection on every device.
+- Convergent, deterministic projection on every device. Forks are legal and
+  converge with no coordination; lazy capped joins keep context and the on-device
+  prefix bounded.
 - Cost: lease + fencing infrastructure and lease handoff; the secondary `hostId`
   tiebreak must be added before convergence can be claimed.
 - Pure log appends remain lock-free.
@@ -86,4 +119,4 @@ flowchart TD
 - `lib/features/sync/vector_clock.dart`
 - `lib/features/agents/README.md` (Wake Orchestration: vector-clock self-suppression)
 - Kleppmann, "How to do distributed locking"
-- ADR 0001, ADR 0016
+- ADR 0001, ADR 0016, ADR 0017, ADR 0019

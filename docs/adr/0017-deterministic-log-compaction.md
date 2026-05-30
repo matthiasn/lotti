@@ -27,17 +27,20 @@ arbitrary winner.
 2. Summaries are **derived projections, not destructive overwrites**: the
    immutable log remains ground truth; summarized messages are retained.
 3. **A content digest does not make two LLM summaries converge** (different
-   content yields a different digest). Convergence requires either **(a)
-   single-writer compaction** — only the executor-lease holder (ADR 0018)
-   summarizes — or **(b) coexisting candidate summaries with deterministic
-   selection** by the projection (VC-order, then `hostId`/`id`).
-   Content-addressing's role is narrower: dedup of *identical* artifacts and a
-   verification/replay hash so a summary is regenerable from the log. When a
-   digest is computed it is over a **canonical serialization** (sorted keys, RFC
-   3339 UTC timestamps, normalized numbers, UTF-8 canonical JSON / JCS) with a
-   **versioned tag** (e.g. `sha256-v1`, base64url), keyed by the message range
-   (`summaryStartMessageId`/`summaryEndMessageId`), the prior summary it folds
-   in, and the summarizer config (model id, params, prompt version).
+   content yields a different digest). Convergence comes from treating summaries
+   as **candidate checkpoints over causal frontiers**, not from the lease. A
+   summary covers a *frontier* — an antichain `{e : prior < e ≤ frontier}`.
+   Frontiers form a **join-semilattice** (merge = least-upper-bound antichain),
+   so the active checkpoint is the **join** of candidate frontiers,
+   deterministically tiebroken — a state-based CRDT that converges by
+   construction. The *frontier* converges by merge; the *summary text* on a
+   chosen frontier is a deterministic **pick** among candidates (you cannot LUB
+   two paragraphs). `frontierDigest` = hash of the antichain's canonical id-set;
+   it keys dedup and the verification/replay hash, computed over a **canonical
+   serialization** (sorted keys, RFC 3339 UTC timestamps, normalized numbers,
+   UTF-8 canonical JSON / JCS) with a **versioned tag** (e.g. `sha256-v1`,
+   base64url). The lease (ADR 0018) only avoids *usually* summarizing twice; it
+   is not required for convergence.
 4. Compaction preserves decisions, open commitments/negotiations, and
    non-negotiables; it discards redundant tool chatter.
 5. Compaction runs as a distinct background identity writing into the same log.
@@ -67,9 +70,9 @@ stateDiagram-v2
   earn their keep.
 - A long-lived, byte-stable on-device prefix yields real KV/prefix-cache reuse
   across wakes.
-- Summaries converge across devices via single-writer compaction or
-  deterministic candidate-selection — *not* by content-addressing LLM outputs,
-  which differ run-to-run.
+- Summaries converge across devices as a **join-semilattice over causal
+  frontiers** (deterministic candidate selection) — *not* by content-addressing
+  LLM outputs, which differ run-to-run.
 - Risks: recursive summarization can amplify hallucination at depth — mitigated
   by stored provenance + replay hash + regeneration; on-device window thresholds
   (MemGPT's 70/100/50% are cloud-tuned) need tuning for small contexts.
