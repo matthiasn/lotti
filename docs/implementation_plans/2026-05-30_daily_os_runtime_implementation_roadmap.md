@@ -66,7 +66,7 @@ Grouped into the six phases of §10. Each PR: **Goal · Depends on · Touches ·
 - **Depends on:** PR 1 (kernel) for local-only; **promote to synced** depends on PR 4.
 - **Touches:** new compaction behavior; summary digest schema; wake context assembly (stable prefix = soul→tools→summary→recent tail; `currentLocalTime` last).
 - **Defers:** merge-summary tuning; cross-device promotion until PR 4.
-- **Done when:** long-lived agents read frozen-summary + tail; replay-from-summary ≡ replay-from-genesis; two devices summarizing the same trunk converge (sim test).
+- **Done when:** long-lived agents read frozen-summary + tail; **replay-from-summary is equivalent to replay-from-genesis in the scoped sense** — identical *projection state* (heads, pointers, derived fields), preserved *provenance* (the summary records which frontier it covers via `frontierDigest`), and byte-identical replay of the *uncovered tail*. This is **not** a claim of byte-identical or semantically-lossless reproduction of the summarized prose (infeasible for LLM/text summaries); the equivalence is over projected state + coverage metadata + tail, not over the summary text itself. Two devices summarizing the same trunk converge (sim test).
 - **Realizes:** §6; ADR 0017.
 
 **PR 6 — Join-by-continuation (fork healing)**
@@ -80,7 +80,7 @@ Grouped into the six phases of §10. Each PR: **Goal · Depends on · Touches ·
 
 **PR 7 — Executor lease + fencing**
 - **Goal:** side-effect-boundary lease (`(agentId, behaviorKind)`, `(userId, dayId, planner)`) + monotonic fencing token; offline reconciliation (idempotent + fenced); side-effect idempotency key `agentId + behaviorKind + frontierDigest + triggerId + toolName` (stable, source-derived `triggerId`).
-- **Depends on:** PR 4 (convergent projection). **Decision required:** lease backend (designated-primary election over synced state vs external coordinator).
+- **Depends on:** PR 4 (convergent projection). **Decision required:** lease backend — and the two candidates are **not** interchangeable. A *designated-primary election over eventually-synced app state* is **best-effort attention negotiation only**: under partition, both sides can believe they hold it, so it cannot provide linearizable ownership or a monotonic fence on its own. A hard lease + fencing token (the actual safety property PR 7 needs) requires either an external coordinator with linearizable compare-and-swap, or restricting auto-commit to genuinely idempotent + fenced side effects so that a double-execution under partition is provably safe. **PR 7 must not try to derive linearizable ownership from eventually-synced state** — pick the external coordinator for irreversible effects, and reserve synced-state primary-election for reversible/idempotent ones.
 - **Touches:** `WakeOrchestrator` (`canExecute()` gate, extending VC self-suppression to inter-device); side-effecting tool paths; idempotency-key plumbing.
 - **Done when:** partition+heal sim shows no duplicate committed schedule and no divergence; stale fencing tokens rejected on reconnect.
 - **Realizes:** §8; ADR 0018 rules 1–3, 9.
