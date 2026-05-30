@@ -169,7 +169,7 @@ _VoiceShaderConfig _voiceConfigFromKnobs(BuildContext context) {
     ),
     speed: context.knobs.double.slider(
       label: 'Voice / speed',
-      initialValue: 0.78,
+      initialValue: 2,
       max: 2.5,
       divisions: 50,
       precision: 2,
@@ -236,7 +236,7 @@ _ThinkingShaderConfig _thinkingConfigFromKnobs(BuildContext context) {
     ),
     speed: context.knobs.double.slider(
       label: 'Thinking / speed',
-      initialValue: 0.82,
+      initialValue: 2.3,
       max: 2.5,
       divisions: 50,
       precision: 2,
@@ -250,7 +250,7 @@ _ThinkingShaderConfig _thinkingConfigFromKnobs(BuildContext context) {
     ),
     randomness: context.knobs.double.slider(
       label: 'Thinking / randomness',
-      initialValue: 0.64,
+      initialValue: 0.9,
       max: 1,
       divisions: 50,
       precision: 2,
@@ -288,6 +288,35 @@ _ThinkingShaderConfig _thinkingConfigFromKnobs(BuildContext context) {
       initialValue: background,
     ),
   );
+}
+
+@visibleForTesting
+const voiceRecorderAmplitudeInterval = Duration(milliseconds: 20);
+
+@visibleForTesting
+const voiceRecorderReleaseDbPerSecond = 64.0;
+
+@visibleForTesting
+double applyVoiceDbfsEnvelope({
+  required double currentDbfs,
+  required double targetDbfs,
+  required double floorDbfs,
+  Duration elapsed = voiceRecorderAmplitudeInterval,
+  double releaseDbPerSecond = voiceRecorderReleaseDbPerSecond,
+}) {
+  final floor = math.min(floorDbfs, -0.001);
+  final current = currentDbfs.clamp(floor, 0.0);
+  final target = targetDbfs.clamp(floor, 0.0);
+
+  if (target >= current) {
+    return target;
+  }
+
+  final releaseStep =
+      releaseDbPerSecond *
+      elapsed.inMicroseconds /
+      Duration.microsecondsPerSecond;
+  return math.max(target, current - releaseStep);
 }
 
 class _VoiceInputOrbUseCase extends StatelessWidget {
@@ -504,7 +533,6 @@ class _VoiceRecorderDrivenPreview extends StatefulWidget {
 class _VoiceRecorderDrivenPreviewState
     extends State<_VoiceRecorderDrivenPreview> {
   static const _defaultInputDeviceId = '__default__';
-  static const _amplitudeInterval = Duration(milliseconds: 40);
 
   final record.AudioRecorder _recorder = record.AudioRecorder();
   StreamSubscription<Uint8List>? _streamSubscription;
@@ -529,6 +557,7 @@ class _VoiceRecorderDrivenPreviewState
   String _signalSource = 'idle';
   String? _error;
   String? _deviceError;
+  bool _isPollingAmplitude = false;
 
   @override
   void initState() {
@@ -750,15 +779,18 @@ class _VoiceRecorderDrivenPreviewState
   void _startAmplitudePolling() {
     _amplitudeTimer?.cancel();
     _amplitudeTimer = Timer.periodic(
-      _amplitudeInterval,
+      voiceRecorderAmplitudeInterval,
       (_) => unawaited(_pollRecorderAmplitude()),
     );
     unawaited(_pollRecorderAmplitude());
   }
 
   Future<void> _pollRecorderAmplitude() async {
-    if (!mounted || !widget.config.useLiveRecorder) return;
+    if (!mounted || !widget.config.useLiveRecorder || _isPollingAmplitude) {
+      return;
+    }
 
+    _isPollingAmplitude = true;
     try {
       final amplitude = await _recorder.getAmplitude();
       if (!mounted || !widget.config.useLiveRecorder) return;
@@ -773,6 +805,8 @@ class _VoiceRecorderDrivenPreviewState
       setState(() {
         _error = 'Amplitude polling failed: $error';
       });
+    } finally {
+      _isPollingAmplitude = false;
     }
   }
 
@@ -788,7 +822,7 @@ class _VoiceRecorderDrivenPreviewState
     _pcmRmsSample = stats.rmsSample;
 
     if (_amplitudeThrottle.isRunning &&
-        _amplitudeThrottle.elapsed < _amplitudeInterval) {
+        _amplitudeThrottle.elapsed < voiceRecorderAmplitudeInterval) {
       _pcmChunkCount += 1;
       _pcmByteCount += chunk.length;
       return;
@@ -805,20 +839,26 @@ class _VoiceRecorderDrivenPreviewState
   }
 
   void _updateLiveDbfs() {
+    late final double targetDbfs;
     if (_pcmDbfs > _packageDbfs) {
-      _liveDbfs = _pcmDbfs;
-      _signalSource = 'PCM dBFS';
-      return;
-    }
-
-    _liveDbfs = _packageDbfs;
-    if (_amplitudeReadCount > 0) {
-      _signalSource = 'package dBFS';
-    } else if (_pcmChunkCount > 0) {
+      targetDbfs = _pcmDbfs;
       _signalSource = 'PCM dBFS';
     } else {
-      _signalSource = 'waiting for signal';
+      targetDbfs = _packageDbfs;
+      if (_amplitudeReadCount > 0) {
+        _signalSource = 'package dBFS';
+      } else if (_pcmChunkCount > 0) {
+        _signalSource = 'PCM dBFS';
+      } else {
+        _signalSource = 'waiting for signal';
+      }
     }
+
+    _liveDbfs = applyVoiceDbfsEnvelope(
+      currentDbfs: _liveDbfs,
+      targetDbfs: targetDbfs,
+      floorDbfs: widget.config.dbfsFloor,
+    );
   }
 
   double _clampDbfs(double dbfs) {

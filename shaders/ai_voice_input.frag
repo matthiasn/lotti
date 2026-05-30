@@ -309,9 +309,12 @@ vec4 tensionLoop(
   vec3 paleTeal = mix(primary, vec3(1.0), 0.34 + level * 0.10);
   vec3 hot = mix(primary, vec3(1.0), 0.76 + level * 0.18);
   vec3 whiteHot = mix(primary, vec3(1.0), 0.92);
+  vec3 fineTeal = mix(primary, paleTeal, 0.18);
   float heatA = angularGlow(angle, time * 0.46 + 0.3, 0.42);
   float heatB = angularGlow(angle, -time * 0.34 - 2.2, 0.44);
   float heatC = angularGlow(angle, time * 0.25 + 2.8, 0.58);
+  float heatD = angularGlow(angle, -time * 0.22 + 1.4, 0.50);
+  float heatE = angularGlow(angle, time * 0.31 - 2.7, 0.46);
   float loopA = contourRing(
       radius,
       angle,
@@ -330,6 +333,24 @@ vec4 tensionLoop(
       0.010 + level * 0.009,
       4.0,
       force * 0.86);
+  float loopC = contourRing(
+      radius,
+      angle,
+      time * 0.36,
+      level,
+      0.382 + level * 0.014,
+      0.007 + level * 0.006,
+      7.4,
+      force * 0.58);
+  float loopD = contourRing(
+      radius,
+      angle,
+      -time * 0.52,
+      level,
+      0.250 - level * 0.006,
+      0.006 + level * 0.005,
+      8.6,
+      force * 0.50);
   float hotLoopA = contourRing(
       radius,
       angle,
@@ -348,6 +369,24 @@ vec4 tensionLoop(
       0.015 + level * 0.010,
       5.7,
       force * 0.50);
+  float hotLoopC = contourRing(
+      radius,
+      angle,
+      time * 0.44,
+      level,
+      0.368 + level * 0.010,
+      0.012 + level * 0.008,
+      3.3,
+      force * 0.42);
+  float hotLoopD = contourRing(
+      radius,
+      angle,
+      -time * 0.48,
+      level,
+      0.268 - level * 0.005,
+      0.011 + level * 0.007,
+      6.9,
+      force * 0.38);
   float glowLoopA = contourRing(
       radius,
       angle,
@@ -366,13 +405,31 @@ vec4 tensionLoop(
       0.034 + level * 0.018,
       5.7,
       force * 0.36);
+  float glowLoopC = contourRing(
+      radius,
+      angle,
+      time * 0.40,
+      level,
+      0.372 + level * 0.012,
+      0.032 + level * 0.016,
+      3.3,
+      force * 0.30);
+  float glowLoopD = contourRing(
+      radius,
+      angle,
+      -time * 0.42,
+      level,
+      0.266 - level * 0.006,
+      0.030 + level * 0.014,
+      6.9,
+      force * 0.28);
   float thinLoopA = contourRing(
       radius,
       angle,
       time * 0.82,
       level,
       0.354 + level * 0.010,
-      0.004 + level * 0.003,
+      0.0060 + level * 0.0038,
       7.1,
       force * 0.72);
   float thinLoopB = contourRing(
@@ -381,14 +438,73 @@ vec4 tensionLoop(
       -time * 0.68,
       level,
       0.284 - level * 0.004,
-      0.004 + level * 0.003,
+      0.0060 + level * 0.0038,
       1.6,
       force * 0.62);
+  float thinLoopC = contourRing(
+      radius,
+      angle,
+      time * 0.96,
+      level,
+      0.394 + level * 0.008,
+      0.0056 + level * 0.0034,
+      4.4,
+      force * 0.52);
+  float thinLoopD = contourRing(
+      radius,
+      angle,
+      -time * 0.88,
+      level,
+      0.244 - level * 0.004,
+      0.0056 + level * 0.0034,
+      8.1,
+      force * 0.46);
+  float thinLoopE = contourRing(
+      radius,
+      angle,
+      time * 1.10,
+      level,
+      0.336 + level * 0.007,
+      0.0054 + level * 0.0032,
+      9.5,
+      force * 0.50);
+  float thinLoopF = contourRing(
+      radius,
+      angle,
+      -time * 0.98,
+      level,
+      0.306 - level * 0.004,
+      0.0054 + level * 0.0032,
+      2.9,
+      force * 0.48);
+  float thinLoopG = contourRing(
+      radius,
+      angle,
+      time * 0.72,
+      level,
+      0.414 + level * 0.006,
+      0.0050 + level * 0.0029,
+      5.9,
+      force * 0.38);
+  float thinLoopH = contourRing(
+      radius,
+      angle,
+      -time * 0.74,
+      level,
+      0.224 - level * 0.002,
+      0.0050 + level * 0.0029,
+      7.7,
+      force * 0.36);
   float tensionA = angularGlow(angle, time * 0.36 + 0.3, 0.46);
   float tensionB = angularGlow(angle, -time * 0.27 - 2.2, 0.48);
   float overlap = min(loopA, loopB) * (0.65 + level * 0.76);
-  float highlight = loopA * tensionA + loopB * tensionB;
-  float heat = hotLoopA * heatA + hotLoopB * heatB + overlap * heatC;
+  float outerOverlap = min(loopC, loopA) * (0.42 + level * 0.54);
+  float innerOverlap = min(loopD, loopB) * (0.38 + level * 0.48);
+  float highlight = loopA * tensionA + loopB * tensionB +
+      loopC * heatD * 0.62 + loopD * heatE * 0.58;
+  float heat = hotLoopA * heatA + hotLoopB * heatB +
+      hotLoopC * heatD + hotLoopD * heatE +
+      overlap * heatC + outerOverlap * heatD + innerOverlap * heatE;
   float threadA = edgeTrace(radius, angle, time, level, 0.320, 5.2, force * 0.78);
   float threadB = edgeTrace(radius, angle, -time * 0.70, level, 0.344, 1.2, force * 0.62);
   float threadC = edgeTrace(radius, angle, time * 1.16, level, 0.286, 3.5, force * 0.58);
@@ -415,20 +531,34 @@ vec4 tensionLoop(
       1.18);
   float aura = contourAura(radius, angle, time, level, 0.321, 2.6, force * 0.52);
 
-  vec3 color = primary * (thinLoopA * 0.96 + thinLoopB * 0.84 +
+  vec3 color = primary * (
       threadA * 0.78 + threadB * 0.68 + threadC * 0.58 + threadD * 0.52 +
       ghost * 0.20);
-  color += paleTeal * (loopA * 0.44 + loopB * 0.38 + highlight * 0.52);
+  color += fineTeal * (thinLoopA * 1.02 + thinLoopB * 0.94 +
+      thinLoopC * 0.74 + thinLoopD * 0.68 +
+      thinLoopE * 0.78 + thinLoopF * 0.74 +
+      thinLoopG * 0.52 + thinLoopH * 0.48);
+  color += paleTeal * (loopA * 0.38 + loopB * 0.34 +
+      loopC * 0.34 + loopD * 0.28 + highlight * 0.46);
   color += hot * (glowLoopA * heatA * 0.22 + glowLoopB * heatB * 0.18 +
-      heat * 0.96 + overlap * 0.50 + ember * 0.30);
-  color += whiteHot * (hotLoopA * heatA * 0.38 + hotLoopB * heatB * 0.32);
+      glowLoopC * heatD * 0.16 + glowLoopD * heatE * 0.14 +
+      heat * 0.86 + overlap * 0.44 +
+      outerOverlap * 0.30 + innerOverlap * 0.26 + ember * 0.28);
+  color += whiteHot * (hotLoopA * heatA * 0.34 + hotLoopB * heatB * 0.30 +
+      hotLoopC * heatD * 0.24 + hotLoopD * heatE * 0.22);
   color += background * backgroundAlpha * aura * 0.08;
 
-  float alpha = (loopA * 0.36 + loopB * 0.34 +
+  float alpha = (loopA * 0.32 + loopB * 0.30 + loopC * 0.24 + loopD * 0.22 +
       glowLoopA * heatA * 0.10 + glowLoopB * heatB * 0.09 +
+      glowLoopC * heatD * 0.07 + glowLoopD * heatE * 0.06 +
       hotLoopA * heatA * 0.40 + hotLoopB * heatB * 0.36 +
-      thinLoopA * 0.22 + thinLoopB * 0.20 +
-      overlap * 0.62 + highlight * 0.40 + heat * 0.42 +
+      hotLoopC * heatD * 0.26 + hotLoopD * heatE * 0.24 +
+      thinLoopA * 0.24 + thinLoopB * 0.22 +
+      thinLoopC * 0.17 + thinLoopD * 0.16 +
+      thinLoopE * 0.18 + thinLoopF * 0.17 +
+      thinLoopG * 0.13 + thinLoopH * 0.12 +
+      overlap * 0.56 + outerOverlap * 0.32 + innerOverlap * 0.28 +
+      highlight * 0.36 + heat * 0.38 +
       threadA * 0.34 + threadB * 0.30 + threadC * 0.24 + threadD * 0.22 +
       ghost * 0.16 + ember * 0.20 + aura * 0.08) * intensity;
   return compose(color * intensity, alpha, radius);

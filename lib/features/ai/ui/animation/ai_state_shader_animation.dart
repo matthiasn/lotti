@@ -86,7 +86,7 @@ class AiVoiceInputShader extends StatefulWidget {
     required this.secondaryColor,
     required this.backgroundColor,
     this.dbfsFloor = -80,
-    this.speed = 1,
+    this.speed = 2,
     this.intensity = 0.78,
     this.lineDensity = 19,
     this.orbitalMix = 0.55,

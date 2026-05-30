@@ -42,7 +42,7 @@ void main() {
       ]);
     });
 
-    test('defaults to the hotter tension loop route', () {
+    test('defaults to the hotter tension loop route at production speed', () {
       const shader = AiVoiceInputShader(
         dbfs: -24,
         size: 160,
@@ -52,6 +52,7 @@ void main() {
       );
 
       expect(shader.route, AiVoiceShaderRoute.tensionLoop);
+      expect(shader.speed, 2);
     });
 
     testWidgets('renders a deterministic fallback when shader loading fails', (
