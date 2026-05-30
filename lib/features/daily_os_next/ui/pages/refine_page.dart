@@ -186,7 +186,6 @@ class _RefinementPanel extends ConsumerWidget {
             SizedBox(height: tokens.spacing.step3),
             _ProblemNotice(
               problem: state.problem!,
-              detail: state.problemDetail,
             ),
           ],
           if (state.phase == RefinePhase.listening) ...[
@@ -345,21 +344,16 @@ class _StatusLine extends StatelessWidget {
 class _ProblemNotice extends StatelessWidget {
   const _ProblemNotice({
     required this.problem,
-    required this.detail,
   });
 
   final RefineProblem problem;
-  final String? detail;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final message = switch (problem) {
       RefineProblem.noChanges => context.messages.dailyOsNextRefineNoChanges,
-      RefineProblem.proposalFailed =>
-        context.messages.dailyOsNextReconcileError(
-          detail ?? '',
-        ),
+      RefineProblem.proposalFailed => context.messages.dailyOsNextGenericError,
     };
     return DecoratedBox(
       decoration: BoxDecoration(

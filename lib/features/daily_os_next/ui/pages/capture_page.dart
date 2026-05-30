@@ -2,9 +2,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
@@ -20,7 +22,12 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// Reconcile CTA). Plain, calm, no calendar or task list visible.
 /// Mirrors `prototype/screens/capture.jsx` variant A.
 class CapturePage extends ConsumerWidget {
-  const CapturePage({this.forDate, this.dateStrip, super.key});
+  const CapturePage({
+    this.forDate,
+    this.actualBlocks = const [],
+    this.dateStrip,
+    super.key,
+  });
 
   /// Day this capture is for. Defaults to `DateTime.now()`, which
   /// routes the capture to today's day-agent. When the route-level
@@ -28,6 +35,11 @@ class CapturePage extends ConsumerWidget {
   /// the local midnight of that day so the resulting day-agent is
   /// keyed on the chosen day instead of today.
   final DateTime? forDate;
+
+  /// Already recorded sessions for [forDate]. The route-level root
+  /// resolves these before mounting Capture so the screen does not
+  /// look empty on days that already have tracked time.
+  final List<TimeBlock> actualBlocks;
 
   /// Optional widget rendered in the AppBar title slot — used by the
   /// route-level root to expose a date strip while Capture is open
@@ -64,6 +76,10 @@ class CapturePage extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    if (actualBlocks.isNotEmpty) ...[
+                      _RecordedTimePreview(blocks: actualBlocks),
+                      SizedBox(height: tokens.spacing.step6),
+                    ],
                     const _GreetingBlock(),
                     SizedBox(height: tokens.spacing.step6),
                     _Headline(forDate: forDate),
@@ -101,6 +117,131 @@ class CapturePage extends ConsumerWidget {
         return context.messages.dailyOsNextCaptureVoiceButtonReset;
     }
   }
+}
+
+class _RecordedTimePreview extends StatelessWidget {
+  const _RecordedTimePreview({required this.blocks});
+
+  final List<TimeBlock> blocks;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final totalMinutes = blocks.fold<int>(
+      0,
+      (sum, block) => sum + block.duration.inMinutes,
+    );
+    final completedTaskIds = blocks
+        .where((block) => block.state == TimeBlockState.completed)
+        .map((block) => block.taskId ?? block.id)
+        .toSet();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+        border: Border.all(color: tokens.colors.decorative.level01),
+      ),
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  messages.dailyOsNextTimeSpentTitle,
+                  style: tokens.typography.styles.others.overline.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ),
+              Text(
+                messages.dailyOsNextTimeSpentSummary(
+                  _formatMinutes(totalMinutes),
+                  completedTaskIds.length,
+                ),
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          for (final block in blocks) ...[
+            _RecordedTimeRow(block: block),
+            if (block != blocks.last) SizedBox(height: tokens.spacing.step2),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RecordedTimeRow extends StatelessWidget {
+  const _RecordedTimeRow({required this.block});
+
+  final TimeBlock block;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final color = categoryColorFromHex(block.category.colorHex);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(top: tokens.spacing.step2),
+          child: SizedBox.square(
+            dimension: tokens.spacing.step2,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                block.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+              ),
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                _formatTimeRange(context, block),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _formatMinutes(int minutes) {
+  final hours = minutes ~/ 60;
+  final remainingMinutes = minutes % 60;
+  if (hours == 0) return '${remainingMinutes}m';
+  if (remainingMinutes == 0) return '${hours}h';
+  return '${hours}h ${remainingMinutes}m';
+}
+
+String _formatTimeRange(BuildContext context, TimeBlock block) {
+  final locale = Localizations.localeOf(context).toString();
+  final formatter = DateFormat.jm(locale);
+  return '${formatter.format(block.start)}-${formatter.format(block.end)}';
 }
 
 class _GreetingBlock extends ConsumerWidget {

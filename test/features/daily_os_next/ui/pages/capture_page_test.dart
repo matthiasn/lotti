@@ -24,6 +24,12 @@ import 'package:record/record.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
+const _category = DayAgentCategory(
+  id: 'cat-work',
+  name: 'Work',
+  colorHex: '5ED4B7',
+);
+
 class _RecordingAgent implements DayAgentInterface {
   String? capturedTranscript;
   String? capturedAudioId;
@@ -234,6 +240,41 @@ void main() {
         await harness.dispose();
       },
     );
+
+    testWidgets('recorded time preview renders above the idle capture prompt', (
+      tester,
+    ) async {
+      final harness = _AudioHarness()..arm();
+      await _pumpCapture(
+        tester,
+        harness: harness,
+        page: CapturePage(
+          actualBlocks: [
+            TimeBlock(
+              id: 'actual:entry-1',
+              title: 'Client follow-up',
+              start: DateTime(2026, 5, 26, 9),
+              end: DateTime(2026, 5, 26, 10),
+              type: TimeBlockType.manual,
+              state: TimeBlockState.completed,
+              category: _category,
+              taskId: 'task-1',
+            ),
+          ],
+        ),
+      );
+
+      final messages = tester.element(find.byType(CapturePage)).messages;
+      expect(find.text(messages.dailyOsNextTimeSpentTitle), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextTimeSpentSummary('1h', 1)),
+        findsOneWidget,
+      );
+      expect(find.text('Client follow-up'), findsOneWidget);
+      expect(find.text(messages.dailyOsNextCaptureIdleTalk), findsOneWidget);
+
+      await harness.dispose();
+    });
 
     testWidgets('type instead opens the editable transcript path', (
       tester,

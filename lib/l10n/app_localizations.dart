@@ -5592,6 +5592,12 @@ abstract class AppLocalizations {
   /// **'{minutes}m'**
   String dailyOsNextEstimateMinutes(int minutes);
 
+  /// No description provided for @dailyOsNextGenericError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Try again in a moment.'**
+  String get dailyOsNextGenericError;
+
   /// No description provided for @dailyOsNextGreetingAfternoon.
   ///
   /// In en, this message translates to:

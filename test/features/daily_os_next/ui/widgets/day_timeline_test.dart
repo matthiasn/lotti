@@ -188,7 +188,13 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byKey(const Key('daily_os_day_block_plan-task')));
+      final block = find.byKey(const Key('daily_os_day_block_plan-task'));
+      expect(
+        find.descendant(of: block, matching: find.byType(Ink)),
+        findsOneWidget,
+      );
+
+      await tester.tap(block);
       await tester.pump();
 
       expect(openedPath, '/tasks/task-1');
@@ -225,7 +231,17 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byKey(const Key('daily_os_day_block_standalone')));
+      final standaloneBlock = find.byKey(
+        const Key('daily_os_day_block_standalone'),
+      );
+      final blockRect = tester.getRect(standaloneBlock);
+      expect(blockRect.top, greaterThanOrEqualTo(0));
+      expect(
+        blockRect.bottom,
+        lessThanOrEqualTo(tester.view.physicalSize.height),
+      );
+
+      await tester.tapAt(blockRect.center);
       await tester.pump();
 
       expect(openedPath, isNull);

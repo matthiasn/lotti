@@ -67,9 +67,7 @@ class ReconcilePage extends ConsumerWidget {
             ),
             _ when state.hasError => Center(
               child: Text(
-                context.messages.dailyOsNextReconcileError(
-                  state.error.toString(),
-                ),
+                context.messages.dailyOsNextGenericError,
                 style: tokens.typography.styles.body.bodyMedium.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
                 ),

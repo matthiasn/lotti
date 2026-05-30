@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -17,6 +19,17 @@ Widget _wrap(Widget child) => makeTestableWidget2(
 Widget _wrapPhone(Widget child) => makeTestableWidget2(
   child,
   mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+);
+
+Widget _wrapWithTheme(
+  Widget child,
+  ThemeData theme, {
+  List<Override> overrides = const [],
+}) => makeTestableWidgetNoScroll(
+  child,
+  overrides: overrides,
+  mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+  theme: theme,
 );
 
 const _category = DayAgentCategory(
@@ -215,6 +228,70 @@ void main() {
       expect(thumbnail.imageId, 'image-1');
       expect(thumbnail.cropX, 0.25);
     });
+
+    testWidgets(
+      'solid cover number chooses dark text on light category colors',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrapWithTheme(
+            const Material(
+              child: AgendaCard(
+                index: 1,
+                item: AgendaItem(
+                  id: 'a1',
+                  title: 'Mint cover',
+                  category: _category,
+                  linkedBlockIds: ['b1'],
+                ),
+                coverArtId: 'image-1',
+              ),
+            ),
+            ThemeData.light(useMaterial3: true),
+            overrides: [createEntryControllerOverride(_image())],
+          ),
+        );
+        await tester.pump();
+
+        final indexText = tester.widget<Text>(find.text('1'));
+        expect(indexText.style?.color, dsTokensLight.colors.text.highEmphasis);
+      },
+    );
+
+    testWidgets(
+      'solid cover number chooses dark-theme contrast per category color',
+      (tester) async {
+        const blueCategory = DayAgentCategory(
+          id: 'cat_blue',
+          name: 'Blue',
+          colorHex: '4AB6E8',
+        );
+        await tester.pumpWidget(
+          _wrapWithTheme(
+            const Material(
+              child: AgendaCard(
+                index: 2,
+                item: AgendaItem(
+                  id: 'a1',
+                  title: 'Blue cover',
+                  category: blueCategory,
+                  linkedBlockIds: ['b1'],
+                ),
+                coverArtId: 'image-1',
+              ),
+            ),
+            ThemeData.dark(useMaterial3: true),
+            overrides: [createEntryControllerOverride(_image())],
+          ),
+        );
+        await tester.pump();
+
+        final indexText = tester.widget<Text>(find.text('2'));
+        expect(
+          indexText.style?.color,
+          dsTokensDark.colors.text.onInteractiveAlert,
+        );
+      },
+    );
 
     testWidgets('renders non-open state and progress metadata', (tester) async {
       await tester.pumpWidget(

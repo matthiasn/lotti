@@ -3324,6 +3324,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextGenericError =>
+      'Etwas ist schiefgelaufen. Versuch es gleich noch mal.';
+
+  @override
   String get dailyOsNextGreetingAfternoon => 'Guten Tag.';
 
   @override

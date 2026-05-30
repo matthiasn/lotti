@@ -3345,6 +3345,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextGenericError =>
+      'Ceva nu a mers bine. Încercați din nou în câteva momente.';
+
+  @override
   String get dailyOsNextGreetingAfternoon => 'Bună după-amiaza.';
 
   @override

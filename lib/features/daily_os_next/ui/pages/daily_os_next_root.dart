@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
@@ -82,12 +83,23 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   @override
   Widget build(BuildContext context) {
     final asyncPlan = ref.watch(currentDraftPlanProvider(_selectedDate));
-    if (asyncPlan.hasValue) return _buildSurface(asyncPlan.requireValue);
+    if (asyncPlan.hasValue) {
+      final plan = asyncPlan.requireValue;
+      if (plan != null) return _buildSurface(plan);
+
+      final actualBlocks = ref.watch(
+        dailyOsActualTimeBlocksProvider(_selectedDate),
+      );
+      return _buildSurface(null, actualBlocks: actualBlocks.value ?? const []);
+    }
     if (asyncPlan.hasError) return _ErrorShell(error: '${asyncPlan.error}');
     return const _LoadingShell();
   }
 
-  Widget _buildSurface(DraftPlan? plan) {
+  Widget _buildSurface(
+    DraftPlan? plan, {
+    List<TimeBlock> actualBlocks = const [],
+  }) {
     final strip = _DateStrip(
       selected: _selectedDate,
       isToday: _isToday,
@@ -110,6 +122,7 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     return CapturePage(
       key: ValueKey('capture-${_selectedDate.toIso8601String()}'),
       forDate: _selectedDate,
+      actualBlocks: actualBlocks,
       dateStrip: strip,
     );
   }

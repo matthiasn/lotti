@@ -1830,6 +1830,7 @@
       }
     }
   },
+  "dailyOsNextGenericError": "Something went wrong. Try again in a moment.",
   "dailyOsNextGreetingAfternoon": "Good afternoon.",
   "dailyOsNextGreetingEvening": "Good evening.",
   "dailyOsNextGreetingHi": "Hi 👋",

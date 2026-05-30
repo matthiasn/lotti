@@ -1620,6 +1620,7 @@
       }
     }
   },
+  "dailyOsNextGenericError": "Etwas ist schiefgelaufen. Versuch es gleich noch mal.",
   "dailyOsNextGreetingAfternoon": "Guten Tag.",
   "dailyOsNextGreetingEvening": "Guten Abend.",
   "dailyOsNextGreetingHi": "Hallo 👋",

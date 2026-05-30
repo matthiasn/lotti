@@ -1620,6 +1620,7 @@
       }
     }
   },
+  "dailyOsNextGenericError": "Ceva nu a mers bine. Încercați din nou în câteva momente.",
   "dailyOsNextGreetingAfternoon": "Bună după-amiaza.",
   "dailyOsNextGreetingEvening": "Bună seara.",
   "dailyOsNextGreetingHi": "Salut 👋",

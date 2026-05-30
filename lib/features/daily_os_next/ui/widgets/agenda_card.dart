@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
@@ -294,10 +296,11 @@ class _NumberedCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final solidForeground =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? tokens.colors.text.highEmphasis
-        : tokens.colors.text.onInteractiveAlert;
+    final solidForeground = _higherContrastForeground(
+      background: color,
+      first: tokens.colors.text.highEmphasis,
+      second: tokens.colors.text.onInteractiveAlert,
+    );
     return Container(
       width: size,
       height: size,
@@ -318,6 +321,27 @@ class _NumberedCircle extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _higherContrastForeground({
+  required Color background,
+  required Color first,
+  required Color second,
+}) {
+  final firstContrast = _contrastRatio(background, first);
+  final secondContrast = _contrastRatio(background, second);
+  return firstContrast >= secondContrast ? first : second;
+}
+
+double _contrastRatio(Color background, Color foreground) {
+  final opaqueForeground = foreground.a < 1
+      ? Color.alphaBlend(foreground, background)
+      : foreground;
+  final backgroundLuminance = background.computeLuminance();
+  final foregroundLuminance = opaqueForeground.computeLuminance();
+  final lighter = math.max(backgroundLuminance, foregroundLuminance);
+  final darker = math.min(backgroundLuminance, foregroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 class _AgendaMetaRow extends StatelessWidget {

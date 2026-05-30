@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -13,6 +11,7 @@ import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 Widget _wrap(Widget child, {List<Override> overrides = const []}) {
@@ -33,69 +32,6 @@ MockDayAgent _fastAgent() => MockDayAgent(
   summarizeLatency: Duration.zero,
   clock: () => DateTime(2026, 5, 25, 9),
 );
-
-class _RefreshBlockingShutdownAgent extends MockDayAgent {
-  _RefreshBlockingShutdownAgent()
-    : super(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        draftLatency: Duration.zero,
-        summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
-      );
-
-  final pendingShutdownRefresh =
-      Completer<
-        ({
-          List<CompletedItem> completed,
-          List<CarryoverItem> carryover,
-          ShutdownMetrics metrics,
-        })
-      >();
-  int shutdownCalls = 0;
-
-  @override
-  Future<
-    ({
-      List<CompletedItem> completed,
-      List<CarryoverItem> carryover,
-      ShutdownMetrics metrics,
-    })
-  >
-  surfaceShutdownData({required DateTime forDate}) {
-    shutdownCalls += 1;
-    if (shutdownCalls == 1) return super.surfaceShutdownData(forDate: forDate);
-    return pendingShutdownRefresh.future;
-  }
-
-  @override
-  Future<TomorrowNote> generateTomorrowNote({required DateTime forDate}) async {
-    return const TomorrowNote(body: 'Tomorrow stays queued.', maturity: 1);
-  }
-}
-
-class _ThrowingShutdownAgent extends MockDayAgent {
-  _ThrowingShutdownAgent()
-    : super(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        draftLatency: Duration.zero,
-        summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
-      );
-
-  @override
-  Future<
-    ({
-      List<CompletedItem> completed,
-      List<CarryoverItem> carryover,
-      ShutdownMetrics metrics,
-    })
-  >
-  surfaceShutdownData({required DateTime forDate}) async {
-    throw StateError('shutdown unavailable');
-  }
-}
 
 void main() {
   group('ShutdownPage', () {
@@ -133,7 +69,7 @@ void main() {
         ..devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
-      final agent = _RefreshBlockingShutdownAgent();
+      final agent = RefreshBlockingShutdownAgent();
       addTearDown(() {
         if (!agent.pendingShutdownRefresh.isCompleted) {
           agent.pendingShutdownRefresh.complete(
@@ -184,21 +120,15 @@ void main() {
         _wrap(
           ShutdownPage(forDate: DateTime(2026, 5, 25)),
           overrides: [
-            dayAgentProvider.overrideWithValue(_ThrowingShutdownAgent()),
+            dayAgentProvider.overrideWithValue(ThrowingShutdownAgent()),
           ],
         ),
       );
       await tester.pump(const Duration(milliseconds: 200));
 
       final messages = tester.element(find.byType(ShutdownPage)).messages;
-      expect(
-        find.text(
-          messages.dailyOsNextReconcileError(
-            'Bad state: shutdown unavailable',
-          ),
-        ),
-        findsOneWidget,
-      );
+      expect(find.text(messages.dailyOsNextGenericError), findsOneWidget);
+      expect(find.textContaining('shutdown unavailable'), findsNothing);
     });
 
     testWidgets('footer actions all pop the shutdown route', (tester) async {

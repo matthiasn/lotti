@@ -92,6 +92,21 @@ void main() {
       verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
     });
 
+    test('ignores bare relative paths instead of routing them', () async {
+      getIt.pushNewScope();
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() async {
+        await getIt.resetScope();
+        await getIt.popScope();
+      });
+
+      await handleMarkdownLinkTap('tasks/task-123', 'Task');
+
+      verifyNever(() => mockNavService.beamToNamed(any()));
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
     test('routes lotti task URLs through NavService', () async {
       getIt.pushNewScope();
       final mockNavService = MockNavService();

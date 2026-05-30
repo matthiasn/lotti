@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
-import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
+import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -238,13 +238,13 @@ Widget _wrap(
   );
 }
 
-ThemeData _themeWithHeaderSpacing(double step5) {
+ThemeData _themeWithHeaderSpacing(double step2) {
   final theme = resolveTestTheme();
   final tokens = theme.extension<DsTokens>()!;
   return theme.copyWith(
     extensions: <ThemeExtension<dynamic>>[
       tokens.copyWith(
-        spacing: tokens.spacing.copyWith(step5: step5),
+        spacing: tokens.spacing.copyWith(step2: step2),
       ),
     ],
   );
@@ -391,7 +391,7 @@ void main() {
         ),
       );
       await tester.pump();
-      final firstLeft = tester.getTopLeft(find.byType(PlanViewToggle)).dx;
+      final firstTop = tester.getTopLeft(find.text(label)).dy;
 
       await tester.pumpWidget(
         _wrap(
@@ -404,9 +404,10 @@ void main() {
         ),
       );
       await tester.pump();
-      final secondLeft = tester.getTopLeft(find.byType(PlanViewToggle)).dx;
+      await tester.pump(const Duration(milliseconds: 250));
+      final secondTop = tester.getTopLeft(find.text(label)).dy;
 
-      expect(secondLeft, greaterThan(firstLeft));
+      expect(secondTop, greaterThan(firstTop));
       expect(tester.takeException(), isNull);
     });
 

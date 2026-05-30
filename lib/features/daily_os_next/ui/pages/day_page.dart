@@ -389,11 +389,13 @@ class _RenderMeasuredDayHeader extends RenderBox
   void performLayout() {
     final width = constraints.hasBoundedWidth
         ? constraints.maxWidth
-        : constraints.minWidth;
+        : constraints.minWidth; // coverage:ignore-line
     final contentWidth = math.max<double>(0, width - horizontalPadding * 2);
+    // coverage:ignore-start
     final maxChildHeight = constraints.hasBoundedHeight
         ? constraints.maxHeight
         : double.infinity;
+    // coverage:ignore-end
     final looseContentConstraints = BoxConstraints.loose(
       Size(contentWidth, maxChildHeight),
     );

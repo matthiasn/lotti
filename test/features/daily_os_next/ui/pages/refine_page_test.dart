@@ -71,7 +71,7 @@ class _RecordingAgent implements DayAgentInterface {
 
   final PlanDiff diff;
   final DraftPlan acceptedPlan;
-  final Object? proposeError;
+  final Error? proposeError;
 
   PlanDiff? capturedDiff;
   String? proposedTranscript;
@@ -432,14 +432,8 @@ void main() {
         );
 
         expect(reportedErrors, isNotEmpty);
-        expect(
-          find.text(
-            messages.dailyOsNextReconcileError(
-              'Bad state: proposal exploded',
-            ),
-          ),
-          findsOneWidget,
-        );
+        expect(find.text(messages.dailyOsNextGenericError), findsOneWidget);
+        expect(find.textContaining('proposal exploded'), findsNothing);
         expect(
           find.byKey(const Key('daily_os_refine_transcript_editor')),
           findsOneWidget,

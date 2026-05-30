@@ -349,14 +349,8 @@ void main() {
       await tester.pump();
 
       final messages = tester.element(find.byType(DraftingPage)).messages;
-      expect(
-        find.text(
-          messages.dailyOsNextReconcileError(
-            'Bad state: drafting unavailable',
-          ),
-        ),
-        findsOneWidget,
-      );
+      expect(find.text(messages.dailyOsNextGenericError), findsOneWidget);
+      expect(find.textContaining('drafting unavailable'), findsNothing);
     });
 
     testWidgets('narrow layout (< 900) stacks left + right in a Column', (

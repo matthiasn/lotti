@@ -232,14 +232,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       final messages = tester.element(find.byType(ReconcilePage)).messages;
-      expect(
-        find.text(
-          messages.dailyOsNextReconcileError(
-            'Bad state: reconcile unavailable',
-          ),
-        ),
-        findsOneWidget,
-      );
+      expect(find.text(messages.dailyOsNextGenericError), findsOneWidget);
+      expect(find.textContaining('reconcile unavailable'), findsNothing);
     });
 
     testWidgets(

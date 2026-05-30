@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -20,9 +22,18 @@ final StreamProvider<int> _dailyOsRootReloadTickProvider = StreamProvider<int>(
   (ref) => const Stream<int>.empty(),
 );
 
-Widget _wrap(Widget child, {List<Override> overrides = const []}) {
+Widget _wrap(
+  Widget child, {
+  List<TimeBlock> actualBlocks = const [],
+  List<Override> overrides = const [],
+}) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      dailyOsActualTimeBlocksProvider.overrideWith(
+        (ref, _) async => actualBlocks,
+      ),
+      ...overrides,
+    ],
     child: makeTestableWidget2(
       child,
       mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
@@ -92,6 +103,50 @@ void main() {
         expect(requestedDates, contains(DateTime(2026, 5, 27)));
       });
     });
+
+    testWidgets(
+      'no-plan capture path still surfaces already recorded time',
+      (tester) async {
+        final actualBlock = TimeBlock(
+          id: 'actual:entry-1',
+          title: 'Client follow-up',
+          start: DateTime(2026, 5, 26, 9),
+          end: DateTime(2026, 5, 26, 10),
+          type: TimeBlockType.manual,
+          state: TimeBlockState.completed,
+          category: _category,
+          taskId: 'task-1',
+        );
+        final realtimeService = MockRealtimeTranscriptionService();
+        when(
+          realtimeService.resolveRealtimeConfig,
+        ).thenAnswer((_) async => null);
+        when(realtimeService.dispose).thenAnswer((_) async {});
+
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              actualBlocks: [actualBlock],
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(realtimeService: realtimeService),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          final messages = tester.element(find.byType(CapturePage)).messages;
+          expect(find.byType(CapturePage), findsOneWidget);
+          expect(find.byType(DayPage), findsNothing);
+          expect(find.text(messages.dailyOsNextTimeSpentTitle), findsOneWidget);
+          expect(find.text('Client follow-up'), findsOneWidget);
+        });
+      },
+    );
 
     testWidgets('AsyncLoading shows the loading shell', (tester) async {
       final realtimeService = MockRealtimeTranscriptionService();
@@ -255,6 +310,7 @@ void main() {
           );
           await tester.pump();
 
+          expect(calls, 2);
           expect(find.byType(DayPage), findsOneWidget);
           expect(find.text('Deep work'), findsOneWidget);
           expect(find.byType(CircularProgressIndicator), findsNothing);

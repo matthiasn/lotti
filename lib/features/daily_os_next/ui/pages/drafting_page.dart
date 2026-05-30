@@ -93,9 +93,7 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
           ),
           _ when asyncState.hasError => Center(
             child: Text(
-              context.messages.dailyOsNextReconcileError(
-                asyncState.error.toString(),
-              ),
+              context.messages.dailyOsNextGenericError,
               style: tokens.typography.styles.body.bodyMedium.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),

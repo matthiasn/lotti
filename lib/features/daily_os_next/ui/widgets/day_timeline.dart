@@ -1625,10 +1625,11 @@ class DayBlock extends StatelessWidget {
         ? tokens.colors.text.lowEmphasis.withValues(alpha: 0.32)
         : category;
 
-    final card = Container(
+    final borderRadius = BorderRadius.circular(tokens.radii.m);
+    final card = Ink(
       decoration: BoxDecoration(
         color: fill,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
+        borderRadius: borderRadius,
         border: isDrafted
             ? Border.all(
                 color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.20),
@@ -1661,7 +1662,12 @@ class DayBlock extends StatelessWidget {
       ),
     );
 
-    if (onTap == null) return card;
+    if (onTap == null) {
+      return Material(
+        type: MaterialType.transparency,
+        child: card,
+      );
+    }
 
     return Semantics(
       button: true,
@@ -1669,7 +1675,7 @@ class DayBlock extends StatelessWidget {
         type: MaterialType.transparency,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(tokens.radii.m),
+          borderRadius: borderRadius,
           child: card,
         ),
       ),

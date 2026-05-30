@@ -1620,6 +1620,7 @@
       }
     }
   },
+  "dailyOsNextGenericError": "Algo salió mal. Inténtalo de nuevo en un momento.",
   "dailyOsNextGreetingAfternoon": "Buenas tardes.",
   "dailyOsNextGreetingEvening": "Buenas noches.",
   "dailyOsNextGreetingHi": "Hola 👋",

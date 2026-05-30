@@ -1429,6 +1429,7 @@
       }
     }
   },
+  "dailyOsNextGenericError": "Něco se pokazilo. Zkus to za chvíli znovu.",
   "dailyOsNextGreetingAfternoon": "Dobré odpoledne.",
   "dailyOsNextGreetingEvening": "Dobrý večer.",
   "dailyOsNextGreetingHi": "Ahoj 👋",

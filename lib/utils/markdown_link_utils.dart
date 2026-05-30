@@ -22,7 +22,8 @@ String? _internalRouteFromMarkdownUrl(String url) {
   final path = switch (uri.scheme) {
     'lotti' when uri.host.isNotEmpty => '/${uri.host}${uri.path}',
     'lotti' => uri.path,
-    '' => uri.path.startsWith('/') ? uri.path : '/${uri.path}',
+    '' when uri.path.startsWith('/') => uri.path,
+    '' => '',
     _ => '',
   };
   if (path.isEmpty) return null;
