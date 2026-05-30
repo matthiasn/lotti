@@ -36,8 +36,11 @@ tiebreak.
 1. **Two merge laws, by entity class.** *Append-only event classes*
    (`AgentMessageEntity`, `AgentLink`, reports, observations, change decisions,
    summaries/checkpoints) converge by **set-union + a deterministic DAG fold in a
-   canonical linear extension of the causal order** (`messagePrev`/VC
-   happens-before, ties broken by `hostId` then `id`) — no LWW. *Mutable registers* (the few genuinely in-place rows — user-authored
+   canonical linear extension of the causal order** (a topological sort of the
+   `messagePrev` parent DAG — the canonical causal graph — with ties broken by
+   `hostId` then `id`; the vector clock is the consistency/conflict signal,
+   *validated against* the edges and used to classify concurrency, **not** a
+   second ordering input) — no LWW. *Mutable registers* (the few genuinely in-place rows — user-authored
    document *heads* via `Version`/`Head`, journal-side in-place edits) converge by
    **LWW snapshot** (rule 4). Separately, **execution** (running behaviors + side
    effects) is gated by the lease. Most agent state is the first class; the LWW
@@ -82,10 +85,11 @@ tiebreak.
    linear extension (rule 1), so every device converges without a join.
 8. **Forks heal by lazy, capped join-by-continuation** — a continuation node
    linking (`messagePrev`) to all current heads, emitted **only when ≥2 heads
-   survive past one wake cycle**. Its **id is the `frontierDigest`** of the
-   parent-head set (already the content hash of that antichain's id-set, so no
-   extra hashing), so two devices emitting the join concurrently write the *same*
-   log entry, which set-union merges into one
+   survive past one wake cycle**. Its **id is content-addressed** —
+   `hash("join-v1" + sorted parent-head ids)`, a domain-tagged digest kept
+   distinct from the summary coverage `frontierDigest` so the two uses can't be
+   confused or collide — so two devices emitting the join concurrently write the
+   *same* log entry, which set-union merges into one
    node; concurrent joins therefore can't form a new fork (no join storm). For that
    shared id to truly merge, the join's **payload must be fully deterministic** —
    the sorted set of parent-head ids plus a fixed kind, with **no wall-clock,
