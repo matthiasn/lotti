@@ -8,7 +8,11 @@
 The agents feature already treats the append-only `AgentMessageEntity` log (plus
 `AgentLink` edges) as durable, immutable, vector-clocked history. But some
 agent-derived state — `AgentStateEntity` slots and pointers, and other mutable
-rows — is persisted and synced as *authoritative* last-write-wins state.
+rows — is persisted and synced as *authoritative* last-write-wins state. Concretely,
+`agent_repository.upsertEntity` writes entities in place
+(`insertOnConflictUpdate`), identities carry a mutable `currentStateId`, and
+agent creation writes mutable state snapshots — so this move is a **storage
+migration, not a purely additive change**.
 
 Under concurrent multi-device edits, every authoritative mutable row is a
 conflict surface: LWW can silently drop a branch, and there is no single

@@ -28,9 +28,9 @@ Concretely, the target runtime should:
 
 The paper explicitly leaves **two problems unresolved**: multi-agent contention over the shared graph, and compaction/checkpointing of long logs. **Those two gaps are precisely the work this document specifies** — and Lotti already has dormant scaffolding for one of them and a mature human-gate for the other.
 
-The architecture gap therefore reduces to **two additive moves**:
+The architecture gap therefore reduces to **two moves** — one largely additive, one a genuine storage migration:
 
-1. **Make agent-derived state a projection of the log, not a synced mutable row.** Today some agent state (`AgentStateEntity` pointers, etc.) is stored and synced as authoritative last-write-wins rows. Treating it as a *recomputed projection* of the immutable log shrinks the multi-device conflict surface to conflict-free facts.
+1. **Make agent-derived state a projection of the log, not a synced mutable row.** Today some agent state (`AgentStateEntity` pointers, etc.) is stored and synced as authoritative last-write-wins rows. Treating it as a *recomputed projection* of the immutable log shrinks the multi-device conflict surface to conflict-free facts. Because agent entities are currently **upserted in place** (`agent_repository.upsertEntity` → `insertOnConflictUpdate`) and identities carry a mutable `currentStateId`, this is a **migration of existing storage**, not a purely additive change.
 2. **Add negotiation / project-phase / outcome as new node+edge *types* plus a planner behavior** — reusing the existing `ChangeSet`/`ChangeDecision` human gate and `WakeOrchestrator`. No new orchestration subsystem.
 
 Everything below is an elaboration of those two moves.
@@ -63,6 +63,17 @@ The useful unit of work is the *delta* from what's already shipped. The followin
 3. **The active compaction pipeline** that turns the dormant summary scaffolding into a real stable prefix and long-horizon memory. *(→ Thread B, C)*
 4. **Outcome tracking / actual-vs-intended loop.** `WakeRunLog` and ratings exist, but nothing closes the "you said X, you did Y" loop. *(→ Thread E, F)*
 
+### Current-state gaps the design must close (not true today)
+
+Some load-bearing claims below describe the *target*, not the runtime. The design must treat them as work, not givens:
+
+- **Execution is in-process single-flight only.** `WakeRunner` guards one wake per agent via an in-memory lock map (`_activeLocks`); there is **no cross-device coordinator**. Two offline devices can each believe they own execution.
+- **Sync applies concurrent agent payloads by arrival order.** `sync_event_processor_agent_handlers` skips an incoming entity/link only when the *local* vector clock dominates (`a_gt_b`/`equal`); `concurrent` and `b_gt_a` are applied as they arrive — no deterministic merge or single-writer guarantee for agent state yet.
+- **Agent entities are upserted in place.** `agent_repository.upsertEntity` uses `insertOnConflictUpdate`, and identities carry a mutable `currentStateId` — so "state as a projection of the log" (§4) is a migration, not current behavior.
+- **The compaction scaffolding has fields but no schema.** `AgentMessageKind.summary` and the head pointers exist, but there is no replay/digest schema and no production compaction path.
+
+These are the gaps §§4–8 must close; §10 sequences them so convergence lands before anything writes new synced derived state.
+
 ---
 
 ## 4. The substrate: log → projection → behavior
@@ -94,10 +105,10 @@ flowchart LR
 Design:
 
 - **Bids are events, not RPCs.** A task/project agent emits an `attention_request` event carrying impact, priority, deadline-slack, energy-fit, and (for recurring asks) a cadence. Modeled as new `AgentDomainEntity` + `AgentLink` variants on the existing synced graph. The message shape follows the **Contract Net Protocol** (call-for-proposals → bid → award → inform) ([CNP](https://en.wikipedia.org/wiki/Contract_Net_Protocol)).
-- **No auction incentive-compatibility needed.** Every bidder is a sub-agent of *one* principal (the user), so Vickrey-style truthful-bidding machinery collapses to a **centralized utility ranking** with agents as honest preference reporters. (Auction theory — [Shoham & Leyton-Brown ch. 11](https://www.cambridge.org/core/services/aop-cambridge-core/content/view/1AFB25EC9CC4799BC455409B2EB37C43/9780511811654c11_p315-366_CBO.pdf/protocols-for-multiagent-resource-allocation-auctions.pdf) — also warns that expressive/combinatorial winner-determination is computationally hard, arguing for a *bounded heuristic* arbiter rather than optimal allocation.)
+- **No auction incentive-compatibility needed.** Every bidder is a sub-agent of *one* principal (the user), so Vickrey-style truthful-bidding machinery collapses to a **centralized utility ranking**. But one principal does not make LLM agents *calibrated* — an agent can overstate impact or misjudge urgency — so bids carry **evidence references** (links to the task/project/day facts that justify them) and **bounded fields**, and the planner **derives utility from those facts**, not from agent-self-assigned scores. (Auction theory — [Shoham & Leyton-Brown ch. 11](https://www.cambridge.org/core/services/aop-cambridge-core/content/view/1AFB25EC9CC4799BC455409B2EB37C43/9780511811654c11_p315-366_CBO.pdf/protocols-for-multiagent-resource-allocation-auctions.pdf) — also warns that expressive/combinatorial winner-determination is computationally hard, arguing for a *bounded heuristic* arbiter rather than optimal allocation.)
 - **The planner is a behavior, and its output is a `ChangeSet`.** It projects a candidate `DayPlan` (reusing capacity + energy bands), ranks requests by utility, and routes the result through the existing human gate. The `Shepherd` day agent's `propose_plan_diff` → `ChangeSet` → accept/revert path is the existing mechanism to reuse.
 - **Non-negotiables are NOT enforced by prompting.** Recent LLM-planning work shows hard constraints are "neither guaranteed nor enforced" by instruction alone and must be checked by a deterministic verifier ([U-Define, arXiv:2605.02765](https://arxiv.org/html/2605.02765v1)). So standing non-negotiables (gym 3×/week, with pre-emption) become a **declarative hard-constraint check run deterministically over the projected graph** during the `draft → agreed` transition. Soft daily priorities stay heuristic/LLM-scored.
-- **"Ask when in doubt" = value-of-information.** Interrupt the user only when the expected value of their answer exceeds the cost of interrupting ([Sarne & Grosz 2013](https://link.springer.com/article/10.1007/s10458-012-9206-9)). The `DayPlan` (capacity/energy bands) is the "scheduler module" the VOI computation queries; recent `ChangeDecision` accept/reject history is the receptivity/fatigue signal. Low-VOI conflicts auto-resolve and are merely logged; high-VOI conflicts raise a `ChangeSet`.
+- **"Ask when in doubt" = value-of-information.** Interrupt the user only when the expected value of their answer exceeds the cost of interrupting ([Sarne & Grosz 2013](https://link.springer.com/article/10.1007/s10458-012-9206-9)). The `DayPlan` (capacity/energy bands) is the "scheduler module" the VOI computation queries; recent `ChangeDecision` accept/reject history is the receptivity/fatigue signal. Low-VOI conflicts auto-resolve and are merely logged — **but only for reversible, low-stakes actions**; committed schedule changes, block drops, and any external side effect stay **gated** regardless of VOI until the user has calibrated trust. High-VOI conflicts raise a `ChangeSet`.
 
 ```mermaid
 sequenceDiagram
@@ -134,7 +145,7 @@ The pipeline (a background behavior, not on the hot path):
 
 1. When the tail past `recentHeadMessageId` exceeds a model-specific budget, summarize that range into a new `summary` message that **folds in the prior `latestSummaryMessageId`**.
 2. Advance both pointers. Preserve decisions, open commitments/negotiations, and non-negotiables; discard redundant tool chatter (per [Anthropic context engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents): "overly aggressive compaction … loses subtle but critical context").
-3. **Treat the summary as a derived projection, not a destructive overwrite.** Make it deterministic/content-addressed so two devices summarizing the same range *converge* instead of racing under LWW (see §8). The content address is a digest over a **canonical form**, specified so independent devices derive identical digests for a semantically identical summary: keys sorted, numbers normalized (integers without leading zeros; fixed-precision decimals), timestamps as RFC 3339 in UTC, UTF-8 canonical JSON (no insignificant whitespace, e.g. JCS), hashed with a **versioned algorithm tag** (e.g. `sha256-v1` over the canonical bytes, base64url-encoded). The digest's input covers the summarized message range (`summaryStart/EndMessageId`), the prior summary it folds in, and the summarizer config (model id, params, prompt version). Store this digest as the verification/replay hash so a bad summary is detectable and regenerable from the immutable log.
+3. **Treat the summary as a derived projection, not a destructive overwrite — and don't expect a digest to make LLM outputs converge.** Two independent summarizations of the same range will *not* be byte-identical, so content-addressing alone does **not** converge them (a digest names an output; it can't make two outputs equal). Convergence needs one of two disciplines: **(a) single-writer compaction** — only the device holding the executor lease (§8) summarizes, so exactly one summary exists; or **(b) coexisting candidates with deterministic selection** — multiple summaries may be written and the projection deterministically picks one (VC-order, then `hostId`/`id`). Content-addressing's real jobs are narrower: dedup of *identical* artifacts, the response cache (§7), and a verification/replay hash so a summary is regenerable from the log. When a digest is used it is computed over a **canonical form** (sorted keys, RFC 3339 UTC timestamps, normalized numbers, UTF-8 canonical JSON/JCS) with a versioned tag (`sha256-v1`, base64url) over the message range (`summaryStart/EndMessageId`), the folded prior summary, and the summarizer config (model id, params, prompt version).
 
 ```mermaid
 stateDiagram-v2
@@ -158,7 +169,7 @@ This compaction is also what makes the **on-device prefix cache** pay off (§7):
 
 ### Tier ladder (vendor-agnostic, behind one adapter)
 
-On-device first (Ollama / llama.cpp today), EU-hosted GDPR-aligned API second, proprietary only if required. The EU tier has standardized on an **OpenAI-compatible surface** across Mistral, OVHcloud, Scaleway, Nebius, and IONOS, so providers are swappable behind a thin adapter — which maps directly onto Lotti's existing `ProfileResolver` / inference-profile system (ADR 0008). Because open-weight families overlap between local and cloud, the *same* model family can spill from device to EU endpoint with comparable behavior.
+On-device first (Ollama / llama.cpp today), EU-hosted GDPR-aligned API second, proprietary only if required. The EU tier has standardized on an **OpenAI-compatible surface** across Mistral, OVHcloud, Scaleway, Nebius, and IONOS, so providers are swappable behind a thin adapter — which maps directly onto Lotti's existing `ProfileResolver` / inference-profile system (ADR 0008). The *API surface* is swappable; the **compliance posture is not uniform** — retention, residency, no-train defaults, and model-version pinning differ per provider and need per-provider handling and verification (see the Thread D caveat and §11), not a single generic assumption. Because open-weight families overlap between local and cloud, the *same* model family can spill from device to EU endpoint with comparable behavior.
 
 ```mermaid
 flowchart LR
@@ -239,12 +250,15 @@ Design: an outcome is a typed graph entity (lag target + leading indicators), li
 
 The moves are additive, so they ship incrementally — each is useful alone:
 
-1. **Activate compaction** (§6). Pure win, already roadmapped; delivers long-horizon memory *and* the stable on-device prefix. Make summaries content-addressed/deterministic from day one (§8).
-2. **State-as-projection** (Move 1). Reframe agent-derived state as recomputed; generalize the `Version`/`Head` snapshot pattern for the parts that stay user-authored.
-3. **Attention requests + minimal planner** (§5). Emit `attention_request` events; a planner behavior ranks and proposes via the `Shepherd`/`DayPlan`/`ChangeSet` path. Add the deterministic non-negotiable verifier.
-4. **Project phases + recurring requests** (§5).
-5. **Outcome tracking + drift nudges** (§9).
-6. **Cross-cutting:** executor lease + fencing for side-effecting commits; VC concurrent-branch tiebreak hardening; anti-sycophancy soul tuning.
+1. **Projection kernel + convergence tests first.** Build the deterministic projection with canonical ordering (§8) and **concurrent-agent sync conflict tests**, before any new synced derived state is written. Everything else depends on this.
+2. **Compaction as a local read-side cache** (§6). Ship it **unsynced** first so summary pointers can't become a new conflict surface; promote to synced only once (1) lands and compaction is single-writer or deterministic-selection.
+3. **State-as-projection migration** (Move 1). Migrate the upsert-in-place entities (`agent_repository.upsertEntity`) to derived projections; generalize the `Version`/`Head` snapshot pattern for genuinely user-authored state.
+4. **Planner MVP — proposal only.** Event-sourced `attention_request` + the deterministic hard-constraint verifier + a `ChangeSet` **proposal**. No auto-mutations, and no auto-resolution of irreversible actions.
+5. **Executor lease + fencing** (§8) with a *named backend and explicit offline behavior*, before any cross-device auto-execution or single-writer compaction.
+6. **Project phases + recurring requests; outcome tracking + drift nudges** (§§5, 9).
+7. **Provider compliance + model-pinning checks** before relying on the EU fallback tier (§7, Thread D).
+
+This sequences convergence and a proposal-only planner ahead of any autonomous mutation.
 
 Candidate ADRs this spawns: *attention-negotiation protocol & bid schema*; *log compaction & summary determinism*; *executor lease & fencing for side effects*; *agent state as projection*. These extend the existing ADR series (0002 wake scheduling, 0008 inference profiles, 0009 redundant-proposal suppression, 0010 scheduled wakes).
 

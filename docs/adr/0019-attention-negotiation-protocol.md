@@ -30,10 +30,14 @@ hypothetical.
    recurring asks) a cadence — modeled as new `AgentDomainEntity` variants and
    `AgentLink` types on the existing synced graph. The exchange is
    Contract-Net-shaped (call-for-proposals → bid → award → inform).
-3. **No auction incentive-compatibility.** All bidders are sub-agents of one
-   principal, so allocation collapses to a centralized utility ranking with
-   agents as honest preference reporters (no Vickrey payments). The arbiter is a
-   bounded heuristic, not optimal winner determination (which is NP-hard).
+3. **No auction incentive-compatibility — but not blind trust.** All bidders are
+   sub-agents of one principal, so allocation collapses to a centralized utility
+   ranking (no Vickrey payments). But one principal does not make LLM agents
+   *calibrated*: they can overstate impact or misjudge urgency. So bids carry
+   **evidence references** (links to the task/project/day facts that justify
+   them) and **bounded fields**, and the planner **derives utility from those
+   facts**, not from agent-self-assigned scores. The arbiter is a bounded
+   heuristic, not optimal winner determination (which is NP-hard).
 4. **Non-negotiables are enforced by a deterministic verifier** over the
    projected graph during the `draft → agreed` transition — not by instructing
    the LLM. The minimal constraint language is recurrence + preemption priority
@@ -41,7 +45,10 @@ hypothetical.
    including `WorkoutEntry`/`QuantitativeEntry` from health import.
 5. **"Ask when in doubt" = value-of-information.** Raise a `ChangeSet`/
    `ChangeDecision` only when the expected value of the user's answer exceeds the
-   interruption cost; low-VOI conflicts auto-resolve and are logged. VOI proxies:
+   interruption cost; low-VOI conflicts auto-resolve and are logged **only for
+   reversible, low-stakes actions** — committed schedule changes, block drops,
+   and external side effects stay gated regardless of VOI until the user has
+   calibrated trust. VOI proxies:
    day-plan utility delta, deadline slack, energy-band fit, recent
    `ChangeDecision` dismissal rate, and **device/health receptivity signals**
    (recent activity, workout completion, steps) from the existing health

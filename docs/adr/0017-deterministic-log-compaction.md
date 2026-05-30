@@ -26,16 +26,18 @@ arbitrary winner.
    `latestSummaryMessageId`**, then advance both pointers.
 2. Summaries are **derived projections, not destructive overwrites**: the
    immutable log remains ground truth; summarized messages are retained.
-3. Summaries are **deterministic / content-addressed** — keyed by the exact
-   message range (`summaryStartMessageId`/`summaryEndMessageId`) plus the prior
-   summary it folds in and the summarizer config (model id, params, prompt
-   version) — so concurrent summarizations of the same range converge instead of
-   conflicting. The digest is computed over a **canonical serialization** (sorted
-   keys, RFC 3339 UTC timestamps, normalized numbers, UTF-8 canonical JSON / JCS)
-   with a **versioned hash tag** (e.g. `sha256-v1`, base64url) so independent
-   devices derive identical digests. Each summary stores this digest as its
-   verification/replay hash, so a wrong summary is detectable and regenerable
-   from the log.
+3. **A content digest does not make two LLM summaries converge** (different
+   content yields a different digest). Convergence requires either **(a)
+   single-writer compaction** — only the executor-lease holder (ADR 0018)
+   summarizes — or **(b) coexisting candidate summaries with deterministic
+   selection** by the projection (VC-order, then `hostId`/`id`).
+   Content-addressing's role is narrower: dedup of *identical* artifacts and a
+   verification/replay hash so a summary is regenerable from the log. When a
+   digest is computed it is over a **canonical serialization** (sorted keys, RFC
+   3339 UTC timestamps, normalized numbers, UTF-8 canonical JSON / JCS) with a
+   **versioned tag** (e.g. `sha256-v1`, base64url), keyed by the message range
+   (`summaryStartMessageId`/`summaryEndMessageId`), the prior summary it folds
+   in, and the summarizer config (model id, params, prompt version).
 4. Compaction preserves decisions, open commitments/negotiations, and
    non-negotiables; it discards redundant tool chatter.
 5. Compaction runs as a distinct background identity writing into the same log.
@@ -65,8 +67,9 @@ stateDiagram-v2
   earn their keep.
 - A long-lived, byte-stable on-device prefix yields real KV/prefix-cache reuse
   across wakes.
-- Summaries converge across devices (content-addressed) rather than racing under
-  LWW.
+- Summaries converge across devices via single-writer compaction or
+  deterministic candidate-selection — *not* by content-addressing LLM outputs,
+  which differ run-to-run.
 - Risks: recursive summarization can amplify hallucination at depth — mitigated
   by stored provenance + replay hash + regeneration; on-device window thresholds
   (MemGPT's 70/100/50% are cloud-tuned) need tuning for small contexts.

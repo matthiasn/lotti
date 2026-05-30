@@ -13,6 +13,13 @@ devices observe the same trigger and both run a behavior, side effects duplicate
 and state diverges. The anchor paper leaves multi-agent contention over the
 shared graph unresolved.
 
+Today there is **no cross-device coordinator**: `WakeRunner` enforces
+single-flight only *in-process* (an in-memory lock map), and
+`sync_event_processor_agent_handlers` applies an incoming agent entity/link
+unless the *local* vector clock dominates — so `concurrent` writes are applied
+by arrival order. Matrix provides causal/eventual delivery, **not** a
+linearizable primitive, so a hard lease cannot be assumed for free.
+
 "Vector clock + last-write-wins" must also be applied correctly. A vector clock
 can detect true concurrency (which a scalar/hybrid logical clock cannot), so LWW
 should apply only on the concurrent branch — and only that branch needs a
@@ -27,9 +34,16 @@ tiebreak.
    monotonically increasing fencing token**; the resource side rejects any write
    carrying a lower token. A bare lease is insufficient — a paused holder can
    issue a stale write past expiry.
-3. Exactly one device holds the executor lease at a time; others project the
-   resulting events. This extends `WakeOrchestrator`'s existing single-flight
-   execution + vector-clock self-suppression from intra-device to inter-device.
+3. Exactly one device executes at a time **while connected to the lease
+   coordinator**; others project the resulting events. This is **not** a free
+   extension of the in-process `WakeRunner` lock — it requires a real lease
+   backend (a designated-primary election with the fencing token persisted in
+   synced state, or an external coordinator). **Offline the hard guarantee
+   degrades:** a partitioned device cannot know it still holds the lease, so
+   during a partition side effects must be **idempotent and reconciled on
+   reconnect** (dedupe via content-address; reject stale fencing tokens), not
+   assumed-unique. "Exactly one executes" is therefore a connected-case guarantee
+   plus an offline reconciliation contract — state both in the backend design.
 4. Convergent projection rule: classify each event pair with the vector clock
    (`a_gt_b`/`b_gt_a` honored by replay order; `concurrent` falls to a tiebreak).
    Apply `updatedAt` LWW **only on the `concurrent` branch**. Extend the partial
@@ -57,8 +71,10 @@ flowchart TD
 
 ## Consequences
 
-- No duplicated side effects across devices; the planner commits a schedule in
-  exactly one place.
+- No duplicated side effects across devices **while connected to the
+  coordinator**; under partition, uniqueness degrades to
+  *idempotent-and-reconciled* (stale fencing tokens rejected on reconnect). The
+  planner commits a schedule in one place in the connected case.
 - Convergent, deterministic projection on every device.
 - Cost: lease + fencing infrastructure and lease handoff; the secondary `hostId`
   tiebreak must be added before convergence can be claimed.
