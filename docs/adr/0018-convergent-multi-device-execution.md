@@ -96,8 +96,11 @@ tiebreak.
    *identity/payload* from the per-device *envelope*. This bounds context and
    re-warms the on-device prefix; it is *not* required for correctness.
 9. **Side effects carry an idempotency key** `agentId + behaviorKind +
-   frontierDigest + triggerId + toolName`, where `triggerId` is the wake's cause
-   (trigger token / `scheduledFor`). The key scopes to the **wake epoch**, not
+   frontierDigest + triggerId + toolName`, where `triggerId` is a **stable,
+   source-derived** identity — the source event id, the scheduled-wake *entity*
+   id, or the shared (sync-replicated) trigger token — **never a per-run local
+   UUID** (two devices minting local tokens for the same wake wouldn't dedup), and
+   not `scheduledFor` alone (two distinct causes can collide at the same instant). The key scopes to the **wake epoch**, not
    just the frontier — otherwise a later time-sensitive wake (a scheduled re-plan
    or reminder) over an *unchanged* frontier would be wrongly suppressed. It
    collapses *the same wake executed on two devices*; the later projection

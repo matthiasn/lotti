@@ -55,8 +55,12 @@ arbitrary winner.
    is still a **normal compaction** — an append-only checkpoint event over a
    canonical frontier/span, selected by the same maximal-complete rule, with the
    original events **retained** (never replaced or omitted); it is *eager only in
-   timing*, not a truncation — so the fallback can never overflow the on-device
-   window while staying inside the convergence rules. (A
+   timing*, not a truncation. When the uncovered region is already too large
+   (e.g. on reconnect), it summarizes **bounded canonical sub-frontiers
+   iteratively** — each an append-only checkpoint over a canonical span, by the
+   same rules — until the uncovered tail fits the budget. So the fallback stays
+   inside both the on-device window and the convergence rules, without ever
+   truncating. (A
    "meet of *all* checkpoints" rule would starve the merge-summary forever, since
    the collapsed branches stay incomparable ancestors.) `frontierDigest` = hash of the
    antichain's canonical id-set — it identifies **coverage only**. The summary
