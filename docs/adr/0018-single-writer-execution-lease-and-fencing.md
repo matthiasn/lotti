@@ -36,8 +36,11 @@ tiebreak.
    order to a single deterministic total order with a replica-independent
    tiebreak: dominance, then a stable `hostId + id` key.
 5. Make the LWW comparator a genuine total order: **break equal `updatedAt` by
-   `hostId`**. Today equal timestamps can diverge and a merely-fast device clock
-   silently wins.
+   `hostId`** (then `id`) so identical timestamps cannot diverge across replicas.
+   This is distinct from clock skew: a fast/skewed physical clock wins a
+   concurrent branch because its `updatedAt` is strictly greater (the
+   equal-timestamp tiebreak never fires), so bounding *that* needs a monotonic
+   hybrid logical clock (or bounded drift) on the comparator — not the tiebreak.
 6. Keep the vector clock — it detects concurrency, which the human gate needs in
    order to know a real conflict exists. A hybrid logical clock may optionally
    harden the concurrent-branch tiebreak but does not replace the vector clock.

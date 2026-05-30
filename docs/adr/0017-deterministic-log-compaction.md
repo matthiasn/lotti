@@ -27,11 +27,15 @@ arbitrary winner.
 2. Summaries are **derived projections, not destructive overwrites**: the
    immutable log remains ground truth; summarized messages are retained.
 3. Summaries are **deterministic / content-addressed** — keyed by the exact
-   message range (`summaryStartMessageId`/`summaryEndMessageId`) plus the
-   summarizer config (model id, params, prompt version) — so concurrent
-   summarizations of the same range converge instead of conflicting. Each
-   summary stores a verification/replay hash so a wrong summary is detectable
-   and regenerable from the log.
+   message range (`summaryStartMessageId`/`summaryEndMessageId`) plus the prior
+   summary it folds in and the summarizer config (model id, params, prompt
+   version) — so concurrent summarizations of the same range converge instead of
+   conflicting. The digest is computed over a **canonical serialization** (sorted
+   keys, RFC 3339 UTC timestamps, normalized numbers, UTF-8 canonical JSON / JCS)
+   with a **versioned hash tag** (e.g. `sha256-v1`, base64url) so independent
+   devices derive identical digests. Each summary stores this digest as its
+   verification/replay hash, so a wrong summary is detectable and regenerable
+   from the log.
 4. Compaction preserves decisions, open commitments/negotiations, and
    non-negotiables; it discards redundant tool chatter.
 5. Compaction runs as a distinct background identity writing into the same log.
