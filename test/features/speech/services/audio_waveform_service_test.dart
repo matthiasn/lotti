@@ -1458,5 +1458,115 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'logs error when cache directory listing fails during prune',
+      () async {
+        if (Platform.isWindows) {
+          return;
+        }
+
+        // Create the cache root so existsSync() passes.
+        final cacheRoot = Directory(
+          p.join(tempDir.path, 'audio_waveforms', 'aa'),
+        )..createSync(recursive: true);
+
+        // Populate a couple of regular files so something is listable.
+        for (var i = 0; i < 3; i++) {
+          File(p.join(cacheRoot.path, 'entry_$i.json'))
+            ..writeAsStringSync('{}')
+            ..setLastModifiedSync(
+              DateTime.utc(2024, 1, 1, 12).add(Duration(seconds: i)),
+            );
+        }
+
+        // Create a sibling subdirectory with no permissions so that recursive
+        // listing throws when the OS tries to open it.
+        final unreadableDir = Directory(
+          p.join(tempDir.path, 'audio_waveforms', 'zz'),
+        )..createSync(recursive: true);
+        final chmodResult = await Process.run('chmod', <String>[
+          '000',
+          unreadableDir.path,
+        ]);
+        expect(chmodResult.exitCode, 0);
+
+        clearInteractions(mockDomainLogger);
+
+        final audio = createAudio(
+          duration: const Duration(seconds: 10),
+          audioId: 'prune-list-fail',
+          fileName: 'list-fail.m4a',
+        );
+
+        try {
+          await service.loadWaveform(audio, targetBuckets: 2);
+        } finally {
+          final restore = await Process.run('chmod', <String>[
+            '755',
+            unreadableDir.path,
+          ]);
+          expect(restore.exitCode, 0);
+        }
+
+        // The listing failure is caught by the outer try-catch in
+        // _pruneCacheIfNeeded and reported via the error logger (line 489).
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'cache_prune',
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  group('default waveform extractor path', () {
+    // These tests exercise _defaultWaveformExtractor (lines 128-129, 148)
+    // by creating a service without a custom extractor so that JustWaveform
+    // is invoked.  In the Flutter test harness the platform channel for
+    // just_waveform is not registered, so invokeMethod completes with an
+    // error which is routed to the waveform progress stream.  The catch
+    // block in _defaultWaveformExtractor then fires, covering line 148, and
+    // the variable assignment on lines 128-129 runs unconditionally.
+
+    test(
+      'logs via DomainLogger when JustWaveform platform channel fails',
+      () async {
+        // Create a service that uses the real _defaultWaveformExtractor.
+        final defaultService = AudioWaveformService();
+
+        final audio = createAudio(
+          duration: const Duration(seconds: 5),
+          audioId: 'default-extractor-fail',
+          fileName: 'default.m4a',
+        );
+
+        clearInteractions(mockDomainLogger);
+
+        // loadWaveform catches the rethrown error and returns null.
+        final result = await defaultService.loadWaveform(
+          audio,
+          targetBuckets: 4,
+        );
+
+        expect(result, isNull);
+
+        // The error surfacing from _defaultWaveformExtractor is logged twice:
+        // once by the extractor itself (subDomain: 'audio_waveform_extractor',
+        // lines 148-153) and once by loadWaveform's outer catch
+        // (subDomain: 'audio_waveform_service', line 273).
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'audio_waveform_extractor',
+          ),
+        ).called(1);
+      },
+    );
   });
 }

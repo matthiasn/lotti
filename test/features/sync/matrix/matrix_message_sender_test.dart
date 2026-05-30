@@ -2119,6 +2119,139 @@ void main() {
     ).called(1);
   });
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Error-path coverage for uncovered logger branches
+  // ─────────────────────────────────────────────────────────────────────────
+
+  test(
+    'ensureOriginatingHostIdForTesting fills and logs originatingHostId '
+    'for a SyncJournalEntity (line 68)',
+    () async {
+      final vectorClockService = MockVectorClockService();
+      when(vectorClockService.getHost).thenAnswer((_) async => 'host-A');
+
+      final senderWithVc = MatrixMessageSender(
+        loggingService: loggingService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        sentEventRegistry: SentEventRegistry(),
+        vectorClockService: vectorClockService,
+      );
+
+      final message = SyncMessage.journalEntity(
+        id: 'journal-id',
+        jsonPath: '/journal/2026-01-02/journal-id.entry.json',
+        vectorClock: const VectorClock({'hostA': 1}),
+        status: SyncEntryStatus.update,
+        // originatingHostId deliberately omitted → defaults to null
+      );
+
+      final result = await senderWithVc.ensureOriginatingHostIdForTesting(
+        message,
+      );
+
+      expect(result, isA<SyncJournalEntity>());
+      expect((result as SyncJournalEntity).originatingHostId, 'host-A');
+      verify(
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf(
+              contains('originatingHostId filled for journalEntity'),
+              contains('journal-id'),
+              contains('host=host-A'),
+            ),
+          ),
+          subDomain: 'sendMatrixMsg.originatingHostId',
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'logs and continues when onSent callback throws (lines 298-304)',
+    () async {
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((_) async => 'event-id');
+
+      var onSentCalled = false;
+      final result = await sender.sendMatrixMessage(
+        message: const SyncMessage.aiConfigDelete(id: 'abc'),
+        context: buildContext(),
+        onSent: (eventId, message) {
+          onSentCalled = true;
+          throw StateError('callback failure');
+        },
+      );
+
+      // sendMatrixMessage returns true because the text send succeeded;
+      // the onSent exception is swallowed after logging.
+      expect(result, isTrue);
+      expect(onSentCalled, isTrue);
+
+      verify(
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('onSent callback threw')),
+          subDomain: 'matrix.message_sender.onSent',
+        ),
+      ).called(1);
+      verify(
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'matrix.message_sender.onSent',
+        ),
+      ).called(1);
+    },
+  );
+
+  group('sendJournalEntityPayloadForTesting', () {
+    test(
+      'returns null and logs when json file cannot be read (line 417)',
+      () async {
+        // The message points to a path that has no file on disk.
+        // File.readAsBytes() throws, hitting the catch block at line 417.
+        final message =
+            SyncMessage.journalEntity(
+                  id: 'missing-entry',
+                  jsonPath: '/journal/2026-01-02/missing-entry.entry.json',
+                  vectorClock: const VectorClock({'hostA': 1}),
+                  status: SyncEntryStatus.update,
+                )
+                as SyncJournalEntity;
+
+        final result = await sender.sendJournalEntityPayloadForTesting(
+          room: room,
+          message: message,
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'sendMatrixMsg',
+          ),
+        ).called(1);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+      },
+    );
+  });
+
   group('sendJournalEntityPayloadForTesting', () {
     test('sends json and attachments successfully', () async {
       when(

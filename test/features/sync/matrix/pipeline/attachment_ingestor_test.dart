@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -266,6 +267,9 @@ Future<void> _withFreshAttachmentIngestorState(
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(
+      const FileSystemException('fallback'),
+    );
   });
 
   late MockDomainLogger logging;
@@ -713,6 +717,134 @@ void main() {
         // Nothing should be queued or in flight when the cap is zero, so
         // whenIdle resolves synchronously.
         await ingestor.whenIdle().timeout(const Duration(seconds: 1));
+      },
+    );
+  });
+
+  group('AttachmentIngestor._saveAttachment — download result branches', () {
+    // These tests exercise the catch block in _saveAttachment (lines 487-522)
+    // and the empty-bytes guard (line 459) that are otherwise unreachable
+    // through the existing test paths.
+
+    test(
+      'logs and returns false when download returns empty bytes (line 459)',
+      () async {
+        // Provide empty bytes from the download to hit the emptiness guard.
+        final e = _makeEvent(
+          eventId: 'ev-empty-bytes',
+          relativePath: 'attachments/file.json',
+          mime: 'application/json',
+          downloadBytes: <int>[], // empty
+        );
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tempDir);
+
+        final wrote = await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+        );
+
+        expect(wrote, isFalse);
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any<String>(that: contains('emptyBytes')),
+            subDomain: 'attachment.download',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'logs cacheEvicted and returns false when download throws '
+      '"File is no longer cached" (line 496)',
+      () async {
+        const cacheEvictedMsg =
+            'Can not try to send again. File is no longer cached.';
+        final e = _makeEvent(
+          eventId: 'ev-cache-evicted',
+          relativePath: 'attachments/evicted.json',
+          mime: 'application/json',
+        );
+        when(e.downloadAndDecryptAttachment).thenAnswer(
+          (_) async => throw Exception(cacheEvictedMsg),
+        );
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tempDir);
+
+        final wrote = await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+        );
+
+        expect(wrote, isFalse);
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any<String>(that: contains('cacheEvicted')),
+            subDomain: 'attachment.save.cacheEvicted',
+          ),
+        ).called(1);
+        // General error log must NOT be emitted for a cacheEvicted error.
+        verifyNever(
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'attachment.save',
+          ),
+        );
+      },
+    );
+
+    test(
+      'logs emfile details and general error when download throws '
+      'FileSystemException with errorCode 24 (lines 507-508)',
+      () async {
+        const osError = OSError('Too many open files', 24);
+        const fse = FileSystemException(
+          'Cannot download attachment',
+          'attachments/emfile.json',
+          osError,
+        );
+        final e = _makeEvent(
+          eventId: 'ev-emfile',
+          relativePath: 'attachments/emfile.json',
+          mime: 'application/json',
+        );
+        when(e.downloadAndDecryptAttachment).thenAnswer(
+          (_) async => throw fse,
+        );
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tempDir);
+
+        final wrote = await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+        );
+
+        expect(wrote, isFalse);
+        // EMFILE-specific log (lines 507-508)
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any<String>(that: contains('emfile')),
+            subDomain: 'attachment.save.emfile',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+        // General error log (line 515)
+        verify(
+          () => logging.error(
+            LogDomain.sync,
+            any<FileSystemException>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'attachment.save',
+          ),
+        ).called(1);
       },
     );
   });

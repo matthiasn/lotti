@@ -73,6 +73,47 @@ class _FakeAttachmentIngestor implements AttachmentIngestor {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// [AttachmentIndex] whose `pathRecorded` stream is driven by an
+/// owned controller so a test can push a stream *error* through it and
+/// exercise the subscription's `onError` handler — the real index never
+/// adds errors to its controller, so a subclass is the only way in.
+class _ErroringAttachmentIndex extends AttachmentIndex {
+  _ErroringAttachmentIndex() : super(logging: null);
+
+  final StreamController<String> errorCtl =
+      StreamController<String>.broadcast();
+
+  @override
+  Stream<String> get pathRecorded => errorCtl.stream;
+
+  @override
+  Future<void> dispose() async {
+    if (!errorCtl.isClosed) {
+      await errorCtl.close();
+    }
+    await super.dispose();
+  }
+}
+
+/// [UpdateNotifications] whose `updateStream` is driven by an owned
+/// controller so a test can push a stream *error* through it and exercise
+/// the journal-update subscription's `onError` handler.
+class _ErroringUpdateNotifications extends UpdateNotifications {
+  final StreamController<Set<String>> errorCtl =
+      StreamController<Set<String>>.broadcast();
+
+  @override
+  Stream<Set<String>> get updateStream => errorCtl.stream;
+
+  @override
+  Future<void> dispose() async {
+    if (!errorCtl.isClosed) {
+      await errorCtl.close();
+    }
+    await super.dispose();
+  }
+}
+
 enum _GeneratedLiveRoomKind { current, foreign, noCurrentRoom }
 
 enum _GeneratedLiveStatusKind { synced, sending, sent, error }
@@ -766,6 +807,36 @@ void main() {
     verifyNever(worker.drainToCompletion);
     verify(() => worker.stop()).called(1);
   });
+
+  test(
+    'stop wraps each teardown stage in tryRun so a throwing worker.stop '
+    'is logged under the stop.worker subDomain yet later stages still run',
+    () async {
+      // `worker.stop()` throwing must not orphan the pen/queue stages —
+      // `tryRun` catches it, logs under `stop.worker`, and continues.
+      when(() => worker.stop()).thenThrow(StateError('worker teardown boom'));
+      final coordinator = build();
+      await coordinator.start();
+
+      await coordinator.stop();
+
+      verify(
+        () => logging.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(
+            named: 'subDomain',
+            that: contains('stop.worker'),
+          ),
+        ),
+      ).called(1);
+      // Stages after the throwing one still ran (best-effort cleanup).
+      verify(pen.stop).called(1);
+      verify(() => queue.dispose()).called(1);
+      expect(coordinator.isRunning, isFalse);
+    },
+  );
 
   test('triggerBridge delegates to bridge.bridgeNow', () async {
     when(bridge.bridgeNow).thenAnswer((_) async {});
@@ -2471,6 +2542,102 @@ void main() {
         });
       },
     );
+
+    test(
+      'an error on the AttachmentIndex.pathRecorded stream is routed to '
+      'the subscription onError handler and logged under the pathRecorded '
+      'subDomain — a faulting source must not take the pipeline down',
+      () async {
+        final attachmentIndex = _ErroringAttachmentIndex();
+        addTearDown(attachmentIndex.dispose);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          attachmentIndex: attachmentIndex,
+          queueOverride: queue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+
+        attachmentIndex.errorCtl.addError(StateError('path source boom'));
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('pathRecorded'),
+            ),
+          ),
+        ).called(1);
+        // The subscription survives the error — the coordinator keeps
+        // running rather than tearing down.
+        expect(coordinator.isRunning, isTrue);
+
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'an error on the UpdateNotifications.updateStream is routed to the '
+      'journal-update subscription onError handler and logged under the '
+      'journalUpdates subDomain',
+      () async {
+        final updateNotifications = _ErroringUpdateNotifications();
+        addTearDown(updateNotifications.dispose);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          updateNotifications: updateNotifications,
+          queueOverride: queue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+
+        updateNotifications.errorCtl.addError(StateError('update source boom'));
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('journalUpdates'),
+            ),
+          ),
+        ).called(1);
+        expect(coordinator.isRunning, isTrue);
+
+        await coordinator.stop();
+      },
+    );
   });
 
   group('gap-triggered unbounded bootstrap (barren-bridge recovery)', () {
@@ -2843,6 +3010,131 @@ void main() {
         verify(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).called(2);
+      },
+    );
+
+    test(
+      'gap recovery whose room can no longer be resolved logs the '
+      'skip=noRoom line and does no backward walk — the room vanished '
+      'between recording the barren signal and the recovery firing',
+      () async {
+        final coordinator = buildWithRealQueue();
+        await coordinator.start();
+        addTearDown(() async => coordinator.stop());
+
+        // Record the barren bridge against a resolvable room.
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        var historyCalls = 0;
+        final events = <Event>[buildSyncPayload(id: r'$e-0', tsMs: 50)];
+        final barrenTimeline = stubTimeline(
+          events: events,
+          canRequestHistory: () => true,
+          onRequestHistory: (_) async {
+            historyCalls++;
+            events.insert(
+              0,
+              buildSyncPayload(
+                id: r'$e-$historyCalls',
+                tsMs: 50 - historyCalls,
+              ),
+            );
+          },
+        );
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => barrenTimeline);
+
+        await coordinator.runBootstrapForTest(room: room, untilTimestamp: 100);
+        expect(coordinator.hasBarrenBridgeSignal, isTrue);
+
+        // The room vanishes before recovery fires: `_resolveRoom`
+        // returns null (cache null, no current room id).
+        when(() => roomManager.currentRoom).thenReturn(null);
+        when(() => roomManager.currentRoomId).thenReturn(null);
+
+        coordinator.maybeStartGapRecovery();
+        await coordinator.gapRecoveryFuture;
+        expect(coordinator.gapRecoveryInFlight, isFalse);
+
+        verify(
+          () => logging.log(
+            any<LogDomain>(),
+            any<String>(
+              that: contains(
+                'queue.coordinator.gapRecovery.skip reason=noRoom',
+              ),
+            ),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).called(1);
+        // No second backward walk: only the barren reconnect issued a
+        // `getTimeline`; recovery bailed at the noRoom guard.
+        verify(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).called(1);
+      },
+    );
+
+    test(
+      'an exception while resolving the room for gap recovery is caught '
+      'and logged under the gapRecovery subDomain — a failed recovery '
+      'must never escape as an unhandled fire-and-forget error',
+      () async {
+        final coordinator = buildWithRealQueue();
+        await coordinator.start();
+        addTearDown(() async => coordinator.stop());
+
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        var historyCalls = 0;
+        final events = <Event>[buildSyncPayload(id: r'$e-0', tsMs: 50)];
+        final barrenTimeline = stubTimeline(
+          events: events,
+          canRequestHistory: () => true,
+          onRequestHistory: (_) async {
+            historyCalls++;
+            events.insert(
+              0,
+              buildSyncPayload(
+                id: r'$e-$historyCalls',
+                tsMs: 50 - historyCalls,
+              ),
+            );
+          },
+        );
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => barrenTimeline);
+
+        await coordinator.runBootstrapForTest(room: room, untilTimestamp: 100);
+        expect(coordinator.hasBarrenBridgeSignal, isTrue);
+
+        // `_resolveRoom` now throws: cache is null and the gateway
+        // lookup blows up, so the recovery's outer try/catch fires.
+        when(() => roomManager.currentRoom).thenReturn(null);
+        when(() => roomManager.currentRoomId).thenReturn(roomId);
+        when(
+          () => client.getRoomById(roomId),
+        ).thenThrow(StateError('gateway down'));
+
+        coordinator.maybeStartGapRecovery();
+        await coordinator.gapRecoveryFuture;
+        expect(coordinator.gapRecoveryInFlight, isFalse);
+
+        verify(
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('gapRecovery'),
+            ),
+          ),
+        ).called(1);
       },
     );
   });

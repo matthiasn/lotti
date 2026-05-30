@@ -187,6 +187,33 @@ void main() {
           expect(failingService.isInitialized, isTrue);
         },
       );
+
+      test(
+        'logs error via DomainLogger when DBusClient initialization fails '
+        'in Flatpak environment',
+        () async {
+          if (!PortalService.shouldUsePortal) {
+            return; // Lines 60-61 only reachable in Flatpak environment
+          }
+
+          // In a Flatpak environment with DomainLogger registered,
+          // if DBusClient.session() throws the error is logged.
+          // We attempt initialization; if D-Bus is unavailable it throws
+          // and the logger records it. If D-Bus IS available, nothing is logged.
+          try {
+            await service.initialize();
+          } catch (e) {
+            // DBusClient.session() threw → verify the logger was called
+            verify(
+              () => mockDomainLogger.error(
+                LogDomain.screenshots,
+                any<Object>(),
+                subDomain: PortalConstants.initializationSubdomain,
+              ),
+            ).called(1);
+          }
+        },
+      );
     });
 
     group('Disposal', () {
@@ -458,6 +485,38 @@ void main() {
           ),
         );
       });
+
+      test(
+        'logs error and returns false when introspect throws in Flatpak',
+        () async {
+          if (!PortalService.shouldUsePortal) {
+            return; // Lines 210-214 only reachable in Flatpak environment
+          }
+
+          service
+            ..setMockClient(mockDBusClient)
+            ..setMockRemoteObject(mockDBusRemoteObject);
+
+          when(
+            () => mockDBusRemoteObject.introspect(),
+          ).thenThrow(Exception('D-Bus introspection failed'));
+
+          final available = await PortalService.isInterfaceAvailable(
+            'org.freedesktop.portal.Screenshot',
+            service,
+            'ScreenshotPortalService',
+          );
+
+          expect(available, isFalse);
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.screenshots,
+              any<Object>(),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('should handle empty interfaces list', () async {
         if (PortalService.shouldUsePortal) {

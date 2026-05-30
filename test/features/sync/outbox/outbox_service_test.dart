@@ -1975,6 +1975,565 @@ void main() {
         );
       },
     );
+
+    test(
+      'journal merge whose update affects zero rows (row no longer pending) '
+      'logs MERGE-MISS and inserts a fresh row with the merged data',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 5});
+        const newVc = VectorClock({'hostA': 7});
+
+        const oldMessage = SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: '/entries/test.json',
+          vectorClock: oldVc,
+          status: SyncEntryStatus.update,
+        );
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:5',
+          filePath: null,
+          outboxEntryId: 'entry-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => existingItem);
+        // Row was sent out from under us between the SELECT and UPDATE.
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 0);
+        OutboxCompanion? insertedCompanion;
+        when(() => syncDatabase.addOutboxItem(any())).thenAnswer((invocation) {
+          insertedCompanion =
+              invocation.positionalArguments.single as OutboxCompanion;
+          return Future<int>.value(2);
+        });
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
+
+        final journalEntity = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'entry-id',
+            createdAt: sampleDate,
+            updatedAt: sampleDate,
+            dateFrom: sampleDate,
+            dateTo: sampleDate,
+            vectorClock: newVc,
+          ),
+          entryText: const EntryText(plainText: 'Updated text'),
+        );
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: jsonPath,
+            vectorClock: newVc,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf([
+                contains('MERGE-MISS'),
+                contains('type=SyncJournalEntity'),
+                contains('id=entry-id'),
+              ]),
+            ),
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+        // Fresh row carries the merged subject + the original entry id.
+        expect(insertedCompanion, isNotNull);
+        expect(insertedCompanion!.subject.value, 'hhash:7');
+        expect(insertedCompanion!.outboxEntryId.value, 'entry-id');
+      },
+    );
+
+    test(
+      'a throw from recordSentEntry during a journal MERGE is caught and '
+      'logged under recordSent so a broken sequence log never breaks the '
+      'merge, and the merge still completes',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 5});
+        const newVc = VectorClock({'hostA': 7});
+
+        const oldMessage = SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: '/entries/test.json',
+          vectorClock: oldVc,
+          status: SyncEntryStatus.update,
+        );
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:5',
+          filePath: null,
+          outboxEntryId: 'entry-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => existingItem);
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 1);
+
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence log gone'));
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          sequenceLogService: sequenceLog,
+        );
+
+        final journalEntity = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'entry-id',
+            createdAt: sampleDate,
+            updatedAt: sampleDate,
+            dateFrom: sampleDate,
+            dateTo: sampleDate,
+            vectorClock: newVc,
+          ),
+          entryText: const EntryText(plainText: 'Updated text'),
+        );
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: jsonPath,
+            vectorClock: newVc,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordSent',
+          ),
+        ).called(1);
+        // The merge still completed despite the sequence-log failure.
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 1,
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a throw from recordSentEntry on the non-merge journal path is caught '
+      'and logged under recordSent so the fresh enqueue still succeeds',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const newVc = VectorClock({'hostA': 7});
+
+        // No existing pending item → fresh-insert path (not a merge).
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => null);
+
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence log gone'));
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          sequenceLogService: sequenceLog,
+        );
+
+        final journalEntity = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'entry-id',
+            createdAt: sampleDate,
+            updatedAt: sampleDate,
+            dateFrom: sampleDate,
+            dateTo: sampleDate,
+            vectorClock: newVc,
+          ),
+          entryText: const EntryText(plainText: 'Fresh text'),
+        );
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: jsonPath,
+            vectorClock: newVc,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordSent',
+          ),
+        ).called(1);
+        // The fresh outbox row was still inserted.
+        verify(() => syncDatabase.addOutboxItem(any())).called(1);
+      },
+    );
+
+    test(
+      'entry-link merge whose update affects zero rows logs MERGE-MISS and '
+      'inserts a fresh row carrying the merged subject and link id',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 3});
+        const newVc = VectorClock({'hostA': 5});
+
+        final oldLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: oldVc,
+        );
+        final oldMessage = SyncMessage.entryLink(
+          entryLink: oldLink,
+          status: SyncEntryStatus.update,
+        );
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:link:3',
+          filePath: null,
+          outboxEntryId: 'link-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('link-id'),
+        ).thenAnswer((_) async => existingItem);
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 0);
+        OutboxCompanion? insertedCompanion;
+        when(() => syncDatabase.addOutboxItem(any())).thenAnswer((invocation) {
+          insertedCompanion =
+              invocation.positionalArguments.single as OutboxCompanion;
+          return Future<int>.value(2);
+        });
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
+
+        final newLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: newVc,
+        );
+
+        await testService.enqueueMessage(
+          SyncMessage.entryLink(
+            entryLink: newLink,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf([
+                contains('MERGE-MISS'),
+                contains('type=SyncEntryLink'),
+                contains('id=link-id'),
+              ]),
+            ),
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+        expect(insertedCompanion, isNotNull);
+        expect(insertedCompanion!.subject.value, 'hhash:link:5');
+        expect(insertedCompanion!.outboxEntryId.value, 'link-id');
+      },
+    );
+
+    test(
+      'a throw from recordSentEntryLink during an entry-link MERGE is caught '
+      'and logged under recordSent without breaking the merge',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 3});
+        const newVc = VectorClock({'hostA': 5});
+
+        final oldLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: oldVc,
+        );
+        final oldMessage = SyncMessage.entryLink(
+          entryLink: oldLink,
+          status: SyncEntryStatus.update,
+        );
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:link:3',
+          filePath: null,
+          outboxEntryId: 'link-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('link-id'),
+        ).thenAnswer((_) async => existingItem);
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 1);
+
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+          ),
+        ).thenThrow(StateError('sequence log gone'));
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          sequenceLogService: sequenceLog,
+        );
+
+        final newLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: newVc,
+        );
+
+        await testService.enqueueMessage(
+          SyncMessage.entryLink(
+            entryLink: newLink,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordSent',
+          ),
+        ).called(1);
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 1,
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'an entry-link merge whose existing row holds undecodable JSON is '
+      'caught under enqueueMessage.merge and falls through to a fresh insert',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const newVc = VectorClock({'hostA': 5});
+
+        // Existing pending link row with a corrupt message body so the
+        // merge `SyncMessage.fromJson` throws inside the link merge try.
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: 'not-valid-json{{{',
+          subject: 'hhash:link:3',
+          filePath: null,
+          outboxEntryId: 'link-id',
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => syncDatabase.findPendingByEntryId('link-id'),
+        ).thenAnswer((_) async => existingItem);
+        when(
+          () => syncDatabase.addOutboxItem(any()),
+        ).thenAnswer((_) async => 2);
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
+
+        final newLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          vectorClock: newVc,
+        );
+
+        await testService.enqueueMessage(
+          SyncMessage.entryLink(
+            entryLink: newLink,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'enqueueMessage.merge',
+          ),
+        ).called(1);
+        // The corrupt-merge fall-through still enqueues the link fresh.
+        verify(() => syncDatabase.addOutboxItem(any())).called(1);
+        verifyNever(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        );
+      },
+    );
   });
 
   group('sendNext', () {
@@ -5617,6 +6176,133 @@ void main() {
 
       await failingService.dispose();
     });
+
+    test(
+      'an agent entity whose id escapes the documents root is skipped and '
+      'logged — the unencoded agent path builder makes a traversal id reach '
+      'the !isWithin guard, unlike notification paths which are URL-encoded',
+      () async {
+        // `relativeAgentEntityPath` does NOT URL-encode the id, so an id
+        // with `../` segments produces a path that normalizes outside the
+        // docs root and trips the `!p.isWithin` guard.
+        final entity = AgentDomainEntity.agent(
+          id: '../../escape',
+          agentId: '../../escape',
+          kind: 'task_agent',
+          displayName: 'Escape',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        await service.enqueueMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: contains('enqueue.skip invalid agent payload path'),
+            ),
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+        // Nothing was persisted: the row is never created for an
+        // out-of-root payload path.
+        verifyNever(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()));
+      },
+    );
+
+    test(
+      'an agent merge whose existing row holds undecodable JSON is caught '
+      'under enqueueMessage.agentMerge, logs the (no VC merge) fallback, and '
+      'still updates the pending row',
+      () async {
+        const newVc = VectorClock({'hostA': 5});
+
+        // Existing pending agent row with a corrupt message body so the
+        // VC-merge `SyncMessage.fromJson` throws inside the agent merge try.
+        when(() => syncDatabase.findPendingByEntryId('agent-xyz')).thenAnswer(
+          (_) async => OutboxItem(
+            id: 42,
+            message: 'corrupt-agent-json{{{',
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            subject: 'agentEntity:agent-xyz',
+            priority: OutboxPriority.low.index,
+          ),
+        );
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 1);
+
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-xyz',
+          agentId: 'agent-xyz',
+          kind: 'task_agent',
+          displayName: 'Updated',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-2',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: newVc,
+        );
+
+        await service.enqueueMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'enqueueMessage.agentMerge',
+          ),
+        ).called(1);
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('(no VC merge)')),
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+        // The merge still proceeds (without merged covered clocks) and
+        // updates the existing pending row rather than inserting fresh.
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 42,
+            newMessage: any(named: 'newMessage'),
+            newSubject: 'agentEntity:agent-xyz',
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('sent-outbox prune', () {
