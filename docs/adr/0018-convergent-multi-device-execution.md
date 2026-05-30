@@ -33,9 +33,14 @@ tiebreak.
 
 ## Decision
 
-1. Separate **facts** (log appends, recorded model/tool responses — replicate
-   freely, converge via CRDT semantics) from **execution** (running behaviors
-   and their side effects).
+1. **Two merge laws, by entity class.** *Append-only event classes*
+   (`AgentMessageEntity`, `AgentLink`, reports, observations, change decisions,
+   summaries/checkpoints) converge by **set-union + a deterministic DAG fold** —
+   no LWW. *Mutable registers* (the few genuinely in-place rows — user-authored
+   document *heads* via `Version`/`Head`, journal-side in-place edits) converge by
+   **LWW snapshot** (rule 4). Separately, **execution** (running behaviors + side
+   effects) is gated by the lease. Most agent state is the first class; the LWW
+   path is the minority.
 2. Side-effecting actions serialize behind a **leader lease keyed to the
    side-effect boundary** — `(agentId, behaviorKind)` for per-agent
    execution/compaction, `(userId, dayId, planner)` for the shared day planner;
@@ -53,11 +58,13 @@ tiebreak.
    reconnect** (dedupe via content-address; reject stale fencing tokens), not
    assumed-unique. "Exactly one executes" is therefore a connected-case guarantee
    plus an offline reconciliation contract — state both in the backend design.
-4. Convergent projection rule: classify each event pair with the vector clock
-   (`a_gt_b`/`b_gt_a` honored by replay order; `concurrent` falls to a tiebreak).
-   Apply `updatedAt` LWW **only on the `concurrent` branch**. Extend the partial
-   order to a single deterministic total order with a replica-independent
-   tiebreak: dominance, then a stable `hostId + id` key.
+4. **For mutable-register entities only** — convergent projection rule: classify
+   each pair with the vector clock (`a_gt_b`/`b_gt_a` honored by replay order;
+   `concurrent` falls to a tiebreak); apply `updatedAt` LWW **only on the
+   `concurrent` branch**. (Append-only event classes skip this entirely — they
+   union and fold by canonical order, rule 1.) Extend the partial order to a
+   single deterministic total order with a replica-independent tiebreak:
+   dominance, then a stable `hostId + id` key.
 5. Make the LWW comparator a genuine total order: **break equal `updatedAt` by
    `hostId`** (then `id`) so identical timestamps cannot diverge across replicas.
    This is distinct from clock skew: a fast/skewed physical clock wins a

@@ -57,9 +57,11 @@ hypothetical.
    (ADR 0006); awards become `PlannedBlock`s on the `DayPlan`. A project phase
    can emit standing recurring `attention_request`s (e.g. "monitoring → 15 min
    weekly").
-7. Negotiation is event-sourced; the arbiter runs under the executor lease
-   (ADR 0018) so concurrent arbiter runs on two devices cannot drop a bid branch
-   under LWW.
+7. Negotiation **converges like any other agent state** (ADR 0018): bids and
+   awards are events folded in canonical order, so concurrent arbiter runs on two
+   devices cannot drop a bid branch — **convergence handles that, not the lease**.
+   The lease on `(userId, dayId, planner)` only reduces duplicate planner work and
+   gates the irreversible schedule commit.
 
 ## Negotiation Flow
 

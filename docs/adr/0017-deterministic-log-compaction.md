@@ -20,22 +20,30 @@ arbitrary winner.
 
 ## Decision
 
-1. A background compaction behavior: when the verbatim tail past
-   `recentHeadMessageId` exceeds a model-specific budget, summarize that range
-   into a new `summary` message that **folds in the prior
-   `latestSummaryMessageId`**, then advance both pointers.
+1. A background compaction behavior: when the verbatim tail past the active
+   checkpoint exceeds a model-specific budget, **append a `summary`/checkpoint
+   event** naming the **frontier** it covers (and the prior checkpoint it folds
+   in). It is an *append*, not a pointer write — the **projection** selects the
+   active checkpoint/head (ADR 0016), and the persisted
+   `recentHeadMessageId`/`latestSummaryMessageId` are a **local cache only**, so
+   compaction adds no mutable conflict surface.
 2. Summaries are **derived projections, not destructive overwrites**: the
    immutable log remains ground truth; summarized messages are retained.
 3. **A content digest does not make two LLM summaries converge** (different
    content yields a different digest). Convergence comes from treating summaries
    as **candidate checkpoints over causal frontiers**, not from the lease. A
    summary covers a *frontier* — an antichain `{e : prior < e ≤ frontier}`.
-   Frontiers form a **join-semilattice** (merge = least-upper-bound antichain),
-   so the active checkpoint is the **join** of candidate frontiers,
-   deterministically tiebroken — a state-based CRDT that converges by
-   construction. The *frontier* converges by merge; the *summary text* on a
-   chosen frontier is a deterministic **pick** among candidates (you cannot LUB
-   two paragraphs). `frontierDigest` = hash of the antichain's canonical id-set;
+   Frontiers form a join-semilattice, but with a critical caveat: the **join of
+   two candidate frontiers may have no materialized summary text** (no one
+   summarized that exact cut). So the **active checkpoint is the greatest
+   *materialized* frontier comparable to (≤) all current heads** — effectively
+   the meet of materialized candidates — and the **divergent region above it is
+   read verbatim** (plus any per-branch candidate summaries) until a lazy
+   **merge-summary behavior** materializes the joined frontier (the same
+   lazy-capped pattern as the message-DAG join, ADR 0018). **Never** pick one
+   candidate's text as *the* checkpoint when candidates are incomparable — that
+   silently drops the other branch's history. `frontierDigest` = hash of the
+   antichain's canonical id-set;
    it keys dedup and the verification/replay hash, computed over a **canonical
    serialization** (sorted keys, RFC 3339 UTC timestamps, normalized numbers,
    UTF-8 canonical JSON / JCS) with a **versioned tag** (e.g. `sha256-v1`,
@@ -61,7 +69,7 @@ stateDiagram-v2
   Appending --> CompactionCheck: tail beyond budget?
   CompactionCheck --> Compacting: yes
   CompactionCheck --> Idle: no
-  Compacting --> Idle: write content-addressed summary, advance pointers
+  Compacting --> Idle: append checkpoint event; projection selects active checkpoint
 ```
 
 ## Consequences
