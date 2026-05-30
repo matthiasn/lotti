@@ -123,7 +123,7 @@ All of the following must hold:
 
 ## 4. Current shape (verified 2026-05-30)
 
-```
+```text
 SyncSequenceStatus (lib/database/sync_db.dart:42-73)
   received(0) missing(1) requested(2) backfilled(3) deleted(4)
   unresolvable(5) reserved(6) burnPending(7)        ← append burned(8)
@@ -208,7 +208,9 @@ Blast radius for SyncSequenceStatus in lib/: sync_db.dart, sync_sequence_log_ser
 - Change all four `SyncSequenceStatus.unresolvable.index` (~1073, 1081, 1094, 1104) to
   `SyncSequenceStatus.burned.index`. (1081 & 1104 are the `status:` arg passed to
   `_refreshSequenceWatermark` — keep them aligned with what is written.)
-- Optionally also exclude `burned` from the `isNotIn([...])` guard (idempotent either way).
+- Add `SyncSequenceStatus.burned.index` to the `isNotIn([...])` guard so an already-burned
+  row is left untouched (makes a repeat burn idempotent; mirrors the terminal-skip guard in
+  `handleBackfillResponse`).
 - Update the docstring: it now writes `burned`.
 
 `lib/features/sync/sequence/sync_sequence_log_service.dart` → `handleBackfillResponse`,
@@ -262,7 +264,8 @@ the `if (unresolvable)` branch (~1213-1265):
       'DROP INDEX IF EXISTS idx_sync_sequence_log_resolved_host_counter',
     );
     await customStatement(
-      'CREATE INDEX idx_sync_sequence_log_resolved_host_counter '
+      'CREATE INDEX IF NOT EXISTS '
+      'idx_sync_sequence_log_resolved_host_counter '
       'ON sync_sequence_log (host_id, counter) '
       'WHERE status IN (0, 3, 4, 5, 8)',
     );
@@ -401,4 +404,3 @@ restore `schemaVersion = 23`, revert the five resolved-set sites and the write s
 re-run `make build_runner`. Existing `burned`(8) rows would then be treated as unresolved
 by older code — so before a downgrade you would `UPDATE sync_sequence_log SET status = 5
 WHERE status = 8`. (Not expected to be needed.)
-```
