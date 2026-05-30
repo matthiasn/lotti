@@ -47,3 +47,4 @@ Each ADR should contain:
 - [`0017-deterministic-log-compaction.md`](./0017-deterministic-log-compaction.md)
 - [`0018-convergent-multi-device-execution.md`](./0018-convergent-multi-device-execution.md)
 - [`0019-attention-negotiation-protocol.md`](./0019-attention-negotiation-protocol.md)
+- [`0020-agent-input-capture.md`](./0020-agent-input-capture.md)
