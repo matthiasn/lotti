@@ -93,6 +93,90 @@ void main() {
     });
   });
 
+  group('canonicalOrder — robustness properties', () {
+    glados.Glados(
+      glados.any.projectionDag,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('output is exactly the distinct input set (no loss/dup)', (dag) {
+      final ordered = canonicalOrder(dag.events);
+      final inputIds = {for (final e in dag.events) e.id};
+
+      expect(ordered.length, inputIds.length, reason: '$dag');
+      expect(_ids(ordered).toSet(), inputIds, reason: '$dag');
+    }, tags: 'glados');
+
+    glados.Glados(
+      glados.any.projectionDag,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('is idempotent — re-ordering an ordered list is a fixpoint', (dag) {
+      final once = canonicalOrder(dag.events);
+
+      expect(_ids(canonicalOrder(once)), _ids(once), reason: '$dag');
+    }, tags: 'glados');
+
+    glados.Glados(
+      glados.any.arbitraryEdgeGraph,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('arbitrary graph → valid linearization, else a cycle throw', (
+      events,
+    ) {
+      final List<AgentEvent> ordered;
+      try {
+        ordered = canonicalOrder(events);
+      } on ProjectionCycleException {
+        return; // a cycle was present; throwing is the contract
+      }
+
+      // No cycle → a valid linearization: exactly the distinct input set, with
+      // every *present* parent before its child (dangling refs impose nothing).
+      final inputIds = {for (final e in events) e.id};
+      expect(_ids(ordered).toSet(), inputIds, reason: '$events');
+      expect(ordered.length, inputIds.length, reason: '$events');
+
+      final position = {
+        for (var i = 0; i < ordered.length; i++) ordered[i].id: i,
+      };
+      for (final event in events) {
+        for (final parentId in event.causalParents) {
+          if (position.containsKey(parentId)) {
+            expect(
+              position[parentId]! < position[event.id]!,
+              isTrue,
+              reason: '$parentId before ${event.id} in $events',
+            );
+          }
+        }
+      }
+    }, tags: 'glados');
+
+    glados.Glados2(
+      glados.any.projectionDag,
+      glados.any.shuffleSeed,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('rejects a duplicated id regardless of DAG shape', (dag, seed) {
+      if (dag.events.isEmpty) return; // nothing to duplicate
+      final original = dag.events[seed % dag.events.length];
+      final duplicate = AgentEvent(
+        id: original.id,
+        hostId: '${original.hostId}-dup', // differs in content → distinct
+        kind: original.kind,
+        vectorClock: original.vectorClock,
+        causalParents: original.causalParents,
+      );
+
+      expect(
+        () => canonicalOrder([...dag.events, duplicate]),
+        throwsA(
+          isA<DuplicateEventIdException>().having(
+            (e) => e.duplicateId,
+            'duplicateId',
+            original.id,
+          ),
+        ),
+      );
+    }, tags: 'glados');
+  });
+
   group('canonicalOrder — shapes', () {
     test('empty input yields empty order', () {
       expect(canonicalOrder(const <AgentEvent>[]), isEmpty);

@@ -56,6 +56,55 @@ void main() {
       // A non-empty DAG always has at least one tip.
       expect(headIds.isNotEmpty, dag.events.isNotEmpty, reason: '$dag');
     }, tags: 'glados');
+
+    glados.Glados(
+      glados.any.projectionDag,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('latestReportId is the last report in canonical order', (dag) {
+      final reports = canonicalOrder(
+        dag.events,
+      ).where((e) => e.kind == AgentEventKind.report).toList();
+      final expected = reports.isEmpty ? null : reports.last.id;
+
+      expect(
+        _projectionOf(dag.events).latestReportId,
+        expected,
+        reason: '$dag',
+      );
+    }, tags: 'glados');
+
+    glados.Glados2(
+      glados.any.projectionDag,
+      glados.any.shuffleSeed,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'a removed event surfaces as a dangling parent, never crashes',
+      (
+        dag,
+        seed,
+      ) {
+        if (dag.events.isEmpty) return;
+        // Drop one event but keep the rest: it becomes the only newly-absent id,
+        // so it is dangling iff a surviving event still references it.
+        final removed = dag.events[seed % dag.events.length];
+        final remaining = [
+          for (final e in dag.events)
+            if (e.id != removed.id) e,
+        ];
+
+        final projection = project(canonicalOrder(remaining)); // must not throw
+        final stillReferenced = remaining.any(
+          (e) => e.causalParents.contains(removed.id),
+        );
+
+        expect(
+          projection.danglingParentIds,
+          stillReferenced ? [removed.id] : <String>[],
+          reason: 'removed=${removed.id} in $dag',
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('project — shapes', () {
@@ -145,6 +194,48 @@ void main() {
       expect(projection.danglingParentIds, ['a', 'z']);
       // Neither x nor y is referenced by a present event, so both are heads.
       expect(projection.headIds.toSet(), {'x', 'y'});
+    });
+  });
+
+  group('project — shape families', () {
+    glados.Glados(
+      glados.any.deepChainDag,
+      glados.ExploreConfig(numRuns: 60),
+    ).test('a deep chain orders root-to-tip with a single head', (events) {
+      final orderedIds = canonicalOrder(events).map((e) => e.id).toList();
+      final expectedOrder = [for (var i = 0; i < events.length; i++) 'e$i'];
+
+      expect(orderedIds, expectedOrder, reason: 'chain of ${events.length}');
+      expect(
+        project(canonicalOrder(events)).headIds,
+        ['e${events.length - 1}'],
+        reason: 'chain of ${events.length}',
+      );
+    }, tags: 'glados');
+
+    glados.Glados(
+      glados.any.wideForkDag,
+      glados.ExploreConfig(numRuns: 60),
+    ).test('a wide fork makes every child a head, never the root', (events) {
+      final heads = project(canonicalOrder(events)).headIds.toSet();
+      final children = {
+        for (final e in events)
+          if (e.id != 'e0') e.id,
+      };
+
+      expect(heads, children, reason: 'fork of ${events.length - 1}');
+      expect(heads.contains('e0'), isFalse, reason: 'fork of ${events.length}');
+    }, tags: 'glados');
+
+    test('a diamond collapses to the single join head', () {
+      final projection = _projectionOf([
+        _ev('a'),
+        _ev('b', parents: ['a']),
+        _ev('c', parents: ['a']),
+        _ev('d', parents: ['b', 'c']),
+      ]);
+
+      expect(projection.headIds, ['d']);
     });
   });
 }

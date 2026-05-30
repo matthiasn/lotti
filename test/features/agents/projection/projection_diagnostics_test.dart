@@ -35,6 +35,43 @@ void main() {
         reason: '$dag',
       );
     }, tags: 'glados');
+
+    glados.Glados2(
+      glados.any.projectionDag,
+      glados.any.shuffleSeed,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('detects exactly the edges of one corrupted event', (dag, seed) {
+      if (dag.events.isEmpty) return;
+      // Corrupt one event's clock to empty. An empty clock dominates nothing,
+      // so it stops dominating its (present) parents → exactly that event's
+      // parent edges become `b_gt_a`. Its children still dominate the now-empty
+      // clock, so no *other* edge is affected — the injection is surgical.
+      final target = dag.events[seed % dag.events.length];
+      final corrupted = [
+        for (final e in dag.events)
+          if (e.id == target.id)
+            AgentEvent(
+              id: e.id,
+              hostId: e.hostId,
+              kind: e.kind,
+              causalParents: e.causalParents,
+              vectorClock: const VectorClock(<String, int>{}),
+            )
+          else
+            e,
+      ];
+
+      final expected = [
+        for (final parentId in target.causalParents)
+          VcInconsistency(
+            childId: target.id,
+            parentId: parentId,
+            status: VclockStatus.b_gt_a,
+          ),
+      ]..sort((a, b) => a.parentId.compareTo(b.parentId));
+
+      expect(diagnoseVectorClocks(corrupted), expected, reason: '$dag');
+    }, tags: 'glados');
   });
 
   group('diagnoseVectorClocks — single edge', () {

@@ -99,6 +99,34 @@ VectorClock _clockDominating(List<AgentEvent> parents, String hostId) {
   return VectorClock(merged);
 }
 
+/// One node of an [AnyProjectionFixtures.arbitraryEdgeGraph] — arbitrary parent
+/// references (mapped to present nodes, self/forward refs, or absent ghosts).
+class _EdgeNode {
+  const _EdgeNode({required this.hostSeed, required this.parentRefs});
+
+  final int hostSeed;
+  final List<int> parentRefs;
+}
+
+List<AgentEvent> _buildArbitraryGraph(List<_EdgeNode> nodes) {
+  final n = nodes.length;
+  return [
+    for (var i = 0; i < n; i++)
+      AgentEvent(
+        id: 'e$i',
+        hostId: 'h${nodes[i].hostSeed % _hostCount}',
+        kind: AgentEventKind.message,
+        vectorClock: VectorClock({'h${nodes[i].hostSeed % _hostCount}': 1}),
+        causalParents: [
+          for (final ref in nodes[i].parentRefs)
+            // Map into [0, n+2): < n is a present node (any node, so self- and
+            // forward-refs → cycles); otherwise an absent ghost (→ dangling).
+            (ref % (n + 2)) < n ? 'e${ref % (n + 2)}' : 'ghost$ref',
+        ],
+      ),
+  ];
+}
+
 /// Every permutation of [items] — used for bounded exhaustive permutation
 /// checks at small `n` (factorial growth means callers must keep `n` small).
 List<List<T>> permutationsOf<T>(List<T> items) {
@@ -141,6 +169,70 @@ extension AnyProjectionFixtures on Any {
 
   /// A non-negative seed for deterministic shuffles.
   Generator<int> get shuffleSeed => IntAnys(this).intInRange(0, 1 << 30);
+
+  /// Events with **arbitrary** parent references — including self/forward refs
+  /// (so the edge set may be **cyclic**) and absent ids (**dangling**). Ids are
+  /// unique (`e0`..), so only a cycle can make `canonicalOrder` throw. Vector
+  /// clocks are trivial (ordering is edge-driven). Use to property-test
+  /// robustness on malformed graphs, not just well-formed DAGs.
+  Generator<List<AgentEvent>> get arbitraryEdgeGraph => ListAnys(this)
+      .listWithLengthInRange(0, 10, _edgeNode)
+      .map(
+        _buildArbitraryGraph,
+      );
+
+  /// A linear chain `e0 → e1 → … → e{n-1}` of 1..15 events (each event's parent
+  /// is the previous one). Exactly one head: the last event. Guarantees the
+  /// deep-chain topology is exercised rather than left to the RNG.
+  Generator<List<AgentEvent>> get deepChainDag => IntAnys(this)
+      .intInRange(1, 16)
+      .map(
+        (length) => [
+          for (var i = 0; i < length; i++)
+            AgentEvent(
+              id: 'e$i',
+              hostId: 'h0',
+              kind: AgentEventKind.message,
+              vectorClock: VectorClock({'h0': i + 1}), // dominates the previous
+              causalParents: i == 0 ? const [] : ['e${i - 1}'],
+            ),
+        ],
+      );
+
+  /// A wide fork: a root `e0` with 1..15 children `e1..e{w}`, all parented to
+  /// the root. Every child is a head; the root is not. Guarantees the
+  /// wide-fork topology is exercised.
+  Generator<List<AgentEvent>> get wideForkDag => IntAnys(this)
+      .intInRange(1, 16)
+      .map(
+        (width) => [
+          AgentEvent(
+            id: 'e0',
+            hostId: 'h0',
+            kind: AgentEventKind.message,
+            vectorClock: const VectorClock({'h0': 1}),
+          ),
+          for (var i = 1; i <= width; i++)
+            AgentEvent(
+              id: 'e$i',
+              hostId: 'h0',
+              kind: AgentEventKind.message,
+              vectorClock: const VectorClock({'h0': 2}), // dominates the root
+              causalParents: const ['e0'],
+            ),
+        ],
+      );
+
+  Generator<_EdgeNode> get _edgeNode => CombinableAny(this).combine2(
+    IntAnys(this).intInRange(0, _hostCount * 3),
+    ListAnys(this).listWithLengthInRange(
+      0,
+      3,
+      IntAnys(this).intInRange(0, 1000),
+    ),
+    (hostSeed, parentRefs) =>
+        _EdgeNode(hostSeed: hostSeed, parentRefs: parentRefs),
+  );
 
   Generator<_NodeSpec> get _nodeSpec => CombinableAny(this).combine6(
     IntAnys(this).intInRange(0, 9),
