@@ -182,6 +182,19 @@ clocks — per `test/README.md`):**
 
 ## Risks & deferred (explicitly out of scope)
 
+- **LWW is lossy for cumulative fields — and `AgentStateEntity` bundles
+  counters.** The resolver picks a whole-row winner and discards the loser
+  entirely, so `wakeCounter` / `processedCounterByHost` / `toolCounterByKey`
+  lose the losing side's increments when two devices update one agent's state
+  concurrently. The deterministic tiebreak does **not** fix this — a loser is
+  still a loser; it only makes *which* side loses agree across replicas. The
+  lease (PR 7) makes that row effectively single-writer per agent, so this is a
+  partition/split-brain edge case, but "rare" is not "safe." The correct fix is
+  to **derive counters from the log** (count the wake/tool events) or use a
+  **counter-CRDT** — classified in PR 4 (derived vs runtime-local vs counter)
+  and the §11 / PR 10 counter flag. Until then PR 2 converges the row
+  deterministically but is **convergent-but-lossy** for its counter fields, and
+  this must not be read as "nothing is lost."
 - **Clock skew on the LWW primary (ADR rule 6).** A later concurrent write wins
   by wall-clock `updatedAt` even when it "shouldn't"; the equal-timestamp
   tiebreak never fires for it. Bounding this needs an HLC / bounded-drift

@@ -488,13 +488,22 @@ silently dropped, the receiver's per-(host, counter) gap detection in
 will pull each child from the originating peer as an individual
 `SyncAgentEntity` / `SyncAgentLink` response.
 
-Inbound agent entities and links are guarded by vector-clock dominance before
-they overwrite the local `AgentRepository` row. If the local row's vector clock
-is equal to or newer than the incoming payload, the processor skips the upsert,
-restores the local JSON cache when the message came through `jsonPath`, and
-still records the sequence-log receipt so backfill does not keep requesting the
-same counter. Incoming-dominant or concurrent clocks continue through the
-normal apply path.
+Inbound agent entities and links are guarded by vector-clock comparison before
+they overwrite the local `AgentRepository` row:
+
+- **Local dominates or equal** (`a_gt_b` / `equal`): the processor skips the
+  upsert, restores the local JSON cache when the message came through
+  `jsonPath`, and still records the sequence-log receipt so backfill does not
+  keep requesting the same counter.
+- **Incoming dominates** (`b_gt_a`): the incoming payload is applied.
+- **Concurrent** (neither dominates): a deterministic last-writer-wins tiebreak
+  picks the winner (`features/agents/sync/agent_concurrent_resolver.dart`). The
+  strictly-newer `updatedAt` wins; on equal timestamps a replica-independent
+  canonical vector-clock comparison decides. Both devices therefore converge on
+  the same row regardless of arrival order — previously the concurrent case
+  applied whichever payload arrived last, which could diverge across replicas.
+  (Agent-derived state converges silently; unlike journal entries it does not
+  raise a user-facing `Conflict` row.)
 
 ### Dequeue-Time Outbox Bundling
 

@@ -70,7 +70,15 @@ tiebreak.
    single deterministic total order with a replica-independent tiebreak:
    dominance, then a stable `hostId + id` key.
 5. Make the LWW comparator a genuine total order: **break equal `updatedAt` by
-   `hostId`** (then `id`) so identical timestamps cannot diverge across replicas.
+   a replica-independent secondary key** so identical timestamps cannot diverge
+   across replicas. *Implementation note:* for the mutable-register concurrent
+   branch the two versions share the same `id`, so `id` cannot discriminate;
+   `agent_concurrent_resolver.dart` instead breaks equal `updatedAt` by a
+   **canonical vector-clock comparison** (sorted `(hostId, counter)` entries) —
+   both replicas hold both clocks, so this is stable and needs no per-entity
+   authoring `hostId` column. This realizes the rule's intent (a deterministic,
+   replica-independent tiebreak); a literal `hostId`-then-`id` key would require
+   first persisting an authoring host on every agent row.
    This is distinct from clock skew: a fast/skewed physical clock wins a
    concurrent branch because its `updatedAt` is strictly greater (the
    equal-timestamp tiebreak never fires), so bounding *that* needs a monotonic

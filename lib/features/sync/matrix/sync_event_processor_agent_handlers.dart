@@ -387,6 +387,8 @@ extension _AgentHandlers on SyncEventProcessor {
     return _localAgentPayloadDominates(
       localVc: localVc,
       incomingVc: incomingVc,
+      localUpdatedAt: () => local.effectiveUpdatedAt,
+      incomingUpdatedAt: () => incoming.effectiveUpdatedAt,
       kind: 'agentEntity',
       id: incoming.id,
       jsonPath: jsonPath,
@@ -408,6 +410,8 @@ extension _AgentHandlers on SyncEventProcessor {
     return _localAgentPayloadDominates(
       localVc: localVc,
       incomingVc: incomingVc,
+      localUpdatedAt: () => local.updatedAt,
+      incomingUpdatedAt: () => incoming.updatedAt,
       kind: 'agentLink',
       id: incoming.id,
       jsonPath: jsonPath,
@@ -418,6 +422,8 @@ extension _AgentHandlers on SyncEventProcessor {
   Future<bool> _localAgentPayloadDominates({
     required VectorClock localVc,
     required VectorClock incomingVc,
+    required DateTime Function() localUpdatedAt,
+    required DateTime Function() incomingUpdatedAt,
     required String kind,
     required String id,
     required String? jsonPath,
@@ -425,9 +431,23 @@ extension _AgentHandlers on SyncEventProcessor {
   }) async {
     try {
       final status = VectorClock.compare(localVc, incomingVc);
-      final localDominates =
-          status == VclockStatus.a_gt_b || status == VclockStatus.equal;
-      if (!localDominates) return false;
+      // Causal dominance decides first; the genuinely `concurrent` branch is
+      // resolved by a deterministic LWW + vector-clock tiebreak so two devices
+      // converge regardless of arrival order (the timestamp closures are only
+      // evaluated on that branch).
+      final keepLocal = switch (status) {
+        VclockStatus.a_gt_b || VclockStatus.equal => true,
+        VclockStatus.b_gt_a => false,
+        VclockStatus.concurrent =>
+          resolveConcurrent(
+                localVc: localVc,
+                incomingVc: incomingVc,
+                localUpdatedAt: localUpdatedAt(),
+                incomingUpdatedAt: incomingUpdatedAt(),
+              ) ==
+              ConcurrentWinner.local,
+      };
+      if (!keepLocal) return false;
 
       await _restoreDominantAgentCache(
         jsonPath: jsonPath,
@@ -436,7 +456,7 @@ extension _AgentHandlers on SyncEventProcessor {
         jsonString: restoreLocalJson(),
       );
       _trace(
-        'apply.$kind.skippedLocalDominates id=$id status=$status',
+        'apply.$kind.skippedLocalWins id=$id status=$status',
         subDomain: 'processor.apply',
       );
       return true;
