@@ -42,3 +42,8 @@ Each ADR should contain:
 - [`0012-recursive-self-improvement-depth-policy.md`](./0012-recursive-self-improvement-depth-policy.md)
 - [`0013-outbox-priority-queue.md`](./0013-outbox-priority-queue.md)
 - [`0014-cross-wake-critical-observation-injection.md`](./0014-cross-wake-critical-observation-injection.md)
+- [`0015-outbox-message-bundling.md`](./0015-outbox-message-bundling.md)
+- [`0016-agent-state-as-log-projection.md`](./0016-agent-state-as-log-projection.md)
+- [`0017-deterministic-log-compaction.md`](./0017-deterministic-log-compaction.md)
+- [`0018-convergent-multi-device-execution.md`](./0018-convergent-multi-device-execution.md)
+- [`0019-attention-negotiation-protocol.md`](./0019-attention-negotiation-protocol.md)
