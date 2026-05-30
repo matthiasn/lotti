@@ -44,19 +44,23 @@ already in the log. Each field is one of:
 | `revision` | derived | function of the log frontier (or retire) |
 | `slots.active{Task,Day,Project,Template}Id` | derived | the agent's `AgentLink` edges (`agentTask`/`agentProject`/…) — already log events |
 | `lastWakeAt`, `slots.last{OneOnOne,FeedbackScan,DailyWake,WeeklyReview}At`, "most recent unreflected activity" | derived | timestamp of the last corresponding event |
-| `wakeCounter` | **counter → count-from-log** | count wake-run events |
-| `slots.totalSessionsCompleted`, `slots.weeklyReviewCount` | **counter → count-from-log** | count ritual / review events |
-| `consecutiveFailureCount` | **counter → count-from-log** | trailing failures in the wake-run tail |
-| `toolCounterByKey` | **counter → count-from-log** | count tool-effect events per key |
+| `wakeCounter`, `slots.totalSessionsCompleted`, `slots.weeklyReviewCount` | **per-host G-counter (PR 2b)** | `Map<hostId,int>`, value = sum, merge = element-wise max (`VectorClock.merge`); exact + convergent even under partition, no lost increments. PR 4 just reads the sum. |
+| `toolCounterByKey` | **count-from-log** | count synced `toolEffect` links (`agent_links`) per key — correct + convergent (nested per-host G-counter only if that proves insufficient) |
+| `consecutiveFailureCount` | **best-effort / LWW** | *resets* on success → not grow-only and ill-defined across a partition; left as a synced LWW field (drives backoff heuristics only) |
 | `nextWakeAt`, `sleepUntil`, `scheduledWakeAt` | runtime-local | device-local scheduling — **do not sync** (each device schedules itself; the lease, PR 7, coordinates who executes) |
 | `slots.feedbackWindowDays`, `slots.recursionDepth` | config | re-home to `AgentConfig` / identity — not mutable state |
 | `processedCounterByHost` | sequence bookkeeping | sequence-log / sync layer, not agent state |
 | `awaitingContent` | derived gate | "has the first meaningful content/wake arrived?" |
 
-**Counters are count-from-log, which resolves PR 2's counter-loss limitation
-*without* a counter-CRDT.** Counting events is exact and convergent; LWW on a bundled
-counter row (PR 2's residual risk) drops to "a stale cached count that the next fold
-corrects." This is strictly better than a CRDT counter here.
+**Counters converge by mechanism, resolving PR 2's counter-loss limitation:**
+the monotonic counters (`wakeCounter`, session/review counts) become **per-host
+G-counters** (PR 2b) — `Map<hostId,int>` summed and merged by element-wise max — so
+they converge to the *exact* total even under partition, with no lost increments;
+`toolCounterByKey` is counted from synced `toolEffect` links; `consecutiveFailureCount`
+stays best-effort. (An earlier draft proposed count-from-log for the monotonic
+counters, but their source — `wake_run_log` — is **device-local**, so counting it
+diverges. The G-counter needs no synced source and reuses the vector-clock merge
+primitive, so it supersedes that approach.)
 
 ## Reconciliation strategy (when to refold the cache)
 
@@ -123,8 +127,9 @@ Not just plumbing — the long-lived agents benefit most:
 
 ## Done when
 
-- Derived agent state is read from the projection; the read-modify-write counter
-  pattern is gone (counters are count-from-log).
+- Derived agent state is read from the projection; the read-modify-write
+  `wakeCounter + 1` pattern is gone (monotonic counters are per-host G-counters per
+  PR 2b; `toolCounterByKey` is count-from-log).
 - Concurrent multi-device edits **self-heal** on agent-derived state (sim test), and
   counters are exact across a partition+heal.
 - `AgentStateEntity` is demoted to a reconciled cache; PR 2's resolver is demonstrably
@@ -136,7 +141,9 @@ Not just plumbing — the long-lived agents benefit most:
   cold-start.
 - **Compaction** (PR 5) — `frontierDigest` and bounded working set land there; PR 4's
   reconcile uses a head-set digest in the interim.
-- **Counter-CRDT** — *not needed* here; count-from-log supersedes it for these fields.
+- **Counter-CRDT** — the monotonic counters *are* per-host G-counters, delivered in
+  **PR 2b** (sibling of PR 2); PR 4 only reads their sum. `consecutiveFailureCount`
+  stays best-effort.
 
 ## Open decisions
 

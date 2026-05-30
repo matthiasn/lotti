@@ -41,6 +41,14 @@ Grouped into the six phases of §10. Each PR: **Goal · Depends on · Touches ·
 - **Done when:** two devices applying the same concurrent pair in either arrival order deterministically agree; equal-`updatedAt` ties covered; non-concurrent branches unchanged.
 - **Realizes:** ADR 0018 rule 5; §8.
 
+**PR 2b — Convergent agent-state counters (per-host G-counters)**
+- **Goal:** make the cumulative agent-state counters converge to the *exact* total across devices, even under partition (PR 2's deterministic tiebreak converges but is *lossy* on counters — it picks one side, dropping the other's increments). `wakeCounter`, `slots.totalSessionsCompleted`, `slots.weeklyReviewCount` become **per-host G-counters** — `Map<hostId,int>`, value = sum of entries, merge = element-wise max (the same shape as a vector clock / `processedCounterByHost`, reusing `VectorClock.merge`). No lost increments, ever.
+- **Depends on:** PR 2 (extends the concurrent-resolution path with a *per-field* merge instead of whole-row LWW). Independent of PR 3.
+- **Touches:** counter fields on `AgentStateEntity`/`AgentSlots` (`int` → `Map<hostId,int>`; freezed regen + `int`→map data migration seeding `{migrating-host: current}` so the sum is preserved); the read-modify-write increment sites (`wakeCounter + 1` → bump the local host's entry, host from `VectorClockService`); the sync apply path (counter fields merge element-wise-max; the rest of the row stays LWW/projection).
+- **Defers:** `toolCounterByKey` → count-from-log over synced `toolEffect` links (synced source; nested per-host G-counter only if that proves insufficient); `consecutiveFailureCount` stays **best-effort/LWW** (it *resets* on success, so it is not grow-only and is ill-defined across a partition).
+- **Done when:** a partition+heal sim shows each counter equals the true sum of per-device increments on every device (no lost increments); non-counter fields unchanged.
+- **Realizes:** the "no lost increments" guarantee; supersedes the count-from-log framing for the monotonic counters (and the §11 / PR 10 counter-CRDT flag for *agent-state* counters specifically).
+
 **PR 3 — `messagePrev` wiring + shadow projection** — detailed plan: [`2026-05-30_messageprev_shadow_projection_plan.md`](./2026-05-30_messageprev_shadow_projection_plan.md).
 - **Goal:** populate `messagePrev` (and/or `prevMessageId`) when persisting messages so the log is a real DAG; compute the kernel's projection **in shadow** (alongside the mutable rows) and assert equality on the forward corpus.
 - **Depends on:** PR 1, PR 2.
@@ -120,6 +128,7 @@ Grouped into the six phases of §10. Each PR: **Goal · Depends on · Touches ·
 flowchart TD
   PR1["PR1 projection kernel"]
   PR2["PR2 tiebreak hardening"]
+  PR2b["PR2b convergent counters (G-counters)"]
   PR3["PR3 messagePrev + shadow"]
   PR4["PR4 state-as-projection"]
   PR5["PR5 compaction (local→synced)"]
@@ -132,6 +141,8 @@ flowchart TD
 
   PR1 --> PR3
   PR2 --> PR3
+  PR2 --> PR2b
+  PR2b --> PR4
   PR1 --> PR5
   PR1 --> PR6
   PR3 --> PR4
