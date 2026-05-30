@@ -116,10 +116,19 @@ Future<void> main() async {
 
   await runZonedGuarded(
     () async {
-      getIt.registerSingleton<LoggingService>(
-        LoggingService(),
-        dispose: (service) => service.dispose(),
-      );
+      // Register DomainLogger immediately after its LoggingService sink so the
+      // startup diagnostics below — and the runZonedGuarded error handler — can
+      // resolve it before registerSingletons() runs. registerSingletons() then
+      // reuses this instance instead of re-registering.
+      final loggingService = LoggingService();
+      getIt
+        ..registerSingleton<LoggingService>(
+          loggingService,
+          dispose: (service) => service.dispose(),
+        )
+        ..registerSingleton<DomainLogger>(
+          DomainLogger(loggingService: loggingService),
+        );
 
       getIt<DomainLogger>().log(
         LogDomain.general,
@@ -203,12 +212,21 @@ Future<void> main() async {
       );
     },
     (Object error, StackTrace stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.general,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'runZonedGuarded',
-      );
+      // Defensive: an error thrown before DomainLogger is registered must not be
+      // masked by a GetIt lookup failure in the handler itself.
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.general,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'runZonedGuarded',
+        );
+      } else {
+        debugPrint(
+          'Unhandled startup error before logging init: $error\n'
+          '$stackTrace',
+        );
+      }
     },
   );
 }

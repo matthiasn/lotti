@@ -227,8 +227,15 @@ Future<void> registerSingletons() async {
   final syncDatabase = getIt<SyncDatabase>();
   final vectorClockService = getIt<VectorClockService>();
   final secureStorage = getIt<SecureStorage>();
-  final domainLogger = DomainLogger(loggingService: loggingService);
-  getIt.registerSingleton<DomainLogger>(domainLogger);
+  // main() registers DomainLogger early (before this runs) so startup
+  // diagnostics can resolve it; only register here when an entry point hasn't
+  // already done so (e.g. a future caller of registerSingletons()).
+  if (!getIt.isRegistered<DomainLogger>()) {
+    getIt.registerSingleton<DomainLogger>(
+      DomainLogger(loggingService: loggingService),
+    );
+  }
+  final domainLogger = getIt<DomainLogger>();
   final sentEventRegistry = SentEventRegistry();
   final matrixGateway = MatrixSdkGateway(
     client: client,
