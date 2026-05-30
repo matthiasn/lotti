@@ -108,6 +108,26 @@ Future<void> tearDownTestGetIt() async {
   await getIt.reset();
 }
 
+/// Registers a [DomainLogger] in GetIt if one is not already registered,
+/// backed by the currently registered [LoggingService] (registering a fresh
+/// one when absent).
+///
+/// Migrated production code resolves `getIt<DomainLogger>()` rather than
+/// `getIt<LoggingService>()`. Tests that set up GetIt by hand and only register
+/// a (mock) [LoggingService] must call this afterwards so the logger resolves.
+/// It is idempotent — safe under reset-based, guard-based, and
+/// unregister/re-register setups, and across the shared CI isolate.
+void ensureDomainLoggerRegistered() {
+  if (!getIt.isRegistered<LoggingService>()) {
+    getIt.registerSingleton<LoggingService>(LoggingService());
+  }
+  if (!getIt.isRegistered<DomainLogger>()) {
+    getIt.registerSingleton<DomainLogger>(
+      DomainLogger(loggingService: getIt<LoggingService>()),
+    );
+  }
+}
+
 /// Ensures core services required by ThemingController are registered.
 /// Unlike setUpTestGetIt, this does NOT reset GetIt - it only registers
 /// missing services. Safe to call in tests that have their own setup.

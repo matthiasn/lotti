@@ -37,6 +37,7 @@ import 'package:record/record.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}

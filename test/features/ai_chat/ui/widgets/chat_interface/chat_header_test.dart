@@ -8,6 +8,8 @@ import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/chat_header.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 void main() {
   testWidgets('ChatHeader displays title + sessionTitle and opens settings', (
     tester,

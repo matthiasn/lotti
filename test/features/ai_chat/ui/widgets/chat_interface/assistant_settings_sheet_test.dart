@@ -10,6 +10,8 @@ import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/assistant_setti
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 class _StaticChatController extends ChatSessionController {
   @override
   ChatSessionUiModel build(String categoryId) {
