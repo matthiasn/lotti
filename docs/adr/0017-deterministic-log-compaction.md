@@ -35,17 +35,18 @@ arbitrary winner.
    summary covers a *frontier* — an antichain `{e : prior < e ≤ frontier}`.
    Frontiers form a join-semilattice, but with a critical caveat: the **join of
    two candidate frontiers may have no materialized summary text** (no one
-   summarized that exact cut). So the **active checkpoint is the materialized
-   checkpoint whose frontier is a common ancestor of all current heads**
-   (causally ≤ every head); when several such checkpoints are incomparable, pick
-   deterministically by `frontierDigest`. Everything causally *after* it is read
-   **verbatim** — per-branch candidate summaries are **not** mixed into that
-   region, so coverage is a clean partition (one checkpoint + a verbatim tail, no
-   double-counting). A lazy **merge-summary** later collapses the verbatim tail
-   into a new materialized checkpoint over the joined frontier (the same
-   lazy-capped pattern as the message-DAG join, ADR 0018). **Never** pick one
-   candidate's text as *the* checkpoint when candidates are incomparable — that
-   silently drops the other branch's history. `frontierDigest` = hash of the
+   summarized that exact cut). So the **active checkpoint is the meet** — the
+   **greatest *common* materialized ancestor** of all materialized checkpoints
+   that are ancestors of every current head. Its summary covers everything
+   causally ≤ its frontier; **every event *not* covered by it is read verbatim** —
+   the full uncovered region across *all* branches, not one branch's tail — so
+   nothing is omitted and nothing is double-counted. A lazy **merge-summary**
+   later collapses that uncovered region into a new materialized checkpoint over
+   the joined frontier (the same lazy-capped pattern as the message-DAG join,
+   ADR 0018). When the materialized checkpoints form a chain the meet is simply
+   the latest one; it drops to a deeper common base only when two branches were
+   summarized incomparably. **Never** pick one incomparable candidate and read
+   "after" it — that drops the other branch's history. `frontierDigest` = hash of the
    antichain's canonical id-set;
    it keys dedup and the verification/replay hash, computed over a **canonical
    serialization** (sorted keys, RFC 3339 UTC timestamps, normalized numbers,
@@ -81,9 +82,11 @@ stateDiagram-v2
   earn their keep.
 - A long-lived, byte-stable on-device prefix yields real KV/prefix-cache reuse
   across wakes.
-- Summaries converge across devices as a **join-semilattice over causal
-  frontiers** (deterministic candidate selection) — *not* by content-addressing
-  LLM outputs, which differ run-to-run.
+- Summaries converge across devices via a **materialized common-ancestor
+  checkpoint (the meet) plus a verbatim uncovered region**, collapsed later by a
+  lazy merge-summary — *not* by content-addressing LLM outputs (which differ
+  run-to-run), and not by selecting a single "joined" frontier whose text may be
+  unmaterialized.
 - Risks: recursive summarization can amplify hallucination at depth — mitigated
   by stored provenance + replay hash + regeneration; on-device window thresholds
   (MemGPT's 70/100/50% are cloud-tuned) need tuning for small contexts.
