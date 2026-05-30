@@ -2,7 +2,7 @@
 
 - Status: Plan · Date: 2026-05-30
 - Part of: [`2026-05-30_daily_os_runtime_implementation_roadmap.md`](./2026-05-30_daily_os_runtime_implementation_roadmap.md) (PR 4).
-- Design baseline: [`../daily_os_ai_runtime_architecture.md`](../daily_os_ai_runtime_architecture.md) §2 / §4 (Move 1); [ADR 0016](../adr/0016-agent-state-as-log-projection.md).
+- Design baseline: [`../daily_os_ai_runtime_architecture.md`](../daily_os_ai_runtime_architecture.md) §2 / §4 (Move 1); [ADR 0016](../adr/0016-agent-state-as-log-projection.md). Companion: [ADR 0020](../adr/0020-agent-input-capture.md) extends the same projection thesis to the agent's *inputs* (per-source content-addressed capture of user content) — this plan covers derived *state*, ADR 0020 covers what the agent reads.
 - Depends on: **PR 3** (`messagePrev` wiring + shadow projection — equivalence must be proven before reads flip). Builds on **PR 1** (the projection kernel) and resolves a limitation carried from **PR 2** (counter-loss under LWW).
 
 ## Goal

@@ -41,12 +41,13 @@ Grouped into the six phases of §10. Each PR: **Goal · Depends on · Touches ·
 - **Done when:** two devices applying the same concurrent pair in either arrival order deterministically agree; equal-`updatedAt` ties covered; non-concurrent branches unchanged.
 - **Realizes:** ADR 0018 rule 5; §8.
 
-**PR 3 — `messagePrev` wiring + shadow projection**
-- **Goal:** populate `messagePrev` (and/or `prevMessageId`) when persisting messages so the log is a real DAG; compute the kernel's projection **in shadow** (alongside the mutable rows) and assert equality.
+**PR 3 — `messagePrev` wiring + shadow projection** — detailed plan: [`2026-05-30_messageprev_shadow_projection_plan.md`](./2026-05-30_messageprev_shadow_projection_plan.md).
+- **Goal:** populate `messagePrev` (and/or `prevMessageId`) when persisting messages so the log is a real DAG; compute the kernel's projection **in shadow** (alongside the mutable rows) and assert equality on the forward corpus.
 - **Depends on:** PR 1, PR 2.
-- **Touches:** message-persisting paths in `TaskAgentWorkflow`/`DayAgentWorkflow`/strategies; a shadow-compare harness; `AgentEvent` adapter from the kernel.
-- **Defers:** flipping reads (PR 4).
-- **Done when:** every persisted message carries a causal parent edge; shadow projection matches the live mutable state across the test corpus.
+- **Touches:** the ~18 message-persisting sites in `TaskAgentWorkflow`/`ProjectAgentWorkflow`/`DayAgentWorkflow` + their strategies (centralized behind one `appendMessage` chokepoint); a shadow-compare harness; `AgentEvent.fromMessage`/`fromLink` adapter. **No DB schema migration** — entities are a `serialized` JSON blob and `messagePrev` uses the existing links table.
+- **Defers:** flipping reads (PR 4); join-on-resume (PR 6); historical edge backfill (unnecessary given the baseline primitive).
+- **Migration/back-compat:** legacy messages have no edges, so shadow-equality is scoped to **forward activity**, not flat history; existing agents are carried by a per-agent **baseline checkpoint** (emitted at the PR 3→PR 4 boundary) that seeds counters/slots and lets `projection = baseline + forward DAG`. Mixed-version sync degrades gracefully (dangling parents → roots). See the plan's Risks & migration section (R1–R8).
+- **Done when:** every post-PR-3 message carries a causal parent edge; shadow projection matches live state across the forward corpus (legacy divergence documented, not asserted away).
 - **Realizes:** §8 (DAG); ADR 0016.
 
 ### Phase 2 — State as a projection
