@@ -48,7 +48,7 @@ class BackfillSettingsPage extends StatelessWidget {
 ///   1. **Status row** — three welded cells (Inbound queue · Missing
 ///      · Skipped) on a single rounded surface. Operator-critical
 ///      counters live here so they sit at eye level.
-///   2. **Sync statistics** — leader-dot ledger of seven counts.
+///   2. **Sync statistics** — leader-dot ledger of eight counts.
 ///   3. **Automatic backfill** — toggle card.
 ///   4. **Advanced recovery** — collapsed group containing every
 ///      manual recovery action.
@@ -339,7 +339,7 @@ class _StatusCell extends StatelessWidget {
 }
 
 /// Sync statistics ledger card. Header (chart icon · title · device
-/// count meta · refresh) above seven leader-dot rows.
+/// count meta · refresh) above eight leader-dot rows.
 class _SyncStatsCard extends StatelessWidget {
   const _SyncStatsCard({
     required this.stats,
@@ -473,6 +473,14 @@ class _Ledger extends StatelessWidget {
           label: messages.backfillStatsUnresolvable,
           value: stats.totalUnresolvable,
           color: unresolvableTone,
+        ),
+        // Authoritative non-events: always low-emphasis. Unlike unresolvable,
+        // a non-zero burned count is benign (voided vector-clock counters with
+        // nothing to fetch), so it never escalates to the error tone.
+        _LedgerRow(
+          label: messages.backfillStatsBurned,
+          value: stats.totalBurned,
+          color: lowEmphasis,
         ),
       ],
     );

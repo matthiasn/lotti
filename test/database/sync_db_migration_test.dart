@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 23);
+        expect(db.schemaVersion, 24);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -154,7 +154,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 23);
+      expect(versionResult.first.read<int>('user_version'), 24);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -330,7 +330,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 23);
+      expect(versionResult.first.read<int>('user_version'), 24);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -409,7 +409,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 23);
+      expect(versionResult.first.read<int>('user_version'), 24);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -490,7 +490,7 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 23);
+      expect(versionResult.first.read<int>('user_version'), 24);
 
       final indexResults = await db
           .customSelect(
@@ -582,7 +582,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 24);
 
         // v11 replaces the v10 index with the covering variant; when the
         // migration steps v9 → v11 in one run, the v10 index must no longer
@@ -694,7 +694,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 24);
 
         final oldIndex = await db
             .customSelect(
@@ -810,7 +810,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 24);
 
         final ready = await db
             .customSelect(
@@ -900,7 +900,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 24);
 
         final pendingIndex = await db
             .customSelect(
@@ -942,7 +942,7 @@ void main() {
         );
         expect(
           sequenceResolvedSql,
-          contains('status IN (0, 3, 4, 5)'),
+          contains('status IN (0, 3, 4, 5, 8)'),
         );
 
         await db.close();
@@ -1022,7 +1022,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 24);
 
         final newIndices = await db
             .customSelect(
@@ -1118,7 +1118,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 24);
 
         final sendingIndex = await db
             .customSelect(
@@ -1174,7 +1174,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 24);
 
         final index = await db
             .customSelect(
@@ -1185,7 +1185,92 @@ void main() {
         expect(index, hasLength(1));
         final indexSql = index.first.readNullable<String>('sql');
         expect(indexSql, contains('host_id, counter'));
-        expect(indexSql, contains('WHERE status IN (0, 3, 4, 5)'));
+        // Migrations always run to the latest schema, so opening a v22 DB
+        // lands on the v24 resolved-index shape (burned (8) included).
+        expect(indexSql, contains('WHERE status IN (0, 3, 4, 5, 8)'));
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v24 migration rebuilds the resolved index to include burned (8) and '
+      'the watermark advances across a burned counter',
+      () async {
+        final dbFile = File(
+          path.join(testDirectory!.path, 'test_sync_v24_burned.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite
+          ..execute('''
+            CREATE TABLE sync_sequence_log (
+              host_id TEXT NOT NULL,
+              counter INTEGER NOT NULL,
+              entry_id TEXT,
+              payload_type INTEGER NOT NULL DEFAULT 0,
+              originating_host_id TEXT,
+              status INTEGER NOT NULL DEFAULT 0,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL,
+              request_count INTEGER NOT NULL DEFAULT 0,
+              last_requested_at INTEGER,
+              json_path TEXT,
+              PRIMARY KEY (host_id, counter)
+            )
+          ''')
+          // The pre-v24 resolved index: burned (8) is absent from the WHERE.
+          ..execute(
+            'CREATE INDEX idx_sync_sequence_log_resolved_host_counter '
+            'ON sync_sequence_log (host_id, counter) '
+            'WHERE status IN (0, 3, 4, 5)',
+          )
+          ..execute('''
+            CREATE TABLE sync_sequence_watermarks (
+              host_id TEXT PRIMARY KEY NOT NULL,
+              last_counter INTEGER NOT NULL DEFAULT 0,
+              updated_at INTEGER NOT NULL
+            )
+          ''')
+          ..execute('PRAGMA user_version = 23')
+          ..dispose();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v24_burned.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 24);
+
+        // v24 drops and recreates the partial index so burned (8) joins the
+        // resolved set.
+        final index = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_sync_sequence_log_resolved_host_counter'",
+            )
+            .get();
+        expect(index, hasLength(1));
+        expect(
+          index.first.readNullable<String>('sql'),
+          contains('WHERE status IN (0, 3, 4, 5, 8)'),
+        );
+
+        // Raw-insert a contiguous run with a burned counter in the middle so
+        // getLastCounterForHost rebuilds the watermark via the CTE. If burned
+        // did not count as resolved, the contiguous prefix would stop at 1.
+        const hostId = 'host-v24';
+        Future<void> insert(int counter, int status) => db.customStatement(
+          'INSERT INTO sync_sequence_log '
+          '(host_id, counter, status, created_at, updated_at) '
+          'VALUES (?, ?, ?, 0, 0)',
+          [hostId, counter, status],
+        );
+        await insert(1, SyncSequenceStatus.received.index);
+        await insert(2, SyncSequenceStatus.burned.index);
+        await insert(3, SyncSequenceStatus.received.index);
+
+        expect(await db.getLastCounterForHost(hostId), 3);
 
         await db.close();
       },

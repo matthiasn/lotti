@@ -2287,6 +2287,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillStatsBackfilled => 'Doplněno';
 
   @override
+  String get backfillStatsBurned => 'Anulováno';
+
+  @override
   String get backfillStatsDeleted => 'Smazáno';
 
   @override

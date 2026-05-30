@@ -1110,6 +1110,7 @@
   "backfillSettingsSubtitle": "Gestionează recuperarea lacunelor de sincronizare",
   "backfillSettingsTitle": "Completare sincronizare",
   "backfillStatsBackfilled": "Completat",
+  "backfillStatsBurned": "Anulat",
   "backfillStatsDeleted": "Șters",
   "backfillStatsMissing": "Lipsă",
   "backfillStatsNoData": "Nu există date de sincronizare disponibile",

@@ -353,11 +353,15 @@ class _BackfillResponseStateScenario {
         _ => SyncSequenceStatus.deleted,
       },
       _BackfillResponseKind.unresolvable => switch (existingState) {
-        _GeneratedCounterState.absent => SyncSequenceStatus.unresolvable,
+        // Incoming `unresolvable=true` is authoritative for the originator's
+        // own counter, so the receiver records it as the terminal [burned]
+        // non-event — unless a strictly better local success state already
+        // won (received / backfilled / deleted), which is preserved.
+        _GeneratedCounterState.absent => SyncSequenceStatus.burned,
         _GeneratedCounterState.received => SyncSequenceStatus.received,
         _GeneratedCounterState.backfilled => SyncSequenceStatus.backfilled,
         _GeneratedCounterState.deleted => SyncSequenceStatus.deleted,
-        _ => SyncSequenceStatus.unresolvable,
+        _ => SyncSequenceStatus.burned,
       },
       _BackfillResponseKind.hint => switch (existingState) {
         _GeneratedCounterState.absent => SyncSequenceStatus.requested,
@@ -596,7 +600,8 @@ extension _SyncSequenceStatusX on SyncSequenceStatus {
       this == SyncSequenceStatus.received ||
       this == SyncSequenceStatus.backfilled ||
       this == SyncSequenceStatus.deleted ||
-      this == SyncSequenceStatus.unresolvable;
+      this == SyncSequenceStatus.unresolvable ||
+      this == SyncSequenceStatus.burned;
 }
 
 extension _AnySequenceGapScenario on glados.Any {
@@ -2718,9 +2723,9 @@ void main() {
     });
 
     test(
-      'upserts an unresolvable row when unresolvable=true and no row '
-      'exists yet — proactive burn broadcasts must land on peers that '
-      'never materialized (hostId, counter)',
+      'records a burned row when unresolvable=true and no row exists yet — '
+      'proactive burn broadcasts must land on peers that never materialized '
+      '(hostId, counter)',
       () async {
         when(
           () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
@@ -2751,7 +2756,7 @@ void main() {
                   .having(
                     (c) => c.status,
                     'status',
-                    Value(SyncSequenceStatus.unresolvable.index),
+                    Value(SyncSequenceStatus.burned.index),
                   ),
             ),
           ),
@@ -2821,7 +2826,7 @@ void main() {
                   .having(
                     (c) => c.status,
                     'status',
-                    Value(SyncSequenceStatus.unresolvable.index),
+                    Value(SyncSequenceStatus.burned.index),
                   ),
             ),
           ),
@@ -2976,6 +2981,53 @@ void main() {
       expect(captured.status.value, SyncSequenceStatus.requested.index);
       expect(captured.entryId.value, 'valid-hint-entry');
     });
+
+    test(
+      'unresolvable=true leaves an already-burned row untouched — burned is '
+      'terminal, so re-applying it would only churn updated_at',
+      () async {
+        when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            3,
+            status: SyncSequenceStatus.burned,
+          ),
+        );
+
+        await service.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          unresolvable: true,
+        );
+
+        verifyNever(() => mockDb.recordSequenceEntry(any()));
+        verifyNever(() => mockDb.updateSequenceStatus(any(), any(), any()));
+      },
+    );
+
+    test(
+      'a later hint never reopens a burned row — unlike an unresolvable '
+      'give-up, burned is the authoritative terminal non-event',
+      () async {
+        when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            3,
+            status: SyncSequenceStatus.burned,
+          ),
+        );
+
+        await service.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          entryId: 'late-hint-entry',
+        );
+
+        verifyNever(() => mockDb.recordSequenceEntry(any()));
+      },
+    );
 
     glados.Glados(
       _AnySequenceGapScenario(glados.any).backfillResponseStateScenario,
@@ -3256,6 +3308,7 @@ void main() {
           backfilledCount: 3,
           deletedCount: 0,
           unresolvableCount: 0,
+          burnedCount: 4,
         ),
       ]);
 

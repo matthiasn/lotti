@@ -3859,6 +3859,12 @@ abstract class AppLocalizations {
   /// **'Backfilled'**
   String get backfillStatsBackfilled;
 
+  /// No description provided for @backfillStatsBurned.
+  ///
+  /// In en, this message translates to:
+  /// **'Burned'**
+  String get backfillStatsBurned;
+
   /// No description provided for @backfillStatsDeleted.
   ///
   /// In en, this message translates to:

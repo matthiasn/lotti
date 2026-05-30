@@ -950,6 +950,7 @@
   "backfillSettingsSubtitle": "Správa obnovy mezer v synchronizaci",
   "backfillSettingsTitle": "Synchronizace doplnění",
   "backfillStatsBackfilled": "Doplněno",
+  "backfillStatsBurned": "Anulováno",
   "backfillStatsDeleted": "Smazáno",
   "backfillStatsMissing": "Chybí",
   "backfillStatsNoData": "Žádná dostupná data synchronizace",

@@ -65,7 +65,7 @@ At runtime, the sync feature owns:
 | `matrix/` | Session management, room discovery/persistence, message sending, read markers, verification, and high-level lifecycle |
 | `matrix/pipeline/` | Attachment ingestion + index, metrics aggregation, and the `sync.limited` Phase-0 diagnostic listener |
 | `queue/` | Persistent inbound queue, per-room worker, `onSync` bridge for catch-up, and pending-decryption holding pen |
-| `sequence/` | Record `(hostId, counter)` coverage, detect gaps, and track reserved/burn-pending/missing/requested/backfilled/deleted/unresolvable states |
+| `sequence/` | Record `(hostId, counter)` coverage, detect gaps, and track reserved/burn-pending/burned/missing/requested/backfilled/deleted/unresolvable states |
 | `backfill/` | Send missing-counter requests and answer peer requests with resend, deleted, unresolvable, or covering-payload hints |
 | `state/` and `ui/` | Riverpod controllers and sync-facing settings, stats, diagnostics, provisioning, and maintenance screens |
 | `actor/` | Separate isolate-based sync implementation; present in the repo, but not wired by the default bootstrap path above |
@@ -860,6 +860,7 @@ states such as:
 - `unresolvable`
 - `reserved`
 - `burnPending`
+- `burned`
 
 Important implementation details:
 
@@ -870,9 +871,25 @@ Important implementation details:
   counter is handed to the write path; `recordSentEntry` overwrites that row
   with `received`
 - only explicitly released reservations become `burnPending`; startup
-  reconciliation retries those as durable `unresolvable` broadcasts, but does
-  not blindly terminalize plain `reserved` rows because a crash may have left a
-  real local payload behind before outbox logging ran
+  reconciliation retries those by enqueueing the durable `unresolvable=true`
+  broadcast and terminalizing the local row to `burned`, but does not blindly
+  terminalize plain `reserved` rows because a crash may have left a real local
+  payload behind before outbox logging ran
+- `burned` and `unresolvable` are the two terminal "we will never get a payload
+  here" outcomes, and the split is deliberate. `burned` is the **authoritative
+  non-event**: the originating host — or a peer applying that host's
+  `unresolvable=true` broadcast, since the originator is authoritative for its
+  own counters — confirming a counter carries no payload, like a voided number
+  in a monotonic invoice sequence. It is terminal and never reopened.
+  `unresolvable` is the **receiver give-up** for a `missing`/`requested` row
+  that exhausted backfill retries (`retireExhaustedRequestedEntries`) or aged
+  past the 7-day amnesty (`retireAgedOutRequestedEntries`); its payload may
+  still be recoverable from a peer, so it stays reopenable by a later hint or
+  the "ask peers again" action. Both count as resolved for the
+  contiguous-prefix watermark (`SyncSequenceStatusX.isResolved`, the single
+  source of truth mirrored by the watermark CTEs and the
+  `idx_sync_sequence_log_resolved_host_counter` partial index), so neither
+  blocks it
 - later vector clocks do not automatically close gaps; explicit coverage still
   matters
 - verified covering entries are used as hints when an exact payload is no
@@ -893,18 +910,33 @@ stateDiagram-v2
   [*] --> Reserved: reserve VC counter
   Reserved --> Received: recordSentEntry binds payload
   Reserved --> BurnPending: release without payload
-  BurnPending --> Unresolvable: marker enqueued
+  BurnPending --> Burned: own-counter burn marker enqueued
+
   Missing --> Requested: backfill batch sent
   Requested --> Backfilled: verified payload arrives
   Requested --> Deleted: responder confirms purge
-  Requested --> Unresolvable: originator confirms burn
+  Requested --> Burned: peer applies originator's unresolvable=true
+  Requested --> Unresolvable: backfill retries exhausted
+  Missing --> Unresolvable: amnesty aged out
+  Unresolvable --> Requested: later hint reopens
+  Unresolvable --> Missing: ask peers again
+
+  Burned --> [*]: terminal non-event
+  Deleted --> [*]
+  Backfilled --> [*]
 ```
+
+`burned` has no outgoing edges — it is terminal. `unresolvable` keeps edges
+back to `requested`/`missing` because a give-up may still be recovered from a
+peer.
 
 `BackfillResponseHandler` can answer a request with one of four outcomes:
 
 - exact payload resend
 - `deleted`
-- `unresolvable`
+- `unresolvable` — only ever sent by the originating host for its own counter;
+  the receiving peer classifies an incoming `unresolvable=true` as the terminal
+  `burned` state (the wire flag is unchanged, so old and new peers interoperate)
 - a verified covering payload hint
 
 Responses are rate-limited and cooled down per `(hostId, counter)` so repair

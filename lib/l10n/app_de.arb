@@ -1110,6 +1110,7 @@
   "backfillSettingsSubtitle": "Synchronisierungslücken verwalten",
   "backfillSettingsTitle": "Sync-Nachfüllung",
   "backfillStatsBackfilled": "Nachgefüllt",
+  "backfillStatsBurned": "Entwertet",
   "backfillStatsDeleted": "Gelöscht",
   "backfillStatsMissing": "Fehlend",
   "backfillStatsNoData": "Keine Synchronisierungsdaten verfügbar",

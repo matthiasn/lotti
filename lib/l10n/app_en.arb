@@ -1306,6 +1306,7 @@
   "backfillSettingsSubtitle": "Manage sync gap recovery",
   "backfillSettingsTitle": "Backfill sync",
   "backfillStatsBackfilled": "Backfilled",
+  "backfillStatsBurned": "Burned",
   "backfillStatsDeleted": "Deleted",
   "backfillStatsMissing": "Missing",
   "backfillStatsNoData": "No sync data available",

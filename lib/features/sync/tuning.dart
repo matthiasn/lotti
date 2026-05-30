@@ -7,6 +7,7 @@ class BackfillHostStats {
     required this.backfilledCount,
     required this.deletedCount,
     required this.unresolvableCount,
+    required this.burnedCount,
   });
 
   final int receivedCount;
@@ -15,6 +16,11 @@ class BackfillHostStats {
   final int backfilledCount;
   final int deletedCount;
   final int unresolvableCount;
+
+  /// Authoritative non-events (`SyncSequenceStatus.burned`): counters the
+  /// originating host confirmed carry no payload. Benign — split out of
+  /// [unresolvableCount] so diagnostics don't read voided counters as loss.
+  final int burnedCount;
 }
 
 /// Aggregate stats across all hosts.
@@ -27,6 +33,7 @@ class BackfillStats {
     required this.totalBackfilled,
     required this.totalDeleted,
     required this.totalUnresolvable,
+    required this.totalBurned,
   });
 
   factory BackfillStats.fromHostStats(List<BackfillHostStats> stats) {
@@ -38,6 +45,7 @@ class BackfillStats {
       totalBackfilled: stats.fold(0, (sum, s) => sum + s.backfilledCount),
       totalDeleted: stats.fold(0, (sum, s) => sum + s.deletedCount),
       totalUnresolvable: stats.fold(0, (sum, s) => sum + s.unresolvableCount),
+      totalBurned: stats.fold(0, (sum, s) => sum + s.burnedCount),
     );
   }
 
@@ -48,6 +56,7 @@ class BackfillStats {
   final int totalBackfilled;
   final int totalDeleted;
   final int totalUnresolvable;
+  final int totalBurned;
 
   int get totalEntries =>
       totalReceived +
@@ -55,7 +64,8 @@ class BackfillStats {
       totalRequested +
       totalBackfilled +
       totalDeleted +
-      totalUnresolvable;
+      totalUnresolvable +
+      totalBurned;
 }
 
 /// Sync and Outbox tuning constants, centralized for easy documentation and
