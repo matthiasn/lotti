@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
@@ -468,11 +469,11 @@ void main() {
         );
 
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'recordReceived',
-            stackTrace: any<Object?>(named: 'stackTrace'),
           ),
         ).called(1);
       },
@@ -507,11 +508,11 @@ void main() {
         );
 
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'recordReceived',
-            stackTrace: any<Object?>(named: 'stackTrace'),
           ),
         ).called(1);
       },

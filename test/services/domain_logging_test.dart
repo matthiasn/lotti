@@ -185,16 +185,6 @@ void main() {
       );
     });
 
-    test('isEnabled / setEnabledDomains reflect the enabled set', () {
-      expect(logger.isEnabled(LogDomain.ai), isFalse);
-      logger.setEnabledDomains([LogDomain.ai, LogDomain.chat]);
-      expect(logger.isEnabled(LogDomain.ai), isTrue);
-      expect(logger.isEnabled(LogDomain.chat), isTrue);
-      expect(logger.isEnabled(LogDomain.sync), isFalse);
-      logger.setEnabledDomains(const []);
-      expect(logger.enabledDomains, isEmpty);
-    });
-
     test('passes subDomain and level through', () {
       logger.enabledDomains.add(LogDomain.agentWorkflow);
 

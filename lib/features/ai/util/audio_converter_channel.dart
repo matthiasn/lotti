@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Dart-side wrapper for native WAV-to-M4A audio conversion via a
 /// platform channel.
@@ -31,9 +31,9 @@ class AudioConverterChannel {
       // Platform has no native implementation — fall back to WAV
       return false;
     } on PlatformException catch (e) {
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.speech,
         'Native audio conversion failed: $e',
-        domain: 'audio_converter_channel',
         subDomain: 'convertWavToM4a',
       );
       return false;

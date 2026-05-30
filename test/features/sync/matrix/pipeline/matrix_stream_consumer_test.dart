@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart'
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -126,7 +127,7 @@ void main() {
 
   late _MockSessionManager session;
   late _MockRoomManager room;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late MockSettingsDb settings;
   late _MockSyncEventProcessor processor;
   late CachedStreamController<SyncUpdate> onSyncCtl;
@@ -135,7 +136,7 @@ void main() {
   setUp(() {
     session = _MockSessionManager();
     room = _MockRoomManager();
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     settings = MockSettingsDb();
     processor = _MockSyncEventProcessor();
     client = MockMatrixClient();
@@ -155,8 +156,6 @@ void main() {
     when(
       () => settings.itemByKey(lastReadMatrixEventTs),
     ).thenAnswer((_) async => '1700000000');
-
-    stubLoggingService(logging);
   });
 
   tearDown(() async {
@@ -203,8 +202,9 @@ void main() {
       await consumer.initialize();
 
       verify(
-        () => logging.captureEvent(
-          any<Object>(
+        () => logging.log(
+          any<LogDomain>(),
+          any<String>(
             that: isA<String>().having(
               (s) => s,
               'message',
@@ -215,7 +215,6 @@ void main() {
               ),
             ),
           ),
-          domain: any<String>(named: 'domain'),
           subDomain: 'startup.marker',
         ),
       ).called(1);
@@ -283,11 +282,11 @@ void main() {
       await consumer.start();
 
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'start.hydrateRoom',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'start.hydrateRoom',
         ),
       ).called(1);
     });
@@ -301,7 +300,7 @@ void main() {
     (scenario) async {
       final localSession = _MockSessionManager();
       final localRoom = _MockRoomManager();
-      final localLogging = MockLoggingService();
+      final localLogging = MockDomainLogger();
       final localSettings = MockSettingsDb();
       final localProcessor = _MockSyncEventProcessor();
       final localClient = MockMatrixClient();
@@ -320,7 +319,6 @@ void main() {
       when(
         () => localSettings.itemByKey(lastReadMatrixEventTs),
       ).thenAnswer((_) async => scenario.timestampSetting);
-      stubLoggingService(localLogging);
 
       switch (scenario.startKind) {
         case _GeneratedConsumerStartKind.skipped:
@@ -421,11 +419,11 @@ void main() {
         }
         if (scenario.hydrateThrows) {
           verify(
-            () => localLogging.captureException(
+            () => localLogging.error(
+              any<LogDomain>(),
               any<Object>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: 'start.hydrateRoom',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'start.hydrateRoom',
             ),
           ).called(1);
         }
@@ -448,15 +446,15 @@ void main() {
       await consumer.dispose();
 
       verify(
-        () => logging.captureEvent(
-          any<Object>(
+        () => logging.log(
+          any<LogDomain>(),
+          any<String>(
             that: isA<String>().having(
               (s) => s,
               'message',
               contains('MatrixStreamConsumer disposed'),
             ),
           ),
-          domain: any<String>(named: 'domain'),
           subDomain: 'dispose',
         ),
       ).called(1);

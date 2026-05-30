@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -12,7 +13,7 @@ void main() {
   late MockPersistenceLogic persistenceLogic;
   late MockJournalDb journalDb;
   late MockEntitiesCacheService cacheService;
-  late MockLoggingService loggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockUpdateNotifications updateNotifications;
   late LabelsRepository repository;
 
@@ -64,14 +65,14 @@ void main() {
     persistenceLogic = MockPersistenceLogic();
     journalDb = MockJournalDb();
     cacheService = MockEntitiesCacheService();
-    loggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     updateNotifications = MockUpdateNotifications();
 
     repository = LabelsRepository(
       persistenceLogic,
       journalDb,
       cacheService,
-      loggingService,
+      mockDomainLogger,
       updateNotifications,
     );
   });
@@ -186,11 +187,11 @@ void main() {
 
     expect(result, isFalse);
     verify(
-      () => loggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
+        any<Object>(),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).called(1);
   });

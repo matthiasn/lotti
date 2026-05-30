@@ -31,7 +31,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -356,13 +356,13 @@ class _InferenceProviderEditPageState
         // try/catch so a missing LoggingService registration in tests
         // does not mask the user-facing toast below.
         try {
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.ai,
             error,
-            domain: 'AI_CONFIG',
+            stackTrace: stackTrace,
             subDomain: widget.configId == null
                 ? 'INFERENCE_PROVIDER_EDIT_PAGE.handleSave.add'
                 : 'INFERENCE_PROVIDER_EDIT_PAGE.handleSave.update',
-            stackTrace: stackTrace,
           );
         } catch (_) {
           // LoggingService not available (e.g., in tests) — ignore.
@@ -419,11 +419,11 @@ class _InferenceProviderEditPageState
         }
       } catch (error, stackTrace) {
         try {
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.ai,
             error,
-            domain: 'AI_CONFIG',
-            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSaveDraft',
             stackTrace: stackTrace,
+            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSaveDraft',
           );
         } catch (_) {
           // LoggingService not registered (tests) — ignore.

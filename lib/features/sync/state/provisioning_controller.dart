@@ -5,7 +5,9 @@ import 'dart:math';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'provisioning_controller.freezed.dart';
@@ -103,7 +105,7 @@ class ProvisioningController extends _$ProvisioningController {
     // Riverpod to dispose the controller mid-operation.
     final link = ref.keepAlive();
     final matrixService = ref.read(matrixServiceProvider);
-    final loggingService = ref.read(loggingServiceProvider);
+    final loggingService = getIt<DomainLogger>();
 
     try {
       // Step 1: Login
@@ -177,10 +179,10 @@ class ProvisioningController extends _$ProvisioningController {
 
       state = ProvisioningState.ready(handoverBase64);
     } catch (e, stackTrace) {
-      loggingService.captureException(
+      loggingService.error(
+        LogDomain.sync,
         e,
         stackTrace: stackTrace,
-        domain: 'ProvisioningController',
         subDomain: 'configureFromBundle',
       );
       state = const ProvisioningState.error(

@@ -2,6 +2,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as pf;
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,7 +11,7 @@ import '../../../mocks/mocks.dart';
 
 class MockClient extends Mock implements Client {}
 
-typedef MockLogging = MockLoggingService;
+typedef MockLogging = MockDomainLogger;
 
 class MockMatrixException extends Mock implements MatrixException {}
 
@@ -243,9 +244,9 @@ void main() {
       verifyNever(() => room.setReadMarker(any()));
       verifyNever(() => db.saveSettingsItem(any(), any()));
       verify(
-        () => log.captureEvent(
+        () => log.log(
+          LogDomain.sync,
           'marker.remote.skip(nonServerId) id=lotti-123',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'setReadMarker.guard',
         ),
       ).called(1);
@@ -283,23 +284,23 @@ void main() {
         verify(() => db.saveSettingsItem(any(), any())).called(1);
         verify(() => room.setReadMarker(r'$missing')).called(1);
         verify(
-          () => log.captureEvent(
+          () => log.log(
+            LogDomain.sync,
             any<String>(
               that: contains(
                 r'marker.remote.missingEvent id=$missing (M_UNKNOWN)',
               ),
             ),
-            domain: 'MATRIX_SERVICE',
             subDomain: 'setReadMarker',
           ),
         ).called(1);
         verifyNever(() => tl.setReadMarker(eventId: any(named: 'eventId')));
         verifyNever(
-          () => log.captureException(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
+          () => log.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         );
       },
@@ -345,9 +346,9 @@ void main() {
 
       verifyNever(() => room.setReadMarker(any()));
       verify(
-        () => log.captureEvent(
+        () => log.log(
+          LogDomain.sync,
           any<String>(that: contains('marker.remote.skip')),
-          domain: 'MATRIX_SERVICE',
           subDomain: 'setReadMarker.guard',
         ),
       ).called(1);
@@ -500,14 +501,14 @@ void main() {
       );
 
       verify(
-        () => log.captureException(
+        () => log.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any<String>(
             named: 'subDomain',
             that: contains('setReadMarker '),
           ),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
     });
@@ -677,17 +678,17 @@ void main() {
 
         if (scenario.logsMissingEvent) {
           verify(
-            () => log.captureEvent(
+            () => log.log(
+              LogDomain.sync,
               any<String>(that: contains('marker.remote.missingEvent')),
-              domain: 'MATRIX_SERVICE',
               subDomain: 'setReadMarker',
             ),
           ).called(1);
         } else {
           verifyNever(
-            () => log.captureEvent(
+            () => log.log(
+              LogDomain.sync,
               any<String>(that: contains('marker.remote.missingEvent')),
-              domain: 'MATRIX_SERVICE',
               subDomain: 'setReadMarker',
             ),
           );
@@ -695,23 +696,23 @@ void main() {
 
         if (scenario.logsRoomFailure) {
           verify(
-            () => log.captureException(
+            () => log.error(
+              LogDomain.sync,
               any<Object>(),
-              domain: 'MATRIX_SERVICE',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: any<String>(
                 named: 'subDomain',
                 that: contains('setReadMarker '),
               ),
-              stackTrace: any<dynamic>(named: 'stackTrace'),
             ),
           ).called(1);
         } else {
           verifyNever(
-            () => log.captureException(
+            () => log.error(
+              LogDomain.sync,
               any<Object>(),
-              domain: 'MATRIX_SERVICE',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: any<String>(named: 'subDomain'),
-              stackTrace: any<dynamic>(named: 'stackTrace'),
             ),
           );
         }

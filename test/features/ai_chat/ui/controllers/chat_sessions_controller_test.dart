@@ -6,7 +6,7 @@ import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_sessions_controller.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -17,16 +17,16 @@ void main() {
   });
   group('ChatSessionsController', () {
     late MockChatRepository mockChatRepository;
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockDomainLogger;
     late ProviderContainer container;
 
     setUp(() {
       mockChatRepository = MockChatRepository();
-      mockLoggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
 
       // Register mock services with GetIt
-      if (!GetIt.instance.isRegistered<LoggingService>()) {
-        GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
+      if (!GetIt.instance.isRegistered<DomainLogger>()) {
+        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
       }
 
       container = ProviderContainer(

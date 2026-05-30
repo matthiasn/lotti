@@ -8,7 +8,7 @@ import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,7 +19,7 @@ void main() {
   late MockSettingsDb mockSettingsDb;
   late MockJournalDb mockJournalDb;
   late MockUserActivityService mockUserActivityService;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -31,7 +31,7 @@ void main() {
     mockSettingsDb = MockSettingsDb();
     mockJournalDb = MockJournalDb();
     mockUserActivityService = MockUserActivityService();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
 
     final mockUpdateNotifications = MockUpdateNotifications();
     when(
@@ -58,11 +58,11 @@ void main() {
     ).thenAnswer((_) => Stream.value(true));
 
     when(
-      () => mockLoggingService.captureException(
+      () => mockLoggingService.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -70,7 +70,7 @@ void main() {
     GetIt.I.registerSingleton<SettingsDb>(mockSettingsDb);
     GetIt.I.registerSingleton<JournalDb>(mockJournalDb);
     GetIt.I.registerSingleton<UserActivityService>(mockUserActivityService);
-    GetIt.I.registerSingleton<LoggingService>(mockLoggingService);
+    GetIt.I.registerSingleton<DomainLogger>(mockLoggingService);
   });
 
   tearDown(() {

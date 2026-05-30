@@ -5,7 +5,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_ser
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Displays a bar chart of daily outbox sync volume (in KB) over the last
@@ -18,10 +18,11 @@ class OutboxVolumeChart extends ConsumerWidget {
     // Log errors once on state transition, not on every rebuild.
     ref.listen(outboxDailyVolumeProvider, (previous, next) {
       if (next is AsyncError && previous is! AsyncError) {
-        getIt<LoggingService>().captureException(
-          next.error,
-          domain: 'OutboxVolumeChart',
+        getIt<DomainLogger>().error(
+          LogDomain.sync,
+          next.error!,
           stackTrace: next.stackTrace,
+          subDomain: 'OutboxVolumeChart',
         );
       }
     });

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -103,11 +103,11 @@ Future<ImageData> takeScreenshot() async {
       }
 
       // If portal fails, fall through to traditional methods
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.screenshots,
         Exception(
           'Screenshot portal failed, falling back to traditional methods',
         ),
-        domain: screenshotDomain,
         subDomain: 'portal_fallback',
       );
     }
@@ -165,9 +165,9 @@ Future<ImageData> takeScreenshot() async {
 
     return imageData;
   } catch (exception, stackTrace) {
-    getIt<LoggingService>().captureException(
+    getIt<DomainLogger>().error(
+      LogDomain.screenshots,
       exception,
-      domain: screenshotDomain,
       stackTrace: stackTrace,
     );
     rethrow;
@@ -177,9 +177,9 @@ Future<ImageData> takeScreenshot() async {
       await windowManager.show();
     } catch (e) {
       // Log but don't rethrow window restoration errors
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.screenshots,
         e,
-        domain: screenshotDomain,
         subDomain: 'window_restoration',
       );
     }

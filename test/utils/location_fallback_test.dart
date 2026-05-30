@@ -7,14 +7,14 @@ import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/linux_location_portal.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
-import '../mocks/mocks.dart' hide MockLoggingService;
+import '../mocks/mocks.dart';
 
 class _FakeLinuxBackend implements LinuxLocationBackend {
   _FakeLinuxBackend({this.result, this.error, this.closeError});
@@ -47,21 +47,6 @@ Future<Geolocation?> nullIpGeolocationProvider({
 
 class MockLocation extends Mock implements Location {}
 
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
-
 class MockLocationData extends Mock implements LocationData {}
 
 Future<Geolocation?> fakeIpGeolocationProvider({
@@ -85,7 +70,7 @@ void main() {
 
   late MockLocation mockLocation;
   late MockJournalDb mockJournalDb;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late DeviceLocation deviceLocation;
 
   setUpAll(() {
@@ -96,24 +81,24 @@ void main() {
   setUp(() {
     mockLocation = MockLocation();
     mockJournalDb = MockJournalDb();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
 
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<DomainLogger>(mockLoggingService);
 
     // Stub captureException to prevent errors in tests
     when(
-      () => mockLoggingService.captureException(
+      () => mockLoggingService.error(
+        any<LogDomain>(),
         any<Exception>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
@@ -253,9 +238,9 @@ void main() {
 
         // Verify that the exception was logged
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'LOCATION_SERVICE',
+          () => mockLoggingService.error(
+            LogDomain.location,
+            any<Object>(),
             subDomain: 'native_location_fallback',
           ),
         ).called(1);
@@ -551,9 +536,9 @@ void main() {
         expect(result!.latitude, 40.7128);
         expect(result.longitude, -74.0060);
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'LOCATION_SERVICE',
+          () => mockLoggingService.error(
+            LogDomain.location,
+            any<Object>(),
             subDomain: 'linux_native_fallback',
           ),
         ).called(1);
@@ -588,9 +573,9 @@ void main() {
           expect(result!.latitude, 1);
           expect(result.longitude, 2);
           verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'LOCATION_SERVICE',
+            () => mockLoggingService.error(
+              LogDomain.location,
+              any<Object>(),
               subDomain: 'linux_backend_close',
             ),
           ).called(1);

@@ -17,9 +17,11 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class _MockGateway extends Mock implements MatrixSyncGateway {}
 
@@ -53,7 +55,7 @@ class _FakeMatrixMessageContext extends Fake implements MatrixMessageContext {}
 
 void main() {
   late _MockGateway gateway;
-  late LoggingService loggingService;
+  late DomainLogger loggingService;
   late _MockActivityGate activityGate;
   late _MockMessageSender messageSender;
   late _MockSettingsDb settingsDb;
@@ -96,7 +98,7 @@ void main() {
 
   setUp(() {
     gateway = _MockGateway();
-    loggingService = LoggingService();
+    loggingService = MockDomainLogger();
     activityGate = _MockActivityGate();
     messageSender = _MockMessageSender();
     settingsDb = _MockSettingsDb();

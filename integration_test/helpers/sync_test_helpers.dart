@@ -26,7 +26,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
@@ -246,7 +246,7 @@ Future<bool> verifyTestEnvironment() async {
 Future<MatrixService> createMatrixService({
   required MatrixConfig config,
   required MatrixSyncGateway gateway,
-  required LoggingService loggingService,
+  required DomainLogger loggingService,
   required JournalDb journalDb,
   required SettingsDb settingsDb,
   required SecureStorage secureStorage,

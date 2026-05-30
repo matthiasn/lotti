@@ -22,7 +22,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' show isTestEnv;
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -188,7 +188,7 @@ class MatrixService {
   ); // Balance UI responsiveness vs emission rate.
 
   final MatrixSyncGateway _gateway;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final UserActivityGate _activityGate;
   final MatrixMessageSender _messageSender;
   final SettingsDb _settingsDb;
@@ -298,10 +298,10 @@ class MatrixService {
 
     await _startQueuePipeline();
 
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'MatrixService initialized - deviceId: ${client.deviceID}, '
       'deviceName: ${client.deviceName}, userId: ${client.userID}',
-      domain: 'MATRIX_SERVICE',
       subDomain: 'init',
     );
   }
@@ -315,11 +315,11 @@ class MatrixService {
     try {
       await _queueCoordinator.start();
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'queue.init',
         stackTrace: stackTrace,
+        subDomain: 'queue.init',
       );
       // The queue coordinator is the only inbound path, so surface the
       // failure to the caller instead of silently running with nothing
@@ -332,19 +332,19 @@ class MatrixService {
     await startKeyVerificationListener();
     final savedRoomId = await _roomManager.loadPersistedRoomId();
     final joinedRooms = client.rooms.map((r) => r.id).toList();
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Sync state - savedRoomId: $savedRoomId, '
       'syncRoomId: ${_roomManager.currentRoomId}, '
       'joinedRooms: $joinedRooms',
-      domain: 'MATRIX_SERVICE',
       subDomain: 'listen',
     );
   }
 
   Future<void> _onLifecycleLogout() async {
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Sync lifecycle paused (logged out).',
-      domain: 'MATRIX_SERVICE',
       subDomain: 'logoutLifecycle',
     );
   }
@@ -440,11 +440,11 @@ class MatrixService {
         await _queueCoordinator.onRoomChanged(roomId);
         await _queueCoordinator.triggerBridge();
       } catch (error, stackTrace) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'saveRoom.bootstrap',
           stackTrace: stackTrace,
+          subDomain: 'saveRoom.bootstrap',
         );
       }
     }());
@@ -465,27 +465,27 @@ class MatrixService {
   Future<String?> getRoom() => _roomManager.loadPersistedRoomId();
 
   Future<void> leaveRoom() async {
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'leaveRoom requested',
-      domain: 'MATRIX_SERVICE',
       subDomain: 'room.leave',
     );
     await _roomManager.leaveCurrentRoom();
   }
 
   Future<void> inviteToSyncRoom({required String userId}) async {
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'inviteToSyncRoom requested user=$userId room=${_roomManager.currentRoomId}',
-      domain: 'MATRIX_SERVICE',
       subDomain: 'room.invite',
     );
     await _roomManager.inviteUser(userId);
   }
 
   Future<void> acceptInvite(SyncRoomInvite invite) async {
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'acceptInvite requested room=${invite.roomId} from=${invite.senderId}',
-      domain: 'MATRIX_SERVICE',
       subDomain: 'room.acceptInvite',
     );
     await _roomManager.acceptInvite(invite);
@@ -505,9 +505,9 @@ class MatrixService {
   /// This refreshes cached device keys/trust and nudges the pipeline with a
   /// catch-up rescan to pick up pending encrypted events immediately.
   Future<void> onVerificationCompleted({required String source}) async {
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'verification.completed source=$source',
-      domain: 'MATRIX_SERVICE',
       subDomain: 'verification',
     );
 
@@ -521,11 +521,11 @@ class MatrixService {
         await client.updateUserDeviceKeys();
       }
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'verification.updateUserDeviceKeys',
         stackTrace: stackTrace,
+        subDomain: 'verification.updateUserDeviceKeys',
       );
     }
 
@@ -533,11 +533,11 @@ class MatrixService {
       await _syncEngine.lifecycleCoordinator.reconcileLifecycleState();
       await forceRescan();
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'verification.forceRescan',
         stackTrace: stackTrace,
+        subDomain: 'verification.forceRescan',
       );
     }
   }
@@ -619,11 +619,11 @@ class MatrixService {
       try {
         await _queueCoordinator.stop(drainFirst: true);
       } catch (error, stackTrace) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'queue.dispose',
           stackTrace: stackTrace,
+          subDomain: 'queue.dispose',
         );
       }
     }
@@ -638,9 +638,9 @@ class MatrixService {
 
   Future<Map<String, dynamic>> getDiagnosticInfo() async {
     final diagnostics = await _syncEngine.diagnostics(log: false);
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'Sync diagnostics: ${json.encode(diagnostics)}',
-      domain: 'MATRIX_SERVICE',
       subDomain: 'diagnostics',
     );
     return diagnostics;
@@ -663,21 +663,21 @@ class MatrixService {
           map['queueAbandoned'] = stats.abandoned;
           map['queueRetrying'] = stats.retrying;
         } catch (error, stackTrace) {
-          _loggingService.captureException(
+          _loggingService.error(
+            LogDomain.sync,
             error,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'metrics.queueStats',
             stackTrace: stackTrace,
+            subDomain: 'metrics.queueStats',
           );
         }
       }
       return SyncMetrics.fromMap(map);
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'metrics',
         stackTrace: st,
+        subDomain: 'metrics',
       );
       return null;
     }
@@ -690,9 +690,9 @@ class MatrixService {
     // rescans to its bridge. Live-only rescans are a no-op since the
     // consumer's own live ingestion is suppressed.
     if (!includeCatchUp) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'forceRescan.suppressed includeCatchUp=false',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'forceRescan',
       );
       return;
@@ -710,17 +710,17 @@ class MatrixService {
   Future<void> retryNow() async {
     try {
       final resurrected = await _queueCoordinator.queue.resurrectAll();
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'retryNow.resurrectAll resurrected=$resurrected',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'retryNow',
       );
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'retryNow.resurrectAll',
         stackTrace: stackTrace,
+        subDomain: 'retryNow.resurrectAll',
       );
     }
     await _nudgeBridge(
@@ -735,17 +735,17 @@ class MatrixService {
   }) async {
     try {
       await _queueCoordinator.triggerBridge();
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         successMessage,
-        domain: 'MATRIX_SERVICE',
         subDomain: subDomain,
       );
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: '$subDomain.triggerBridge',
         stackTrace: stackTrace,
+        subDomain: '$subDomain.triggerBridge',
       );
     }
   }
@@ -784,7 +784,7 @@ class MatrixService {
   /// If the password change succeeds on the server but persisting the new
   /// config fails, attempts to rollback the server-side password. Both the
   /// original persist error and any rollback failure are logged as critical
-  /// via [LoggingService.captureException].
+  /// via `DomainLogger.error`.
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,
@@ -799,11 +799,11 @@ class MatrixService {
         await setConfig(config.copyWith(password: newPassword));
       }
     } catch (persistError, persistStack) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         persistError,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'changePassword.persist',
         stackTrace: persistStack,
+        subDomain: 'changePassword.persist',
       );
       // Attempt to rollback the server-side password change.
       try {
@@ -812,11 +812,11 @@ class MatrixService {
           newPassword: oldPassword,
         );
       } catch (rollbackError, rollbackStack) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           rollbackError,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'changePassword.rollback',
           stackTrace: rollbackStack,
+          subDomain: 'changePassword.rollback',
         );
       }
       rethrow;

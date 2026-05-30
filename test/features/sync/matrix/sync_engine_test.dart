@@ -3,6 +3,7 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 // No internal SDK controllers in tests
 import 'package:mocktail/mocktail.dart';
@@ -28,14 +29,14 @@ void main() {
   late MockMatrixSessionManager sessionManager;
   late MockSyncRoomManager roomManager;
   late MockSyncLifecycleCoordinator lifecycleCoordinator;
-  late MockLoggingService loggingService;
+  late MockDomainLogger loggingService;
   late SyncEngine engine;
 
   setUp(() {
     sessionManager = MockMatrixSessionManager();
     roomManager = MockSyncRoomManager();
     lifecycleCoordinator = MockSyncLifecycleCoordinator();
-    loggingService = MockLoggingService();
+    loggingService = MockDomainLogger();
 
     engine = SyncEngine(
       sessionManager: sessionManager,
@@ -152,9 +153,9 @@ void main() {
       () => client.onLoginStateChanged.value,
     ).thenReturn(LoginState.loggedIn);
     when(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenReturn(null);
@@ -165,9 +166,9 @@ void main() {
     expect(diagnostics['savedRoomId'], '!saved:server');
     expect(diagnostics['pipelineActive'], isTrue);
     verify(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        LogDomain.sync,
         any<String>(),
-        domain: 'SYNC_ENGINE',
         subDomain: 'diagnostics',
       ),
     ).called(1);
@@ -175,9 +176,9 @@ void main() {
     clearInteractions(loggingService);
     await engine.diagnostics(log: false);
     verifyNever(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     );
@@ -197,11 +198,11 @@ void main() {
       ).thenThrow(Exception('background error'));
 
       when(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
+        () => loggingService.error(
+          any<LogDomain>(),
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
@@ -216,11 +217,11 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'SYNC_ENGINE',
-          subDomain: 'connect.backgroundLifecycle',
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'connect.backgroundLifecycle',
         ),
       ).called(1);
     },
@@ -231,17 +232,17 @@ void main() {
     when(() => sessionManager.isLoggedIn()).thenReturn(false);
     when(() => lifecycleCoordinator.isActive).thenReturn(false);
     when(
-      () => loggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
+      () => loggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
     when(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenReturn(null);
@@ -253,11 +254,11 @@ void main() {
     expect(diagnostics['pipelineActive'], isFalse);
 
     verify(
-      () => loggingService.captureException(
-        any<dynamic>(),
-        domain: 'SYNC_ENGINE',
-        subDomain: 'diagnostics.snapshot',
+      () => loggingService.error(
+        LogDomain.sync,
+        any<Object>(),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'diagnostics.snapshot',
       ),
     ).called(1);
   });

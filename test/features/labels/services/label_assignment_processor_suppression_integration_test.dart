@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -17,7 +18,7 @@ void main() {
     () async {
       final db = MockJournalDb();
       final repo = MockLabelsRepository();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
 
       // Task context
       const taskId = 't1';
@@ -126,13 +127,13 @@ void main() {
       // Capture telemetry
       final telemetry = <String>[];
       when(
-        () => log.captureEvent(
+        () => log.log(
+          any<LogDomain>(),
           any<String>(),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((inv) {
-        telemetry.add(inv.positionalArguments.first as String);
+        telemetry.add(inv.positionalArguments[1] as String);
       });
 
       final processor = LabelAssignmentProcessor(

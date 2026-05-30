@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 /// Snapshot of the per-room queue marker the bridge reads at the
@@ -48,7 +48,6 @@ typedef BootstrapRunner =
       required BridgeMarker marker,
     });
 
-const _logDomain = 'sync';
 const _logSub = 'queue.bridge';
 
 /// Owns the "limited=true" bridge call for the queue-based pipeline.
@@ -80,7 +79,7 @@ class BridgeCoordinator {
   final Future<Room?> Function() _resolveRoom;
   final Future<BridgeMarker> Function() _readMarker;
   final BootstrapRunner _bootstrapRunner;
-  final LoggingService _logging;
+  final DomainLogger _logging;
   final Duration _incompleteRetryDelay;
   final int _maxIncompleteRetries;
 
@@ -114,11 +113,11 @@ class BridgeCoordinator {
     _sub ??= _client.onSync.stream.listen(
       _handle,
       onError: (Object error, StackTrace stackTrace) {
-        _logging.captureException(
+        _logging.error(
+          LogDomain.sync,
           error,
-          domain: _logDomain,
-          subDomain: '$_logSub.subscription',
           stackTrace: stackTrace,
+          subDomain: '$_logSub.subscription',
         );
       },
     );
@@ -178,11 +177,11 @@ class BridgeCoordinator {
     try {
       await _runBridgeOnce(expectedRoomId);
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.run',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.run',
       );
     } finally {
       _inFlightBridge = null;
@@ -208,11 +207,11 @@ class BridgeCoordinator {
           try {
             onBridgeCompleted?.call();
           } catch (error, stackTrace) {
-            _logging.captureException(
+            _logging.error(
+              LogDomain.sync,
               error,
-              domain: _logDomain,
-              subDomain: '$_logSub.onCompleted',
               stackTrace: stackTrace,
+              subDomain: '$_logSub.onCompleted',
             );
           }
         }
@@ -223,9 +222,9 @@ class BridgeCoordinator {
   Future<void> _runBridgeOnce(String? expectedRoomId) async {
     final room = await _resolveRoom();
     if (room == null) {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.bridge.skip reason=noRoom',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       return;
@@ -235,10 +234,10 @@ class BridgeCoordinator {
       // abandon this pass rather than running catch-up against a
       // different room than the one whose `limited=true` sync
       // scheduled the work.
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.bridge.skip reason=roomChanged '
         'expectedRoomId=$expectedRoomId actualRoomId=${room.id}',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       return;
@@ -258,12 +257,12 @@ class BridgeCoordinator {
         ? 'reconnect.backward'
         : 'fresh';
 
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.bridge.start '
       'mode=$mode '
       'lastAppliedTs=${marker.lastAppliedTs} '
       'lastAppliedEventId=${marker.lastAppliedEventId}',
-      domain: _logDomain,
       subDomain: _logSub,
     );
 
@@ -274,18 +273,18 @@ class BridgeCoordinator {
         marker: marker,
       );
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.bootstrap',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.bootstrap',
       );
       completed = false;
     }
 
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.bridge.done completed=$completed',
-      domain: _logDomain,
       subDomain: _logSub,
     );
 
@@ -317,10 +316,10 @@ class BridgeCoordinator {
     }
     _consecutiveIncomplete++;
     if (_consecutiveIncomplete > _maxIncompleteRetries) {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.bridge.incomplete.giveUp '
         'retries=$_consecutiveIncomplete',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       _consecutiveIncomplete = 0;
@@ -330,10 +329,10 @@ class BridgeCoordinator {
     _incompleteRetryTimer = Timer(_incompleteRetryDelay, () {
       _incompleteRetryTimer = null;
       if (_stopped) return;
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.bridge.incomplete.retry '
         'attempt=$_consecutiveIncomplete',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       unawaited(_bridge(expectedRoomId));

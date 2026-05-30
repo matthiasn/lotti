@@ -19,12 +19,12 @@ void main() {
   late MockSecureStorage mockSecureStorage;
   late MatrixSessionManager sessionManager;
   late MockMatrixSyncGateway mockGateway;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
 
   setUp(() {
     mockSecureStorage = MockSecureStorage();
     mockGateway = MockMatrixSyncGateway();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
     sessionManager = MatrixSessionManager(
       gateway: mockGateway,
       roomManager: MockSyncRoomManager(),

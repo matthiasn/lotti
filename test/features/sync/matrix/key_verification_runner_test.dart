@@ -5,6 +5,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 // No internal SDK controllers in tests
@@ -393,7 +394,7 @@ void main() {
 
   group('listenForKeyVerificationRequestsWithSubscription', () {
     late MockMatrixService service;
-    late MockLoggingService loggingService;
+    late MockDomainLogger loggingService;
     late MockMatrixClient client;
     late StreamController<KeyVerificationRunner> runnerController;
     late StreamController<KeyVerification> requestController;
@@ -401,7 +402,7 @@ void main() {
 
     setUp(() {
       service = MockMatrixService();
-      loggingService = MockLoggingService();
+      loggingService = MockDomainLogger();
       client = MockMatrixClient();
       runnerController = StreamController<KeyVerificationRunner>.broadcast(
         sync: true,
@@ -411,11 +412,11 @@ void main() {
       );
 
       when(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
+        () => loggingService.error(
+          any<LogDomain>(),
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
@@ -490,11 +491,11 @@ void main() {
       );
 
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'listen',
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'listen',
         ),
       ).called(1);
     });

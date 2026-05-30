@@ -42,18 +42,9 @@ class DomainLogger {
   ///
   /// Managed externally (e.g. via config flag watchers in
   /// `domainLoggerProvider`). When a domain is absent, [log] is a no-op for it,
-  /// while [error] still logs.
+  /// while [error] still logs. Mutated in place by `domainLoggerProvider` as
+  /// config flags toggle.
   final Set<LogDomain> enabledDomains = <LogDomain>{};
-
-  /// Whether [domain] is currently enabled for info-level logging.
-  bool isEnabled(LogDomain domain) => enabledDomains.contains(domain);
-
-  /// Replace the set of enabled domains in one shot.
-  void setEnabledDomains(Iterable<LogDomain> domains) {
-    enabledDomains
-      ..clear()
-      ..addAll(domains);
-  }
 
   /// Log a domain-specific message at the given [level].
   ///
@@ -104,7 +95,9 @@ class DomainLogger {
       stackTrace: stackTrace,
     );
 
-    // PII-safe description: never includes the raw error string.
+    // PII-safe description: never includes the raw error string. The stack
+    // trace is intentionally omitted — frames can contain absolute paths with
+    // the user's system username, which would leak into this shareable log.
     final safeDescription = safeErrorDescription(error, message);
     _appendToSharedFile(
       fileStem: errorSafeLogStem,
@@ -112,7 +105,6 @@ class DomainLogger {
       level: 'ERROR',
       subDomain: subDomain,
       message: safeDescription,
-      stackTrace: stackTrace,
     );
 
     // Per-domain file (skipped for sync, which routes to the shared sync log).

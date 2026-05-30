@@ -20,7 +20,7 @@ import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -41,7 +41,7 @@ class _MockSeeder extends Mock implements QueueMarkerSeeder {}
 
 /// Test double for [AttachmentIngestor] that records every `process()`
 /// call and optionally throws, without needing mocktail fallbacks for
-/// every named-argument type (Function, LoggingService, nullable refs).
+/// every named-argument type (Function, DomainLogger, nullable refs).
 class _FakeAttachmentIngestor implements AttachmentIngestor {
   _FakeAttachmentIngestor({this.shouldThrow = false, this.firstProcessed});
 
@@ -52,7 +52,7 @@ class _FakeAttachmentIngestor implements AttachmentIngestor {
   @override
   Future<bool> process({
     required Event event,
-    required LoggingService logging,
+    required DomainLogger logging,
     required AttachmentIndex? attachmentIndex,
     bool scheduleDownload = false,
   }) async {
@@ -427,7 +427,7 @@ void main() {
   late _MockRoomManager roomManager;
   late MockSyncEventProcessor processor;
   late MockSyncSequenceLogService sequenceLog;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late MockInboundQueue queue;
   late _MockWorker worker;
   late _MockBridge bridge;
@@ -451,7 +451,7 @@ void main() {
     roomManager = _MockRoomManager();
     processor = MockSyncEventProcessor();
     sequenceLog = MockSyncSequenceLogService();
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     queue = MockInboundQueue();
     worker = _MockWorker();
     bridge = _MockBridge();
@@ -601,7 +601,7 @@ void main() {
       final localRoomManager = _MockRoomManager();
       final localProcessor = MockSyncEventProcessor();
       final localSequenceLog = MockSyncSequenceLogService();
-      final localLogging = MockLoggingService();
+      final localLogging = MockDomainLogger();
       final localQueue = MockInboundQueue();
       final localWorker = _MockWorker();
       final localBridge = _MockBridge();
@@ -667,11 +667,11 @@ void main() {
         return penHoldsByEventId[event.eventId] ?? false;
       });
       when(
-        () => localLogging.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
+        () => localLogging.error(
+          any<LogDomain>(),
+          any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
@@ -808,9 +808,9 @@ void main() {
 
     verifyNever(() => seeder.seedIfAbsent(any()));
     verify(
-      () => logging.captureEvent(
+      () => logging.log(
+        any<LogDomain>(),
         any<String>(that: contains('queue.coordinator.start.noRoom')),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).called(1);
@@ -827,14 +827,14 @@ void main() {
 
     expect(coordinator.isRunning, isTrue);
     verify(
-      () => logging.captureException(
+      () => logging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any<String>(
           named: 'subDomain',
           that: contains('start.seed'),
         ),
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
       ),
     ).called(1);
     await coordinator.stop();
@@ -902,11 +902,11 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     verify(
-      () => logging.captureException(
+      () => logging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain', that: contains('enqueue')),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain', that: contains('enqueue')),
       ),
     ).called(1);
     await coordinator.stop();
@@ -1089,11 +1089,11 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     verify(
-      () => logging.captureException(
+      () => logging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain', that: contains('postLoad')),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain', that: contains('postLoad')),
       ),
     ).called(1);
     await coordinator.stop();
@@ -1107,11 +1107,11 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     verify(
-      () => logging.captureException(
+      () => logging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain', that: contains('syncSub')),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain', that: contains('syncSub')),
       ),
     ).called(1);
     await coordinator.stop();
@@ -1135,11 +1135,11 @@ void main() {
     await coordinator.stop(drainFirst: true);
 
     verify(
-      () => logging.captureException(
+      () => logging.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain', that: contains('drain')),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain', that: contains('drain')),
       ),
     ).called(greaterThanOrEqualTo(1));
     verify(() => worker.stop()).called(1);
@@ -1206,14 +1206,14 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(
               named: 'subDomain',
               that: contains('startupBridge'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
         await coordinator.stop();
@@ -1244,14 +1244,14 @@ void main() {
         await coordinator.onRoomChanged('!other:example.org');
 
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(
               named: 'subDomain',
               that: contains('onRoomChanged'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
       },
@@ -1308,11 +1308,11 @@ void main() {
         );
 
         verify(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(
               that: contains('queue.coordinator.drainUntilEmpty.timeout'),
             ),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(1);
@@ -1353,7 +1353,7 @@ void main() {
         final localRoomManager = _MockRoomManager();
         final localProcessor = MockSyncEventProcessor();
         final localSequenceLog = MockSyncSequenceLogService();
-        final localLogging = MockLoggingService();
+        final localLogging = MockDomainLogger();
         final localQueue = MockInboundQueue();
         final localWorker = _MockWorker();
         final localBridge = _MockBridge();
@@ -1443,20 +1443,20 @@ void main() {
           }
         });
         when(
-          () => localLogging.captureEvent(
+          () => localLogging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((invocation) {
-          events.add(invocation.positionalArguments.single as String);
+          events.add(invocation.positionalArguments[1] as String);
         });
         when(
-          () => localLogging.captureException(
+          () => localLogging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((invocation) async {
           exceptionSubDomains.add(
@@ -1741,11 +1741,11 @@ void main() {
           ),
         );
         verify(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(
               that: contains('queue.bridge.start mode=reconnect.backward'),
             ),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(1);
@@ -1837,9 +1837,9 @@ void main() {
         await coordinator.triggerBridge();
 
         verify(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(that: contains('queue.bridge.skip reason=noRoom')),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(1);
@@ -2143,14 +2143,14 @@ void main() {
         final ingestor = _FakeAttachmentIngestor(shouldThrow: true);
         final ingestorFailureLogged = Completer<void>();
         when(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(
               named: 'subDomain',
               that: contains('attachmentIngestor'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).thenAnswer((_) {
           if (!ingestorFailureLogged.isCompleted) {
@@ -2183,14 +2183,14 @@ void main() {
         // The enqueue path still fires despite the ingestor throwing.
         verify(() => queue.enqueueLive(any())).called(1);
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(
               named: 'subDomain',
               that: contains('attachmentIngestor'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
 
@@ -2402,14 +2402,14 @@ void main() {
         await coordinator.flushPendingPathResurrectionsForTest();
 
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(
               named: 'subDomain',
               that: contains('resurrectByPaths'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
 
@@ -2458,14 +2458,14 @@ void main() {
             ..flushMicrotasks();
 
           verify(
-            () => logging.captureException(
+            () => logging.error(
+              any<LogDomain>(),
               any<Object>(),
-              domain: any<String>(named: 'domain'),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
               subDomain: any<String>(
                 named: 'subDomain',
                 that: contains('resurrectByReason'),
               ),
-              stackTrace: any<StackTrace>(named: 'stackTrace'),
             ),
           ).called(greaterThanOrEqualTo(1));
         });

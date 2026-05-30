@@ -5,7 +5,7 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Voxtral-specific inference operations
@@ -28,12 +28,12 @@ class VoxtralInferenceRepository {
     required String subDomain,
     StackTrace? stackTrace,
   }) {
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt<LoggingService>().captureException(
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt<DomainLogger>().error(
+        LogDomain.speech,
         exception,
-        domain: 'VOXTRAL',
-        subDomain: subDomain,
         stackTrace: stackTrace,
+        subDomain: subDomain,
       );
     }
   }

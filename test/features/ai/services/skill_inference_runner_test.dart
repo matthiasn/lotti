@@ -21,7 +21,7 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -176,7 +176,7 @@ class _GeneratedSkillRunnerBench {
     final cloudRepository = MockCloudInferenceRepository();
     final aiInputRepository = MockAiInputRepository();
     final journalRepository = MockJournalRepository();
-    final loggingService = MockLoggingService();
+    final loggingService = MockDomainLogger();
     final promptBuilderHelper = MockPromptBuilderHelper();
     final taskSummaryResolver = MockTaskSummaryResolver();
     final container = ProviderContainer();
@@ -212,7 +212,7 @@ class _GeneratedSkillRunnerBench {
   final MockCloudInferenceRepository cloudRepository;
   final MockAiInputRepository aiInputRepository;
   final MockJournalRepository journalRepository;
-  final MockLoggingService loggingService;
+  final MockDomainLogger loggingService;
   final MockPromptBuilderHelper promptBuilderHelper;
   final MockTaskSummaryResolver taskSummaryResolver;
   final ProviderContainer container;
@@ -229,20 +229,20 @@ class _GeneratedSkillRunnerBench {
 
   void stubLoggingException() {
     when(
-      () => loggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
+      () => loggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenReturn(null);
   }
 
   void stubLoggingEvent() {
     when(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenReturn(null);
@@ -257,7 +257,7 @@ void main() {
   late MockCloudInferenceRepository mockCloudRepo;
   late MockAiInputRepository mockAiInputRepo;
   late MockJournalRepository mockJournalRepo;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late MockPromptBuilderHelper mockPromptBuilderHelper;
   late MockTaskSummaryResolver mockTaskSummaryResolver;
   late MockAiConfigRepository mockAiConfigRepo;
@@ -475,20 +475,20 @@ void main() {
 
   void stubLoggingException() {
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
+      () => mockLoggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenReturn(null);
   }
 
   void stubLoggingEvent() {
     when(
-      () => mockLoggingService.captureEvent(
+      () => mockLoggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenReturn(null);
@@ -500,7 +500,7 @@ void main() {
     mockCloudRepo = MockCloudInferenceRepository();
     mockAiInputRepo = MockAiInputRepository();
     mockJournalRepo = MockJournalRepository();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
     mockPromptBuilderHelper = MockPromptBuilderHelper();
     mockTaskSummaryResolver = MockTaskSummaryResolver();
     mockAiConfigRepo = MockAiConfigRepository();
@@ -996,11 +996,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SkillInferenceRunner',
-            subDomain: 'runTranscription',
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'runTranscription',
           ),
         ).called(1);
       });
@@ -1405,11 +1405,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SkillInferenceRunner',
-            subDomain: 'runImageAnalysis',
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'runImageAnalysis',
           ),
         ).called(1);
       });
@@ -1699,11 +1699,11 @@ void main() {
 
           verifyZeroInteractions(mockCloudRepo);
           verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'SkillInferenceRunner',
-              subDomain: 'runPromptGeneration',
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              any<Object>(),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runPromptGeneration',
             ),
           ).called(1);
         },
@@ -1722,11 +1722,11 @@ void main() {
 
         verifyZeroInteractions(mockCloudRepo);
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SkillInferenceRunner',
-            subDomain: 'runPromptGeneration',
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'runPromptGeneration',
           ),
         ).called(1);
       });
@@ -2313,27 +2313,27 @@ void main() {
           final localCloudRepo = MockCloudInferenceRepository();
           final localAiInputRepo = MockAiInputRepository();
           final localJournalRepo = MockJournalRepository();
-          final localLoggingService = MockLoggingService();
+          final localLoggingService = MockDomainLogger();
           final localPromptBuilderHelper = MockPromptBuilderHelper();
           final localTaskSummaryResolver = MockTaskSummaryResolver();
           final localContainer = ProviderContainer();
 
           void stubLocalLoggingException() {
             when(
-              () => localLoggingService.captureException(
-                any<dynamic>(),
-                domain: any<String>(named: 'domain'),
-                subDomain: any<String>(named: 'subDomain'),
+              () => localLoggingService.error(
+                any<LogDomain>(),
+                any<Object>(),
                 stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                subDomain: any<String>(named: 'subDomain'),
               ),
             ).thenReturn(null);
           }
 
           void stubLocalLoggingEvent() {
             when(
-              () => localLoggingService.captureEvent(
+              () => localLoggingService.log(
+                any<LogDomain>(),
                 any<String>(),
-                domain: any<String>(named: 'domain'),
                 subDomain: any<String>(named: 'subDomain'),
               ),
             ).thenReturn(null);
@@ -2449,11 +2449,11 @@ void main() {
                 ),
               );
               verify(
-                () => localLoggingService.captureException(
-                  any<dynamic>(),
-                  domain: 'SkillInferenceRunner',
-                  subDomain: 'runPromptGeneration',
+                () => localLoggingService.error(
+                  LogDomain.ai,
+                  any<Object>(),
                   stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                  subDomain: 'runPromptGeneration',
                 ),
               ).called(1);
               return;
@@ -2633,11 +2633,11 @@ void main() {
                 ),
               );
               verify(
-                () => bench.loggingService.captureException(
-                  any<dynamic>(),
-                  domain: 'SkillInferenceRunner',
-                  subDomain: 'runPromptGeneration',
+                () => bench.loggingService.error(
+                  LogDomain.ai,
+                  any<Object>(),
                   stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                  subDomain: 'runPromptGeneration',
                 ),
               ).called(1);
               return;
@@ -2663,9 +2663,9 @@ void main() {
             expect(captured[1], entryId);
             expect(captured[2], 'cat-generated');
             verify(
-              () => bench.loggingService.captureEvent(
+              () => bench.loggingService.log(
+                LogDomain.ai,
                 any<String>(),
-                domain: 'SkillInferenceRunner',
                 subDomain: 'runPromptGeneration',
               ),
             ).called(1);
@@ -2688,11 +2688,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SkillInferenceRunner',
-            subDomain: 'runPromptGeneration',
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'runPromptGeneration',
           ),
         ).called(1);
       });
@@ -2872,11 +2872,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SkillInferenceRunner',
-            subDomain: 'runImageGeneration',
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'runImageGeneration',
           ),
         ).called(1);
       });
@@ -2895,11 +2895,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SkillInferenceRunner',
-            subDomain: 'runImageGeneration',
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'runImageGeneration',
           ),
         ).called(1);
       });
@@ -2924,11 +2924,11 @@ void main() {
 
         verifyZeroInteractions(mockCloudRepo);
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SkillInferenceRunner',
-            subDomain: 'runImageGeneration',
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'runImageGeneration',
           ),
         ).called(1);
       });
@@ -2955,11 +2955,11 @@ void main() {
             ),
           );
           verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'SkillInferenceRunner',
-              subDomain: 'runImageGeneration',
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              any<Object>(),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runImageGeneration',
             ),
           ).called(1);
         },
@@ -2985,11 +2985,11 @@ void main() {
           ),
         );
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SkillInferenceRunner',
-            subDomain: 'runImageGeneration',
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'runImageGeneration',
           ),
         ).called(1);
       });
@@ -3034,7 +3034,7 @@ void main() {
           final mockPersistenceLogic = MockPersistenceLogic();
           getIt
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-            ..registerSingleton<LoggingService>(mockLoggingService);
+            ..registerSingleton<DomainLogger>(mockLoggingService);
 
           when(
             () => mockPersistenceLogic.createMetadata(
@@ -3107,11 +3107,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SkillInferenceRunner',
-            subDomain: 'runImageGeneration',
+          () => mockLoggingService.error(
+            LogDomain.ai,
+            any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'runImageGeneration',
           ),
         ).called(1);
       });
@@ -3182,7 +3182,7 @@ void main() {
           final mockPersistenceLogic = MockPersistenceLogic();
           getIt
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-            ..registerSingleton<LoggingService>(mockLoggingService);
+            ..registerSingleton<DomainLogger>(mockLoggingService);
 
           when(
             () => mockPersistenceLogic.createMetadata(
@@ -3287,9 +3287,9 @@ void main() {
 
           // Verify success event was logged.
           verify(
-            () => mockLoggingService.captureEvent(
+            () => mockLoggingService.log(
+              LogDomain.ai,
               any<String>(that: contains('image generation completed')),
-              domain: 'SkillInferenceRunner',
               subDomain: 'runImageGeneration',
             ),
           ).called(1);
@@ -3372,17 +3372,17 @@ void main() {
           );
 
           verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              any<Object>(
                 that: isA<StateError>().having(
                   (e) => e.message,
                   'message',
                   contains('not found before cover art save'),
                 ),
               ),
-              domain: 'SkillInferenceRunner',
-              subDomain: 'runImageGeneration',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runImageGeneration',
             ),
           ).called(1);
         },
@@ -3453,7 +3453,7 @@ void main() {
           final mockPersistenceLogic = MockPersistenceLogic();
           getIt
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-            ..registerSingleton<LoggingService>(mockLoggingService);
+            ..registerSingleton<DomainLogger>(mockLoggingService);
 
           when(
             () => mockPersistenceLogic.createMetadata(
@@ -3490,11 +3490,11 @@ void main() {
           );
 
           verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: 'SkillInferenceRunner',
-              subDomain: 'runImageGeneration',
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              any<Object>(),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runImageGeneration',
             ),
           ).called(1);
         },
@@ -3564,7 +3564,7 @@ void main() {
           final mockPersistenceLogic = MockPersistenceLogic();
           getIt
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-            ..registerSingleton<LoggingService>(mockLoggingService);
+            ..registerSingleton<DomainLogger>(mockLoggingService);
 
           when(
             () => mockPersistenceLogic.createMetadata(
@@ -3609,17 +3609,17 @@ void main() {
           );
 
           verify(
-            () => mockLoggingService.captureException(
-              any<dynamic>(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              any<Object>(
                 that: isA<StateError>().having(
                   (e) => e.message,
                   'message',
                   contains('disappeared before cover art update'),
                 ),
               ),
-              domain: 'SkillInferenceRunner',
-              subDomain: 'runImageGeneration',
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runImageGeneration',
             ),
           ).called(1);
         },
@@ -3729,8 +3729,8 @@ void main() {
             ).thenAnswer((_) async => true);
           }
 
-          if (!getIt.isRegistered<LoggingService>()) {
-            getIt.registerSingleton<LoggingService>(mockLoggingService);
+          if (!getIt.isRegistered<DomainLogger>()) {
+            getIt.registerSingleton<DomainLogger>(mockLoggingService);
           }
 
           when(

@@ -9,6 +9,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -25,7 +26,7 @@ void main() {
     test(
       'returns bytes verbatim when no encoding header is present',
       () async {
-        final logging = MockLoggingService();
+        final logging = MockDomainLogger();
         final event = _MockEvent();
         when(() => event.content).thenReturn(<String, dynamic>{});
 
@@ -39,9 +40,9 @@ void main() {
 
         expect(decoded, same(payload));
         verifyNever(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         );
@@ -54,7 +55,7 @@ void main() {
         // Forward-compat: a future sender might add a new encoding; older
         // receivers must pass the bytes through untouched rather than
         // panic or corrupt the file.
-        final logging = MockLoggingService();
+        final logging = MockDomainLogger();
         final event = _MockEvent();
         when(() => event.content).thenReturn(<String, dynamic>{
           attachmentEncodingKey: 'brotli',
@@ -75,11 +76,11 @@ void main() {
     test(
       'decompresses a gzipped payload when encoding=gzip and logs ratio',
       () async {
-        final logging = MockLoggingService();
+        final logging = MockDomainLogger();
         when(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((_) async {});
@@ -106,9 +107,9 @@ void main() {
         expect(decoded, equals(original));
 
         final captured = verify(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             captureAny<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: 'attachment.decode',
           ),
         ).captured;
@@ -130,11 +131,11 @@ void main() {
         // threshold so that the offload branch runs end-to-end. The test
         // checks correctness (round-trip) and that the log line still fires
         // from the main isolate after the worker returns.
-        final logging = MockLoggingService();
+        final logging = MockDomainLogger();
         when(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((_) async {});
@@ -167,9 +168,9 @@ void main() {
         expect(decoded, equals(original));
 
         final captured = verify(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             captureAny<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: 'attachment.decode',
           ),
         ).captured;
@@ -187,11 +188,11 @@ void main() {
         // exists to prevent. Pre-fix, a caller would receive the raw gzip
         // bytes (0x1f 0x8b ...) and feed them to utf8.decode, which throws
         // `FormatException: Unexpected extension byte (at offset 1)`.
-        final logging = MockLoggingService();
+        final logging = MockDomainLogger();
         when(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((_) async {});

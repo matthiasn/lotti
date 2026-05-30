@@ -16,7 +16,7 @@ import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
 typedef SyncProgressCallback = void Function(double progress);
@@ -59,7 +59,7 @@ class SyncMaintenanceRepository {
 
   final JournalDb _journalDb;
   final OutboxService _outboxService;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final AiConfigRepository _aiConfigRepository;
   final AgentRepository _agentRepository;
   final VectorClockService _vectorClockService;
@@ -470,11 +470,11 @@ class SyncMaintenanceRepository {
     try {
       return await run();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_SERVICE',
-        subDomain: subDomain,
         stackTrace: stackTrace,
+        subDomain: subDomain,
       );
       rethrow;
     }
@@ -574,7 +574,7 @@ final syncMaintenanceRepositoryProvider = Provider<SyncMaintenanceRepository>((
   return SyncMaintenanceRepository(
     journalDb: ref.watch(journalDbProvider),
     outboxService: ref.watch(outboxServiceProvider),
-    loggingService: ref.watch(loggingServiceProvider),
+    loggingService: getIt<DomainLogger>(),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     agentRepository: ref.watch(agentRepositoryProvider),
     vectorClockService: getIt<VectorClockService>(),

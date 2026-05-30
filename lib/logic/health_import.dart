@@ -12,8 +12,8 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/health_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -254,9 +254,9 @@ class HealthImport {
           }
         }
       } catch (e) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.health,
           e,
-          domain: 'HEALTH_IMPORT',
           subDomain: 'fetchHealthData',
         );
       }

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_signals.dart';
@@ -11,7 +10,7 @@ import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Encryption + diagnostics façade for the queue pipeline.
 ///
@@ -49,7 +48,7 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final SettingsDb _settingsDb;
   final SyncEventProcessor _eventProcessor;
   final MetricsCounters _metrics;
@@ -70,11 +69,11 @@ class MatrixStreamConsumer implements SyncPipeline {
     final lastEventId = results[0];
     final lastTs = results[1] as num?;
     _eventProcessor.startupTimestamp = lastTs;
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       _withInstance(
         'startup.marker id=${lastEventId ?? 'null'} ts=${lastTs?.toInt() ?? 'null'}',
       ),
-      domain: syncLoggingDomain,
       subDomain: 'startup.marker',
     );
     _initialized = true;
@@ -88,11 +87,11 @@ class MatrixStreamConsumer implements SyncPipeline {
       try {
         await _roomManager.hydrateRoomSnapshot(client: _sessionManager.client);
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: syncLoggingDomain,
-          subDomain: 'start.hydrateRoom',
           stackTrace: st,
+          subDomain: 'start.hydrateRoom',
         );
       }
       // Wait only when a room is already configured. During fresh provisioning
@@ -109,12 +108,12 @@ class MatrixStreamConsumer implements SyncPipeline {
           .now()
           .difference(hydrateStart)
           .inMilliseconds;
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         _withInstance(
           'start.hydrateRoom.ready=${_roomManager.currentRoom != null} '
           'configured=$hasConfiguredRoom after ${hydrateElapsed}ms',
         ),
-        domain: syncLoggingDomain,
         subDomain: 'start',
       );
     }
@@ -123,9 +122,9 @@ class MatrixStreamConsumer implements SyncPipeline {
     // device) is owned by `QueuePipelineCoordinator._maybePostLoadCurrentRoom`,
     // which calls `room.postLoad()` on every onSync.
     await _signals.start();
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       _withInstance('MatrixStreamConsumer started'),
-      domain: syncLoggingDomain,
       subDomain: 'start',
     );
   }
@@ -133,9 +132,9 @@ class MatrixStreamConsumer implements SyncPipeline {
   @override
   Future<void> dispose() async {
     await _signals.dispose();
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       _withInstance('MatrixStreamConsumer disposed'),
-      domain: syncLoggingDomain,
       subDomain: 'dispose',
     );
   }

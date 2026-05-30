@@ -1,8 +1,51 @@
 # Logging migration: `LoggingService` → enum-based `DomainLogger`
 
-**Status:** in progress (core infrastructure landed; call-site + test migration pending)
+**Status:** ✅ COMPLETE — all phases done; `dart analyze lib test` = 0; tests pass.
 **Owner:** logging
 **Created:** 2026-05-30
+
+## Final status (completed 2026-05-30)
+
+All ~602 direct `LoggingService.captureEvent/captureException` call sites are
+migrated to `DomainLogger.log/error` (getIt receivers, injected fields with their
+construction sites in `get_it.dart`/providers, self-fetching fields, cascades,
+null-aware calls, and generic wrappers). The only remaining capture calls in
+`lib/` are inside `domain_logging.dart` — the bridge that delegates to the
+`LoggingService` file sink. Every test that constructed/verified logging is
+migrated to `MockDomainLogger` + `log/error`. Phase E (l10n) and Phase F cleanup
+(removed `logAgentRuntimeFlag/Workflow/Sync` consts → `LogDomain.flagName`;
+narrowed `syncFileDomains` to `{'sync'}`; `lib/services/README.md`; CHANGELOG +
+flatpak metainfo under 0.9.1011) are done. `LoggingService` remains only as the
+low-level sink that `DomainLogger` owns. The sections below are the original
+plan, kept for history.
+
+## Current status (updated 2026-05-30)
+
+**Done and green** (`dart analyze lib test` = 0 issues; all touched tests pass):
+- Infra: `LogDomain` enum (`logging_domains.dart`), `DomainLogger` rewritten to
+  the error-first enum API with `setEnabledDomains`/`isEnabled` and static
+  `full/safeErrorDescription`, **two** daily error logs (full `error-*.log` in
+  `LoggingService`, PII-safe `error-safe-*.log` in `DomainLogger` — per the
+  product decision to keep both), per-domain config-flag seeding.
+- Phase A wiring (startup watch of `domainLoggerProvider`, unused import removed).
+- All ~42 existing `DomainLogger` source files + ~40 test files migrated off the
+  old `LogDomains` string constants to the enum API.
+- Phase E l10n: 23 `loggingDomain*` ARB keys, settings page localized labels,
+  obsolete `settingsLoggingAgentRuntime/Workflow/Sync` keys removed.
+- `database_test`/`config_flags_test` updated for the per-domain flag seeding.
+- `lib/services/README.md`, CHANGELOG + flatpak metainfo (under 0.9.1011).
+
+**Not done (the bulk):**
+- **Phase B** (getIt sites) and **Phase C** (injected-field sites) — ~602 direct
+  `LoggingService.captureEvent/Exception` call sites remain on `LoggingService`
+  (a valid sink). A scripted Phase B attempt was reverted: many "getIt" files are
+  actually mixed (the `getIt<LoggingService>()` is a constructor default while the
+  real logging is an injected field), so getIt-only migration corrupts their
+  tests. **Lesson: migrate whole-file (both getIt and injected sites + the file's
+  test) per feature, not split B/C.**
+- **Phase D** remaining test files, **Phase F** cleanup (remove
+  `logAgentRuntimeFlag/Workflow/Sync` consts, narrow `syncFileDomains` to
+  `{'sync'}` only after sync call sites migrate, feature READMEs).
 
 ## Goal
 

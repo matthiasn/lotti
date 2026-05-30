@@ -29,15 +29,7 @@ class LoggingService {
 
   /// Domains whose info-level events are routed to the sync log file instead
   /// of the general log. Exposed so `DomainLogger` can avoid duplicate writes.
-  static const Set<String> syncFileDomains = <String>{
-    'sync',
-    'MATRIX_SYNC',
-    'MATRIX_SERVICE',
-    'OUTBOX',
-    'AGENT_SYNC',
-    'SYNC_SEQUENCE',
-    'SYNC_BACKFILL',
-  };
+  static const Set<String> syncFileDomains = <String>{'sync'};
   final Map<String, List<String>> _pendingFileLinesByStem =
       <String, List<String>>{};
   final Map<String, Timer> _fileFlushTimers = <String, Timer>{};

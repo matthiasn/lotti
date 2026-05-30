@@ -5,7 +5,7 @@ import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -103,11 +103,11 @@ class WhatsNewController extends _$WhatsNewController {
 
       return WhatsNewState(unseenContent: unseenReleases);
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.whatsNew,
         e,
-        domain: 'WHATS_NEW',
-        subDomain: 'build',
         stackTrace: stackTrace,
+        subDomain: 'build',
       );
       return const WhatsNewState();
     }

@@ -7,6 +7,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -242,14 +243,13 @@ extension _AnyAttachmentIngestorScenario on glados.Any {
 
 Future<void> _withFreshAttachmentIngestorState(
   Future<void> Function(
-    MockLoggingService logging,
+    MockDomainLogger logging,
     AttachmentIndex index,
     Directory tempDir,
   )
   body,
 ) async {
-  final logging = MockLoggingService();
-  stubLoggingService(logging);
+  final logging = MockDomainLogger();
   final index = AttachmentIndex(logging: logging, verboseLogging: false);
   final tempDir = Directory.systemTemp.createTempSync('lotti_attach_ingest_');
 
@@ -268,13 +268,12 @@ void main() {
     registerFallbackValue(StackTrace.empty);
   });
 
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late AttachmentIndex index;
   late Directory tempDir;
 
   setUp(() {
-    logging = MockLoggingService();
-    stubLoggingService(logging);
+    logging = MockDomainLogger();
     index = AttachmentIndex(logging: logging, verboseLogging: false);
     tempDir = Directory.systemTemp.createTempSync('lotti_attach_ingest_');
   });
@@ -341,9 +340,9 @@ void main() {
         );
 
         verify(
-          () => logging.captureEvent(
+          () => logging.log(
+            any<LogDomain>(),
             any<String>(that: contains('attachmentEvent id=ev1')),
-            domain: any<String>(named: 'domain'),
             subDomain: 'attachment.observe',
           ),
         ).called(1);
@@ -458,9 +457,9 @@ void main() {
       );
       expect(wrote, isFalse);
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('pathTraversal.blocked')),
-          domain: any<String>(named: 'domain'),
           subDomain: 'attachment.save',
         ),
       ).called(1);
@@ -478,9 +477,9 @@ void main() {
       expect(wrote, isFalse);
       // No path traversal, no observe-only state — just nothing written.
       verifyNever(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('pathTraversal.blocked')),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
       );
@@ -537,9 +536,9 @@ void main() {
       expect(wrote, isFalse);
       expect(dominanceChecks, 1);
       verify(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(that: contains('skip.localVcDominates')),
-          domain: any<String>(named: 'domain'),
           subDomain: 'attachment.download.skip',
         ),
       ).called(1);
@@ -565,11 +564,11 @@ void main() {
 
       expect(wrote, isFalse);
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'attachment.download.skip',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'attachment.download.skip',
         ),
       ).called(1);
     });
@@ -591,17 +590,16 @@ void main() {
           final skipLogs = <String>[];
 
           when(
-            () => logging.captureEvent(
-              any<Object>(),
-              domain: any<String>(named: 'domain'),
+            () => logging.log(
+              any<LogDomain>(),
+              any<String>(),
               subDomain: any<String>(named: 'subDomain'),
               level: any(named: 'level'),
-              type: any(named: 'type'),
             ),
           ).thenAnswer((invocation) {
             if (invocation.namedArguments[#subDomain] ==
                 'attachment.download.skip') {
-              skipLogs.add(invocation.positionalArguments.single.toString());
+              skipLogs.add(invocation.positionalArguments[1].toString());
             }
           });
 

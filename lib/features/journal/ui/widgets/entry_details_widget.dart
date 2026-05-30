@@ -28,8 +28,8 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/events/event_form.dart';
@@ -525,11 +525,11 @@ class EntryDetailsContent extends ConsumerWidget {
                       ),
                     );
               } catch (e, s) {
-                getIt<LoggingService>().captureException(
+                getIt<DomainLogger>().error(
+                  LogDomain.persistence,
                   e,
-                  domain: 'EntryDetailsContent',
-                  subDomain: 'onToggleCollapse',
                   stackTrace: s,
+                  subDomain: 'onToggleCollapse',
                 );
               }
               // Only auto-scroll when expanding and the card top is pushed

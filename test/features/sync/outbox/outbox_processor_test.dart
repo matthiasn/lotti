@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -39,41 +40,41 @@ OutboxItem _item({
   );
 }
 
-void _stubSilentLogging(MockLoggingService log) {
+void _stubSilentLogging(MockDomainLogger log) {
   when(
-    () => log.captureEvent(
-      any<Object>(),
-      domain: any<String>(named: 'domain'),
+    () => log.log(
+      any<LogDomain>(),
+      any<String>(),
       subDomain: any<String>(named: 'subDomain'),
     ),
   ).thenAnswer((_) {});
   when(
-    () => log.captureException(
+    () => log.error(
+      any<LogDomain>(),
       any<Object>(),
-      domain: any<String>(named: 'domain'),
-      subDomain: any<String>(named: 'subDomain'),
       stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      subDomain: any<String>(named: 'subDomain'),
     ),
   ).thenAnswer((_) async {});
 }
 
-List<String> _captureEvents(MockLoggingService log) {
+List<String> _captureEvents(MockDomainLogger log) {
   final events = <String>[];
   when(
-    () => log.captureEvent(
-      captureAny<Object>(),
-      domain: any(named: 'domain'),
+    () => log.log(
+      any<LogDomain>(),
+      captureAny<String>(),
       subDomain: any(named: 'subDomain'),
     ),
   ).thenAnswer((inv) {
-    events.add(inv.positionalArguments.first.toString());
+    events.add(inv.positionalArguments[1].toString());
   });
   when(
-    () => log.captureException(
+    () => log.error(
+      any<LogDomain>(),
       any<Object>(),
-      domain: any(named: 'domain'),
-      subDomain: any(named: 'subDomain'),
       stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      subDomain: any(named: 'subDomain'),
     ),
   ).thenAnswer((_) async {});
   return events;
@@ -330,22 +331,22 @@ void _stubGeneratedHasMore({
 }
 
 void _stubGeneratedLogging({
-  required MockLoggingService log,
+  required MockDomainLogger log,
   required _GeneratedProcessorScenario scenario,
 }) {
   when(
-    () => log.captureException(
+    () => log.error(
+      any<LogDomain>(),
       any<Object>(),
-      domain: any<String>(named: 'domain'),
-      subDomain: any<String>(named: 'subDomain'),
       stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      subDomain: any<String>(named: 'subDomain'),
     ),
   ).thenAnswer((_) async {});
 
   final eventStub = when(
-    () => log.captureEvent(
-      any<Object>(),
-      domain: any<String>(named: 'domain'),
+    () => log.log(
+      any<LogDomain>(),
+      any<String>(),
       subDomain: any<String>(named: 'subDomain'),
     ),
   );
@@ -370,7 +371,7 @@ void main() {
     fakeAsync((async) {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
 
       final pending = _item();
       _stubClaimSequence(repo, [pending]);
@@ -406,7 +407,7 @@ void main() {
   test('exits early when claim returns null (empty queue)', () async {
     final repo = MockOutboxRepository();
     final sender = MockMessageSender();
-    final log = MockLoggingService();
+    final log = MockDomainLogger();
 
     when(
       () => repo.claimNextBatch(
@@ -433,7 +434,7 @@ void main() {
   test('schedules next pass when more items remain after send', () async {
     final repo = MockOutboxRepository();
     final sender = MockMessageSender();
-    final log = MockLoggingService();
+    final log = MockDomainLogger();
 
     _stubClaimSequence(repo, [_item()]);
     _stubHasMorePending(repo, hasMore: true);
@@ -457,7 +458,7 @@ void main() {
   test('schedules no next pass when queue is drained after send', () async {
     final repo = MockOutboxRepository();
     final sender = MockMessageSender();
-    final log = MockLoggingService();
+    final log = MockDomainLogger();
 
     _stubClaimSequence(repo, [_item()]);
     _stubHasMorePending(repo);
@@ -485,7 +486,7 @@ void main() {
     (scenario) async {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
       final claimedRows = scenario.claimedRows();
       final sentMessages = <SyncMessage>[];
 
@@ -605,7 +606,7 @@ void main() {
       fakeAsync((async) {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         // maxRetriesOverride=3 → retries=2 + 1 hits cap
         final pending = _item(subject: 'host:cap', retries: 2);
@@ -630,9 +631,11 @@ void main() {
         expect(result!.nextDelay, Duration.zero);
         verify(() => repo.markRetry(any())).called(1);
         verify(
-          () => log.captureEvent(
-            startsWith('retryCapReached subject=host:cap attempts=3'),
-            domain: 'OUTBOX',
+          () => log.log(
+            LogDomain.sync,
+            any<String>(
+              that: startsWith('retryCapReached subject=host:cap attempts=3'),
+            ),
             subDomain: 'retry.cap',
           ),
         ).called(1);
@@ -651,7 +654,7 @@ void main() {
       fakeAsync((async) {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final pending = _item(id: 2, subject: 'host:cap-ex', retries: 2);
         _stubClaimSequence(repo, [pending]);
@@ -675,9 +678,13 @@ void main() {
         expect(result!.nextDelay, Duration.zero);
         verify(() => repo.markRetry(any())).called(1);
         verify(
-          () => log.captureEvent(
-            startsWith('retryCapReached subject=host:cap-ex attempts=3'),
-            domain: 'OUTBOX',
+          () => log.log(
+            LogDomain.sync,
+            any<String>(
+              that: startsWith(
+                'retryCapReached subject=host:cap-ex attempts=3',
+              ),
+            ),
             subDomain: 'retry.cap',
           ),
         ).called(1);
@@ -695,7 +702,7 @@ void main() {
     test('queue continues processing after capped item', () async {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
 
       final a = _item(id: 11, subject: 'A', retries: 2, messageId: 'A');
       final b = _item(id: 12, subject: 'B', messageId: 'B');
@@ -735,7 +742,7 @@ void main() {
       fakeAsync((async) {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         _stubClaimSequence(repo, [_item(id: 3, subject: 'host:slow')]);
         _stubHasMorePending(repo);
@@ -770,7 +777,7 @@ void main() {
     test('fast failure logs timedOut=false', () async {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
 
       _stubClaimSequence(repo, [_item(id: 4, subject: 'host:fastfail')]);
       _stubHasMorePending(repo);
@@ -797,7 +804,7 @@ void main() {
     fakeAsync((async) {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
 
       _stubClaimSequence(repo, [
         _item(id: 99, subject: 'host:timeout-boundary'),
@@ -835,7 +842,7 @@ void main() {
   test('repeated failure counter handles large values', () async {
     final repo = MockOutboxRepository();
     final sender = MockMessageSender();
-    final log = MockLoggingService();
+    final log = MockDomainLogger();
 
     final item = _item(id: 1000, subject: 'S', messageId: 'repeat');
     // Claim the same item repeatedly to simulate the retry loop.
@@ -875,7 +882,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final item0 = _item(id: 21, subject: 'S', messageId: 'X');
         final item1 = item0.copyWith(
@@ -921,7 +928,7 @@ void main() {
     test('repeated failure resets on different subject', () async {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
 
       final a0 = _item(id: 31, subject: 'A', messageId: 'A');
       final a1 = a0.copyWith(retries: 1);
@@ -955,7 +962,7 @@ void main() {
     test('repeated failure resets on success for the same subject', () async {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
 
       final s0 = _item(id: 41, subject: 'S', messageId: 'S');
       final s1 = s0.copyWith(retries: 1);
@@ -1027,7 +1034,7 @@ void main() {
       // already-sent row back to pending and cause a duplicate Matrix event.
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
 
       _stubClaimSequence(repo, [_item(subject: 'host:post-mark')]);
       when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
@@ -1062,7 +1069,7 @@ void main() {
         // snapshot read earlier in the pipeline.
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final claimedItem = OutboxItem(
           id: 100,
@@ -1179,7 +1186,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final queue = [textItem(id: 1)];
         stubBatchClaimFromQueue(repo, queue);
@@ -1211,7 +1218,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final queue = [mediaItem(id: 1)];
         stubBatchClaimFromQueue(repo, queue);
@@ -1243,7 +1250,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final queue = [
           for (var i = 1; i <= 5; i++) textItem(id: i),
@@ -1288,7 +1295,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final queue = [
           for (var i = 1; i <= 3; i++) textItem(id: i),
@@ -1328,7 +1335,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final hotRow = textItem(id: 1).copyWith(retries: 1);
         final coldRow = textItem(id: 2);
@@ -1362,7 +1369,7 @@ void main() {
         fakeAsync((async) {
           final repo = MockOutboxRepository();
           final sender = MockMessageSender();
-          final log = MockLoggingService();
+          final log = MockDomainLogger();
 
           final queue = [
             for (var i = 1; i <= 4; i++) textItem(id: i),
@@ -1402,7 +1409,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final queue = [
           for (var i = 1; i <= 3; i++) textItem(id: i),
@@ -1439,7 +1446,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final queue = <OutboxItem>[
           for (var i = 1; i < 100; i++) textItem(id: i),
@@ -1502,7 +1509,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final queue = <OutboxItem>[
           for (var i = 1; i <= 59; i++) textItem(id: i),
@@ -1547,7 +1554,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final queue = [
           for (var i = 1; i <= 3; i++) textItem(id: i),
@@ -1586,7 +1593,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         final queue = [
           textItem(id: 1).copyWith(retries: 1), // hits cap on next retry
@@ -1620,7 +1627,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         // Same head row across both calls. We rebuild the queue each time
         // because stubBatchClaimFromQueue empties it as it claims.
@@ -1657,7 +1664,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
 
         when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
         when(() => repo.markSentBatch(any())).thenAnswer((_) async {});

@@ -7,13 +7,13 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 
 void main() {
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.current);
@@ -21,20 +21,20 @@ void main() {
   });
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
 
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockLoggingService);
 
     when(
-      () => mockLoggingService.captureException(
+      () => mockLoggingService.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
   });

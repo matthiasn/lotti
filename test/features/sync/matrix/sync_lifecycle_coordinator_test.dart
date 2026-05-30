@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -193,7 +194,7 @@ void main() {
     late MockMatrixSyncGateway gateway;
     late MockMatrixSessionManager sessionManager;
     late MockSyncRoomManager roomManager;
-    late MockLoggingService logging;
+    late MockDomainLogger logging;
     late MockPipeline pipeline;
     late StreamController<LoginState> loginStates;
 
@@ -211,7 +212,7 @@ void main() {
       gateway = MockMatrixSyncGateway();
       sessionManager = MockMatrixSessionManager();
       roomManager = MockSyncRoomManager();
-      logging = MockLoggingService();
+      logging = MockDomainLogger();
       pipeline = MockPipeline();
       loginStates = StreamController<LoginState>.broadcast(sync: true);
       when(
@@ -229,18 +230,18 @@ void main() {
       when(() => pipeline.start()).thenAnswer((_) async {});
       when(() => pipeline.dispose()).thenAnswer((_) async {});
       when(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(),
-          domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenReturn(null);
       when(
-        () => logging.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
+        () => logging.error(
+          any<LogDomain>(),
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
     });
@@ -393,7 +394,7 @@ void main() {
           final gateway = MockMatrixSyncGateway();
           final sessionManager = MockMatrixSessionManager();
           final roomManager = MockSyncRoomManager();
-          final logging = MockLoggingService();
+          final logging = MockDomainLogger();
           final pipeline = MockPipeline();
           final loginStates = StreamController<LoginState>.broadcast(
             sync: true,
@@ -421,18 +422,18 @@ void main() {
             pipelineDisposes++;
           });
           when(
-            () => logging.captureEvent(
+            () => logging.log(
+              any<LogDomain>(),
               any<String>(),
-              domain: any<String>(named: 'domain'),
               subDomain: any<String>(named: 'subDomain'),
             ),
           ).thenReturn(null);
           when(
-            () => logging.captureException(
-              any<dynamic>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain'),
+            () => logging.error(
+              any<LogDomain>(),
+              any<Object>(),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: any<String>(named: 'subDomain'),
             ),
           ).thenAnswer((_) async {});
 

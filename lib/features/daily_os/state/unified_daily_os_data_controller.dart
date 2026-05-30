@@ -14,8 +14,8 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -187,11 +187,11 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       } while (_pendingRefresh && !_isDisposed);
     } catch (e, stackTrace) {
       if (_isDisposed) return;
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.dailyOs,
         e,
-        domain: 'unified_daily_os_data_controller',
-        subDomain: '_refreshFromNotifications',
         stackTrace: stackTrace,
+        subDomain: '_refreshFromNotifications',
       );
     } finally {
       _refreshInFlight = false;
@@ -220,11 +220,11 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
           })
           .catchError((Object e, StackTrace stackTrace) {
             if (_isDisposed) return;
-            getIt<LoggingService>().captureException(
+            getIt<DomainLogger>().error(
+              LogDomain.dailyOs,
               e,
-              domain: 'unified_daily_os_data_controller',
-              subDomain: '_updateWithRunningTimer',
               stackTrace: stackTrace,
+              subDomain: '_updateWithRunningTimer',
             );
           });
       return;

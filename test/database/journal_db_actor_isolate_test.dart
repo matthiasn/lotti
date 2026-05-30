@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -25,7 +25,7 @@ void main() {
   group('JournalDb isolate-safe construction', () {
     late Directory documentsDirectory;
     late JournalDb db;
-    final mockLoggingService = MockLoggingService();
+    final mockLoggingService = MockDomainLogger();
 
     setUp(() {
       documentsDirectory = Directory.systemTemp.createTempSync(
@@ -33,19 +33,19 @@ void main() {
       );
 
       when(
-        () => mockLoggingService.captureEvent(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
+        () => mockLoggingService.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
       when(
-        () => mockLoggingService.captureException(
+        () => mockLoggingService.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
@@ -87,7 +87,7 @@ void main() {
 
         expect(result.applied, isTrue);
         expect(getIt.isRegistered<Directory>(), isFalse);
-        expect(getIt.isRegistered<LoggingService>(), isFalse);
+        expect(getIt.isRegistered<DomainLogger>(), isFalse);
         expect(File(expectedPath).existsSync(), isTrue);
       },
     );

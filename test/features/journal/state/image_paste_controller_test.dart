@@ -14,7 +14,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -45,7 +45,7 @@ void main() {
   late MockClipboardDataReader mockItem;
   late MockDataReaderFile mockFile;
   late MockPersistenceLogic mockPersistenceLogic;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late MockAutomaticImageAnalysisTrigger mockImageAnalysisTrigger;
 
   setUpAll(() async {
@@ -84,13 +84,13 @@ void main() {
     if (getIt.isRegistered<TimeService>()) {
       getIt.unregister<TimeService>();
     }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
 
     // Create and keep references to mocks we need to stub
     mockPersistenceLogic = MockPersistenceLogic();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
 
     // Register all required mock services
     getIt
@@ -103,7 +103,7 @@ void main() {
       ..registerSingleton<OutboxService>(MockOutboxService())
       ..registerSingleton<NotificationService>(MockNotificationService())
       ..registerSingleton<TimeService>(MockTimeService())
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<DomainLogger>(mockLoggingService);
   });
 
   tearDownAll(() async {
@@ -138,8 +138,8 @@ void main() {
     if (getIt.isRegistered<TimeService>()) {
       getIt.unregister<TimeService>();
     }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
   });
 
@@ -202,11 +202,11 @@ void main() {
 
     // Silence logging side effects
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String?>(named: 'subDomain'),
+      () => mockLoggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String?>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
   });

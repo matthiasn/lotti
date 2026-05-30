@@ -1,5 +1,3 @@
-// ignore_for_file: inference_failure_on_function_invocation
-
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +11,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -28,7 +26,7 @@ void main() {
   late ChecklistRepository repository;
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late ProviderContainer container;
 
   setUpAll(() {
@@ -72,12 +70,12 @@ void main() {
   setUp(() {
     mockJournalDb = MockJournalDb();
     mockPersistenceLogic = MockPersistenceLogic();
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<DomainLogger>(mockDomainLogger);
 
     // Create ProviderContainer
     container = ProviderContainer();
@@ -307,11 +305,11 @@ void main() {
       ).thenAnswer((_) async => checklist);
 
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -325,11 +323,11 @@ void main() {
       expect(result.checklist, isNotNull);
       // Verify that the exception was caught
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           any(),
-          domain: 'persistence_logic',
-          subDomain: 'createChecklistEntry',
           stackTrace: any(named: 'stackTrace'),
+          subDomain: 'createChecklistEntry',
         ),
       ).called(1);
 
@@ -350,11 +348,11 @@ void main() {
 
       when(() => mockJournalDb.journalEntityById(taskId)).thenThrow(exception);
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -365,11 +363,11 @@ void main() {
       expect(result.checklist, isNull);
       expect(result.createdItems, isEmpty);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           exception,
-          domain: 'persistence_logic',
-          subDomain: 'createChecklistEntry',
           stackTrace: any(named: 'stackTrace'),
+          subDomain: 'createChecklistEntry',
         ),
       ).called(1);
     });
@@ -477,11 +475,11 @@ void main() {
 
       when(() => mockPersistenceLogic.createMetadata()).thenThrow(exception);
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -496,11 +494,11 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           exception,
-          domain: 'persistence_logic',
-          subDomain: 'createChecklistEntry',
           stackTrace: any(named: 'stackTrace'),
+          subDomain: 'createChecklistEntry',
         ),
       ).called(1);
     });
@@ -638,11 +636,11 @@ void main() {
         () => mockJournalDb.journalEntityById(entryId),
       ).thenAnswer((_) async => testTextEntry);
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -656,11 +654,11 @@ void main() {
       expect(result, isTrue);
       verify(() => mockJournalDb.journalEntityById(entryId)).called(1);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           'not a checklist',
-          domain: 'persistence_logic',
-          subDomain: 'updateChecklist',
           stackTrace: any(named: 'stackTrace'),
+          subDomain: 'updateChecklist',
         ),
       ).called(1);
     });
@@ -680,11 +678,11 @@ void main() {
         () => mockJournalDb.journalEntityById(checklistId),
       ).thenThrow(exception);
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -697,11 +695,11 @@ void main() {
       // Assert
       expect(result, isTrue);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           exception,
-          domain: 'persistence_logic',
-          subDomain: 'updateChecklist',
           stackTrace: any(named: 'stackTrace'),
+          subDomain: 'updateChecklist',
         ),
       ).called(1);
     });
@@ -801,11 +799,11 @@ void main() {
         () => mockJournalDb.journalEntityById(entryId),
       ).thenAnswer((_) async => testTextEntry);
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -820,11 +818,11 @@ void main() {
       expect(result, isTrue);
       verify(() => mockJournalDb.journalEntityById(entryId)).called(1);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           'not a checklist item',
-          domain: 'persistence_logic',
-          subDomain: 'updateChecklistItem',
           stackTrace: any(named: 'stackTrace'),
+          subDomain: 'updateChecklistItem',
         ),
       ).called(1);
     });
@@ -844,11 +842,11 @@ void main() {
         () => mockJournalDb.journalEntityById(checklistItemId),
       ).thenThrow(exception);
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -862,11 +860,11 @@ void main() {
       // Assert
       expect(result, isTrue);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           exception,
-          domain: 'persistence_logic',
-          subDomain: 'updateChecklistItem',
           stackTrace: any(named: 'stackTrace'),
+          subDomain: 'updateChecklistItem',
         ),
       ).called(1);
     });
@@ -1004,11 +1002,11 @@ void main() {
         () => mockJournalDb.journalEntityById(checklistId),
       ).thenAnswer((_) async => null);
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -1023,9 +1021,9 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           'Entity is not a checklist',
-          domain: 'persistence_logic',
           subDomain: 'addItemToChecklist',
         ),
       ).called(1);
@@ -1094,11 +1092,11 @@ void main() {
         () => mockJournalDb.journalEntityById(checklistId),
       ).thenAnswer((_) async => task);
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -1113,9 +1111,9 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           'Entity is not a checklist',
-          domain: 'persistence_logic',
           subDomain: 'addItemToChecklist',
         ),
       ).called(1);
@@ -1132,11 +1130,11 @@ void main() {
 
       when(() => mockPersistenceLogic.createMetadata()).thenThrow(exception);
       when(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
           any(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -1151,11 +1149,11 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(
-        () => mockLoggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
           exception,
-          domain: 'persistence_logic',
-          subDomain: 'createChecklistEntry',
           stackTrace: any(named: 'stackTrace'),
+          subDomain: 'createChecklistEntry',
         ),
       ).called(1);
     });
@@ -1320,11 +1318,11 @@ void main() {
       'row should not poison the entire fetch',
       () async {
         when(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
             stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -1357,11 +1355,11 @@ void main() {
 
         expect(result, isEmpty);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any(),
-            domain: any(named: 'domain'),
-            subDomain: 'getChecklistItemsForTask',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'getChecklistItemsForTask',
           ),
         ).called(1);
         // No items recovered means the second bulk read is skipped.

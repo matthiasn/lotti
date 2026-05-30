@@ -35,6 +35,7 @@ import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -51,7 +52,7 @@ const _uuid = Uuid();
 Future<MatrixService> _createMatrixService({
   required MatrixConfig config,
   required MatrixSyncGateway gateway,
-  required LoggingService loggingService,
+  required DomainLogger loggingService,
   required JournalDb journalDb,
   required SettingsDb settingsDb,
   required SecureStorage secureStorage,
@@ -277,6 +278,9 @@ void main() {
       getIt
         ..registerSingleton<Directory>(sharedDocumentsDirectory)
         ..registerSingleton<LoggingService>(sharedLoggingService)
+        ..registerSingleton<DomainLogger>(
+          DomainLogger(loggingService: sharedLoggingService),
+        )
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<UserActivityService>(sharedUserActivityService)
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
@@ -339,7 +343,7 @@ void main() {
           client: aliceClient,
           sentEventRegistry: aliceRegistry,
         );
-        final loggingService = sharedLoggingService;
+        final loggingService = getIt<DomainLogger>();
         final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
         alice = await _createMatrixService(
           config: config1,
@@ -382,7 +386,7 @@ void main() {
         bob = await _createBobService(
           documentsDirectory: sharedDocumentsDirectory,
           config: config2,
-          loggingService: sharedLoggingService,
+          loggingService: getIt<DomainLogger>(),
           journalDb: bobDb,
           settingsDb: bobSettingsDb,
           secureStorage: secureStorageMock,
@@ -592,7 +596,7 @@ void main() {
         bob = await _createBobService(
           documentsDirectory: sharedDocumentsDirectory,
           config: config2,
-          loggingService: sharedLoggingService,
+          loggingService: getIt<DomainLogger>(),
           journalDb: bobDb,
           settingsDb: bobSettingsDb,
           secureStorage: secureStorageMock,
@@ -809,7 +813,7 @@ void main() {
         bob = await _createBobService(
           documentsDirectory: sharedDocumentsDirectory,
           config: config2,
-          loggingService: sharedLoggingService,
+          loggingService: getIt<DomainLogger>(),
           journalDb: bobDb,
           settingsDb: bobSettingsDb,
           secureStorage: secureStorageMock,
@@ -902,7 +906,7 @@ void main() {
 Future<MatrixService> _createBobService({
   required Directory documentsDirectory,
   required MatrixConfig config,
-  required LoggingService loggingService,
+  required DomainLogger loggingService,
   required JournalDb journalDb,
   required SettingsDb settingsDb,
   required SecureStorage secureStorage,

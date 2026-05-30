@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -104,7 +105,7 @@ extension _AnyGeneratedSyncMaintenanceScenario on glados.Any {
 
 void main() {
   late MockSyncMaintenanceRepository mockRepository;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late ProviderContainer container;
   late SyncMaintenanceController controller;
 
@@ -115,7 +116,7 @@ void main() {
 
   setUp(() {
     mockRepository = MockSyncMaintenanceRepository();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
 
     container = ProviderContainer(
       overrides: [
@@ -184,10 +185,10 @@ void main() {
     });
 
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-        domain: any(named: 'domain'),
+      () => mockLoggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
@@ -566,10 +567,11 @@ void main() {
         ),
       );
       verify(
-        () => mockLoggingService.captureException(
+        () => mockLoggingService.error(
+          LogDomain.sync,
           exception,
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-          domain: 'SYNC_CONTROLLER',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'SYNC_CONTROLLER',
         ),
       ).called(2);
 

@@ -11,7 +11,7 @@ import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -26,14 +26,14 @@ class MockBuildContext extends Mock implements BuildContext {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late Directory tempDir;
 
   setUpAll(() async {
     getIt.pushNewScope();
     setFakeDocumentsPath();
 
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
 
     // Register mock services
     getIt
@@ -45,7 +45,7 @@ void main() {
       ..registerSingleton<UpdateNotifications>(MockUpdateNotifications())
       ..registerSingleton<NotificationService>(MockNotificationService())
       ..registerSingleton<TimeService>(MockTimeService())
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<DomainLogger>(mockLoggingService);
 
     // Create temp directory for file operations
     tempDir = await Directory.systemTemp.createTemp('lotti_test_');
@@ -63,11 +63,11 @@ void main() {
   setUp(() {
     // Silence logging side effects
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String?>(named: 'subDomain'),
+      () => mockLoggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String?>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
   });

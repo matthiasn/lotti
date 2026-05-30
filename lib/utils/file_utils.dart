@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:path/path.dart';
@@ -113,8 +113,8 @@ Future<void> saveJson(String path, String json) async {
   final target = File(path);
   await target.parent.create(recursive: true);
   // Use shared atomic writer; logging is optional to avoid hard dependency in tests
-  final logger = getIt.isRegistered<LoggingService>()
-      ? getIt<LoggingService>()
+  final logger = getIt.isRegistered<DomainLogger>()
+      ? getIt<DomainLogger>()
       : null;
   await atomicWriteString(
     text: json,

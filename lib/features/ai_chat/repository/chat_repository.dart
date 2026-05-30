@@ -11,7 +11,7 @@ import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/system_message_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 final Provider<ChatRepository> chatRepositoryProvider = Provider((ref) {
@@ -20,7 +20,7 @@ final Provider<ChatRepository> chatRepositoryProvider = Provider((ref) {
     taskSummaryRepository: ref.read(taskSummaryRepositoryProvider),
     aiConfigRepository: ref.read(aiConfigRepositoryProvider),
     systemMessageService: ref.read(systemMessageServiceProvider),
-    loggingService: getIt<LoggingService>(),
+    loggingService: getIt<DomainLogger>(),
   );
 });
 
@@ -59,7 +59,7 @@ class ChatRepository {
   final TaskSummaryRepository taskSummaryRepository;
   final AiConfigRepository aiConfigRepository;
   final SystemMessageService systemMessageService;
-  final LoggingService loggingService;
+  final DomainLogger loggingService;
   final ChatMessageProcessor _messageProcessor;
 
   static const int defaultSessionLimit = 20;
@@ -86,9 +86,9 @@ class ChatRepository {
     }
 
     try {
-      loggingService.captureEvent(
+      loggingService.log(
+        LogDomain.chat,
         'Starting chat message processing',
-        domain: 'ChatRepository',
         subDomain: 'sendMessage',
       );
 
@@ -178,11 +178,11 @@ class ChatRepository {
         }
       }
     } catch (e, stackTrace) {
-      loggingService.captureException(
+      loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatRepository',
-        subDomain: 'sendMessage',
         stackTrace: stackTrace,
+        subDomain: 'sendMessage',
       );
       throw ChatRepositoryException('Failed to send message: $e', e);
     }

@@ -17,7 +17,7 @@ import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 // ignore_for_file: unnecessary_lambdas
 import 'package:record/record.dart' as record;
@@ -37,27 +37,6 @@ class _MockRealtimeService extends Mock
 
 class _InMemoryAiConfigRepo extends AiConfigRepository {
   _InMemoryAiConfigRepo() : super(AiConfigDb(inMemoryDatabase: true));
-}
-
-class _FakeLoggingService extends LoggingService {
-  @override
-  void captureEvent(
-    dynamic event, {
-    required String domain,
-    String? subDomain,
-    InsightLevel level = InsightLevel.info,
-    InsightType type = InsightType.log,
-  }) {}
-
-  @override
-  void captureException(
-    dynamic exception, {
-    required String domain,
-    String? subDomain,
-    dynamic stackTrace,
-    InsightLevel level = InsightLevel.error,
-    InsightType type = InsightType.exception,
-  }) {}
 }
 
 class _ThrowingCancelSubscription
@@ -174,16 +153,16 @@ void main() {
   setUp(() {
     // Ensure logging is available to avoid getIt lookup errors.
     // Always reset to _FakeLoggingService to ensure consistent state.
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
+    getIt.registerSingleton<DomainLogger>(MockDomainLogger());
   });
 
   tearDown(() {
     // Clean up GetIt state to prevent cross-test contamination
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
   });
 
@@ -659,10 +638,10 @@ void main() {
   });
 
   test('stopAndTranscribe logs when recorder.stop throws', () async {
-    final mockLogger = MockLoggingService();
+    final mockLogger = MockDomainLogger();
     // Replace the fake with a mock for verification
-    getIt.unregister<LoggingService>();
-    getIt.registerSingleton<LoggingService>(mockLogger);
+    getIt.unregister<DomainLogger>();
+    getIt.registerSingleton<DomainLogger>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();
@@ -707,20 +686,20 @@ void main() {
     await controller.stopAndTranscribe();
 
     verify(
-      () => mockLogger.captureException(
-        any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-        domain: 'ChatRecorderController',
+      () => mockLogger.error(
+        LogDomain.chat,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: 'stopAndTranscribe.stop',
       ),
     ).called(1);
   });
 
   test('cancel logs when ampSub.cancel and recorder.stop throw', () async {
-    final mockLogger = MockLoggingService();
+    final mockLogger = MockDomainLogger();
     // Replace the fake with a mock for verification
-    getIt.unregister<LoggingService>();
-    getIt.registerSingleton<LoggingService>(mockLogger);
+    getIt.unregister<DomainLogger>();
+    getIt.registerSingleton<DomainLogger>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();
@@ -766,28 +745,28 @@ void main() {
     await controller.cancel();
 
     verify(
-      () => mockLogger.captureException(
-        any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-        domain: 'ChatRecorderController',
+      () => mockLogger.error(
+        LogDomain.chat,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: 'cancel.ampSub',
       ),
     ).called(1);
     verify(
-      () => mockLogger.captureException(
-        any<dynamic>(),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-        domain: 'ChatRecorderController',
+      () => mockLogger.error(
+        LogDomain.chat,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: 'cancel.recorder',
       ),
     ).called(1);
   });
 
   test('cleanup logs when file/dir are missing (PathNotFound)', () async {
-    final mockLogger = MockLoggingService();
+    final mockLogger = MockDomainLogger();
     // Replace the fake with a mock for verification
-    getIt.unregister<LoggingService>();
-    getIt.registerSingleton<LoggingService>(mockLogger);
+    getIt.unregister<DomainLogger>();
+    getIt.registerSingleton<DomainLogger>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();
@@ -842,9 +821,10 @@ void main() {
     // We accept either specific PathNotFound logs or the generic cleanup log,
     // depending on platform exception types.
     verify(
-      () => mockLogger.captureException(
-        any<dynamic>(),
-        domain: 'ChatRecorderController',
+      () => mockLogger.error(
+        LogDomain.chat,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any<String>(
           named: 'subDomain',
           that: predicate(
@@ -855,7 +835,6 @@ void main() {
                 s == 'cleanup.tempDir',
           ),
         ),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).called(greaterThanOrEqualTo(1));
   });
@@ -2041,28 +2020,25 @@ void main() {
   group('cancel error paths for realtime subscriptions', () {
     test('logs error when deltaSub.cancel throws during cancel', () async {
       // Replace LoggingService with a mock to verify logging
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt.unregister<LoggingService>();
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
       }
-      final mockLogging = MockLoggingService();
-      getIt.registerSingleton<LoggingService>(mockLogging);
+      final mockLogging = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(mockLogging);
       when(
-        () => mockLogging.captureEvent(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
+        () => mockLogging.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any<String>(named: 'subDomain'),
           level: any<InsightLevel>(named: 'level'),
-          type: any<InsightType>(named: 'type'),
         ),
       ).thenReturn(null);
       when(
-        () => mockLogging.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
+        () => mockLogging.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-          level: any<InsightLevel>(named: 'level'),
-          type: any<InsightType>(named: 'type'),
         ),
       ).thenAnswer((_) async {});
 
@@ -2115,16 +2091,14 @@ void main() {
 
       // Verify that captureException was called for the cancel error
       verify(
-        () => mockLogging.captureException(
-          any<dynamic>(),
-          domain: 'ChatRecorderController',
+        () => mockLogging.error(
+          LogDomain.chat,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any<String>(
             named: 'subDomain',
             that: contains('cancel'),
           ),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-          level: any<InsightLevel>(named: 'level'),
-          type: any<InsightType>(named: 'type'),
         ),
       ).called(greaterThan(0));
     });

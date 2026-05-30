@@ -14,7 +14,7 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -39,7 +39,7 @@ void main() {
   late MockUpdateNotifications mockUpdateNotifications;
   late MockJournalRepository mockJournalRepository;
   late MockPersistenceLogic mockPersistenceLogic;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late StreamController<Set<String>> updateStreamController;
 
   final testChecklist = Checklist(
@@ -102,14 +102,14 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
     mockJournalRepository = MockJournalRepository();
     mockPersistenceLogic = MockPersistenceLogic();
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     // Register getIt dependencies
     registerMock<JournalDb>(mockDb);
     registerMock<UpdateNotifications>(mockUpdateNotifications);
     registerMock<PersistenceLogic>(mockPersistenceLogic);
-    registerMock<LoggingService>(mockLoggingService);
+    registerMock<DomainLogger>(mockDomainLogger);
 
     // Setup stubs
     when(
@@ -138,7 +138,7 @@ void main() {
     unregisterMock<JournalDb>();
     unregisterMock<UpdateNotifications>();
     unregisterMock<PersistenceLogic>();
-    unregisterMock<LoggingService>();
+    unregisterMock<DomainLogger>();
   });
 
   group('ChecklistController', () {

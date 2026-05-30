@@ -119,18 +119,21 @@ void _registerLazyServiceSafely<T extends Object>(
 /// Safe logging helper that falls back to DevLogger if LoggingService is unavailable
 void _safeLog(String message, {required bool isError}) {
   try {
-    if (getIt.isRegistered<LoggingService>()) {
-      final loggingService = getIt<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      final domainLogger = getIt<DomainLogger>();
       if (isError) {
-        loggingService.captureEvent(
+        // error() is never gated on enabledDomains, so a registration failure
+        // is always recorded even when the settings domain is toggled off.
+        domainLogger.error(
+          LogDomain.settings,
           message,
-          domain: 'SERVICE_REGISTRATION',
           subDomain: 'error',
         );
       } else {
-        loggingService.captureEvent(
+        domainLogger.log(
+          LogDomain.settings,
           message,
-          domain: 'SERVICE_REGISTRATION',
+          subDomain: 'SERVICE_REGISTRATION',
         );
       }
     } else {
@@ -232,7 +235,7 @@ Future<void> registerSingletons() async {
     sentEventRegistry: sentEventRegistry,
   );
   final matrixMessageSender = MatrixMessageSender(
-    loggingService: loggingService,
+    loggingService: domainLogger,
     journalDb: journalDb,
     documentsDirectory: documentsDirectory,
     sentEventRegistry: sentEventRegistry,
@@ -244,19 +247,19 @@ Future<void> registerSingletons() async {
   // would otherwise produce thousands of `attachmentIndex.*` lines in a
   // single second. The wrapping `batch.summary` carries the aggregate.
   final attachmentIndex = AttachmentIndex(
-    logging: loggingService,
+    logging: domainLogger,
     verboseLogging: false,
   );
   final readMarkerService = SyncReadMarkerService(
     settingsDb: settingsDb,
-    loggingService: loggingService,
+    loggingService: domainLogger,
   );
 
   // Self-healing sync: sequence log service for gap detection
   final syncSequenceLogService = SyncSequenceLogService(
     syncDatabase: syncDatabase,
     vectorClockService: vectorClockService,
-    loggingService: loggingService,
+    loggingService: domainLogger,
     domainLogger: domainLogger,
   );
 
@@ -277,14 +280,14 @@ Future<void> registerSingletons() async {
   // The chain BackfillResponseHandler → OutboxService → MatrixService →
   // SyncEventProcessor prevents constructor-time injection.
   final syncEventProcessor = SyncEventProcessor(
-    loggingService: loggingService,
+    loggingService: domainLogger,
     domainLogger: domainLogger,
     updateNotifications: getIt<UpdateNotifications>(),
     aiConfigRepository: aiConfigRepository,
     settingsDb: settingsDb,
     journalEntityLoader: SmartJournalEntityLoader(
       attachmentIndex: attachmentIndex,
-      loggingService: loggingService,
+      loggingService: domainLogger,
     ),
     attachmentIndex: attachmentIndex,
     sequenceLogService: syncSequenceLogService,
@@ -298,14 +301,14 @@ Future<void> registerSingletons() async {
 
   // Room discovery service for single-user multi-device flow
   final discoveryService = SyncRoomDiscoveryService(
-    loggingService: loggingService,
+    loggingService: domainLogger,
   );
 
   // Room manager with discovery capability
   final roomManager = SyncRoomManager(
     gateway: matrixGateway,
     settingsDb: settingsDb,
-    loggingService: loggingService,
+    loggingService: domainLogger,
     discoveryService: discoveryService,
   );
 
@@ -315,7 +318,7 @@ Future<void> registerSingletons() async {
   final sessionManager = MatrixSessionManager(
     gateway: matrixGateway,
     roomManager: roomManager,
-    loggingService: loggingService,
+    loggingService: domainLogger,
   );
 
   // Phase-2 queue pipeline owns inbound ingestion unconditionally. The
@@ -342,7 +345,7 @@ Future<void> registerSingletons() async {
     eventProcessor: syncEventProcessor,
     sequenceLogService: syncSequenceLogService,
     activityGate: userActivityGate,
-    logging: loggingService,
+    logging: domainLogger,
     attachmentIndex: attachmentIndex,
     updateNotifications: getIt<UpdateNotifications>(),
     attachmentIngestor: queueAttachmentIngestor,
@@ -352,7 +355,7 @@ Future<void> registerSingletons() async {
 
   final matrixService = MatrixService(
     gateway: matrixGateway,
-    loggingService: loggingService,
+    loggingService: domainLogger,
     activityGate: userActivityGate,
     messageSender: matrixMessageSender,
     settingsDb: settingsDb,
@@ -376,7 +379,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<OutboxService>(
       OutboxService(
         syncDatabase: syncDatabase,
-        loggingService: loggingService,
+        loggingService: domainLogger,
         vectorClockService: vectorClockService,
         journalDb: journalDb,
         documentsDirectory: documentsDirectory,
@@ -426,11 +429,11 @@ Future<void> registerSingletons() async {
     try {
       await syncNodeProfileBroadcaster.broadcast();
     } catch (error, stackTrace) {
-      loggingService.captureException(
+      domainLogger.error(
+        LogDomain.sync,
         error,
-        domain: 'SYNC_NODE_PROFILE',
-        subDomain: 'startupBroadcast',
         stackTrace: stackTrace,
+        subDomain: 'startupBroadcast',
       );
     }
   }());
@@ -583,7 +586,7 @@ Future<void> registerSingletons() async {
     journalDb: journalDb,
     sequenceLogService: syncSequenceLogService,
     outboxService: outboxService,
-    loggingService: loggingService,
+    loggingService: domainLogger,
     vectorClockService: vectorClockService,
     domainLogger: domainLogger,
     notificationsDb: notificationsDb,
@@ -593,7 +596,7 @@ Future<void> registerSingletons() async {
     syncDatabase: syncDatabase,
     outboxService: outboxService,
     vectorClockService: vectorClockService,
-    loggingService: loggingService,
+    loggingService: domainLogger,
     documentsDirectory: documentsDirectory,
     queueCoordinator: queuePipelineCoordinator,
     domainLogger: domainLogger,
@@ -630,7 +633,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<GeolocationService>(
       GeolocationService(
         journalDb: journalDb,
-        loggingService: loggingService,
+        loggingService: domainLogger,
         metadataService: getIt<MetadataService>(),
         deviceLocation: Platform.isWindows ? null : DeviceLocation(),
       ),
@@ -715,12 +718,12 @@ Future<void> registerSingletons() async {
     getIt<EmbeddingService>().start();
     _safeLog('Embedding pipeline initialized successfully', isError: false);
   } catch (e, stackTrace) {
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt<LoggingService>().captureException(
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt<DomainLogger>().error(
+        LogDomain.ai,
         e,
-        domain: 'AI',
-        subDomain: 'embedding_pipeline_init',
         stackTrace: stackTrace,
+        subDomain: 'embedding_pipeline_init',
       );
     }
     _safeLog(
@@ -749,7 +752,7 @@ Future<void> _checkAndPopulateSequenceLog() async {
   // ran V1 (journal + links only) will re-run with agent data included.
   const settingsKey = 'maintenance_sequenceLogPopulatedV2';
   final settingsDb = getIt<SettingsDb>();
-  final loggingService = getIt<LoggingService>();
+  final domainLogger = getIt<DomainLogger>();
 
   try {
     // Check if we've already run this migration
@@ -784,12 +787,12 @@ Future<void> _checkAndPopulateSequenceLog() async {
       return;
     }
 
-    loggingService.captureEvent(
+    domainLogger.log(
+      LogDomain.database,
       'Starting automatic sequence log population (V2): '
       'journal=$journalCount links=$linksCount '
       'agentEntities=$agentEntityCount agentLinks=$agentLinkCount '
       'sequenceLog=$sequenceLogCount',
-      domain: 'MAINTENANCE',
       subDomain: 'sequenceLogPopulation',
     );
 
@@ -823,19 +826,19 @@ Future<void> _checkAndPopulateSequenceLog() async {
     // Mark as completed
     await settingsDb.saveSettingsItem(settingsKey, 'true');
 
-    loggingService.captureEvent(
+    domainLogger.log(
+      LogDomain.database,
       'Automatic sequence log population (V2) completed: '
       'journal=$populatedJournal links=$populatedLinks '
       'agentEntities=$populatedAgentEntities agentLinks=$populatedAgentLinks',
-      domain: 'MAINTENANCE',
       subDomain: 'sequenceLogPopulation',
     );
   } catch (e, stackTrace) {
-    loggingService.captureException(
+    domainLogger.error(
+      LogDomain.database,
       e,
-      domain: 'MAINTENANCE',
-      subDomain: 'sequenceLogPopulation',
       stackTrace: stackTrace,
+      subDomain: 'sequenceLogPopulation',
     );
     // Don't mark as completed on error - will retry on next startup
   }

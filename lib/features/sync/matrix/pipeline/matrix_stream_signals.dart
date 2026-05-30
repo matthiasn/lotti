@@ -1,9 +1,8 @@
 import 'dart:async';
 
-import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 /// Phase-0 diagnostic listener.
@@ -21,7 +20,7 @@ class MatrixStreamSignalBinder {
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
 
   StreamSubscription<SyncUpdate>? _syncSub;
 
@@ -53,21 +52,21 @@ class MatrixStreamSignalBinder {
         final sinceMs = prev == null
             ? 'initial'
             : '${now.difference(prev).inMilliseconds}';
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'sync.limited roomId=$roomId '
           'prevBatch=${timeline.prevBatch} '
           'eventCount=${timeline.events?.length ?? 0} '
           'sinceMs=$sinceMs',
-          domain: syncLoggingDomain,
           subDomain: 'sync.limited',
         );
       },
       onError: (Object error, StackTrace stackTrace) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           error,
-          domain: syncLoggingDomain,
-          subDomain: 'sync.limited.stream',
           stackTrace: stackTrace,
+          subDomain: 'sync.limited.stream',
         );
       },
     );

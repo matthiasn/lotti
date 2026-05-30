@@ -9,7 +9,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -84,8 +84,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _CountingJournalDb db;
-  late MockLoggingService loggingService;
-  LoggingService? previousLoggingService;
+  late MockDomainLogger loggingService;
+  DomainLogger? previousLoggingService;
   Directory? testDirectory;
   Directory? previousDirectory;
 
@@ -111,27 +111,27 @@ void main() {
         );
     getIt.registerSingleton<Directory>(testDirectory!);
 
-    loggingService = MockLoggingService();
+    loggingService = MockDomainLogger();
     when(
-      () => loggingService.captureEvent(
-        any<Object>(),
-        domain: any<String>(named: 'domain'),
+      () => loggingService.log(
+        any<LogDomain>(),
+        any<String>(),
         subDomain: any<String?>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
     when(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String?>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String?>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
-    if (getIt.isRegistered<LoggingService>()) {
-      previousLoggingService = getIt<LoggingService>();
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      previousLoggingService = getIt<DomainLogger>();
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(loggingService);
+    getIt.registerSingleton<DomainLogger>(loggingService);
 
     db = _CountingJournalDb();
     await initConfigFlags(db, inMemoryDatabase: true);
@@ -144,11 +144,11 @@ void main() {
           null,
         );
     await db.close();
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
     if (previousLoggingService != null) {
-      getIt.registerSingleton<LoggingService>(previousLoggingService!);
+      getIt.registerSingleton<DomainLogger>(previousLoggingService!);
     }
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();

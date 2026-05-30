@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -9,25 +9,25 @@ import '../mocks/mocks.dart';
 class FakeException extends Fake implements Exception {}
 
 void main() {
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
 
   setUpAll(() {
     registerFallbackValue(FakeException());
   });
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockLoggingService);
 
     // Stub captureException to prevent errors in tests
     when(
-      () => mockLoggingService.captureException(
+      () => mockLoggingService.error(
+        any<LogDomain>(),
         any<Exception>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
@@ -100,14 +100,14 @@ void main() {
     group('Error Logging', () {
       test('Logging service is called on errors', () {
         // Verify that the mock logging service is properly registered
-        expect(getIt.isRegistered<LoggingService>(), isTrue);
-        expect(getIt<LoggingService>(), equals(mockLoggingService));
+        expect(getIt.isRegistered<DomainLogger>(), isTrue);
+        expect(getIt<DomainLogger>(), equals(mockLoggingService));
 
         // When errors occur, they should be logged with proper domain
         when(
-          () => mockLoggingService.captureException(
+          () => mockLoggingService.error(
+            any<LogDomain>(),
             any<Exception>(),
-            domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((_) async {});

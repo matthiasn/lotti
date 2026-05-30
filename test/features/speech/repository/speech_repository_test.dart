@@ -6,7 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -16,7 +16,7 @@ void main() {
 
   late MockPersistenceLogic mockPersistenceLogic;
   late MockJournalDb mockJournalDb;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
 
   setUpAll(() {
     // Register fakes for any() matchers if needed for complex objects
@@ -28,7 +28,7 @@ void main() {
   setUp(() {
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
 
     // Unregister specific services before re-registering for the test
     if (getIt.isRegistered<PersistenceLogic>()) {
@@ -38,24 +38,23 @@ void main() {
       getIt.unregister<JournalDb>();
     }
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
 
     // Register mocks with getIt
     getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     // ignore_for_file: cascade_invocations
     getIt.registerSingleton<JournalDb>(mockJournalDb);
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
     // Default stub for logging to avoid errors in tests not focused on logging
     when(
-      () => mockLoggingService.captureException(
-        // ignore_for_file: inference_failure_on_function_invocation
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
         any(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
         stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -190,11 +189,11 @@ void main() {
           // Assert
           expect(result, isNull);
           verify(
-            () => mockLoggingService.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.persistence,
               exception,
-              domain: 'persistence_logic',
-              subDomain: 'createAudioEntry',
               stackTrace: any(named: 'stackTrace'),
+              subDomain: 'createAudioEntry',
             ),
           ).called(1);
           verifyNever(
@@ -233,11 +232,11 @@ void main() {
           // Assert
           expect(result, isNull);
           verify(
-            () => mockLoggingService.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.persistence,
               exception,
-              domain: 'persistence_logic',
-              subDomain: 'createAudioEntry',
               stackTrace: any(named: 'stackTrace'),
+              subDomain: 'createAudioEntry',
             ),
           ).called(1);
         },
@@ -326,11 +325,10 @@ void main() {
         // Assert
         verify(() => mockJournalDb.journalEntityById(testEntryId)).called(1);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             'not an audio entry',
-            domain: 'persistence_logic',
             subDomain: 'updateLanguage',
-            // stackTrace is optional here as it might not be generated for simple string exceptions
           ),
         ).called(1);
         verifyNever(() => mockPersistenceLogic.updateMetadata(any()));
@@ -352,11 +350,11 @@ void main() {
         // Assert
         verify(() => mockJournalDb.journalEntityById(testEntryId)).called(1);
         verifyNever(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
             stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
           ),
         );
         verifyNever(() => mockPersistenceLogic.updateMetadata(any()));
@@ -379,11 +377,11 @@ void main() {
         // Assert
         verify(() => mockJournalDb.journalEntityById(testEntryId)).called(1);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             exception,
-            domain: 'persistence_logic',
-            subDomain: 'updateLanguage',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'updateLanguage',
           ),
         ).called(1);
         verifyNever(() => mockPersistenceLogic.updateMetadata(any()));
@@ -408,11 +406,11 @@ void main() {
 
         // Assert
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             exception,
-            domain: 'persistence_logic',
-            subDomain: 'updateLanguage',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'updateLanguage',
           ),
         ).called(1);
         verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
@@ -444,11 +442,11 @@ void main() {
 
         // Assert
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             exception,
-            domain: 'persistence_logic',
-            subDomain: 'updateLanguage',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'updateLanguage',
           ),
         ).called(1);
       });
@@ -620,9 +618,9 @@ void main() {
           isTrue,
         ); // Original method returns true even in orElse/catch
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             'not an audio entry',
-            domain: 'persistence_logic',
             subDomain: 'removeAudioTranscript',
           ),
         ).called(1);
@@ -645,11 +643,11 @@ void main() {
         // Assert
         expect(result, isTrue);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             exception,
-            domain: 'persistence_logic',
-            subDomain: 'removeAudioTranscript',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'removeAudioTranscript',
           ),
         ).called(1);
         verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
@@ -678,11 +676,11 @@ void main() {
         // Assert
         expect(result, isTrue);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             exception,
-            domain: 'persistence_logic',
-            subDomain: 'removeAudioTranscript',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'removeAudioTranscript',
           ),
         ).called(1);
       });

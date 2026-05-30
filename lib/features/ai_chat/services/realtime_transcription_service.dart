@@ -12,7 +12,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai/util/pcm_amplitude.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 enum _RealtimeBackendKind { mistral, mlxAudio }
 
@@ -171,9 +171,9 @@ class RealtimeTranscriptionService {
         _bufferPcmAndAmplitude(chunk);
       },
       onError: (Object error) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.speech,
           error,
-          domain: 'RealtimeTranscriptionService',
           subDomain: 'pcmStream.error',
         );
       },
@@ -259,10 +259,10 @@ class RealtimeTranscriptionService {
       // are captured in the fallback transcript.
       transcript = _deltaBuffer.toString();
       usedFallback = true;
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.speech,
         'transcription.done timed out, using accumulated deltas '
         '(${transcript.length} chars)',
-        domain: 'RealtimeTranscriptionService',
         subDomain: 'stop.timeout',
       );
     } finally {
@@ -327,9 +327,9 @@ class RealtimeTranscriptionService {
             if (completer != null && !completer.isCompleted) {
               completer.completeError(error);
             }
-            getIt<LoggingService>().captureException(
+            getIt<DomainLogger>().error(
+              LogDomain.speech,
               error,
-              domain: 'RealtimeTranscriptionService',
               subDomain: 'mlxAudio.error',
             );
           case MlxAudioRealtimeEventType.provisional:
@@ -362,20 +362,20 @@ class RealtimeTranscriptionService {
             Object error,
             StackTrace stackTrace,
           ) {
-            getIt<LoggingService>().captureException(
+            getIt<DomainLogger>().error(
+              LogDomain.speech,
               error,
-              domain: 'RealtimeTranscriptionService',
-              subDomain: 'mlxAudio.appendPcm',
               stackTrace: stackTrace,
+              subDomain: 'mlxAudio.appendPcm',
             );
           }),
         );
         _bufferPcmAndAmplitude(chunk);
       },
       onError: (Object error) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.speech,
           error,
-          domain: 'RealtimeTranscriptionService',
           subDomain: 'pcmStream.error',
         );
       },
@@ -404,20 +404,20 @@ class RealtimeTranscriptionService {
     } on TimeoutException {
       transcript = _deltaBuffer.toString();
       usedFallback = true;
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.speech,
         'MLX transcription.done timed out, using accumulated confirmed text '
         '(${transcript.length} chars)',
-        domain: 'RealtimeTranscriptionService',
         subDomain: 'mlxAudio.stop.timeout',
       );
     } catch (error, stackTrace) {
       transcript = _deltaBuffer.toString();
       usedFallback = true;
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.speech,
         error,
-        domain: 'RealtimeTranscriptionService',
-        subDomain: 'mlxAudio.stop',
         stackTrace: stackTrace,
+        subDomain: 'mlxAudio.stop',
       );
     }
 
@@ -561,9 +561,9 @@ class RealtimeTranscriptionService {
         return wavOutputPath;
       }
     } catch (e) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.speech,
         e,
-        domain: 'RealtimeTranscriptionService',
         subDomain: 'saveAudio',
       );
       // Try to keep the WAV if it exists

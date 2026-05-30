@@ -8,8 +8,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
@@ -133,10 +133,11 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
         );
       }
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.calendar,
         e,
-        domain: 'TimeHistoryHeaderController._refresh',
         stackTrace: stackTrace,
+        subDomain: 'TimeHistoryHeaderController._refresh',
       );
       // Keep current state on error - don't disrupt the UI
     }
@@ -225,10 +226,11 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
         ),
       );
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.calendar,
         e,
-        domain: 'TimeHistoryHeaderController.loadMoreDays',
         stackTrace: stackTrace,
+        subDomain: 'TimeHistoryHeaderController.loadMoreDays',
       );
       if (!ref.mounted) return;
       state = AsyncData(current.copyWith(isLoadingMore: false));
@@ -249,10 +251,11 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
         state = AsyncData(data);
       }
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.calendar,
         e,
-        domain: 'TimeHistoryHeaderController.resetToToday',
         stackTrace: stackTrace,
+        subDomain: 'TimeHistoryHeaderController.resetToToday',
       );
       if (ref.mounted) {
         // Restore previous state on error to avoid stuck loading

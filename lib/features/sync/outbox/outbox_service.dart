@@ -24,7 +24,6 @@ import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -106,9 +105,9 @@ class OutboxService {
             ConnectivityResult.ethernet,
           }.intersection(result.toSet()).isNotEmpty;
           if (regained) {
-            _loggingService.captureEvent(
+            _loggingService.log(
+              LogDomain.sync,
               'connectivity.regained → enqueue',
-              domain: 'OUTBOX',
               subDomain: 'connectivity',
             );
             if (!_isDisposed) {
@@ -134,9 +133,9 @@ class OutboxService {
     if (client != null) {
       _loginSubscription = client.onLoginStateChanged.stream.listen((state) {
         if (state == LoginState.loggedIn) {
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'login.loggedIn → enqueue',
-            domain: 'OUTBOX',
             subDomain: 'login',
           );
           unawaited(enqueueNextSendRequest(delay: Duration.zero));
@@ -168,16 +167,16 @@ class OutboxService {
       if (elapsedOk || crossedThreshold) {
         _lastLoggedDbNudgeCount = count;
         _lastLoggedDbNudgeAt = now;
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'dbNudge count=$count → enqueue',
-          domain: 'OUTBOX',
           subDomain: 'dbNudge',
         );
       }
     });
   }
 
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
   final SyncActivitySignaler? _activitySignaler;
   final SyncDatabase _syncDatabase;
@@ -237,9 +236,9 @@ class OutboxService {
         final waitedMs = DateTime.now().difference(started).inMilliseconds;
         if (waitedMs > 50) {
           // Light instrumentation to correlate potential stalls.
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'activityGate.wait ms=$waitedMs',
-            domain: 'OUTBOX',
             subDomain: 'activityGate',
           );
         }
@@ -273,19 +272,19 @@ class OutboxService {
           retention: SyncTuning.outboxSentRetention,
         );
         if (deleted > 0) {
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'prune.sent removed=$deleted '
             'retentionDays=${SyncTuning.outboxSentRetention.inDays}',
-            domain: 'OUTBOX',
             subDomain: 'prune',
           );
         }
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'OUTBOX',
-          subDomain: 'prune',
           stackTrace: st,
+          subDomain: 'prune',
         );
       }
     }
@@ -313,9 +312,9 @@ class OutboxService {
       try {
         final loggedIn = _matrixService?.isLoggedIn() ?? true;
         if (!loggedIn) {
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'watchdog.skip notLoggedIn',
-            domain: 'OUTBOX',
             subDomain: 'watchdog',
           );
           return;
@@ -325,19 +324,19 @@ class OutboxService {
         )).isNotEmpty;
         final idleQueue = _clientRunner.queueSize == 0;
         if (hasPending && loggedIn && idleQueue) {
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'watchdog: pending+loggedIn idleQueue → enqueue',
-            domain: 'OUTBOX',
             subDomain: 'watchdog',
           );
           unawaited(enqueueNextSendRequest(delay: Duration.zero));
         }
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'OUTBOX',
-          subDomain: 'watchdog',
           stackTrace: st,
+          subDomain: 'watchdog',
         );
       }
     });
@@ -350,9 +349,9 @@ class OutboxService {
     final relativePath = relativeNotificationPath(entity.id);
     final fullPath = _safePayloadFullPath(relativePath);
     if (fullPath == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'enqueue.skip invalid notification payload path: $relativePath',
-        domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
       );
       return;
@@ -516,11 +515,11 @@ class OutboxService {
         unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
       }
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         exception,
-        domain: 'OUTBOX',
-        subDomain: 'enqueueMessage',
         stackTrace: stackTrace,
+        subDomain: 'enqueueMessage',
       );
     }
   }
@@ -614,9 +613,9 @@ class OutboxService {
     for (var pass = 0; pass < _maxDrainPasses; pass++) {
       if (_isDisposed) return false;
       if (!_activityGate.canProcess) {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'drain.paused activityGate.canProcess=false',
-          domain: 'OUTBOX',
           subDomain: 'activityGate',
         );
         _recordBackoff(SyncTuning.outboxRetryDelay);
@@ -645,9 +644,9 @@ class OutboxService {
       final stillPending = (await _repository.fetchPending(
         limit: 1,
       )).isNotEmpty;
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'drain.passCap stillPending=$stillPending → enqueueImmediate',
-        domain: 'OUTBOX',
         subDomain: 'drain',
       );
     } catch (_) {
@@ -696,9 +695,9 @@ class OutboxService {
           )).isNotEmpty;
           _lastLoggedSendNextState = '$partialKey p=$hasPending';
           _lastLoggedSendNextStateAt = now;
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'sendNext.state loggedIn=$loggedIn canProcess=$canProc pending=$hasPending',
-            domain: 'OUTBOX',
             subDomain: 'sendNext',
           );
         }
@@ -710,9 +709,9 @@ class OutboxService {
       // from here to avoid spin while logged out. Normal triggers (enqueue,
       // connectivity regain, UI actions) will re-nudge the outbox after login.
       if (_matrixService != null && !_matrixService.isLoggedIn()) {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'sendNext.loginGate.notLoggedIn',
-          domain: 'OUTBOX',
           subDomain: 'sendNext',
         );
         // Notify listeners only when meaningful and outside startup grace:
@@ -751,9 +750,9 @@ class OutboxService {
       await Future<void>.delayed(_postDrainSettle);
       if (_isDisposed) return;
       if (!_activityGate.canProcess) {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'sendNext.postSettle.paused activityGate.canProcess=false',
-          domain: 'OUTBOX',
           subDomain: 'activityGate',
         );
         _recordBackoff(SyncTuning.outboxRetryDelay);
@@ -761,11 +760,11 @@ class OutboxService {
       }
       await _drainOutbox();
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         exception,
-        domain: 'OUTBOX',
-        subDomain: 'sendNext',
         stackTrace: stackTrace,
+        subDomain: 'sendNext',
       );
       _recordBackoff(const Duration(seconds: 15));
     }
@@ -818,27 +817,27 @@ class OutboxService {
         final capped = links.length > SyncTuning.maxEmbeddedEntryLinks
             ? links.sublist(links.length - SyncTuning.maxEmbeddedEntryLinks)
             : links;
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'enqueueMessage.attachedLinks id=${journalMsg.id} '
           'count=${links.length} embedded=${capped.length} '
           'from=$fromCount to=$toCount',
-          domain: 'OUTBOX',
           subDomain: 'enqueueMessage.attachLinks',
         );
         journalMsg = journalMsg.copyWith(entryLinks: capped);
       } else {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'enqueueMessage.noLinks id=${journalMsg.id}',
-          domain: 'OUTBOX',
           subDomain: 'enqueueMessage.attachLinks',
         );
       }
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'OUTBOX',
-        subDomain: 'enqueueMessage.fetchLinks',
         stackTrace: st,
+        subDomain: 'enqueueMessage.fetchLinks',
       );
       // Continue with original message without links on error
     }
@@ -983,18 +982,18 @@ class OutboxService {
         final canonicalPath = entityPath(latest, _documentsDirectory);
         await _saveJson(canonicalPath, jsonEncode(latest));
       } else {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'enqueueMessage.missingEntity id=${msg.id}',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'enqueueMessage',
         );
       }
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'enqueueMessage.refreshJson',
         stackTrace: stackTrace,
+        subDomain: 'enqueueMessage.refreshJson',
       );
     }
 
@@ -1095,10 +1094,10 @@ class OutboxService {
 
           if (affectedRows == 0) {
             // Row was no longer pending — insert fresh row with merged data
-            _loggingService.captureEvent(
+            _loggingService.log(
+              LogDomain.sync,
               'enqueue MERGE-MISS type=SyncJournalEntity id=${msg.id} '
               '(row no longer pending, inserting fresh)',
-              domain: 'OUTBOX',
               subDomain: 'enqueueMessage',
             );
             await _syncDatabase.addOutboxItem(
@@ -1116,11 +1115,11 @@ class OutboxService {
           final coveredVcStrings = coveredClocks
               ?.map((vc) => vc.vclock)
               .toList();
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'enqueue MERGED type=SyncJournalEntity id=${msg.id} '
             'coveredClocks=${coveredClocks?.length ?? 0} covered=$coveredVcStrings '
             'latest=${latestVc?.vclock}',
-            domain: 'OUTBOX',
             subDomain: 'enqueueMessage',
           );
 
@@ -1133,11 +1132,11 @@ class OutboxService {
                 vectorClock: journalEntity.meta.vectorClock!,
               );
             } catch (e, st) {
-              _loggingService.captureException(
+              _loggingService.error(
+                LogDomain.sync,
                 e,
-                domain: 'SYNC_SEQUENCE',
-                subDomain: 'recordSent',
                 stackTrace: st,
+                subDomain: 'recordSent',
               );
             }
           }
@@ -1146,11 +1145,11 @@ class OutboxService {
           return true; // Merge happened - don't create new item
         }
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage.merge',
           stackTrace: st,
+          subDomain: 'enqueueMessage.merge',
         );
         // Fall through to create new item on merge error
       }
@@ -1180,10 +1179,10 @@ class OutboxService {
         payloadSize: Value(outboxSize),
       ),
     );
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'enqueue type=SyncJournalEntity subject=${'$hostHash:$localCounter'} '
       'id=${msg.id} attachBytes=$fileLength embeddedLinks=$embeddedLinksCount',
-      domain: 'OUTBOX',
       subDomain: 'enqueueMessage',
     );
 
@@ -1195,11 +1194,11 @@ class OutboxService {
           vectorClock: journalEntity.meta.vectorClock!,
         );
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'recordSent',
           stackTrace: st,
+          subDomain: 'recordSent',
         );
       }
     }
@@ -1224,11 +1223,11 @@ class OutboxService {
         lastSentVc,
       ]);
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'enrichCoveredVcs',
         stackTrace: st,
+        subDomain: 'enrichCoveredVcs',
       );
       return existingCovered;
     }
@@ -1302,10 +1301,10 @@ class OutboxService {
 
           if (affectedRows == 0) {
             // Row was no longer pending — insert fresh row with merged data
-            _loggingService.captureEvent(
+            _loggingService.log(
+              LogDomain.sync,
               'enqueue MERGE-MISS type=SyncEntryLink id=$linkId '
               '(row no longer pending, inserting fresh)',
-              domain: 'OUTBOX',
               subDomain: 'enqueueMessage',
             );
             await _syncDatabase.addOutboxItem(
@@ -1324,11 +1323,11 @@ class OutboxService {
               ?.map((vc) => vc.vclock)
               .toList();
           final latestVcStr = msg.entryLink.vectorClock?.vclock;
-          _loggingService.captureEvent(
+          _loggingService.log(
+            LogDomain.sync,
             'enqueue MERGED type=SyncEntryLink id=$linkId '
             'coveredClocks=${coveredClocks?.length ?? 0} covered=$coveredVcStrings '
             'latest=$latestVcStr',
-            domain: 'OUTBOX',
             subDomain: 'enqueueMessage',
           );
 
@@ -1341,11 +1340,11 @@ class OutboxService {
                 vectorClock: msg.entryLink.vectorClock!,
               );
             } catch (e, st) {
-              _loggingService.captureException(
+              _loggingService.error(
+                LogDomain.sync,
                 e,
-                domain: 'SYNC_SEQUENCE',
-                subDomain: 'recordSent',
                 stackTrace: st,
+                subDomain: 'recordSent',
               );
             }
           }
@@ -1354,11 +1353,11 @@ class OutboxService {
           return true; // Merge happened - don't create new item
         }
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage.merge',
           stackTrace: st,
+          subDomain: 'enqueueMessage.merge',
         );
         // Fall through to create new item on merge error
       }
@@ -1384,10 +1383,10 @@ class OutboxService {
         payloadSize: Value(outboxLinkSize),
       ),
     );
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'enqueue type=SyncEntryLink subject=$subject '
       'from=${msg.entryLink.fromId} to=${msg.entryLink.toId}',
-      domain: 'OUTBOX',
       subDomain: 'enqueueMessage',
     );
 
@@ -1399,11 +1398,11 @@ class OutboxService {
           vectorClock: msg.entryLink.vectorClock!,
         );
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'recordSent',
           stackTrace: st,
+          subDomain: 'recordSent',
         );
       }
     }
@@ -1421,9 +1420,9 @@ class OutboxService {
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(subject: Value(subject)),
     );
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       logMessage,
-      domain: 'OUTBOX',
       subDomain: 'enqueueMessage',
     );
     return false;
@@ -1486,9 +1485,9 @@ class OutboxService {
   }) async {
     final fullPath = _safePayloadFullPath(msg.jsonPath);
     if (fullPath == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'enqueue.skip invalid notification payload path: ${msg.jsonPath}',
-        domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
       );
       return false;
@@ -1519,9 +1518,9 @@ class OutboxService {
         payloadSize: Value(outboxSize),
       ),
     );
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'enqueue type=SyncNotification id=${msg.id} attachBytes=$fileLength',
-      domain: 'OUTBOX',
       subDomain: 'enqueueMessage',
     );
 
@@ -1592,9 +1591,9 @@ class OutboxService {
   }) async {
     final entity = msg.agentEntity;
     if (entity == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'enqueue.skip agentEntity is null',
-        domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
       );
       return false;
@@ -1620,9 +1619,9 @@ class OutboxService {
   }) async {
     final link = msg.agentLink;
     if (link == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'enqueue.skip agentLink is null',
-        domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
       );
       return false;
@@ -1664,9 +1663,9 @@ class OutboxService {
     final subject = '$subjectPrefix:$id';
 
     if (!p.isWithin(docsRoot, fullPath)) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'enqueue.skip invalid agent payload path: $relativePath',
-        domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
       );
       return false;
@@ -1675,11 +1674,11 @@ class OutboxService {
     try {
       await _saveJson(fullPath, payloadJson);
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'OUTBOX',
-        subDomain: 'enqueueMessage.saveAgentPayload',
         stackTrace: stackTrace,
+        subDomain: 'enqueueMessage.saveAgentPayload',
       );
       // Fallback: enqueue with inline payload so the sender's legacy
       // enrichment path can write the file and upload on retry.
@@ -1767,25 +1766,25 @@ class OutboxService {
         }
 
         final coveredVcStrings = coveredClocks?.map((vc) => vc.vclock).toList();
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'enqueue MERGED type=$typeName id=$id '
           'coveredClocks=${coveredClocks?.length ?? 0} '
           'covered=$coveredVcStrings',
-          domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         );
       } catch (e, st) {
         _loggingService
-          ..captureException(
+          ..error(
+            LogDomain.sync,
             e,
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage.agentMerge',
             stackTrace: st,
+            subDomain: 'enqueueMessage.agentMerge',
           )
           // Fallback: proceed without merging covered clocks
-          ..captureEvent(
+          ..log(
+            LogDomain.sync,
             'enqueue MERGED type=$typeName id=$id (no VC merge)',
-            domain: 'OUTBOX',
             subDomain: 'enqueueMessage',
           );
       }
@@ -1808,10 +1807,10 @@ class OutboxService {
         // Row was no longer pending (sent or in-flight between lookup and
         // update). Insert a fresh row with the merged message so nothing is
         // lost.
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'enqueue MERGE-MISS type=$typeName id=$id '
           '(row no longer pending, inserting fresh)',
-          domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         );
         await _syncDatabase.addOutboxItem(
@@ -1868,9 +1867,9 @@ class OutboxService {
         payloadSize: Value(outboxAgentSize),
       ),
     );
-    _loggingService.captureEvent(
+    _loggingService.log(
+      LogDomain.sync,
       'enqueue type=$typeName subject=$subject',
-      domain: 'OUTBOX',
       subDomain: 'enqueueMessage',
     );
 
@@ -1898,11 +1897,11 @@ class OutboxService {
           payloadType: payloadType,
         );
       } catch (e, st) {
-        _loggingService.captureException(
+        _loggingService.error(
+          LogDomain.sync,
           e,
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'recordSent',
           stackTrace: st,
+          subDomain: 'recordSent',
         );
       }
     }
@@ -1921,11 +1920,11 @@ class OutboxService {
         payloadType: payloadType,
       );
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'recordSent',
         stackTrace: st,
+        subDomain: 'recordSent',
       );
     }
   }

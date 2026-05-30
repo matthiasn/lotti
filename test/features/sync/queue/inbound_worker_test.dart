@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -142,7 +143,7 @@ extension _AnyInboundWorkerScenario on glados.Any {
 
 void main() {
   late SyncDatabase db;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late InboundQueue queue;
   late _SpySequenceLog sequenceLog;
   late MockRoom room;
@@ -154,7 +155,7 @@ void main() {
 
   setUp(() {
     db = SyncDatabase(inMemoryDatabase: true);
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     queue = InboundQueue(db: db, logging: logging);
     sequenceLog = _SpySequenceLog(
       syncDatabase: db,
@@ -463,7 +464,7 @@ void main() {
     'generated apply outcome sequences match retry and terminal state model',
     (scenario) async {
       final localDb = SyncDatabase(inMemoryDatabase: true);
-      final localLogging = MockLoggingService();
+      final localLogging = MockDomainLogger();
       final localQueue = InboundQueue(db: localDb, logging: localLogging);
       final localSequenceLog = _SpySequenceLog(
         syncDatabase: localDb,
@@ -558,11 +559,11 @@ void main() {
         expect(await worker.drainToCompletion(), 1);
         // The apply throw must be logged so oncall can see it.
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain', that: contains('apply')),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain', that: contains('apply')),
           ),
         ).called(1);
       });
@@ -752,14 +753,14 @@ void main() {
           decryptionPen: decryptionPen,
         );
         when(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any(
               named: 'subDomain',
               that: contains('loop'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).thenAnswer((_) {
           if (!loopErrorCaptured.isCompleted) {
@@ -780,14 +781,14 @@ void main() {
         await worker.stop();
         expect(worker.isRunning, isFalse);
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any(
               named: 'subDomain',
               that: contains('loop'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(greaterThanOrEqualTo(1));
       },
@@ -902,14 +903,14 @@ void main() {
         expect(appliedCount, 1);
         expect(applied, [r'$fail']);
         verify(
-          () => logging.captureException(
+          () => logging.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(
               named: 'subDomain',
               that: contains('prepareBatch'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
       },

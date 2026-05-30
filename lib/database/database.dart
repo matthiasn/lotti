@@ -16,7 +16,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/habits/habit_completion_resolution.dart';
 import 'package:lotti/services/dev_logger.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -108,7 +108,7 @@ class JournalDb extends _$JournalDb {
        );
 
   bool inMemoryDatabase = false;
-  final LoggingService? _loggingService;
+  final DomainLogger? _loggingService;
   final Directory? _documentsDirectory;
   final Map<String, ConfigFlag> _configFlagsByName = <String, ConfigFlag>{};
   final StreamController<Set<ConfigFlag>> _configFlagsController =
@@ -985,7 +985,6 @@ class JournalDb extends _$JournalDb {
       } catch (error, stackTrace) {
         _captureException(
           error,
-          domain: 'JOURNAL_DB',
           subDomain: 'detectConflict',
           stackTrace: stackTrace,
         );
@@ -1007,7 +1006,6 @@ class JournalDb extends _$JournalDb {
       } else if (status != null) {
         _captureEvent(
           EnumToString.convertToString(status),
-          domain: 'JOURNAL_DB',
           subDomain: 'Conflict status',
         );
         skipReason = status == VclockStatus.concurrent
@@ -2230,9 +2228,9 @@ class JournalDb extends _$JournalDb {
         );
       } catch (e) {
         // Log error but continue with other files
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.database,
           e,
-          domain: 'Database',
           subDomain: 'purgeDeletedFiles',
         );
       }
@@ -3471,7 +3469,6 @@ WHERE EXISTS (
 
   void _captureException(
     Object error, {
-    required String domain,
     required String subDomain,
     required StackTrace? stackTrace,
   }) {
@@ -3480,17 +3477,16 @@ WHERE EXISTS (
       return;
     }
 
-    logger.captureException(
+    logger.error(
+      LogDomain.database,
       error,
-      domain: domain,
-      subDomain: subDomain,
       stackTrace: stackTrace,
+      subDomain: subDomain,
     );
   }
 
   void _captureEvent(
     String message, {
-    required String domain,
     required String subDomain,
   }) {
     final logger = _logger;
@@ -3498,20 +3494,20 @@ WHERE EXISTS (
       return;
     }
 
-    logger.captureEvent(
+    logger.log(
+      LogDomain.database,
       message,
-      domain: domain,
       subDomain: subDomain,
     );
   }
 
-  LoggingService? get _logger {
+  DomainLogger? get _logger {
     if (_loggingService != null) {
       return _loggingService;
     }
 
-    if (getIt.isRegistered<LoggingService>()) {
-      return getIt<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      return getIt<DomainLogger>();
     }
 
     return null;

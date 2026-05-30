@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dbus/dbus.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Constants for XDG Desktop Portal communication
 class PortalConstants {
@@ -57,10 +57,10 @@ abstract class PortalService {
       _initialized = true;
     } catch (e) {
       // Guard against LoggingService not being registered
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt<LoggingService>().captureException(
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.screenshots,
           e,
-          domain: PortalConstants.portalServiceDomain,
           subDomain: PortalConstants.initializationSubdomain,
         );
       }
@@ -207,11 +207,11 @@ abstract class PortalService {
         (interface) => interface.name == interfaceName,
       );
     } catch (e) {
-      if (getIt.isRegistered<LoggingService>()) {
-        getIt<LoggingService>().captureException(
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.screenshots,
           e,
-          domain: serviceName,
-          subDomain: PortalConstants.availabilitySubdomain,
+          subDomain: '$serviceName ${PortalConstants.availabilitySubdomain}',
         );
       }
       return false;

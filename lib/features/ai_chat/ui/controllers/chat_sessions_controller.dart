@@ -4,14 +4,14 @@ import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'chat_sessions_controller.g.dart';
 
 @riverpod
 class ChatSessionsController extends _$ChatSessionsController {
-  final LoggingService _loggingService = getIt<LoggingService>();
+  final DomainLogger _loggingService = getIt<DomainLogger>();
 
   @override
   ChatStateUiModel build(String categoryId) {
@@ -35,11 +35,11 @@ class ChatSessionsController extends _$ChatSessionsController {
 
       state = state.copyWith(recentSessions: uiSessions);
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionsController',
-        subDomain: '_loadRecentSessions',
         stackTrace: stackTrace,
+        subDomain: '_loadRecentSessions',
       );
 
       // Don't show error for loading recent sessions, just log it
@@ -70,11 +70,11 @@ class ChatSessionsController extends _$ChatSessionsController {
       // Don't log or rethrow if provider was disposed during operation
       if (!ref.mounted) return null;
 
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionsController',
-        subDomain: 'createNewSession',
         stackTrace: stackTrace,
+        subDomain: 'createNewSession',
       );
       state = state.copyWith(error: 'Failed to create new session: $e');
       throw ChatRepositoryException('Failed to create new session: $e', e);
@@ -96,11 +96,11 @@ class ChatSessionsController extends _$ChatSessionsController {
       final uiModel = ChatSessionUiModel.fromDomain(session);
       state = state.copyWith(currentSession: uiModel);
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionsController',
-        subDomain: 'switchToSession',
         stackTrace: stackTrace,
+        subDomain: 'switchToSession',
       );
       if (!ref.mounted) return;
       state = state.copyWith(error: 'Failed to switch to session: $e');
@@ -124,11 +124,11 @@ class ChatSessionsController extends _$ChatSessionsController {
         await _loadRecentSessions();
       }
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionsController',
-        subDomain: 'deleteSession',
         stackTrace: stackTrace,
+        subDomain: 'deleteSession',
       );
       if (!ref.mounted) return;
       state = state.copyWith(error: 'Failed to delete session: $e');
@@ -167,11 +167,11 @@ class ChatSessionsController extends _$ChatSessionsController {
 
       return sessions.map(ChatSessionUiModel.fromDomain).toList();
     } catch (e, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.chat,
         e,
-        domain: 'ChatSessionsController',
-        subDomain: 'searchSessions',
         stackTrace: stackTrace,
+        subDomain: 'searchSessions',
       );
       if (!ref.mounted) return [];
       return state.recentSessions;

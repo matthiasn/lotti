@@ -623,7 +623,7 @@ void main() {
     test('sync-family info events are routed to sync log only', () async {
       bufferedLogging.captureEvent(
         'timeline callback',
-        domain: 'MATRIX_SYNC',
+        domain: 'sync',
         subDomain: 'signal',
       );
 
@@ -636,7 +636,7 @@ void main() {
       expect(syncFile, isNotNull, reason: 'Sync log should exist');
       expect(
         syncFile!.readAsStringSync(),
-        contains('[INFO] MATRIX_SYNC signal: timeline callback'),
+        contains('[INFO] sync signal: timeline callback'),
       );
     });
 
@@ -645,7 +645,7 @@ void main() {
       () async {
         bufferedLogging.captureException(
           'sync blew up',
-          domain: 'MATRIX_SYNC',
+          domain: 'sync',
           subDomain: 'liveScan',
           stackTrace: 'trace',
         );
@@ -659,11 +659,11 @@ void main() {
         expect(syncFile, isNotNull, reason: 'Sync log should exist');
         expect(
           generalFile!.readAsStringSync(),
-          contains('[ERROR] MATRIX_SYNC liveScan: sync blew up trace'),
+          contains('[ERROR] sync liveScan: sync blew up trace'),
         );
         expect(
           syncFile!.readAsStringSync(),
-          contains('[ERROR] MATRIX_SYNC liveScan: sync blew up trace'),
+          contains('[ERROR] sync liveScan: sync blew up trace'),
         );
       },
     );

@@ -6,6 +6,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -228,7 +229,7 @@ extension _AnyPendingDecryptionPenScenario on glados.Any {
 
 void main() {
   late SyncDatabase db;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late InboundQueue queue;
   late MockRoom room;
   const roomId = '!roomA:example.org';
@@ -239,7 +240,7 @@ void main() {
 
   setUp(() {
     db = SyncDatabase(inMemoryDatabase: true);
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     queue = InboundQueue(db: db, logging: logging);
     room = MockRoom();
     when(() => room.id).thenReturn(roomId);
@@ -446,11 +447,11 @@ void main() {
       expect(outcome.stillEncrypted, 1);
       expect(pen.size, 1);
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain', that: contains('fetch')),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain', that: contains('fetch')),
         ),
       ).called(1);
     },
@@ -512,7 +513,7 @@ void main() {
     'generated hold and flush sequences match the bounded pen model',
     (scenario) async {
       final localDb = SyncDatabase(inMemoryDatabase: true);
-      final localLogging = MockLoggingService();
+      final localLogging = MockDomainLogger();
       final localQueue = InboundQueue(db: localDb, logging: localLogging);
       final localRoom = MockRoom();
       when(() => localRoom.id).thenReturn(roomId);

@@ -4,7 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:timezone/timezone.dart';
@@ -44,9 +44,9 @@ class NotificationService {
       );
     } catch (e) {
       // Gracefully handle notification initialization failure in flatpak
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.notifications,
         e,
-        domain: 'NOTIFICATION_SERVICE',
         subDomain: 'initialization',
       );
     }

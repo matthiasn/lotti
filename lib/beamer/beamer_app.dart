@@ -40,7 +40,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -199,11 +199,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
           loading: () {},
           error: (error, stack) {
-            getIt<LoggingService>().captureException(
+            getIt<DomainLogger>().error(
+              LogDomain.sync,
               error,
-              domain: 'OUTBOX',
-              subDomain: 'notLoggedInGateStream',
               stackTrace: stack,
+              subDomain: 'notLoggedInGateStream',
             );
           },
         );
@@ -222,11 +222,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
           loading: () {},
           error: (error, stack) {
-            getIt<LoggingService>().captureException(
+            getIt<DomainLogger>().error(
+              LogDomain.whatsNew,
               error,
-              domain: 'WHATS_NEW',
-              subDomain: 'shouldAutoShowWhatsNew',
               stackTrace: stack,
+              subDomain: 'shouldAutoShowWhatsNew',
             );
           },
         );
@@ -255,11 +255,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
           loading: () {},
           error: (error, stack) {
-            getIt<LoggingService>().captureException(
+            getIt<DomainLogger>().error(
+              LogDomain.ai,
               error,
-              domain: 'AI_FTUE',
-              subDomain: 'aiSetupPromptService',
               stackTrace: stack,
+              subDomain: 'aiSetupPromptService',
             );
           },
         );

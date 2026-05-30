@@ -6,7 +6,7 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as path;
 
@@ -53,9 +53,9 @@ Future<void> importDroppedAudio({
       // Validate file name has extension
       final nameParts = file.name.split('.');
       if (nameParts.length < 2) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.speech,
           'Audio file has no extension: ${file.name}',
-          domain: AudioImportConstants.loggingDomain,
           subDomain: 'importDroppedAudio',
         );
         continue;
@@ -71,9 +71,9 @@ Future<void> importDroppedAudio({
       // Validate file size
       final fileSize = await File(srcPath).length();
       if (fileSize > AudioImportConstants.maxFileSizeBytes) {
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.speech,
           'Audio file too large: $fileSize bytes',
-          domain: AudioImportConstants.loggingDomain,
           subDomain: 'importDroppedAudio',
         );
         continue;
@@ -102,11 +102,11 @@ Future<void> importDroppedAudio({
         duration = await reader(targetFilePath);
       } catch (exception, stackTrace) {
         // Log but continue with zero duration - can be updated later
-        getIt<LoggingService>().captureException(
+        getIt<DomainLogger>().error(
+          LogDomain.speech,
           exception,
-          domain: AudioImportConstants.loggingDomain,
-          subDomain: 'importDroppedAudio_duration',
           stackTrace: stackTrace,
+          subDomain: 'importDroppedAudio_duration',
         );
       }
 
@@ -129,21 +129,21 @@ Future<void> importDroppedAudio({
         try {
           await File(copiedFilePath).delete();
         } catch (deleteException, deleteStackTrace) {
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.speech,
             deleteException,
-            domain: AudioImportConstants.loggingDomain,
-            subDomain: 'importDroppedAudio_cleanup',
             stackTrace: deleteStackTrace,
+            subDomain: 'importDroppedAudio_cleanup',
           );
         }
       }
     } catch (exception, stackTrace) {
       // Log and clean up on any error
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.speech,
         exception,
-        domain: AudioImportConstants.loggingDomain,
-        subDomain: 'importDroppedAudio',
         stackTrace: stackTrace,
+        subDomain: 'importDroppedAudio',
       );
 
       // Clean up copied file if it exists
@@ -151,11 +151,11 @@ Future<void> importDroppedAudio({
         try {
           await File(copiedFilePath).delete();
         } catch (deleteException, deleteStackTrace) {
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.speech,
             deleteException,
-            domain: AudioImportConstants.loggingDomain,
-            subDomain: 'importDroppedAudio_cleanup',
             stackTrace: deleteStackTrace,
+            subDomain: 'importDroppedAudio_cleanup',
           );
         }
       }

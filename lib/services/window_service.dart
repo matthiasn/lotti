@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/utils/immediate_exit.dart';
@@ -203,11 +204,11 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     String service,
   ) {
     try {
-      getIt<LoggingService>().captureException(
-        error,
-        domain: 'WINDOW_SERVICE',
-        subDomain: 'dispose_$service',
+      getIt<DomainLogger>().error(
+        LogDomain.general,
+        error as Object,
         stackTrace: stackTrace,
+        subDomain: 'dispose_$service',
       );
     } catch (_) {
       // LoggingService itself may already be torn down.

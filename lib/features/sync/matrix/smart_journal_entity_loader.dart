@@ -12,7 +12,7 @@ import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -24,7 +24,7 @@ import 'package:matrix/matrix.dart' show Event;
 class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
     required this._attachmentIndex,
-    required LoggingService loggingService,
+    required DomainLogger loggingService,
     void Function()? onCachePurge,
   }) : _logging = loggingService {
     _vectorClockValidator = VectorClockValidator(
@@ -38,7 +38,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   }
 
   final AttachmentIndex _attachmentIndex;
-  final LoggingService _logging;
+  final DomainLogger _logging;
   late final VectorClockValidator _vectorClockValidator;
   late final DescriptorDownloader _descriptorDownloader;
 
@@ -80,18 +80,18 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       } on FileSystemException {
         // Expected when text arrives before the descriptor: treat as a local miss.
         // We fetch via AttachmentIndex below; log as an info event rather than exception.
-        _logging.captureEvent(
+        _logging.log(
+          LogDomain.sync,
           'smart.local.miss path=$jsonPath',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'SmartLoader.localMiss',
         );
       } catch (e, st) {
         // Unexpected read failure – keep as exception for diagnostics.
-        _logging.captureException(
+        _logging.error(
+          LogDomain.sync,
           e,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SmartLoader.localRead',
           stackTrace: st,
+          subDomain: 'SmartLoader.localRead',
         );
       }
 
@@ -99,9 +99,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       final eventForPath = _attachmentIndex.find(indexKey);
       if (eventForPath == null) {
         // Descriptor not yet available; let caller retry later.
-        _logging.captureEvent(
+        _logging.log(
+          LogDomain.sync,
           'smart.fetch.miss path=$jsonPath key=$indexKey',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'SmartLoader.fetch',
         );
         throw FileSystemException(
@@ -116,17 +116,17 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           jsonPath: jsonPath,
         );
         await saveJson(targetFile.path, descriptor.json);
-        _logging.captureEvent(
+        _logging.log(
+          LogDomain.sync,
           'smart.json.written path=$jsonPath bytes=${descriptor.bytesLength}',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'SmartLoader.fetch',
         );
       } catch (e, st) {
-        _logging.captureException(
+        _logging.error(
+          LogDomain.sync,
           e,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SmartLoader.fetchJson',
           stackTrace: st,
+          subDomain: 'SmartLoader.fetchJson',
         );
         rethrow;
       }
@@ -145,9 +145,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       if (needsFetch) {
         final eventForPath = _attachmentIndex.find(indexKey);
         if (eventForPath == null) {
-          _logging.captureEvent(
+          _logging.log(
+            LogDomain.sync,
             'smart.fetch.miss(noVc) path=$jsonPath key=$indexKey',
-            domain: 'MATRIX_SERVICE',
             subDomain: 'SmartLoader.fetch',
           );
           throw FileSystemException(
@@ -172,17 +172,17 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           );
           final jsonString = utf8.decode(bytes);
           await saveJson(targetFile.path, jsonString);
-          _logging.captureEvent(
+          _logging.log(
+            LogDomain.sync,
             'smart.json.written(noVc) path=$jsonPath bytes=${bytes.length}',
-            domain: 'MATRIX_SERVICE',
             subDomain: 'SmartLoader.fetch',
           );
         } catch (e, st) {
-          _logging.captureException(
+          _logging.error(
+            LogDomain.sync,
             e,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SmartLoader.fetchJson.noVc',
             stackTrace: st,
+            subDomain: 'SmartLoader.fetchJson.noVc',
           );
           rethrow;
         }
@@ -230,20 +230,20 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         if (f.lengthSync() > 0) return; // present
       }
     } catch (e, st) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SmartLoader.pathCheck',
         stackTrace: st,
+        subDomain: 'SmartLoader.pathCheck',
       );
     }
 
     final descriptorKey = _buildIndexKey(rp);
     final ev = _attachmentIndex.find(descriptorKey);
     if (ev == null) {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'smart.media.miss path=$rp key=$descriptorKey',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'SmartLoader.fetchMedia',
       );
       _onMissingDescriptorPath?.call(descriptorKey);
@@ -261,9 +261,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         if (!purged || attempt == 1) {
           throw const FileSystemException('empty attachment bytes');
         }
-        _logging.captureEvent(
+        _logging.log(
+          LogDomain.sync,
           'smart.media.empty_bytes.refresh path=$rp',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'SmartLoader.fetchMedia',
         );
       }
@@ -280,11 +280,11 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         subDomain: 'SmartLoader.writeMedia',
       );
     } catch (e, st) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SmartLoader.fetchMedia',
         stackTrace: st,
+        subDomain: 'SmartLoader.fetchMedia',
       );
       _onMissingDescriptorPath?.call(descriptorKey);
     }
@@ -295,18 +295,18 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       final uri = event.attachmentOrThumbnailMxcUrl();
       if (uri == null) return false;
       await event.room.client.database.deleteFile(uri);
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'smart.media.empty_bytes.purge path=$path mxc=$uri',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'SmartLoader.fetchMedia',
       );
       return true;
     } catch (e, st) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         e,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SmartLoader.fetchMedia.purge',
         stackTrace: st,
+        subDomain: 'SmartLoader.fetchMedia.purge',
       );
       return false;
     }

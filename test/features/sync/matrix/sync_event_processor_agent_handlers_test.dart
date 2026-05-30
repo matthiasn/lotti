@@ -72,9 +72,9 @@ void main() {
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       verify(
-        () => loggingService.captureEvent(
-          any<Object>(that: contains('agentEntity')),
-          domain: LogDomain.sync.wireName,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('agentEntity')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -543,9 +543,9 @@ void main() {
 
       verify(() => mockAgentRepo.upsertLink(link)).called(1);
       verify(
-        () => loggingService.captureEvent(
-          any<Object>(that: contains('agentLink')),
-          domain: LogDomain.sync.wireName,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('agentLink')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -708,9 +708,9 @@ void main() {
 
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
       verify(
-        () => loggingService.captureEvent(
-          any<Object>(that: contains('ignored')),
-          domain: LogDomain.sync.wireName,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('ignored')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -738,9 +738,9 @@ void main() {
 
       verifyNever(() => mockAgentRepo.upsertLink(any()));
       verify(
-        () => loggingService.captureEvent(
-          any<Object>(that: contains('ignored')),
-          domain: LogDomain.sync.wireName,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('ignored')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -779,11 +779,11 @@ void main() {
       );
 
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).called(1);
     });
@@ -814,11 +814,11 @@ void main() {
       );
 
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).called(1);
     });
@@ -1150,9 +1150,11 @@ void main() {
         await proc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => loggingService.captureEvent(
-            contains('apply.agentEntity.gapsDetected count=1'),
-            domain: LogDomain.sync.wireName,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: contains('apply.agentEntity.gapsDetected count=1'),
+            ),
             subDomain: 'processor.gapDetection',
           ),
         ).called(1);
@@ -1206,11 +1208,11 @@ void main() {
         // Entity should still be upserted despite seq log error
         verify(() => mockAgentRepoSeq.upsertEntity(entity)).called(1);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordReceived',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordReceived',
           ),
         ).called(1);
       });
@@ -1311,9 +1313,9 @@ void main() {
         await proc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => loggingService.captureEvent(
-            contains('apply.agentLink.gapsDetected count=2'),
-            domain: LogDomain.sync.wireName,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('apply.agentLink.gapsDetected count=2')),
             subDomain: 'processor.gapDetection',
           ),
         ).called(1);
@@ -1361,11 +1363,11 @@ void main() {
         // Link should still be upserted despite seq log error.
         verify(() => mockAgentRepoSeq.upsertLink(link)).called(1);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordReceived',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordReceived',
           ),
         ).called(1);
       });
@@ -1948,9 +1950,9 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
-          () => loggingService.captureEvent(
-            any<Object>(that: contains('no payload and no jsonPath')),
-            domain: LogDomain.sync.wireName,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('no payload and no jsonPath')),
             subDomain: 'processor.resolve',
           ),
         ).called(1);
@@ -1966,9 +1968,9 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
-          () => loggingService.captureEvent(
-            any<Object>(that: contains('no payload and no jsonPath')),
-            domain: LogDomain.sync.wireName,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('no payload and no jsonPath')),
             subDomain: 'processor.resolve',
           ),
         ).called(1);
@@ -1985,11 +1987,11 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve.agentEntity.invalidPath',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'resolve.agentEntity.invalidPath',
           ),
         ).called(1);
       });
@@ -2005,11 +2007,11 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve.agentLink.invalidPath',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'resolve.agentLink.invalidPath',
           ),
         ).called(1);
       });
@@ -2063,11 +2065,11 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve.agentEntity',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'resolve.agentEntity',
           ),
         ).called(1);
       });
@@ -2300,11 +2302,11 @@ void main() {
 
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
           verify(
-            () => loggingService.captureException(
+            () => loggingService.error(
+              LogDomain.sync,
               any<Object>(),
-              domain: 'AGENT_SYNC',
-              subDomain: 'resolve.agentEntity.parseFetched',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'resolve.agentEntity.parseFetched',
             ),
           ).called(1);
         });
@@ -2327,11 +2329,11 @@ void main() {
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve.agentLink',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'resolve.agentLink',
           ),
         ).called(1);
       });
@@ -2347,11 +2349,11 @@ void main() {
     );
 
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.sync,
         any<Object>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SyncEventProcessor',
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'SyncEventProcessor',
       ),
     ).called(1);
   });
@@ -2376,11 +2378,11 @@ void main() {
     );
 
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.sync,
         any<Object>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SyncEventProcessor',
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'SyncEventProcessor',
       ),
     ).called(1);
   });
@@ -2402,11 +2404,11 @@ void main() {
     await processor.process(event: event, journalDb: journalDb);
 
     verify(
-      () => loggingService.captureEvent(
-        any<Object>(
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(
           that: contains('skipping undeserializable sync message'),
         ),
-        domain: LogDomain.sync.wireName,
         subDomain: 'processor.skipUnrecoverable',
       ),
     ).called(1);
@@ -2435,11 +2437,11 @@ void main() {
       // If it threw, it's a non-deserialization error that rethrows → also ok,
       // but verify the outer catch logged it.
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SyncEventProcessor',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'SyncEventProcessor',
         ),
       ).called(1);
     }
@@ -2456,11 +2458,11 @@ void main() {
     await processor.process(event: event, journalDb: journalDb);
 
     verify(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        LogDomain.sync,
         any<String>(
           that: contains('skipping undeserializable sync message'),
         ),
-        domain: LogDomain.sync.wireName,
         subDomain: 'processor.skipUnrecoverable',
       ),
     ).called(1);

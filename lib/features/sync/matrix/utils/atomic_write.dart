@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Atomically writes [bytes] to [filePath] using a temporary file + rename.
 ///
@@ -19,9 +19,8 @@ import 'package:lotti/services/logging_service.dart';
 Future<void> atomicWriteBytes({
   required List<int> bytes,
   required String filePath,
-  LoggingService? logging,
+  DomainLogger? logging,
   String subDomain = 'atomicWrite',
-  String domain = 'MATRIX_SERVICE',
 }) async {
   final tmpPath =
       '$filePath.tmp.${DateTime.now().microsecondsSinceEpoch}.$pid.media';
@@ -42,9 +41,9 @@ Future<void> atomicWriteBytes({
           await File(filePath).rename(bakPath);
           movedAside = true;
         } catch (e) {
-          logging?.captureEvent(
+          logging?.log(
+            LogDomain.sync,
             'moveAside.failed path=$filePath err=$e',
-            domain: domain,
             subDomain: subDomain,
           );
         }
@@ -54,9 +53,9 @@ Future<void> atomicWriteBytes({
         try {
           await File(bakPath).delete();
         } catch (e) {
-          logging?.captureEvent(
+          logging?.log(
+            LogDomain.sync,
             'cleanup.bakDelete.failed path=$bakPath err=$e',
-            domain: domain,
             subDomain: subDomain,
           );
         }
@@ -65,9 +64,9 @@ Future<void> atomicWriteBytes({
       try {
         await tmpFile.delete();
       } catch (e2) {
-        logging?.captureEvent(
+        logging?.log(
+          LogDomain.sync,
           'cleanup.tmpDelete.failed path=$tmpPath err=$e2',
-          domain: domain,
           subDomain: subDomain,
         );
       }
@@ -76,17 +75,17 @@ Future<void> atomicWriteBytes({
           await File(bakPath).rename(filePath);
         }
       } catch (e3) {
-        logging?.captureEvent(
+        logging?.log(
+          LogDomain.sync,
           'restore.failed path=$filePath bak=$bakPath err=$e3',
-          domain: domain,
           subDomain: subDomain,
         );
       }
-      logging?.captureException(
+      logging?.error(
+        LogDomain.sync,
         e,
-        domain: domain,
-        subDomain: subDomain,
         stackTrace: st,
+        subDomain: subDomain,
       );
       rethrow;
     }
@@ -97,15 +96,13 @@ Future<void> atomicWriteBytes({
 Future<void> atomicWriteString({
   required String text,
   required String filePath,
-  LoggingService? logging,
+  DomainLogger? logging,
   String subDomain = 'atomicWrite',
-  String domain = 'MATRIX_SERVICE',
 }) async {
   await atomicWriteBytes(
     bytes: utf8.encode(text),
     filePath: filePath,
     logging: logging,
     subDomain: subDomain,
-    domain: domain,
   );
 }

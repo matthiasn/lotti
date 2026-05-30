@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 class SpeechRepository {
   static Future<JournalAudio?> createAudioEntry(
@@ -42,11 +42,11 @@ class SpeechRepository {
 
       return journalEntity;
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createAudioEntry',
         stackTrace: stackTrace,
+        subDomain: 'createAudioEntry',
       );
     }
 
@@ -73,19 +73,19 @@ class SpeechRepository {
           );
         },
         orElse: () async {
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.persistence,
             'not an audio entry',
-            domain: 'persistence_logic',
             subDomain: 'updateLanguage',
           );
         },
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateLanguage',
         stackTrace: stackTrace,
+        subDomain: 'updateLanguage',
       );
     }
   }
@@ -122,19 +122,19 @@ class SpeechRepository {
           );
         },
         orElse: () async {
-          getIt<LoggingService>().captureException(
+          getIt<DomainLogger>().error(
+            LogDomain.persistence,
             'not an audio entry',
-            domain: 'persistence_logic',
             subDomain: 'removeAudioTranscript',
           );
         },
       );
     } catch (exception, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'removeAudioTranscript',
         stackTrace: stackTrace,
+        subDomain: 'removeAudioTranscript',
       );
     }
     return true;

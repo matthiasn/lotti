@@ -1,4 +1,4 @@
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 enum SyncErrorType {
   database,
@@ -18,14 +18,14 @@ class SyncError {
   factory SyncError.fromException(
     Object error,
     StackTrace? stackTrace,
-    LoggingService loggingService, {
-    String domain = 'SYNC_CONTROLLER',
-  }) {
+    DomainLogger loggingService,
+  ) {
     // Log the full error and stack trace for debugging
-    loggingService.captureException(
+    loggingService.error(
+      LogDomain.sync,
       error,
-      domain: domain,
       stackTrace: stackTrace,
+      subDomain: 'SYNC_CONTROLLER',
     );
 
     // Determine error type based on the error object

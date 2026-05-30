@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -157,11 +157,11 @@ class ConfirmationProgressModal {
     try {
       await operation();
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.settings,
         e,
-        domain: 'ConfirmationProgressModal',
-        subDomain: 'operation',
         stackTrace: stackTrace,
+        subDomain: 'operation',
       );
     } finally {
       if (closeOnComplete && modalSheetContext.mounted) {

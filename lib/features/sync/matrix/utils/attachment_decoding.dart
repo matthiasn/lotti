@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/tuning.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 /// Payloads smaller than this are decoded inline — the fixed cost of spawning
@@ -37,18 +37,18 @@ Future<Uint8List> decodeAttachmentBytes({
   required Event event,
   required Uint8List downloadedBytes,
   required String relativePath,
-  required LoggingService logging,
+  required DomainLogger logging,
 }) async {
   final encoding = event.content[attachmentEncodingKey];
   if (encoding != attachmentEncodingGzip) return downloadedBytes;
   final decoded = downloadedBytes.length < _inlineGzipThreshold
       ? _asUint8List(gzip.decode(downloadedBytes))
       : await compute(_gzipDecodeWorker, downloadedBytes);
-  logging.captureEvent(
+  logging.log(
+    LogDomain.sync,
     'gzipDecoded path=$relativePath '
     'compressed=${downloadedBytes.length} decoded=${decoded.length} '
     'ratio=${formatCompressionRatio(raw: decoded.length, compressed: downloadedBytes.length)}',
-    domain: syncLoggingDomain,
     subDomain: 'attachment.decode',
   );
   return decoded;

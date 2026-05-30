@@ -25,7 +25,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
@@ -43,7 +43,7 @@ void main() {
   late JournalEntity testAudioEntity;
   late List<AiConfigSkill> testSkills;
   late MockNavigatorObserver mockNavigatorObserver;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late MockJournalDb mockJournalDb;
   late MockUpdateNotifications mockUpdateNotifications;
   late List<Override> defaultOverrides;
@@ -52,13 +52,13 @@ void main() {
 
   setUp(() {
     mockNavigatorObserver = MockNavigatorObserver();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
 
     // Set up GetIt
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
@@ -67,7 +67,7 @@ void main() {
       getIt.unregister<UpdateNotifications>();
     }
     getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<DomainLogger>(mockLoggingService)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
@@ -88,19 +88,19 @@ void main() {
 
     // Mock logging methods
     when(
-      () => mockLoggingService.captureEvent(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => mockLoggingService.log(
+        any<LogDomain>(),
+        any<String>(),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
 
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => mockLoggingService.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenReturn(null);
 

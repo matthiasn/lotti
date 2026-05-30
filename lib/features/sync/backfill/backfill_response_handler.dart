@@ -14,7 +14,6 @@ import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:meta/meta.dart';
@@ -42,7 +41,7 @@ class BackfillResponseHandler {
   final JournalDb _journalDb;
   final SyncSequenceLogService _sequenceLogService;
   final OutboxService _outboxService;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final VectorClockService _vectorClockService;
   final DomainLogger? _domainLogger;
   final NotificationsDb? _notificationsDb;
@@ -422,11 +421,11 @@ class BackfillResponseHandler {
         subDomain: 'backfill.request',
       );
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'handleRequest',
         stackTrace: st,
+        subDomain: 'handleRequest',
       );
     }
   }
@@ -966,11 +965,11 @@ class BackfillResponseHandler {
         }
       }
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'handleResponse',
         stackTrace: st,
+        subDomain: 'handleResponse',
       );
     }
   }

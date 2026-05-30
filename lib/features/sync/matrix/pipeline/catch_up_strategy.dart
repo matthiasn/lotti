@@ -1,7 +1,6 @@
 import 'package:collection/collection.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 /// Signature for a reconnect backfill/pagination function.
@@ -24,7 +23,7 @@ typedef BackfillFn =
       required String? lastEventId,
       required int pageSize,
       required int? maxPages,
-      required LoggingService logging,
+      required DomainLogger logging,
       num? untilTimestamp,
     });
 
@@ -110,7 +109,7 @@ class CatchUpStrategy {
     required Room room,
     required String? lastEventId,
     required BackfillFn backfill,
-    required LoggingService logging,
+    required DomainLogger logging,
     int initialLimit = 200,
     int maxLookback = 4000,
     int missingMarkerFallbackLimit = defaultMissingMarkerFallbackLimit,
@@ -144,11 +143,11 @@ class CatchUpStrategy {
             try {
               next.cancelSubscriptions();
             } catch (e, st) {
-              logging.captureException(
+              logging.error(
+                LogDomain.sync,
                 e,
-                domain: syncLoggingDomain,
-                subDomain: 'catchup.noAnchor.cleanup',
                 stackTrace: st,
+                subDomain: 'catchup.noAnchor.cleanup',
               );
             }
           }
@@ -222,14 +221,14 @@ class CatchUpStrategy {
           preContextSinceTs: preContextSinceTs,
           preContextCount: preContextCount,
         );
-        logging.captureEvent(
+        logging.log(
+          LogDomain.sync,
           'catchup.timestampBoundary '
           'snapshot=${ordered.length} '
           'lastEventId=${lastEventId ?? 'null'} '
           'startIndex=$start '
           'pagingSatisfied=$pagingSatisfied '
           'requiresServerBoundary=$requiresServerBoundary',
-          domain: syncLoggingDomain,
           subDomain: 'catchup.timestampBoundary',
         );
         return CatchUpCollection.timestampAnchored(
@@ -245,14 +244,14 @@ class CatchUpStrategy {
       // logic will handle any overlap, and marking catch-up as complete lets
       // live scans take over for subsequent events.
       if (ordered.isNotEmpty) {
-        logging.captureEvent(
+        logging.log(
+          LogDomain.sync,
           'catchup.bestEffort lastEventId=$lastEventId '
           'snapshot=${ordered.length} '
           'reason=timestampBoundaryUnreachable '
           'reachedTimestampBoundary=$boundarySatisfied '
           'requiresServerBoundary=$requiresServerBoundary '
           'pagingSatisfied=$pagingSatisfied',
-          domain: syncLoggingDomain,
           subDomain: 'catchup.bestEffort',
         );
         return CatchUpCollection.timestampAnchored(
@@ -264,7 +263,8 @@ class CatchUpStrategy {
       final visibleTailCount = ordered.length <= missingMarkerFallbackLimit
           ? ordered.length
           : missingMarkerFallbackLimit;
-      logging.captureEvent(
+      logging.log(
+        LogDomain.sync,
         'catchup.incomplete lastEventId=$lastEventId '
         'snapshot=${ordered.length} visibleTail=$visibleTailCount '
         'fallbackLimit=$missingMarkerFallbackLimit '
@@ -272,7 +272,6 @@ class CatchUpStrategy {
         'reachedTimestampBoundary=$boundarySatisfied '
         'requiresServerBoundary=$requiresServerBoundary '
         'pagingSatisfied=$pagingSatisfied',
-        domain: syncLoggingDomain,
         subDomain: 'catchup.incomplete',
       );
       return CatchUpCollection.incomplete(
@@ -366,7 +365,7 @@ class CatchUpStrategy {
   static Future<BootstrapResult> collectHistoryForBootstrap({
     required Room room,
     required BootstrapSink sink,
-    required LoggingService logging,
+    required DomainLogger logging,
     int pageSize = 200,
     num? untilTimestamp,
     Duration? overallTimeout,
@@ -468,22 +467,22 @@ class CatchUpStrategy {
             // incrementing so the counter reflects attempts already
             // issued, not attempts about to fire.
             if (boundaryContinuations >= boundaryContinuationCap) {
-              logging.captureEvent(
+              logging.log(
+                LogDomain.sync,
                 'bootstrap.boundaryContinuation.exhausted '
                 'pages=$boundaryContinuations cap=$boundaryContinuationCap',
-                domain: syncLoggingDomain,
                 subDomain: 'bootstrap',
               );
               stopReason = BootstrapStopReason.boundaryReached;
               break;
             }
             boundaryContinuations++;
-            logging.captureEvent(
+            logging.log(
+              LogDomain.sync,
               'bootstrap.boundaryContinuation '
               'attempt=$boundaryContinuations cap=$boundaryContinuationCap '
               'reason=accepted=0 oldestTs='
               '${TimelineEventOrdering.timestamp(page.first)}',
-              domain: syncLoggingDomain,
               subDomain: 'bootstrap',
             );
           }
@@ -497,11 +496,11 @@ class CatchUpStrategy {
         try {
           await timeline.requestHistory(historyCount: pageSize);
         } catch (error, stackTrace) {
-          logging.captureException(
+          logging.error(
+            LogDomain.sync,
             error,
-            domain: syncLoggingDomain,
-            subDomain: 'bootstrap.requestHistory',
             stackTrace: stackTrace,
+            subDomain: 'bootstrap.requestHistory',
           );
           stopReason = BootstrapStopReason.error;
           break;
@@ -566,7 +565,7 @@ class CatchUpStrategy {
   static Future<BootstrapResult> collectForwardForBootstrap({
     required Room room,
     required BootstrapSink sink,
-    required LoggingService logging,
+    required DomainLogger logging,
     required String anchorEventId,
     int pageSize = 200,
     int forwardPageCap = 50,
@@ -577,11 +576,11 @@ class CatchUpStrategy {
     try {
       timeline = await room.getTimeline(eventContextId: anchorEventId);
     } catch (error, stackTrace) {
-      logging.captureException(
+      logging.error(
+        LogDomain.sync,
         error,
-        domain: syncLoggingDomain,
-        subDomain: 'bootstrap.forward.getTimeline',
         stackTrace: stackTrace,
+        subDomain: 'bootstrap.forward.getTimeline',
       );
       return const BootstrapResult(
         totalPages: 0,
@@ -600,10 +599,10 @@ class CatchUpStrategy {
       (e) => e.eventId == anchorEventId,
     );
     if (anchor == null) {
-      logging.captureEvent(
+      logging.log(
+        LogDomain.sync,
         'bootstrap.forward.anchorMissing '
         'anchorEventId=$anchorEventId events=${timeline.events.length}',
-        domain: syncLoggingDomain,
         subDomain: 'bootstrap.forward',
       );
       try {
@@ -697,11 +696,11 @@ class CatchUpStrategy {
         }
 
         if (pageIndex >= forwardPageCap) {
-          logging.captureEvent(
+          logging.log(
+            LogDomain.sync,
             'bootstrap.forward.capReached '
             'pages=$pageIndex cap=$forwardPageCap '
             'events=$totalEventsSoFar',
-            domain: syncLoggingDomain,
             subDomain: 'bootstrap.forward',
           );
           // Treat as completed rather than error — the cap is a
@@ -716,11 +715,11 @@ class CatchUpStrategy {
         try {
           await timeline.requestFuture(historyCount: pageSize);
         } catch (error, stackTrace) {
-          logging.captureException(
+          logging.error(
+            LogDomain.sync,
             error,
-            domain: syncLoggingDomain,
-            subDomain: 'bootstrap.forward.requestFuture',
             stackTrace: stackTrace,
+            subDomain: 'bootstrap.forward.requestFuture',
           );
           stopReason = BootstrapStopReason.error;
           break;

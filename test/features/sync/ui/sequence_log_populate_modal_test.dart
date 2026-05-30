@@ -7,7 +7,7 @@ import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart'
 import 'package:lotti/features/sync/ui/sequence_log_populate_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -17,26 +17,26 @@ void main() {
 
   late MockSyncSequenceLogService mockSequenceLogService;
   late MockJournalDb mockJournalDb;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
 
   setUp(() async {
     await getIt.reset();
 
     mockSequenceLogService = MockSyncSequenceLogService();
     mockJournalDb = MockJournalDb();
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
 
     getIt
       ..registerSingleton<SyncSequenceLogService>(mockSequenceLogService)
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<DomainLogger>(mockLoggingService);
 
     when(
-      () => mockLoggingService.captureException(
+      () => mockLoggingService.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
   });

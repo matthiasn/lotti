@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -16,23 +16,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../helpers/fallbacks.dart';
+import '../mocks/mocks.dart';
 
 // Mocks
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
-
 class MockWindowManager extends Mock implements WindowManager {}
 
 class FakeDBusObjectPath extends Fake implements DBusObjectPath {}
@@ -43,7 +29,7 @@ class FakeDBusSignature extends Fake implements DBusSignature {}
 
 void main() {
   group('Screenshots Comprehensive Tests', () {
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockLoggingService;
     late MockWindowManager mockWindowManager;
     late Directory testTempDir;
 
@@ -68,12 +54,12 @@ void main() {
     });
 
     setUp(() {
-      mockLoggingService = MockLoggingService();
+      mockLoggingService = MockDomainLogger();
       mockWindowManager = MockWindowManager();
 
       // Register mocks in GetIt
       getIt
-        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<DomainLogger>(mockLoggingService)
         ..registerSingleton<WindowManager>(mockWindowManager)
         ..registerSingleton<Directory>(testTempDir);
 
@@ -82,19 +68,19 @@ void main() {
       when(() => mockWindowManager.show()).thenAnswer((_) async {});
 
       when(
-        () => mockLoggingService.captureEvent(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
+        () => mockLoggingService.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any(named: 'subDomain'),
         ),
       ).thenReturn(null);
 
       when(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
+        () => mockLoggingService.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async {});
     });
@@ -175,9 +161,9 @@ void main() {
         // This is tested by the error handling in takeScreenshot
 
         when(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'SCREENSHOTS',
+          () => mockLoggingService.error(
+            LogDomain.screenshots,
+            any<Object>(),
             subDomain: 'portal_fallback',
           ),
         ).thenAnswer((_) async {});
@@ -268,10 +254,10 @@ void main() {
 
         // Logging should be attempted
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: screenshotDomain,
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+          () => mockLoggingService.error(
+            LogDomain.screenshots,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -363,10 +349,10 @@ void main() {
 
         // Verify logging was attempted
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: screenshotDomain,
-            stackTrace: any<dynamic>(named: 'stackTrace'),
+          () => mockLoggingService.error(
+            LogDomain.screenshots,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
       });

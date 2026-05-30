@@ -12,7 +12,7 @@ void main() {
     () async {
       final db = MockJournalDb();
       final repo = MockLabelsRepository();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
 
       // Valid global label 'S'
       when(() => db.getLabelDefinitionById('S')).thenAnswer(

@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
-import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Coordinates execution of selected definition sync steps and maps per-step
 /// progress into a simple [SyncState] used by the Sync modal. Each step is
@@ -12,7 +12,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
   SyncMaintenanceController();
 
   late SyncMaintenanceRepository _repository;
-  late LoggingService _loggingService;
+  late DomainLogger _loggingService;
 
   @override
   SyncState build() {
@@ -158,6 +158,6 @@ final syncControllerProvider =
       SyncMaintenanceController.new,
     );
 
-final syncLoggingServiceProvider = Provider<LoggingService>((ref) {
-  return ref.watch(loggingServiceProvider);
+final syncLoggingServiceProvider = Provider<DomainLogger>((ref) {
+  return getIt<DomainLogger>();
 });

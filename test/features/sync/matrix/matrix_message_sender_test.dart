@@ -21,6 +21,7 @@ import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -445,7 +446,7 @@ void main() {
   });
 
   late Directory documentsDirectory;
-  late MockLoggingService loggingService;
+  late MockDomainLogger loggingService;
   late MockJournalDb journalDb;
   late MatrixMessageSender sender;
   late MockRoom room;
@@ -455,7 +456,7 @@ void main() {
     documentsDirectory = Directory.systemTemp.createTempSync(
       'matrix_message_sender_test',
     );
-    loggingService = MockLoggingService();
+    loggingService = MockDomainLogger();
     journalDb = MockJournalDb();
     sentEventRegistry = SentEventRegistry();
     sender = MatrixMessageSender(
@@ -467,18 +468,18 @@ void main() {
     room = MockRoom();
 
     when(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) {});
     when(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
     when(
@@ -522,9 +523,9 @@ void main() {
 
     expect(result, isFalse);
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.sync,
         any<Object>(),
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       ),
     ).called(1);
@@ -547,9 +548,9 @@ void main() {
     expect(result, isFalse);
     expect(calls, 0);
     verify(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        LogDomain.sync,
         configNotFound,
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       ),
     ).called(1);
@@ -568,9 +569,9 @@ void main() {
 
     expect(result, isFalse);
     verify(
-      () => loggingService.captureEvent(
-        contains('no room instance available'),
-        domain: 'MATRIX_SERVICE',
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(that: contains('no room instance available')),
         subDomain: 'sendMatrixMsg',
       ),
     ).called(1);
@@ -1045,13 +1046,15 @@ void main() {
 
     expect(result, isTrue);
     verify(
-      () => loggingService.captureEvent(
-        allOf(
-          contains('reason=json_mismatch'),
-          contains('previous={hostA: 425}'),
-          contains('assigned={hostA: 402}'),
+      () => loggingService.log(
+        LogDomain.sync,
+        any<String>(
+          that: allOf(
+            contains('reason=json_mismatch'),
+            contains('previous={hostA: 425}'),
+            contains('assigned={hostA: 402}'),
+          ),
         ),
-        domain: 'VECTOR_CLOCK',
         subDomain: 'send.adoptJson',
       ),
     ).called(1);
@@ -1208,9 +1211,9 @@ void main() {
 
       expect(result, isTrue);
       verifyNever(
-        () => loggingService.captureEvent(
+        () => loggingService.log(
+          LogDomain.sync,
           any<String>(),
-          domain: 'MATRIX_SERVICE',
           subDomain: 'sendMatrixMsg.vclockAdjusted',
         ),
       );
@@ -1277,12 +1280,14 @@ void main() {
 
       expect(result, isTrue);
       verify(
-        () => loggingService.captureEvent(
-          allOf(
-            contains('reason=message_missing'),
-            contains('assigned={hostA: 7}'),
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf(
+              contains('reason=message_missing'),
+              contains('assigned={hostA: 7}'),
+            ),
           ),
-          domain: 'VECTOR_CLOCK',
           subDomain: 'send.adoptJson',
         ),
       ).called(1);
@@ -1348,9 +1353,9 @@ void main() {
 
     expect(result, isTrue);
     verifyNever(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        LogDomain.sync,
         any<String>(),
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.vclockAdjusted',
       ),
     );
@@ -1418,13 +1423,15 @@ void main() {
 
       expect(result, isTrue);
       verify(
-        () => loggingService.captureEvent(
-          allOf(
-            contains('reason=json_mismatch'),
-            contains('previous={hostA: 8}'),
-            contains('assigned={hostA: 10}'),
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: allOf(
+              contains('reason=json_mismatch'),
+              contains('previous={hostA: 8}'),
+              contains('assigned={hostA: 10}'),
+            ),
           ),
-          domain: 'VECTOR_CLOCK',
           subDomain: 'send.adoptJson',
         ),
       ).called(1);
@@ -1491,9 +1498,9 @@ void main() {
 
       expect(result, isTrue);
       verifyNever(
-        () => loggingService.captureEvent(
+        () => loggingService.log(
+          LogDomain.sync,
           any<String>(),
-          domain: 'MATRIX_SERVICE',
           subDomain: 'sendMatrixMsg.vclockAdjusted',
         ),
       );
@@ -1524,11 +1531,11 @@ void main() {
 
     expect(result, isFalse);
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.sync,
         any<Object>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'sendMatrixMsg',
       ),
     ).called(1);
   });
@@ -1884,11 +1891,11 @@ void main() {
 
     expect(result, isFalse);
     verify(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        LogDomain.sync,
         any<Object>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.decode',
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'sendMatrixMsg.decode',
       ),
     ).called(1);
     verify(
@@ -2095,11 +2102,11 @@ void main() {
     // Missing files are skipped gracefully — the journal entity is still sent
     expect(result, isTrue);
     verify(
-      () => loggingService.captureEvent(
+      () => loggingService.log(
+        LogDomain.sync,
         any<String>(
           that: contains('skipping missing file'),
         ),
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       ),
     ).called(1);
@@ -2345,11 +2352,11 @@ void main() {
 
       expect(result, isNull);
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg.agentEntity',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'sendMatrixMsg.agentEntity',
         ),
       ).called(1);
     });
@@ -3049,9 +3056,9 @@ void main() {
           ),
         );
         verify(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             'skipping empty outboxBundle send',
-            domain: 'MATRIX_SERVICE',
             subDomain: 'sendMatrixMsg',
           ),
         ).called(1);
@@ -3198,7 +3205,8 @@ void main() {
           ),
         );
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(
               that: isA<String>().having(
                 (msg) => msg,
@@ -3206,7 +3214,6 @@ void main() {
                 contains('outboxBundle aborting'),
               ),
             ),
-            domain: 'MATRIX_SERVICE',
             subDomain: 'sendMatrixMsg.outboxBundle.missingEntity',
           ),
         ).called(1);
@@ -3401,7 +3408,8 @@ void main() {
           ),
         );
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(
               that: isA<String>().having(
                 (msg) => msg,
@@ -3409,7 +3417,6 @@ void main() {
                 contains('outboxBundle exceeds max bytes'),
               ),
             ),
-            domain: 'MATRIX_SERVICE',
             subDomain: 'sendMatrixMsg.outboxBundle.tooLarge',
           ),
         ).called(1);
@@ -3440,13 +3447,13 @@ void main() {
         expect(stripped!.jsonPath, startsWith('/outbox_bundles/'));
         expect(stripped.jsonPath, isNot('/journal/2026-04-25/evil.entry.json'));
         verify(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             any<String>(
               that: contains(
                 'rejecting outboxBundle jsonPath outside /outbox_bundles/',
               ),
             ),
-            domain: 'MATRIX_SERVICE',
             subDomain: 'sendMatrixMsg.outboxBundle.write',
           ),
         ).called(1);
@@ -3472,11 +3479,11 @@ void main() {
 
         expect(result, isNull);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(that: isA<SocketException>()),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'sendMatrixMsg.outboxBundle.upload',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'sendMatrixMsg.outboxBundle.upload',
           ),
         ).called(1);
       },
@@ -3588,11 +3595,11 @@ void main() {
           ),
         );
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'sendMatrixMsg.notification',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'sendMatrixMsg.notification',
           ),
         ).called(1);
       },
@@ -3623,9 +3630,9 @@ void main() {
         expect(stamped, isA<SyncNotification>());
         expect((stamped as SyncNotification).originatingHostId, 'host-N');
         verify(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             any<String>(that: contains('notification id=notification-stamp')),
-            domain: 'MATRIX_SERVICE',
             subDomain: 'sendMatrixMsg.originatingHostId',
           ),
         ).called(1);
@@ -3659,13 +3666,13 @@ void main() {
           'host-S',
         );
         verify(
-          () => loggingService.captureEvent(
+          () => loggingService.log(
+            LogDomain.sync,
             any<String>(
               that: contains(
                 'notificationStateUpdate id=notification-state-stamp',
               ),
             ),
-            domain: 'MATRIX_SERVICE',
             subDomain: 'sendMatrixMsg.originatingHostId',
           ),
         ).called(1);
@@ -3690,11 +3697,11 @@ void main() {
 
         expect(result, isNull);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'sendMatrixMsg.notification',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'sendMatrixMsg.notification',
           ),
         ).called(1);
       },
@@ -3729,11 +3736,11 @@ void main() {
 
         expect(result, isNull);
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'sendMatrixMsg.notification.decode',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'sendMatrixMsg.notification.decode',
           ),
         ).called(1);
       },

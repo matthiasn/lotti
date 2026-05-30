@@ -14,7 +14,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -27,7 +26,7 @@ void main() {
   late MockVectorClockService mockVectorClock;
   late MockUpdateNotifications mockNotifications;
   late MockOutboxService mockOutbox;
-  late MockLoggingService mockLogging;
+  late MockDomainLogger mockDomainLogger;
 
   const testTimeEntryId = 'time-entry-1';
   final testDate = DateTime(2024, 3, 15, 10);
@@ -87,7 +86,7 @@ void main() {
     mockVectorClock = MockVectorClockService();
     mockNotifications = MockUpdateNotifications();
     mockOutbox = MockOutboxService();
-    mockLogging = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
 
     getIt
       ..registerSingleton<JournalDb>(mockDb)
@@ -95,7 +94,7 @@ void main() {
       ..registerSingleton<VectorClockService>(mockVectorClock)
       ..registerSingleton<UpdateNotifications>(mockNotifications)
       ..registerSingleton<OutboxService>(mockOutbox)
-      ..registerSingleton<LoggingService>(mockLogging);
+      ..registerSingleton<DomainLogger>(mockDomainLogger);
 
     repository = RatingRepository();
   });
@@ -386,11 +385,11 @@ void main() {
           ),
         ).thenThrow(Exception('DB error'));
         when(
-          () => mockLogging.captureException(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
           ),
         ).thenAnswer((_) async {});
 
@@ -401,11 +400,11 @@ void main() {
 
         expect(result, isNull);
         verify(
-          () => mockLogging.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.ratings,
             any<Object>(),
-            domain: 'RatingRepository',
-            subDomain: 'createOrUpdateRating',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'createOrUpdateRating',
           ),
         ).called(1);
       });
@@ -531,6 +530,9 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenReturn(null);
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
+        }
         getIt
           ..registerSingleton<SyncSequenceLogService>(mockSequenceLog)
           ..registerSingleton<DomainLogger>(mockDomainLogger);
@@ -686,11 +688,11 @@ void main() {
 
           expect(result, isNull);
           verify(
-            () => mockLogging.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.ratings,
               any<Object>(),
-              domain: 'RatingRepository',
-              subDomain: '_createRating.linkCleanup',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: '_createRating.linkCleanup',
             ),
           ).called(1);
           // _softDeleteEntity issued the compensating updateDbEntity with a
@@ -723,11 +725,11 @@ void main() {
 
           expect(result, isNull);
           verify(
-            () => mockLogging.captureException(
+            () => mockDomainLogger.error(
+              LogDomain.ratings,
               any<Object>(),
-              domain: 'RatingRepository',
-              subDomain: '_softDeleteEntity',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: '_softDeleteEntity',
             ),
           ).called(1);
         },
@@ -755,6 +757,9 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
             ),
           ).thenReturn(null);
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt.unregister<DomainLogger>();
+          }
           getIt
             ..registerSingleton<SyncSequenceLogService>(mockSequenceLog)
             ..registerSingleton<DomainLogger>(mockDomainLogger);

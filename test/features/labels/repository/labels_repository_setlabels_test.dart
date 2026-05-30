@@ -3,26 +3,11 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
-import '../../../mocks/mocks.dart' hide MockLoggingService;
-
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
+import '../../../mocks/mocks.dart';
 
 void main() {
   group('LabelsRepository.setLabels suppression updates', () {
@@ -30,7 +15,7 @@ void main() {
     late MockJournalDb mockDb;
     late MockPersistenceLogic mockPl;
     late MockEntitiesCacheService mockCache;
-    late MockLoggingService mockLog;
+    late MockDomainLogger mockDomainLogger;
 
     setUpAll(() {
       registerAllFallbackValues();
@@ -73,13 +58,13 @@ void main() {
       mockDb = MockJournalDb();
       mockPl = MockPersistenceLogic();
       mockCache = MockEntitiesCacheService();
-      mockLog = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
       mockNotifications = MockUpdateNotifications();
       repo = LabelsRepository(
         mockPl,
         mockDb,
         mockCache,
-        mockLog,
+        mockDomainLogger,
         mockNotifications,
       );
     });
@@ -229,11 +214,11 @@ void main() {
     test('error handling returns false and logs', () async {
       when(() => mockDb.journalEntityById('bad')).thenThrow(Exception('db'));
       when(
-        () => mockLog.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
@@ -251,11 +236,11 @@ void main() {
       );
 
       verify(
-        () => mockLog.captureException(
-          any<dynamic>(),
-          domain: 'labels_repository',
-          subDomain: any<String>(named: 'subDomain'),
+        () => mockDomainLogger.error(
+          LogDomain.labels,
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).called(greaterThanOrEqualTo(1));
     });

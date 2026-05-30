@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
@@ -9,24 +10,24 @@ import '../../../../mocks/mocks.dart';
 
 void main() {
   late Directory tempDir;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
 
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('atomic_write_test');
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     when(
-      () => logging.captureEvent(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => logging.log(
+        any<LogDomain>(),
+        any<String>(),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
     when(
-      () => logging.captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => logging.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -106,11 +107,11 @@ void main() {
 
       // We expect an exception capture for the failed rename fallback
       verify(
-        () => logging.captureException(
-          any<dynamic>(),
-          domain: any(named: 'domain'),
+        () => logging.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).called(1);
 

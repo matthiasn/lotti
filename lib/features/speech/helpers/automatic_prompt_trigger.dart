@@ -6,7 +6,7 @@ import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Helper class to handle automatic prompt triggering after audio recording.
 ///
@@ -20,7 +20,7 @@ class AutomaticPromptTrigger {
   });
 
   final Ref ref;
-  final LoggingService loggingService;
+  final DomainLogger loggingService;
 
   /// Triggers automatic transcription via profile-driven automation.
   ///
@@ -34,10 +34,10 @@ class AutomaticPromptTrigger {
   }) async {
     try {
       if (linkedTaskId == null) {
-        loggingService.captureEvent(
+        loggingService.log(
+          LogDomain.ai,
           'No linked task for entry $entryId — skipping automatic '
           'transcription',
-          domain: 'automatic_prompt_trigger',
           subDomain: 'triggerAutomaticPrompts',
         );
         return;
@@ -50,11 +50,11 @@ class AutomaticPromptTrigger {
       );
 
       if (!result.handled || realtimeTranscriptProvided) {
-        loggingService.captureEvent(
+        loggingService.log(
+          LogDomain.ai,
           'Profile automation did not handle transcription for '
           'task $linkedTaskId (handled=${result.handled}, '
           'realtimeProvided=$realtimeTranscriptProvided)',
-          domain: 'automatic_prompt_trigger',
           subDomain: 'triggerAutomaticPrompts',
         );
         // A realtime transcript is still a completed transcription — nudge
@@ -69,10 +69,10 @@ class AutomaticPromptTrigger {
         return;
       }
 
-      loggingService.captureEvent(
+      loggingService.log(
+        LogDomain.ai,
         'Profile-driven transcription for task $linkedTaskId '
         'using skill "${result.skill!.id}"',
-        domain: 'automatic_prompt_trigger',
         subDomain: 'triggerAutomaticPrompts',
       );
 
@@ -93,11 +93,11 @@ class AutomaticPromptTrigger {
         linkedTaskId: linkedTaskId,
       );
     } catch (exception, stackTrace) {
-      loggingService.captureException(
+      loggingService.error(
+        LogDomain.ai,
         exception,
-        domain: 'automatic_prompt_trigger',
-        subDomain: 'triggerAutomaticPrompts',
         stackTrace: stackTrace,
+        subDomain: 'triggerAutomaticPrompts',
       );
     }
   }
@@ -124,18 +124,18 @@ class AutomaticPromptTrigger {
             reason: WakeReason.transcriptionComplete.name,
             triggerTokens: {linkedTaskId, entryId},
           );
-      loggingService.captureEvent(
+      loggingService.log(
+        LogDomain.ai,
         'Nudged task agent ${agent.agentId} after transcription '
         'completion (task $linkedTaskId, entry $entryId)',
-        domain: 'automatic_prompt_trigger',
         subDomain: 'nudgeTaskAgent',
       );
     } catch (exception, stackTrace) {
-      loggingService.captureException(
+      loggingService.error(
+        LogDomain.ai,
         exception,
-        domain: 'automatic_prompt_trigger',
-        subDomain: 'nudgeTaskAgent',
         stackTrace: stackTrace,
+        subDomain: 'nudgeTaskAgent',
       );
     }
   }
@@ -145,6 +145,6 @@ class AutomaticPromptTrigger {
 final automaticPromptTriggerProvider = Provider<AutomaticPromptTrigger>((ref) {
   return AutomaticPromptTrigger(
     ref: ref,
-    loggingService: getIt<LoggingService>(),
+    loggingService: getIt<DomainLogger>(),
   );
 });

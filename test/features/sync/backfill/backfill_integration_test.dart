@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,8 +41,8 @@ void main() {
   late JournalDb aliceJournalDb;
   late MockOutboxService aliceOutbox;
   late MockOutboxService bobOutbox;
-  late MockLoggingService aliceLogging;
-  late MockLoggingService bobLogging;
+  late MockDomainLogger aliceLogging;
+  late MockDomainLogger bobLogging;
   late MockVectorClockService aliceVcService;
   late MockVectorClockService bobVcService;
   late SyncSequenceLogService aliceSequenceService;
@@ -81,8 +82,8 @@ void main() {
     // Create mocks
     aliceOutbox = MockOutboxService();
     bobOutbox = MockOutboxService();
-    aliceLogging = MockLoggingService();
-    bobLogging = MockLoggingService();
+    aliceLogging = MockDomainLogger();
+    bobLogging = MockDomainLogger();
     aliceVcService = MockVectorClockService();
     bobVcService = MockVectorClockService();
 
@@ -95,18 +96,18 @@ void main() {
     // Configure logging (no-op)
     for (final logging in [aliceLogging, bobLogging]) {
       when(
-        () => logging.captureEvent(
+        () => logging.log(
+          any<LogDomain>(),
           any<String>(),
-          domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
       ).thenReturn(null);
       when(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
     }

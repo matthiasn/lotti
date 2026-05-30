@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
@@ -501,18 +501,17 @@ void main() {
     test(
       'getModelStatus failure logs to the registered LoggingService',
       () async {
-        final logger = MockLoggingService();
-        stubLoggingService(logger);
+        final mockDomainLogger = MockDomainLogger();
         final getIt = GetIt.instance;
         addTearDown(() {
-          if (getIt.isRegistered<LoggingService>()) {
-            getIt.unregister<LoggingService>();
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt.unregister<DomainLogger>();
           }
         });
-        if (getIt.isRegistered<LoggingService>()) {
-          getIt.unregister<LoggingService>();
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
         }
-        getIt.registerSingleton<LoggingService>(logger);
+        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
         const methodChannel = MethodChannel(
           'test_mlx_audio_logger_status_failure',
@@ -535,9 +534,9 @@ void main() {
 
         expect(progress.status, MlxAudioModelStatus.failed);
         verify(
-          () => logger.captureEvent(
-            any<Object>(that: contains('MLX Audio channel getModelStatus')),
-            domain: 'mlx_audio_channel',
+          () => mockDomainLogger.log(
+            LogDomain.speech,
+            any<String>(that: contains('MLX Audio channel getModelStatus')),
             subDomain: 'getModelStatus',
           ),
         ).called(1);

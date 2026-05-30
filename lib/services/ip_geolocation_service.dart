@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/geohash.dart';
 
 typedef IpGeolocationProvider =
@@ -58,9 +58,9 @@ class IpGeolocationService {
         }
       }
     } catch (e) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.location,
         e,
-        domain: 'IP_GEOLOCATION',
         subDomain: 'getLocationFromIp',
       );
     }
@@ -82,9 +82,9 @@ class IpGeolocationService {
         return sign * (hours * 60 + minutes);
       }
     } catch (e) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.location,
         e,
-        domain: 'IP_GEOLOCATION',
         subDomain: '_parseUtcOffset',
       );
     }
@@ -131,9 +131,9 @@ class IpGeolocationService {
         }
       }
     } catch (e) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.location,
         e,
-        domain: 'IP_GEOLOCATION',
         subDomain: '_getLocationFromIpApiFallback',
       );
     }

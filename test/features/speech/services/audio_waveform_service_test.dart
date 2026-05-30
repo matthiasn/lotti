@@ -8,7 +8,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
@@ -56,7 +56,7 @@ class _FakeWaveformExtractor {
 
 void main() {
   late Directory tempDir;
-  late MockLoggingService loggingService;
+  late MockDomainLogger mockDomainLogger;
   late _FakeWaveformExtractor extractor;
   late AudioWaveformService service;
 
@@ -72,7 +72,7 @@ void main() {
   setUp(() async {
     await getIt.reset();
     tempDir = await Directory.systemTemp.createTemp('waveform_service_test');
-    loggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     extractor = _FakeWaveformExtractor(
       Waveform(
         version: 1,
@@ -85,7 +85,7 @@ void main() {
     );
 
     getIt
-      ..registerSingleton<LoggingService>(loggingService)
+      ..registerSingleton<DomainLogger>(mockDomainLogger)
       ..registerSingleton<Directory>(tempDir);
 
     service = AudioWaveformService(
@@ -229,9 +229,9 @@ void main() {
 
     expect(result, isNotNull);
     verifyNever(
-      () => loggingService.captureEvent(
+      () => mockDomainLogger.log(
+        LogDomain.speech,
         any<String>(),
-        domain: 'audio_waveform_service',
         subDomain: 'duration_gate',
       ),
     );
@@ -790,10 +790,11 @@ void main() {
 
       expect(result, isNull);
       verify(
-        () => loggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(),
-          domain: 'audio_waveform_service',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'audio_waveform_service',
         ),
       ).called(1);
       expect(
@@ -815,10 +816,11 @@ void main() {
 
       expect(result, isNull);
       verify(
-        () => loggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<StateError>(),
-          domain: 'audio_waveform_service',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'audio_waveform_service',
         ),
       ).called(1);
     });
@@ -834,9 +836,9 @@ void main() {
 
       expect(result, isNull);
       verify(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.speech,
           any<String>(),
-          domain: 'audio_waveform_service',
           subDomain: 'missing_source',
         ),
       ).called(1);
@@ -863,10 +865,11 @@ void main() {
 
       expect(result, isNull);
       verify(
-        () => loggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<FileSystemException>(),
-          domain: 'audio_waveform_service',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'audio_waveform_service',
         ),
       ).called(1);
 
@@ -911,10 +914,11 @@ void main() {
       expect(tempFile, isNotNull);
       expect(tempFile!.existsSync(), isFalse);
       verify(
-        () => loggingService.captureException(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
           any<Object>(),
-          domain: 'audio_waveform_service',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'audio_waveform_service',
         ),
       ).called(1);
     });
@@ -932,17 +936,17 @@ void main() {
         ..createSync(recursive: true)
         ..writeAsStringSync('{"version":1');
 
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
 
       final result = await service.loadWaveform(audio, targetBuckets: 4);
       expect(result, isNotNull);
 
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_waveform_service',
-          subDomain: 'cache_read',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'cache_read',
         ),
       ).called(1);
 
@@ -960,17 +964,17 @@ void main() {
         ..createSync(recursive: true)
         ..writeAsStringSync('not-json');
 
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
 
       final result = await service.loadWaveform(audio, targetBuckets: 3);
       expect(result, isNotNull);
 
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_waveform_service',
-          subDomain: 'cache_read',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'cache_read',
         ),
       ).called(1);
 
@@ -988,17 +992,17 @@ void main() {
         ..createSync(recursive: true)
         ..writeAsStringSync('');
 
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
 
       final result = await service.loadWaveform(audio, targetBuckets: 2);
       expect(result, isNotNull);
 
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_waveform_service',
-          subDomain: 'cache_read',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'cache_read',
         ),
       ).called(1);
 
@@ -1016,25 +1020,25 @@ void main() {
         ..createSync(recursive: true)
         ..writeAsStringSync('[]');
 
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
 
       final result = await service.loadWaveform(audio, targetBuckets: 5);
       expect(result, isNotNull);
 
       verify(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.speech,
           'Unexpected cache payload shape: []',
-          domain: 'audio_waveform_service',
           subDomain: 'cache_read',
         ),
       ).called(1);
 
       verifyNever(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_waveform_service',
-          subDomain: 'cache_read',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'cache_read',
         ),
       );
 
@@ -1098,7 +1102,7 @@ void main() {
       ]);
       expect(removeWrite.exitCode, 0);
 
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
 
       try {
         final result = await service.loadWaveform(audio, targetBuckets: 3);
@@ -1112,11 +1116,11 @@ void main() {
       }
 
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_waveform_service',
-          subDomain: 'cache_write',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'cache_write',
         ),
       ).called(1);
 
@@ -1161,17 +1165,17 @@ void main() {
             },
       );
 
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
 
       final result = await service.loadWaveform(audio, targetBuckets: 3);
       expect(result, isNotNull);
 
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'audio_waveform_service',
-          subDomain: 'cache_write',
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'cache_write',
         ),
       ).called(1);
     });
@@ -1232,7 +1236,7 @@ void main() {
         fileName: 'long.m4a',
       );
 
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
       final result = await service.loadWaveform(audio, targetBuckets: 3);
       expect(result, isNotNull);
 
@@ -1254,20 +1258,20 @@ void main() {
       if (cacheFile.existsSync()) {
         expect(p.basename(cacheFile.path), '${sanitized}_3.json');
         verifyNever(
-          () => loggingService.captureException(
-            any<dynamic>(),
-            domain: 'audio_waveform_service',
-            subDomain: 'cache_write',
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'cache_write',
           ),
         );
       } else {
         verify(
-          () => loggingService.captureException(
-            any<dynamic>(),
-            domain: 'audio_waveform_service',
-            subDomain: 'cache_write',
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'cache_write',
           ),
         ).called(1);
       }
@@ -1316,7 +1320,7 @@ void main() {
   group('cache pruning', () {
     test('prunes oldest files when exceeding 1000 entries', () async {
       populateCacheEntries(1009);
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
       final audio = createAudio(
         duration: const Duration(seconds: 30),
         audioId: 'new-audio',
@@ -1361,9 +1365,9 @@ void main() {
       expect(remainingNames.contains('entry_10.json'), isTrue);
 
       verify(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.speech,
           'Pruned 10 waveform cache files (now 1000 entries)',
-          domain: 'audio_waveform_service',
           subDomain: 'cache_prune',
         ),
       ).called(1);
@@ -1371,7 +1375,7 @@ void main() {
 
     test('skips pruning when under cache limit', () async {
       populateCacheEntries(5);
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
       final audio = createAudio(
         duration: const Duration(seconds: 25),
         audioId: 'under-limit',
@@ -1385,9 +1389,9 @@ void main() {
       ).listSync(recursive: true).whereType<File>().toList();
       expect(allFiles.length, 6);
       verifyNever(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.speech,
           any<String>(),
-          domain: 'audio_waveform_service',
           subDomain: 'cache_prune',
         ),
       );
@@ -1398,7 +1402,7 @@ void main() {
       if (cacheRoot.existsSync()) {
         cacheRoot.deleteSync(recursive: true);
       }
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
       final audio = createAudio(
         duration: const Duration(seconds: 20),
         audioId: 'missing-dir',
@@ -1409,9 +1413,9 @@ void main() {
       expect(result, isNotNull);
 
       verifyNever(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.speech,
           any<String>(),
-          domain: 'audio_waveform_service',
           subDomain: 'cache_prune',
         ),
       );
@@ -1428,7 +1432,7 @@ void main() {
         targetDir.path,
       ]);
       expect(removeWrite.exitCode, 0);
-      clearInteractions(loggingService);
+      clearInteractions(mockDomainLogger);
 
       final audio = createAudio(
         duration: const Duration(seconds: 28),
@@ -1447,9 +1451,9 @@ void main() {
       }
 
       verify(
-        () => loggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.speech,
           'Pruned 10 waveform cache files (now 1000 entries)',
-          domain: 'audio_waveform_service',
           subDomain: 'cache_prune',
         ),
       ).called(1);

@@ -3,10 +3,9 @@ import 'dart:collection';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
-const _logDomain = 'sync';
 const _logSub = 'queue.decryptionPen';
 
 class _HeldEvent {
@@ -42,7 +41,7 @@ class PendingDecryptionPen {
     this.sweepInterval,
   });
 
-  final LoggingService _logging;
+  final DomainLogger _logging;
   final int capacity;
   final int maxAttempts;
   final Duration? sweepInterval;
@@ -164,10 +163,10 @@ class PendingDecryptionPen {
       if (held.attempts >= maxAttempts) {
         _held.remove(id);
         dropped++;
-        _logging.captureEvent(
+        _logging.log(
+          LogDomain.sync,
           'queue.decryptionPen.drop eventId=$id '
           'attempts=${held.attempts}',
-          domain: _logDomain,
           subDomain: _logSub,
         );
       } else {
@@ -198,11 +197,11 @@ class PendingDecryptionPen {
     try {
       return await room.getEventById(eventId);
     } catch (error, stackTrace) {
-      _logging.captureException(
+      _logging.error(
+        LogDomain.sync,
         error,
-        domain: _logDomain,
-        subDomain: '$_logSub.fetch',
         stackTrace: stackTrace,
+        subDomain: '$_logSub.fetch',
       );
       return null;
     }
@@ -212,9 +211,9 @@ class PendingDecryptionPen {
     while (_held.length > capacity) {
       final victim = _held.keys.first;
       _held.remove(victim);
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.decryptionPen.evict eventId=$victim reason=capacity',
-        domain: _logDomain,
         subDomain: _logSub,
       );
     }

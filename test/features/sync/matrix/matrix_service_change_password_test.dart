@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -47,7 +48,7 @@ void main() {
   late _MockGateway gateway;
   late _MockSessionManager sessionManager;
   late _MockSecureStorage secureStorage;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late MatrixService service;
 
   const existingConfig = MatrixConfig(
@@ -61,7 +62,7 @@ void main() {
     sessionManager = _MockSessionManager();
     secureStorage = _MockSecureStorage();
 
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     final sender = _MockMessageSender();
     final settingsDb = _MockSettingsDb();
     final eventProcessor = _MockEventProcessor();
@@ -185,11 +186,11 @@ void main() {
 
       // Stub logging
       when(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
@@ -218,11 +219,11 @@ void main() {
 
       // Verify persist error was logged
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'changePassword.persist',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'changePassword.persist',
         ),
       ).called(1);
     });
@@ -254,11 +255,11 @@ void main() {
 
       // Stub logging
       when(
-        () => logging.captureException(
+        () => logging.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
@@ -272,19 +273,19 @@ void main() {
 
       // Verify both persist and rollback errors were logged
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'changePassword.persist',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'changePassword.persist',
         ),
       ).called(1);
       verify(
-        () => logging.captureException(
+        () => logging.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'changePassword.rollback',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'changePassword.rollback',
         ),
       ).called(1);
     });

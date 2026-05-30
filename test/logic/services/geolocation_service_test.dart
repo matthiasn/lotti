@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -51,7 +52,7 @@ void main() {
   group('GeolocationService', () {
     late GeolocationService geolocationService;
     late MockJournalDb mockJournalDb;
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockDomainLogger;
     late MockMetadataService mockMetadataService;
     late MockDeviceLocation mockDeviceLocation;
 
@@ -96,7 +97,7 @@ void main() {
 
     setUp(() {
       mockJournalDb = MockJournalDb();
-      mockLoggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
       mockMetadataService = MockMetadataService();
       mockDeviceLocation = MockDeviceLocation();
 
@@ -106,7 +107,7 @@ void main() {
 
       geolocationService = GeolocationService(
         journalDb: mockJournalDb,
-        loggingService: mockLoggingService,
+        loggingService: mockDomainLogger,
         metadataService: mockMetadataService,
         deviceLocation: mockDeviceLocation,
       );
@@ -228,7 +229,7 @@ void main() {
       test('returns null when device location is null', () async {
         final serviceWithoutLocation = GeolocationService(
           journalDb: mockJournalDb,
-          loggingService: mockLoggingService,
+          loggingService: mockDomainLogger,
           metadataService: mockMetadataService,
           // deviceLocation is null
         );
@@ -380,9 +381,9 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.location,
             exception,
-            domain: 'geolocation_service',
             subDomain: 'getCurrentGeoLocation',
           ),
         ).called(1);
@@ -408,11 +409,11 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.location,
             exception,
-            domain: 'geolocation_service',
-            subDomain: 'addGeolocation',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'addGeolocation',
           ),
         ).called(1);
       });

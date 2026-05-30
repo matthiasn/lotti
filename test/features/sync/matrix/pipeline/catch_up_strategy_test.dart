@@ -2,7 +2,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -244,7 +244,7 @@ void main() {
       'generated timestamp catch-up returns the modeled boundary slice',
       (scenario) async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final timeline = MockTimeline();
         final events = [
           for (final event in scenario.events) _eventFromGenerated(event),
@@ -274,7 +274,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async {
                 backfillCalls++;
@@ -314,7 +314,7 @@ void main() {
       'returns best-effort events when timestamp boundary stays unreachable and snapshot is full',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final created = <MockTimeline>[];
 
         // Large dataset e0..e4999
@@ -357,7 +357,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => false,
           preContextSinceTs: -1,
@@ -378,7 +378,7 @@ void main() {
       'returns best-effort events without escalating when timestamp boundary is unreachable and snapshot not full',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // Data shorter than the initial limit and still newer than the anchor.
@@ -407,7 +407,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => true,
           preContextSinceTs: 50,
@@ -428,7 +428,7 @@ void main() {
       'returns best-effort events when timestamp boundary is unreachable regardless of fallback limit',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         final events = List<Event>.generate(20, (i) {
@@ -456,7 +456,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => true,
           missingMarkerFallbackLimit: 3,
@@ -472,7 +472,7 @@ void main() {
     );
     test('preContextCount=80 bounds timestamp overlap window', () async {
       final room = MockRoom();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
       final tl = MockTimeline();
 
       // Build ordered events e0..e199 (ts increasing)
@@ -501,7 +501,7 @@ void main() {
               required String? lastEventId,
               required int pageSize,
               required int? maxPages,
-              required LoggingService logging,
+              required DomainLogger logging,
               num? untilTimestamp,
             }) async => true,
         preContextSinceTs: 120,
@@ -516,7 +516,7 @@ void main() {
 
     test('maxLookback=1000 bounds timestamp-boundary lookback', () async {
       final room = MockRoom();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
       final created = <MockTimeline>[];
 
       // Synthetic large window e0..e9999
@@ -557,7 +557,7 @@ void main() {
               required String? lastEventId,
               required int pageSize,
               required int? maxPages,
-              required LoggingService logging,
+              required DomainLogger logging,
               num? untilTimestamp,
             }) async => false,
         initialLimit: 50,
@@ -577,7 +577,7 @@ void main() {
     });
     test('uses backfill and returns timestamp-anchored slice', () async {
       final room = MockRoom();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
       final tl = MockTimeline();
 
       // Snapshot with events e0..e2 (sorted oldest->newest)
@@ -606,7 +606,7 @@ void main() {
               required String? lastEventId,
               required int pageSize,
               required int? maxPages,
-              required LoggingService logging,
+              required DomainLogger logging,
               num? untilTimestamp,
             }) async {
               // backfill attempts and succeeds
@@ -626,7 +626,7 @@ void main() {
       'boundary even if server backfill reports end-of-timeline',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         Event mk(String id, int ts) {
@@ -656,7 +656,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => false,
           preContextSinceTs: 150,
@@ -681,7 +681,7 @@ void main() {
       'requires server history to satisfy the timestamp boundary when prev_batch exists',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         Event mk(String id, int ts) {
@@ -711,7 +711,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async {
                 events.insert(1, mk('server-gap', 140));
@@ -733,7 +733,7 @@ void main() {
 
     test('falls back to doubling when backfill unavailable', () async {
       final room = MockRoom();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
       final created = <MockTimeline>[];
 
       // Build a synthetic sequence e0..e9
@@ -772,7 +772,7 @@ void main() {
               required String? lastEventId,
               required int pageSize,
               required int? maxPages,
-              required LoggingService logging,
+              required DomainLogger logging,
               num? untilTimestamp,
             }) async => false,
         initialLimit: 2,
@@ -794,7 +794,7 @@ void main() {
       'no anchor returns small snapshot without expansion when under limit',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // 10 events — well under the default initialLimit of 200,
@@ -824,7 +824,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => true,
         );
@@ -843,7 +843,7 @@ void main() {
       'no anchor expands timeline by doubling until all events are fetched',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final created = <MockTimeline>[];
 
         // 15 events total. initialLimit=5 so the first page is full and
@@ -881,7 +881,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => true,
         );
@@ -904,7 +904,7 @@ void main() {
       'no anchor expansion stops at maxLookback',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final created = <MockTimeline>[];
 
         // 500 events, but maxLookback=100 should cap the expansion.
@@ -941,7 +941,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => true,
         );
@@ -963,7 +963,7 @@ void main() {
       'no anchor expansion stops when no new events are returned',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final created = <MockTimeline>[];
 
         // Exactly 5 events. initialLimit=5 makes the first page "full",
@@ -1001,7 +1001,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => true,
         );
@@ -1020,7 +1020,7 @@ void main() {
       'includes pre-context by count around the timestamp boundary',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // Build ordered events: o1(ts=100), x1(ts=150), x2(ts=200)
@@ -1051,7 +1051,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async {
                 return true;
@@ -1068,7 +1068,7 @@ void main() {
 
     test('includes pre-context by timestamp (since last sync)', () async {
       final room = MockRoom();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
       final tl = MockTimeline();
 
       // o1(ts=100), x1(ts=150), x2(ts=200)
@@ -1100,7 +1100,7 @@ void main() {
               required String? lastEventId,
               required int pageSize,
               required int? maxPages,
-              required LoggingService logging,
+              required DomainLogger logging,
               num? untilTimestamp,
             }) async => true,
         preContextSinceTs: sinceTs,
@@ -1115,7 +1115,7 @@ void main() {
       'preContextCount=1 includes exactly one before the timestamp boundary',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // Ordered events: e0(ts=100), m(ts=150)[marker], e1(ts=200)
@@ -1147,7 +1147,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => true,
           preContextSinceTs: 150,
@@ -1164,7 +1164,7 @@ void main() {
       'preContextSinceTs equals earliest timestamp does not over-include',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // Earliest ts is 100; marker at 150; latest 200
@@ -1197,7 +1197,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => true,
           preContextSinceTs: 100, // equals earliest
@@ -1214,7 +1214,7 @@ void main() {
       'returns best-effort events when older history is not reachable',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // Simple window e0..e2, marker not present
@@ -1243,7 +1243,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async => false,
           preContextCount: 5,
@@ -1264,7 +1264,7 @@ void main() {
       'replays from timestamp boundary after backfill reaches older history',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         num? capturedUntilTimestamp;
         int? capturedMaxPages;
@@ -1296,7 +1296,7 @@ void main() {
                 required String? lastEventId,
                 required int pageSize,
                 required int? maxPages,
-                required LoggingService logging,
+                required DomainLogger logging,
                 num? untilTimestamp,
               }) async {
                 capturedUntilTimestamp = untilTimestamp;
@@ -1330,7 +1330,7 @@ void main() {
     'incomplete-return branch and its diagnostics log',
     () async {
       final room = MockRoom();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
       final tl = MockTimeline();
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
@@ -1349,7 +1349,7 @@ void main() {
               required String? lastEventId,
               required int pageSize,
               required int? maxPages,
-              required LoggingService logging,
+              required DomainLogger logging,
               num? untilTimestamp,
             }) async => false,
         preContextSinceTs: 10_000,
@@ -1358,9 +1358,9 @@ void main() {
       expect(result.events, isEmpty);
       expect(result.reachedTimestampBoundary, isFalse);
       verify(
-        () => log.captureEvent(
+        () => log.log(
+          any<LogDomain>(),
           any<String>(that: contains('catchup.incomplete')),
-          domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
@@ -1372,7 +1372,7 @@ void main() {
     'intermediate timeline.cancelSubscriptions throws',
     () async {
       final room = MockRoom();
-      final log = MockLoggingService();
+      final log = MockDomainLogger();
       final tl0 = MockTimeline();
       final tl1 = MockTimeline();
       final firstEvents = List<Event>.generate(200, (i) {
@@ -1410,21 +1410,21 @@ void main() {
               required String? lastEventId,
               required int pageSize,
               required int? maxPages,
-              required LoggingService logging,
+              required DomainLogger logging,
               num? untilTimestamp,
             }) async => false,
         // preContextSinceTs: null → no-anchor branch.
       );
       expect(result.events, hasLength(200));
       verify(
-        () => log.captureException(
+        () => log.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any(named: 'domain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any(
             named: 'subDomain',
             that: contains('catchup.noAnchor.cleanup'),
           ),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
       ).called(1);
     },
@@ -1446,7 +1446,7 @@ void main() {
       'generated backward bootstrap honors boundary continuation cap',
       (scenario) async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final timeline = MockTimeline();
         final events = <Event>[_generatedEvent('history-0', 900)];
         var historyCalls = 0;
@@ -1497,7 +1497,7 @@ void main() {
       '(memory bounded by page size, not total history depth)',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // The SDK stores events in a single mutable list that grows as
@@ -1557,7 +1557,7 @@ void main() {
       'page cannot re-emit an already-emitted event at the same ts',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // First page: two events at ts=100 with ids ordered 'b','a'
@@ -1605,7 +1605,7 @@ void main() {
       'requestHistory fires',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         final events = <Event>[buildEvent('x', 1)];
         when(
@@ -1635,7 +1635,7 @@ void main() {
       'with stopReason=error (no unhandled future)',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
@@ -1655,14 +1655,14 @@ void main() {
         );
         expect(result.stopReason, BootstrapStopReason.error);
         verify(
-          () => log.captureException(
+          () => log.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any(
               named: 'subDomain',
               that: contains('bootstrap.requestHistory'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
       },
@@ -1673,7 +1673,7 @@ void main() {
       'when the new first id is lex-smaller',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         // Page 0 emits two events at ts=100, oldest by (ts, id) is 'm'.
         final events = <Event>[
@@ -1714,7 +1714,7 @@ void main() {
       'sink cancellation halts paging before the next requestHistory',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         final events = <Event>[buildEvent('x', 1)];
         when(
@@ -1743,7 +1743,7 @@ void main() {
       'does not walk further back than the queue marker',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // Initial snapshot: three events strictly newer than the boundary.
@@ -1801,7 +1801,7 @@ void main() {
       'queue seeing (the queue dedups anything older)',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // Whole initial snapshot is at ts=50, already below a
@@ -1840,7 +1840,7 @@ void main() {
       'history and the bridge does not exit prematurely',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         // Every page is at-or-below the boundary (ts <= 100). Without
@@ -1885,7 +1885,7 @@ void main() {
       'continuation only kicks in when the sink accepted zero events',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
 
         final events = <Event>[buildEvent('e-0', 50)];
@@ -1936,7 +1936,7 @@ void main() {
       'generated forward bootstrap honors future paging and cap semantics',
       (scenario) async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final timeline = MockTimeline();
         final events = <Event>[
           _generatedEvent(r'$anchor', 1000),
@@ -2000,7 +2000,7 @@ void main() {
       'the gap window',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         final events = <Event>[
           buildEvent(r'$anchor', 100),
@@ -2039,7 +2039,7 @@ void main() {
       'compacted the anchor event out of its timeline',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         when(
           () => room.getTimeline(
@@ -2070,7 +2070,7 @@ void main() {
       'page',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         var futureCalls = 0;
         final events = <Event>[
@@ -2127,7 +2127,7 @@ void main() {
       'not a failure',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         final events = <Event>[
           buildEvent(r'$anchor', 100),
@@ -2175,7 +2175,7 @@ void main() {
       'backward walk, so the shape has to match exactly',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         when(
           () => room.getTimeline(
             eventContextId: any(named: 'eventContextId'),
@@ -2202,7 +2202,7 @@ void main() {
       'stop promptly, not drain the whole server first',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         final events = <Event>[
           buildEvent(r'$anchor', 100),
@@ -2245,7 +2245,7 @@ void main() {
       'connectivity mid-walk" and schedule a retry accordingly',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         final events = <Event>[
           buildEvent(r'$anchor', 100),
@@ -2274,14 +2274,14 @@ void main() {
         expect(result.stopReason, BootstrapStopReason.error);
         expect(result.totalPages, 1);
         verify(
-          () => log.captureException(
+          () => log.error(
+            any<LogDomain>(),
             any<Object>(),
-            domain: any<String>(named: 'domain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String>(
               named: 'subDomain',
               that: contains('requestFuture'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
       },
@@ -2294,7 +2294,7 @@ void main() {
       'already sent to the sink',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         // Two events share ts=110, and the lex-greater one arrives on
         // a later page. The first page sends `$aaaa`, the second
@@ -2349,7 +2349,7 @@ void main() {
       'falls back to continuing pagination rather than crashing',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         final anchor = buildEvent(r'$anchor', 100);
         final e1 = buildEvent(r'$e1', 110);
@@ -2381,7 +2381,7 @@ void main() {
       'network, and a bounded timeout keeps the bridge responsive',
       () async {
         final room = MockRoom();
-        final log = MockLoggingService();
+        final log = MockDomainLogger();
         final tl = MockTimeline();
         final anchorEv = buildEvent(r'$anchor', 100);
         final e1 = buildEvent(r'$e1', 110);

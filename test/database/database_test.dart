@@ -24,8 +24,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
-import 'package:lotti/services/logging_domains.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -326,7 +325,7 @@ void main() {
 
   JournalDb? db;
   final mockUpdateNotifications = MockUpdateNotifications();
-  final mockLoggingService = MockLoggingService();
+  final mockLoggingService = MockDomainLogger();
   late Directory testDirectory;
 
   group('Database Tests - ', () {
@@ -339,7 +338,7 @@ void main() {
       // Register services
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<DomainLogger>(mockLoggingService)
         ..registerSingleton<Directory>(testDirectory);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -347,19 +346,19 @@ void main() {
       );
 
       when(
-        () => mockLoggingService.captureEvent(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
+        () => mockLoggingService.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) => Future<void>.value());
 
       when(
-        () => mockLoggingService.captureException(
+        () => mockLoggingService.error(
+          any<LogDomain>(),
           any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((_) async {});
 
@@ -496,11 +495,11 @@ void main() {
           expect(result.applied, isFalse);
           expect(result.skipReason, JournalUpdateSkipReason.conflict);
           verify(
-            () => mockLoggingService.captureException(
+            () => mockLoggingService.error(
+              LogDomain.database,
               any<Object>(),
-              domain: 'JOURNAL_DB',
-              subDomain: 'detectConflict',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'detectConflict',
             ),
           ).called(1);
         } finally {
@@ -3231,11 +3230,11 @@ void main() {
         await db!.purgeDeletedFiles();
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockLoggingService.error(
+            LogDomain.database,
             any<Object>(),
-            domain: 'Database',
-            subDomain: 'purgeDeletedFiles',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'purgeDeletedFiles',
           ),
         ).called(1);
         expect(File(textJsonPath).existsSync(), isFalse);
@@ -4387,7 +4386,7 @@ void main() {
       // Unregister services first to avoid hanging references
       getIt
         ..unregister<UpdateNotifications>()
-        ..unregister<LoggingService>()
+        ..unregister<DomainLogger>()
         ..unregister<Directory>();
 
       // Then close database

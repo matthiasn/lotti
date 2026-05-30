@@ -4,6 +4,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -134,12 +135,11 @@ extension _AnyGeneratedVcValidatorScenario on glados.Any {
 
 void main() {
   group('VectorClockValidator', () {
-    late MockLoggingService logging;
+    late MockDomainLogger logging;
     late VectorClockValidator validator;
 
     setUp(() {
-      logging = MockLoggingService();
-      stubLoggingService(logging);
+      logging = MockDomainLogger();
       validator = VectorClockValidator(loggingService: logging);
     });
 
@@ -164,9 +164,9 @@ void main() {
       );
       expect(decision, VectorClockDecision.retryAfterPurge);
       verify(
-        () => logging.captureEvent(
-          contains('smart.fetch.stale_vc path=/path.json'),
-          domain: 'MATRIX_SERVICE',
+        () => logging.log(
+          LogDomain.sync,
+          any<String>(that: contains('smart.fetch.stale_vc path=/path.json')),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -187,9 +187,11 @@ void main() {
       );
       expect(decision, VectorClockDecision.staleAfterRefresh);
       verify(
-        () => logging.captureEvent(
-          contains('smart.fetch.stale_vc.pending path=/path.json'),
-          domain: 'MATRIX_SERVICE',
+        () => logging.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.fetch.stale_vc.pending path=/path.json'),
+          ),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -219,9 +221,11 @@ void main() {
       );
       expect(decision, VectorClockDecision.circuitBreaker);
       verify(
-        () => logging.captureEvent(
-          contains('smart.fetch.stale_vc.breaker path=/path.json'),
-          domain: 'MATRIX_SERVICE',
+        () => logging.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.fetch.stale_vc.breaker path=/path.json'),
+          ),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -236,9 +240,11 @@ void main() {
       );
       expect(decision, VectorClockDecision.missingVectorClock);
       verify(
-        () => logging.captureEvent(
-          contains('smart.fetch.missing_vc path=/missing.json'),
-          domain: 'MATRIX_SERVICE',
+        () => logging.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('smart.fetch.missing_vc path=/missing.json'),
+          ),
           subDomain: 'SmartLoader.fetch',
         ),
       ).called(1);
@@ -274,8 +280,7 @@ void main() {
     ).test(
       'generated interleaved descriptor checks keep stale counters path-scoped',
       (scenario) {
-        final localLogging = MockLoggingService();
-        stubLoggingService(localLogging);
+        final localLogging = MockDomainLogger();
         final localValidator = VectorClockValidator(
           loggingService: localLogging,
         );

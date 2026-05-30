@@ -7,18 +7,18 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 class AutoChecklistService {
   AutoChecklistService({
     required this._checklistRepository,
     JournalDb? journalDb,
-    LoggingService? loggingService,
+    DomainLogger? loggingService,
   }) : _journalDb = journalDb ?? getIt<JournalDb>(),
-       _loggingService = loggingService ?? getIt<LoggingService>();
+       _loggingService = loggingService ?? getIt<DomainLogger>();
 
   final JournalDb _journalDb;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final ChecklistRepository _checklistRepository;
 
   Future<bool> shouldAutoCreate({required String taskId}) async {
@@ -32,11 +32,11 @@ class AutoChecklistService {
       final checklistIds = task.data.checklistIds ?? [];
       return checklistIds.isEmpty;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.tasks,
         exception,
-        domain: 'auto_checklist_service',
-        subDomain: 'shouldAutoCreate',
         stackTrace: stackTrace,
+        subDomain: 'shouldAutoCreate',
       );
       return false;
     }
@@ -100,9 +100,9 @@ class AutoChecklistService {
         );
       }
 
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.tasks,
         'auto_checklist_created: taskId=$taskId, checklistId=${result.checklist!.id}, itemCount=${result.createdItems.length}',
-        domain: 'auto_checklist_service',
         subDomain: 'autoCreateChecklist',
       );
 
@@ -113,11 +113,11 @@ class AutoChecklistService {
         error: null,
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.tasks,
         exception,
-        domain: 'auto_checklist_service',
-        subDomain: 'autoCreateChecklist',
         stackTrace: stackTrace,
+        subDomain: 'autoCreateChecklist',
       );
       return (
         success: false,

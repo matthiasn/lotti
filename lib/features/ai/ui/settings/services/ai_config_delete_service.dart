@@ -8,7 +8,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -376,10 +376,10 @@ class AiConfigDeleteService {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently
       try {
-        getIt<LoggingService>().captureEvent(
+        getIt<DomainLogger>().log(
+          LogDomain.ai,
           'Undo provider deletion failed: ${provider.name} (${provider.id}), '
           '${result.deletedModels.length} models, error: $error',
-          domain: 'AI_CONFIG',
           subDomain: 'DELETE_SERVICE',
           level: InsightLevel.warn,
         );
@@ -398,10 +398,10 @@ class AiConfigDeleteService {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently
       try {
-        getIt<LoggingService>().captureEvent(
+        getIt<DomainLogger>().log(
+          LogDomain.ai,
           'Undo config deletion failed: ${config.name} (${config.id}), '
           'type: ${config.runtimeType}, error: $error',
-          domain: 'AI_CONFIG',
           subDomain: 'DELETE_SERVICE',
           level: InsightLevel.warn,
         );

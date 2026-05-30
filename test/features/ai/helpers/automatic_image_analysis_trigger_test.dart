@@ -7,13 +7,13 @@ import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
 void main() {
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockProfileAutomationService mockProfileAutomationService;
   late MockSkillInferenceRunner mockRunner;
   late ProviderContainer container;
@@ -36,29 +36,29 @@ void main() {
   }
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockProfileAutomationService = MockProfileAutomationService();
     mockRunner = MockSkillInferenceRunner();
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
     when(
-      () => mockLoggingService.captureEvent(
+      () => mockDomainLogger.log(
+        any<LogDomain>(),
         any<String>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenReturn(null);
 
     when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
+        any<Object>(),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -80,8 +80,8 @@ void main() {
 
   tearDown(() {
     container.dispose();
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
   });
 
@@ -94,9 +94,9 @@ void main() {
       );
 
       verify(
-        () => mockLoggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.ai,
           any<String>(that: contains('No linked task')),
-          domain: 'automatic_image_analysis_trigger',
           subDomain: 'triggerAutomaticImageAnalysis',
         ),
       ).called(1);
@@ -116,9 +116,9 @@ void main() {
       );
 
       verify(
-        () => mockLoggingService.captureEvent(
+        () => mockDomainLogger.log(
+          LogDomain.ai,
           any<String>(that: contains('No linked task')),
-          domain: 'automatic_image_analysis_trigger',
           subDomain: 'triggerAutomaticImageAnalysis',
         ),
       ).called(1);
@@ -139,11 +139,11 @@ void main() {
       );
 
       verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'automatic_image_analysis_trigger',
-          subDomain: 'triggerAutomaticImageAnalysis',
+        () => mockDomainLogger.error(
+          LogDomain.ai,
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'triggerAutomaticImageAnalysis',
         ),
       ).called(1);
     });
@@ -184,9 +184,9 @@ void main() {
         ).called(1);
 
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            LogDomain.ai,
             any<String>(that: contains('Profile-driven image analysis')),
-            domain: 'automatic_image_analysis_trigger',
             subDomain: 'triggerAutomaticImageAnalysis',
           ),
         ).called(1);
@@ -208,9 +208,9 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureEvent(
+          () => mockDomainLogger.log(
+            LogDomain.ai,
             any<String>(that: contains('did not handle image analysis')),
-            domain: 'automatic_image_analysis_trigger',
             subDomain: 'triggerAutomaticImageAnalysis',
           ),
         ).called(1);

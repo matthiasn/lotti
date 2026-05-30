@@ -4,7 +4,7 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Mistral-specific inference operations
@@ -25,12 +25,12 @@ class MistralInferenceRepository {
     required String subDomain,
     StackTrace? stackTrace,
   }) {
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt<LoggingService>().captureException(
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt<DomainLogger>().error(
+        LogDomain.ai,
         exception,
-        domain: 'MISTRAL',
-        subDomain: subDomain,
         stackTrace: stackTrace,
+        subDomain: subDomain,
       );
     }
   }

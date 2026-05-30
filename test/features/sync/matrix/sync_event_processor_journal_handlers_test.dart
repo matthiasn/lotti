@@ -63,30 +63,34 @@ void main() {
 
         // Verify logging for each embedded link
         verify(
-          () => loggingService.captureEvent(
-            contains(
-              'apply entryLink.embedded from=${link1.fromId} to=${link1.toId}',
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: contains(
+                'apply entryLink.embedded from=${link1.fromId} to=${link1.toId}',
+              ),
             ),
-            domain: LogDomain.sync.wireName,
             subDomain: 'processor.apply.entryLink.embedded',
           ),
         ).called(1);
 
         verify(
-          () => loggingService.captureEvent(
-            contains(
-              'apply entryLink.embedded from=${link2.fromId} to=${link2.toId}',
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: contains(
+                'apply entryLink.embedded from=${link2.fromId} to=${link2.toId}',
+              ),
             ),
-            domain: LogDomain.sync.wireName,
             subDomain: 'processor.apply.entryLink.embedded',
           ),
         ).called(1);
 
         // Verify summary log includes embedded links count
         verify(
-          () => loggingService.captureEvent(
-            contains('embeddedLinks=2/2'),
-            domain: LogDomain.sync.wireName,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('embeddedLinks=2/2')),
             subDomain: 'processor.apply',
           ),
         ).called(1);
@@ -161,20 +165,22 @@ void main() {
 
       // Verify logging for embedded link processing
       verify(
-        () => loggingService.captureEvent(
-          contains(
-            'apply entryLink.embedded from=${link.fromId} to=${link.toId}',
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains(
+              'apply entryLink.embedded from=${link.fromId} to=${link.toId}',
+            ),
           ),
-          domain: LogDomain.sync.wireName,
           subDomain: 'processor.apply.entryLink.embedded',
         ),
       ).called(1);
 
       // Verify summary shows 1 embedded link processed
       verify(
-        () => loggingService.captureEvent(
-          contains('embeddedLinks=1/1'),
-          domain: LogDomain.sync.wireName,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('embeddedLinks=1/1')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -245,11 +251,11 @@ void main() {
         // The link-level capture still ran before the rethrow so the
         // failure shows up in domain logs.
         verify(
-          () => loggingService.captureException(
+          () => loggingService.error(
+            LogDomain.sync,
             any<Exception>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'apply.entryLink.embedded',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'apply.entryLink.embedded',
           ),
         ).called(1);
       },
@@ -276,9 +282,9 @@ void main() {
 
       // Verify summary shows 0/0 embedded links
       verify(
-        () => loggingService.captureEvent(
-          contains('embeddedLinks=0/0'),
-          domain: LogDomain.sync.wireName,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('embeddedLinks=0/0')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -315,18 +321,18 @@ void main() {
 
       // Verify no log for link application (rows was 0)
       verifyNever(
-        () => loggingService.captureEvent(
-          contains('apply entryLink.embedded'),
-          domain: any(named: 'domain'),
+        () => loggingService.log(
+          any<LogDomain>(),
+          any<String>(that: contains('apply entryLink.embedded')),
           subDomain: 'processor.apply.entryLink.embedded',
         ),
       );
 
       // Verify summary shows 0 processed (since linkRows was 0)
       verify(
-        () => loggingService.captureEvent(
-          contains('embeddedLinks=0/1'),
-          domain: LogDomain.sync.wireName,
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('embeddedLinks=0/1')),
           subDomain: 'processor.apply',
         ),
       ).called(1);
@@ -484,9 +490,9 @@ void main() {
         await processorWithSeq.process(event: event, journalDb: journalDb);
 
         verify(
-          () => loggingService.captureEvent(
-            contains('apply.entryLink.gapsDetected count=2'),
-            domain: LogDomain.sync.wireName,
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('apply.entryLink.gapsDetected count=2')),
             subDomain: 'processor.gapDetection',
           ),
         ).called(1);
@@ -534,11 +540,11 @@ void main() {
 
       // Verify exception was logged
       verify(
-        () => loggingService.captureException(
+        () => loggingService.error(
+          LogDomain.sync,
           any<Object>(),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'recordReceived',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'recordReceived',
         ),
       ).called(1);
     });

@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -15,26 +15,26 @@ import '../../../mocks/mocks.dart';
 
 void main() {
   late MockHttpClient mockHttpClient;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late WhatsNewService service;
 
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
     mockHttpClient = MockHttpClient();
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
     when(
-      () => mockLoggingService.captureException(
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
 
@@ -127,11 +127,11 @@ void main() {
 
         expect(releases, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.whatsNew,
             any<Object>(),
-            domain: 'WHATS_NEW',
-            subDomain: any(named: 'subDomain'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
           ),
         ).called(1);
       });
@@ -153,11 +153,11 @@ void main() {
 
         expect(releases, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.whatsNew,
             any<Object>(),
-            domain: 'WHATS_NEW',
-            subDomain: 'fetchIndex.parse',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'fetchIndex.parse',
           ),
         ).called(1);
       });
@@ -255,11 +255,11 @@ Fixed some bugs.
 
         expect(content, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.whatsNew,
             any<Object>(),
-            domain: 'WHATS_NEW',
-            subDomain: any(named: 'subDomain'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
           ),
         ).called(1);
       });
@@ -277,11 +277,11 @@ Fixed some bugs.
 
         expect(content, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.whatsNew,
             any<Object>(),
-            domain: 'WHATS_NEW',
-            subDomain: 'fetchContent.timeout',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'fetchContent.timeout',
           ),
         ).called(1);
       });
@@ -299,11 +299,11 @@ Fixed some bugs.
 
         expect(content, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.whatsNew,
             any<Object>(),
-            domain: 'WHATS_NEW',
-            subDomain: 'fetchContent.network',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'fetchContent.network',
           ),
         ).called(1);
       });
@@ -322,11 +322,11 @@ Fixed some bugs.
 
         expect(releases, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.whatsNew,
             any<Object>(),
-            domain: 'WHATS_NEW',
-            subDomain: 'fetchIndex.timeout',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'fetchIndex.timeout',
           ),
         ).called(1);
       });
@@ -343,11 +343,11 @@ Fixed some bugs.
 
         expect(releases, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.whatsNew,
             any<Object>(),
-            domain: 'WHATS_NEW',
-            subDomain: 'fetchIndex.network',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'fetchIndex.network',
           ),
         ).called(1);
       });

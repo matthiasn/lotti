@@ -26,8 +26,8 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart'
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -138,7 +138,7 @@ void main() {
     late Fts5Db initialFts5;
     late Maintenance maintenance;
     late MockOutboxService outboxService;
-    late MockLoggingService loggingService;
+    late MockDomainLogger mockDomainLogger;
     late MockPersistenceLogic persistenceLogic;
     late MockEntitiesCacheService entitiesCacheService;
     late MockVectorClockService vectorClockService;
@@ -160,8 +160,8 @@ void main() {
       outboxService = MockOutboxService();
       getIt.registerSingleton<OutboxService>(outboxService);
 
-      loggingService = MockLoggingService();
-      getIt.registerSingleton<LoggingService>(loggingService);
+      mockDomainLogger = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       persistenceLogic = MockPersistenceLogic();
       getIt.registerSingleton<PersistenceLogic>(persistenceLogic);
@@ -202,9 +202,9 @@ void main() {
       });
 
       when(
-        () => loggingService.captureEvent(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
+        () => mockDomainLogger.log(
+          any<LogDomain>(),
+          any<String>(),
           subDomain: any<String?>(named: 'subDomain'),
         ),
       ).thenAnswer((invocation) {
@@ -213,14 +213,16 @@ void main() {
       });
 
       when(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any<String?>(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
       ).thenAnswer((invocation) {
-        loggedExceptions.add(invocation.positionalArguments.first);
+        // error(LogDomain, Object error, ...): the error object is the
+        // second positional argument.
+        loggedExceptions.add(invocation.positionalArguments[1]);
         return;
       });
 
@@ -750,9 +752,9 @@ void main() {
 
           expect(sentMessages, isEmpty);
           verify(
-            () => loggingService.captureEvent(
+            () => mockDomainLogger.log(
+              LogDomain.database,
               'reSyncInterval skipped — both entity-type filters disabled',
-              domain: 'MAINTENANCE',
               subDomain: 'reSyncInterval',
             ),
           ).called(1);
@@ -791,9 +793,9 @@ void main() {
         expect(dbFile.existsSync(), isFalse);
 
         verify(
-          () => loggingService.captureEvent(
+          () => mockDomainLogger.log(
+            LogDomain.database,
             'FTS5 database DELETED',
-            domain: 'MAINTENANCE',
             subDomain: 'recreateFts5',
           ),
         ).called(1);
@@ -856,9 +858,9 @@ void main() {
 
         expect(dbFile.existsSync(), isFalse);
         verify(
-          () => loggingService.captureEvent(
+          () => mockDomainLogger.log(
+            LogDomain.database,
             'Database file $agentDbFileName does not exist',
-            domain: 'MAINTENANCE',
             subDomain: 'deleteAgentDb',
           ),
         ).called(1);
@@ -1042,9 +1044,9 @@ void main() {
           expect(await syncDb.allOutboxItems, hasLength(2));
 
           verify(
-            () => loggingService.captureEvent(
+            () => mockDomainLogger.log(
+              LogDomain.database,
               'purgeSentOutbox removed=12 retentionDays=7 chunkSize=5',
-              domain: 'MAINTENANCE',
               subDomain: 'purgeSentOutbox',
             ),
           ).called(1);
@@ -1061,9 +1063,9 @@ void main() {
 
           expect(deleted, 0);
           verify(
-            () => loggingService.captureEvent(
+            () => mockDomainLogger.log(
+              LogDomain.database,
               'purgeSentOutbox removed=0 retentionDays=7 chunkSize=5',
-              domain: 'MAINTENANCE',
               subDomain: 'purgeSentOutbox',
             ),
           ).called(1);

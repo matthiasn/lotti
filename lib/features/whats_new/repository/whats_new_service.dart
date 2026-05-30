@@ -7,7 +7,7 @@ import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/util/whats_new_markdown_parser.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Service for fetching "What's New" content from a remote repository.
 ///
@@ -61,32 +61,32 @@ class WhatsNewService {
         return releases;
       }
     } on TimeoutException catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.whatsNew,
         e,
-        domain: 'WHATS_NEW',
-        subDomain: 'fetchIndex.timeout',
         stackTrace: stackTrace,
+        subDomain: 'fetchIndex.timeout',
       );
     } on SocketException catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.whatsNew,
         e,
-        domain: 'WHATS_NEW',
-        subDomain: 'fetchIndex.network',
         stackTrace: stackTrace,
+        subDomain: 'fetchIndex.network',
       );
     } on FormatException catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.whatsNew,
         e,
-        domain: 'WHATS_NEW',
-        subDomain: 'fetchIndex.parse',
         stackTrace: stackTrace,
+        subDomain: 'fetchIndex.parse',
       );
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.whatsNew,
         e,
-        domain: 'WHATS_NEW',
-        subDomain: 'fetchIndex',
         stackTrace: stackTrace,
+        subDomain: 'fetchIndex',
       );
     }
 
@@ -114,25 +114,25 @@ class WhatsNewService {
         );
       }
     } on TimeoutException catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.whatsNew,
         e,
-        domain: 'WHATS_NEW',
-        subDomain: 'fetchContent.timeout',
         stackTrace: stackTrace,
+        subDomain: 'fetchContent.timeout',
       );
     } on SocketException catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.whatsNew,
         e,
-        domain: 'WHATS_NEW',
-        subDomain: 'fetchContent.network',
         stackTrace: stackTrace,
+        subDomain: 'fetchContent.network',
       );
     } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.whatsNew,
         e,
-        domain: 'WHATS_NEW',
-        subDomain: 'fetchContent',
         stackTrace: stackTrace,
+        subDomain: 'fetchContent',
       );
     }
 

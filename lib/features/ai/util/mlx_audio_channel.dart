@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 
 /// Native bridge for MLX Audio on macOS.
@@ -225,9 +225,9 @@ class MlxAudioChannel {
 
   void _logPlatformException(String method, PlatformException error) {
     try {
-      getIt<LoggingService>().captureEvent(
+      getIt<DomainLogger>().log(
+        LogDomain.speech,
         'MLX Audio channel $method failed: $error',
-        domain: 'mlx_audio_channel',
         subDomain: method,
       );
     } catch (_) {
@@ -539,11 +539,11 @@ class MlxAudioModelProgressStore
     StackTrace stackTrace,
   ) {
     try {
-      getIt<LoggingService>().captureException(
+      getIt<DomainLogger>().error(
+        LogDomain.speech,
         error,
-        domain: 'mlx_audio_channel',
-        subDomain: operation,
         stackTrace: stackTrace,
+        subDomain: operation,
       );
     } catch (_) {
       // LoggingService may not be registered in tests.

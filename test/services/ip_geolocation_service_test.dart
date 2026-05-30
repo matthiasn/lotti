@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -17,7 +17,7 @@ class FakeUri extends Fake implements Uri {}
 class FakeException extends Fake implements Exception {}
 
 void main() {
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockHttpClient mockHttpClient;
 
   // Fixed reference moment used both as the injected clock for the service
@@ -34,19 +34,19 @@ void main() {
   });
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockHttpClient = MockHttpClient();
 
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
     // Stub captureException to prevent errors in tests
     when(
-      () => mockLoggingService.captureException(
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
         any<Exception>(),
-        domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
@@ -193,9 +193,9 @@ void main() {
         expect(result, isNull);
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.location,
             any<Exception>(),
-            domain: 'IP_GEOLOCATION',
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(2);
@@ -467,9 +467,9 @@ void main() {
         );
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.location,
             any<Exception>(),
-            domain: 'IP_GEOLOCATION',
             subDomain: '_parseUtcOffset',
           ),
         ).called(1);

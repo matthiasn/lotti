@@ -11,30 +11,11 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
-import '../../../mocks/mocks.dart' hide MockLoggingService;
-
-// Local [MockLoggingService] that auto-stubs `captureException` with all
-// six named arguments so test bodies don't need to repeat that wiring.
-// The central mock leaves `captureException` unstubbed and expects callers
-// to use the `stubLoggingService` helper.
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
+import '../../../mocks/mocks.dart';
 
 void main() {
   final baseTime = DateTime.utc(1970);
@@ -66,7 +47,7 @@ void main() {
   late MockPersistenceLogic persistenceLogic;
   late MockJournalDb journalDb;
   late MockEntitiesCacheService cacheService;
-  late MockLoggingService loggingService;
+  late MockDomainLogger domainLogger;
   late MockUpdateNotifications updateNotifications;
   late LabelsRepository repository;
 
@@ -92,14 +73,14 @@ void main() {
     persistenceLogic = MockPersistenceLogic();
     journalDb = MockJournalDb();
     cacheService = MockEntitiesCacheService();
-    loggingService = MockLoggingService();
+    domainLogger = MockDomainLogger();
     updateNotifications = MockUpdateNotifications();
 
     repository = LabelsRepository(
       persistenceLogic,
       journalDb,
       cacheService,
-      loggingService,
+      domainLogger,
       updateNotifications,
     );
   });
@@ -827,7 +808,7 @@ void main() {
         persistenceLogic,
         journalDb,
         cacheService,
-        loggingService,
+        domainLogger,
         realNotifications,
       );
     });
@@ -901,7 +882,7 @@ void main() {
         persistenceLogic,
         journalDb,
         cacheService,
-        loggingService,
+        domainLogger,
         realNotifications,
       );
     });
@@ -1127,11 +1108,11 @@ void main() {
 
       expect(result, isFalse);
       verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
+        () => domainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String?>(named: 'subDomain'),
         ),
       ).called(1);
     });

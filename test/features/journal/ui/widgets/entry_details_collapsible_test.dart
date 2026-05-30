@@ -17,10 +17,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1012,22 +1012,22 @@ void main() {
         tester,
       ) async {
         final mockJournalRepository = MockJournalRepository();
-        final mockLoggingService = MockLoggingService();
+        final mockLoggingService = MockDomainLogger();
 
         when(
           () => mockJournalRepository.updateLink(any()),
         ).thenThrow(Exception('db write failed'));
 
         when(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: any<String>(named: 'domain'),
+          () => mockLoggingService.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: any<String?>(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).thenAnswer((_) async {});
 
-        getIt.registerSingleton<LoggingService>(mockLoggingService);
+        getIt.registerSingleton<DomainLogger>(mockLoggingService);
 
         final testLink = EntryLink.basic(
           id: 'link-error',
@@ -1067,15 +1067,15 @@ void main() {
 
         // Verify the exception was captured via LoggingService
         verify(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'EntryDetailsContent',
+          () => mockLoggingService.error(
+            LogDomain.persistence,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'onToggleCollapse',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
         ).called(1);
 
-        getIt.unregister<LoggingService>();
+        getIt.unregister<DomainLogger>();
       });
     });
 

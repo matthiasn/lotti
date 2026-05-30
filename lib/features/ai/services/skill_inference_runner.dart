@@ -27,7 +27,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -54,7 +54,7 @@ class SkillInferenceRunner {
   final CloudInferenceRepository _cloudRepository;
   final AiInputRepository _aiInputRepository;
   final JournalRepository _journalRepository;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final PromptBuilderHelper _promptBuilderHelper;
   final TaskSummaryResolver _taskSummaryResolver;
 
@@ -121,11 +121,11 @@ class SkillInferenceRunner {
         responseType: responseType,
         linkedTaskId: linkedTaskId,
       );
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.ai,
         e,
-        domain: _logTag,
-        subDomain: subDomain,
         stackTrace: stack,
+        subDomain: subDomain,
       );
     }
   }
@@ -352,10 +352,10 @@ class SkillInferenceRunner {
         );
         await _journalRepository.updateJournalEntity(updated);
 
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.ai,
           'Skill-based transcription completed for $audioEntryId '
           '(${response.length} chars)',
-          domain: _logTag,
           subDomain: 'runTranscription',
         );
       },
@@ -491,10 +491,10 @@ class SkillInferenceRunner {
         );
         await _journalRepository.updateJournalEntity(updated);
 
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.ai,
           'Skill-based image analysis completed for $imageEntryId '
           '(${response.length} chars)',
-          domain: _logTag,
           subDomain: 'runImageAnalysis',
         );
       },
@@ -614,10 +614,10 @@ class SkillInferenceRunner {
           categoryId: entity.meta.categoryId,
         );
 
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.ai,
           'Skill-based prompt generation completed for $entryId '
           '(${response.length} chars)',
-          domain: _logTag,
           subDomain: 'runPromptGeneration',
         );
       },
@@ -759,10 +759,10 @@ class SkillInferenceRunner {
           );
         }
 
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.ai,
           'Skill-based image generation completed for task $linkedTaskId '
           '(imageId: $imageId)',
-          domain: _logTag,
           subDomain: 'runImageGeneration',
         );
 
@@ -920,7 +920,7 @@ SkillInferenceRunner skillInferenceRunner(Ref ref) {
     cloudRepository: ref.watch(cloudInferenceRepositoryProvider),
     aiInputRepository: ref.watch(aiInputRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
-    loggingService: ref.watch(loggingServiceProvider),
+    loggingService: getIt<DomainLogger>(),
     taskSummaryResolver: taskSummaryResolver,
     promptBuilderHelper: PromptBuilderHelper(
       aiInputRepository: ref.watch(aiInputRepositoryProvider),

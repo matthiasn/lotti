@@ -17,8 +17,8 @@ import 'package:lotti/features/tasks/ui/filtering/tasks_filter_sheet_state.dart'
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_toast.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 
 /// Shows the task filter modal using the design system filter sheet.
 ///
@@ -113,12 +113,12 @@ Future<void> showTaskFilterModal(
                 }
               }
             } catch (error, stackTrace) {
-              if (getIt.isRegistered<LoggingService>()) {
-                getIt<LoggingService>().captureException(
+              if (getIt.isRegistered<DomainLogger>()) {
+                getIt<DomainLogger>().error(
+                  LogDomain.tasks,
                   error,
-                  domain: 'TaskFilterModal',
-                  subDomain: 'saveFilter',
                   stackTrace: stackTrace,
+                  subDomain: 'saveFilter',
                 );
               }
               // Rethrow so the modal layer keeps the modal open and the

@@ -2,9 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
-const _logDomain = 'sync';
 const _logSub = 'queue.markerSeed';
 
 /// One-shot migration: copies the legacy `lastReadMatrixEventTs` and
@@ -26,7 +25,7 @@ class QueueMarkerSeeder {
 
   final SyncDatabase _syncDb;
   final SettingsDb _settingsDb;
-  final LoggingService _logging;
+  final DomainLogger _logging;
 
   /// Returns `true` if a new row was seeded, `false` if a row already
   /// existed (or no legacy marker was stored).
@@ -35,9 +34,9 @@ class QueueMarkerSeeder {
       _syncDb.queueMarkers,
     )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
     if (existing != null) {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.markerSeed.skip roomId=$roomId reason=alreadySeeded',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       return false;
@@ -46,9 +45,9 @@ class QueueMarkerSeeder {
     final legacyTs = await getLastReadMatrixEventTs(_settingsDb);
     final legacyEventId = await getLastReadMatrixEventId(_settingsDb);
     if (legacyTs == null && legacyEventId == null) {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.markerSeed.skip roomId=$roomId reason=noLegacyMarker',
-        domain: _logDomain,
         subDomain: _logSub,
       );
       return false;
@@ -69,11 +68,11 @@ class QueueMarkerSeeder {
           mode: InsertMode.insertOrIgnore,
         );
 
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.markerSeed.done roomId=$roomId '
       'legacyEventId=${legacyEventId ?? 'null'} '
       'legacyTs=${legacyTs ?? 'null'}',
-      domain: _logDomain,
       subDomain: _logSub,
     );
     return true;

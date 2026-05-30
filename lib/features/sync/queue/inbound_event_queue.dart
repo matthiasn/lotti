@@ -7,7 +7,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 export 'package:lotti/database/sync_db.dart' show InboundEventProducer;
@@ -152,7 +152,6 @@ class QueueStats {
   final int retrying;
 }
 
-const _logDomain = 'sync';
 const _logSubEnqueue = 'queue.enqueue';
 const _logSubCommit = 'queue.commit';
 const _logSubRetry = 'queue.retry';
@@ -208,7 +207,7 @@ class InboundQueue {
   }) : _leaseDuration = leaseDuration ?? SyncTuning.inboundWorkerLeaseDuration;
 
   final SyncDatabase _db;
-  final LoggingService _logging;
+  final DomainLogger _logging;
   final SyncActivitySignaler? _activitySignaler;
   final Duration _leaseDuration;
 
@@ -349,12 +348,12 @@ class InboundQueue {
       });
     }
 
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.enqueue producer=${producer.name} '
       'accepted=$accepted dupes=$duplicates '
       'filteredOutByType=$filteredOut '
       'deferredPendingDecryption=$deferred',
-      domain: _logDomain,
       subDomain: _logSubEnqueue,
     );
 
@@ -535,12 +534,12 @@ class InboundQueue {
       markerAdvanced = await _advanceMarkerIfNewer(entry);
     });
 
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.commit pipeline=queue '
       'eventId=${entry.eventId} '
       'originTs=${entry.originTs} '
       'markerAdvanced=$markerAdvanced',
-      domain: _logDomain,
       subDomain: _logSubCommit,
     );
     _activitySignaler?.pulseRx();
@@ -678,12 +677,12 @@ class InboundQueue {
         lastErrorReason: Value(reason.name),
       ),
     );
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.retry eventId=${entry.eventId} '
       'reason=${reason.name} '
       'attempts=${entry.attempts + 1} '
       'nextDueAtMs=$nextDueAt',
-      domain: _logDomain,
       subDomain: _logSubRetry,
     );
     // The retrying count is part of `QueueStats` and is observed by
@@ -721,10 +720,10 @@ class InboundQueue {
       );
       markerAdvanced = await _advanceMarkerIfNewer(entry);
     });
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.skip eventId=${entry.eventId} reason=$resolvedReason '
       'markerAdvanced=$markerAdvanced',
-      domain: _logDomain,
       subDomain: _logSubSkip,
     );
     _scheduleDepthEmit();
@@ -917,11 +916,11 @@ class InboundQueue {
       return custom;
     });
 
-    _logging.captureEvent(
+    _logging.log(
+      LogDomain.sync,
       'queue.resurrect $diagnostic '
       'count=$updated hardCap=$hardCap '
       'nowMs=$nowMs',
-      domain: _logDomain,
       subDomain: _logSubResurrect,
     );
     if (updated > 0) {
@@ -960,9 +959,9 @@ class InboundQueue {
       );
     });
     if (moved > 0) {
-      _logging.captureEvent(
+      _logging.log(
+        LogDomain.sync,
         'queue.prune currentRoom=$currentRoomId abandoned=$moved',
-        domain: _logDomain,
         subDomain: _logSubPrune,
       );
       _scheduleDepthEmit();

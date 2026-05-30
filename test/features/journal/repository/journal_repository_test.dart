@@ -1,5 +1,3 @@
-// ignore_for_file: inference_failure_on_function_invocation
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -19,7 +17,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart' show getIt;
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -34,7 +32,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockNotificationService mockNotificationService;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late MockVectorClockService mockVectorClockService;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockOutboxService mockOutboxService;
@@ -46,7 +44,7 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockPersistenceLogic = MockPersistenceLogic();
     mockNotificationService = MockNotificationService();
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     mockVectorClockService = MockVectorClockService();
     mockUpdateNotifications = MockUpdateNotifications();
     mockOutboxService = MockOutboxService();
@@ -60,7 +58,7 @@ void main() {
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<NotificationService>(mockNotificationService)
-      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<DomainLogger>(mockDomainLogger)
       ..registerSingleton<VectorClockService>(mockVectorClockService)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<OutboxService>(mockOutboxService)
@@ -333,11 +331,11 @@ void main() {
           isTrue,
         ); // The method catches the exception and returns true
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             any(),
-            domain: 'JournalRepository',
-            subDomain: 'updateCategoryId',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'updateCategoryId',
           ),
         ).called(1);
       });
@@ -818,11 +816,11 @@ void main() {
         expect(result, isTrue);
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             any(),
-            domain: 'JournalRepository',
-            subDomain: 'updateJournalEntityDate',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'updateJournalEntityDate',
           ),
         ).called(1);
       });
@@ -902,11 +900,11 @@ void main() {
         // Assert
         expect(result, isFalse);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             any(),
-            domain: 'JournalRepository',
-            subDomain: 'updateJournalEntity',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'updateJournalEntity',
           ),
         ).called(1);
       });
@@ -1660,11 +1658,11 @@ void main() {
         // Assert
         expect(result, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             any(),
-            domain: 'JournalRepository',
-            subDomain: 'createTextEntry',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'createTextEntry',
           ),
         ).called(1);
       });
@@ -1781,11 +1779,11 @@ void main() {
         // Assert
         expect(result, isNull);
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
             any(),
-            domain: 'JournalRepository',
-            subDomain: 'createImageEntry',
             stackTrace: any(named: 'stackTrace'),
+            subDomain: 'createImageEntry',
           ),
         ).called(1);
       });

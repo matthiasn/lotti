@@ -14,7 +14,6 @@ import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -41,7 +40,7 @@ class MatrixMessageSender {
     this._domainLogger,
   });
 
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final JournalDb _journalDb;
   final Directory _documentsDirectory;
   final SentEventRegistry _sentEventRegistry;
@@ -66,29 +65,29 @@ class MatrixMessageSender {
     if (host == null) return message;
 
     if (message is SyncJournalEntity && message.originatingHostId == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'originatingHostId filled for journalEntity id=${message.id} jsonPath=${message.jsonPath} host=$host',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.originatingHostId',
       );
       return message.copyWith(originatingHostId: host);
     }
 
     if (message is SyncEntryLink && message.originatingHostId == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'originatingHostId filled for entryLink id=${message.entryLink.id} '
         'from=${message.entryLink.fromId} to=${message.entryLink.toId} host=$host',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.originatingHostId',
       );
       return message.copyWith(originatingHostId: host);
     }
 
     if (message is SyncNotification && message.originatingHostId.isEmpty) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'originatingHostId filled for notification id=${message.id} '
         'jsonPath=${message.jsonPath} host=$host',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.originatingHostId',
       );
       return message.copyWith(originatingHostId: host);
@@ -96,10 +95,10 @@ class MatrixMessageSender {
 
     if (message is SyncNotificationStateUpdate &&
         message.originatingHostId.isEmpty) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'originatingHostId filled for notificationStateUpdate '
         'id=${message.id} host=$host',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.originatingHostId',
       );
       return message.copyWith(originatingHostId: host);
@@ -113,11 +112,11 @@ class MatrixMessageSender {
       // (including the sender itself) ends up running the full
       // prepare-apply pipeline — wasting CPU on a payload that
       // vector-clock dedup will discard anyway.
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'originatingHostId filled for outboxBundle '
         'jsonPath=${message.jsonPath} children=${message.children.length} '
         'host=$host',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.originatingHostId',
       );
       return message.copyWith(originatingHostId: host);
@@ -140,9 +139,9 @@ class MatrixMessageSender {
         'type=${message.runtimeType}',
         subDomain: 'matrix.send.error',
       );
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         'Unverified devices found',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
       return false;
@@ -156,9 +155,9 @@ class MatrixMessageSender {
         'FAIL noRoomId type=${message.runtimeType}',
         subDomain: 'matrix.send.error',
       );
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         configNotFound,
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
       return false;
@@ -169,9 +168,9 @@ class MatrixMessageSender {
         'FAIL noRoom roomId=$roomId type=${message.runtimeType}',
         subDomain: 'matrix.send.error',
       );
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Unable to send message: no room instance available for $roomId',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
       return false;
@@ -279,9 +278,9 @@ class MatrixMessageSender {
           'jsonBytes=${encodedBytes.length} b64Bytes=${b64Message.length}',
           subDomain: 'matrix.send.error',
         );
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'Failed sending text message to $room',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'sendMatrixMsg',
         );
         return false;
@@ -296,17 +295,17 @@ class MatrixMessageSender {
         onSent(eventId, outboundMessage);
       } catch (error, stackTrace) {
         _loggingService
-          ..captureEvent(
+          ..log(
+            LogDomain.sync,
             'onSent callback threw for eventId=$eventId '
             'messageType=${outboundMessage.runtimeType}',
-            domain: 'MATRIX_SERVICE',
             subDomain: 'matrix.message_sender.onSent',
           )
-          ..captureException(
+          ..error(
+            LogDomain.sync,
             error,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'matrix.message_sender.onSent',
             stackTrace: stackTrace,
+            subDomain: 'matrix.message_sender.onSent',
           );
       }
       return true;
@@ -316,11 +315,11 @@ class MatrixMessageSender {
         'error=${error.runtimeType}: $error',
         subDomain: 'matrix.send.error',
       );
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
         stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg',
       );
       return false;
     }
@@ -336,9 +335,9 @@ class MatrixMessageSender {
       final file = File(fullPath);
       // ignore: avoid_slow_async_io
       if (bytes == null && !await file.exists()) {
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'skipping missing file $relativePath (not found at $fullPath)',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'sendMatrixMsg',
         );
         return true;
@@ -368,9 +367,9 @@ class MatrixMessageSender {
           'bytes=${uploadBytes.length}',
           subDomain: 'matrix.send.error',
         );
-        _loggingService.captureEvent(
+        _loggingService.log(
+          LogDomain.sync,
           'Failed sending $relativePath file message to $room',
-          domain: 'MATRIX_SERVICE',
           subDomain: 'sendMatrixMsg',
         );
         return false;
@@ -387,11 +386,11 @@ class MatrixMessageSender {
         'error=${error.runtimeType}: $error',
         subDomain: 'matrix.send.error',
       );
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
         stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg',
       );
       return false;
     }
@@ -415,11 +414,11 @@ class MatrixMessageSender {
         'error=${error.runtimeType}: $error',
         subDomain: 'matrix.send.error',
       );
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
         stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg',
       );
       return null;
     }
@@ -442,11 +441,11 @@ class MatrixMessageSender {
         json.decode(jsonString) as Map<String, dynamic>,
       );
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.decode',
         stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg.decode',
       );
       return null;
     }
@@ -592,11 +591,11 @@ class MatrixMessageSender {
         'error=${error.runtimeType}: $error',
         subDomain: 'matrix.send.error',
       );
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.notification',
         stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg.notification',
       );
       return null;
     }
@@ -615,11 +614,11 @@ class MatrixMessageSender {
         json.decode(utf8.decode(jsonBytes)) as Map<String, dynamic>,
       );
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.notification.decode',
         stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg.notification.decode',
       );
       return null;
     }
@@ -706,9 +705,9 @@ class MatrixMessageSender {
     required SyncOutboxBundle message,
   }) async {
     if (message.children.isEmpty) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'skipping empty outboxBundle send',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
       return null;
@@ -725,10 +724,10 @@ class MatrixMessageSender {
     if (candidatePath == null || _isSafeOutboxBundlePath(candidatePath)) {
       relativePath = candidatePath ?? relativeOutboxBundlePath(uuid.v1());
     } else {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'rejecting outboxBundle jsonPath outside /outbox_bundles/: '
         '$candidatePath — falling back to a fresh UUID path',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.outboxBundle.write',
       );
       relativePath = relativeOutboxBundlePath(uuid.v1());
@@ -780,7 +779,8 @@ class MatrixMessageSender {
     }
 
     if (missingJournalEntityIds.isNotEmpty) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         'outboxBundle aborting: '
         '${missingJournalEntityIds.length} journal entity '
         'payload(s) missing from DB '
@@ -788,7 +788,6 @@ class MatrixMessageSender {
         'failing the bundle so the row stays pending and the standard '
         'retry/cap path surfaces the rotten entry instead of silently '
         'dropping it from the manifest',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.outboxBundle.missingEntity',
       );
       return null;
@@ -806,22 +805,22 @@ class MatrixMessageSender {
       // stall the UI thread for the duration of the encode pipeline.
       gzipped = await gzipEncodeJson(manifest);
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.outboxBundle.encode',
         stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg.outboxBundle.encode',
       );
       return null;
     }
 
     if (gzipped.length > SyncTuning.outboxBundleMaxBytes) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         'outboxBundle exceeds max bytes: '
         'gzipped=${gzipped.length} '
         'max=${SyncTuning.outboxBundleMaxBytes} '
         'children=${message.children.length}',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.outboxBundle.tooLarge',
       );
       return null;
@@ -851,11 +850,11 @@ class MatrixMessageSender {
         'error=${error.runtimeType}: $error',
         subDomain: 'matrix.send.error',
       );
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.outboxBundle.upload',
         stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg.outboxBundle.upload',
       );
       return null;
     }
@@ -866,9 +865,9 @@ class MatrixMessageSender {
         'gzippedBytes=${gzipped.length}',
         subDomain: 'matrix.send.error',
       );
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'Failed sending outboxBundle file message to $room',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
       return null;
@@ -1081,9 +1080,9 @@ class MatrixMessageSender {
     }
 
     if (enrichedPath == null) {
-      _loggingService.captureEvent(
+      _loggingService.log(
+        LogDomain.sync,
         'skipping $logLabel send: missing payload and jsonPath',
-        domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
       return null;
@@ -1125,11 +1124,11 @@ class MatrixMessageSender {
     try {
       jsonBytes = await File(fullPath).readAsBytes();
     } catch (error, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.$logLabel',
         stackTrace: stackTrace,
+        subDomain: 'sendMatrixMsg.$logLabel',
       );
       return false;
     }

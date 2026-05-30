@@ -15,13 +15,13 @@ class _MockLabelsRepository extends Mock implements LabelsRepository {}
 void main() {
   late MockJournalDb mockDb;
   late _MockLabelsRepository mockRepo;
-  late MockLoggingService mockLogging;
+  late MockDomainLogger mockLogging;
   late LabelAssignmentProcessor processor;
 
   setUp(() {
     mockDb = MockJournalDb();
     mockRepo = _MockLabelsRepository();
-    mockLogging = MockLoggingService();
+    mockLogging = MockDomainLogger();
     getIt.registerSingleton<LabelAssignmentEventService>(
       LabelAssignmentEventService(),
     );

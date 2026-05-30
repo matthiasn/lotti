@@ -26,6 +26,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -146,7 +147,9 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)
-        ..registerSingleton<LoggingService>(LoggingService())
+        ..registerSingleton<DomainLogger>(
+          DomainLogger(loggingService: LoggingService()),
+        )
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<NotificationService>(mockNotificationService)
@@ -159,7 +162,7 @@ void main() {
         ..registerSingleton<GeolocationService>(
           GeolocationService(
             journalDb: journalDb,
-            loggingService: getIt<LoggingService>(),
+            loggingService: getIt<DomainLogger>(),
             metadataService: getIt<MetadataService>(),
             deviceLocation: mockDeviceLocation,
           ),

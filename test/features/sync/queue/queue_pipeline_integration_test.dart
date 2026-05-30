@@ -109,7 +109,7 @@ void main() {
   late _MockRoomManager roomManager;
   late _MockSyncEventProcessor processor;
   late SyncSequenceLogService sequenceLog;
-  late MockLoggingService logging;
+  late MockDomainLogger logging;
   late _MockBridge bridge;
   late _MockRoom room;
   late StreamController<Event> timelineCtl;
@@ -133,9 +133,9 @@ void main() {
     sequenceLog = SyncSequenceLogService(
       syncDatabase: syncDb,
       vectorClockService: _MockVectorClockService(),
-      loggingService: MockLoggingService(),
+      loggingService: MockDomainLogger(),
     );
-    logging = MockLoggingService();
+    logging = MockDomainLogger();
     bridge = _MockBridge();
     room = _MockRoom();
     timelineCtl = StreamController<Event>.broadcast(sync: true);
@@ -373,7 +373,7 @@ void main() {
         return null;
       });
 
-      final attachmentIndex = AttachmentIndex(logging: MockLoggingService());
+      final attachmentIndex = AttachmentIndex(logging: MockDomainLogger());
       addTearDown(attachmentIndex.dispose);
 
       final coordinator = QueuePipelineCoordinator(
@@ -540,7 +540,7 @@ void main() {
         return null;
       });
 
-      final attachmentIndex = AttachmentIndex(logging: MockLoggingService());
+      final attachmentIndex = AttachmentIndex(logging: MockDomainLogger());
       addTearDown(attachmentIndex.dispose);
       // documentsDirectory=null skips the download step — we only
       // need the ingestor's record() side effect, which runs before

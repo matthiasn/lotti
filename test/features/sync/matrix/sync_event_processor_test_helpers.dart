@@ -31,7 +31,7 @@ class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
 late MockEvent event;
 late MockJournalDb journalDb;
 late MockUpdateNotifications updateNotifications;
-late MockLoggingService loggingService;
+late MockDomainLogger loggingService;
 late MockAiConfigRepository aiConfigRepository;
 late MockJournalEntityLoader journalEntityLoader;
 late MockSettingsDb settingsDb;
@@ -66,7 +66,7 @@ void setUpProcessorMocks() {
   event = MockEvent();
   journalDb = MockJournalDb();
   updateNotifications = MockUpdateNotifications();
-  loggingService = MockLoggingService();
+  loggingService = MockDomainLogger();
   aiConfigRepository = MockAiConfigRepository();
   journalEntityLoader = MockJournalEntityLoader();
   settingsDb = MockSettingsDb();
@@ -89,7 +89,6 @@ void setUpProcessorMocks() {
       fromSync: any<bool>(named: 'fromSync'),
     ),
   ).thenAnswer((_) {});
-  stubLoggingService(loggingService);
   when(
     () => aiConfigRepository.saveConfig(
       any<AiConfig>(),

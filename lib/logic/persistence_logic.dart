@@ -20,7 +20,6 @@ import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/entry_utils.dart';
@@ -33,7 +32,7 @@ class PersistenceLogic {
   VectorClockService get _vectorClockService => getIt<VectorClockService>();
   GeolocationService get _geolocationService => getIt<GeolocationService>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
-  LoggingService get _loggingService => getIt<LoggingService>();
+  DomainLogger get _loggingService => getIt<DomainLogger>();
   SyncSequenceLogService? get _sequenceLogService =>
       getIt.isRegistered<SyncSequenceLogService>()
       ? getIt<SyncSequenceLogService>()
@@ -54,11 +53,11 @@ class PersistenceLogic {
         vectorClock: vectorClock,
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         exception,
-        domain: 'SYNC_SEQUENCE',
-        subDomain: subDomain,
         stackTrace: stackTrace,
+        subDomain: subDomain,
       );
     }
   }
@@ -76,11 +75,11 @@ class PersistenceLogic {
         vectorClock: vectorClock,
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         exception,
-        domain: 'SYNC_SEQUENCE',
-        subDomain: subDomain,
         stackTrace: stackTrace,
+        subDomain: subDomain,
       );
     }
   }
@@ -150,11 +149,11 @@ class PersistenceLogic {
       );
       return journalEntity;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createQuantitativeEntry',
         stackTrace: stackTrace,
+        subDomain: 'createQuantitativeEntry',
       );
     }
 
@@ -179,11 +178,11 @@ class PersistenceLogic {
 
       return workout;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createWorkoutEntry',
         stackTrace: stackTrace,
+        subDomain: 'createWorkoutEntry',
       );
     }
 
@@ -206,11 +205,11 @@ class PersistenceLogic {
 
       await createDbEntity(journalEntity, linkedId: linkedId);
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createSurveyEntry',
         stackTrace: stackTrace,
+        subDomain: 'createSurveyEntry',
       );
     }
 
@@ -249,11 +248,11 @@ class PersistenceLogic {
 
       return measurementEntry;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createMeasurementEntry',
         stackTrace: stackTrace,
+        subDomain: 'createMeasurementEntry',
       );
     }
 
@@ -301,11 +300,11 @@ class PersistenceLogic {
 
       return habitCompletionEntry;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createMeasurementEntry',
         stackTrace: stackTrace,
+        subDomain: 'createMeasurementEntry',
       );
     }
 
@@ -335,11 +334,11 @@ class PersistenceLogic {
 
       return task;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createTaskEntry',
         stackTrace: stackTrace,
+        subDomain: 'createTaskEntry',
       );
     }
 
@@ -372,11 +371,11 @@ class PersistenceLogic {
 
       return aiResponse;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createAiResponseEntry',
         stackTrace: stackTrace,
+        subDomain: 'createAiResponseEntry',
       );
     }
 
@@ -403,11 +402,11 @@ class PersistenceLogic {
 
       return journalEvent;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createEventEntry',
         stackTrace: stackTrace,
+        subDomain: 'createEventEntry',
       );
     }
 
@@ -581,11 +580,11 @@ class PersistenceLogic {
 
       return saved;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'createDbEntity',
         stackTrace: stackTrace,
+        subDomain: 'createDbEntity',
       );
       DevLogger.error(
         name: 'PersistenceLogic',
@@ -662,11 +661,11 @@ class PersistenceLogic {
         );
       }
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateJournalEntityText',
         stackTrace: stackTrace,
+        subDomain: 'updateJournalEntityText',
       );
       // Mirror updateJournalEntity's contract: a caught exception means the
       // write did not commit, so callers must see a failure return rather
@@ -706,11 +705,11 @@ class PersistenceLogic {
 
       return await updateDbEntity(updated) ?? false;
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateJournalEntry',
         stackTrace: stackTrace,
+        subDomain: 'updateJournalEntry',
       );
       return false;
     }
@@ -748,19 +747,19 @@ class PersistenceLogic {
           );
         },
         orElse: () async {
-          _loggingService.captureException(
+          _loggingService.error(
+            LogDomain.persistence,
             'not a task',
-            domain: 'persistence_logic',
             subDomain: 'updateTask',
           );
         },
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateTask',
         stackTrace: stackTrace,
+        subDomain: 'updateTask',
       );
     }
     return true;
@@ -789,19 +788,19 @@ class PersistenceLogic {
           );
         },
         orElse: () async {
-          _loggingService.captureException(
+          _loggingService.error(
+            LogDomain.persistence,
             'not an event',
-            domain: 'persistence_logic',
             subDomain: 'updateEvent',
           );
         },
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateEvent',
         stackTrace: stackTrace,
+        subDomain: 'updateEvent',
       );
     }
     return true;
@@ -875,11 +874,11 @@ class PersistenceLogic {
         commitWhen: (applied) => applied,
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateJournalEntity',
         stackTrace: stackTrace,
+        subDomain: 'updateJournalEntity',
       );
       return false;
     }
@@ -924,11 +923,11 @@ class PersistenceLogic {
             try {
               await beforeNotify();
             } catch (exception, stackTrace) {
-              _loggingService.captureException(
+              _loggingService.error(
+                LogDomain.persistence,
                 exception,
-                domain: 'persistence_logic',
-                subDomain: 'updateDbEntity.beforeNotify',
                 stackTrace: stackTrace,
+                subDomain: 'updateDbEntity.beforeNotify',
               );
             }
           }
@@ -1008,11 +1007,11 @@ class PersistenceLogic {
         commitWhen: (applied) => applied ?? false,
       );
     } catch (exception, stackTrace) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.persistence,
         exception,
-        domain: 'persistence_logic',
-        subDomain: 'updateDbEntity',
         stackTrace: stackTrace,
+        subDomain: 'updateDbEntity',
       );
       DevLogger.error(
         name: 'PersistenceLogic',

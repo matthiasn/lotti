@@ -7,7 +7,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -34,7 +34,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _CountingJournalDb db;
-  late MockLoggingService loggingService;
+  late MockDomainLogger loggingService;
   Directory? testDirectory;
   Directory? previousDirectory;
 
@@ -60,26 +60,26 @@ void main() {
         );
     getIt.registerSingleton<Directory>(testDirectory!);
 
-    loggingService = MockLoggingService();
+    loggingService = MockDomainLogger();
     when(
-      () => loggingService.captureEvent(
-        any<Object>(),
-        domain: any<String>(named: 'domain'),
+      () => loggingService.log(
+        any<LogDomain>(),
+        any<String>(),
         subDomain: any<String?>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
     when(
-      () => loggingService.captureException(
+      () => loggingService.error(
+        any<LogDomain>(),
         any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String?>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: any<String?>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
-    getIt.registerSingleton<LoggingService>(loggingService);
+    getIt.registerSingleton<DomainLogger>(loggingService);
 
     db = _CountingJournalDb();
     await initConfigFlags(db, inMemoryDatabase: true);
@@ -92,8 +92,8 @@ void main() {
           null,
         );
     await db.close();
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt.unregister<DomainLogger>();
     }
     getIt.unregister<Directory>();
     if (previousDirectory != null) {

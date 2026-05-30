@@ -440,16 +440,6 @@ class MockDomainLogger extends Mock implements DomainLogger {
   }
 }
 
-/// Registers the fallback values needed for `any()` matchers on a
-/// [MockDomainLogger]. Constructing a [MockDomainLogger] already registers
-/// these; this helper is kept for tests that prefer an explicit `setUp` call.
-/// The `log`/`error` methods are void, so unstubbed calls are already no-ops.
-void stubDomainLogger(MockDomainLogger mock) {
-  registerFallbackValue(LogDomain.general);
-  registerFallbackValue(InsightLevel.info);
-  registerFallbackValue(StackTrace.empty);
-}
-
 class MockEditorDb extends Mock implements EditorDb {}
 
 class MockEditorStateService extends Mock implements EditorStateService {}

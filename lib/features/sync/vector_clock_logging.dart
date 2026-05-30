@@ -1,5 +1,5 @@
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 const vectorClockLogDomain = 'VECTOR_CLOCK';
 
@@ -9,7 +9,7 @@ String _formatClocks(List<VectorClock>? clocks) =>
     clocks?.map((vc) => vc.vclock).toList().toString() ?? 'null';
 
 void logVectorClockAssignment(
-  LoggingService loggingService, {
+  DomainLogger loggingService, {
   required String subDomain,
   required String action,
   String? type,
@@ -35,9 +35,9 @@ void logVectorClockAssignment(
       if (entry.value != null) '${entry.key}=${entry.value}',
   ];
 
-  loggingService.captureEvent(
+  loggingService.log(
+    LogDomain.sync,
     parts.join(' '),
-    domain: vectorClockLogDomain,
     subDomain: subDomain,
   );
 }

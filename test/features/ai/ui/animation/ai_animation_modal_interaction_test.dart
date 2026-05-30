@@ -12,7 +12,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart' show LoggingService;
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -21,7 +21,7 @@ import '../../../../test_helper.dart';
 class MockAiConfigDb extends Mock implements AiConfigDb {}
 
 void main() {
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockLoggingService;
   late MockAiConfigRepository mockAiConfigRepository;
   late MockAiConfigDb mockAiConfigDb;
 
@@ -31,21 +31,21 @@ void main() {
   });
 
   setUp(() {
-    mockLoggingService = MockLoggingService();
+    mockLoggingService = MockDomainLogger();
     mockAiConfigRepository = MockAiConfigRepository();
     mockAiConfigDb = MockAiConfigDb();
 
     // Register mocks in GetIt
     getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<DomainLogger>(mockLoggingService)
       ..registerSingleton<AiConfigRepository>(mockAiConfigRepository)
       ..registerSingleton<AiConfigDb>(mockAiConfigDb);
 
     // Setup mock behaviors
     when(
-      () => mockLoggingService.captureEvent(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
+      () => mockLoggingService.log(
+        any<LogDomain>(),
+        any<String>(),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);

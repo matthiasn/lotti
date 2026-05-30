@@ -11,7 +11,6 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
@@ -66,7 +65,7 @@ class BackfillRequestService {
   final SyncDatabase _syncDatabase;
   final OutboxService _outboxService;
   final VectorClockService _vectorClockService;
-  final LoggingService _loggingService;
+  final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
   final Duration _requestInterval;
   final int _maxBatchSize;
@@ -272,11 +271,11 @@ class BackfillRequestService {
 
       return totalProcessed;
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'reRequest',
         stackTrace: st,
+        subDomain: 'reRequest',
       );
       return totalProcessed;
     } finally {
@@ -421,11 +420,11 @@ class BackfillRequestService {
 
       return missing.length;
     } catch (e, st) {
-      _loggingService.captureException(
+      _loggingService.error(
+        LogDomain.sync,
         e,
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'process',
         stackTrace: st,
+        subDomain: 'process',
       );
       return 0;
     } finally {

@@ -23,7 +23,7 @@ import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -2203,12 +2203,11 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(1024, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        final mockLoggingService = MockLoggingService();
-        stubLoggingService(mockLoggingService);
-        if (getIt.isRegistered<LoggingService>()) {
-          getIt.unregister<LoggingService>();
+        final mockDomainLogger = MockDomainLogger();
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
         }
-        getIt.registerSingleton<LoggingService>(mockLoggingService);
+        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
         when(
           () => mockRepository.saveConfig(any()),
@@ -2243,11 +2242,11 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
             any<Object>(),
-            domain: 'AI_CONFIG',
-            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSave.add',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSave.add',
           ),
         ).called(1);
       },
@@ -2261,12 +2260,11 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(1024, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        final mockLoggingService = MockLoggingService();
-        stubLoggingService(mockLoggingService);
-        if (getIt.isRegistered<LoggingService>()) {
-          getIt.unregister<LoggingService>();
+        final mockDomainLogger = MockDomainLogger();
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
         }
-        getIt.registerSingleton<LoggingService>(mockLoggingService);
+        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
         when(
           () => mockRepository.saveConfig(any()),
@@ -2290,11 +2288,11 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
             any<Object>(),
-            domain: 'AI_CONFIG',
-            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSave.update',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSave.update',
           ),
         ).called(1);
       },
@@ -2530,12 +2528,11 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(1024, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        final mockLoggingService = MockLoggingService();
-        stubLoggingService(mockLoggingService);
-        if (getIt.isRegistered<LoggingService>()) {
-          getIt.unregister<LoggingService>();
+        final mockDomainLogger = MockDomainLogger();
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
         }
-        getIt.registerSingleton<LoggingService>(mockLoggingService);
+        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
         when(
           () => mockRepository.saveConfig(any()),
@@ -2559,11 +2556,11 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
             any<Object>(),
-            domain: 'AI_CONFIG',
-            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSaveDraft',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSaveDraft',
           ),
         ).called(1);
       },

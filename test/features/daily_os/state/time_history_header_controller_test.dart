@@ -11,8 +11,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -26,7 +26,7 @@ void main() {
   late MockJournalDb mockDb;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockEntitiesCacheService mockEntitiesCacheService;
-  late MockLoggingService mockLoggingService;
+  late MockDomainLogger mockDomainLogger;
   late StreamController<Set<String>> updateStreamController;
 
   // Use a fixed date to avoid test flakiness
@@ -117,7 +117,7 @@ void main() {
     mockDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
     mockEntitiesCacheService = MockEntitiesCacheService();
-    mockLoggingService = MockLoggingService();
+    mockDomainLogger = MockDomainLogger();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     when(
@@ -140,7 +140,7 @@ void main() {
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<DomainLogger>(mockDomainLogger);
 
     container = ProviderContainer();
   });
@@ -794,10 +794,11 @@ void main() {
 
         // Error should have been logged
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.calendar,
             any<Object>(),
-            domain: 'TimeHistoryHeaderController.loadMoreDays',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'TimeHistoryHeaderController.loadMoreDays',
           ),
         ).called(1);
       });
@@ -848,10 +849,11 @@ void main() {
 
         // Error should have been logged
         verify(
-          () => mockLoggingService.captureException(
+          () => mockDomainLogger.error(
+            LogDomain.calendar,
             any<Object>(),
-            domain: 'TimeHistoryHeaderController.resetToToday',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'TimeHistoryHeaderController.resetToToday',
           ),
         ).called(1);
       });
@@ -872,14 +874,14 @@ void main() {
     late MockJournalDb mockDb;
     late MockUpdateNotifications mockUpdateNotifications;
     late MockEntitiesCacheService mockEntitiesCacheService;
-    late MockLoggingService mockLoggingService;
+    late MockDomainLogger mockDomainLogger;
     late StreamController<Set<String>> updateStreamController;
 
     setUp(() {
       mockDb = MockJournalDb();
       mockUpdateNotifications = MockUpdateNotifications();
       mockEntitiesCacheService = MockEntitiesCacheService();
-      mockLoggingService = MockLoggingService();
+      mockDomainLogger = MockDomainLogger();
       updateStreamController = StreamController<Set<String>>.broadcast();
 
       when(
@@ -892,7 +894,7 @@ void main() {
         ..registerSingleton<JournalDb>(mockDb)
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LoggingService>(mockLoggingService);
+        ..registerSingleton<DomainLogger>(mockDomainLogger);
 
       container = ProviderContainer();
     });
