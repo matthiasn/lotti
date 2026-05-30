@@ -357,6 +357,54 @@ Implementation details that matter:
 - Gemini-specific thought signatures are stored in `ConversationManager` and replayed on later turns
 - the repository has provider-specific handling for Gemini-style multi-call chunks that arrive without stable IDs
 
+## AI Activity Visualization
+
+`ui/animation/ai_state_shader_animation.dart` contains the first shader-based
+AI activity prototypes. They are not wired into the production AI progress
+surface yet; the runtime entry point is Widgetbook via
+`widgetbook/ai_shader_animations_widgetbook.dart`.
+
+Two Flutter runtime-effect shaders are registered in `pubspec.yaml`:
+
+- `shaders/ai_voice_input.frag` renders five transparent elastic-circle voice
+  routes: elastic membrane, impact ripples, tension loop, liquid pulse, and
+  resonance braid. The public widget accepts a dBFS value (`-80..0` by default),
+  matching `record.Amplitude.current` and `computeDbfsFromPcm16`. The routes use
+  localized pressure fields, delayed contour layers, edge traces, and traveling
+  highlights instead of radial zig-zag spokes, pinwheel-like symmetry, globe
+  grids, or filled shader backgrounds. The tension-loop route derives its hot
+  bands from the primary teal toward translucent white rather than using an
+  alert/red accent.
+- `shaders/ai_thinking_line.frag` renders five horizontal thinking routes:
+  quiet thread, packet scan, circuit trace, probability band, and decoder bars,
+  sized for eventual action-bar use.
+
+The Widgetbook use cases expose route pickers plus knobs for speed, intensity,
+geometry, colors, randomness, and dBFS. Matrix use cases render every route at
+once for side-by-side comparison; the voice playground opens on the tension loop
+route because that is the current lead candidate. The voice playground also has a
+Widgetbook-only recorder control that starts a `record.AudioRecorder` metered
+mic session and polls `AudioRecorder.getAmplitude()` for package-reported dBFS.
+The default metered path writes only to a temporary file and deletes it when
+recording stops. A PCM stream mode remains available as a diagnostic and
+fallback dBFS source, with input-device selection and raw peak/RMS diagnostics
+to catch silent default devices. The recorder readout uses tabular numeric
+features so dBFS and counter changes do not move the surrounding UI. Recorder
+voice processing defaults off to match the production realtime recorder path.
+
+```mermaid
+flowchart LR
+  Knobs["Widgetbook knobs"] --> VoiceConfig["Voice shader config"]
+  Recorder["Widgetbook recorder<br/>package dBFS + PCM diagnostics"] --> VoiceConfig
+  VoiceConfig --> VoiceWidget["AiVoiceInputShader"]
+  ThinkConfig["Thinking shader config"] --> ThinkWidget["AiThinkingLineShader"]
+  VoiceWidget --> ProgramCache["AiStateShaderProgramCache"]
+  ThinkWidget --> ProgramCache
+  ProgramCache --> FragmentProgram["FragmentProgram.fromAsset"]
+  FragmentProgram --> Painter["CustomPainter uniforms"]
+  Painter --> Canvas["Widgetbook canvas"]
+```
+
 ## Provider Routing
 
 `CloudInferenceRepository` is the central router despite its name; it also handles local providers such as Ollama, Whisper, Voxtral, and MLX Audio.

@@ -201,6 +201,10 @@ flutter:
   generate: true
   uses-material-design: true
 
+  shaders:
+    - shaders/ai_voice_input.frag
+    - shaders/ai_thinking_line.frag
+
   fonts:
     - family: Inconsolata
       fonts:

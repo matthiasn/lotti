@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:lotti/features/ai/widgetbook/ai_shader_animations_widgetbook.dart';
 import 'package:lotti/features/daily_os/widgetbook/my_daily_widgetbook.dart';
 import 'package:lotti/features/daily_os/widgetbook/set_time_blocks_widgetbook.dart';
 import 'package:lotti/features/dashboards/widgetbook/insights_widgetbook.dart';
@@ -57,6 +58,7 @@ class WidgetbookApp extends StatelessWidget {
         ),
       ),
       directories: [
+        buildAiWidgetbookFolder(),
         buildDesignSystemWidgetbookFolder(),
         buildMyDailyWidgetbookFolder(),
         buildSetTimeBlocksWidgetbookFolder(),
