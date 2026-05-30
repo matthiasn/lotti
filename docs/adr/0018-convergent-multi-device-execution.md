@@ -85,11 +85,23 @@ tiebreak.
    survive past one wake cycle**. Its **id is content-addressed** — `id =
    hash(frontierDigest)` over the parent-head set — so two devices emitting the
    join concurrently write the *same* log entry, which set-union merges into one
-   node; concurrent joins therefore can't form a new fork (no join storm). This
-   bounds context and re-warms the on-device prefix; it is *not* required for
-   correctness.
+   node; concurrent joins therefore can't form a new fork (no join storm). For that
+   shared id to truly merge, the join's **payload must be fully deterministic** —
+   the sorted set of parent-head ids plus a fixed kind, with **no wall-clock,
+   `hostId`, or vector clock in the content** — so both writes are byte-identical
+   under the id. Per-device **envelope metadata** (`hostId`, VC, `createdAt`) is
+   canonicalized by the projection (content-addressed events merge by id; the
+   envelope is reconciled deterministically, e.g. min-VC-merge / lowest `hostId`),
+   so LWW cannot overwrite or diverge them — separate the deterministic event
+   *identity/payload* from the per-device *envelope*. This bounds context and
+   re-warms the on-device prefix; it is *not* required for correctness.
 9. **Side effects carry an idempotency key** `agentId + behaviorKind +
-   frontierDigest + toolName`; the later projection dedups/suppresses duplicates
+   frontierDigest + triggerId + toolName`, where `triggerId` is the wake's cause
+   (trigger token / `scheduledFor`). The key scopes to the **wake epoch**, not
+   just the frontier — otherwise a later time-sensitive wake (a scheduled re-plan
+   or reminder) over an *unchanged* frontier would be wrongly suppressed. It
+   collapses *the same wake executed on two devices*; the later projection
+   dedups/suppresses those duplicates
    (reuse ChangeSet dedup, ADR 0009). Truly irreversible external effects (a sent
    email, a created calendar event) cannot be undone — they stay behind the lease
    + the human gate (ADR 0019), and that set is kept minimal; where no external

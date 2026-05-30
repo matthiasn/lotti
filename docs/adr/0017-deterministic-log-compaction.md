@@ -51,9 +51,12 @@ arbitrary winner.
    then materializes one checkpoint over the joined frontier, which becomes the
    new unique maximum — so a merge-summary always eventually becomes active. When that verbatim fallback region would exceed
    the model's context budget (deeply diverged, multiply-compacted branches), the
-   merge-summary fires **eagerly** rather than lazily — and, as a last resort, the
-   oldest uncovered span is emergency-summarized — so the fallback can never
-   overflow the on-device window. (A
+   merge-summary fires **eagerly** rather than lazily. Any such emergency summary
+   is still a **normal compaction** — an append-only checkpoint event over a
+   canonical frontier/span, selected by the same maximal-complete rule, with the
+   original events **retained** (never replaced or omitted); it is *eager only in
+   timing*, not a truncation — so the fallback can never overflow the on-device
+   window while staying inside the convergence rules. (A
    "meet of *all* checkpoints" rule would starve the merge-summary forever, since
    the collapsed branches stay incomparable ancestors.) `frontierDigest` = hash of the
    antichain's canonical id-set — it identifies **coverage only**. The summary
