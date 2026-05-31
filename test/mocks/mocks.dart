@@ -562,6 +562,12 @@ class MockAgentService extends Mock implements AgentService {}
 class MockAgentSyncService extends Mock implements AgentSyncService {
   @override
   Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+
+  /// Default local host so tests that exercise counter (G-counter) increments
+  /// don't each have to stub it. A fixed value is fine — workflow tests assert
+  /// on the resulting counter value, not on which host was attributed.
+  @override
+  Future<String> localHost() async => 'test-host';
 }
 
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}

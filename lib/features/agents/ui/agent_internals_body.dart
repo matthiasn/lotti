@@ -186,7 +186,7 @@ class _AgentStateSection extends StatelessWidget {
           ),
           _StateRow(
             label: context.messages.agentStateWakeCount,
-            value: state.wakeCounter.toString(),
+            value: state.wakeCounter.value.toString(),
           ),
           _StateRow(
             label: context.messages.agentStateConsecutiveFailures,

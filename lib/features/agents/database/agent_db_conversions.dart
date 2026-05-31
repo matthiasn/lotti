@@ -52,6 +52,9 @@ class AgentDbConversions {
       wakeTokenUsage: (e) => e.threadId,
     );
 
+    final json = entity.toJson();
+    _addLegacyCounterMirrors(entity, json);
+
     return AgentEntitiesCompanion(
       id: Value(entity.id),
       agentId: Value(entity.agentId),
@@ -63,8 +66,28 @@ class AgentDbConversions {
       createdAt: Value(entityCreatedAt(entity)),
       updatedAt: Value(entityUpdatedAt(entity)),
       deletedAt: Value(deletedAt),
-      serialized: Value(jsonEncode(entity.toJson())),
+      serialized: Value(jsonEncode(json)),
     );
+  }
+
+  /// Dual-write back-compat for the int → per-host G-counter migration:
+  /// alongside the `*ByHost` maps that `toJson` already emits, also write the
+  /// legacy scalar keys (= each counter's summed `value`) so a device still on
+  /// the pre-G-counter build keeps reading a sane integer instead of seeing the
+  /// field absent (→ 0). The mirror keys are dropped a release after the
+  /// rollout. Only `AgentStateEntity` carries them.
+  static void _addLegacyCounterMirrors(
+    AgentDomainEntity entity,
+    Map<String, dynamic> json,
+  ) {
+    if (entity is! AgentStateEntity) return;
+    json['wakeCounter'] = entity.wakeCounter.value;
+    // `toJson` is implicit-to-json: nested values remain Dart objects (not maps)
+    // until `jsonEncode` recurses, so `json['slots']` is an AgentSlots, not a
+    // mutable map. Replace it with the slots' own json plus the mirror keys.
+    json['slots'] = entity.slots.toJson()
+      ..['totalSessionsCompleted'] = entity.slots.totalSessionsCompleted.value
+      ..['weeklyReviewCount'] = entity.slots.weeklyReviewCount.value;
   }
 
   /// Convert a Drift [AgentEntity] row back to a Freezed [AgentDomainEntity].
@@ -72,9 +95,13 @@ class AgentDbConversions {
   /// Applies forward-migration fixups for schema changes that occurred before
   /// the schema_version column was actively bumped:
   /// - `agentReport.content`: migrated from `Map<String, Object?>` → `String`.
+  /// - `AgentStateEntity` counters: legacy scalar `wakeCounter` /
+  ///   `totalSessionsCompleted` / `weeklyReviewCount` seeded into their per-host
+  ///   `*ByHost` G-counter maps (see [_migrateGCounters]).
   static AgentDomainEntity fromEntityRow(AgentEntity row) {
     final json = jsonDecode(row.serialized) as Map<String, dynamic>;
     _migrateReportContent(json);
+    _migrateGCounters(json);
     return AgentDomainEntity.fromJson(json);
   }
 
@@ -87,6 +114,50 @@ class AgentDbConversions {
     if (content is Map) {
       json['content'] =
           (content['markdown'] ?? content.values.firstOrNull ?? '').toString();
+    }
+  }
+
+  /// The host the pre-G-counter legacy scalar is seeded under. Fixed and shared
+  /// across devices: `wakeCounter` etc. were single synced ints that LWW-
+  /// converged to one value `n` everywhere, so seeding each device's scalar under
+  /// *its own* host would element-wise-max-merge to `N·n` (overcount). One shared
+  /// key makes the merge `max(n, …) = n` and preserves the value; forward per-
+  /// host increments are never lost.
+  static const preGCounterSentinelHost = '__pre_gcounter__';
+
+  /// Read-side back-compat for the int → per-host G-counter migration. A
+  /// pre-G-counter row — or a write from a device still on the old build —
+  /// stores these counters as plain integers under their legacy keys. Seed the
+  /// `*ByHost` map from that scalar (under [preGCounterSentinelHost]). When the
+  /// `*ByHost` map is already present (a new-client write), the legacy scalar
+  /// mirror is ignored. Only `AgentStateEntity` carries these counters.
+  static void _migrateGCounters(Map<String, dynamic> json) {
+    if (json['runtimeType'] != 'agentState') return;
+    _seedGCounter(json, 'wakeCounterByHost', 'wakeCounter');
+    final slots = json['slots'];
+    if (slots is Map<String, dynamic>) {
+      _seedGCounter(
+        slots,
+        'totalSessionsCompletedByHost',
+        'totalSessionsCompleted',
+      );
+      _seedGCounter(slots, 'weeklyReviewCountByHost', 'weeklyReviewCount');
+    }
+  }
+
+  /// Seeds [byHostKey] from a legacy numeric [legacyKey] under the sentinel host,
+  /// unless the per-host map is already present.
+  static void _seedGCounter(
+    Map<String, dynamic> json,
+    String byHostKey,
+    String legacyKey,
+  ) {
+    if (json[byHostKey] != null) return;
+    final legacy = json[legacyKey];
+    if (legacy is num) {
+      json[byHostKey] = <String, dynamic>{
+        preGCounterSentinelHost: legacy.toInt(),
+      };
     }
   }
 

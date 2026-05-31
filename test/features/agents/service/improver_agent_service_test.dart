@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -538,7 +539,7 @@ void main() {
           scenario.recursionDepth,
           reason: '$scenario',
         );
-        expect(updatedState.slots.totalSessionsCompleted, 0);
+        expect(updatedState.slots.totalSessionsCompleted.value, 0);
         expect(
           updatedState.scheduledWakeAt,
           testDate.add(Duration(days: scenario.expectedFeedbackWindowDays)),
@@ -634,7 +635,7 @@ void main() {
             ImproverSlotDefaults.defaultFeedbackWindowDays,
           );
           expect(updatedState.slots.recursionDepth, 0);
-          expect(updatedState.slots.totalSessionsCompleted, 0);
+          expect(updatedState.slots.totalSessionsCompleted.value, 0);
           expect(updatedState.scheduledWakeAt, isNotNull);
 
           // Verify improverTarget link via insertLinkExclusive.
@@ -1177,7 +1178,7 @@ void main() {
             slots: const AgentSlots(
               activeTemplateId: 'target-template-001',
               feedbackWindowDays: 7,
-              totalSessionsCompleted: 2,
+              totalSessionsCompleted: GCounter({'test-host': 2}),
               recursionDepth: 0,
             ),
           );
@@ -1198,7 +1199,7 @@ void main() {
             testDate.add(const Duration(days: 7)),
           );
           expect(updatedState.slots.lastOneOnOneAt, testDate);
-          expect(updatedState.slots.totalSessionsCompleted, 3);
+          expect(updatedState.slots.totalSessionsCompleted.value, 3);
           expect(updatedState.updatedAt, testDate);
           expect(notifiedAgentIds, [agentId]);
         });
@@ -1210,7 +1211,6 @@ void main() {
           final state = makeState(
             slots: const AgentSlots(
               activeTemplateId: 'target-template-001',
-              totalSessionsCompleted: 0,
             ),
           );
 
@@ -1243,7 +1243,6 @@ void main() {
             slots: const AgentSlots(
               activeTemplateId: 'target-template-001',
               feedbackWindowDays: 0,
-              totalSessionsCompleted: 0,
             ),
           );
 
@@ -1278,7 +1277,6 @@ void main() {
               slots: const AgentSlots(
                 activeTemplateId: 'target-template-001',
                 feedbackWindowDays: -5,
-                totalSessionsCompleted: 0,
               ),
             );
 
@@ -1345,7 +1343,7 @@ void main() {
             ).captured;
 
             final updatedState = captured.first as AgentStateEntity;
-            expect(updatedState.slots.totalSessionsCompleted, 1);
+            expect(updatedState.slots.totalSessionsCompleted.value, 1);
             expect(
               updatedState.scheduledWakeAt,
               testDate.add(const Duration(days: 14)),

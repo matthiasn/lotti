@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 enum _GeneratedReportContentShape {
@@ -184,6 +185,155 @@ void main() {
       final report = entity as AgentReportEntity;
       expect(report.content, scenario.expectedContent, reason: '$scenario');
     }, tags: 'glados');
+  });
+
+  group('AgentDbConversions — G-counter migration + dual-write', () {
+    const sentinel = AgentDbConversions.preGCounterSentinelHost;
+
+    AgentEntity makeStateRow(Map<String, dynamic> serializedJson) {
+      return AgentEntity(
+        id: 'state-1',
+        agentId: agentId,
+        type: AgentEntityTypes.agentState,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: jsonEncode(serializedJson),
+        schemaVersion: 1,
+      );
+    }
+
+    Map<String, dynamic> stateJson({
+      Map<String, dynamic> extra = const {},
+      Map<String, dynamic> slots = const {},
+    }) {
+      return {
+        'runtimeType': 'agentState',
+        'id': 'state-1',
+        'agentId': agentId,
+        'revision': 1,
+        'slots': slots,
+        'updatedAt': updatedAt.toIso8601String(),
+        'vectorClock': null,
+        ...extra,
+      };
+    }
+
+    AgentStateEntity readState(Map<String, dynamic> serializedJson) =>
+        AgentDbConversions.fromEntityRow(makeStateRow(serializedJson))
+            as AgentStateEntity;
+
+    test('seeds a legacy scalar counter under the shared sentinel host', () {
+      final state = readState(
+        stateJson(
+          extra: {'wakeCounter': 42},
+          slots: {'totalSessionsCompleted': 7, 'weeklyReviewCount': 3},
+        ),
+      );
+
+      expect(state.wakeCounter.byHost, {sentinel: 42});
+      expect(state.wakeCounter.value, 42);
+      expect(state.slots.totalSessionsCompleted.value, 7);
+      expect(state.slots.weeklyReviewCount.value, 3);
+    });
+
+    test('absent counters default to an empty G-counter (value 0)', () {
+      final state = readState(stateJson());
+
+      expect(state.wakeCounter.value, 0);
+      expect(state.slots.totalSessionsCompleted.value, 0);
+      expect(state.slots.weeklyReviewCount.value, 0);
+    });
+
+    test('a present per-host map wins; the stale legacy mirror is ignored', () {
+      // A new-client write carries both; the map is authoritative.
+      final state = readState(
+        stateJson(
+          extra: {
+            'wakeCounterByHost': {'h1': 2, 'h2': 3},
+            'wakeCounter': 999, // stale mirror — must be ignored
+          },
+        ),
+      );
+
+      expect(state.wakeCounter.byHost, {'h1': 2, 'h2': 3});
+      expect(state.wakeCounter.value, 5);
+    });
+
+    test(
+      'toEntityCompanion dual-writes the per-host map and the int mirror',
+      () {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-1',
+          agentId: agentId,
+          revision: 1,
+          slots: const AgentSlots(totalSessionsCompleted: GCounter({'h1': 4})),
+          updatedAt: updatedAt,
+          vectorClock: null,
+          wakeCounter: const GCounter({'h1': 2, 'h2': 3}),
+        );
+
+        final companion = AgentDbConversions.toEntityCompanion(entity);
+        final json =
+            jsonDecode(companion.serialized.value) as Map<String, dynamic>;
+
+        // Per-host map (authoritative) ...
+        expect(json['wakeCounterByHost'], {'h1': 2, 'h2': 3});
+        // ... plus the legacy scalar mirror (= value) for old clients.
+        expect(json['wakeCounter'], 5);
+        final slots = json['slots'] as Map<String, dynamic>;
+        expect(slots['totalSessionsCompletedByHost'], {'h1': 4});
+        expect(slots['totalSessionsCompleted'], 4);
+      },
+    );
+
+    test('round-trips a multi-host G-counter through write then read', () {
+      final entity = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: agentId,
+        revision: 1,
+        slots: const AgentSlots(
+          weeklyReviewCount: GCounter({'h1': 1, 'h2': 1}),
+        ),
+        updatedAt: updatedAt,
+        vectorClock: null,
+        wakeCounter: const GCounter({'h1': 5, 'h2': 9}),
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      final roundtripped = readState(
+        jsonDecode(companion.serialized.value) as Map<String, dynamic>,
+      );
+
+      expect(roundtripped.wakeCounter, const GCounter({'h1': 5, 'h2': 9}));
+      expect(
+        roundtripped.slots.weeklyReviewCount,
+        const GCounter({'h1': 1, 'h2': 1}),
+      );
+    });
+
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(1, 1000), // legacy value n
+      glados.IntAnys(glados.any).intInRange(1, 6), // number of devices
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'N devices migrating the same legacy scalar converge to n, not N·n '
+      '(the overcount trap)',
+      (n, deviceCount) {
+        // Every device independently migrates a legacy row carrying the same n
+        // (they had LWW-converged to it). Merging must preserve n, not sum it.
+        final migrated = [
+          for (var i = 0; i < deviceCount; i++)
+            readState(stateJson(extra: {'wakeCounter': n})).wakeCounter,
+        ];
+        final merged = migrated.fold(
+          const GCounter.empty(),
+          (acc, c) => acc.merge(c),
+        );
+
+        expect(merged.value, n, reason: 'n=$n devices=$deviceCount');
+      },
+      tags: 'glados',
+    );
   });
 
   group('AgentDbConversions — unknown entity variant', () {

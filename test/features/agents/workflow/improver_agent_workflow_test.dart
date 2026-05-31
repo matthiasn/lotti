@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -66,7 +67,9 @@ void main() {
         activeTemplateId: activeTemplateId,
         lastFeedbackScanAt: lastFeedbackScanAt,
         lastOneOnOneAt: lastOneOnOneAt,
-        totalSessionsCompleted: totalSessionsCompleted,
+        totalSessionsCompleted: totalSessionsCompleted == null
+            ? const GCounter.empty()
+            : GCounter({'test-host': totalSessionsCompleted}),
         recursionDepth: recursionDepth,
       ),
       wakeCounter: wakeCounter,
@@ -157,7 +160,7 @@ void main() {
       expect(stateUpdates, isNotEmpty);
       final lastUpdate = stateUpdates.last;
       expect(lastUpdate.slots.lastFeedbackScanAt, isNotNull);
-      expect(lastUpdate.wakeCounter, 1);
+      expect(lastUpdate.wakeCounter.value, 1);
     });
 
     test('threshold gate: insufficient feedback skips ritual', () async {

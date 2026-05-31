@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 void main() {
@@ -105,7 +106,7 @@ void main() {
           recentHeadMessageId: 'msg-head-001',
           latestSummaryMessageId: 'msg-summary-001',
           consecutiveFailureCount: 2,
-          wakeCounter: 14,
+          wakeCounter: const GCounter({'test-host': 14}),
           processedCounterByHost: {'host-a': 5, 'host-b': 9},
           toolCounterByKey: {'day_agent_set_next_wake:2026-02-20': 3},
         );
@@ -125,7 +126,7 @@ void main() {
             activeProjectId: 'project-abc',
             lastDailyWakeAt: DateTime(2026, 3, 15, 8),
             lastWeeklyReviewAt: DateTime(2026, 3, 10, 14),
-            weeklyReviewCount: 5,
+            weeklyReviewCount: const GCounter({'test-host': 5}),
           ),
           updatedAt: updatedAt,
           vectorClock: vectorClock,
@@ -144,7 +145,7 @@ void main() {
           state.slots.lastWeeklyReviewAt,
           equals(DateTime(2026, 3, 10, 14)),
         );
-        expect(state.slots.weeklyReviewCount, equals(5));
+        expect(state.slots.weeklyReviewCount.value, equals(5));
       });
 
       test('roundtrips day agent slots', () {
@@ -181,7 +182,7 @@ void main() {
         expect(roundtripped, equals(original));
         final state = roundtripped as AgentStateEntity;
         expect(state.consecutiveFailureCount, equals(0));
-        expect(state.wakeCounter, equals(0));
+        expect(state.wakeCounter.value, equals(0));
         expect(state.processedCounterByHost, isEmpty);
         expect(state.toolCounterByKey, isEmpty);
       });

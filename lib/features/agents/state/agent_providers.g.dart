@@ -229,7 +229,7 @@ final class DomainLoggerProvider
   }
 }
 
-String _$domainLoggerHash() => r'e203383757041025f853dec58f2f6c2a47af2693';
+String _$domainLoggerHash() => r'46969db95e501597138667474034d573fb8e2f33';
 
 /// The agent database instance (singleton via GetIt).
 

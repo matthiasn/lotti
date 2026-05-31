@@ -65,6 +65,18 @@ class AgentSyncService {
   /// The underlying repository for read-only operations.
   AgentRepository get repository => _repository;
 
+  /// The local device's host id — the key this device's `GCounter` increments
+  /// are attributed to (so per-host entries stay disjoint and merge losslessly).
+  /// Sourced from [VectorClockService], which sets it during init; throws if it
+  /// is somehow unset, which should not happen in a running app.
+  Future<String> localHost() async {
+    final host = await _vectorClockService.getHost();
+    if (host == null) {
+      throw StateError('VectorClockService has no host id for a counter bump');
+    }
+    return host;
+  }
+
   /// Returns the active transaction context from the current [Zone], or
   /// `null` when called outside [runInTransaction].
   static _TransactionContext? get _currentTxContext =>

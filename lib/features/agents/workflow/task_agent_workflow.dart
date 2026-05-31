@@ -659,13 +659,14 @@ class TaskAgentWorkflow {
         );
 
         // 11. Persist state.
+        final hostId = await syncService.localHost();
         await syncService.upsertEntity(
           state.copyWith(
             revision: state.revision + 1,
             lastWakeAt: now,
             updatedAt: now,
             consecutiveFailureCount: 0,
-            wakeCounter: state.wakeCounter + 1,
+            wakeCounter: state.wakeCounter.increment(hostId),
           ),
         );
       });

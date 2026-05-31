@@ -1,6 +1,7 @@
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 import 'constants.dart';
@@ -45,6 +46,8 @@ AgentStateEntity makeTestState({
   AgentSlots slots = const AgentSlots(),
   DateTime? updatedAt,
   VectorClock? vectorClock,
+  // Convenience: a plain int wraps into a single-host G-counter whose value is
+  // that int, so existing call sites keep passing an int.
   int wakeCounter = 0,
   bool awaitingContent = false,
   int consecutiveFailureCount = 0,
@@ -61,7 +64,9 @@ AgentStateEntity makeTestState({
         slots: slots,
         updatedAt: updatedAt ?? kAgentTestDate,
         vectorClock: vectorClock,
-        wakeCounter: wakeCounter,
+        wakeCounter: wakeCounter == 0
+            ? const GCounter.empty()
+            : GCounter({'test-host': wakeCounter}),
         awaitingContent: awaitingContent,
         consecutiveFailureCount: consecutiveFailureCount,
         toolCounterByKey: toolCounterByKey,

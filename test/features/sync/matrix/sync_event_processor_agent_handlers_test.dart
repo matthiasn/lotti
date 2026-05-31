@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -94,7 +95,7 @@ void main() {
         slots: const AgentSlots(),
         updatedAt: DateTime(2024, 3, 15),
         vectorClock: null,
-        wakeCounter: 42,
+        wakeCounter: const GCounter({'test-host': 42}),
       );
 
       final message = SyncMessage.agentEntity(
