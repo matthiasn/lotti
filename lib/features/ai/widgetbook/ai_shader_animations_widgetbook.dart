@@ -609,6 +609,7 @@ class _VoiceRecorderDrivenPreviewState
     try {
       final hasPermission = await _recorder.hasPermission();
       if (!mounted) return;
+      if (!_isStarting || !widget.config.useLiveRecorder) return;
       if (!hasPermission) {
         setState(() {
           _isStarting = false;
@@ -619,6 +620,10 @@ class _VoiceRecorderDrivenPreviewState
 
       if (widget.config.usePcmStreamCapture) {
         final stream = await _recorder.startStream(_streamRecordConfig);
+        if (!mounted || !_isStarting || !widget.config.useLiveRecorder) {
+          await _recorder.stop();
+          return;
+        }
         _streamSubscription = stream.listen(
           _handlePcmChunk,
           onError: _handleRecorderError,
@@ -626,6 +631,12 @@ class _VoiceRecorderDrivenPreviewState
       } else {
         _tempRecordingPath = _createTempRecordingPath();
         await _recorder.start(_meteredRecordConfig, path: _tempRecordingPath!);
+        if (!mounted || !_isStarting || !widget.config.useLiveRecorder) {
+          final path = _tempRecordingPath;
+          await _recorder.stop();
+          await _deleteTempRecording(path);
+          return;
+        }
       }
       _amplitudeThrottle.reset();
       _startAmplitudePolling();
@@ -723,6 +734,16 @@ class _VoiceRecorderDrivenPreviewState
   }
 
   Future<void> _stopRecorder() async {
+    if (_isStarting) {
+      if (mounted) {
+        setState(() {
+          _isStarting = false;
+        });
+      } else {
+        _isStarting = false;
+      }
+    }
+
     _amplitudeTimer?.cancel();
     _amplitudeTimer = null;
     await _streamSubscription?.cancel();
@@ -753,6 +774,7 @@ class _VoiceRecorderDrivenPreviewState
   }
 
   Future<void> _disposeRecorder() async {
+    _isStarting = false;
     _amplitudeTimer?.cancel();
     await _streamSubscription?.cancel();
     _amplitudeThrottle.stop();
@@ -769,10 +791,7 @@ class _VoiceRecorderDrivenPreviewState
     _tempRecordingPath = null;
     if (path == null || path.isEmpty) return;
     try {
-      final file = File(path);
-      if (file.existsSync()) {
-        file.deleteSync();
-      }
+      await File(path).delete();
     } catch (_) {}
   }
 

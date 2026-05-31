@@ -46,16 +46,12 @@ extension AiThinkingShaderRouteLabel on AiThinkingShaderRoute {
 }
 
 @visibleForTesting
-class AiStateShaderAssets {
-  const AiStateShaderAssets._();
-
+abstract final class AiStateShaderAssets {
   static const voiceInput = 'shaders/ai_voice_input.frag';
   static const thinkingLine = 'shaders/ai_thinking_line.frag';
 }
 
-class AiStateShaderProgramCache {
-  AiStateShaderProgramCache._();
-
+abstract final class AiStateShaderProgramCache {
   static Future<ui.FragmentProgram>? _voiceInputProgram;
   static Future<ui.FragmentProgram>? _thinkingLineProgram;
 
@@ -189,7 +185,7 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
                     final program = snapshot.data;
                     return CustomPaint(
                       painter: program == null
-                          ? _VoiceInputFallbackPainter(
+                          ? AiVoiceInputFallbackPainter(
                               dbfs: widget.dbfs,
                               dbfsFloor: widget.dbfsFloor,
                               time: time,
@@ -201,7 +197,7 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
                               secondaryColor: widget.secondaryColor,
                               backgroundColor: widget.backgroundColor,
                             )
-                          : _VoiceInputShaderPainter(
+                          : AiVoiceInputShaderPainter(
                               program: program,
                               dbfs: widget.dbfs,
                               dbfsFloor: widget.dbfsFloor,
@@ -337,7 +333,7 @@ class _AiThinkingLineShaderState extends State<AiThinkingLineShader>
                     final program = snapshot.data;
                     return CustomPaint(
                       painter: program == null
-                          ? _ThinkingLineFallbackPainter(
+                          ? AiThinkingLineFallbackPainter(
                               time: time,
                               speed: widget.speed,
                               amplitude: widget.amplitude,
@@ -349,7 +345,7 @@ class _AiThinkingLineShaderState extends State<AiThinkingLineShader>
                               secondaryColor: widget.secondaryColor,
                               backgroundColor: widget.backgroundColor,
                             )
-                          : _ThinkingLineShaderPainter(
+                          : AiThinkingLineShaderPainter(
                               program: program,
                               time: time,
                               speed: widget.speed,
@@ -374,8 +370,9 @@ class _AiThinkingLineShaderState extends State<AiThinkingLineShader>
   }
 }
 
-class _VoiceInputShaderPainter extends CustomPainter {
-  _VoiceInputShaderPainter({
+@visibleForTesting
+class AiVoiceInputShaderPainter extends CustomPainter {
+  AiVoiceInputShaderPainter({
     required this.program,
     required this.dbfs,
     required this.dbfsFloor,
@@ -426,7 +423,7 @@ class _VoiceInputShaderPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_VoiceInputShaderPainter oldDelegate) {
+  bool shouldRepaint(AiVoiceInputShaderPainter oldDelegate) {
     return oldDelegate.program != program ||
         oldDelegate.dbfs != dbfs ||
         oldDelegate.dbfsFloor != dbfsFloor ||
@@ -441,8 +438,9 @@ class _VoiceInputShaderPainter extends CustomPainter {
   }
 }
 
-class _ThinkingLineShaderPainter extends CustomPainter {
-  _ThinkingLineShaderPainter({
+@visibleForTesting
+class AiThinkingLineShaderPainter extends CustomPainter {
+  AiThinkingLineShaderPainter({
     required this.program,
     required this.time,
     required this.speed,
@@ -493,7 +491,7 @@ class _ThinkingLineShaderPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ThinkingLineShaderPainter oldDelegate) {
+  bool shouldRepaint(AiThinkingLineShaderPainter oldDelegate) {
     return oldDelegate.program != program ||
         oldDelegate.time != time ||
         oldDelegate.speed != speed ||
@@ -508,8 +506,9 @@ class _ThinkingLineShaderPainter extends CustomPainter {
   }
 }
 
-class _VoiceInputFallbackPainter extends CustomPainter {
-  _VoiceInputFallbackPainter({
+@visibleForTesting
+class AiVoiceInputFallbackPainter extends CustomPainter {
+  AiVoiceInputFallbackPainter({
     required this.dbfs,
     required this.dbfsFloor,
     required this.time,
@@ -600,7 +599,7 @@ class _VoiceInputFallbackPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_VoiceInputFallbackPainter oldDelegate) {
+  bool shouldRepaint(AiVoiceInputFallbackPainter oldDelegate) {
     return oldDelegate.dbfs != dbfs ||
         oldDelegate.dbfsFloor != dbfsFloor ||
         oldDelegate.time != time ||
@@ -614,8 +613,9 @@ class _VoiceInputFallbackPainter extends CustomPainter {
   }
 }
 
-class _ThinkingLineFallbackPainter extends CustomPainter {
-  _ThinkingLineFallbackPainter({
+@visibleForTesting
+class AiThinkingLineFallbackPainter extends CustomPainter {
+  AiThinkingLineFallbackPainter({
     required this.time,
     required this.speed,
     required this.amplitude,
@@ -652,7 +652,7 @@ class _ThinkingLineFallbackPainter extends CustomPainter {
       final t = time * speed;
       final layerOffset = (lineIndex - (count - 1) / 2) * size.height * 0.09;
       final path = Path();
-      final samples = math.max(size.width ~/ 4, 12);
+      final samples = math.min(math.max(size.width ~/ 4, 12), 48);
       for (var i = 0; i <= samples; i++) {
         final x = size.width * i / samples;
         final progress = i / samples;
@@ -695,7 +695,7 @@ class _ThinkingLineFallbackPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ThinkingLineFallbackPainter oldDelegate) {
+  bool shouldRepaint(AiThinkingLineFallbackPainter oldDelegate) {
     return oldDelegate.time != time ||
         oldDelegate.speed != speed ||
         oldDelegate.amplitude != amplitude ||
