@@ -59,12 +59,16 @@ class _InMemoryAgentRepository extends MockAgentRepository {
   }
 
   @override
+  Future<AgentDomainEntity?> getEntity(String id) async => _entities[id];
+
+  @override
   Future<AgentStateEntity?> getAgentState(String agentId) async {
     final states = _entities.values
         .whereType<AgentStateEntity>()
         .where((s) => s.agentId == agentId)
         .toList();
-    return states.isEmpty ? null : states.last;
+    // Exactly one state per agent — `.single` fails fast if a test seeds two.
+    return states.isEmpty ? null : states.single;
   }
 
   @override

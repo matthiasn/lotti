@@ -193,8 +193,14 @@ class AgentSyncService {
   /// can't be bypassed. Messages chain *across wakes* into one continuous
   /// per-agent history (the first message of a brand-new agent is a root). The
   /// message, its link, and the advanced head commit atomically inside
-  /// [runInTransaction]; the `messagePrev` link id is derived from the message
-  /// id, so a re-append is idempotent.
+  /// [runInTransaction].
+  ///
+  /// **Idempotent.** A repeat upsert of an already-persisted message id (a retry
+  /// or a content update) re-persists the row with its *existing* edge and stops
+  /// — it does not re-chain. Without this, the retry would re-point
+  /// `prevMessageId` at the current head: for the just-appended head that is a
+  /// self-link (`m → m`, a 1-cycle the projection rejects), for an older message
+  /// a back-edge — either way a cycle that corrupts the canonical chain.
   ///
   /// This is the only place `recentHeadMessageId` is maintained — it is
   /// otherwise declared-but-unwritten. Concurrent multi-device appends off one
@@ -203,15 +209,28 @@ class AgentSyncService {
   /// back through the [upsertEntity] message router.
   Future<void> _appendMessage(AgentMessageEntity message) async {
     await runInTransaction(() async {
+      // Idempotency guard — see the docstring. Preserve the persisted edge so a
+      // content update doesn't drop it; never re-chain an existing message.
+      final existing = await _repository.getEntity(message.id);
+      if (existing is AgentMessageEntity) {
+        await _upsertEntityRaw(
+          message.copyWith(prevMessageId: existing.prevMessageId),
+        );
+        return;
+      }
+
       final state = await _repository.getAgentState(message.agentId);
       var head = state?.recentHeadMessageId;
 
-      // Legacy agents have messages but no head pointer (it was never
-      // maintained). On the first append, chain their existing prefix into one
-      // spine so history is continuous; the new message then extends it. Once
-      // the head is set this is never reached again. Returns null for a
-      // brand-new agent with no prior messages (the message is then a root).
-      head ??= await _backfillMessageChain(message.agentId);
+      // A legacy agent has a state row whose head pointer was never written; on
+      // the first append, chain its existing prefix into one spine so history is
+      // continuous, then extend it (the head is persisted below, so this never
+      // re-runs). Skip entirely when there is no state row: there is no head to
+      // maintain, and re-scanning every append — the advanced head is never
+      // persisted without a state row — would be quadratic.
+      if (state != null && head == null) {
+        head = await _backfillMessageChain(message.agentId);
+      }
 
       await _upsertEntityRaw(
         head == null ? message : message.copyWith(prevMessageId: head),
@@ -249,7 +268,9 @@ class AgentSyncService {
   /// Only the links are written (not the messages), so history is **not**
   /// re-stamped or re-synced — just `n-1` new edges. Link ids are derived from
   /// the child id, so two devices backfilling the same agent converge on the
-  /// same edges. Reached only while the head is unset, so it runs at most once.
+  /// same edges. Reached only on the first append of an agent whose state row
+  /// has an unset head, so it runs at most once (the append then persists the
+  /// head).
   Future<String?> _backfillMessageChain(String agentId) async {
     final messages = await _repository.getAgentMessages(agentId);
     if (messages.isEmpty) return null;
