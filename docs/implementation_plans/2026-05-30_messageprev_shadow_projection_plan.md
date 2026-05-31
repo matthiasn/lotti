@@ -41,14 +41,20 @@ Two workstreams:
 
 ## Edge-population design
 
-- **Chokepoint = `AgentSyncService.appendAgentMessage`.** A new method that, for
-  a message append: reads the agent's current head from
-  `AgentStateEntity.recentHeadMessageId`; stamps `prevMessageId` = head; persists
-  the message (existing `upsertEntity` path → VC stamp + sync); creates a
-  `messagePrev` link (deterministic id `msgprev-<messageId>`, so re-append is
-  idempotent) `fromId = newMessage → toId = head`; and advances
-  `recentHeadMessageId` to the new message. Wrap in `runInTransaction` so
-  message + link + state commit atomically. Refactor the ~18 sites to call it.
+- **Chokepoint = routing inside `AgentSyncService.upsertEntity`.** Rather than a
+  new public method wired into the ~18 append sites, `upsertEntity` routes every
+  *local* `AgentMessageEntity` write to a private `_appendMessage` (sync-received
+  messages already carry their edge and skip it). `_appendMessage` reads the
+  agent's current head from `AgentStateEntity.recentHeadMessageId`; stamps
+  `prevMessageId` = head; persists the message (raw `_upsertEntityRaw` path → VC
+  stamp + sync); creates a `messagePrev` link (deterministic id
+  `msgprev-<messageId>`, so re-append is idempotent) `fromId = newMessage →
+  toId = head`; and advances `recentHeadMessageId` to the new message — all in
+  one `runInTransaction` so message + link + state commit atomically. Routing in
+  the funnel (vs. editing call sites) means **no site can bypass chaining by
+  construction** — a 19th append site added later is chained automatically. That
+  no-bypass guarantee is why this beat the explicit-method/18-site-refactor
+  alternative, with zero call-site churn.
 - **Parent rule (cross-wake).** Parent = the agent's **global** head
   (`recentHeadMessageId`), so messages chain *across* wakes into one continuous
   history; within a wake the running head advances message-to-message. First
@@ -57,11 +63,20 @@ Two workstreams:
   (≥2 heads) — legal and expected; the projection is multi-head tolerant. PR 3
   uses the simple **pick-one-head** rule (parent = local head) and leaves join
   emission to PR 6.
-- **`hostId` sourcing (resolves the PR 1 open item).** Stamp the authoring host
-  into the message JSON on new appends (local host from `VectorClockService`;
-  `originatingHostId` is already on the sync envelope, per PR 2). The adapter
-  sets `AgentEvent.hostId` from that field, falling back to `id`-only tiebreak
-  when absent (legacy rows) — deterministic either way.
+- **`hostId` sourcing (resolves the PR 1 open item) — DECIDED: `id`-only.** The
+  adapter leaves `AgentEvent.hostId` empty, so `canonicalOrder` breaks ties on
+  `id` alone. This is sufficient: event ids are globally-unique UUIDs, so `id`
+  already imposes a deterministic total order on concurrent events — the
+  `hostId` half of ADR 0018's `(hostId, id)` tuple is the textbook
+  *per-replica-counter* disambiguator, which a unique id makes redundant for
+  ordering. Deriving the host from the message vector clock was rejected as
+  fragile: it only works while messages carry a single-host clock (constructed
+  with `vectorClock: null`, never re-stamped), an implicit invariant that a
+  future multi-host/merge path could silently break. An **explicit** authoring-
+  host field stays deferred to the increment that gains a real consumer
+  (provenance UI, per-host accounting, or the PR 7 lease) — at which point a
+  migration is clearly justified rather than speculative for a tiebreak that
+  does not need it.
 
 ## Adapter + shadow harness
 
@@ -182,8 +197,11 @@ backfill only establishes the **DAG/head**; it does not seed counters.
 - **Baseline checkpoint timing** — emit in PR 3 (anchors shadow scoping) vs. PR 4
   (where reads actually need it). Leaning PR 4, with PR 3 shadow scoped to fresh
   agents/forward corpora.
-- **Authoring-host persistence** — add an explicit host field to the message JSON
-  going forward (cheap, no schema migration) vs. rely on `originatingHostId` +
-  `id`-only fallback. Leaning explicit field for a clean `(hostId, id)`.
+- **Authoring-host persistence — DECIDED: `id`-only now, explicit field
+  deferred.** The kernel tiebreak does not need a host (unique UUID ids already
+  give a total order), and deriving it from the VC is fragile, so PR 3 ships
+  `id`-only. An explicit host field is added later, by the increment that gains a
+  real consumer for it (provenance / per-host accounting / PR 7 lease). See the
+  edge-population design above for the full rationale.
 - **Join-on-resume** — pick-one-head (defer joins to PR 6, recommended) vs. emit
   joins now.

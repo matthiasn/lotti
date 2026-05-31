@@ -207,6 +207,21 @@ class AgentRepository {
     return entity.mapOrNull(agentState: (e) => e);
   }
 
+  /// All non-deleted messages for [agentId], across threads. Used by the
+  /// causal-DAG backfill to chain a legacy (edge-less) message prefix. The
+  /// underlying query orders newest-first; callers that need chronological
+  /// order sort by `(createdAt, id)` themselves.
+  Future<List<AgentMessageEntity>> getAgentMessages(String agentId) async {
+    // Delegates to the generic fetcher with its default unbounded limit (-1) —
+    // a one-time backfill needs the full history. The `type` filter guarantees
+    // every row is a message; `whereType` only narrows the static type.
+    final entities = await getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.agentMessage,
+    );
+    return entities.whereType<AgentMessageEntity>().toList();
+  }
+
   /// Batch-fetch the latest [AgentStateEntity] for each agent in [agentIds].
   ///
   /// Issues chunked SQL queries that keep only the newest state row per

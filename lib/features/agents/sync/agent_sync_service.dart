@@ -123,12 +123,30 @@ class AgentSyncService {
   /// Upsert an [AgentDomainEntity] and enqueue a sync message unless
   /// [fromSync] is `true`.
   ///
+  /// Local (non-sync) **message** writes are routed through the causal-DAG
+  /// append path ([_appendMessage]) so every persisted message is chained into
+  /// the log and advances the agent's head — no call site can bypass it. Every
+  /// other entity (and sync-received messages, which already carry their edge)
+  /// goes straight to the raw upsert.
+  Future<void> upsertEntity(
+    AgentDomainEntity entity, {
+    bool fromSync = false,
+  }) async {
+    if (!fromSync && entity is AgentMessageEntity) {
+      return _appendMessage(entity);
+    }
+    return _upsertEntityRaw(entity, fromSync: fromSync);
+  }
+
+  /// Raw upsert: VC-stamp, persist, and enqueue (or defer inside a
+  /// transaction). Bypasses the message-append routing in [upsertEntity].
+  ///
   /// When called inside [runInTransaction], the outbox enqueue is deferred
   /// until the outermost transaction commits. The reserved vector clock is
   /// also bound to the outer transaction's scope so a rollback releases the
   /// counter through the normal burn path instead of binding it to a payload
   /// that never committed.
-  Future<void> upsertEntity(
+  Future<void> _upsertEntityRaw(
     AgentDomainEntity entity, {
     bool fromSync = false,
   }) async {
@@ -164,6 +182,94 @@ class AgentSyncService {
         );
       }
     });
+  }
+
+  /// Appends a local [message] to the agent's log, wiring it into the causal
+  /// DAG: the message's `prevMessageId` and a `messagePrev` link point at the
+  /// agent's current head (`AgentStateEntity.recentHeadMessageId`), and the head
+  /// then advances to the new message.
+  ///
+  /// Reached from [upsertEntity] for every local message write, so chaining
+  /// can't be bypassed. Messages chain *across wakes* into one continuous
+  /// per-agent history (the first message of a brand-new agent is a root). The
+  /// message, its link, and the advanced head commit atomically inside
+  /// [runInTransaction]; the `messagePrev` link id is derived from the message
+  /// id, so a re-append is idempotent.
+  ///
+  /// This is the only place `recentHeadMessageId` is maintained — it is
+  /// otherwise declared-but-unwritten. Concurrent multi-device appends off one
+  /// head produce a fork (≥2 heads), which the projection tolerates; joins are
+  /// deferred (PR 6). Internal writes use [_upsertEntityRaw] to avoid recursing
+  /// back through the [upsertEntity] message router.
+  Future<void> _appendMessage(AgentMessageEntity message) async {
+    await runInTransaction(() async {
+      final state = await _repository.getAgentState(message.agentId);
+      var head = state?.recentHeadMessageId;
+
+      // Legacy agents have messages but no head pointer (it was never
+      // maintained). On the first append, chain their existing prefix into one
+      // spine so history is continuous; the new message then extends it. Once
+      // the head is set this is never reached again. Returns null for a
+      // brand-new agent with no prior messages (the message is then a root).
+      head ??= await _backfillMessageChain(message.agentId);
+
+      await _upsertEntityRaw(
+        head == null ? message : message.copyWith(prevMessageId: head),
+      );
+
+      if (head != null) {
+        await upsertLink(
+          AgentLink.messagePrev(
+            id: 'msgprev-${message.id}',
+            fromId: message.id,
+            toId: head,
+            createdAt: message.createdAt,
+            updatedAt: message.createdAt,
+            vectorClock: null,
+          ),
+        );
+      }
+
+      if (state != null) {
+        await _upsertEntityRaw(
+          state.copyWith(
+            recentHeadMessageId: message.id,
+            updatedAt: message.createdAt,
+          ),
+        );
+      }
+    });
+  }
+
+  /// One-time migration for a legacy agent: chains its existing (edge-less)
+  /// messages into a single spine ordered by `(createdAt, id)`, creating
+  /// content-addressed `messagePrev` links. Returns the resulting head (the
+  /// last message's id), or null when the agent has no messages yet.
+  ///
+  /// Only the links are written (not the messages), so history is **not**
+  /// re-stamped or re-synced — just `n-1` new edges. Link ids are derived from
+  /// the child id, so two devices backfilling the same agent converge on the
+  /// same edges. Reached only while the head is unset, so it runs at most once.
+  Future<String?> _backfillMessageChain(String agentId) async {
+    final messages = await _repository.getAgentMessages(agentId);
+    if (messages.isEmpty) return null;
+    messages.sort((a, b) {
+      final byCreatedAt = a.createdAt.compareTo(b.createdAt);
+      return byCreatedAt != 0 ? byCreatedAt : a.id.compareTo(b.id);
+    });
+    for (var i = 1; i < messages.length; i++) {
+      await upsertLink(
+        AgentLink.messagePrev(
+          id: 'msgprev-${messages[i].id}',
+          fromId: messages[i].id,
+          toId: messages[i - 1].id,
+          createdAt: messages[i].createdAt,
+          updatedAt: messages[i].createdAt,
+          vectorClock: null,
+        ),
+      );
+    }
+    return messages.last.id;
   }
 
   /// Upsert an [AgentLink] and enqueue a sync message unless [fromSync]
