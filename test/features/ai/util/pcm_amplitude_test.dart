@@ -177,6 +177,23 @@ void main() {
       expect(dbfs, closeTo(0, 0.01));
     });
 
+    test('reports peak, RMS, and non-zero sample diagnostics', () {
+      final byteData = ByteData(8)
+        ..setInt16(0, 0, Endian.little)
+        ..setInt16(2, 1000, Endian.little)
+        ..setInt16(4, -3000, Endian.little)
+        ..setInt16(6, 0, Endian.little);
+
+      final stats = measurePcm16Amplitude(byteData.buffer.asUint8List());
+
+      expect(stats.sampleCount, 4);
+      expect(stats.nonZeroSampleCount, 2);
+      expect(stats.peakSample, 3000);
+      expect(stats.rmsSample, closeTo(sqrt(2500000), 0.001));
+      expect(stats.isSilent, isFalse);
+      expect(stats.dbfs, closeTo(-26.33, 0.01));
+    });
+
     Glados(any.pcmScenario, ExploreConfig(numRuns: 200)).test(
       'matches the generated RMS dBFS model',
       (scenario) {
