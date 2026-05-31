@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../test_data/entity_factories.dart';
 
 enum _GeneratedSyncWriteKind {
   entity,
@@ -357,6 +358,18 @@ void main() {
 
     when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
+    // Local message upserts route through the causal-DAG append path, which
+    // reads the agent's head and (when unset) backfills the prefix; default to
+    // no head and no prior messages unless a test overrides.
+    when(
+      () => mockRepository.getAgentState(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockRepository.getAgentMessages(any()),
+    ).thenAnswer((_) async => <AgentMessageEntity>[]);
+    // The append path's idempotency guard looks the message up first; default
+    // to "not yet persisted" so a plain append proceeds to chaining.
+    when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
     when(
       () => mockRepository.insertLinkExclusive(any()),
     ).thenAnswer((_) async {});
@@ -1358,6 +1371,181 @@ void main() {
           verify(() => mockOutboxService.enqueueMessage(any())).called(2);
         },
       );
+    });
+  });
+
+  group('AgentSyncService.upsertEntity — local message append', () {
+    AgentMessageEntity newMessage() => makeTestMessage(
+      id: 'm-new',
+      agentId: 'agent-1',
+      createdAt: DateTime(2024, 3, 15),
+    );
+
+    test('chains a new message to the current head and advances it', () async {
+      when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+        (_) async => makeTestState(agentId: 'agent-1').copyWith(
+          recentHeadMessageId: 'old-head',
+        ),
+      );
+
+      await syncService.upsertEntity(newMessage());
+
+      final upserted = verify(
+        () => mockRepository.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
+      // Message stamped with prevMessageId = head; state advanced to the new id.
+      expect(
+        upserted.whereType<AgentMessageEntity>().single.prevMessageId,
+        'old-head',
+      );
+      expect(
+        upserted.whereType<AgentStateEntity>().single.recentHeadMessageId,
+        'm-new',
+      );
+      // A messagePrev link new → head with a deterministic id.
+      final link =
+          verify(() => mockRepository.upsertLink(captureAny())).captured.single
+              as AgentLink;
+      expect(
+        link,
+        isA<MessagePrevLink>()
+            .having((l) => l.id, 'id', 'msgprev-m-new')
+            .having((l) => l.fromId, 'fromId', 'm-new')
+            .having((l) => l.toId, 'toId', 'old-head'),
+      );
+    });
+
+    test('a first message (no head) is a root — no link, head set', () async {
+      when(
+        () => mockRepository.getAgentState('agent-1'),
+      ).thenAnswer((_) async => makeTestState(agentId: 'agent-1'));
+
+      await syncService.upsertEntity(newMessage());
+
+      final upserted = verify(
+        () => mockRepository.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
+      expect(
+        upserted.whereType<AgentMessageEntity>().single.prevMessageId,
+        isNull,
+      );
+      expect(
+        upserted.whereType<AgentStateEntity>().single.recentHeadMessageId,
+        'm-new',
+      );
+      verifyNever(() => mockRepository.upsertLink(any()));
+    });
+
+    test(
+      'backfills a legacy edge-less prefix into a chain on first append',
+      () async {
+        // Legacy agent: messages exist, but the head pointer was never set.
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => makeTestState(agentId: 'agent-1'));
+        when(() => mockRepository.getAgentMessages('agent-1')).thenAnswer(
+          (_) async => [
+            makeTestMessage(
+              id: 'mA',
+              agentId: 'agent-1',
+              createdAt: DateTime(2024),
+            ),
+            makeTestMessage(
+              id: 'mB',
+              agentId: 'agent-1',
+              createdAt: DateTime(2024, 1, 2),
+            ),
+            makeTestMessage(
+              id: 'mC',
+              agentId: 'agent-1',
+              createdAt: DateTime(2024, 1, 3),
+            ),
+          ],
+        );
+
+        await syncService.upsertEntity(newMessage());
+
+        // Prefix chained A←B←C, then the new message extends from C — one spine.
+        final edges = {
+          for (final link in verify(
+            () => mockRepository.upsertLink(captureAny()),
+          ).captured.cast<AgentLink>())
+            (link as MessagePrevLink).fromId: link.toId,
+        };
+        expect(edges, {'mB': 'mA', 'mC': 'mB', 'm-new': 'mC'});
+
+        final message = verify(() => mockRepository.upsertEntity(captureAny()))
+            .captured
+            .cast<AgentDomainEntity>()
+            .whereType<AgentMessageEntity>()
+            .single;
+        expect(message.prevMessageId, 'mC');
+      },
+    );
+
+    test('with no state row, only the message is persisted', () async {
+      when(
+        () => mockRepository.getAgentState('agent-1'),
+      ).thenAnswer((_) async => null);
+
+      await syncService.upsertEntity(newMessage());
+
+      final upserted = verify(
+        () => mockRepository.upsertEntity(captureAny()),
+      ).captured;
+      expect(upserted.length, 1); // message only — no state update
+      expect((upserted.single as AgentMessageEntity).prevMessageId, isNull);
+      verifyNever(() => mockRepository.upsertLink(any()));
+    });
+
+    test('skips backfill when there is no state row even if messages exist — '
+        'avoids a per-append full-history rescan', () async {
+      // No state row, but the agent already has messages. Without the
+      // state-row guard, head stays null → backfill would re-scan every append
+      // (the advanced head is never persisted without a state row → quadratic).
+      when(
+        () => mockRepository.getAgentState('agent-1'),
+      ).thenAnswer((_) async => null);
+      when(() => mockRepository.getAgentMessages('agent-1')).thenAnswer(
+        (_) async => [makeTestMessage(id: 'mA', agentId: 'agent-1')],
+      );
+
+      await syncService.upsertEntity(newMessage());
+
+      verifyNever(() => mockRepository.getAgentMessages(any()));
+      final upserted = verify(
+        () => mockRepository.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
+      // Persisted as a root; no edge, no head advance.
+      expect(
+        upserted.whereType<AgentMessageEntity>().single.prevMessageId,
+        isNull,
+      );
+      verifyNever(() => mockRepository.upsertLink(any()));
+    });
+
+    test('re-appending an existing message preserves its edge and does not '
+        're-chain it (no self-link)', () async {
+      // The message is already persisted with a parent edge, and it is also the
+      // current head — the worst case for a naive retry (would self-link m→m).
+      when(() => mockRepository.getEntity('m-new')).thenAnswer(
+        (_) async => newMessage().copyWith(prevMessageId: 'old-head'),
+      );
+
+      await syncService.upsertEntity(newMessage());
+
+      final upserted = verify(
+        () => mockRepository.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
+      final message = upserted.whereType<AgentMessageEntity>().single;
+      // Existing edge preserved; emphatically not a self-link to its own id.
+      expect(message.prevMessageId, 'old-head');
+      expect(message.prevMessageId, isNot('m-new'));
+      // Short-circuits before any chaining: no new link, no head advance, and
+      // it never even reads the head.
+      verifyNever(() => mockRepository.upsertLink(any()));
+      expect(upserted.whereType<AgentStateEntity>(), isEmpty);
+      verifyNever(() => mockRepository.getAgentState(any()));
     });
   });
 }

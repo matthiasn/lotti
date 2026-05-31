@@ -8,9 +8,10 @@ derived state. The thesis it proves is
 > branching.
 
 If that permutation-invariance holds, the "log is the agent / convergent DAG"
-design is real. This module is **not wired into production** (PR 1 of the Daily
-OS runtime roadmap) — its only importers are its tests. PR 3 adds the adapter
-from storage rows and runs it in shadow against live state.
+design is real. The kernel (PR 1) still **drives no production read**: PR 3
+added the storage adapter and a shadow comparison that run the projection
+*alongside* the live mutable rows, but the only importers remain tests and the
+diagnostic compare — reads do not flip to the projection until PR 4.
 
 ## Files
 
@@ -20,6 +21,8 @@ from storage rows and runs it in shadow against live state.
 | `canonical_order.dart` | `canonicalOrder()` — deterministic topological sort; `DuplicateEventIdException`, `ProjectionCycleException`. |
 | `agent_projection.dart` | `AgentProjection` + `project()` — the clock-free structural fold. |
 | `projection_diagnostics.dart` | `diagnoseVectorClocks()` + `VcInconsistency` — vector-clock consistency surface, kept out of the fold. |
+| `agent_event_adapter.dart` | `agentEventsFromLog()` — maps persisted `AgentMessageEntity` + `messagePrev` links onto `AgentEvent` (PR 3 bridge). |
+| `shadow_projection.dart` | `compareShadowProjection()` + `ShadowProjectionReport`/`Status` — non-throwing compare of the projection against the live head. |
 
 ## The causal model (the load-bearing decision)
 
@@ -84,6 +87,38 @@ Reports each present parent edge whose `child.vc` does not strictly dominate
 `parent.vc`. Deliberately separate from `project()` so the fold stays
 clock-free.
 
+## Shadow projection (PR 3)
+
+`agentEventsFromLog(messages, links)` bridges storage to the kernel: each
+persisted `AgentMessageEntity` becomes an `AgentEvent` whose `causalParents` are
+read from the active `messagePrev` links (the canonical causal graph). A null
+message clock maps to an empty clock; `hostId` is left empty, so the tiebreak is
+**`id`-only**. That is deliberate and sufficient — event ids are globally-unique
+UUIDs, so `id` alone already totally-orders concurrent events; the `hostId` half
+of ADR 0018's `(hostId, id)` tuple is the per-replica-counter disambiguator that
+a unique id makes redundant for ordering. An explicit authoring-host field is
+deferred to the increment that needs it (provenance / per-host accounting / the
+PR 7 lease), not synthesized fragilely from the vector clock.
+
+`compareShadowProjection(messages, links, liveHeadId)` runs
+`project(canonicalOrder(...))` over that log and compares the projected tips to
+the live `recentHeadMessageId`, returning a `ShadowProjectionReport`:
+
+```mermaid
+stateDiagram-v2
+  [*] --> empty: no events && no live head
+  [*] --> error: canonicalOrder/project threw (dup id / cycle)
+  [*] --> mismatch: live head absent / not a projected tip
+  [*] --> match: exactly one tip == live head
+  [*] --> forked: ≥2 tips && live head is one of them
+```
+
+`forked` is *expected* divergence under concurrent multi-device appends, not a
+defect — the projection is the more-correct multi-head view while the live
+pointer names a single tip. The compare is pure and **never throws**: structural
+failures surface as `error`. It drives no production read — only tests and an
+optional debug-mode assert.
+
 ## Determinism contract
 
 `project(canonicalOrder(S))` is a pure function of the **set of distinct events**
@@ -103,3 +138,13 @@ Pure logic → Glados property tests (tagged `glados`) plus example/edge tests:
   dangling parents are surfaced.
 - **Two-device convergence** (`projection_convergence_test.dart`) — the shared
   harness reused by PRs 3–7.
+- **Shadow compare** (`shadow_projection_test.dart`) — example statuses plus
+  properties: projected heads equal the kernel heads, the status is the
+  biconditional of `liveHeadId` vs the projected tips, and the report is
+  invariant under input shuffle.
+- **Append-path integration** (`append_path_shadow_projection_test.dart`) —
+  drives the *real* `AgentSyncService` append path over an in-memory store and
+  projects the captured log: a forward corpus reproduces the maintained head
+  (`match`), two devices appending off a shared head `fork`, and the fork
+  converges order-independently. Properties cover arbitrary chain length and
+  fork width.

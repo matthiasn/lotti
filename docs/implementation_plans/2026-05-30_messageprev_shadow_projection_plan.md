@@ -25,33 +25,58 @@ Two workstreams:
   are promoted columns). `prevMessageId` already lives inside that JSON, and
   `messagePrev` is a variant of the existing `agent_links` table. Populating both
   is *data*, not schema.
-- **~18 append sites.** Messages are constructed inline in
+- **~18 append sites, one chokepoint.** Messages are constructed inline in
   `task_agent_workflow`, `project_agent_workflow`, `day_agent_workflow`, and each
-  of their `*_strategy` files, then persisted via `agent_repository.upsertEntity`.
-- **Head is already tracked.** `AgentStateEntity.recentHeadMessageId` is the
-  current head; appends advance it.
+  of their `*_strategy` files, but they all persist through a single funnel:
+  **`AgentSyncService.upsertEntity`** (which VC-stamps + enqueues sync). That is
+  the natural chokepoint.
+- **The head pointer is NOT maintained today.** `AgentStateEntity.recentHeadMessageId`
+  is *declared but never written* in production (the same scaffolding gap as
+  `messagePrev`). So edge-population must **introduce head maintenance**, not just
+  read an existing pointer.
+- **`threadId` is per-wake** (`threadId = job.runKey`), so an agent already has
+  many threads. The causal chain therefore spans wakes (continuous per-agent
+  history), keyed off the agent's **global** head — not per-thread, which would
+  produce a disconnected forest with one head per wake.
 
 ## Edge-population design
 
-- **Centralize, don't sprinkle.** Add one `appendMessage` chokepoint (in the
-  repository or a thin service) that, given a message without a parent, stamps
-  `prevMessageId` = the agent's current head and creates the `messagePrev` link,
-  then advances the head. Refactor the ~18 construction sites to call it. Setting
-  the edge at 18 call sites is the main correctness risk; a single chokepoint
-  removes it.
-- **Parent rule.** Parent = the running head *within the wake* (so several
-  messages appended in one wake form a chain), seeded from
-  `recentHeadMessageId`. First message of a brand-new agent = root (no parent).
+- **Chokepoint = routing inside `AgentSyncService.upsertEntity`.** Rather than a
+  new public method wired into the ~18 append sites, `upsertEntity` routes every
+  *local* `AgentMessageEntity` write to a private `_appendMessage` (sync-received
+  messages already carry their edge and skip it). `_appendMessage` reads the
+  agent's current head from `AgentStateEntity.recentHeadMessageId`; stamps
+  `prevMessageId` = head; persists the message (raw `_upsertEntityRaw` path → VC
+  stamp + sync); creates a `messagePrev` link (deterministic id
+  `msgprev-<messageId>`, so re-append is idempotent) `fromId = newMessage →
+  toId = head`; and advances `recentHeadMessageId` to the new message — all in
+  one `runInTransaction` so message + link + state commit atomically. Routing in
+  the funnel (vs. editing call sites) means **no site can bypass chaining by
+  construction** — a 19th append site added later is chained automatically. That
+  no-bypass guarantee is why this beat the explicit-method/18-site-refactor
+  alternative, with zero call-site churn.
+- **Parent rule (cross-wake).** Parent = the agent's **global** head
+  (`recentHeadMessageId`), so messages chain *across* wakes into one continuous
+  history; within a wake the running head advances message-to-message. First
+  message of a brand-new agent = root (no parent).
 - **Forks/joins.** Concurrent multi-device appends off one head produce a fork
-  (≥2 heads) — legal and expected; the projection is multi-head tolerant. A wake
-  that resumes after a sync delivered a concurrent branch may either pick one
-  head (fork persists) or emit a join (multiple parents). PR 3 picks the simple
-  rule (parent = local head) and leaves join emission to PR 6.
-- **`hostId` sourcing (resolves the PR 1 open item).** Stamp the authoring host
-  into the message JSON on new appends (local host from `VectorClockService`;
-  `originatingHostId` is already on the sync envelope, per PR 2). The adapter
-  sets `AgentEvent.hostId` from that field, falling back to `id`-only tiebreak
-  when absent (legacy rows) — deterministic either way.
+  (≥2 heads) — legal and expected; the projection is multi-head tolerant. PR 3
+  uses the simple **pick-one-head** rule (parent = local head) and leaves join
+  emission to PR 6.
+- **`hostId` sourcing (resolves the PR 1 open item) — DECIDED: `id`-only.** The
+  adapter leaves `AgentEvent.hostId` empty, so `canonicalOrder` breaks ties on
+  `id` alone. This is sufficient: event ids are globally-unique UUIDs, so `id`
+  already imposes a deterministic total order on concurrent events — the
+  `hostId` half of ADR 0018's `(hostId, id)` tuple is the textbook
+  *per-replica-counter* disambiguator, which a unique id makes redundant for
+  ordering. Deriving the host from the message vector clock was rejected as
+  fragile: it only works while messages carry a single-host clock (constructed
+  with `vectorClock: null`, never re-stamped), an implicit invariant that a
+  future multi-host/merge path could silently break. An **explicit** authoring-
+  host field stays deferred to the increment that gains a real consumer
+  (provenance UI, per-host accounting, or the PR 7 lease) — at which point a
+  migration is clearly justified rather than speculative for a tiebreak that
+  does not need it.
 
 ## Adapter + shadow harness
 
@@ -118,23 +143,30 @@ logs and `AgentStateEntity` rows across multiple synced devices. The arc to
 - **R8 — First compaction of a large existing log is expensive** and needs the
   edges/baseline from PR 3/PR 4. Forward-looking; not a PR 3 blocker.
 
-### The unifying migration primitive — per-agent baseline checkpoint
+### Migration: backfill the legacy prefix into a chain (DECIDED)
 
-Emit **one append-only "state baseline" checkpoint per existing agent** (at the
-PR 3→PR 4 boundary, where it is first needed) capturing today's truth: the head
-pointer, counters, and slot values. Then **projection = baseline + forward DAG**.
-This single primitive neutralizes R1, R5, R6, R7:
+For each existing agent, a one-time migration **chains its existing messages into
+a single causal spine**: order all of the agent's messages by `(createdAt, id)`,
+set each one's `prevMessageId` + a `messagePrev` link to the previous, and set
+`recentHeadMessageId` to the last. Because `threadId` is per-wake, this orders
+*across* wakes by time — the continuous cross-wake history (R1/R2 resolved):
 
-- legacy flat messages are *covered* by the baseline and not re-folded, so
-  shadow-equality is cleanly scoped to forward activity;
-- counters seed from the baseline (no zero-reset);
-- slot values not otherwise reconstructible are preserved verbatim;
-- no mass backfill of historical edges is required (cheaper and less fragile than
-  rewriting every old message's parent).
+- the legacy prefix becomes one chain → a **single head**, so the projection of
+  an existing agent matches its real current position;
+- it sets `recentHeadMessageId`, so the first forward append naturally parents it
+  — **"bridge" is automatic**, no separate step;
+- `createdAt`-ordering is an arbitrary-but-reasonable linearization of past
+  history (acceptable: history is immutable and mostly sequential per agent).
 
-Optional, only if full historical replay is ever wanted: a one-time **edge
-backfill** chaining legacy messages per thread by `(createdAt, id)`. Deferred —
-the baseline makes it unnecessary for correctness.
+Cost: one `messagePrev` link per existing message, written + synced once
+(idempotent via the `msgprev-<id>` link id). Scales with history length; runs
+lazily per agent (e.g. on next wake) to avoid a startup write storm.
+
+State **seeding** (counters/slots for PR 4) is the *separate* concern resolved in
+the [PR 4 plan](./2026-05-30_state_as_projection_plan.md): count-from-log for
+synced-sourced counters, per-host G-counters (PR 2b) for the monotonic ones, and
+a Form-A cache-seed for the small unrecoverable residue. This message-prefix
+backfill only establishes the **DAG/head**; it does not seed counters.
 
 ## Test plan
 
@@ -165,8 +197,11 @@ the baseline makes it unnecessary for correctness.
 - **Baseline checkpoint timing** — emit in PR 3 (anchors shadow scoping) vs. PR 4
   (where reads actually need it). Leaning PR 4, with PR 3 shadow scoped to fresh
   agents/forward corpora.
-- **Authoring-host persistence** — add an explicit host field to the message JSON
-  going forward (cheap, no schema migration) vs. rely on `originatingHostId` +
-  `id`-only fallback. Leaning explicit field for a clean `(hostId, id)`.
+- **Authoring-host persistence — DECIDED: `id`-only now, explicit field
+  deferred.** The kernel tiebreak does not need a host (unique UUID ids already
+  give a total order), and deriving it from the VC is fragile, so PR 3 ships
+  `id`-only. An explicit host field is added later, by the increment that gains a
+  real consumer for it (provenance / per-host accounting / PR 7 lease). See the
+  edge-population design above for the full rationale.
 - **Join-on-resume** — pick-one-head (defer joins to PR 6, recommended) vs. emit
   joins now.

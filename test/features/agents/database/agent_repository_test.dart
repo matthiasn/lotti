@@ -2771,6 +2771,29 @@ void main() {
       });
     });
 
+    group('getAgentMessages', () {
+      test("returns all of the agent's messages across threads, excluding "
+          'non-message entities and other agents', () async {
+        await repo.upsertEntity(makeMessage(id: 'msg-a', threadId: 'thread-A'));
+        await repo.upsertEntity(makeMessage(id: 'msg-b', threadId: 'thread-B'));
+        // A non-message entity for the same agent — must be excluded.
+        await repo.upsertEntity(makeReport());
+        // A message for a different agent — must be excluded.
+        await repo.upsertEntity(
+          makeMessage(id: 'msg-other', agentId: 'other-agent'),
+        );
+
+        final messages = await repo.getAgentMessages(testAgentId);
+
+        expect(messages.map((m) => m.id), unorderedEquals(['msg-a', 'msg-b']));
+      });
+
+      test('returns an empty list when the agent has no messages', () async {
+        await repo.upsertEntity(makeReport()); // agent exists, but no messages
+        expect(await repo.getAgentMessages(testAgentId), isEmpty);
+      });
+    });
+
     group('getLatestReport', () {
       test('returns the report pointed to by the head', () async {
         final pair = await setupReportWithHead(
