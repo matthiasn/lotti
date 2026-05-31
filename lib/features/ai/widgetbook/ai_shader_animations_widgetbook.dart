@@ -236,9 +236,9 @@ _ThinkingShaderConfig _thinkingConfigFromKnobs(BuildContext context) {
     ),
     speed: context.knobs.double.slider(
       label: 'Thinking / speed',
-      initialValue: 2.3,
-      max: 2.5,
-      divisions: 50,
+      initialValue: 3.6,
+      max: 5,
+      divisions: 80,
       precision: 2,
     ),
     amplitude: context.knobs.double.slider(
@@ -250,7 +250,7 @@ _ThinkingShaderConfig _thinkingConfigFromKnobs(BuildContext context) {
     ),
     randomness: context.knobs.double.slider(
       label: 'Thinking / randomness',
-      initialValue: 0.9,
+      initialValue: 1,
       max: 1,
       divisions: 50,
       precision: 2,

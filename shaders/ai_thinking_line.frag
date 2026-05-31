@@ -10,6 +10,7 @@ uniform float uRandomness;
 uniform float uLineCount;
 uniform float uPulse;
 uniform float uVariant;
+uniform float uOpacity;
 uniform vec4 uPrimaryColor;
 uniform vec4 uSecondaryColor;
 uniform vec4 uBackgroundColor;
@@ -289,9 +290,11 @@ void main() {
   float time = uTime * max(uSpeed, 0.0);
   float activeCount = clamp(floor(uLineCount + 0.5), 1.0, 6.0);
   float variant = floor(uVariant + 0.5);
+  float opacity = saturate(uOpacity);
+  vec4 color;
 
   if (variant < 0.5) {
-    fragColor = quietThread(
+    color = quietThread(
         uv,
         time,
         amplitude,
@@ -303,7 +306,7 @@ void main() {
         uBackgroundColor.rgb,
         uBackgroundColor.a);
   } else if (variant < 1.5) {
-    fragColor = packetScan(
+    color = packetScan(
         uv,
         time,
         amplitude,
@@ -314,7 +317,7 @@ void main() {
         uBackgroundColor.rgb,
         uBackgroundColor.a);
   } else if (variant < 2.5) {
-    fragColor = circuitTrace(
+    color = circuitTrace(
         uv,
         time,
         amplitude,
@@ -325,7 +328,7 @@ void main() {
         uBackgroundColor.rgb,
         uBackgroundColor.a);
   } else if (variant < 3.5) {
-    fragColor = probabilityBand(
+    color = probabilityBand(
         uv,
         time,
         amplitude,
@@ -335,7 +338,7 @@ void main() {
         uBackgroundColor.rgb,
         uBackgroundColor.a);
   } else {
-    fragColor = decoderBars(
+    color = decoderBars(
         uv,
         time,
         amplitude,
@@ -346,4 +349,6 @@ void main() {
         uBackgroundColor.rgb,
         uBackgroundColor.a);
   }
+
+  fragColor = vec4(color.rgb * opacity, saturate(color.a * opacity));
 }

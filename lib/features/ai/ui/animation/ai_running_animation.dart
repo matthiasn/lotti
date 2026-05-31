@@ -6,7 +6,9 @@ import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:siri_wave/siri_wave.dart';
@@ -53,44 +55,12 @@ class AiRunningAnimationWrapper extends ConsumerWidget {
   final bool isInteractive;
 
   Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
-    // Find the active inference for this entity
-    ActiveInferenceData? activeInference;
-
-    for (final responseType in responseTypes) {
-      final inference = ref.read(
-        activeInferenceControllerProvider(
-          entityId: entryId,
-          aiResponseType: responseType,
-        ),
-      );
-      if (inference != null) {
-        activeInference = inference;
-        break;
-      }
-    }
-
-    if (activeInference != null) {
-      // Get the prompt configuration
-      final prompt = await ref.read(
-        aiConfigByIdProvider(activeInference.promptId).future,
-      );
-
-      if (prompt != null && prompt is AiConfigPrompt) {
-        final entityId = activeInference.entityId;
-        if (context.mounted) {
-          await ModalUtils.showSingleSliverPageModal<void>(
-            context: context,
-            builder: (ctx) => UnifiedAiProgressUtils.progressPage(
-              context: ctx,
-              prompt: prompt,
-              entityId: entityId,
-              onTapBack: () => Navigator.of(ctx).pop(),
-              showExisting: true,
-            ),
-          );
-        }
-      }
-    }
+    await _handleAiActivityTap(
+      context: context,
+      ref: ref,
+      entryId: entryId,
+      responseTypes: responseTypes,
+    );
   }
 
   @override
@@ -116,6 +86,201 @@ class AiRunningAnimationWrapper extends ConsumerWidget {
 
     return animation;
   }
+}
+
+class AiRunningDecoderBars extends ConsumerStatefulWidget {
+  const AiRunningDecoderBars({
+    required this.entryId,
+    required this.responseTypes,
+    this.height = defaultHeight,
+    this.isInteractive = false,
+    super.key,
+  });
+
+  static const defaultHeight = 34.0;
+  static const defaultSpeed = 3.6;
+  static const defaultRandomness = 1.0;
+  static const defaultAmplitude = 0.7;
+  static const defaultPulse = 0.6;
+  static const transitionDuration = Duration(milliseconds: 340);
+
+  @visibleForTesting
+  static const Key indicatorKey = ValueKey('ai-running-decoder-bars');
+
+  final String entryId;
+  final Set<AiResponseType> responseTypes;
+  final double height;
+  final bool isInteractive;
+
+  @override
+  ConsumerState<AiRunningDecoderBars> createState() =>
+      _AiRunningDecoderBarsState();
+}
+
+class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _presenceController;
+
+  bool _buildBars = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _presenceController = AnimationController(
+      vsync: this,
+      duration: AiRunningDecoderBars.transitionDuration,
+    );
+    _presenceController.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed && mounted) {
+        setState(() => _buildBars = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _presenceController.dispose();
+    super.dispose();
+  }
+
+  void _syncPresence(bool isRunning) {
+    if (isRunning) {
+      _buildBars = true;
+      if (_presenceController.value < 1 &&
+          _presenceController.status != AnimationStatus.forward) {
+        _presenceController.forward();
+      }
+      return;
+    }
+
+    if ((_buildBars || _presenceController.value > 0) &&
+        _presenceController.status != AnimationStatus.reverse &&
+        _presenceController.value > 0) {
+      _presenceController.reverse();
+    }
+  }
+
+  double get _presenceProgress {
+    final value = _presenceController.value.clamp(0.0, 1.0);
+    return Curves.easeInOutCubic.transform(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = inferenceRunningControllerProvider(
+      id: widget.entryId,
+      responseTypes: widget.responseTypes,
+    );
+    final isRunning = ref.watch(provider);
+    _syncPresence(isRunning);
+
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final bottomGap = spacing.step2;
+    final bars = AnimatedBuilder(
+      animation: _presenceController,
+      builder: (context, _) {
+        final progress = _presenceProgress;
+        final shaderHeight = widget.height * progress;
+        if (!_buildBars || shaderHeight < 1) {
+          return const SizedBox.shrink();
+        }
+
+        return SizedBox(
+          key: AiRunningDecoderBars.indicatorKey,
+          height: (widget.height + bottomGap) * progress,
+          width: double.infinity,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              height: shaderHeight,
+              width: double.infinity,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.hasBoundedWidth
+                      ? constraints.maxWidth
+                      : MediaQuery.sizeOf(context).width;
+                  return AiThinkingLineShader(
+                    width: width,
+                    height: shaderHeight,
+                    speed: AiRunningDecoderBars.defaultSpeed,
+                    amplitude: AiRunningDecoderBars.defaultAmplitude * progress,
+                    randomness: AiRunningDecoderBars.defaultRandomness,
+                    lineCount: 5,
+                    pulse: AiRunningDecoderBars.defaultPulse * progress,
+                    opacity: progress,
+                    route: AiThinkingShaderRoute.decoderBars,
+                    primaryColor: tokens.colors.interactive.enabled,
+                    secondaryColor: tokens.colors.text.highEmphasis,
+                    backgroundColor: Colors.transparent,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!widget.isInteractive) {
+      return bars;
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _handleAiActivityTap(
+        context: context,
+        ref: ref,
+        entryId: widget.entryId,
+        responseTypes: widget.responseTypes,
+      ),
+      child: bars,
+    );
+  }
+}
+
+Future<void> _handleAiActivityTap({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String entryId,
+  required Set<AiResponseType> responseTypes,
+}) async {
+  ActiveInferenceData? activeInference;
+
+  for (final responseType in responseTypes) {
+    final inference = ref.read(
+      activeInferenceControllerProvider(
+        entityId: entryId,
+        aiResponseType: responseType,
+      ),
+    );
+    if (inference != null) {
+      activeInference = inference;
+      break;
+    }
+  }
+
+  if (activeInference == null) return;
+
+  final prompt = await ref.read(
+    aiConfigByIdProvider(activeInference.promptId).future,
+  );
+
+  if (prompt == null || prompt is! AiConfigPrompt) return;
+
+  final entityId = activeInference.entityId;
+  if (!context.mounted) return;
+
+  await ModalUtils.showSingleSliverPageModal<void>(
+    context: context,
+    builder: (ctx) => UnifiedAiProgressUtils.progressPage(
+      context: ctx,
+      prompt: prompt,
+      entityId: entityId,
+      onTapBack: () => Navigator.of(ctx).pop(),
+      showExisting: true,
+    ),
+  );
 }
 
 class AiRunningAnimationWrapperCard extends ConsumerWidget {

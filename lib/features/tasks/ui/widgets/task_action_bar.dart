@@ -38,10 +38,12 @@ import 'package:lotti/widgets/misc/timer_navigation.dart';
 class TaskActionBar extends ConsumerStatefulWidget {
   const TaskActionBar({
     required this.task,
+    this.topSlot,
     super.key,
   });
 
   final Task task;
+  final Widget? topSlot;
 
   /// Stable test key for the Track time pill body — the outer tap zone.
   /// Idle: tapping starts a timer. Tracking-this-task: tapping
@@ -71,6 +73,10 @@ class TaskActionBar extends ConsumerStatefulWidget {
   /// Stable test key for the "more actions" icon button.
   @visibleForTesting
   static const Key moreKey = ValueKey('task-action-bar-more');
+
+  /// Stable test key for the optional activity area above the action row.
+  @visibleForTesting
+  static const Key topSlotKey = ValueKey('task-action-bar-top-slot');
 
   /// Round-button diameter and pill height. The design system has no
   /// dedicated icon-button-size token; this matches `tokens.spacing.step9`
@@ -288,86 +294,99 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
     // extends edge-to-edge into that inset, while the touchable row sits
     // above it.
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
+    final topPadding = widget.topSlot == null ? spacing.step4 : spacing.step2;
 
     return DesignSystemGlassStrip(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           spacing.step5,
-          spacing.step4,
+          topPadding,
           spacing.step5,
           spacing.step4 + safeBottomInset,
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Affordances are dropped in priority order so the row
-            // always fits on a single line. Image goes first, then
-            // checklist; both stay reachable via the "..." (more) menu.
-            //
-            // Thresholds are based on the worst-case rendered widths of
-            // the inner content: the idle pill ("Track time" label,
-            // ~150 px including icon and padding), 48 px round buttons,
-            // and step4 (12 px) gaps. Adding each extra button costs
-            // ~60 px, so 5 items need ≈ 400 px and 4 items need ≈ 340.
-            final showImage =
-                constraints.maxWidth >= TaskActionBar.minWidthForImageButton;
-            final showChecklist =
-                constraints.maxWidth >=
-                TaskActionBar.minWidthForChecklistButton;
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _TrackTimePill(
-                  key: TaskActionBar.trackTimeKey,
-                  isTracking: isTracking,
-                  label: elapsedLabel,
-                  idleSemanticLabel: messages.taskActionBarTrackTime,
-                  navigateSemanticLabel: messages.taskActionBarOpenRunningTimer,
-                  stopSemanticLabel: messages.taskActionBarStopTracking,
-                  onStartTimer: _onStartTimer,
-                  onNavigateToRunningEntry: _onNavigateToRunningEntry,
-                  onStop: _onStopTimer,
-                ),
-                SizedBox(width: spacing.step4),
-                _RoundActionButton(
-                  key: TaskActionBar.audioKey,
-                  icon: Icons.mic_rounded,
-                  semanticLabel: isRecordingAudio
-                      ? messages.taskActionBarAudioRecordingActive
-                      : messages.addActionAddAudioRecording,
-                  onPressed: _onAudioPressed,
-                  backgroundColor: isRecordingAudio
-                      ? tokens.colors.alert.error.defaultColor
-                      : null,
-                  iconColor: isRecordingAudio ? Colors.white : null,
-                ),
-                if (showChecklist) ...[
-                  SizedBox(width: spacing.step4),
-                  _RoundActionButton(
-                    key: TaskActionBar.checklistKey,
-                    icon: Icons.checklist_rounded,
-                    semanticLabel: messages.addActionAddChecklist,
-                    onPressed: _onChecklistPressed,
-                  ),
-                ],
-                if (showImage) ...[
-                  SizedBox(width: spacing.step4),
-                  _RoundActionButton(
-                    key: TaskActionBar.imageKey,
-                    icon: Icons.image_rounded,
-                    semanticLabel: messages.addActionImportImage,
-                    onPressed: _onImagePressed,
-                  ),
-                ],
-                SizedBox(width: spacing.step4),
-                _RoundActionButton(
-                  key: TaskActionBar.moreKey,
-                  icon: Icons.more_horiz_rounded,
-                  semanticLabel: messages.taskActionBarMoreActions,
-                  onPressed: _onMorePressed,
-                ),
-              ],
-            );
-          },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.topSlot != null)
+              KeyedSubtree(
+                key: TaskActionBar.topSlotKey,
+                child: widget.topSlot!,
+              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Affordances are dropped in priority order so the row
+                // always fits on a single line. Image goes first, then
+                // checklist; both stay reachable via the "..." (more) menu.
+                //
+                // Thresholds are based on the worst-case rendered widths of
+                // the inner content: the idle pill ("Track time" label,
+                // ~150 px including icon and padding), 48 px round buttons,
+                // and step4 (12 px) gaps. Adding each extra button costs
+                // ~60 px, so 5 items need ≈ 400 px and 4 items need ≈ 340.
+                final showImage =
+                    constraints.maxWidth >=
+                    TaskActionBar.minWidthForImageButton;
+                final showChecklist =
+                    constraints.maxWidth >=
+                    TaskActionBar.minWidthForChecklistButton;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _TrackTimePill(
+                      key: TaskActionBar.trackTimeKey,
+                      isTracking: isTracking,
+                      label: elapsedLabel,
+                      idleSemanticLabel: messages.taskActionBarTrackTime,
+                      navigateSemanticLabel:
+                          messages.taskActionBarOpenRunningTimer,
+                      stopSemanticLabel: messages.taskActionBarStopTracking,
+                      onStartTimer: _onStartTimer,
+                      onNavigateToRunningEntry: _onNavigateToRunningEntry,
+                      onStop: _onStopTimer,
+                    ),
+                    SizedBox(width: spacing.step4),
+                    _RoundActionButton(
+                      key: TaskActionBar.audioKey,
+                      icon: Icons.mic_rounded,
+                      semanticLabel: isRecordingAudio
+                          ? messages.taskActionBarAudioRecordingActive
+                          : messages.addActionAddAudioRecording,
+                      onPressed: _onAudioPressed,
+                      backgroundColor: isRecordingAudio
+                          ? tokens.colors.alert.error.defaultColor
+                          : null,
+                      iconColor: isRecordingAudio ? Colors.white : null,
+                    ),
+                    if (showChecklist) ...[
+                      SizedBox(width: spacing.step4),
+                      _RoundActionButton(
+                        key: TaskActionBar.checklistKey,
+                        icon: Icons.checklist_rounded,
+                        semanticLabel: messages.addActionAddChecklist,
+                        onPressed: _onChecklistPressed,
+                      ),
+                    ],
+                    if (showImage) ...[
+                      SizedBox(width: spacing.step4),
+                      _RoundActionButton(
+                        key: TaskActionBar.imageKey,
+                        icon: Icons.image_rounded,
+                        semanticLabel: messages.addActionImportImage,
+                        onPressed: _onImagePressed,
+                      ),
+                    ],
+                    SizedBox(width: spacing.step4),
+                    _RoundActionButton(
+                      key: TaskActionBar.moreKey,
+                      icon: Icons.more_horiz_rounded,
+                      semanticLabel: messages.taskActionBarMoreActions,
+                      onPressed: _onMorePressed,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
       ),
     );

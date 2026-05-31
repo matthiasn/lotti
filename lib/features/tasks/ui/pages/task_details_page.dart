@@ -147,27 +147,23 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       // _AppScreenState._isTaskDetailRoute), so the action bar
       // sits flush with the home indicator. TaskActionBar handles its
       // own bottom safe-inset padding.
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AiRunningAnimationWrapperCard(
-            entryId: widget.taskId,
-            height: 50,
-            isInteractive: true,
-            responseTypes: const {
-              AiResponseType.imageAnalysis,
-              AiResponseType.audioTranscription,
-              AiResponseType.promptGeneration,
-              AiResponseType.imageGeneration,
-            },
-          ),
-          TaskActionBar(task: task),
-        ],
+      bottomNavigationBar: TaskActionBar(
+        task: task,
+        topSlot: AiRunningDecoderBars(
+          entryId: widget.taskId,
+          isInteractive: true,
+          responseTypes: const {
+            AiResponseType.imageAnalysis,
+            AiResponseType.audioTranscription,
+            AiResponseType.promptGeneration,
+            AiResponseType.imageGeneration,
+          },
+        ),
       ),
       // Builder so MediaQuery.paddingOf reads the Scaffold-modified
       // value: with extendBody: true, Scaffold adds the
-      // bottomNavigationBar slot height (action bar + AI overlay when
-      // running) to padding.bottom on the body's MediaQuery. The
+      // bottomNavigationBar slot height (action bar + inline AI activity
+      // slot when running) to padding.bottom on the body's MediaQuery. The
       // trailing SliverPadding consumes that inset so the last entry
       // can scroll fully above the bar instead of being hidden behind.
       body: Builder(
