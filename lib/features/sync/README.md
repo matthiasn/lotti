@@ -496,14 +496,19 @@ they overwrite the local `AgentRepository` row:
   `jsonPath`, and still records the sequence-log receipt so backfill does not
   keep requesting the same counter.
 - **Incoming dominates** (`b_gt_a`): the incoming payload is applied.
-- **Concurrent** (neither dominates): a deterministic last-writer-wins tiebreak
-  picks the winner (`features/agents/sync/agent_concurrent_resolver.dart`). The
-  strictly-newer `updatedAt` wins; on equal timestamps a replica-independent
-  canonical vector-clock comparison decides. Both devices therefore converge on
-  the same row regardless of arrival order — previously the concurrent case
-  applied whichever payload arrived last, which could diverge across replicas.
-  (Agent-derived state converges silently; unlike journal entries it does not
-  raise a user-facing `Conflict` row.)
+- **Concurrent** (neither dominates): **non-counter** fields use a deterministic
+  last-writer-wins tiebreak (`features/agents/sync/agent_concurrent_resolver.dart`):
+  the strictly-newer `updatedAt` wins; on equal timestamps a replica-independent
+  canonical vector-clock comparison decides. The **cumulative per-host G-counter**
+  fields on `AgentStateEntity` (`wakeCounter`, `slots.totalSessionsCompleted`,
+  `slots.weeklyReviewCount`) are instead **merged element-wise** (CRDT join via
+  `mergeAgentStateCounters`), so concurrent increments from different devices are
+  never lost. The merge is applied only when it actually recovers a counter the
+  LWW winner lacked; otherwise the standard whole-row path applies (and avoids a
+  redundant write). Both devices therefore converge on the same row regardless of
+  arrival order — previously the concurrent case applied whichever payload arrived
+  last, dropping the loser's counter increments. (Agent-derived state converges
+  silently; unlike journal entries it does not raise a user-facing `Conflict` row.)
 
 ### Dequeue-Time Outbox Bundling
 

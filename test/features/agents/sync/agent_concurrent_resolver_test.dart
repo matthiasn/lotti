@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 /// A pair of genuinely-concurrent versions of one id, plus their timestamps.
@@ -58,6 +61,24 @@ extension _AnyResolver on glados.Any {
         glados.IntAnys(this).intInRange(0, 4),
         (a, b, c) => VectorClock({'h0': a, 'h1': b, 'h2': c}),
       );
+
+  glados.Generator<GCounter> get gCounter => glados.ListAnys(this)
+      .listWithLengthInRange(
+        0,
+        5,
+        glados.CombinableAny(this).combine2(
+          glados.IntAnys(this).intInRange(0, 3),
+          glados.IntAnys(this).intInRange(0, 20),
+          (int host, int count) => MapEntry('h$host', count),
+        ),
+      )
+      .map((entries) {
+        final byHost = <String, int>{};
+        for (final entry in entries) {
+          byHost[entry.key] = (byHost[entry.key] ?? 0) + entry.value;
+        }
+        return GCounter(byHost);
+      });
 }
 
 ConcurrentWinner _resolve(_Scenario s) => resolveConcurrent(
@@ -222,5 +243,116 @@ void main() {
         0,
       );
     });
+  });
+
+  group('mergeAgentStateCounters', () {
+    AgentStateEntity stateWith({
+      GCounter wakeCounter = const GCounter.empty(),
+      GCounter totalSessions = const GCounter.empty(),
+      int revision = 1,
+      String? activeTaskId,
+    }) {
+      return AgentDomainEntity.agentState(
+            id: 'state-1',
+            agentId: 'agent-1',
+            revision: revision,
+            slots: AgentSlots(
+              activeTaskId: activeTaskId,
+              totalSessionsCompleted: totalSessions,
+            ),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            wakeCounter: wakeCounter,
+          )
+          as AgentStateEntity;
+    }
+
+    test('joins counters element-wise and takes non-counter fields from the '
+        'winner', () {
+      final local = stateWith(
+        wakeCounter: const GCounter({'h1': 5}),
+        totalSessions: const GCounter({'h1': 1}),
+        revision: 2,
+        activeTaskId: 'task-local',
+      );
+      final incoming = stateWith(
+        wakeCounter: const GCounter({'h2': 3}),
+        totalSessions: const GCounter({'h2': 4}),
+        revision: 9,
+        activeTaskId: 'task-incoming',
+      );
+
+      final merged = mergeAgentStateCounters(
+        winner: local,
+        local: local,
+        incoming: incoming,
+      );
+
+      // Counters: element-wise max of BOTH sides — nothing dropped.
+      expect(merged.wakeCounter.byHost, {'h1': 5, 'h2': 3});
+      expect(merged.wakeCounter.value, 8);
+      expect(merged.slots.totalSessionsCompleted.byHost, {'h1': 1, 'h2': 4});
+      // Non-counter fields: from the winner (local here).
+      expect(merged.revision, 2);
+      expect(merged.slots.activeTaskId, 'task-local');
+    });
+
+    test('counters are winner-independent; only non-counter fields follow the '
+        'winner', () {
+      final local = stateWith(
+        wakeCounter: const GCounter({'h1': 5}),
+        activeTaskId: 'L',
+      );
+      final incoming = stateWith(
+        wakeCounter: const GCounter({'h2': 3}),
+        activeTaskId: 'I',
+      );
+
+      final viaLocal = mergeAgentStateCounters(
+        winner: local,
+        local: local,
+        incoming: incoming,
+      );
+      final viaIncoming = mergeAgentStateCounters(
+        winner: incoming,
+        local: local,
+        incoming: incoming,
+      );
+
+      expect(viaLocal.slots.activeTaskId, 'L');
+      expect(viaIncoming.slots.activeTaskId, 'I');
+      // The merged counter is the same regardless of which side won the LWW.
+      expect(viaLocal.wakeCounter, viaIncoming.wakeCounter);
+      expect(viaLocal.wakeCounter.value, 8);
+    });
+
+    glados.Glados2(
+      glados.any.gCounter,
+      glados.any.gCounter,
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'the merged counter equals the element-wise join of both sides, '
+      'independent of winner order (partition + heal)',
+      (a, b) {
+        final local = stateWith(wakeCounter: a);
+        final incoming = stateWith(wakeCounter: b);
+
+        final viaLocal = mergeAgentStateCounters(
+          winner: local,
+          local: local,
+          incoming: incoming,
+        );
+        final viaIncoming = mergeAgentStateCounters(
+          winner: incoming,
+          local: incoming,
+          incoming: local,
+        );
+
+        expect(viaLocal.wakeCounter, a.merge(b), reason: '$a ⊔ $b');
+        // Commutative: both devices converge to the same counter on heal.
+        expect(viaLocal.wakeCounter, viaIncoming.wakeCounter);
+      },
+      tags: 'glados',
+    );
   });
 }

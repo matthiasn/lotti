@@ -236,19 +236,34 @@ extension _AgentHandlers on SyncEventProcessor {
       return;
     }
     if (agentRepository != null) {
-      if (await _localAgentEntityDominates(
-        incoming: resolvedEntity,
-        jsonPath: msg.jsonPath,
-        prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
-      )) {
+      // AgentStateEntity carries per-host G-counters that must converge under
+      // concurrent edits: merge them element-wise rather than letting whole-row
+      // LWW drop one side's increments. On a concurrent clock this returns the
+      // merged state to persist (counters joined, non-counter fields from the
+      // LWW winner) and bypasses the keep-local skip below; otherwise it returns
+      // null and the standard dominance path applies (causal dominance already
+      // implies counter-domination, so no merge is needed there).
+      final mergedState = resolvedEntity is AgentStateEntity
+          ? await _mergeConcurrentAgentState(
+              incoming: resolvedEntity,
+              prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+            )
+          : null;
+
+      if (mergedState == null &&
+          await _localAgentEntityDominates(
+            incoming: resolvedEntity,
+            jsonPath: msg.jsonPath,
+            prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+          )) {
         await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
         return;
       }
 
-      await agentRepository!.upsertEntity(resolvedEntity);
-      if (prefetchedAgentEntitiesById?.containsKey(resolvedEntity.id) ??
-          false) {
-        prefetchedAgentEntitiesById![resolvedEntity.id] = resolvedEntity;
+      final entityToApply = mergedState ?? resolvedEntity;
+      await agentRepository!.upsertEntity(entityToApply);
+      if (prefetchedAgentEntitiesById?.containsKey(entityToApply.id) ?? false) {
+        prefetchedAgentEntitiesById![entityToApply.id] = entityToApply;
       }
       // Remove wake subscriptions when an agent is paused or destroyed
       // remotely — mirrors what AgentService.pauseAgent/destroyAgent do
@@ -394,6 +409,61 @@ extension _AgentHandlers on SyncEventProcessor {
       jsonPath: jsonPath,
       restoreLocalJson: () => jsonEncode(local.toJson()),
     );
+  }
+
+  /// On a **concurrent** clock conflict, returns the merged [AgentStateEntity]:
+  /// the per-host G-counters joined element-wise (lossless) via
+  /// [mergeAgentStateCounters], with non-counter fields from the deterministic
+  /// [resolveConcurrent] winner. Returns null when there is no comparable local
+  /// state, a clock is missing, or the clocks are **not** concurrent — in those
+  /// cases causal dominance already implies counter-domination, so the standard
+  /// [_localAgentEntityDominates] path is correct.
+  Future<AgentStateEntity?> _mergeConcurrentAgentState({
+    required AgentStateEntity incoming,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
+  }) async {
+    final incomingVc = incoming.vectorClock;
+    if (incomingVc == null) return null;
+
+    final local =
+        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false)
+        ? prefetchedAgentEntitiesById![incoming.id]
+        : await agentRepository!.getEntity(incoming.id);
+    if (local is! AgentStateEntity) return null;
+    final localVc = local.vectorClock;
+    if (localVc == null) return null;
+
+    final VclockStatus status;
+    try {
+      status = VectorClock.compare(localVc, incomingVc);
+    } catch (_) {
+      // Invalid clock — let the standard dominance path log and fall through.
+      return null;
+    }
+    if (status != VclockStatus.concurrent) return null;
+
+    final winner =
+        resolveConcurrent(
+              localVc: localVc,
+              incomingVc: incomingVc,
+              localUpdatedAt: local.effectiveUpdatedAt,
+              incomingUpdatedAt: incoming.effectiveUpdatedAt,
+            ) ==
+            ConcurrentWinner.local
+        ? local
+        : incoming;
+
+    final merged = mergeAgentStateCounters(
+      winner: winner,
+      local: local,
+      incoming: incoming,
+    );
+    // Only diverge from the standard whole-row path when the merge actually
+    // recovers a counter the LWW winner lacked. When the winner already carries
+    // the joined counters, the standard path is correct (keep local / apply
+    // incoming) and we avoid a redundant write — and stay behaviour-compatible
+    // with the non-counter concurrent resolution.
+    return merged == winner ? null : merged;
   }
 
   Future<bool> _localAgentLinkDominates({

@@ -93,22 +93,32 @@ number out. This is the safety net for the ~5 increment sites *and* any display
 
 ### 3. The convergent merge (concurrent branch only)
 
-In the sync apply handler, when the incoming entity is an `AgentStateEntity`
-**and** the vclock relation is `concurrent`:
+In the sync apply handler (`_applyAgentEntityMessage` → `_mergeConcurrentAgentState`),
+when the incoming entity is an `AgentStateEntity` **and** the vclock relation is
+`concurrent`:
 
 - non-counter fields: the existing `resolveConcurrent` winner (unchanged);
-- counter fields: `local.wakeCounter.merge(incoming.wakeCounter)` and the same
-  for `totalSessionsCompleted`;
-- upsert the **merged** entity (fromSync), instead of the current
-  pick-one-whole-row.
+- counter fields: `local.X.merge(incoming.X)` element-wise for all three counters;
+- **the winner's vector clock is kept** — a future update that causally dominates
+  it necessarily saw, and (since every replica applies the same deterministic
+  merge symmetrically) merged, both sides, so its counters are a superset and a
+  later `b_gt_a` whole-row overwrite loses nothing;
+- upsert the **merged** entity (fromSync) — but **only when the merge actually
+  recovers a counter the winner lacked** (`merged != winner`). When the winner
+  already carries the joined counters, defer to the standard whole-row path
+  (keep-local / apply-incoming): correct, behaviour-compatible with the existing
+  non-counter concurrent resolution, and avoids a redundant write.
 
 `a_gt_b` / `equal` (keep local) and `b_gt_a` (take incoming) are **unchanged**:
 VC dominance means the dominant side has causally seen the other, so its counters
 already include the other's — element-wise max there would be a no-op. Scoping
-the merge to `concurrent` keeps the change minimal and matches the roadmap.
+the merge to `concurrent` keeps the change minimal and matches the roadmap. An
+invalid clock (a `VclockException` from `compare`) yields `null`, so the standard
+path logs and falls through exactly as before.
 
-A pure `mergeAgentStateCounters(local, incoming) → AgentStateEntity` function
-holds the field-merge logic so it's unit/property-testable without the handler.
+A pure `mergeAgentStateCounters({winner, local, incoming}) → AgentStateEntity`
+(in `agent_concurrent_resolver.dart`, beside `resolveConcurrent`) holds the
+field-merge logic so it's unit/property-testable without the handler.
 
 ### 4. Dual-write serialization + migration (decided: dual-write for one release)
 

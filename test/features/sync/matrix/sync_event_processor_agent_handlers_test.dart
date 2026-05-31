@@ -109,6 +109,92 @@ void main() {
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
 
+    test('concurrent agent-state edits merge their G-counters element-wise '
+        '(no increment lost)', () async {
+      // localVc leads on host-A, incomingVc leads on host-B → concurrent.
+      const localVc = VectorClock({'host-A': 2, 'host-B': 1});
+      const incomingVc = VectorClock({'host-A': 1, 'host-B': 2});
+      final local = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        revision: 5,
+        slots: const AgentSlots(),
+        updatedAt: DateTime(2024, 3, 16),
+        vectorClock: localVc,
+        wakeCounter: const GCounter({'host-A': 7}),
+      );
+      final incoming = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        revision: 5,
+        slots: const AgentSlots(),
+        updatedAt: DateTime(2024, 3, 16),
+        vectorClock: incomingVc,
+        wakeCounter: const GCounter({'host-B': 4}),
+      );
+      when(
+        () => mockAgentRepo.getEntity('state-1'),
+      ).thenAnswer((_) async => local);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: incoming,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      final upserted =
+          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+              as AgentStateEntity;
+      // Both devices' increments survive the concurrent apply.
+      expect(upserted.wakeCounter.byHost, {'host-A': 7, 'host-B': 4});
+      expect(upserted.wakeCounter.value, 11);
+    });
+
+    test('a locally-dominating agent state is kept — incoming is neither '
+        'merged nor applied', () async {
+      // local dominates (a_gt_b), so the merge must NOT run; if it did it would
+      // upsert a merged state. Correct behavior keeps local and writes nothing.
+      const localVc = VectorClock({'host-A': 2});
+      const incomingVc = VectorClock({'host-A': 1});
+      final local = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        revision: 5,
+        slots: const AgentSlots(),
+        updatedAt: DateTime(2024, 3, 16),
+        vectorClock: localVc,
+        wakeCounter: const GCounter({'host-A': 5}),
+      );
+      final incoming = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        revision: 5,
+        slots: const AgentSlots(),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: incomingVc,
+        wakeCounter: const GCounter({'host-A': 3}),
+      );
+      when(
+        () => mockAgentRepo.getEntity('state-1'),
+      ).thenAnswer((_) async => local);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: incoming,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => mockAgentRepo.upsertEntity(any()));
+    });
+
     test(
       'prefetches local agent entities once for outbox bundle dominance checks',
       () async {
