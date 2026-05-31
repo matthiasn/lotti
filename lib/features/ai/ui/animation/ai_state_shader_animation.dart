@@ -234,6 +234,7 @@ class AiThinkingLineShader extends StatefulWidget {
     this.randomness = 0.62,
     this.lineCount = 3,
     this.pulse = 0.42,
+    this.opacity = 1,
     this.route = AiThinkingShaderRoute.decoderBars,
     this.timeOverride,
     this.programLoader,
@@ -248,6 +249,7 @@ class AiThinkingLineShader extends StatefulWidget {
   final double randomness;
   final int lineCount;
   final double pulse;
+  final double opacity;
   final AiThinkingShaderRoute route;
   final Color primaryColor;
   final Color secondaryColor;
@@ -340,6 +342,7 @@ class _AiThinkingLineShaderState extends State<AiThinkingLineShader>
                               randomness: widget.randomness,
                               lineCount: widget.lineCount,
                               pulse: widget.pulse,
+                              opacity: widget.opacity,
                               route: widget.route,
                               primaryColor: widget.primaryColor,
                               secondaryColor: widget.secondaryColor,
@@ -353,6 +356,7 @@ class _AiThinkingLineShaderState extends State<AiThinkingLineShader>
                               randomness: widget.randomness,
                               lineCount: widget.lineCount,
                               pulse: widget.pulse,
+                              opacity: widget.opacity,
                               route: widget.route,
                               primaryColor: widget.primaryColor,
                               secondaryColor: widget.secondaryColor,
@@ -448,6 +452,7 @@ class AiThinkingLineShaderPainter extends CustomPainter {
     required this.randomness,
     required this.lineCount,
     required this.pulse,
+    this.opacity = 1,
     required this.route,
     required this.primaryColor,
     required this.secondaryColor,
@@ -461,6 +466,7 @@ class AiThinkingLineShaderPainter extends CustomPainter {
   final double randomness;
   final int lineCount;
   final double pulse;
+  final double opacity;
   final AiThinkingShaderRoute route;
   final Color primaryColor;
   final Color secondaryColor;
@@ -479,10 +485,11 @@ class AiThinkingLineShaderPainter extends CustomPainter {
       ..setFloat(5, randomness)
       ..setFloat(6, lineCount.toDouble())
       ..setFloat(7, pulse)
-      ..setFloat(8, route.index.toDouble());
-    _setColor(shader, 9, primaryColor);
-    _setColor(shader, 13, secondaryColor);
-    _setColor(shader, 17, backgroundColor);
+      ..setFloat(8, route.index.toDouble())
+      ..setFloat(9, opacity);
+    _setColor(shader, 10, primaryColor);
+    _setColor(shader, 14, secondaryColor);
+    _setColor(shader, 18, backgroundColor);
 
     canvas.drawRect(
       Offset.zero & size,
@@ -499,6 +506,7 @@ class AiThinkingLineShaderPainter extends CustomPainter {
         oldDelegate.randomness != randomness ||
         oldDelegate.lineCount != lineCount ||
         oldDelegate.pulse != pulse ||
+        oldDelegate.opacity != opacity ||
         oldDelegate.route != route ||
         oldDelegate.primaryColor != primaryColor ||
         oldDelegate.secondaryColor != secondaryColor ||
@@ -622,6 +630,7 @@ class AiThinkingLineFallbackPainter extends CustomPainter {
     required this.randomness,
     required this.lineCount,
     required this.pulse,
+    this.opacity = 1,
     required this.route,
     required this.primaryColor,
     required this.secondaryColor,
@@ -634,6 +643,7 @@ class AiThinkingLineFallbackPainter extends CustomPainter {
   final double randomness;
   final int lineCount;
   final double pulse;
+  final double opacity;
   final AiThinkingShaderRoute route;
   final Color primaryColor;
   final Color secondaryColor;
@@ -643,8 +653,15 @@ class AiThinkingLineFallbackPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
 
+    final safeOpacity = opacity.clamp(0.0, 1.0);
     if (backgroundColor.a > 0) {
-      canvas.drawRect(Offset.zero & size, Paint()..color = backgroundColor);
+      canvas.drawRect(
+        Offset.zero & size,
+        Paint()
+          ..color = backgroundColor.withValues(
+            alpha: backgroundColor.a * safeOpacity,
+          ),
+      );
     }
 
     final count = lineCount.clamp(1, 6);
@@ -685,7 +702,9 @@ class AiThinkingLineFallbackPainter extends CustomPainter {
       final sweep =
           0.65 + 0.35 * math.sin(t * 1.8 + lineIndex * math.pi * 0.7) * pulse;
       final paint = Paint()
-        ..color = color.withValues(alpha: color.a * (0.42 + 0.28 * sweep))
+        ..color = color.withValues(
+          alpha: color.a * safeOpacity * (0.42 + 0.28 * sweep),
+        )
         ..style = PaintingStyle.stroke
         ..strokeWidth = size.height * (0.045 + 0.010 * amplitude)
         ..strokeCap = StrokeCap.round
@@ -702,6 +721,7 @@ class AiThinkingLineFallbackPainter extends CustomPainter {
         oldDelegate.randomness != randomness ||
         oldDelegate.lineCount != lineCount ||
         oldDelegate.pulse != pulse ||
+        oldDelegate.opacity != opacity ||
         oldDelegate.route != route ||
         oldDelegate.primaryColor != primaryColor ||
         oldDelegate.secondaryColor != secondaryColor ||

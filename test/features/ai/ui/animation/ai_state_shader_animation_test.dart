@@ -415,11 +415,26 @@ void main() {
         secondaryColor: const Color(0xFFE9EEF2),
         backgroundColor: const Color(0x00000000),
       );
+      final changedOpacityPainter = AiThinkingLineShaderPainter(
+        program: program,
+        time: 2,
+        speed: 2.3,
+        amplitude: 0.7,
+        randomness: 0.9,
+        lineCount: 5,
+        pulse: 0.6,
+        opacity: 0.5,
+        route: AiThinkingShaderRoute.decoderBars,
+        primaryColor: const Color(0xFF63D7C7),
+        secondaryColor: const Color(0xFFE9EEF2),
+        backgroundColor: const Color(0x00000000),
+      );
 
       _paintWith(painter, const Size(320, 72));
 
       expect(samePainter.shouldRepaint(painter), isFalse);
       expect(changedPainter.shouldRepaint(painter), isTrue);
+      expect(changedOpacityPainter.shouldRepaint(painter), isTrue);
     });
 
     test('paint fallback painters and compare repaint inputs', () {
@@ -507,6 +522,19 @@ void main() {
         secondaryColor: const Color(0xFFE9EEF2),
         backgroundColor: const Color(0x11000000),
       );
+      final changedOpacityThinkingPainter = AiThinkingLineFallbackPainter(
+        time: 1.4,
+        speed: 2.3,
+        amplitude: 0.7,
+        randomness: 0.9,
+        lineCount: 9,
+        pulse: 0.6,
+        opacity: 0.5,
+        route: AiThinkingShaderRoute.decoderBars,
+        primaryColor: const Color(0xFF63D7C7),
+        secondaryColor: const Color(0xFFE9EEF2),
+        backgroundColor: const Color(0x11000000),
+      );
 
       _paintWith(voicePainter, const Size(96, 96));
       _paintWith(thinkingPainter, const Size(320, 72));
@@ -516,6 +544,10 @@ void main() {
       expect(changedVoicePainter.shouldRepaint(voicePainter), isTrue);
       expect(sameThinkingPainter.shouldRepaint(thinkingPainter), isFalse);
       expect(changedThinkingPainter.shouldRepaint(thinkingPainter), isTrue);
+      expect(
+        changedOpacityThinkingPainter.shouldRepaint(thinkingPainter),
+        isTrue,
+      );
     });
   });
 }
