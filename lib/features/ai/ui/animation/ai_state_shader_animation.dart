@@ -452,11 +452,11 @@ class AiThinkingLineShaderPainter extends CustomPainter {
     required this.randomness,
     required this.lineCount,
     required this.pulse,
-    this.opacity = 1,
     required this.route,
     required this.primaryColor,
     required this.secondaryColor,
     required this.backgroundColor,
+    this.opacity = 1,
   });
 
   final ui.FragmentProgram program;
@@ -630,11 +630,11 @@ class AiThinkingLineFallbackPainter extends CustomPainter {
     required this.randomness,
     required this.lineCount,
     required this.pulse,
-    this.opacity = 1,
     required this.route,
     required this.primaryColor,
     required this.secondaryColor,
     required this.backgroundColor,
+    this.opacity = 1,
   });
 
   final double time;

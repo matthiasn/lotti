@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task detail pages now show running AI activity as subtle shader-based
   decoder bars integrated into the sticky action bar, replacing the separate
   Siri-wave strip above it.
+- Daily OS Next voice capture now wraps the record button with the dBFS-driven
+  tension-loop shader while listening, and shows reviewed transcripts in a
+  calmer fixed-height review panel.
 
 ## [0.9.1011]
 ### Added

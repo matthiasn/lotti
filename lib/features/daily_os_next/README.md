@@ -100,6 +100,11 @@ Runtime behavior:
   realtime output looks truncated. Refine uses the same Mistral-preferred
   realtime path but disables the full-file batch verifier for that session so a
   reviewed Mistral transcript is not replaced by an MLX fallback.
+- `CaptureState` keeps two live audio signals while the mic is open:
+  normalized `amplitudes` for the compact waveform bars and raw `dbfs` for the
+  shader voice affordance. `VoiceButton` mounts the AI tension-loop shader only
+  during `listening`, wraps it around the fixed-size record button, and removes
+  the shader subtree for idle, transcribing, captured, and error phases.
 - Agenda and Commit surfaces use a linear capacity meter. UI projections derive
   scheduled minutes from the non-dropped blocks they render. Buffers count
   because they reserve real time; dropped blocks do not. This keeps stale

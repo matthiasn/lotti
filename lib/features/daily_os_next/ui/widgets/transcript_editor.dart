@@ -6,58 +6,66 @@ class TranscriptEditor extends StatelessWidget {
   const TranscriptEditor({
     required this.transcript,
     required this.onChanged,
+    this.lineCount = 4,
     this.fieldKey,
     super.key,
   });
 
   final String transcript;
   final ValueChanged<String> onChanged;
+  final int lineCount;
   final Key? fieldKey;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          context.messages.dailyOsNextCaptureTranscriptLabel,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
+    final fieldTextStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02.withValues(alpha: 0.24),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(
+          color: tokens.colors.text.highEmphasis.withValues(alpha: 0.12),
         ),
-        SizedBox(height: tokens.spacing.step2),
-        TextFormField(
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step4),
+        child: TextFormField(
           key: fieldKey,
           initialValue: transcript,
-          minLines: 3,
-          maxLines: 5,
+          minLines: lineCount,
+          maxLines: lineCount,
           textInputAction: TextInputAction.newline,
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
+          cursorColor: tokens.colors.interactive.enabled,
+          style: fieldTextStyle,
           decoration: InputDecoration(
             hintText: context.messages.dailyOsNextCaptureTranscriptHint,
-            filled: true,
-            fillColor: tokens.colors.background.level02.withValues(alpha: 0.54),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step3,
+            hintStyle: fieldTextStyle.copyWith(
+              color: tokens.colors.text.lowEmphasis,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(tokens.radii.s),
-              borderSide: BorderSide(
-                color: tokens.colors.decorative.level01.withValues(alpha: 0.72),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(tokens.radii.s),
-              borderSide: BorderSide(color: tokens.colors.interactive.enabled),
-            ),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
           ),
           onChanged: onChanged,
         ),
-      ],
+      ),
+    );
+  }
+}
+              ),
+              onChanged: onChanged,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

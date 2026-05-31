@@ -363,7 +363,8 @@ Implementation details that matter:
 activity visualizations. Widgetbook remains the tuning surface via
 `widgetbook/ai_shader_animations_widgetbook.dart`; production task details use
 the decoder-bars thinking shader in the task action bar while inference is
-running.
+running, and Daily OS Next uses the voice tension-loop shader around the record
+button while capture or refine listening is active.
 
 Two Flutter runtime-effect shaders are registered in `pubspec.yaml`:
 
@@ -392,7 +393,7 @@ Widgetbook-only recorder control that starts a `record.AudioRecorder` metered
 mic session and polls `AudioRecorder.getAmplitude()` every 20ms for
 package-reported dBFS. The shader input runs through a dBFS envelope with
 instant attack and slower release so voice onsets stay responsive while short
-dips do not make the rings collapse abruptly.
+  dips do not make the rings collapse abruptly.
 The default metered path writes only to a temporary file and deletes it when
 recording stops. A PCM stream mode remains available as a diagnostic and
 fallback dBFS source, with input-device selection and raw peak/RMS diagnostics

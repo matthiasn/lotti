@@ -209,7 +209,6 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
                     lineCount: 5,
                     pulse: AiRunningDecoderBars.defaultPulse * progress,
                     opacity: progress,
-                    route: AiThinkingShaderRoute.decoderBars,
                     primaryColor: tokens.colors.interactive.enabled,
                     secondaryColor: tokens.colors.text.highEmphasis,
                     backgroundColor: Colors.transparent,
