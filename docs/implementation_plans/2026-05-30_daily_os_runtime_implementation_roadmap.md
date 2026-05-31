@@ -41,7 +41,7 @@ Grouped into the six phases of §10. Each PR: **Goal · Depends on · Touches ·
 - **Done when:** two devices applying the same concurrent pair in either arrival order deterministically agree; equal-`updatedAt` ties covered; non-concurrent branches unchanged.
 - **Realizes:** ADR 0018 rule 5; §8.
 
-**PR 2b — Convergent agent-state counters (per-host G-counters)**
+**PR 2b — Convergent agent-state counters (per-host G-counters)** — detailed plan: [`2026-05-31_convergent_counters_plan.md`](./2026-05-31_convergent_counters_plan.md).
 - **Goal:** make the cumulative agent-state counters converge to the *exact* total across devices, even under partition (PR 2's deterministic tiebreak converges but is *lossy* on counters — it picks one side, dropping the other's increments). `wakeCounter`, `slots.totalSessionsCompleted`, `slots.weeklyReviewCount` become **per-host G-counters** — `Map<hostId,int>`, value = sum of entries, merge = element-wise max (the same shape as a vector clock / `processedCounterByHost`, reusing `VectorClock.merge`). No lost increments, ever.
 - **Depends on:** PR 2 (extends the concurrent-resolution path with a *per-field* merge instead of whole-row LWW). Independent of PR 3.
 - **Touches:** counter fields on `AgentStateEntity`/`AgentSlots` (`int` → `Map<hostId,int>`; freezed regen + `int`→map data migration seeding `{migrating-host: current}` so the sum is preserved); the read-modify-write increment sites (`wakeCounter + 1` → bump the local host's entry, host from `VectorClockService`); the sync apply path (counter fields merge element-wise-max; the rest of the row stays LWW/projection).

@@ -103,9 +103,10 @@ logs and `AgentStateEntity` rows across multiple synced devices. The arc to
   contrast, has one `recentHeadMessageId` (last by arrival). **Shadow-equality
   cannot hold over flat legacy history** — and that is expected, not a bug.
   *Mitigation:* scope PR 3 shadow-equality to **forward activity** (messages
-  appended after rollout / after a baseline checkpoint), and to fresh agents in
-  tests. Do **not** assert that flat legacy projects identically. See the
-  baseline-event primitive below.
+  appended after rollout) and to fresh agents in tests, and do **not** assert
+  that *un-backfilled* flat legacy history projects identically. The
+  legacy-prefix backfill chain (below) resolves this for existing agents by
+  chaining the prefix into one head.
 - **R2 — `recentHeadMessageId` is single-valued; the kernel is multi-head.**
   Even forward, a concurrent multi-device append yields ≥2 heads while live state
   names one. The shadow harness must compare on linear (single-head) corpora and
@@ -194,9 +195,14 @@ backfill only establishes the **DAG/head**; it does not seed counters.
 
 ## Open decisions
 
-- **Baseline checkpoint timing** — emit in PR 3 (anchors shadow scoping) vs. PR 4
-  (where reads actually need it). Leaning PR 4, with PR 3 shadow scoped to fresh
-  agents/forward corpora.
+- **Baseline checkpoint timing — RESOLVED: no checkpoint in PR 3.** The
+  "anchors shadow scoping" job a PR-3 checkpoint would have done is served
+  instead by the legacy-prefix backfill chain (DECIDED, above): chaining an
+  existing agent's prefix gives it a single head, so its projection already
+  matches live state without a checkpoint, and PR 3 scopes shadow-equality to
+  fresh agents / forward corpora. The *counter/slot* baseline (R5/R6) is a
+  distinct concern — counter seeding, not the DAG — deferred to PR 4 and tracked
+  in the [PR 4 plan](./2026-05-30_state_as_projection_plan.md).
 - **Authoring-host persistence — DECIDED: `id`-only now, explicit field
   deferred.** The kernel tiebreak does not need a host (unique UUID ids already
   give a total order), and deriving it from the VC is fragile, so PR 3 ships
