@@ -179,6 +179,34 @@ extension _GeneratedSyncWriteKindX on _GeneratedSyncWriteKind {
   }
 }
 
+/// One generated local agent-state write: the persisted row's head and the
+/// caller's (possibly stale) head independently present or absent, plus a
+/// distinguishing `lastWakeAt` to prove the caller's other fields survive.
+class _GeneratedHeadPreservationScenario {
+  const _GeneratedHeadPreservationScenario({
+    required this.persistedStateExists,
+    required this.persistedHead,
+    required this.callerHead,
+    required this.lastWakeAt,
+  });
+
+  final bool persistedStateExists;
+  final String? persistedHead;
+  final String? callerHead;
+  final DateTime lastWakeAt;
+
+  /// The head the write must end with: the persisted (append-owned) head when a
+  /// state row exists, otherwise the caller's value (the first-ever write).
+  String? get expectedHead => persistedStateExists ? persistedHead : callerHead;
+
+  @override
+  String toString() =>
+      '_GeneratedHeadPreservationScenario('
+      'persistedStateExists: $persistedStateExists, '
+      'persistedHead: $persistedHead, callerHead: $callerHead, '
+      'lastWakeAt: $lastWakeAt)';
+}
+
 /// One generated `appendMilestone` call: any milestone, with the thread id and
 /// run key independently present or absent, at any created-at offset.
 class _GeneratedMilestoneScenario {
@@ -203,6 +231,27 @@ class _GeneratedMilestoneScenario {
 extension _AnyGeneratedAgentSyncServiceScenario on glados.Any {
   glados.Generator<_GeneratedSyncWriteKind> get syncWriteKind =>
       glados.AnyUtils(this).choose(_GeneratedSyncWriteKind.values);
+
+  glados.Generator<_GeneratedHeadPreservationScenario>
+  get headPreservationScenario => glados.CombinableAny(this).combine4(
+    glados.IntAnys(this).intInRange(0, 2),
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 28),
+    (
+      int statePresentSelector,
+      int persistedSelector,
+      int callerSelector,
+      int dayOffset,
+    ) => _GeneratedHeadPreservationScenario(
+      persistedStateExists: statePresentSelector == 1,
+      persistedHead: persistedSelector == 0
+          ? null
+          : 'persisted-$persistedSelector',
+      callerHead: callerSelector == 0 ? null : 'caller-$callerSelector',
+      lastWakeAt: DateTime(2024, 3, 15).add(Duration(days: dayOffset)),
+    ),
+  );
 
   glados.Generator<_GeneratedMilestoneScenario> get milestoneScenario =>
       glados.CombinableAny(this).combine4(
@@ -901,6 +950,11 @@ void main() {
             );
           },
         );
+        // Local agent-state writes re-read the persisted head to preserve it;
+        // this test isn't about head preservation, so no prior state exists.
+        when(
+          () => generatedRepository.getAgentState(any()),
+        ).thenAnswer((_) async => null);
         final generatedOutboxService = MockOutboxService();
         final generatedVectorClockService = MockVectorClockService();
         final generatedSyncService = AgentSyncService(
@@ -1702,5 +1756,81 @@ void main() {
         reason: '$scenario',
       );
     }, tags: 'glados');
+  });
+
+  group('AgentSyncService.upsertEntity — agent-state head preservation', () {
+    AgentStateEntity callerState({String? head, DateTime? lastWakeAt}) =>
+        makeTestState(agentId: 'agent-1').copyWith(
+          recentHeadMessageId: head,
+          lastWakeAt: lastWakeAt,
+        );
+
+    glados.Glados(
+      glados.any.headPreservationScenario,
+      glados.ExploreConfig(numRuns: 200),
+    ).test('a local write keeps the persisted head and the other caller '
+        'fields, for any head combination', (scenario) async {
+      // Fresh wiring per run so captures don't accumulate across iterations.
+      final repository = MockAgentRepository();
+      final upserted = <AgentDomainEntity>[];
+      when(() => repository.upsertEntity(any())).thenAnswer((invocation) async {
+        upserted.add(
+          invocation.positionalArguments.single as AgentDomainEntity,
+        );
+      });
+      when(() => repository.getAgentState('agent-1')).thenAnswer(
+        (_) async => scenario.persistedStateExists
+            ? makeTestState(
+                agentId: 'agent-1',
+              ).copyWith(recentHeadMessageId: scenario.persistedHead)
+            : null,
+      );
+      final outboxService = MockOutboxService();
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
+      final vectorClockService = MockVectorClockService();
+      when(
+        () => vectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer((_) async => testClock);
+      final service = AgentSyncService(
+        repository: repository,
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+      );
+
+      await service.upsertEntity(
+        callerState(head: scenario.callerHead, lastWakeAt: scenario.lastWakeAt),
+      );
+
+      final written = upserted.whereType<AgentStateEntity>().single;
+      // The append-owned head is never clobbered by the caller's stale value;
+      // a first-ever write (no persisted row) keeps the caller's value.
+      expect(
+        written.recentHeadMessageId,
+        scenario.expectedHead,
+        reason: '$scenario',
+      );
+      // The caller's genuine field updates are untouched.
+      expect(written.lastWakeAt, scenario.lastWakeAt, reason: '$scenario');
+    }, tags: 'glados');
+
+    test(
+      'a synced (fromSync) state write keeps its own head, unread',
+      () async {
+        // Sync-received state carries the resolver-merged head; it must not be
+        // overwritten with the local DB head, and the local head is never read.
+        await syncService.upsertEntity(
+          callerState(head: 'remote-head'),
+          fromSync: true,
+        );
+
+        final written = verify(
+          () => mockRepository.upsertEntity(captureAny()),
+        ).captured.whereType<AgentStateEntity>().single;
+        expect(written.recentHeadMessageId, 'remote-head');
+        verifyNever(() => mockRepository.getAgentState(any()));
+      },
+    );
   });
 }

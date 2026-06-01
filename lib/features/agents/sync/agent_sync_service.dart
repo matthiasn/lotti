@@ -142,9 +142,11 @@ class AgentSyncService {
   ///
   /// Local (non-sync) **message** writes are routed through the causal-DAG
   /// append path ([_appendMessage]) so every persisted message is chained into
-  /// the log and advances the agent's head — no call site can bypass it. Every
-  /// other entity (and sync-received messages, which already carry their edge)
-  /// goes straight to the raw upsert.
+  /// the log and advances the agent's head — no call site can bypass it. Local
+  /// **agent-state** writes are routed through [_upsertAgentStatePreservingHead]
+  /// so they can't clobber that head. Every other entity (and sync-received
+  /// entities, which already carry their merged head) goes straight to the raw
+  /// upsert.
   Future<void> upsertEntity(
     AgentDomainEntity entity, {
     bool fromSync = false,
@@ -152,7 +154,38 @@ class AgentSyncService {
     if (!fromSync && entity is AgentMessageEntity) {
       return _appendMessage(entity);
     }
+    if (!fromSync && entity is AgentStateEntity) {
+      return _upsertAgentStatePreservingHead(entity);
+    }
     return _upsertEntityRaw(entity, fromSync: fromSync);
+  }
+
+  /// Persists a local [AgentStateEntity] write while preserving the
+  /// append-path-owned `recentHeadMessageId`.
+  ///
+  /// `recentHeadMessageId` is maintained *exclusively* by [_appendMessage] — it
+  /// is the only writer of that field. A workflow, however, computes its
+  /// end-of-wake state update by `copyWith`-ing a snapshot it captured *before*
+  /// it appended the wake's messages, so the head it carries is stale. Persisted
+  /// verbatim, that write would reset the head the appends just advanced and
+  /// fork the `messagePrev` DAG at the wake boundary (the next wake's first
+  /// message would chain off the pre-wake head, not the real tip).
+  ///
+  /// So overlay the persisted head onto the write. Read-your-writes inside the
+  /// wake [runInTransaction] means the re-read already reflects the head the
+  /// appends advanced; outside a transaction it reflects the committed head.
+  /// The append path itself writes via [_upsertEntityRaw] and so bypasses this,
+  /// keeping it the sole place the head moves. Sync-received state
+  /// (`fromSync`) is left untouched — it carries the resolver-merged head.
+  Future<void> _upsertAgentStatePreservingHead(AgentStateEntity entity) async {
+    final persisted = await _repository.getAgentState(entity.agentId);
+    await _upsertEntityRaw(
+      persisted == null
+          ? entity
+          : entity.copyWith(
+              recentHeadMessageId: persisted.recentHeadMessageId,
+            ),
+    );
   }
 
   /// Appends a milestone marker — a `system` message tagged with

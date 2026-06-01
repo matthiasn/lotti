@@ -241,17 +241,21 @@ in shadow. B1–B5 are each shippable green on their own.
   with PR 5 (compaction reuses it).
 - **`revision`** — derive from the frontier, or retire it in favor of the vector clock
   / head-set.
-- **End-of-wake state write clobbers `recentHeadMessageId`** *(found during B2; matters
-  at B6, not before)*. Every workflow captures `state` (task: once up front; project /
-  day: a `latestState` re-read at transaction start) **before** appending the wake's
-  messages, then writes `state.copyWith(lastWakeAt: …)` at the end. The repository upsert
-  is a full-row `insertOnConflictUpdate`, so that final write resets `recentHeadMessageId`
-  to its pre-wake value — even though `_appendMessage` advanced it for each message. Net
-  effect: the *live head pointer* is stale by a wake and the `messagePrev` DAG forks at
-  every wake boundary (the next wake's first message chains off the pre-wake head, not the
-  actual tip). **B2 is unaffected** — the watermark fold scans messages by
-  `metadata.milestone`, never via the head — but B6's read-flip relies on a correct head /
-  reconciled projection, so this must be fixed before (or as part of) B6. Likely fix:
-  re-read state immediately before the final write, or merge-preserve `recentHeadMessageId`
-  (and `updatedAt`) instead of overwriting. The PR 3 append-path shadow test exercises raw
-  appends, not the workflow end-of-wake write, so it doesn't currently catch this.
+- **End-of-wake state write clobbered `recentHeadMessageId`** *(found during B2;
+  ✅ fixed)*. Every workflow captures `state` (task: once up front; project / day: a
+  `latestState` re-read at transaction start) **before** appending the wake's messages,
+  then writes `state.copyWith(lastWakeAt: …)` at the end. The repository upsert is a
+  full-row `insertOnConflictUpdate`, so that final write reset `recentHeadMessageId` to
+  its pre-wake value — even though `_appendMessage` advanced it for each message. Net
+  effect: the *live head pointer* was stale by a wake and the `messagePrev` DAG forked at
+  every wake boundary (the next wake's first message chained off the pre-wake head, not
+  the actual tip). B2 was unaffected (the watermark fold scans messages by
+  `metadata.milestone`, never via the head), but B6's read-flip relies on a correct head /
+  reconciled projection. **Fix:** `AgentSyncService.upsertEntity` now routes local
+  (`!fromSync`) `AgentStateEntity` writes through `_upsertAgentStatePreservingHead`, which
+  overlays the persisted (read-your-writes inside the wake transaction) head onto the
+  write — so only `_appendMessage` (which writes via `_upsertEntityRaw`, bypassing this)
+  ever moves the head, and sync-received state keeps its resolver-merged head. Covered by a
+  glados property test over `(persisted-head, caller-head)` combinations plus a `fromSync`
+  example. (The PR 3 append-path shadow test exercised raw appends, not the workflow
+  end-of-wake write, so it didn't catch this.)
