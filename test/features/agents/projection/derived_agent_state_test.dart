@@ -584,4 +584,132 @@ void main() {
       expect(reconciledB.slots.activeTaskId, 'task-Y');
     });
   });
+
+  group('compareDerivedAgentState — full divergence & report semantics', () {
+    test('reports every diverging field', () {
+      final messages = [
+        _marker('w', AgentMilestone.wakeCompleted, _day(1)),
+        _marker('o', AgentMilestone.oneOnOneCompleted, _day(2)),
+        _marker('f', AgentMilestone.feedbackScanCompleted, _day(3)),
+        _marker('d', AgentMilestone.dailyWakeCompleted, _day(4)),
+        _marker('r', AgentMilestone.weeklyReviewCompleted, _day(5)),
+      ];
+      final links = [
+        makeTestAgentTaskLink(toId: 'task-log'),
+        makeTestAgentProjectLink(toId: 'project-log'),
+        makeTestAgentDayLink(toId: 'day-log'),
+        makeTestImproverTargetLink(toId: 'template-log'),
+      ];
+      // The cache diverges on every log-backed field.
+      final live = makeTestState(
+        lastWakeAt: _day(11),
+        slots: AgentSlots(
+          activeTaskId: 'task-cache',
+          activeProjectId: 'project-cache',
+          activeDayId: 'day-cache',
+          activeTemplateId: 'template-cache',
+          lastOneOnOneAt: _day(12),
+          lastFeedbackScanAt: _day(13),
+          lastDailyWakeAt: _day(14),
+          lastWeeklyReviewAt: _day(15),
+        ),
+      );
+
+      final report = compareDerivedAgentState(
+        messages: messages,
+        links: links,
+        liveState: live,
+      );
+
+      expect(report.equivalent, isFalse);
+      expect(report.fieldMismatches.map((m) => m.field).toSet(), {
+        'activeTaskId',
+        'activeProjectId',
+        'activeDayId',
+        'activeTemplateId',
+        'lastWakeAt',
+        'lastOneOnOneAt',
+        'lastFeedbackScanAt',
+        'lastDailyWakeAt',
+        'lastWeeklyReviewAt',
+      });
+      final task = report.fieldMismatches.firstWhere(
+        (m) => m.field == 'activeTaskId',
+      );
+      expect(task.derived, 'task-log');
+      expect(task.live, 'task-cache');
+    });
+
+    test('equivalent on a fresh empty agent (empty head status)', () {
+      final report = compareDerivedAgentState(
+        messages: const [],
+        links: const [],
+        liveState: makeTestState(),
+      );
+
+      expect(report.shadow.status, ShadowProjectionStatus.empty);
+      expect(report.equivalent, isTrue);
+    });
+
+    test('equivalent under an expected fork when no field diverges', () {
+      // Two parentless messages → two heads (a fork); the live head is one of
+      // them. No markers/links, so the derived fields match the empty cache.
+      final report = compareDerivedAgentState(
+        messages: [
+          makeTestMessage(id: 'm1'),
+          makeTestMessage(id: 'm2'),
+        ],
+        links: const [],
+        liveState: makeTestState().copyWith(recentHeadMessageId: 'm1'),
+      );
+
+      expect(report.shadow.status, ShadowProjectionStatus.forked);
+      expect(report.equivalent, isTrue);
+    });
+
+    test('DerivedFieldMismatch carries its values and has value equality', () {
+      // Runtime (non-const) instances, so Equatable actually compares `props`
+      // rather than short-circuiting on const-canonicalized identity.
+      final a = DerivedFieldMismatch(
+        field: 'lastWakeAt',
+        derived: _day(1),
+        live: _day(2),
+      );
+      final b = DerivedFieldMismatch(
+        field: 'lastWakeAt',
+        derived: _day(1),
+        live: _day(2),
+      );
+
+      expect(identical(a, b), isFalse);
+      expect(a, b);
+      expect(a.toString(), contains('lastWakeAt'));
+    });
+
+    test('DerivedStateReport has value equality', () {
+      const shadow = ShadowProjectionReport(
+        status: ShadowProjectionStatus.empty,
+        projectedHeadIds: [],
+        liveHeadId: null,
+        danglingParentIds: [],
+      );
+      // A runtime mismatch keeps the reports non-const (distinct instances).
+      final mismatch = DerivedFieldMismatch(
+        field: 'f',
+        derived: _day(1),
+        live: _day(2),
+      );
+      final r1 = DerivedStateReport(
+        shadow: shadow,
+        fieldMismatches: [mismatch],
+      );
+      final r2 = DerivedStateReport(
+        shadow: shadow,
+        fieldMismatches: [mismatch],
+      );
+
+      expect(identical(r1, r2), isFalse);
+      expect(r1, r2);
+    });
+  });
 }

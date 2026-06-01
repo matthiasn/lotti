@@ -449,7 +449,6 @@ void main() {
         final stateEntity = AgentDomainEntity.agentState(
           id: 'state-1',
           agentId: 'agent-1',
-          revision: 0,
           slots: const AgentSlots(),
           updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,

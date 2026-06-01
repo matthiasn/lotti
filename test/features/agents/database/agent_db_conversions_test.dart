@@ -1009,6 +1009,38 @@ void main() {
       expect(result.fromId, 'agent-001');
       expect(result.toId, 'day-2026-06-01');
     });
+
+    test('preserves deletedAt for agentDay through to/from conversion', () {
+      final deletedAt = DateTime(2026, 6, 2, 12);
+      final link = model.AgentLink.agentDay(
+        id: 'link-day-003',
+        fromId: 'agent-001',
+        toId: 'day-2026-06-01',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+        deletedAt: deletedAt,
+      );
+
+      final companion = AgentDbConversions.toLinkCompanion(link);
+      expect(companion.deletedAt, Value(deletedAt));
+
+      final row = AgentLink(
+        id: 'link-day-003',
+        fromId: 'agent-001',
+        toId: 'day-2026-06-01',
+        type: 'agent_day',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        deletedAt: deletedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromLinkRow(row);
+      expect(result, isA<model.AgentDayLink>());
+      expect(result.deletedAt, deletedAt);
+    });
   });
 
   group('AgentDbConversions — improverTarget link', () {

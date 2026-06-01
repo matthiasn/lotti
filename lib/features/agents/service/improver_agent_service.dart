@@ -246,17 +246,20 @@ class ImproverAgentService {
       updatedAt: now,
     );
 
-    await syncService.upsertEntity(updatedState);
-
-    // Event-source the `lastOneOnOneAt` watermark (PR 4, B2): the marker's
-    // createdAt is what the projection folds, so the one-on-one watermark
-    // converges across devices. No wake thread here — the marker gets its own.
-    // The cached row above stays the read source until the cutover (B6).
-    await syncService.appendMilestone(
-      agentId: agentId,
-      milestone: AgentMilestone.oneOnOneCompleted,
-      createdAt: now,
-    );
+    // The cached watermark and its event-sourced marker (PR 4, B2) must share
+    // one durability boundary: if only the cache row committed, a later
+    // reconciled read could regress `lastOneOnOneAt` or re-run the ritual on
+    // another device. The marker's createdAt is what the projection folds; the
+    // cached row stays the read source until the cutover (B6). No wake thread
+    // here — the marker gets its own.
+    await syncService.runInTransaction(() async {
+      await syncService.upsertEntity(updatedState);
+      await syncService.appendMilestone(
+        agentId: agentId,
+        milestone: AgentMilestone.oneOnOneCompleted,
+        createdAt: now,
+      );
+    });
     onPersistedStateChanged?.call(agentId);
 
     developer.log(

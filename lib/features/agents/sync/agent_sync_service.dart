@@ -172,21 +172,25 @@ class AgentSyncService {
   /// fork the `messagePrev` DAG at the wake boundary (the next wake's first
   /// message would chain off the pre-wake head, not the real tip).
   ///
-  /// So overlay the persisted head onto the write. Read-your-writes inside the
-  /// wake [runInTransaction] means the re-read already reflects the head the
-  /// appends advanced; outside a transaction it reflects the committed head.
+  /// So overlay the persisted head onto the write. The re-read and the write run
+  /// in one [runInTransaction] so a concurrent message append can't advance the
+  /// head between them and have this write clobber it back (the lost-update the
+  /// preservation exists to prevent); read-your-writes inside the enclosing wake
+  /// transaction also means the re-read reflects the head the appends advanced.
   /// The append path itself writes via [_upsertEntityRaw] and so bypasses this,
   /// keeping it the sole place the head moves. Sync-received state
   /// (`fromSync`) is left untouched — it carries the resolver-merged head.
   Future<void> _upsertAgentStatePreservingHead(AgentStateEntity entity) async {
-    final persisted = await _repository.getAgentState(entity.agentId);
-    await _upsertEntityRaw(
-      persisted == null
-          ? entity
-          : entity.copyWith(
-              recentHeadMessageId: persisted.recentHeadMessageId,
-            ),
-    );
+    await runInTransaction(() async {
+      final persisted = await _repository.getAgentState(entity.agentId);
+      await _upsertEntityRaw(
+        persisted == null
+            ? entity
+            : entity.copyWith(
+                recentHeadMessageId: persisted.recentHeadMessageId,
+              ),
+      );
+    });
   }
 
   /// Appends a milestone marker — a `system` message tagged with
@@ -253,11 +257,27 @@ class AgentSyncService {
       _repository.getMessagesByKind(agentId, AgentMessageKind.system),
       _repository.getLinksFrom(agentId),
     ).wait;
-    final reconciled = reconcileAgentState(
-      cache: cache,
-      messages: markers,
-      links: links,
-    );
+    final AgentStateEntity reconciled;
+    try {
+      reconciled = reconcileAgentState(
+        cache: cache,
+        messages: markers,
+        links: links,
+      );
+    } catch (exception, stackTrace) {
+      // The fold runs over a synced log that a peer may have corrupted
+      // (duplicate id / cycle). A malformed log must not abort the wake — fall
+      // back to the cached row; the projection self-heals once the log is
+      // consistent again.
+      getIt<DomainLogger>().error(
+        LogDomain.sync,
+        exception,
+        message: 'reconcile fold failed for $agentId; using cached state',
+        stackTrace: stackTrace,
+        subDomain: 'agentSync.reconcile',
+      );
+      return cache;
+    }
     if (reconciled != cache) {
       await upsertEntity(reconciled);
     }
