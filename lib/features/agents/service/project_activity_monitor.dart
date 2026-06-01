@@ -111,7 +111,6 @@ class ProjectActivityMonitor {
 
       await _syncService.upsertEntity(
         state.copyWith(
-          revision: state.revision + 1,
           slots: state.slots.copyWith(
             pendingProjectActivityAt: now,
           ),

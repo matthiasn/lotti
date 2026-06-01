@@ -181,10 +181,6 @@ class _AgentStateSection extends StatelessWidget {
           ),
           const SizedBox(height: AppTheme.spacingSmall),
           _StateRow(
-            label: context.messages.agentStateRevision,
-            value: state.revision.toString(),
-          ),
-          _StateRow(
             label: context.messages.agentStateWakeCount,
             value: state.wakeCounter.value.toString(),
           ),

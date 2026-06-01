@@ -108,8 +108,13 @@ log. It shows only wake records that can still fire later:
 
 - `nextWakeAt`: the per-device deferred subscription wake deadline persisted by
   `WakeOrchestrator`
-- `scheduledWakeAt`: the synced scheduled wake used by project agents and
-  template improvers
+- `scheduledWakeAt`: the scheduled wake used by project agents and template
+  improvers
+
+All three scheduling fields (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`) are
+**device-local** (PR 4 B4): each device schedules its own wakes, so the sync
+apply path preserves the local row's scheduling rather than letting a peer's
+`AgentStateEntity` overwrite it (`_preserveLocalScheduling`).
 
 Each pending-wake card owns its own one-second countdown timer and recomputes
 the remaining time from `clock.now()` on every tick, so the page does not need
@@ -211,6 +216,8 @@ Persisted links include:
 - `agent_state`
 - `agent_task`
 - `agent_project`
+- `agent_day` (day agent → its day; back-links `slots.activeDayId` like the
+  task/project slot links so it can be derived from the synced log)
 - `template_assignment`
 - `improver_target`
 - `soul_assignment`
@@ -326,6 +333,41 @@ Current state:
 - the UI can render summary messages if they ever exist, but the production
   wake path still relies on the raw persisted message and report records
 
+### State-as-projection: the log is the source of truth (PR 4)
+
+`AgentStateEntity` is a **reconciled cache**, not the authority — the append-only
+log (messages + links) is. The convergence-critical, log-backed fields are
+event-sourced and folded back over the cache:
+
+- **Watermarks** — every place a wake advances a timestamp watermark also emits a
+  `system` message tagged with `AgentMessageMetadata.milestone` (an `AgentMilestone`)
+  via `AgentSyncService.appendMilestone(...)`. The watermark derives as the
+  `max(createdAt)` of messages carrying that milestone.
+- **Active slots** — `activeTask/Project/Day/TemplateId` derive from the agent's
+  association links (`agent_task`/`agent_project`/`agent_day`/`improver_target`).
+
+| Watermark | Milestone | Emitted by |
+| --- | --- | --- |
+| `lastWakeAt` | `wakeCompleted` | task / day / project wakes, incl. the project dormant-skip path |
+| `slots.lastDailyWakeAt` | `dailyWakeCompleted` | project wake when the scheduled daily digest was due |
+| `slots.lastFeedbackScanAt` | `feedbackScanCompleted` | improver workflow (skip and ritual-started paths) |
+| `slots.lastOneOnOneAt` | `oneOnOneCompleted` | `ImproverAgentService.scheduleNextRitual` |
+| `slots.lastWeeklyReviewAt` | `weeklyReviewCompleted` | *no emit site yet — the weekly-review feature is unimplemented* |
+
+**Reads are flipped (B6).** Each wake starts by reading
+`AgentSyncService.reconciledAgentState(agentId)`, which folds the log's watermarks +
+slots over the cached row (`reconcileAgentState`) and self-heals any value the cache
+lost to last-writer-wins under a partition — so two devices can't miss or
+double-count a ritual. The reconcile is migration-safe: watermarks take
+`max(derived, cache)` and slots take `derived ?? cache`, so a value the cache holds
+but the log lacks yet (an agent predating the markers/links) is never nulled. It
+persists only when something diverged (no churn on the common path). UI/service reads
+stay on the raw cache (`AgentRepository.getAgentState`) — eventual and self-healing.
+The dual-written counters are convergent G-counters (PR 2b); `awaitingContent` and the
+device-local scheduling fields are still cache-only (no backing log event yet). The
+milestone markers also show up as `System` rows in the `AgentInternalsBody`
+activity log.
+
 ## Agent Kinds and Lifecycle
 
 The current persisted agent kinds are:
@@ -337,7 +379,10 @@ The current persisted agent kinds are:
 | `template_improver` | `activeTemplateId` | `ImproverAgentWorkflow` | scheduled ritual |
 
 There is no separate persisted `meta_improver` kind. A meta-improver is a
-`template_improver` whose `recursionDepth > 0`.
+`template_improver` whose `recursionDepth > 0`. `recursionDepth` and the ritual
+cadence `feedbackWindowDays` live on `AgentConfig` (PR 4 B4 — configuration set
+at creation, not mutable state); reads fall back to the legacy `AgentSlots`
+fields for agents created before the re-home.
 
 The lifecycle enum exposes `created`, `active`, `dormant`, and `destroyed`.
 Current creation services instantiate agents directly in `active` state, so the

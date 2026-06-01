@@ -486,7 +486,6 @@ void main() {
           final index = scenario.indexForAgentId(state.agentId);
           expect(index, isNonNegative, reason: '$scenario');
           final original = scenario.specs[index].state(index)!;
-          expect(state.revision, original.revision + 1, reason: '$scenario');
           expect(
             state.slots.activeProjectId,
             original.slots.activeProjectId,
@@ -566,7 +565,6 @@ void main() {
               as AgentStateEntity;
       expect(captured.slots.activeProjectId, 'project-1');
       expect(captured.slots.pendingProjectActivityAt, now);
-      expect(captured.revision, state.revision + 1);
 
       verify(
         () => notifications.notifyUiOnly({'agent-1', agentNotification}),

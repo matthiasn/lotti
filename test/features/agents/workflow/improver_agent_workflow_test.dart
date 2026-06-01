@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -41,6 +42,8 @@ void main() {
     );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    stubAppendMilestone(mockSyncService);
+    stubReconciledAgentState(mockSyncService, mockRepository);
     when(() => mockTemplateService.repository).thenReturn(mockRepository);
   });
 
@@ -162,6 +165,12 @@ void main() {
       expect(lastUpdate.slots.lastFeedbackScanAt, isNotNull);
       // Host-attributed under the mocked local host, not just summed to 1.
       expect(lastUpdate.wakeCounter.byHost, {'test-host': 1});
+      // The scan event-sources lastFeedbackScanAt (PR 4, B2). scheduleNextRitual
+      // (which event-sources lastOneOnOneAt) is mocked here, so no oneOnOne
+      // marker leaks into this assertion.
+      expect(capturedMilestones(mockSyncService), [
+        AgentMilestone.feedbackScanCompleted,
+      ]);
     });
 
     test('threshold gate: insufficient feedback skips ritual', () async {
@@ -196,6 +205,10 @@ void main() {
       final stateUpdates = captured.whereType<AgentStateEntity>().toList();
       expect(stateUpdates, hasLength(1));
       expect(stateUpdates.first.slots.lastFeedbackScanAt, isNotNull);
+      // The skipped scan still advances the watermark → marker emitted.
+      expect(capturedMilestones(mockSyncService), [
+        AgentMilestone.feedbackScanCompleted,
+      ]);
     });
 
     test('returns failure when no agent state found', () async {

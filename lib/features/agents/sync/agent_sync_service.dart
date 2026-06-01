@@ -1,8 +1,11 @@
 import 'dart:async';
 
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/projection/derived_agent_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -10,6 +13,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:uuid/uuid.dart';
 
 /// Per-chain transaction context, stored in a [Zone] value so that
 /// concurrent transaction chains each have their own isolated buffer.
@@ -61,6 +65,8 @@ class AgentSyncService {
   final OutboxService _outboxService;
   final VectorClockService _vectorClockService;
   final SyncSequenceLogService? sequenceLogService;
+
+  static const _uuid = Uuid();
 
   /// The underlying repository for read-only operations.
   AgentRepository get repository => _repository;
@@ -137,9 +143,11 @@ class AgentSyncService {
   ///
   /// Local (non-sync) **message** writes are routed through the causal-DAG
   /// append path ([_appendMessage]) so every persisted message is chained into
-  /// the log and advances the agent's head — no call site can bypass it. Every
-  /// other entity (and sync-received messages, which already carry their edge)
-  /// goes straight to the raw upsert.
+  /// the log and advances the agent's head — no call site can bypass it. Local
+  /// **agent-state** writes are routed through [_upsertAgentStatePreservingHead]
+  /// so they can't clobber that head. Every other entity (and sync-received
+  /// entities, which already carry their merged head) goes straight to the raw
+  /// upsert.
   Future<void> upsertEntity(
     AgentDomainEntity entity, {
     bool fromSync = false,
@@ -147,7 +155,133 @@ class AgentSyncService {
     if (!fromSync && entity is AgentMessageEntity) {
       return _appendMessage(entity);
     }
+    if (!fromSync && entity is AgentStateEntity) {
+      return _upsertAgentStatePreservingHead(entity);
+    }
     return _upsertEntityRaw(entity, fromSync: fromSync);
+  }
+
+  /// Persists a local [AgentStateEntity] write while preserving the
+  /// append-path-owned `recentHeadMessageId`.
+  ///
+  /// `recentHeadMessageId` is maintained *exclusively* by [_appendMessage] — it
+  /// is the only writer of that field. A workflow, however, computes its
+  /// end-of-wake state update by `copyWith`-ing a snapshot it captured *before*
+  /// it appended the wake's messages, so the head it carries is stale. Persisted
+  /// verbatim, that write would reset the head the appends just advanced and
+  /// fork the `messagePrev` DAG at the wake boundary (the next wake's first
+  /// message would chain off the pre-wake head, not the real tip).
+  ///
+  /// So overlay the persisted head onto the write. The re-read and the write run
+  /// in one [runInTransaction] so a concurrent message append can't advance the
+  /// head between them and have this write clobber it back (the lost-update the
+  /// preservation exists to prevent); read-your-writes inside the enclosing wake
+  /// transaction also means the re-read reflects the head the appends advanced.
+  /// The append path itself writes via [_upsertEntityRaw] and so bypasses this,
+  /// keeping it the sole place the head moves. Sync-received state
+  /// (`fromSync`) is left untouched — it carries the resolver-merged head.
+  Future<void> _upsertAgentStatePreservingHead(AgentStateEntity entity) async {
+    await runInTransaction(() async {
+      final persisted = await _repository.getAgentState(entity.agentId);
+      await _upsertEntityRaw(
+        persisted == null
+            ? entity
+            : entity.copyWith(
+                recentHeadMessageId: persisted.recentHeadMessageId,
+              ),
+      );
+    });
+  }
+
+  /// Appends a milestone marker — a `system` message tagged with
+  /// [AgentMessageMetadata.milestone] — to the agent's log.
+  ///
+  /// This is how a wake-completion watermark (`lastWakeAt`,
+  /// `slots.lastOneOnOneAt`, …) is event-sourced: the marker's [createdAt] is
+  /// the source of truth for the matching watermark, which the
+  /// State-as-Projection fold (PR 4) derives as the `max(createdAt)` of markers
+  /// carrying that milestone. Because it derives from the synced log rather than
+  /// a last-writer-wins row, the watermark converges across devices — no missed
+  /// or double ritual under a partition.
+  ///
+  /// The marker is routed through [upsertEntity] (so it chains into the causal
+  /// DAG like any message). [threadId] defaults to the marker's own id, which
+  /// suits the completion paths that have no wake thread (the dormant-skip wake
+  /// and the improver one-on-one). Callers continue to write the cached
+  /// watermark row alongside this marker; reads do not switch to the projection
+  /// until the cutover (B6).
+  Future<void> appendMilestone({
+    required String agentId,
+    required AgentMilestone milestone,
+    required DateTime createdAt,
+    String? threadId,
+    String? runKey,
+  }) {
+    final id = _uuid.v4();
+    return upsertEntity(
+      AgentDomainEntity.agentMessage(
+        id: id,
+        agentId: agentId,
+        threadId: threadId ?? id,
+        kind: AgentMessageKind.system,
+        createdAt: createdAt,
+        vectorClock: null,
+        metadata: AgentMessageMetadata(runKey: runKey, milestone: milestone),
+      ),
+    );
+  }
+
+  /// Returns the agent's state **reconciled against the log** — the read
+  /// cutover (PR 4 B6). This is the read a wake must act on: it folds the log's
+  /// watermarks + active slots over the cached row ([reconcileAgentState]) so a
+  /// value the cache lost to last-writer-wins under a partition self-heals
+  /// before the agent decides anything. Returns null when the agent has no
+  /// state row yet.
+  ///
+  /// The reconcile reads only the watermarks (carried on `system` milestone
+  /// markers) and active slots (the agent's outbound links) — it never touches
+  /// the append-maintained head — so it loads just the markers, **not** the
+  /// agent's full message log, which for a long-lived agent can be large. The
+  /// marker load + the link load are independent, so they run concurrently.
+  /// When the reconcile corrects a divergence the healed row is persisted (which
+  /// also propagates the correction to peers); when nothing diverged it is a
+  /// pure read with no write — no outbox churn on the common path (e.g. an
+  /// existing agent with no markers yet reconciles to itself).
+  ///
+  /// Strictly for the wake critical path; UI/service reads stay on the raw
+  /// cache via [AgentRepository.getAgentState] (eventual, self-healing).
+  Future<AgentStateEntity?> reconciledAgentState(String agentId) async {
+    final cache = await _repository.getAgentState(agentId);
+    if (cache == null) return null;
+    final (markers, links) = await (
+      _repository.getMessagesByKind(agentId, AgentMessageKind.system),
+      _repository.getLinksFrom(agentId),
+    ).wait;
+    final AgentStateEntity reconciled;
+    try {
+      reconciled = reconcileAgentState(
+        cache: cache,
+        messages: markers,
+        links: links,
+      );
+    } catch (exception, stackTrace) {
+      // The fold runs over a synced log that a peer may have corrupted
+      // (duplicate id / cycle). A malformed log must not abort the wake — fall
+      // back to the cached row; the projection self-heals once the log is
+      // consistent again.
+      getIt<DomainLogger>().error(
+        LogDomain.sync,
+        exception,
+        message: 'reconcile fold failed for $agentId; using cached state',
+        stackTrace: stackTrace,
+        subDomain: 'agentSync.reconcile',
+      );
+      return cache;
+    }
+    if (reconciled != cache) {
+      await upsertEntity(reconciled);
+    }
+    return reconciled;
   }
 
   /// Raw upsert: VC-stamp, persist, and enqueue (or defer inside a

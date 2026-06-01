@@ -109,6 +109,59 @@ void main() {
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
 
+    test('applying a remote agent state keeps local scheduling fields '
+        '(device-local, not synced)', () async {
+      // Incoming causally dominates local, so it is applied — but the local
+      // device's own scheduling must survive (PR 4 B4).
+      final local = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        slots: const AgentSlots(),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: const VectorClock({'host-A': 1}),
+        wakeCounter: const GCounter({'host-A': 1}),
+        nextWakeAt: DateTime(2024, 1, 2),
+        sleepUntil: DateTime(2024, 1, 3),
+        scheduledWakeAt: DateTime(2024, 1, 1),
+      );
+      final incoming = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        slots: const AgentSlots(),
+        updatedAt: DateTime(2024, 3, 16),
+        vectorClock: const VectorClock({'host-A': 2}),
+        wakeCounter: const GCounter({'host-A': 3}),
+        // The peer's schedule — must be ignored on this device.
+        nextWakeAt: DateTime(2030, 1, 2),
+        sleepUntil: DateTime(2030, 1, 3),
+        scheduledWakeAt: DateTime(2030, 1, 1),
+      );
+      when(
+        () => mockAgentRepo.getEntity('state-1'),
+      ).thenAnswer((_) async => local);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: incoming,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      final upserted =
+          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+              as AgentStateEntity;
+      // Scheduling stays local…
+      expect(upserted.scheduledWakeAt, DateTime(2024, 1, 1));
+      expect(upserted.nextWakeAt, DateTime(2024, 1, 2));
+      expect(upserted.sleepUntil, DateTime(2024, 1, 3));
+      // …while everything else takes the applied (incoming) value.
+      expect(upserted.wakeCounter.value, 3);
+      expect(upserted.updatedAt, DateTime(2024, 3, 16));
+    });
+
     test('concurrent agent-state edits merge their G-counters element-wise '
         '(no increment lost)', () async {
       // localVc leads on host-A, incomingVc leads on host-B → concurrent.

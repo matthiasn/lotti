@@ -324,6 +324,34 @@ enum AgentMessageKind {
   system,
 }
 
+/// Marks an agent message as recording the completion of a wake milestone.
+///
+/// When set on `AgentMessageMetadata.milestone`, the message's `createdAt`
+/// becomes the watermark for the corresponding derived-state field. The
+/// State-as-Projection fold (PR 4) computes each watermark as the
+/// `max(createdAt)` of messages carrying the matching milestone, so the
+/// watermark converges across devices by set-union instead of being clobbered
+/// by last-writer-wins.
+///
+/// This enum is the milestone vocabulary only — nothing emits these markers
+/// yet (B1). Emission is wired in B2 and folded into the projection in B5.
+enum AgentMilestone {
+  /// A wake cycle finished, including the dormant-skip path → `lastWakeAt`.
+  wakeCompleted,
+
+  /// An improver one-on-one ritual completed → `slots.lastOneOnOneAt`.
+  oneOnOneCompleted,
+
+  /// An improver feedback scan completed → `slots.lastFeedbackScanAt`.
+  feedbackScanCompleted,
+
+  /// A project agent's scheduled daily wake completed → `slots.lastDailyWakeAt`.
+  dailyWakeCompleted,
+
+  /// A project agent's weekly review completed → `slots.lastWeeklyReviewAt`.
+  weeklyReviewCompleted,
+}
+
 /// Parsed capture item role in the Daily OS day-agent reconcile flow.
 enum ParsedItemKind {
   /// The phrase should become a new task or planning input.

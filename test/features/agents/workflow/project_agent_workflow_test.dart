@@ -186,6 +186,8 @@ void main() {
     );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    stubAppendMilestone(mockSyncService);
+    stubReconciledAgentState(mockSyncService, mockAgentRepository);
 
     // `_collectObservationPayloads` now batches via `getEntitiesByIds`.
     // Route the default stub through the per-id `getEntity` stubs so
@@ -479,6 +481,10 @@ void main() {
           expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
           expect(updatedState.slots.lastDailyWakeAt, isNull);
           expect(mockConversationRepository.deletedConversationIds, isEmpty);
+          // The dormant skip still advances lastWakeAt → emits wakeCompleted
+          // only (no daily-wake marker, since the digest didn't run).
+          final milestones = capturedMilestones(mockSyncService);
+          expect(milestones, [AgentMilestone.wakeCompleted]);
           verifyNever(
             () => mockAgentRepository.updateWakeRunTemplate(
               any(),
@@ -526,6 +532,15 @@ void main() {
           expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
           expect(updatedState.slots.lastDailyWakeAt, testDate);
           expect(updatedState.slots.pendingProjectActivityAt, isNull);
+          // A due scheduled wake advances both watermarks → exactly those two
+          // markers, no duplicates or extras.
+          expect(
+            capturedMilestones(mockSyncService),
+            unorderedEquals([
+              AgentMilestone.wakeCompleted,
+              AgentMilestone.dailyWakeCompleted,
+            ]),
+          );
         },
       );
 
@@ -564,6 +579,12 @@ void main() {
           expect(updatedState.scheduledWakeAt, futureSchedule);
           expect(updatedState.slots.lastDailyWakeAt, isNull);
           expect(updatedState.slots.pendingProjectActivityAt, isNull);
+          // A non-due wake advances lastWakeAt but not lastDailyWakeAt →
+          // exactly one wakeCompleted marker and nothing else.
+          expect(
+            capturedMilestones(mockSyncService),
+            unorderedEquals([AgentMilestone.wakeCompleted]),
+          );
         },
       );
 

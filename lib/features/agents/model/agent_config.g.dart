@@ -10,6 +10,8 @@ _AgentConfig _$AgentConfigFromJson(Map<String, dynamic> json) => _AgentConfig(
   maxTurnsPerWake: (json['maxTurnsPerWake'] as num?)?.toInt() ?? 10,
   modelId: json['modelId'] as String? ?? 'models/gemini-3-flash-preview',
   profileId: json['profileId'] as String?,
+  feedbackWindowDays: (json['feedbackWindowDays'] as num?)?.toInt(),
+  recursionDepth: (json['recursionDepth'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
@@ -17,6 +19,8 @@ Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
       'maxTurnsPerWake': instance.maxTurnsPerWake,
       'modelId': instance.modelId,
       'profileId': instance.profileId,
+      'feedbackWindowDays': instance.feedbackWindowDays,
+      'recursionDepth': instance.recursionDepth,
     };
 
 _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
@@ -80,6 +84,11 @@ _AgentMessageMetadata _$AgentMessageMetadataFromJson(
   errorMessage: json['errorMessage'] as String?,
   policyDenied: json['policyDenied'] as bool? ?? false,
   denialReason: json['denialReason'] as String?,
+  milestone: $enumDecodeNullable(
+    _$AgentMilestoneEnumMap,
+    json['milestone'],
+    unknownValue: JsonKey.nullForUndefinedEnumValue,
+  ),
 );
 
 Map<String, dynamic> _$AgentMessageMetadataToJson(
@@ -91,4 +100,13 @@ Map<String, dynamic> _$AgentMessageMetadataToJson(
   'errorMessage': instance.errorMessage,
   'policyDenied': instance.policyDenied,
   'denialReason': instance.denialReason,
+  'milestone': _$AgentMilestoneEnumMap[instance.milestone],
+};
+
+const _$AgentMilestoneEnumMap = {
+  AgentMilestone.wakeCompleted: 'wakeCompleted',
+  AgentMilestone.oneOnOneCompleted: 'oneOnOneCompleted',
+  AgentMilestone.feedbackScanCompleted: 'feedbackScanCompleted',
+  AgentMilestone.dailyWakeCompleted: 'dailyWakeCompleted',
+  AgentMilestone.weeklyReviewCompleted: 'weeklyReviewCompleted',
 };

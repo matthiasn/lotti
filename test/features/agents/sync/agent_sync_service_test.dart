@@ -179,9 +179,98 @@ extension _GeneratedSyncWriteKindX on _GeneratedSyncWriteKind {
   }
 }
 
+/// One generated local agent-state write: the persisted row's head and the
+/// caller's (possibly stale) head independently present or absent, plus a
+/// distinguishing `lastWakeAt` to prove the caller's other fields survive.
+class _GeneratedHeadPreservationScenario {
+  const _GeneratedHeadPreservationScenario({
+    required this.persistedStateExists,
+    required this.persistedHead,
+    required this.callerHead,
+    required this.lastWakeAt,
+  });
+
+  final bool persistedStateExists;
+  final String? persistedHead;
+  final String? callerHead;
+  final DateTime lastWakeAt;
+
+  /// The head the write must end with: the persisted (append-owned) head when a
+  /// state row exists, otherwise the caller's value (the first-ever write).
+  String? get expectedHead => persistedStateExists ? persistedHead : callerHead;
+
+  @override
+  String toString() =>
+      '_GeneratedHeadPreservationScenario('
+      'persistedStateExists: $persistedStateExists, '
+      'persistedHead: $persistedHead, callerHead: $callerHead, '
+      'lastWakeAt: $lastWakeAt)';
+}
+
+/// One generated `appendMilestone` call: any milestone, with the thread id and
+/// run key independently present or absent, at any created-at offset.
+class _GeneratedMilestoneScenario {
+  const _GeneratedMilestoneScenario({
+    required this.milestone,
+    required this.threadId,
+    required this.runKey,
+    required this.createdAt,
+  });
+
+  final AgentMilestone milestone;
+  final String? threadId;
+  final String? runKey;
+  final DateTime createdAt;
+
+  @override
+  String toString() =>
+      '_GeneratedMilestoneScenario(milestone: $milestone, '
+      'threadId: $threadId, runKey: $runKey, createdAt: $createdAt)';
+}
+
 extension _AnyGeneratedAgentSyncServiceScenario on glados.Any {
   glados.Generator<_GeneratedSyncWriteKind> get syncWriteKind =>
       glados.AnyUtils(this).choose(_GeneratedSyncWriteKind.values);
+
+  glados.Generator<_GeneratedHeadPreservationScenario>
+  get headPreservationScenario => glados.CombinableAny(this).combine4(
+    glados.IntAnys(this).intInRange(0, 2),
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 28),
+    (
+      int statePresentSelector,
+      int persistedSelector,
+      int callerSelector,
+      int dayOffset,
+    ) => _GeneratedHeadPreservationScenario(
+      persistedStateExists: statePresentSelector == 1,
+      persistedHead: persistedSelector == 0
+          ? null
+          : 'persisted-$persistedSelector',
+      callerHead: callerSelector == 0 ? null : 'caller-$callerSelector',
+      lastWakeAt: DateTime(2024, 3, 15).add(Duration(days: dayOffset)),
+    ),
+  );
+
+  glados.Generator<_GeneratedMilestoneScenario> get milestoneScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.AnyUtils(this).choose(AgentMilestone.values),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 28),
+        (
+          AgentMilestone milestone,
+          int threadSelector,
+          int runSelector,
+          int dayOffset,
+        ) => _GeneratedMilestoneScenario(
+          milestone: milestone,
+          threadId: threadSelector == 0 ? null : 'thread-$threadSelector',
+          runKey: runSelector == 0 ? null : 'run-$runSelector',
+          createdAt: DateTime(2024, 3, 15).add(Duration(days: dayOffset)),
+        ),
+      );
 
   glados.Generator<_GeneratedSyncOperationKind> get syncOperationKind =>
       glados.AnyUtils(this).choose(_GeneratedSyncOperationKind.values);
@@ -248,7 +337,6 @@ void main() {
   final testStateEntity = AgentDomainEntity.agentState(
     id: 'state-1',
     agentId: 'agent-1',
-    revision: 0,
     slots: const AgentSlots(),
     updatedAt: testDate,
     vectorClock: null,
@@ -367,6 +455,12 @@ void main() {
     when(
       () => mockRepository.getAgentMessages(any()),
     ).thenAnswer((_) async => <AgentMessageEntity>[]);
+    when(
+      () => mockRepository.getMessagesByKind(any(), any()),
+    ).thenAnswer((_) async => <AgentMessageEntity>[]);
+    when(
+      () => mockRepository.getLinksFrom(any()),
+    ).thenAnswer((_) async => <AgentLink>[]);
     // The append path's idempotency guard looks the message up first; default
     // to "not yet persisted" so a plain append proceeds to chaining.
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
@@ -861,6 +955,11 @@ void main() {
             );
           },
         );
+        // Local agent-state writes re-read the persisted head to preserve it;
+        // this test isn't about head preservation, so no prior state exists.
+        when(
+          () => generatedRepository.getAgentState(any()),
+        ).thenAnswer((_) async => null);
         final generatedOutboxService = MockOutboxService();
         final generatedVectorClockService = MockVectorClockService();
         final generatedSyncService = AgentSyncService(
@@ -1546,6 +1645,259 @@ void main() {
       verifyNever(() => mockRepository.upsertLink(any()));
       expect(upserted.whereType<AgentStateEntity>(), isEmpty);
       verifyNever(() => mockRepository.getAgentState(any()));
+    });
+  });
+
+  group('AgentSyncService.appendMilestone', () {
+    AgentMessageEntity capturedMessage() => verify(
+      () => mockRepository.upsertEntity(captureAny()),
+    ).captured.whereType<AgentMessageEntity>().single;
+
+    test('emits a system message tagged with the milestone, via the append '
+        'path', () async {
+      when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+        (_) async => makeTestState(agentId: 'agent-1').copyWith(
+          recentHeadMessageId: 'prev-head',
+        ),
+      );
+
+      await syncService.appendMilestone(
+        agentId: 'agent-1',
+        milestone: AgentMilestone.wakeCompleted,
+        createdAt: DateTime(2024, 3, 15),
+        threadId: 'thread-1',
+        runKey: 'run-1',
+      );
+
+      final message = capturedMessage();
+      expect(message.kind, AgentMessageKind.system);
+      expect(message.agentId, 'agent-1');
+      expect(message.threadId, 'thread-1');
+      expect(message.createdAt, DateTime(2024, 3, 15));
+      expect(message.metadata.milestone, AgentMilestone.wakeCompleted);
+      expect(message.metadata.runKey, 'run-1');
+      // Routed through _appendMessage: chained to the head and head advanced.
+      expect(message.prevMessageId, 'prev-head');
+      expect(
+        verify(() => mockRepository.upsertLink(captureAny())).captured.single,
+        isA<MessagePrevLink>()
+            .having((l) => l.fromId, 'fromId', message.id)
+            .having((l) => l.toId, 'toId', 'prev-head'),
+      );
+    });
+
+    test('defaults threadId to the marker id for thread-less paths', () async {
+      await syncService.appendMilestone(
+        agentId: 'agent-1',
+        milestone: AgentMilestone.oneOnOneCompleted,
+        createdAt: DateTime(2024, 3, 15),
+      );
+
+      final message = capturedMessage();
+      // No wake thread to join (dormant-skip / one-on-one): the marker stands
+      // alone in its own thread keyed by its own id.
+      expect(message.threadId, message.id);
+      expect(message.metadata.milestone, AgentMilestone.oneOnOneCompleted);
+      expect(message.metadata.runKey, isNull);
+    });
+
+    glados.Glados(
+      glados.any.milestoneScenario,
+      glados.ExploreConfig(numRuns: 200),
+    ).test('emits a system marker preserving milestone, runKey and createdAt, '
+        'defaulting threadId to the marker id', (scenario) async {
+      // Fresh wiring per run so captures don't accumulate across iterations.
+      final repository = MockAgentRepository();
+      final upserted = <AgentDomainEntity>[];
+      when(() => repository.upsertEntity(any())).thenAnswer((invocation) async {
+        upserted.add(
+          invocation.positionalArguments.single as AgentDomainEntity,
+        );
+      });
+      when(() => repository.upsertLink(any())).thenAnswer((_) async {});
+      when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+      when(
+        () => repository.getAgentState(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => repository.getAgentMessages(any()),
+      ).thenAnswer((_) async => <AgentMessageEntity>[]);
+      final outboxService = MockOutboxService();
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
+      final vectorClockService = MockVectorClockService();
+      when(
+        () => vectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer((_) async => testClock);
+      final service = AgentSyncService(
+        repository: repository,
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+      );
+
+      await service.appendMilestone(
+        agentId: 'agent-x',
+        milestone: scenario.milestone,
+        createdAt: scenario.createdAt,
+        threadId: scenario.threadId,
+        runKey: scenario.runKey,
+      );
+
+      final message = upserted.whereType<AgentMessageEntity>().single;
+      expect(message.kind, AgentMessageKind.system, reason: '$scenario');
+      expect(message.agentId, 'agent-x', reason: '$scenario');
+      expect(message.createdAt, scenario.createdAt, reason: '$scenario');
+      expect(
+        message.metadata.milestone,
+        scenario.milestone,
+        reason: '$scenario',
+      );
+      expect(message.metadata.runKey, scenario.runKey, reason: '$scenario');
+      // An explicit thread joins the wake; otherwise the marker keys its own.
+      expect(
+        message.threadId,
+        scenario.threadId ?? message.id,
+        reason: '$scenario',
+      );
+    }, tags: 'glados');
+  });
+
+  group('AgentSyncService.upsertEntity — agent-state head preservation', () {
+    AgentStateEntity callerState({String? head, DateTime? lastWakeAt}) =>
+        makeTestState(agentId: 'agent-1').copyWith(
+          recentHeadMessageId: head,
+          lastWakeAt: lastWakeAt,
+        );
+
+    glados.Glados(
+      glados.any.headPreservationScenario,
+      glados.ExploreConfig(numRuns: 200),
+    ).test('a local write keeps the persisted head and the other caller '
+        'fields, for any head combination', (scenario) async {
+      // Fresh wiring per run so captures don't accumulate across iterations.
+      final repository = MockAgentRepository();
+      final upserted = <AgentDomainEntity>[];
+      when(() => repository.upsertEntity(any())).thenAnswer((invocation) async {
+        upserted.add(
+          invocation.positionalArguments.single as AgentDomainEntity,
+        );
+      });
+      when(() => repository.getAgentState('agent-1')).thenAnswer(
+        (_) async => scenario.persistedStateExists
+            ? makeTestState(
+                agentId: 'agent-1',
+              ).copyWith(recentHeadMessageId: scenario.persistedHead)
+            : null,
+      );
+      final outboxService = MockOutboxService();
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
+      final vectorClockService = MockVectorClockService();
+      when(
+        () => vectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer((_) async => testClock);
+      final service = AgentSyncService(
+        repository: repository,
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+      );
+
+      await service.upsertEntity(
+        callerState(head: scenario.callerHead, lastWakeAt: scenario.lastWakeAt),
+      );
+
+      final written = upserted.whereType<AgentStateEntity>().single;
+      // The append-owned head is never clobbered by the caller's stale value;
+      // a first-ever write (no persisted row) keeps the caller's value.
+      expect(
+        written.recentHeadMessageId,
+        scenario.expectedHead,
+        reason: '$scenario',
+      );
+      // The caller's genuine field updates are untouched.
+      expect(written.lastWakeAt, scenario.lastWakeAt, reason: '$scenario');
+    }, tags: 'glados');
+
+    test(
+      'a synced (fromSync) state write keeps its own head, unread',
+      () async {
+        // Sync-received state carries the resolver-merged head; it must not be
+        // overwritten with the local DB head, and the local head is never read.
+        await syncService.upsertEntity(
+          callerState(head: 'remote-head'),
+          fromSync: true,
+        );
+
+        final written = verify(
+          () => mockRepository.upsertEntity(captureAny()),
+        ).captured.whereType<AgentStateEntity>().single;
+        expect(written.recentHeadMessageId, 'remote-head');
+        verifyNever(() => mockRepository.getAgentState(any()));
+      },
+    );
+  });
+
+  group('AgentSyncService.reconciledAgentState', () {
+    test('returns null when the agent has no state row', () async {
+      when(
+        () => mockRepository.getAgentState('agent-x'),
+      ).thenAnswer((_) async => null);
+
+      expect(await syncService.reconciledAgentState('agent-x'), isNull);
+    });
+
+    test('returns the cache and does not persist when nothing diverged '
+        '(empty log preserves the cached watermark)', () async {
+      final cache = makeTestState(
+        agentId: 'agent-1',
+        lastWakeAt: DateTime(2024, 3, 5),
+      );
+      when(
+        () => mockRepository.getAgentState('agent-1'),
+      ).thenAnswer((_) async => cache);
+
+      final result = await syncService.reconciledAgentState('agent-1');
+
+      expect(result, cache);
+      // Migration-safe no-op: an empty log must not null the cached watermark,
+      // and an unchanged row must not be re-persisted (no outbox churn).
+      verifyNever(() => mockRepository.upsertEntity(any()));
+    });
+
+    test('heals and persists when the log has a newer watermark', () async {
+      final cache = makeTestState(
+        agentId: 'agent-1',
+        lastWakeAt: DateTime(2024, 3),
+      );
+      final marker = makeTestMessage(
+        id: 'w',
+        agentId: 'agent-1',
+        kind: AgentMessageKind.system,
+        createdAt: DateTime(2024, 3, 9),
+        metadata: const AgentMessageMetadata(
+          milestone: AgentMilestone.wakeCompleted,
+        ),
+      );
+      when(
+        () => mockRepository.getAgentState('agent-1'),
+      ).thenAnswer((_) async => cache);
+      when(
+        () => mockRepository.getMessagesByKind(
+          'agent-1',
+          AgentMessageKind.system,
+        ),
+      ).thenAnswer((_) async => [marker]);
+
+      final result = await syncService.reconciledAgentState('agent-1');
+
+      expect(result!.lastWakeAt, DateTime(2024, 3, 9));
+      // The healed row is persisted, propagating the correction to peers.
+      final upserted = verify(
+        () => mockRepository.upsertEntity(captureAny()),
+      ).captured.whereType<AgentStateEntity>().single;
+      expect(upserted.lastWakeAt, DateTime(2024, 3, 9));
     });
   });
 }

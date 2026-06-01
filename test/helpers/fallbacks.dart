@@ -217,6 +217,8 @@ void registerAllFallbackValues() {
   // Enum fallbacks
   registerFallbackValue(ChangeSource.user);
   registerFallbackValue(AiConfigType.inferenceProvider);
+  registerFallbackValue(AgentMilestone.wakeCompleted);
+  registerFallbackValue(AgentMessageKind.system);
 
   // Profile-automation result fallback (used by synced-audio-inference
   // dispatcher and skill-inference runner tests via `any()`).

@@ -273,6 +273,8 @@ void main() {
         currentState = entity;
       }
     });
+    stubAppendMilestone(syncService);
+    stubReconciledAgentState(syncService, repository);
   });
 
   group('DayAgentWorkflow', () {
@@ -399,6 +401,8 @@ void main() {
         expect(finalState.lastWakeAt, now);
         expect(finalState.consecutiveFailureCount, 0);
         expect(finalState.wakeCounter.value, 1);
+        // The completed wake event-sources lastWakeAt (PR 4, B2).
+        expect(capturedMilestones(syncService), [AgentMilestone.wakeCompleted]);
 
         final payloads = upsertedEntities
             .whereType<AgentMessagePayloadEntity>();
@@ -1583,7 +1587,6 @@ void main() {
       expect(result.error, contains('model failed'));
       final failureState = upsertedEntities.whereType<AgentStateEntity>().last;
       expect(failureState.consecutiveFailureCount, 3);
-      expect(failureState.revision, 2);
       expect(failureState.scheduledWakeAt, isNull);
       expect(conversationRepository.deletedConversationCount, 1);
       verify(

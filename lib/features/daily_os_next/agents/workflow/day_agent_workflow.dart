@@ -114,7 +114,8 @@ class DayAgentWorkflow {
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
-    final state = await agentRepository.getAgentState(agentId);
+    // The wake acts on the log-reconciled state (PR 4 B6).
+    final state = await syncService.reconciledAgentState(agentId);
     if (state == null) {
       return const WakeResult(success: false, error: 'No agent state found');
     }
@@ -299,13 +300,23 @@ class DayAgentWorkflow {
         final hostId = await syncService.localHost();
         await syncService.upsertEntity(
           latestState.copyWith(
-            revision: latestState.revision + 1,
             lastWakeAt: now,
             updatedAt: now,
             consecutiveFailureCount: 0,
             wakeCounter: latestState.wakeCounter.increment(hostId),
             scheduledWakeAt: _remainingScheduledWakeAt(latestState, now),
           ),
+        );
+
+        // Event-source the `lastWakeAt` watermark (PR 4, B2): the marker's
+        // createdAt is what the projection folds; the cached row above stays the
+        // read source until the cutover (B6).
+        await syncService.appendMilestone(
+          agentId: agentId,
+          milestone: AgentMilestone.wakeCompleted,
+          createdAt: now,
+          threadId: threadId,
+          runKey: runKey,
         );
       });
       onPersistedStateChanged
@@ -321,7 +332,6 @@ class DayAgentWorkflow {
             await agentRepository.getAgentState(agentId) ?? state;
         await syncService.upsertEntity(
           latestState.copyWith(
-            revision: latestState.revision + 1,
             updatedAt: now,
             consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
             scheduledWakeAt: _remainingScheduledWakeAt(latestState, now),
@@ -450,7 +460,6 @@ class DayAgentWorkflow {
 
         await syncService.upsertEntity(
           state.copyWith(
-            revision: state.revision + 1,
             scheduledWakeAt: scheduledAt,
             updatedAt: now,
             toolCounterByKey: _nextToolCounterByKey(

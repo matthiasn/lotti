@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 
 part 'agent_config.freezed.dart';
@@ -16,6 +17,17 @@ abstract class AgentConfig with _$AgentConfig {
 
     /// Inference profile ID — takes precedence over [modelId] when set.
     String? profileId,
+
+    /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
+    /// it is configuration set once at creation, not mutable derived state.
+    /// Null falls back to the default window. Reads accept the legacy
+    /// `AgentSlots.feedbackWindowDays` for agents created before the re-home.
+    int? feedbackWindowDays,
+
+    /// Improver recursion depth: 0 = task improver, 1 = meta-improver. Re-homed
+    /// from `AgentSlots` (config, not mutable state); legacy slot value is the
+    /// read fallback for pre-existing agents.
+    int? recursionDepth,
   }) = _AgentConfig;
 
   factory AgentConfig.fromJson(Map<String, dynamic> json) =>
@@ -98,6 +110,19 @@ abstract class AgentMessageMetadata with _$AgentMessageMetadata {
 
     /// Denial reason if policyDenied is true.
     String? denialReason,
+
+    /// Tags this message as recording the completion of a wake milestone.
+    ///
+    /// When set, the message's `createdAt` is the source of truth for the
+    /// corresponding derived watermark (e.g. `lastWakeAt`,
+    /// `slots.lastOneOnOneAt`). The State-as-Projection fold (PR 4) reads these
+    /// markers so watermarks converge across devices instead of being clobbered
+    /// by LWW. Null on every message today — emission is wired in B2.
+    ///
+    /// Forward-compatible: a milestone value an older client doesn't recognise
+    /// deserialises to `null` rather than throwing.
+    @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
+    AgentMilestone? milestone,
   }) = _AgentMessageMetadata;
 
   factory AgentMessageMetadata.fromJson(Map<String, dynamic> json) =>

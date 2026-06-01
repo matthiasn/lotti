@@ -186,9 +186,14 @@ void main() {
       final links = verify(
         () => syncService.upsertLink(captureAny()),
       ).captured.cast<AgentLink>();
-      final link = links.single as TemplateAssignmentLink;
-      expect(link.fromId, dayAgentTemplateId);
-      expect(link.toId, agentId);
+      expect(links, hasLength(2));
+      final templateLink = links.whereType<TemplateAssignmentLink>().single;
+      expect(templateLink.fromId, dayAgentTemplateId);
+      expect(templateLink.toId, agentId);
+      // Agent → day link so activeDayId is derivable from the synced log (B3).
+      final dayLink = links.whereType<AgentDayLink>().single;
+      expect(dayLink.fromId, agentId);
+      expect(dayLink.toId, dayId);
 
       verify(
         () => orchestrator.enqueueManualWake(

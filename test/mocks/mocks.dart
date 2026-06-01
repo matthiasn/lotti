@@ -573,6 +573,52 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
   Future<String> localHost() async => 'test-host';
 }
 
+/// Stubs [MockAgentSyncService.appendMilestone] to a no-op so workflow/service
+/// tests that don't assert on milestone emission don't trip over the unstubbed
+/// mock (the watermark markers from PR 4, B2 are fire-and-forget here). Calls
+/// are still recorded, so a test can `verify(() => mock.appendMilestone(...))`.
+/// Requires the `AgentMilestone` fallback from `registerAllFallbackValues()`.
+void stubAppendMilestone(MockAgentSyncService mock) {
+  when(
+    () => mock.appendMilestone(
+      agentId: any(named: 'agentId'),
+      milestone: any(named: 'milestone'),
+      createdAt: any(named: 'createdAt'),
+      threadId: any(named: 'threadId'),
+      runKey: any(named: 'runKey'),
+    ),
+  ).thenAnswer((_) async {});
+}
+
+/// Verifies [MockAgentSyncService.appendMilestone] was called and returns the
+/// captured `milestone` arguments, in call order — so a test can assert which
+/// watermark markers (PR 4, B2) a wake emitted (e.g. `contains(wakeCompleted)`).
+List<Object?> capturedMilestones(MockAgentSyncService mock) => verify(
+  () => mock.appendMilestone(
+    agentId: any(named: 'agentId'),
+    milestone: captureAny(named: 'milestone'),
+    createdAt: any(named: 'createdAt'),
+    threadId: any(named: 'threadId'),
+    runKey: any(named: 'runKey'),
+  ),
+).captured;
+
+/// Stubs [MockAgentSyncService.reconciledAgentState] (the wake-start read
+/// cutover, PR 4 B6) to delegate to the repository's raw `getAgentState`. In
+/// unit tests there is no divergence, so the reconcile is the identity — this
+/// lets workflow tests keep stubbing `getAgentState` while the wake reads the
+/// reconciled state. The real reconcile + persist + convergence is covered by
+/// the projection sim tests.
+void stubReconciledAgentState(
+  MockAgentSyncService sync,
+  MockAgentRepository repo,
+) {
+  when(() => sync.reconciledAgentState(any())).thenAnswer(
+    (invocation) =>
+        repo.getAgentState(invocation.positionalArguments.single as String),
+  );
+}
+
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 
 class MockBackfillResponseHandler extends Mock

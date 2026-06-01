@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
@@ -106,11 +107,21 @@ class ImproverAgentService {
         );
       }
 
-      // Create the agent identity.
+      final feedbackWindowDays = recursionDepth > 0
+          ? ImproverSlotDefaults.defaultMetaFeedbackWindowDays
+          : ImproverSlotDefaults.defaultFeedbackWindowDays;
+
+      // Create the agent identity. The ritual cadence and recursion depth are
+      // configuration, so they live on AgentConfig (PR 4 B4) — not on the
+      // mutable, projection-derived state slots.
       final identity = await agentService.createAgent(
         kind: AgentKinds.templateImprover,
         displayName: displayName ?? '${targetTemplate.displayName} Improver',
-        config: AgentConfig(modelId: improverTemplate.modelId),
+        config: AgentConfig(
+          modelId: improverTemplate.modelId,
+          feedbackWindowDays: feedbackWindowDays,
+          recursionDepth: recursionDepth,
+        ),
       );
 
       // Update state with improver-specific slots.
@@ -122,16 +133,11 @@ class ImproverAgentService {
       }
 
       final now = clock.now();
-      final feedbackWindowDays = recursionDepth > 0
-          ? ImproverSlotDefaults.defaultMetaFeedbackWindowDays
-          : ImproverSlotDefaults.defaultFeedbackWindowDays;
       final scheduledWakeAt = now.add(Duration(days: feedbackWindowDays));
 
       final updatedState = state.copyWith(
         slots: state.slots.copyWith(
           activeTemplateId: targetTemplateId,
-          feedbackWindowDays: feedbackWindowDays,
-          recursionDepth: recursionDepth,
           totalSessionsCompleted: const GCounter.empty(),
         ),
         scheduledWakeAt: scheduledWakeAt,
@@ -209,15 +215,18 @@ class ImproverAgentService {
 
   /// Schedule the next one-on-one wake for an improver agent.
   ///
-  /// Reads the `feedbackWindowDays` from the agent's slots and sets
-  /// `scheduledWakeAt` accordingly.
+  /// Reads `feedbackWindowDays` from the agent's [AgentConfig] (PR 4 B4),
+  /// falling back to the legacy `AgentSlots.feedbackWindowDays` for agents
+  /// created before the re-home, and sets `scheduledWakeAt` accordingly.
   Future<void> scheduleNextRitual(String agentId) async {
     final state = await repository.getAgentState(agentId);
     if (state == null) {
       throw StateError('Agent state not found for $agentId');
     }
 
-    final configuredWindowDays = state.slots.feedbackWindowDays;
+    final identity = await agentService.getAgent(agentId);
+    final configuredWindowDays =
+        identity?.config.feedbackWindowDays ?? state.slots.feedbackWindowDays;
     final feedbackWindowDays =
         configuredWindowDays != null && configuredWindowDays > 0
         ? configuredWindowDays
@@ -237,7 +246,20 @@ class ImproverAgentService {
       updatedAt: now,
     );
 
-    await syncService.upsertEntity(updatedState);
+    // The cached watermark and its event-sourced marker (PR 4, B2) must share
+    // one durability boundary: if only the cache row committed, a later
+    // reconciled read could regress `lastOneOnOneAt` or re-run the ritual on
+    // another device. The marker's createdAt is what the projection folds; the
+    // cached row stays the read source until the cutover (B6). No wake thread
+    // here — the marker gets its own.
+    await syncService.runInTransaction(() async {
+      await syncService.upsertEntity(updatedState);
+      await syncService.appendMilestone(
+        agentId: agentId,
+        milestone: AgentMilestone.oneOnOneCompleted,
+        createdAt: now,
+      );
+    });
     onPersistedStateChanged?.call(agentId);
 
     developer.log(

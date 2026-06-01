@@ -260,7 +260,17 @@ extension _AgentHandlers on SyncEventProcessor {
         return;
       }
 
-      final entityToApply = mergedState ?? resolvedEntity;
+      var entityToApply = mergedState ?? resolvedEntity;
+      // Scheduling is device-local (PR 4 B4): each device schedules its own
+      // wakes, so a remote AgentStateEntity must never overwrite this device's
+      // nextWakeAt / sleepUntil / scheduledWakeAt. Overlay the local values onto
+      // the row about to be persisted; everything else still syncs as usual.
+      if (entityToApply is AgentStateEntity) {
+        entityToApply = await _preserveLocalScheduling(
+          incoming: entityToApply,
+          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+        );
+      }
       await agentRepository!.upsertEntity(entityToApply);
       if (prefetchedAgentEntitiesById?.containsKey(entityToApply.id) ?? false) {
         prefetchedAgentEntitiesById![entityToApply.id] = entityToApply;
@@ -464,6 +474,28 @@ extension _AgentHandlers on SyncEventProcessor {
     // incoming) and we avoid a redundant write — and stay behaviour-compatible
     // with the non-counter concurrent resolution.
     return merged == winner ? null : merged;
+  }
+
+  /// Overlays this device's local scheduling fields onto an [incoming]
+  /// `AgentStateEntity` about to be applied from sync, so device-local
+  /// scheduling (`nextWakeAt` / `sleepUntil` / `scheduledWakeAt`) is never
+  /// clobbered by a peer's row (PR 4 B4). When there is no local state row yet
+  /// (a brand-new agent on this device) the incoming values are kept as the
+  /// bootstrap schedule; the device reschedules itself from there.
+  Future<AgentStateEntity> _preserveLocalScheduling({
+    required AgentStateEntity incoming,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
+  }) async {
+    final local =
+        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false)
+        ? prefetchedAgentEntitiesById![incoming.id]
+        : await agentRepository!.getEntity(incoming.id);
+    if (local is! AgentStateEntity) return incoming;
+    return incoming.copyWith(
+      nextWakeAt: local.nextWakeAt,
+      sleepUntil: local.sleepUntil,
+      scheduledWakeAt: local.scheduledWakeAt,
+    );
   }
 
   Future<bool> _localAgentLinkDominates({

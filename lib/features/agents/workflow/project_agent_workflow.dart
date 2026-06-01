@@ -107,8 +107,8 @@ class ProjectAgentWorkflow {
       subDomain: 'execute',
     );
 
-    // 1. Load current state.
-    final loadedState = await agentRepository.getAgentState(agentId);
+    // 1. Load current state, reconciled against the log (PR 4 B6).
+    final loadedState = await syncService.reconciledAgentState(agentId);
     if (loadedState == null) {
       _log('no agent state found — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No agent state found');
@@ -488,7 +488,6 @@ class ProjectAgentWorkflow {
         final hostId = await syncService.localHost();
         await syncService.upsertEntity(
           latestState.copyWith(
-            revision: latestState.revision + 1,
             slots: nextSlots.copyWith(
               pendingProjectActivityAt: nextPendingActivityAt,
             ),
@@ -499,6 +498,27 @@ class ProjectAgentWorkflow {
             wakeCounter: latestState.wakeCounter.increment(hostId),
           ),
         );
+
+        // Event-source the watermarks updated above (PR 4, B2): the markers'
+        // createdAt is what the projection folds. `lastWakeAt` updates on every
+        // wake; `lastDailyWakeAt` only when the scheduled daily wake was due.
+        // The cached row stays the read source until the cutover (B6).
+        await syncService.appendMilestone(
+          agentId: agentId,
+          milestone: AgentMilestone.wakeCompleted,
+          createdAt: now,
+          threadId: threadId,
+          runKey: runKey,
+        );
+        if (scheduledWakeWasDue) {
+          await syncService.appendMilestone(
+            agentId: agentId,
+            milestone: AgentMilestone.dailyWakeCompleted,
+            createdAt: now,
+            threadId: threadId,
+            runKey: runKey,
+          );
+        }
       });
       onPersistedStateChanged?.call(agentId);
 
@@ -515,7 +535,6 @@ class ProjectAgentWorkflow {
       try {
         await syncService.upsertEntity(
           state.copyWith(
-            revision: state.revision + 1,
             updatedAt: now,
             consecutiveFailureCount: state.consecutiveFailureCount + 1,
           ),
@@ -544,7 +563,6 @@ class ProjectAgentWorkflow {
     await syncService.runInTransaction(() async {
       await syncService.upsertEntity(
         state.copyWith(
-          revision: state.revision + 1,
           lastWakeAt: now,
           scheduledWakeAt: nextLocalDayAtTime(
             now,
@@ -554,6 +572,15 @@ class ProjectAgentWorkflow {
           consecutiveFailureCount: 0,
           wakeCounter: state.wakeCounter.increment(hostId),
         ),
+      );
+
+      // The dormant skip still advances `lastWakeAt`, so it event-sources the
+      // same marker as a full wake (PR 4, B2). No wake thread here — the marker
+      // gets its own thread.
+      await syncService.appendMilestone(
+        agentId: state.agentId,
+        milestone: AgentMilestone.wakeCompleted,
+        createdAt: now,
       );
     });
     onPersistedStateChanged?.call(state.agentId);

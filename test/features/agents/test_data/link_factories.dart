@@ -42,3 +42,107 @@ model.AgentLink makeTestBasicLink({
     vectorClock: vectorClock,
   );
 }
+
+// ── Active-slot link factories (agent → target) ──────────────────────────────
+// These back `slots.active{Task,Project,Day,Template}Id` in the projection fold.
+
+model.AgentLink makeTestAgentTaskLink({
+  String id = 'link-task-001',
+  String fromId = kTestAgentId,
+  String toId = 'task-001',
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  return model.AgentLink.agentTask(
+    id: id,
+    fromId: fromId,
+    toId: toId,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    deletedAt: deletedAt,
+  );
+}
+
+model.AgentLink makeTestAgentProjectLink({
+  String id = 'link-project-001',
+  String fromId = kTestAgentId,
+  String toId = 'project-001',
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  return model.AgentLink.agentProject(
+    id: id,
+    fromId: fromId,
+    toId: toId,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    deletedAt: deletedAt,
+  );
+}
+
+model.AgentLink makeTestAgentDayLink({
+  String id = 'link-day-001',
+  String fromId = kTestAgentId,
+  String toId = 'day-2024-03-15',
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  return model.AgentLink.agentDay(
+    id: id,
+    fromId: fromId,
+    toId: toId,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    deletedAt: deletedAt,
+  );
+}
+
+model.AgentLink makeTestImproverTargetLink({
+  String id = 'link-improver-001',
+  String fromId = kTestAgentId,
+  String toId = kTestTemplateId,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  return model.AgentLink.improverTarget(
+    id: id,
+    fromId: fromId,
+    toId: toId,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    deletedAt: deletedAt,
+  );
+}
+
+/// A `messagePrev` causal edge: child [fromId] → parent [toId].
+model.AgentLink makeTestMessagePrevLink({
+  required String fromId,
+  required String toId,
+  String? id,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  return model.AgentLink.messagePrev(
+    id: id ?? 'msgprev-$fromId',
+    fromId: fromId,
+    toId: toId,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    deletedAt: deletedAt,
+  );
+}

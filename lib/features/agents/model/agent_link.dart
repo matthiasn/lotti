@@ -132,6 +132,19 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = AgentProjectLink;
 
+  /// Links a day agent to the day it plans.
+  /// [fromId] = agent ID, [toId] = day ID. Lets `slots.activeDayId` be derived
+  /// from the synced log like the other active-slot links (State-as-Projection).
+  const factory AgentLink.agentDay({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AgentDayLink;
+
   /// Links a template to its assigned soul document.
   /// [fromId] = template ID, [toId] = soul document ID.
   const factory AgentLink.soulAssignment({
@@ -199,6 +212,7 @@ extension AgentLinkSoftDelete on AgentLink {
     templateAssignment: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     improverTarget: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentProject: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    agentDay: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     soulAssignment: (l) => l.copyWith(deletedAt: at, updatedAt: at),
   );
 }

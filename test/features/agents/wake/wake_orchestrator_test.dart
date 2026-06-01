@@ -5121,7 +5121,6 @@ void main() {
                     AgentDomainEntity.agentState(
                           id: 'state-1',
                           agentId: 'agent-1',
-                          revision: 0,
                           slots: const AgentSlots(),
                           updatedAt: now,
                           vectorClock: null,
@@ -5178,7 +5177,6 @@ void main() {
                     AgentDomainEntity.agentState(
                           id: 'state-1',
                           agentId: 'agent-1',
-                          revision: 0,
                           slots: const AgentSlots(),
                           updatedAt: now,
                           vectorClock: null,
@@ -5231,7 +5229,6 @@ void main() {
                     AgentDomainEntity.agentState(
                           id: 'state-1',
                           agentId: 'agent-1',
-                          revision: 0,
                           slots: const AgentSlots(),
                           updatedAt: now,
                           vectorClock: null,
@@ -5285,7 +5282,6 @@ void main() {
                     AgentDomainEntity.agentState(
                           id: 'state-1',
                           agentId: 'agent-1',
-                          revision: 0,
                           slots: const AgentSlots(),
                           updatedAt: now,
                           vectorClock: null,
@@ -5335,7 +5331,6 @@ void main() {
                     AgentDomainEntity.agentState(
                           id: 'state-1',
                           agentId: 'agent-1',
-                          revision: 0,
                           slots: const AgentSlots(),
                           updatedAt: now,
                           vectorClock: null,
@@ -5408,7 +5403,6 @@ void main() {
                     AgentDomainEntity.agentState(
                           id: 'state-1',
                           agentId: 'agent-1',
-                          revision: 0,
                           slots: const AgentSlots(),
                           updatedAt: now,
                           vectorClock: null,
