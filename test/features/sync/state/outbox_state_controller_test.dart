@@ -625,6 +625,131 @@ void main() {
       },
     );
   });
+
+  // Deterministic coverage for the buffer/replay/error branches of
+  // `inboundQueueDepthStream`. The real in-memory `InboundQueue.stats()`
+  // resolves too fast to reliably land a `depthChanges` signal inside the
+  // generator's `stats()` await, so these tests drive a `MockInboundQueue`
+  // with a manually-controlled `stats()` completer and a hand-fed
+  // `depthChanges` controller. That lets us force the exact interleaving
+  // where a live signal arrives BEFORE the consumer subscribes to the
+  // internal relay (`relay.hasListener == false`) so the value is captured
+  // in the `buffered` list and replayed once `stats()` resolves.
+  group('inboundQueueDepthStream — buffered/error branches (mocked queue)', () {
+    late MockInboundQueue queue;
+    late StreamController<QueueDepthSignal> depthCtl;
+    late Completer<QueueStats> statsCompleter;
+
+    QueueDepthSignal signal(int total) => QueueDepthSignal(
+      total: total,
+      byProducer: const <InboundEventProducer, int>{},
+      oldestEnqueuedAt: null,
+    );
+
+    QueueStats stats(int total) => QueueStats(
+      total: total,
+      byProducer: const <InboundEventProducer, int>{},
+      readyNow: 0,
+      oldestEnqueuedAt: null,
+    );
+
+    setUpAll(() {
+      registerFallbackValue(StackTrace.empty);
+    });
+
+    setUp(() {
+      queue = MockInboundQueue();
+      depthCtl = StreamController<QueueDepthSignal>.broadcast();
+      statsCompleter = Completer<QueueStats>();
+      when(() => queue.depthChanges).thenAnswer((_) => depthCtl.stream);
+      when(queue.stats).thenAnswer((_) => statsCompleter.future);
+    });
+
+    tearDown(() async {
+      if (!depthCtl.isClosed) await depthCtl.close();
+    });
+
+    test(
+      'a live signal that lands while stats() is still awaiting is buffered '
+      'and replayed in arrival order, skipping the stale snapshot — covers '
+      'buffered.add, the replay loop, and buffered.clear',
+      () async {
+        final received = <int>[];
+        final firstTwo = Completer<void>();
+        final sub = inboundQueueDepthStream(queue).listen((value) {
+          received.add(value);
+          if (received.length == 2 && !firstTwo.isCompleted) {
+            firstTwo.complete();
+          }
+        });
+        addTearDown(sub.cancel);
+
+        // Let the generator subscribe to depthChanges and park on the
+        // (still-pending) stats() future. At this point the consumer has
+        // not yet reached `yield* relay.stream`, so `relay.hasListener`
+        // is false and any depth signal is captured into `buffered`.
+        await Future<void>.value();
+        await Future<void>.value();
+
+        // Two live signals arrive DURING the stats() await -> buffered.add
+        // is hit twice (covers line 131).
+        depthCtl
+          ..add(signal(7))
+          ..add(signal(3));
+        await Future<void>.value();
+        await Future<void>.value();
+
+        // Now resolve the snapshot. Because `buffered` is non-empty the
+        // generator takes the else branch: it replays the buffered values
+        // in arrival order (the for-loop) and then clears the buffer
+        // (covers lines 154 + 157) instead of yielding the stale snapshot.
+        statsCompleter.complete(stats(99));
+
+        await firstTwo.future.timeout(const Duration(seconds: 2));
+
+        // The stale snapshot (99) must never appear: the buffered live
+        // sequence [7, 3] is emitted in arrival order instead.
+        expect(received, [7, 3]);
+        expect(received, isNot(contains(99)));
+      },
+    );
+
+    test(
+      'after the snapshot is yielded and the consumer is forwarding the '
+      'relay, a depthChanges error is forwarded through relay.addError — '
+      'covers the onError branch',
+      () async {
+        final received = <int>[];
+        Object? receivedError;
+        final errored = Completer<void>();
+        final sub = inboundQueueDepthStream(queue).listen(
+          received.add,
+          onError: (Object e, StackTrace s) {
+            receivedError ??= e;
+            if (!errored.isCompleted) errored.complete();
+          },
+        );
+        addTearDown(sub.cancel);
+
+        // Resolve stats() with an empty snapshot. With no buffered values
+        // the generator yields the snapshot (0) and then enters
+        // `yield* relay.stream`, so the relay now HAS a listener.
+        statsCompleter.complete(stats(0));
+        await Future<void>.value();
+        await Future<void>.value();
+        expect(received, [0]);
+
+        // An error on depthChanges while the relay has a listener is
+        // forwarded through relay.addError (covers lines 134-135). The
+        // consumer surfaces it as a stream error.
+        final boom = Exception('depth stream failed');
+        depthCtl.addError(boom);
+
+        await errored.future.timeout(const Duration(seconds: 2));
+        expect(receivedError, same(boom));
+      },
+    );
+  });
 }
 
 class _MockQueueCoordinator extends Mock implements QueuePipelineCoordinator {}

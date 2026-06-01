@@ -161,6 +161,94 @@ void main() {
       );
 
       test(
+        'returns null when the bundle jsonPath itself escapes the documents '
+        'sandbox — resolveJsonCandidateFile throws FileSystemException for '
+        'the bundle path and the resolver logs invalidPath then bails before '
+        'any descriptor fetch or disk read',
+        () async {
+          // A multi-level traversal escapes the documents dir; a single
+          // `/..` would collapse back to `/` under path.normalize.
+          const escapingBundlePath = '../../escape-bundle.json';
+
+          final resolved = await processor
+              .resolveOutboxBundleManifestForTesting(escapingBundlePath);
+
+          expect(resolved, isNull);
+          verify(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(that: isA<FileSystemException>()),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'processor.resolve.outboxBundle.invalidPath',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'rethrows the FileSystemException from the disk-fallback read when '
+        'no descriptor is registered and the manifest file does not exist — '
+        'a missing-file read must propagate so the unpacker schedules a '
+        'whole-bundle retry instead of acking a never-delivered bundle',
+        () async {
+          // The bundle path is valid (inside the sandbox) but no file was
+          // ever written there, so targetFile.readAsString() throws
+          // FileSystemException, which the resolver rethrows untouched.
+          const bundleRelativePath = '/outbox_bundles/never-written.json';
+
+          await expectLater(
+            processor.resolveOutboxBundleManifestForTesting(bundleRelativePath),
+            throwsA(isA<FileSystemException>()),
+          );
+
+          // The rethrow path does NOT log via loggingService.error — it is a
+          // retriable IO condition surfaced to the caller, not a terminal
+          // diagnostic.
+          verifyNever(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: any<String?>(named: 'subDomain'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'returns null and logs on the parse subDomain when the manifest file '
+        'on disk holds invalid JSON — a corrupt manifest must not crash the '
+        'resolver; it is dropped so the surrounding retry mechanics can '
+        're-deliver a clean copy',
+        () async {
+          const bundleRelativePath = '/outbox_bundles/corrupt.json';
+          File(
+              path.join(
+                tempDir.path,
+                stripLeadingSlashes(bundleRelativePath),
+              ),
+            )
+            ..parent.createSync(recursive: true)
+            // Not valid JSON — json.decode throws FormatException, which the
+            // resolver catches (it is not a FileSystemException) and logs.
+            ..writeAsStringSync('{ this is : not json, ');
+
+          final resolved = await processor
+              .resolveOutboxBundleManifestForTesting(bundleRelativePath);
+
+          expect(resolved, isNull);
+          verify(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(that: isA<FormatException>()),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'processor.resolve.outboxBundle.parse',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'returns null when the manifest version does not match — receivers '
         'reject unknown wire shapes and let the surrounding retry mechanics '
         're-deliver the bundle under a forward-compatible code path instead '

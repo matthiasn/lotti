@@ -130,6 +130,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeEntryText());
   registerFallbackValue(FakeTaskData());
   registerFallbackValue(FakeJournalAudio());
+  registerFallbackValue(FakePlayable());
   registerFallbackValue(FakeMeasurementData());
   registerFallbackValue(FakeHabitCompletionData());
   registerFallbackValue(FakeAiConfigPrompt());

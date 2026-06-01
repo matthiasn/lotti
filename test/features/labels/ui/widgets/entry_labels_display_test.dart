@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -110,6 +111,7 @@ void main() {
     bool showEditButton = false,
     bool showHeader = false,
     double bottomPadding = 0,
+    List<Override> extraOverrides = const [],
   }) {
     return ProviderScope(
       overrides: [
@@ -119,6 +121,7 @@ void main() {
         labelsStreamProvider.overrideWith(
           (ref) => Stream<List<LabelDefinition>>.value([labelA, labelB]),
         ),
+        ...extraOverrides,
       ],
       child: makeTestableWidgetWithScaffold(
         EntryLabelsDisplay(
@@ -359,6 +362,69 @@ void main() {
       // Edit button should still be shown so users can add labels
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
     });
+
+    testWidgets('tapping edit button opens the label selection modal', (
+      tester,
+    ) async {
+      final entry = textEntryWithLabels(['label-a'], categoryId: 'cat-1');
+
+      await tester.pumpWidget(
+        buildWrapper(
+          entry,
+          showHeader: true,
+          showEditButton: true,
+          extraOverrides: [
+            availableLabelsForCategoryProvider('cat-1').overrideWithValue(
+              [labelA, labelB],
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Modal is not present before tapping.
+      expect(find.text('Search labels…'), findsNothing);
+
+      // Tap the edit button -> _openSelector -> openLabelSelector.
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+
+      // The label selection modal is now open: its search bar and the
+      // Cancel/Apply sticky action bar from openLabelSelector are visible.
+      expect(find.text('Search labels…'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Apply'), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping edit button opens selector when entry has no category',
+      (tester) async {
+        // Exercises the null categoryId argument path of _openSelector.
+        final entry = textEntryWithLabels(const []);
+
+        await tester.pumpWidget(
+          buildWrapper(
+            entry,
+            showHeader: true,
+            showEditButton: true,
+            extraOverrides: [
+              availableLabelsForCategoryProvider(null).overrideWithValue(
+                [labelA, labelB],
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.edit_outlined));
+        await tester.pumpAndSettle();
+
+        // Modal opened with the available labels rendered as selectable chips.
+        expect(find.text('Search labels…'), findsOneWidget);
+        expect(find.text('Apply'), findsOneWidget);
+        expect(find.text('Alpha'), findsWidgets);
+      },
+    );
   });
 
   group('EntryLabelsDisplay with header empty state', () {

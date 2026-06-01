@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart'
     show Any, CombinableAny, ExploreConfig, Generator, Glados, IntAnys, any;
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
@@ -264,6 +266,92 @@ String _priorityFilterId(TaskPriority priority) {
   };
 }
 
+/// Builds a minimal [TaskRecord] with directly controllable comparator inputs.
+///
+/// Used by the deterministic sorting/status tests below to force specific
+/// branches in `TaskListDetailState._computeVisibleTasks` and `_statusFilterId`
+/// that the showcase mock data does not exercise.
+TaskRecord _record({
+  required String id,
+  required String title,
+  required DateTime sectionDate,
+  required DateTime createdAt,
+  required TaskStatus status,
+  DateTime? due,
+  TaskPriority priority = TaskPriority.p2Medium,
+}) {
+  final task =
+      JournalEntity.task(
+            meta: Metadata(
+              id: id,
+              createdAt: createdAt,
+              updatedAt: createdAt,
+              dateFrom: createdAt,
+              dateTo: createdAt,
+              categoryId: 'work',
+            ),
+            data: TaskData(
+              status: status,
+              statusHistory: const [],
+              title: title,
+              dateFrom: createdAt,
+              dateTo: createdAt,
+              due: due,
+              priority: priority,
+            ),
+          )
+          as Task;
+
+  return TaskRecord(
+    task: task,
+    category:
+        EntityDefinition.categoryDefinition(
+              id: 'work',
+              createdAt: createdAt,
+              updatedAt: createdAt,
+              name: 'Work',
+              vectorClock: null,
+              private: false,
+              active: true,
+            )
+            as CategoryDefinition,
+    sectionTitle: 'Section ${sectionDate.toIso8601String()}',
+    sectionDate: sectionDate,
+    projectTitle: 'Project',
+    timeRange: '',
+    labels: const [],
+    aiSummary: '',
+    description: '',
+    trackedDurationLabel: '',
+    trackerEntries: const [],
+    checklistItems: const [],
+    audioEntries: const [],
+  );
+}
+
+TaskStatus _open(DateTime createdAt) =>
+    TaskStatus.open(id: 'open-$createdAt', createdAt: createdAt, utcOffset: 0);
+
+TaskListData _dataWith(List<TaskRecord> tasks) => TaskListData(
+  categories: const [],
+  tasks: tasks,
+  currentTime: DateTime(2026, 4),
+);
+
+TaskListDetailState _stateWith(
+  List<TaskRecord> tasks, {
+  required String sortId,
+}) {
+  return TaskListDetailState(
+    data: _dataWith(tasks),
+    searchQuery: '',
+    selectedTaskId: '',
+    filterState: buildTaskShowcaseFilterState().copyWith(
+      selectedSortId: sortId,
+    ),
+  );
+}
+
 void main() {
   group('TaskListDetailState', () {
     test('selects the matching task when visible', () {
@@ -345,6 +433,172 @@ void main() {
         ['payment-confirmation'],
       );
     });
+
+    test(
+      'createdDateSort orders same-section tasks by createdAt descending',
+      () {
+        // Two records in the same section (same sectionDate) with distinct
+        // createdAt. This forces the createdDateSort branch and its
+        // `createdCompare != 0` guard to decide the order (newest first).
+        final older = _record(
+          id: 'older',
+          title:
+              'Zeta', // alphabetically last, to prove title is not the tie-breaker
+          sectionDate: DateTime(2026, 4),
+          createdAt: DateTime(2026, 4, 1, 8),
+          status: _open(DateTime(2026, 4, 1, 8)),
+        );
+        final newer = _record(
+          id: 'newer',
+          title: 'Alpha',
+          sectionDate: DateTime(2026, 4),
+          createdAt: DateTime(2026, 4, 1, 12),
+          status: _open(DateTime(2026, 4, 1, 12)),
+        );
+
+        final state = _stateWith(
+          [older, newer],
+          sortId: TaskSortIds.createdDateSort,
+        );
+
+        expect(
+          state.visibleTasks.map((record) => record.task.meta.id),
+          ['newer', 'older'],
+        );
+      },
+    );
+
+    test(
+      'createdDateSort falls through to title when createdAt is equal',
+      () {
+        // Same section, identical createdAt -> createdCompare == 0, so the
+        // comparator must fall through to the title tie-breaker.
+        final createdAt = DateTime(2026, 4, 1, 9);
+        final bravo = _record(
+          id: 'bravo',
+          title: 'Bravo',
+          sectionDate: DateTime(2026, 4),
+          createdAt: createdAt,
+          status: _open(createdAt),
+        );
+        final alpha = _record(
+          id: 'alpha',
+          title: 'Alpha',
+          sectionDate: DateTime(2026, 4),
+          createdAt: createdAt,
+          status: _open(createdAt),
+        );
+
+        final state = _stateWith(
+          [bravo, alpha],
+          sortId: TaskSortIds.createdDateSort,
+        );
+
+        expect(
+          state.visibleTasks.map((record) => record.task.meta.id),
+          ['alpha', 'bravo'],
+        );
+      },
+    );
+
+    test('dueDateSort places a null due after a non-null due', () {
+      // Same section, exactly one record has a null due. The due-date sort
+      // branch must order the record with a due before the one without.
+      final withDue = _record(
+        id: 'with-due',
+        title: 'Zeta', // last alphabetically, to prove due drives the order
+        sectionDate: DateTime(2026, 4),
+        createdAt: DateTime(2026, 4, 1, 8),
+        status: _open(DateTime(2026, 4, 1, 8)),
+        due: DateTime(2026, 4, 5),
+      );
+      final withoutDue = _record(
+        id: 'without-due',
+        title: 'Alpha',
+        sectionDate: DateTime(2026, 4),
+        createdAt: DateTime(2026, 4, 1, 9),
+        status: _open(DateTime(2026, 4, 1, 9)),
+      );
+
+      final state = _stateWith(
+        [withoutDue, withDue],
+        sortId: TaskSortIds.dueDateSort,
+      );
+
+      expect(
+        state.visibleTasks.map((record) => record.task.meta.id),
+        ['with-due', 'without-due'],
+      );
+    });
+
+    test(
+      'status filter matches done and rejected tasks via _statusFilterId',
+      () {
+        // Exercises the TaskDone and TaskRejected arms of _statusFilterId,
+        // which the showcase mock data never produces.
+        final done = _record(
+          id: 'done-task',
+          title: 'Done',
+          sectionDate: DateTime(2026, 4),
+          createdAt: DateTime(2026, 4, 1, 8),
+          status: TaskStatus.done(
+            id: 'done-status',
+            createdAt: DateTime(2026, 4, 1, 8),
+            utcOffset: 0,
+          ),
+        );
+        final rejected = _record(
+          id: 'rejected-task',
+          title: 'Rejected',
+          sectionDate: DateTime(2026, 4),
+          createdAt: DateTime(2026, 4, 1, 9),
+          status: TaskStatus.rejected(
+            id: 'rejected-status',
+            createdAt: DateTime(2026, 4, 1, 9),
+            utcOffset: 0,
+          ),
+        );
+        final open = _record(
+          id: 'open-task',
+          title: 'Open',
+          sectionDate: DateTime(2026, 4),
+          createdAt: DateTime(2026, 4, 1, 10),
+          status: _open(DateTime(2026, 4, 1, 10)),
+        );
+
+        final tasks = [done, rejected, open];
+
+        final doneOnly = TaskListDetailState(
+          data: _dataWith(tasks),
+          searchQuery: '',
+          selectedTaskId: '',
+          filterState: buildTaskShowcaseFilterState().copyWith(
+            statusField: buildTaskShowcaseFilterState().statusField?.copyWith(
+              selectedIds: const {TaskStatusFilterIds.done},
+            ),
+          ),
+        );
+        expect(
+          doneOnly.visibleTasks.map((record) => record.task.meta.id),
+          ['done-task'],
+        );
+
+        final rejectedOnly = TaskListDetailState(
+          data: _dataWith(tasks),
+          searchQuery: '',
+          selectedTaskId: '',
+          filterState: buildTaskShowcaseFilterState().copyWith(
+            statusField: buildTaskShowcaseFilterState().statusField?.copyWith(
+              selectedIds: const {TaskStatusFilterIds.rejected},
+            ),
+          ),
+        );
+        expect(
+          rejectedOnly.visibleTasks.map((record) => record.task.meta.id),
+          ['rejected-task'],
+        );
+      },
+    );
 
     Glados(any.taskListScenario, ExploreConfig(numRuns: 180)).test(
       'matches the generated task filtering and sorting model',

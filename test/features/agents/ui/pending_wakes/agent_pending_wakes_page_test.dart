@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -306,6 +308,50 @@ void main() {
     },
   );
 
+  testWidgets(
+    'shows an in-flight spinner while a scheduled delete is pending',
+    (tester) async {
+      // Hold the clear() future open so `_isDeleting` stays true and the
+      // CircularProgressIndicator branch (not the IconButton) renders.
+      final gate = Completer<void>();
+      final mockService = MockAgentService();
+      when(
+        () => mockService.clearScheduledWake('agent-busy'),
+      ).thenAnswer((_) => gate.future);
+
+      final now = DateTime(2026, 3, 31, 9);
+      await withClock(Clock(() => now), () async {
+        await pumpPage(
+          tester,
+          records: [
+            _record(
+              agentId: 'agent-busy',
+              displayName: 'Busy',
+              type: PendingWakeType.scheduled,
+              dueAt: now.add(const Duration(minutes: 5)),
+            ),
+          ],
+          agentService: mockService,
+        );
+
+        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.pump();
+
+        // While the future is unresolved the delete icon is replaced by a
+        // spinner.
+        expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Resolving the future restores the delete affordance.
+        gate.complete();
+        await tester.pump();
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+        verify(() => mockService.clearScheduledWake('agent-busy')).called(1);
+      });
+    },
+  );
+
   testWidgets('tapping a row beams to the agent instance detail route', (
     tester,
   ) async {
@@ -480,6 +526,81 @@ void main() {
         alphaY = tester.getTopLeft(find.text('Alpha')).dy;
         bravoY = tester.getTopLeft(find.text('Bravo')).dy;
         expect(alphaY, lessThan(bravoY));
+      });
+    },
+  );
+
+  testWidgets(
+    'Name sort breaks ties by id when two rows share the same title',
+    (tester) async {
+      String? navigated;
+      beamToNamedOverride = (path) => navigated = path;
+
+      final now = DateTime(2026, 3, 31, 9);
+      await withClock(Clock(() => now), () async {
+        await pumpPage(
+          tester,
+          records: [
+            // Identical display name so Name sort's `byName` is 0 and
+            // ordering falls through to the id tiebreaker (a-id < b-id).
+            // The dueAt values are deliberately the *inverse* of the id
+            // order: b-id is due sooner than a-id. Under the default
+            // Due-Soonest sort that puts b-id on top, so asserting a-id is
+            // on top only holds once we've actually switched to Name sort —
+            // distinguishing Name sort from the default.
+            _record(
+              agentId: 'b-id',
+              displayName: 'Twin',
+              type: PendingWakeType.pending,
+              dueAt: now.add(const Duration(minutes: 1)),
+            ),
+            _record(
+              agentId: 'a-id',
+              displayName: 'Twin',
+              type: PendingWakeType.pending,
+              dueAt: now.add(const Duration(minutes: 5)),
+            ),
+          ],
+        );
+
+        final ctx = tester.element(find.byType(AgentPendingWakesPage));
+        // Default (Due Soonest) sort: b-id is due sooner, so it sits on top
+        // and tapping the top "Twin" beams to b-id. Asserting this before
+        // touching the sort control proves the default order genuinely
+        // differs from Name sort, so the post-switch assertion below can't
+        // pass without the switch actually reordering the rows.
+        await tester.tap(find.text('Twin').first);
+        await tester.pumpAndSettle();
+        expect(navigated, '/settings/agents/instances/b-id');
+        navigated = null;
+
+        // Switch to Name sort: open the sort menu (button label) and pick
+        // "Name" (the menu item — `.last`, since the button label also
+        // matches). Identical titles tie, so the id tiebreaker (a-id < b-id)
+        // wins and a-id rises to the top — flipping the order.
+        await tester.tap(
+          find.text(ctx.messages.agentPendingWakesSortDueSoonest).first,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(ctx.messages.agentInstancesSortName).last);
+        await tester.pumpAndSettle();
+        tester.takeException();
+
+        // Both rows render identical "Twin" titles, so identify ordering by
+        // tapping the topmost row and asserting it beams to a-id's route —
+        // proving the id tiebreaker (not insertion order) placed a-id first.
+        final titles = find.text('Twin');
+        expect(titles, findsNWidgets(2));
+        final topTitle = titles.first;
+        final bottomTitle = titles.last;
+        expect(
+          tester.getTopLeft(topTitle).dy,
+          lessThan(tester.getTopLeft(bottomTitle).dy),
+        );
+
+        await tester.tap(topTitle);
+        await tester.pumpAndSettle();
+        expect(navigated, '/settings/agents/instances/a-id');
       });
     },
   );

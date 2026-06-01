@@ -113,6 +113,49 @@ void main() {
         expect(result, contains('User:'));
         expect(result, contains('Hello'));
       });
+
+      test(
+        'renders multi-part user content by stringifying and joining parts',
+        () {
+          // Arrange: a user message whose content is an array of content
+          // parts (not a plain string). This exercises the `parts` branch of
+          // the user-text extraction, which maps each part to its string and
+          // joins them with a space.
+          final messages = [
+            const ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.parts([
+                ChatCompletionMessageContentPart.text(text: 'first part'),
+                ChatCompletionMessageContentPart.text(text: 'second part'),
+              ]),
+            ),
+          ];
+
+          // Act
+          final result = processor.buildPromptFromMessages(
+            messages,
+            'follow-up',
+          );
+
+          // Assert: the prompt line for the multi-part user message must
+          // contain both parts' text, joined into a single `User:` line.
+          final lines = result.split('\n\n');
+          final partsLine = lines.firstWhere(
+            (l) => l.contains('first part'),
+            orElse: () => '',
+          );
+          expect(partsLine, startsWith('User: '));
+          expect(partsLine, contains('first part'));
+          expect(partsLine, contains('second part'));
+          // The two parts are joined with a single space, so "first part"
+          // and "second part" appear within the same single line.
+          expect(
+            partsLine.indexOf('second part'),
+            greaterThan(partsLine.indexOf('first part')),
+          );
+          // The trailing current message is still appended as its own line.
+          expect(result, contains('User: follow-up'));
+        },
+      );
     });
 
     group('processTaskSummaryTool', () {

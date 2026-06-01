@@ -224,6 +224,22 @@ void main() {
       expect(cluster1, isNot(equals(cluster3)));
     });
 
+    test('equality differentiates on endHour when startHour matches', () {
+      // Same startHour but different endHour: the == operator must evaluate
+      // the endHour comparison term rather than short-circuiting on startHour.
+      const cluster1 = VisibleCluster(startHour: 9, endHour: 12);
+      const sameStartDifferentEnd = VisibleCluster(startHour: 9, endHour: 15);
+
+      expect(cluster1 == sameStartDifferentEnd, isFalse);
+      expect(cluster1, isNot(equals(sameStartDifferentEnd)));
+    });
+
+    test('equality returns false for a non-VisibleCluster object', () {
+      const cluster = VisibleCluster(startHour: 9, endHour: 12);
+      const Object other = CompressedRegion(startHour: 9, endHour: 12);
+      expect(cluster == other, isFalse);
+    });
+
     test('hashCode is consistent with equality', () {
       const cluster1 = VisibleCluster(startHour: 9, endHour: 12);
       const cluster2 = VisibleCluster(startHour: 9, endHour: 12);
@@ -262,6 +278,43 @@ void main() {
     test('toString returns readable representation', () {
       const region = CompressedRegion(startHour: 3, endHour: 9);
       expect(region.toString(), 'CompressedRegion(3-9)');
+    });
+  });
+
+  group('TimelineFoldingState', () {
+    test(
+      'toString returns readable representation of clusters and regions',
+      () {
+        const state = TimelineFoldingState(
+          visibleClusters: [
+            VisibleCluster(startHour: 8, endHour: 12),
+            VisibleCluster(startHour: 14, endHour: 18),
+          ],
+          compressedRegions: [
+            CompressedRegion(startHour: 0, endHour: 8),
+            CompressedRegion(startHour: 12, endHour: 14),
+          ],
+        );
+
+        expect(
+          state.toString(),
+          'TimelineFoldingState('
+          'visible: [VisibleCluster(8-12), VisibleCluster(14-18)], '
+          'compressed: [CompressedRegion(0-8), CompressedRegion(12-14)])',
+        );
+      },
+    );
+
+    test('toString handles empty cluster and region lists', () {
+      const state = TimelineFoldingState(
+        visibleClusters: [],
+        compressedRegions: [],
+      );
+
+      expect(
+        state.toString(),
+        'TimelineFoldingState(visible: [], compressed: [])',
+      );
     });
   });
 

@@ -253,12 +253,11 @@ void main() {
       expect(find.byType(ChatInterface), findsOneWidget);
     });
 
-    testWidgets('ambient pulse overlay toggles with streaming state', (
+    testWidgets('ambient pulse overlay activates when streaming is true', (
       tester,
     ) async {
       ensureDomainLoggerRegistered();
 
-      // First with streaming=true
       await _pumpChatModalPage(
         tester,
         selectedCategoryIds: {'cat'},
@@ -270,35 +269,87 @@ void main() {
       );
       await tester.pump();
 
-      // Expect a Container with active glow (non-empty boxShadow)
-      expect(
-        find.byWidgetPredicate((w) {
-          if (w is Container && w.decoration is BoxDecoration) {
-            final d = w.decoration! as BoxDecoration;
-            return d.boxShadow != null && d.boxShadow!.isNotEmpty;
-          }
-          return false;
-        }),
-        findsWidgets,
-      );
-
-      // Rebuild with idle controller -> ensure app still builds
-      await _pumpChatModalPage(
-        tester,
-        selectedCategoryIds: {'cat'},
-        extraOverrides: [
-          chatSessionControllerProvider(
-            'cat',
-          ).overrideWith(_IdleChatController.new),
-        ],
-      );
-      await tester.pump();
+      // While streaming, the ambient border container renders an active glow
+      // (non-empty boxShadow) and an overlay border.
+      expect(_activeGlowContainerFinder, findsWidgets);
     });
+
+    testWidgets(
+      'didUpdateWidget starts the pulse when streaming turns on '
+      'and stops it when streaming turns off',
+      (tester) async {
+        ensureDomainLoggerRegistered();
+
+        // Start with streaming OFF so the animation controller is idle and the
+        // _AmbientPulseBorder State exists. Toggling the provider afterwards
+        // keeps the SAME widget mounted, driving didUpdateWidget.
+        await _pumpChatModalPage(
+          tester,
+          selectedCategoryIds: {'cat'},
+          extraOverrides: [
+            chatSessionControllerProvider(
+              'cat',
+            ).overrideWith(_TogglableChatController.new),
+          ],
+        );
+        await tester.pump();
+
+        // Initially idle: no active glow.
+        expect(_activeGlowContainerFinder, findsNothing);
+
+        final element = tester.element(find.byType(ChatModalPage));
+        final container = ProviderScope.containerOf(element);
+        final notifier =
+            container.read(
+                  chatSessionControllerProvider('cat').notifier,
+                )
+                as _TogglableChatController;
+
+        // Turn streaming ON -> didUpdateWidget hits the repeat() branch.
+        // ignore: cascade_invocations
+        notifier.setStreaming(isStreaming: true);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+
+        expect(
+          container.read(
+            chatSessionControllerProvider('cat').select((s) => s.isStreaming),
+          ),
+          isTrue,
+        );
+        expect(_activeGlowContainerFinder, findsWidgets);
+
+        // Turn streaming OFF -> didUpdateWidget hits the stop() branch and the
+        // glow disappears. This also clears the repeating animation so no timer
+        // leaks past the test.
+        notifier.setStreaming(isStreaming: false);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+
+        expect(
+          container.read(
+            chatSessionControllerProvider('cat').select((s) => s.isStreaming),
+          ),
+          isFalse,
+        );
+        expect(_activeGlowContainerFinder, findsNothing);
+      },
+    );
   });
 }
 
+/// Finds an `_AmbientPulseBorder` `Container` that currently renders the active
+/// glow (a non-empty `boxShadow`), which only happens while streaming.
+final Finder _activeGlowContainerFinder = find.byWidgetPredicate((w) {
+  if (w is Container && w.decoration is BoxDecoration) {
+    final d = w.decoration! as BoxDecoration;
+    return d.boxShadow != null && d.boxShadow!.isNotEmpty;
+  }
+  return false;
+});
+
 // ---------------------------------------------------------------------------
-// Fake controllers for the ambient pulse test
+// Fake controllers for the ambient pulse tests
 // ---------------------------------------------------------------------------
 
 class _StreamingChatController extends ChatSessionController {
@@ -318,12 +369,26 @@ class _StreamingChatController extends ChatSessionController {
   Future<void> initializeSession({String? sessionId}) async {}
 }
 
-class _IdleChatController extends ChatSessionController {
+/// Controller whose streaming flag can be toggled on demand so a single mounted
+/// [ChatModalPage] sees the `isStreaming` value change, driving
+/// `_AmbientPulseBorder.didUpdateWidget`.
+class _TogglableChatController extends ChatSessionController {
   @override
   ChatSessionUiModel build(String categoryId) {
-    return ChatSessionUiModel.empty();
+    return const ChatSessionUiModel(
+      id: 's',
+      title: 't',
+      messages: <ChatMessage>[],
+      isLoading: false,
+      isStreaming: false,
+      selectedModelId: 'm',
+    );
   }
 
   @override
   Future<void> initializeSession({String? sessionId}) async {}
+
+  void setStreaming({required bool isStreaming}) {
+    state = state.copyWith(isStreaming: isStreaming);
+  }
 }

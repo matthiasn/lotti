@@ -1219,6 +1219,51 @@ void main() {
   });
 
   test(
+    'stop() waits for an in-flight live enqueue before disposing the '
+    'queue — a producer mid-insert when shutdown begins must finish its '
+    'write so disposal never races a live enqueueLive() call',
+    () async {
+      // Gate enqueueLive on a completer so the tracked future stays in
+      // `_inFlightEnqueues` across the start of stop().
+      final enqueueGate = Completer<EnqueueResult>();
+      when(
+        () => queue.enqueueLive(any()),
+      ).thenAnswer((_) => enqueueGate.future);
+
+      final coordinator = build();
+      await coordinator.start();
+
+      timelineCtl.add(buildEvent(EventTypes.Message));
+      // Let _handleLiveEvent run through pen.hold and _safeEnqueue so the
+      // gated enqueueLive future is registered in _inFlightEnqueues.
+      await Future<void>.delayed(Duration.zero);
+      verify(() => queue.enqueueLive(any())).called(1);
+
+      var stopDone = false;
+      final stopFuture = coordinator.stop().then((_) => stopDone = true);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      // stop() is parked on Future.wait(_inFlightEnqueues) — the queue
+      // must not be disposed while the enqueue is still in flight.
+      expect(
+        stopDone,
+        isFalse,
+        reason: 'stop must await the in-flight enqueue',
+      );
+      verifyNever(() => queue.dispose());
+
+      // Release the enqueue; stop() can now drain the in-flight set and
+      // proceed to teardown.
+      enqueueGate.complete(EnqueueResult.empty);
+      await stopFuture;
+
+      expect(stopDone, isTrue);
+      verify(() => queue.dispose()).called(1);
+      expect(coordinator.isRunning, isFalse);
+    },
+  );
+
+  test(
     'coordinator built without overrides wires default collaborators',
     () async {
       when(() => sessionManager.client).thenReturn(client);
@@ -1820,6 +1865,79 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      r'_readMarker keeps a `$`-prefixed lastAppliedEventId so the bridge '
+      'forward-walks from that server-assigned anchor via '
+      'getTimeline(eventContextId:) rather than the timestamp-bounded '
+      'backward walk',
+      () async {
+        // Seed a marker carrying a real, server-assigned (`\$`-prefixed)
+        // event id. `_readMarker` must surface it verbatim, which routes
+        // the bridge into the forward (eventContextId) walk.
+        await syncDb
+            .into(syncDb.queueMarkers)
+            .insert(
+              QueueMarkersCompanion.insert(
+                roomId: roomId,
+                lastAppliedTs: const Value(5000),
+                lastAppliedEventId: const Value(r'$server-anchor'),
+              ),
+            );
+
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        final forwardTimeline = MockTimeline();
+        final anchor = MockEvent();
+        when(() => anchor.eventId).thenReturn(r'$server-anchor');
+        when(
+          () => anchor.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(5000));
+        when(() => forwardTimeline.events).thenReturn(<Event>[anchor]);
+        when(() => forwardTimeline.canRequestFuture).thenReturn(false);
+        when(forwardTimeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => forwardTimeline);
+        when(() => roomManager.currentRoom).thenReturn(room);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+
+        await coordinator.triggerBridge();
+
+        // Forward walk anchored on the preserved `\$`-prefixed id; the
+        // backward (no eventContextId) walk must NOT run.
+        verify(
+          () => room.getTimeline(
+            eventContextId: r'$server-anchor',
+            limit: any(named: 'limit'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        );
       },
     );
 
@@ -3135,6 +3253,133 @@ void main() {
             ),
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'backward walk whose requestHistory throws ends in stopReason=error '
+      'and _runBackwardBootstrap returns false so the bridge schedules a '
+      'bounded retry instead of treating the walk as complete',
+      () async {
+        final coordinator = buildWithRealQueue();
+        await coordinator.start();
+        addTearDown(() async => coordinator.stop());
+
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        // First page has one event (so the walk does not immediately
+        // serverExhaust), the SDK still claims more history, and the
+        // follow-up `requestHistory` throws — that is the exact shape
+        // that yields BootstrapStopReason.error from the backward walk.
+        final timeline = stubTimeline(
+          events: <Event>[buildSyncPayload(id: r'$e-err', tsMs: 500)],
+          canRequestHistory: () => true,
+          onRequestHistory: (_) async {
+            throw StateError('network lost mid-backward-walk');
+          },
+        );
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        // Fresh-mode walk (untilTimestamp == null) so no boundary
+        // logic interferes — the only terminal reason available is the
+        // requestHistory throw.
+        final completed = await coordinator.runBootstrapForTest(room: room);
+
+        expect(
+          completed,
+          isFalse,
+          reason: 'error stopReason maps to false from _runBackwardBootstrap',
+        );
+        verify(
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('bootstrap.requestHistory'),
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'stop() awaits an in-flight gap-recovery walk before tearing the '
+      'queue down — a recovery /messages walk launched moments before '
+      'shutdown must settle so its sink writes finish before disposal',
+      () async {
+        final coordinator = buildWithRealQueue();
+        await coordinator.start();
+
+        // Record the barren bridge so a gap signal can launch recovery.
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        var historyCalls = 0;
+        final events = <Event>[buildSyncPayload(id: r'$e-0', tsMs: 50)];
+        final barrenTimeline = stubTimeline(
+          events: events,
+          canRequestHistory: () => true,
+          onRequestHistory: (_) async {
+            historyCalls++;
+            events.insert(
+              0,
+              buildSyncPayload(
+                id: r'$e-$historyCalls',
+                tsMs: 50 - historyCalls,
+              ),
+            );
+          },
+        );
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => barrenTimeline);
+
+        await coordinator.runBootstrapForTest(room: room, untilTimestamp: 100);
+        expect(coordinator.hasBarrenBridgeSignal, isTrue);
+
+        // Block the recovery walk's getTimeline on a completer so the
+        // recovery future stays in-flight while we call stop().
+        final recoveryGate = Completer<Timeline>();
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) => recoveryGate.future);
+
+        coordinator.maybeStartGapRecovery();
+        expect(coordinator.gapRecoveryInFlight, isTrue);
+
+        // stop() must reach the gapRecovery teardown stage and await the
+        // in-flight future. Kick it off without awaiting, prove it has
+        // NOT completed while recovery is gated, then release the gate.
+        var stopDone = false;
+        final stopFuture = coordinator.stop().then((_) => stopDone = true);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          stopDone,
+          isFalse,
+          reason: 'stop must block on the in-flight gap recovery',
+        );
+
+        // Release the recovery walk with an empty, exhausted snapshot.
+        recoveryGate.complete(
+          stubTimeline(
+            events: <Event>[],
+            canRequestHistory: () => false,
+            onRequestHistory: (_) async {},
+          ),
+        );
+
+        await stopFuture;
+        expect(stopDone, isTrue);
+        expect(coordinator.gapRecoveryInFlight, isFalse);
+        expect(coordinator.isRunning, isFalse);
+        // Teardown reached the post-gap-recovery stages: the worker was
+        // stopped only after the recovery walk settled.
+        verify(() => worker.stop()).called(1);
       },
     );
   });

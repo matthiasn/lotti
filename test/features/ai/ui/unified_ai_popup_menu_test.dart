@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
@@ -398,6 +400,52 @@ void main() {
       // Assert - check for the skills list
       expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
     });
+
+    testWidgets(
+      'renders GlassActionButton (not IconButton) when iconColor is set, and '
+      'tapping it opens the modal',
+      (tester) async {
+        // Arrange — passing a non-null iconColor selects the
+        // GlassActionButton branch used when the menu sits over an image.
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testTaskEntity,
+              linkedFromId: null,
+              iconColor: const Color(0xFF00FF00),
+            ),
+            overrides: [
+              hasAvailableSkillsProvider((
+                entityId: testTaskEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider((
+                entityId: testTaskEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(testSkills)),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Assert — the GlassActionButton branch is taken, not the
+        // standard IconButton branch, and the icon adopts the passed color.
+        expect(find.byType(GlassActionButton), findsOneWidget);
+        expect(find.byType(IconButton), findsNothing);
+        final icon = tester.widget<Icon>(
+          find.byIcon(Icons.assistant_rounded),
+        );
+        expect(icon.color, const Color(0xFF00FF00));
+
+        // Act — tapping the glass button opens the unified AI modal.
+        await tester.tap(find.byType(GlassActionButton));
+        await tester.pumpAndSettle();
+
+        // Assert — onTap wired through to UnifiedAiModal.show.
+        expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
+      },
+    );
   });
 
   group('UnifiedAiSkillsList Tests', () {
@@ -668,6 +716,87 @@ void main() {
             .toList();
         expect(dividersFinal[0].color, isNot(Colors.transparent));
         expect(dividersFinal[1].color, isNot(Colors.transparent));
+      },
+    );
+
+    testWidgets(
+      'a background refresh that drops the hovered skill clears the hover '
+      'state via the ref.listen callback — proven by re-adding the skill '
+      'and observing its divider is opaque (a retained stale hover would '
+      'have kept it transparent)',
+      (tester) async {
+        // A StateProvider feeds the (overridden) skills future provider so
+        // the test can push refreshed lists at runtime, exercising the
+        // ref.listen reconciliation branch in the widget.
+        final skillsSource = StateProvider<List<AiConfigSkill>>(
+          (ref) => testSkills,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiSkillsList(
+              journalEntity: testAudioEntity,
+              onSkillSelected: (_) async {},
+            ),
+            overrides: [
+              availableSkillsForEntityProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => ref.watch(skillsSource)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Three skills → two dividers, both opaque before hover.
+        expect(find.byType(Divider), findsNWidgets(2));
+
+        // Hover the LAST skill so its only adjacent divider (index 1) goes
+        // transparent, confirming _hoveredSkillId == testSkills[2].id.
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer(location: Offset.zero);
+        await gesture.moveTo(tester.getCenter(find.text(testSkills[2].name)));
+        await tester.pumpAndSettle();
+
+        final hovered = tester
+            .widgetList<Divider>(find.byType(Divider))
+            .toList();
+        expect(hovered[1].color, Colors.transparent);
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(UnifiedAiSkillsList)),
+        );
+
+        // Background refresh: drop the hovered last skill. The ref.listen
+        // callback must clear _hoveredSkillId because testSkills[2] is no
+        // longer present in the refreshed list.
+        container.read(skillsSource.notifier).state = [
+          testSkills[0],
+          testSkills[1],
+        ];
+        await tester.pumpAndSettle();
+        expect(find.text(testSkills[2].name), findsNothing);
+
+        // Park the pointer in dead space so that re-adding the skill below
+        // does not re-hover it under the (otherwise stationary) cursor,
+        // which would confound the divider assertion.
+        await gesture.moveTo(const Offset(-500, -500));
+        await tester.pumpAndSettle();
+
+        // Re-add the previously-hovered skill. If the ref.listen callback
+        // had cleared the hover, this row's divider is opaque. A retained
+        // stale _hoveredSkillId would instead paint divider[1] transparent.
+        container.read(skillsSource.notifier).state = testSkills;
+        await tester.pumpAndSettle();
+
+        final restored = tester
+            .widgetList<Divider>(find.byType(Divider))
+            .toList();
+        expect(restored, hasLength(2));
+        expect(restored[1].color, isNot(Colors.transparent));
       },
     );
 
@@ -1232,6 +1361,109 @@ void main() {
         );
       });
     }
+
+    // When the entity itself is a Task, linkedTaskId is non-null
+    // (journalEntity.id) so the override handler resolves the profile via
+    // resolveForTask rather than resolveForCategory. This drives the
+    // task-profile branch and proves the resolved default is honoured.
+    testWidgets(
+      'Task entity resolves its profile via resolveForTask (not '
+      'resolveForCategory) and the picker highlights that default row',
+      (tester) async {
+        final t = DateTime(2024, 3, 15, 10);
+        final providerA = _buildProvider(id: 'p-a', name: 'Provider A', t: t);
+        final providerB = _buildProvider(id: 'p-b', name: 'Provider B', t: t);
+        final modelA = _buildModel(
+          id: 'm-a',
+          name: 'Voxtral Local',
+          providerModelId: 'wire-a',
+          providerId: 'p-a',
+          modality: Modality.audio,
+          t: t,
+        );
+        final modelB = _buildModel(
+          id: 'm-b',
+          name: 'Mistral Cloud',
+          providerModelId: 'wire-b',
+          providerId: 'p-b',
+          modality: Modality.audio,
+          t: t,
+        );
+        final skill = _buildSkill(_transcriptionOverrideVariant, t);
+        // Profile slot points at modelA (wire-a via providerA) so the
+        // popup computes modelA as the default row.
+        final profile = _fillTranscriptionSlot(
+          thinkingProvider: providerA,
+          slotProvider: providerA,
+          slotProviderModelId: 'wire-a',
+        );
+        final taskEntity = Task(
+          meta: Metadata(
+            id: 'task-override',
+            createdAt: t,
+            updatedAt: t,
+            dateFrom: t,
+            dateTo: t,
+            categoryId: 'cat-should-not-be-used',
+          ),
+          data: TaskData(
+            title: 'Override Task',
+            status: TaskStatus.open(id: 'st', createdAt: t, utcOffset: 0),
+            statusHistory: [],
+            dateFrom: t,
+            dateTo: t,
+          ),
+        );
+        final resolver = _RecordingProfileResolver(profile);
+        TriggerSkillParams? capturedParams;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: taskEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              entryControllerProvider(id: taskEntity.id).overrideWith(
+                () => FakeEntryController(taskEntity),
+              ),
+              ..._baseOverrides(
+                entity: taskEntity,
+                skill: skill,
+                models: [modelA, modelB],
+                resolver: resolver,
+                configs: [modelA, modelB, providerA, providerB],
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
+        await tester.pumpAndSettle();
+
+        // The Task's profile was resolved via resolveForTask, keyed by the
+        // task id — never via resolveForCategory.
+        expect(resolver.resolveForTaskCalls, ['task-override']);
+        expect(resolver.resolveForCategoryCalls, isEmpty);
+
+        // Picker is open; tapping the default-badged row (modelA) collapses
+        // the override to null because it matches the resolved default.
+        expect(find.byType(InferenceModelPickerModal), findsOneWidget);
+        await tester.tap(find.text(modelA.name));
+        await tester.pumpAndSettle();
+
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.entityId, taskEntity.id);
+        expect(capturedParams!.linkedTaskId, taskEntity.id);
+        expect(capturedParams!.overrideModelId, isNull);
+      },
+    );
   });
 
   group('resolveLinkedTask', () {
@@ -1841,6 +2073,32 @@ class _FixedProfileResolver implements ProfileAutomationResolver {
   @override
   Future<ResolvedProfile?> resolveForCategory(String categoryId) async =>
       _profile;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Resolver that returns a fixed profile and records which method was
+/// invoked (and with which id). Used to prove the override handler routes
+/// Task entities through `resolveForTask` rather than `resolveForCategory`.
+class _RecordingProfileResolver implements ProfileAutomationResolver {
+  _RecordingProfileResolver(this._profile);
+
+  final ResolvedProfile _profile;
+  final List<String> resolveForTaskCalls = [];
+  final List<String> resolveForCategoryCalls = [];
+
+  @override
+  Future<ResolvedProfile?> resolveForTask(String taskId) async {
+    resolveForTaskCalls.add(taskId);
+    return _profile;
+  }
+
+  @override
+  Future<ResolvedProfile?> resolveForCategory(String categoryId) async {
+    resolveForCategoryCalls.add(categoryId);
+    return _profile;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

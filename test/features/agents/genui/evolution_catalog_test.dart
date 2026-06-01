@@ -1055,6 +1055,29 @@ void main() {
       expect(find.text('A quick yes or no is enough.'), findsOneWidget);
     });
 
+    testWidgets('uses custom confirm and dismiss labels when provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(binaryChoicePromptItem, {
+            'question': 'Proceed?',
+            'confirmLabel': 'Absolutely',
+            'dismissLabel': 'Not now',
+          }),
+        ),
+      );
+
+      final context = tester.element(find.text('Proceed?'));
+
+      // Custom labels are rendered instead of the default Yes/No.
+      expect(find.text('Absolutely'), findsOneWidget);
+      expect(find.text('Not now'), findsOneWidget);
+      // Default localized labels are absent.
+      expect(find.text(context.messages.agentBinaryChoiceYes), findsNothing);
+      expect(find.text(context.messages.agentBinaryChoiceNo), findsNothing);
+    });
+
     testWidgets('dispatches binary_choice_submitted with semantic payload', (
       tester,
     ) async {
@@ -1319,6 +1342,51 @@ void main() {
         find.text(
           context.messages.agentEvolutionSoulProposedField(
             context.messages.agentSoulFieldVoice,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('trims and renders current coaching and anti-sycophancy', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'coachingStyle': 'Celebrate small wins.',
+            'antiSycophancyPolicy': 'Disagree when warranted.',
+            'rationale': 'Refine coaching and pushback.',
+            // Surrounding whitespace proves the `?.trim()` on the current
+            // values actually runs (only reached when the value is non-null).
+            'currentCoachingStyle': '  Always agree.  ',
+            'currentAntiSycophancyPolicy': '\tNever push back.\n',
+          }),
+        ),
+      );
+
+      final context = tester.element(find.byType(Padding).first);
+
+      // Trimmed current values are rendered (no leading/trailing whitespace).
+      expect(find.text('Always agree.'), findsOneWidget);
+      expect(find.text('Never push back.'), findsOneWidget);
+      // Proposed values render alongside.
+      expect(find.text('Celebrate small wins.'), findsOneWidget);
+      expect(find.text('Disagree when warranted.'), findsOneWidget);
+
+      // The "current" section label appears for both fields.
+      expect(
+        find.text(
+          context.messages.agentEvolutionSoulCurrentField(
+            context.messages.agentSoulFieldCoachingStyle,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          context.messages.agentEvolutionSoulCurrentField(
+            context.messages.agentSoulFieldAntiSycophancy,
           ),
         ),
         findsOneWidget,

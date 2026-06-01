@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -71,6 +72,81 @@ class TestWidgetWithMixinState extends State<TestWidgetWithMixin>
             child: Text('Entry $id'),
           );
         },
+      ),
+    );
+  }
+}
+
+/// A render object that throws while `Scrollable.ensureVisible` computes the
+/// reveal offset (it reads `paintBounds` of the target). This deterministically
+/// forces the `catch (e)` branch in `HighlightScrollMixin`'s scroll-with-retry
+/// logic without leaking an uncaught framework exception: the throw happens
+/// inside the awaited future returned by `ensureVisible`, so it is swallowed by
+/// the mixin's own try/catch.
+class _ThrowOnRevealBox extends SingleChildRenderObjectWidget {
+  const _ThrowOnRevealBox({super.key, super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderThrowOnReveal();
+}
+
+class _RenderThrowOnReveal extends RenderProxyBox {
+  @override
+  Rect get paintBounds => throw StateError('reveal-boom');
+}
+
+/// Host that wraps every entry in a [_ThrowOnRevealBox] so that scrolling to a
+/// found, laid-out entry throws during reveal, exercising the catch branch.
+class ThrowingScrollHost extends StatefulWidget {
+  const ThrowingScrollHost({required this.entryIds, super.key});
+
+  final List<String> entryIds;
+
+  @override
+  State<ThrowingScrollHost> createState() => ThrowingScrollHostState();
+}
+
+class ThrowingScrollHostState extends State<ThrowingScrollHost>
+    with HighlightScrollMixin {
+  final Map<String, GlobalKey> _entryKeys = {};
+  int onScrolledCallCount = 0;
+
+  @override
+  void dispose() {
+    disposeHighlight();
+    super.dispose();
+  }
+
+  GlobalKey _getEntryKey(String entryId) =>
+      _entryKeys.putIfAbsent(entryId, GlobalKey.new);
+
+  void triggerScroll(String entryId, {VoidCallback? onScrolled}) {
+    // isInitialLoad uses the (zero in test mode) initialScrollDelay so the
+    // post-frame scroll attempt runs deterministically within a few pumps.
+    scrollToEntry(
+      entryId,
+      0.5,
+      getEntryKey: _getEntryKey,
+      isInitialLoad: true,
+      onScrolled: () {
+        onScrolledCallCount++;
+        onScrolled?.call();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ListView(
+        children: [
+          for (final id in widget.entryIds)
+            _ThrowOnRevealBox(
+              key: _getEntryKey(id),
+              child: SizedBox(height: 100, child: Text('Entry $id')),
+            ),
+        ],
       ),
     );
   }
@@ -356,6 +432,75 @@ void main() {
         );
       }
     });
+
+    testWidgets(
+      'ensureVisible failure logs warning, clears intent, leaves no highlight',
+      (tester) async {
+        DevLogger.clear();
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: ThrowingScrollHost(entryIds: ['entry-1', 'entry-2']),
+          ),
+        );
+
+        final state = tester.state<ThrowingScrollHostState>(
+          find.byType(ThrowingScrollHost),
+        );
+
+        var callbackInvoked = false;
+        state.triggerScroll(
+          'entry-1',
+          onScrolled: () => callbackInvoked = true,
+        );
+
+        // initialScrollDelay is zero in test mode; the post-frame callback runs
+        // the throwing ensureVisible, then resolves the catch branch. Pump a few
+        // frames so the timer fires, the post-frame callback runs, and the
+        // awaited (throwing) future settles.
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 60));
+        }
+
+        // The catch branch treats the throw as terminal: it cancels the retry
+        // timer (line 155) and clears the scroll intent exactly once (line 157),
+        // so even after pumping well past the retry delay there is no second
+        // attempt and the entry is never highlighted (highlight is only set on
+        // the success path).
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 60));
+        }
+
+        expect(callbackInvoked, isTrue);
+        expect(state.onScrolledCallCount, equals(1));
+        expect(state.highlightedEntryId, isNull);
+        expect(tester.takeException(), isNull);
+
+        // The catch branch logs exactly one per-attempt failure message that
+        // includes the thrown error (lines 150-152), and never reaches the
+        // retries-exhausted message ('after N attempts').
+        final catchLogs = DevLogger.capturedLogs
+            .where(
+              (log) =>
+                  log.contains('HighlightScrollMixin') &&
+                  log.contains('Failed to scroll to entry entry-1') &&
+                  log.contains('reveal-boom'),
+            )
+            .toList();
+        expect(
+          catchLogs,
+          hasLength(1),
+          reason:
+              'catch branch should log the failure with the thrown error once. '
+              'Logs: ${DevLogger.capturedLogs}',
+        );
+        expect(
+          DevLogger.capturedLogs.any((log) => log.contains('after')),
+          isFalse,
+          reason: 'should not reach the retries-exhausted path',
+        );
+      },
+    );
 
     testWidgets('scroll operation completes when entry becomes available', (
       tester,

@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -8,21 +11,30 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
+import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:record/record.dart' show Amplitude;
 
 import '../../helpers/fallbacks.dart';
 import '../../helpers/path_provider.dart';
@@ -211,19 +223,6 @@ void main() {
       verify(() => mockTimeService.start(timer, parent)).called(1);
     });
 
-    test('showAudioRecordingModal calls AudioRecordingModal.show', () {
-      // Note: This test verifies the method exists and can be called.
-      // Full integration testing of AudioRecordingModal.show would require
-      // widget testing with a proper BuildContext.
-
-      // The method should exist and be callable
-      expect(service.showAudioRecordingModal, isNotNull);
-      expect(
-        () => service.showAudioRecordingModal,
-        returnsNormally,
-      );
-    });
-
     test(
       'createChecklist forwards taskId and returns the repo result',
       () async {
@@ -339,15 +338,192 @@ void main() {
         expect(result, isNull);
       },
     );
+  });
 
-    test('importImage and showCreateEntryModal are callable', () {
-      // Both delegate to top-level Flutter APIs that need a real
-      // BuildContext to exercise meaningfully — the wider integration
-      // is covered in widget tests. These smoke checks just ensure the
-      // tear-offs exist on the service surface and so guard against
-      // an accidental rename.
-      expect(service.importImage, isNotNull);
-      expect(service.showCreateEntryModal, isNotNull);
+  // These tests exercise the thin UI-delegating methods of the service
+  // (showAudioRecordingModal / importImage / showCreateEntryModal). They need a
+  // real BuildContext, so they live in their own group with widget-test
+  // GetIt + provider wiring, independent of the database-backed group above.
+  group('EntryCreationService UI delegators', () {
+    late MockNavService mockNavService;
+    late MockAudioRecorderRepository mockAudioRecorderRepository;
+    late MockJournalDb mockJournalDb;
+
+    setUp(() {
+      mockNavService = MockNavService();
+      mockAudioRecorderRepository = MockAudioRecorderRepository();
+      mockJournalDb = MockJournalDb();
+
+      when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+      when(
+        () => mockAudioRecorderRepository.amplitudeStream,
+      ).thenAnswer((_) => const Stream<Amplitude>.empty());
+      when(
+        () => mockAudioRecorderRepository.hasPermission(),
+      ).thenAnswer((_) async => false);
+
+      // CreateEntryModal's menu list watches config flags via JournalDb.
+      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableEventsFlag,
+              description: 'Enable Events?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      getIt
+        ..registerSingleton<NavService>(mockNavService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<LoggingService>(LoggingService())
+        ..registerSingleton<DomainLogger>(
+          DomainLogger(loggingService: getIt<LoggingService>()),
+        );
     });
+
+    tearDown(getIt.reset);
+
+    /// Pumps a button that, when tapped, invokes [onTap] with the button's
+    /// BuildContext. Returns the [EntryCreationService] read from the scope so
+    /// callers can assert on its side effects.
+    Future<EntryCreationService> pumpServiceHost(
+      WidgetTester tester, {
+      required void Function(EntryCreationService service, BuildContext context)
+      onTap,
+      List<Override> overrides = const [],
+    }) async {
+      late EntryCreationService service;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            ...overrides,
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Consumer(
+              builder: (context, ref, _) {
+                service = ref.read(entryCreationServiceProvider);
+                return Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () => onTap(service, context),
+                    child: const Text('go'),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return service;
+    }
+
+    testWidgets(
+      'showAudioRecordingModal opens the recording modal and marks it visible',
+      (tester) async {
+        late ProviderContainer container;
+        final service = await pumpServiceHost(
+          tester,
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+          ],
+          onTap: (service, context) {
+            container = ProviderScope.containerOf(context);
+            service.showAudioRecordingModal(context, categoryId: 'cat-1');
+          },
+        );
+        expect(service, isNotNull);
+
+        await tester.tap(find.text('go'));
+        await tester.pumpAndSettle();
+
+        // The modal content rendered (its RECORD button carries this key).
+        expect(find.byType(AudioRecordingModalContent), findsOneWidget);
+        expect(find.byKey(const ValueKey('record')), findsOneWidget);
+
+        // .show() flips the controller's modalVisible flag and forwards the
+        // categoryId — observable side effects of the delegated call.
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.modalVisible, isTrue);
+      },
+    );
+
+    testWidgets(
+      'importImage delegates to the photo importer and returns when denied',
+      (tester) async {
+        const channel = MethodChannel('com.fluttercandies/photo_manager');
+        final methodCalls = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          (call) async {
+            methodCalls.add(call.method);
+            if (call.method == 'requestPermissionExtend') {
+              // Index 2 == PermissionState.denied -> importer returns early.
+              return 2;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            channel,
+            null,
+          ),
+        );
+
+        Future<void>? returnedFuture;
+        await pumpServiceHost(
+          tester,
+          onTap: (service, context) {
+            returnedFuture = service.importImage(
+              context,
+              linkedId: 'linked-1',
+              categoryId: 'cat-1',
+            );
+          },
+        );
+
+        await tester.tap(find.text('go'));
+        await tester.pumpAndSettle();
+
+        // The delegated importer actually ran (it asked for permission) and
+        // the returned Future completed without throwing.
+        expect(methodCalls, contains('requestPermissionExtend'));
+        expect(returnedFuture, isNotNull);
+        await expectLater(returnedFuture, completes);
+      },
+    );
+
+    testWidgets(
+      'showCreateEntryModal opens the create-entry menu',
+      (tester) async {
+        await pumpServiceHost(
+          tester,
+          onTap: (service, context) {
+            service.showCreateEntryModal(
+              context,
+              linkedFromId: 'linked-1',
+              categoryId: 'cat-1',
+            );
+          },
+        );
+
+        await tester.tap(find.text('go'));
+        await tester.pumpAndSettle();
+
+        // The menu modal rendered its items (Event/Task/Audio/Timer/Text).
+        expect(find.byType(CreateMenuListItem), findsWidgets);
+        expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
+        // Timer item only present because linkedFromId was provided.
+        expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      },
+    );
   });
 }

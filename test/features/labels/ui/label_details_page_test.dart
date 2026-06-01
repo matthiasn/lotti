@@ -58,6 +58,24 @@ class _ColorSpyController extends _FakeLabelEditorController {
   }
 }
 
+/// Records every [addCategoryId] argument while still mutating state, so a
+/// test can both verify the exact ids forwarded by the page and observe the
+/// resulting chips render.
+class _AddCategorySpyController extends _FakeLabelEditorController {
+  _AddCategorySpyController(
+    super.params, {
+    required super.initialState,
+  });
+
+  final addedIds = <String>[];
+
+  @override
+  void addCategoryId(String id) {
+    addedIds.add(id);
+    super.addCategoryId(id);
+  }
+}
+
 void main() {
   setUpAll(() async {
     // Make sliver list build more children so deep widgets are present
@@ -670,5 +688,115 @@ void main() {
         'HelloX',
       );
     });
+
+    testWidgets(
+      'delete dialog Cancel dismisses without deleting or navigating',
+      (tester) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        final repo = _MockLabelsRepository();
+        when(() => repo.watchLabel('label-1')).thenAnswer(
+          (_) => Stream<LabelDefinition?>.value(
+            testLabelDefinition1.copyWith(id: 'label-1'),
+          ),
+        );
+        when(() => repo.deleteLabel(any())).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [labelsRepositoryProvider.overrideWithValue(repo)],
+            child: makeTestableWidget2(
+              const LabelDetailsPage(labelId: 'label-1'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Open the delete confirmation dialog.
+        await tester.tap(find.byType(LottiTertiaryButton));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
+
+        // The first tertiary button inside the dialog is Cancel.
+        final cancelButton = find
+            .descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(LottiTertiaryButton),
+            )
+            .first;
+        await tester.tap(cancelButton);
+        await tester.pumpAndSettle();
+
+        // Dialog is dismissed, nothing deleted, and no navigation happened.
+        expect(find.byType(AlertDialog), findsNothing);
+        verifyNever(() => repo.deleteLabel(any()));
+        expect(beamedTo, isNull);
+      },
+    );
+
+    testWidgets(
+      'selecting categories in the modal forwards their ids to the controller',
+      (tester) async {
+        // Modal needs real categories to show cards and to resolve the
+        // selection back to definitions on Done.
+        final cache = getIt<EntitiesCacheService>();
+        when(
+          () => (cache as MockEntitiesCacheService).sortedCategories,
+        ).thenReturn(<CategoryDefinition>[categoryMindfulness]);
+        when(
+          () => cache.getCategoryById(categoryMindfulness.id),
+        ).thenReturn(categoryMindfulness);
+
+        const state = LabelEditorState(
+          name: 'Urgent',
+          colorHex: '#FF0000',
+          isPrivate: false,
+          selectedCategoryIds: {},
+        );
+        final controller = _AddCategorySpyController(
+          const LabelEditorArgs(),
+          initialState: state,
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            labelEditorControllerProvider.overrideWith(() => controller),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(const LabelDetailsPage()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // No chips initially.
+        expect(find.byType(InputChip), findsNothing);
+
+        // Open the category selection modal.
+        final addButton = find.byIcon(Icons.add);
+        await tester.ensureVisible(addButton);
+        await tester.tap(addButton);
+        await tester.pumpAndSettle();
+
+        // Toggle the category on, then confirm with Done.
+        await tester.tap(find.text('Mindfulness').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+        await tester.pumpAndSettle();
+
+        // The page forwarded exactly the selected id to the controller...
+        expect(controller.addedIds, [categoryMindfulness.id]);
+        // ...and the resulting chip is now rendered.
+        expect(
+          find.widgetWithText(InputChip, 'Mindfulness'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

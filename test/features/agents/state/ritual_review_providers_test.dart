@@ -155,6 +155,108 @@ void main() {
     });
   });
 
+  group('ritualFeedbackProvider', () {
+    test(
+      'extracts feedback over the default 7-day window ending now',
+      () async {
+        final now = DateTime(2024, 3, 31, 14, 30);
+        final expectedSince = now.subtract(const Duration(days: 7));
+        final service = MockFeedbackExtractionService();
+        final feedback = makeTestClassifiedFeedback(
+          items: [
+            makeTestClassifiedFeedbackItem(detail: 'Loved the new tone.'),
+          ],
+          windowStart: expectedSince,
+          windowEnd: now,
+          totalObservationsScanned: 3,
+          totalDecisionsScanned: 2,
+        );
+
+        when(
+          () => service.extract(
+            templateId: kTestTemplateId,
+            since: expectedSince,
+            until: now,
+          ),
+        ).thenAnswer((_) async => feedback);
+
+        final container = ProviderContainer(
+          overrides: [
+            agentUpdateStreamProvider(kTestTemplateId).overrideWith(
+              (ref) => const Stream<Set<String>>.empty(),
+            ),
+            feedbackExtractionServiceProvider.overrideWithValue(service),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final result = await withClock(
+          Clock.fixed(now),
+          () => container.read(
+            ritualFeedbackProvider(kTestTemplateId).future,
+          ),
+        );
+
+        expect(result, same(feedback));
+        expect(result?.items.single.detail, 'Loved the new tone.');
+        expect(result?.totalObservationsScanned, 3);
+        expect(result?.totalDecisionsScanned, 2);
+        verify(
+          () => service.extract(
+            templateId: kTestTemplateId,
+            since: expectedSince,
+            until: now,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('recomputes the window from the current clock', () async {
+      final now = DateTime(2024, 5, 10, 9);
+      final expectedSince = now.subtract(const Duration(days: 7));
+      final service = MockFeedbackExtractionService();
+      final feedback = makeTestClassifiedFeedback(
+        windowStart: expectedSince,
+        windowEnd: now,
+      );
+
+      when(
+        () => service.extract(
+          templateId: kTestTemplateId,
+          since: expectedSince,
+          until: now,
+        ),
+      ).thenAnswer((_) async => feedback);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentUpdateStreamProvider(kTestTemplateId).overrideWith(
+            (ref) => const Stream<Set<String>>.empty(),
+          ),
+          feedbackExtractionServiceProvider.overrideWithValue(service),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await withClock(
+        Clock.fixed(now),
+        () => container.read(
+          ritualFeedbackProvider(kTestTemplateId).future,
+        ),
+      );
+
+      expect(result?.windowStart, expectedSince);
+      expect(result?.windowEnd, now);
+      verify(
+        () => service.extract(
+          templateId: kTestTemplateId,
+          since: expectedSince,
+          until: now,
+        ),
+      ).called(1);
+    });
+  });
+
   group('templatesPendingReviewProvider', () {
     test('collects distinct template IDs from active sessions', () async {
       final container = ProviderContainer(

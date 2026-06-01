@@ -282,6 +282,76 @@ void main() {
 
       expect(a, isNot(equals(b)));
     });
+
+    // Each case differs from the reference object in exactly the named
+    // trailing field, so the short-circuiting `&&` chain in operator== must
+    // evaluate every earlier (equal) comparison before reaching the differing
+    // one — this exercises the totalDuration/isHighUsage/isTemplate branches.
+    const reference = TokenSourceBreakdown(
+      templateId: 'tpl-1',
+      displayName: 'Agent A',
+      totalTokens: 5000,
+      percentage: 50,
+      wakeCount: 10,
+      totalDuration: Duration(hours: 1),
+      isHighUsage: true,
+    );
+    final trailingFieldVariants = <String, TokenSourceBreakdown>{
+      'totalDuration': const TokenSourceBreakdown(
+        templateId: 'tpl-1',
+        displayName: 'Agent A',
+        totalTokens: 5000,
+        percentage: 50,
+        wakeCount: 10,
+        totalDuration: Duration(hours: 2),
+        isHighUsage: true,
+      ),
+      'isHighUsage': const TokenSourceBreakdown(
+        templateId: 'tpl-1',
+        displayName: 'Agent A',
+        totalTokens: 5000,
+        percentage: 50,
+        wakeCount: 10,
+        totalDuration: Duration(hours: 1),
+        isHighUsage: false,
+      ),
+      'isTemplate': const TokenSourceBreakdown(
+        templateId: 'tpl-1',
+        displayName: 'Agent A',
+        totalTokens: 5000,
+        percentage: 50,
+        wakeCount: 10,
+        totalDuration: Duration(hours: 1),
+        isHighUsage: true,
+        isTemplate: false,
+      ),
+    };
+
+    for (final entry in trailingFieldVariants.entries) {
+      test('inequality when only ${entry.key} differs', () {
+        final variant = entry.value;
+        expect(reference, isNot(equals(variant)));
+      });
+    }
+
+    test('isTemplate defaults to true and equals an explicit true', () {
+      const explicit = TokenSourceBreakdown(
+        templateId: 'tpl-1',
+        displayName: 'Agent A',
+        totalTokens: 5000,
+        percentage: 50,
+        wakeCount: 10,
+        totalDuration: Duration(hours: 1),
+        isHighUsage: true,
+        // Explicitly passing the default to assert it equals the implicit one.
+        // ignore: avoid_redundant_argument_values
+        isTemplate: true,
+      );
+
+      expect(reference.isTemplate, isTrue);
+      expect(reference, equals(explicit));
+      expect(reference.hashCode, equals(explicit.hashCode));
+    });
   });
 
   group('TokenUsageComparison', () {

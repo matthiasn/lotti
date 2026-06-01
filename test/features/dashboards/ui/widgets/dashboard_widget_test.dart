@@ -6,6 +6,7 @@ import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -133,5 +134,56 @@ void main() {
 
       expect(find.text('My Dashboard'), findsOneWidget);
     });
+
+    testWidgets(
+      'builds DashboardHabitsChart for a habit item with propagated range',
+      (tester) async {
+        // getHabitById returns null so the inner HabitCompletionCard collapses
+        // to SizedBox.shrink(), letting us assert on the DashboardWidget's own
+        // wiring of the habit item without the habit controller/repository.
+        when(() => mockCache.getHabitById(any())).thenReturn(null);
+
+        final dashboard = DashboardDefinition(
+          id: 'habit-dash',
+          name: 'Habit Dashboard',
+          description: 'desc',
+          items: const [
+            DashboardItem.habitChart(habitId: 'habit-123'),
+          ],
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          version: '',
+          lastReviewed: DateTime(2024, 3, 15),
+          active: true,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardWidget(
+              dashboardId: 'habit-dash',
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ),
+            overrides: [
+              dashboardByIdProvider(
+                'habit-dash',
+              ).overrideWith((ref) => dashboard),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // The habit case (lines 70-74) built a DashboardHabitsChart and
+        // forwarded the habit id plus the dashboard's date range to it.
+        final chart = tester.widget<DashboardHabitsChart>(
+          find.byType(DashboardHabitsChart),
+        );
+        expect(chart.habitId, 'habit-123');
+        expect(chart.rangeStart, rangeStart);
+        expect(chart.rangeEnd, rangeEnd);
+      },
+    );
   });
 }

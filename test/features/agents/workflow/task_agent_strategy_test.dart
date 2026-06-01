@@ -786,6 +786,125 @@ void main() {
         },
       );
 
+      test(
+        'recovers via brace extraction when fenced JSON inner content is '
+        'invalid',
+        () async {
+          // The markdown fence matches but its inner content is not valid JSON
+          // (exercises the FormatException recovery inside the fence branch).
+          // A valid JSON object follows the fence and is recovered by the
+          // balanced-brace extractor instead.
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'fence-fallback-ok',
+            ),
+          );
+
+          // Fence wraps non-JSON text; the real object trails after the fence.
+          const raw = '```json\nnot valid json\n```\n{"priority": "P3"}';
+
+          final toolCalls = [
+            const ChatCompletionMessageToolCall(
+              id: 'call-fence-invalid',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_task_priority',
+                arguments: raw,
+              ),
+            ),
+          ];
+
+          final action = await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(action, ConversationAction.continueConversation);
+
+          // The fenced content failed to parse, but the trailing object was
+          // recovered and passed to the executor as a clean map.
+          verify(
+            () => mockExecutor.execute(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P3'},
+              targetEntityId: taskId,
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).called(1);
+
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-fence-invalid',
+              response: 'fence-fallback-ok',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'returns error when balanced-brace candidate is not valid JSON',
+        () async {
+          // Braces are balanced but the content between them is not valid JSON,
+          // so the brace-extraction recovery throws FormatException and all
+          // recovery attempts ultimately fail.
+          const raw = '{not: valid, json}';
+
+          final toolCalls = [
+            const ChatCompletionMessageToolCall(
+              id: 'call-bad-braces',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_task_priority',
+                arguments: raw,
+              ),
+            ),
+          ];
+
+          final action = await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(action, ConversationAction.continueConversation);
+
+          // The executor is never reached because parsing failed entirely.
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-bad-braces',
+              response: any(
+                named: 'response',
+                that: startsWith(
+                  'Error: invalid arguments format — expected a JSON object.',
+                ),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
       test('persists assistant message before processing tool calls', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(

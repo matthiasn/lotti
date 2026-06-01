@@ -1896,6 +1896,102 @@ void main() {
       },
     );
 
+    // Lines 201-229: _GlowBorderPainter.paint() — the actual border-drawing
+    // code. The pulsing border lives inside a FadeTransition whose opacity
+    // animation starts at 0.0 (during the startDelay window). While the opacity
+    // is exactly 0, RenderAnimatedOpacity skips painting its child entirely, so
+    // _GlowBorderPainter.paint() never runs. Earlier tests only sampled frames
+    // near t=0 where the opacity was ~0, leaving paint() uncovered.
+    //
+    // Here we let the startDelay (1000 ms) elapse, then step the animation
+    // forward in small frames until the first up-tween (0.0 -> 1.0 over the
+    // first 1/8 of the 4800 ms controller, i.e. ~600 ms) lifts the opacity to a
+    // clearly non-zero value. Once opacity > 0 the FadeTransition paints its
+    // child and _GlowBorderPainter.paint() executes for real. We then play the
+    // animation out to completion and confirm the widget disposes cleanly with
+    // no leaked Timer/ticker.
+    testWidgets(
+      '_PulsingBorder paints the glow border once the fade-in opacity rises '
+      'above zero, then fades out and disposes cleanly',
+      (tester) async {
+        when(
+          () => mockEntitiesCacheService.getCategoryById(any()),
+        ).thenReturn(categoryMindfulness);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+                isHighlighted: true,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // The highlighted layout mounts a FadeTransition wrapping the
+        // CustomPaint glow border. Grab the inner-most FadeTransition (the
+        // _PulsingBorder one) so we can observe its opacity directly.
+        FadeTransition pulsingFade() {
+          return tester
+              .widgetList<FadeTransition>(find.byType(FadeTransition))
+              .last;
+        }
+
+        // During the 1000 ms startDelay the controller is parked at value 0,
+        // so the first up-tween (begin: 0.0) yields opacity 0 and the border
+        // stays hidden. Pump up to just before the delay fires.
+        await tester.pump(const Duration(milliseconds: 900));
+        expect(pulsingFade().opacity.value, 0.0);
+
+        // Cross the startDelay so the Timer fires _controller.forward(), then
+        // step forward in small frames. By ~600 ms into the controller the
+        // first up-tween has reached its peak (high = 1.0), so the opacity is
+        // unambiguously > 0 and the FadeTransition paints the CustomPaint child
+        // — running _GlowBorderPainter.paint().
+        await tester.pump(const Duration(milliseconds: 200)); // delay fires
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        // The fade-in has lifted the border to a clearly visible opacity.
+        final visibleOpacity = pulsingFade().opacity.value;
+        expect(visibleOpacity, greaterThan(0.5));
+
+        // The CustomPaint that paint() drew is in the tree and its painter is
+        // the private _GlowBorderPainter (verified via runtime type name so we
+        // do not depend on the private symbol).
+        final customPaints = tester.widgetList<CustomPaint>(
+          find.byType(CustomPaint),
+        );
+        expect(
+          customPaints.any(
+            (cp) => cp.painter.runtimeType.toString() == '_GlowBorderPainter',
+          ),
+          isTrue,
+        );
+
+        // Play the animation out to completion (4800 ms controller + the
+        // 1000 ms delay already elapsed). The final down-tween fades the last
+        // loop to 0.0, so the border ends hidden again.
+        await tester.pump(const Duration(milliseconds: 5000));
+        expect(pulsingFade().opacity.value, 0.0);
+
+        // No pending Timer / active ticker leaked: the controller has stopped
+        // and the startDelay Timer already fired and was discarded.
+        expect(tester.binding.transientCallbackCount, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     // Lines 235-237: _GlowBorderPainter.shouldRepaint — radius, strokeWidth,
     // and glowSigma checks.
     //

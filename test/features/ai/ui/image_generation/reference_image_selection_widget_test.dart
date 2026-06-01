@@ -519,6 +519,60 @@ void main() {
       expect(find.byType(GridView), findsOneWidget);
     });
 
+    testWidgets(
+      'image tile errorBuilder renders broken-image placeholder',
+      (tester) async {
+        // The image points at a file that does not exist on disk; we exercise
+        // the Image.file errorBuilder directly (the real file load completes
+        // asynchronously and is unreliable to await in a widget test).
+        final stateWithImages = ReferenceImageSelectionState(
+          availableImages: [buildTestImage('missing-img')],
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              referenceImageSelectionControllerProvider(
+                taskId: testTaskId,
+              ).overrideWith(
+                () => _MockReferenceImageSelectionController(stateWithImages),
+              ),
+            ],
+            child: ReferenceImageSelectionWidget(
+              taskId: testTaskId,
+              onContinue: (_) {},
+              onSkip: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Grab the grid-tile image and invoke its errorBuilder, simulating a
+        // decode/IO failure for the missing file.
+        final imageWidget = tester.widget<Image>(find.byType(Image));
+        final errorBuilder = imageWidget.errorBuilder;
+        expect(errorBuilder, isNotNull);
+
+        final imageElement = tester.element(find.byType(Image));
+        final placeholder = errorBuilder!(
+          imageElement,
+          Object(),
+          StackTrace.current,
+        );
+
+        // The errorBuilder builds a ColoredBox(surfaceContainerHighest)
+        // wrapping a broken-image icon tinted with onSurfaceVariant.
+        final theme = Theme.of(imageElement);
+        expect(placeholder, isA<ColoredBox>());
+        final coloredBox = placeholder as ColoredBox;
+        expect(coloredBox.color, theme.colorScheme.surfaceContainerHighest);
+
+        final icon = coloredBox.child! as Icon;
+        expect(icon.icon, Icons.broken_image_outlined);
+        expect(icon.color, theme.colorScheme.onSurfaceVariant);
+      },
+    );
+
     testWidgets('shows error UI when errorCode is set', (tester) async {
       const errorState = ReferenceImageSelectionState(
         errorCode: ReferenceImageSelectionError.loadImagesFailed,

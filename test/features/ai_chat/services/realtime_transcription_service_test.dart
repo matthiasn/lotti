@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -121,6 +122,62 @@ class _FakeWebSocketSink implements WebSocketSink {
 
   @override
   Future<dynamic> get done => _channel._readyCompleter.future;
+}
+
+/// Controllable [MistralRealtimeTranscriptionRepository] subclass used to drive
+/// the service's stream handlers directly — in particular the `onError`
+/// callback wired onto [transcriptionDone] inside `stop()`, which the real
+/// repository never triggers (it only ever calls `.add` on its done
+/// controller).
+class _ControllableRepository extends MistralRealtimeTranscriptionRepository {
+  final deltaController = StreamController<String>.broadcast();
+  final languageController = StreamController<String>.broadcast();
+  final doneController =
+      StreamController<RealtimeTranscriptionDone>.broadcast();
+  final sentChunks = <Uint8List>[];
+  bool connected = false;
+  bool endAudioCalled = false;
+  bool disconnected = false;
+
+  @override
+  Future<void> connect({
+    required String apiKey,
+    required String baseUrl,
+    String? model,
+  }) async {
+    connected = true;
+  }
+
+  @override
+  void sendAudioChunk(Uint8List pcmBytes) {
+    sentChunks.add(Uint8List.fromList(pcmBytes));
+  }
+
+  @override
+  Future<void> endAudio() async {
+    endAudioCalled = true;
+  }
+
+  @override
+  Future<void> disconnect() async {
+    disconnected = true;
+  }
+
+  @override
+  Stream<String> get transcriptionDeltas => deltaController.stream;
+
+  @override
+  Stream<String> get detectedLanguage => languageController.stream;
+
+  @override
+  Stream<RealtimeTranscriptionDone> get transcriptionDone =>
+      doneController.stream;
+
+  Future<void> close() async {
+    await deltaController.close();
+    await languageController.close();
+    await doneController.close();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -404,6 +461,8 @@ class _TestBench {
 Uint8List _pcmSilence(int bytes) => Uint8List(bytes);
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late _FakeDomainLogger fakeLogging;
 
   setUp(() {
@@ -1244,6 +1303,95 @@ void main() {
         contains(contains('native stop failed')),
       );
     });
+
+    test(
+      'propagates a transcription.done stream error out of stop()',
+      () async {
+        // The real Mistral repo never errors its done stream, so drive the
+        // onError branch via a controllable repository subclass. When the done
+        // stream errors, the listener completes the done completer with that
+        // error; the subsequent `await ...future.timeout(...)` rethrows it.
+        // stop() only catches TimeoutException, so a generic error surfaces to
+        // the caller (after endAudio + done-subscription cleanup).
+        final repo = _ControllableRepository();
+        final container = ProviderContainer(
+          overrides: [
+            realtimeTranscriptionServiceProvider.overrideWith(
+              (ref) => RealtimeTranscriptionService(
+                ref,
+                repository: repo,
+                doneTimeout: const Duration(seconds: 30),
+              ),
+            ),
+          ],
+        );
+        addTearDown(() async {
+          await repo.close();
+          container.dispose();
+        });
+
+        final service = container.read(realtimeTranscriptionServiceProvider);
+        final pcm = StreamController<Uint8List>();
+        addTearDown(pcm.close);
+
+        final provider =
+            AiConfig.inferenceProvider(
+                  id: _providerId,
+                  baseUrl: 'https://api.mistral.ai/v1',
+                  apiKey: 'test-key',
+                  name: 'Mistral',
+                  createdAt: DateTime(2024),
+                  inferenceProviderType: InferenceProviderType.mistral,
+                )
+                as AiConfigInferenceProvider;
+        final model =
+            AiConfig.model(
+                  id: _modelId,
+                  name: 'Voxtral Realtime',
+                  providerModelId: _providerModelId,
+                  inferenceProviderId: _providerId,
+                  createdAt: DateTime(2024),
+                  inputModalities: const [Modality.audio],
+                  outputModalities: const [Modality.text],
+                  isReasoningModel: false,
+                )
+                as AiConfigModel;
+
+        await service.startRealtimeTranscription(
+          pcmStream: pcm.stream,
+          onDelta: (_) {},
+          config: (provider: provider, model: model),
+        );
+
+        // Begin stop(): it cancels the PCM sub, stops the recorder, calls
+        // endAudio, then awaits the done completer. Error the done stream a
+        // few microtasks in, once the completer future is being awaited, so
+        // the listener's onError completes it with the error.
+        final stopFuture = service.stop(
+          stopRecorder: () async {},
+          outputPath: '/tmp/rt_done_error/output',
+        );
+
+        await Future<void>.value();
+        await Future<void>.value();
+        await Future<void>.value();
+        repo.doneController.addError(StateError('done stream exploded'));
+
+        await expectLater(
+          stopFuture,
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              'done stream exploded',
+            ),
+          ),
+        );
+
+        // endAudio still ran before the error surfaced.
+        expect(repo.endAudioCalled, isTrue);
+      },
+    );
   });
 
   group('dispose', () {
@@ -1330,6 +1478,55 @@ void main() {
       final headerDataSize = ByteData.sublistView(bytes, 40, 44);
       expect(headerDataSize.getUint32(0, Endian.little), pcmData.length);
     });
+
+    test(
+      'returns the m4a path and removes the temp WAV on successful conversion',
+      () async {
+        // Mock the native audio converter so convertWavToM4a returns true,
+        // exercising the success branch that deletes the temp WAV file.
+        const channel = MethodChannel('com.matthiasn.lotti/audio_converter');
+        final converterCalls = <Map<Object?, Object?>>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              if (call.method == 'convertWavToM4a') {
+                final args = call.arguments as Map<Object?, Object?>;
+                converterCalls.add(args);
+                // Materialise the output file so the path is real, then report
+                // success so the service deletes the temp WAV.
+                await File(args['outputPath']! as String).writeAsBytes(
+                  const [0],
+                );
+                return true;
+              }
+              return null;
+            });
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(channel, null);
+        });
+
+        final bench = await _TestBench.create();
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        await bench.sendPcm(_pcmSilence(3200));
+
+        bench.scheduleDone('converted ok');
+        final result = await bench.stop();
+
+        expect(result.transcript, 'converted ok');
+        expect(result.audioFilePath, isNotNull);
+        expect(result.audioFilePath, endsWith('.m4a'));
+        // The native converter was invoked with the temp WAV as input.
+        expect(converterCalls, hasLength(1));
+        final tempWavPath = converterCalls.single['inputPath']! as String;
+        expect(tempWavPath, endsWith('.wav'));
+        // The temp WAV was deleted after the successful conversion.
+        expect(File(tempWavPath).existsSync(), isFalse);
+        // The returned m4a file is the materialised output.
+        expect(File(result.audioFilePath!).existsSync(), isTrue);
+      },
+    );
 
     test('audio file has .wav extension as fallback', () async {
       final bench = await _TestBench.create();

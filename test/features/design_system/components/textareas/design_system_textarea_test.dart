@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
@@ -75,6 +76,132 @@ void main() {
       expect(find.text('5/100'), findsOneWidget);
 
       controller.dispose();
+    });
+
+    testWidgets('updates counter when controller text changes after mount', (
+      tester,
+    ) async {
+      final controller = TextEditingController(text: 'Hi');
+
+      await _pumpTextarea(
+        tester,
+        DesignSystemTextarea(
+          controller: controller,
+          maxLength: 50,
+          showCounter: true,
+        ),
+      );
+
+      expect(find.text('2/50'), findsOneWidget);
+
+      // Changing the controller text fires the registered listener
+      // (_onTextChanged), which rebuilds and updates the counter.
+      controller.text = 'Hello there';
+      await tester.pump();
+
+      expect(find.text('2/50'), findsNothing);
+      expect(find.text('11/50'), findsOneWidget);
+
+      controller.dispose();
+    });
+
+    testWidgets('updates border color on hover and reverts on exit', (
+      tester,
+    ) async {
+      const key = Key('hover-textarea');
+
+      await _pumpTextarea(
+        tester,
+        const DesignSystemTextarea(
+          key: key,
+          label: 'Hoverable',
+        ),
+      );
+
+      Color currentBorderColor() {
+        final decoratedBox = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byKey(key),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is DecoratedBox &&
+                  widget.decoration is BoxDecoration &&
+                  (widget.decoration as BoxDecoration).border != null,
+            ),
+          ),
+        );
+        return ((decoratedBox.decoration as BoxDecoration).border! as Border)
+            .top
+            .color;
+      }
+
+      final restingColor = dsTokensLight.colors.text.highEmphasis.withValues(
+        alpha: 0.12,
+      );
+      expect(currentBorderColor(), restingColor);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+
+      // Enter the MouseRegion area -> _hovered = true (line 106).
+      await gesture.moveTo(tester.getCenter(find.byType(TextField)));
+      await tester.pump();
+      expect(currentBorderColor(), dsTokensLight.colors.text.mediumEmphasis);
+
+      // Exit the MouseRegion -> _hovered = false (line 109).
+      await gesture.moveTo(const Offset(-100, -100));
+      await tester.pump();
+      expect(currentBorderColor(), restingColor);
+    });
+
+    testWidgets('does not change border on hover when disabled', (
+      tester,
+    ) async {
+      const key = Key('disabled-hover-textarea');
+
+      await _pumpTextarea(
+        tester,
+        const DesignSystemTextarea(
+          key: key,
+          label: 'Disabled hover',
+          enabled: false,
+        ),
+      );
+
+      Color currentBorderColor() {
+        final decoratedBox = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byKey(key),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is DecoratedBox &&
+                  widget.decoration is BoxDecoration &&
+                  (widget.decoration as BoxDecoration).border != null,
+            ),
+          ),
+        );
+        return ((decoratedBox.decoration as BoxDecoration).border! as Border)
+            .top
+            .color;
+      }
+
+      final restingColor = dsTokensLight.colors.text.highEmphasis.withValues(
+        alpha: 0.12,
+      );
+      expect(currentBorderColor(), restingColor);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+
+      await gesture.moveTo(tester.getCenter(find.byType(TextField)));
+      await tester.pump();
+
+      // onEnter is null when disabled, so border stays at resting color.
+      expect(currentBorderColor(), restingColor);
     });
 
     testWidgets('calls onChanged when text is entered', (tester) async {

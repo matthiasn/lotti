@@ -1,14 +1,20 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncData;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -55,6 +61,36 @@ class _ModalLauncherWithEntry extends StatelessWidget {
       },
       child: const Text('Open'),
     );
+  }
+}
+
+// A controller whose updateFromTo always throws, to exercise the Save
+// handler's catch block (which logs via DevLogger and keeps the modal open).
+class _ThrowingEntryController extends EntryController {
+  _ThrowingEntryController(this._entity);
+
+  final JournalEntity _entity;
+
+  @override
+  Future<EntryState?> build({required String id}) {
+    final value = EntryState.saved(
+      entryId: id,
+      entry: _entity,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+      formKey: GlobalKey<FormBuilderState>(),
+    );
+    state = AsyncData(value);
+    return SynchronousFuture(value);
+  }
+
+  @override
+  Future<bool> updateFromTo({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    throw Exception('boom');
   }
 }
 
@@ -817,6 +853,204 @@ void main() {
           tracker.updateFromToCalls.first,
           containsPair('dateFrom', testTextEntry.meta.dateFrom),
         );
+      },
+    );
+
+    // ----------------------------------------------------------------
+    // Picker: onDateTimeChanged updates the correct notifier per field
+    // ----------------------------------------------------------------
+
+    // Drives the CupertinoDatePicker.onDateTimeChanged callback directly for a
+    // given field, then taps Save and returns the DateTime forwarded to
+    // updateFromTo for that field. This exercises both branches of the
+    // onDateTimeChanged closure (from vs. to) through observable output: the
+    // value that reaches the controller's updateFromTo call.
+    Future<DateTime> changeFieldViaPickerAndSave(
+      WidgetTester tester, {
+      required ToggleCallTracker tracker,
+      required String formattedFieldText,
+      required DateTime newValue,
+      required String trackerKey,
+    }) async {
+      // Open the picker page for the requested field.
+      await tester.tap(find.text(formattedFieldText).first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Invoke the picker's onDateTimeChanged with a deterministic value.
+      final picker = tester.widget<CupertinoDatePicker>(
+        find.byType(CupertinoDatePicker),
+      );
+      picker.onDateTimeChanged(newValue);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Return to the range page via Done so Save is reachable.
+      await tester.ensureVisible(find.text('Done'));
+      await tester.tap(find.text('Done'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Save the change.
+      final saveButton = find.text('SAVE');
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        tracker.updateFromToCalls,
+        hasLength(1),
+        reason: 'Save should forward the picked value to updateFromTo',
+      );
+      return tracker.updateFromToCalls.first[trackerKey]!;
+    }
+
+    testWidgets(
+      'onDateTimeChanged on the from picker updates dateFrom and is saved',
+      (tester) async {
+        _useWideModalView(tester);
+
+        final tracker = ToggleCallTracker();
+        final override =
+            entryControllerProvider(
+              id: testTextEntry.meta.id,
+            ).overrideWith(
+              () => FakeEntryController(testTextEntry, tracker: tracker),
+            );
+
+        await _openModal(
+          tester,
+          override: override,
+          mediaQueryData: const MediaQueryData(size: Size(800, 900)),
+          settle: const Duration(milliseconds: 500),
+        );
+
+        // New dateFrom kept strictly before the original dateTo
+        // (2022-07-07 14:00) so the range stays valid and is detected as dirty.
+        final newFrom = DateTime(2022, 7, 7, 9, 30);
+        final saved = await changeFieldViaPickerAndSave(
+          tester,
+          tracker: tracker,
+          formattedFieldText: dfShorter.format(testTextEntry.meta.dateFrom),
+          newValue: newFrom,
+          trackerKey: 'dateFrom',
+        );
+
+        // The from-branch (selectedField == from) wrote the new value into
+        // dateFromNotifier, which is what reached updateFromTo.
+        expect(saved, newFrom);
+        // dateTo was left untouched by the from-branch.
+        expect(
+          tracker.updateFromToCalls.first['dateTo'],
+          testTextEntry.meta.dateTo,
+        );
+      },
+    );
+
+    testWidgets(
+      'onDateTimeChanged on the to picker updates dateTo and is saved',
+      (tester) async {
+        _useWideModalView(tester);
+
+        final tracker = ToggleCallTracker();
+        final override =
+            entryControllerProvider(
+              id: testTextEntry.meta.id,
+            ).overrideWith(
+              () => FakeEntryController(testTextEntry, tracker: tracker),
+            );
+
+        await _openModal(
+          tester,
+          override: override,
+          mediaQueryData: const MediaQueryData(size: Size(800, 900)),
+          settle: const Duration(milliseconds: 500),
+        );
+
+        // New dateTo kept strictly after dateFrom (13:00) so the range is valid.
+        final newTo = DateTime(2024, 3, 15, 18);
+        final saved = await changeFieldViaPickerAndSave(
+          tester,
+          tracker: tracker,
+          formattedFieldText: dfShorter.format(testTextEntry.meta.dateTo),
+          newValue: newTo,
+          trackerKey: 'dateTo',
+        );
+
+        // The else-branch (selectedField == to) wrote the new value into
+        // dateToNotifier, which is what reached updateFromTo.
+        expect(saved, newTo);
+        // dateFrom was left untouched by the to-branch.
+        expect(
+          tracker.updateFromToCalls.first['dateFrom'],
+          testTextEntry.meta.dateFrom,
+        );
+      },
+    );
+
+    // ----------------------------------------------------------------
+    // Save handler: updateFromTo throwing is caught and logged
+    // ----------------------------------------------------------------
+
+    testWidgets(
+      'Save logs a warning and keeps the modal open when updateFromTo throws',
+      (tester) async {
+        _useWideModalView(tester);
+        DevLogger.clear();
+        addTearDown(DevLogger.clear);
+
+        final override = entryControllerProvider(
+          id: testTextEntry.meta.id,
+        ).overrideWith(() => _ThrowingEntryController(testTextEntry));
+
+        await _openModal(
+          tester,
+          override: override,
+          mediaQueryData: const MediaQueryData(size: Size(800, 900)),
+          settle: const Duration(milliseconds: 500),
+        );
+
+        // Make the range dirty + valid by scrolling the dateTo picker forward.
+        await tester.tap(
+          find.text(dfShorter.format(testTextEntry.meta.dateTo)).first,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        final picker = tester.widget<CupertinoDatePicker>(
+          find.byType(CupertinoDatePicker),
+        );
+        picker.onDateTimeChanged(DateTime(2024, 3, 15, 18));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        await tester.ensureVisible(find.text('Done'));
+        await tester.tap(find.text('Done'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Tap Save — updateFromTo throws, the catch block logs and swallows.
+        final saveButton = find.text('SAVE');
+        await tester.ensureVisible(saveButton);
+        await tester.tap(saveButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // The warning was logged with the modal's name and the error text.
+        expect(
+          DevLogger.capturedLogs,
+          contains(
+            allOf(
+              contains('EntryDateTimeMultiPageModal'),
+              contains('Error updating date range'),
+              contains('boom'),
+            ),
+          ),
+        );
+
+        // The modal stays open because the pop only runs on success.
+        expect(find.text('Date & Time Range'), findsOneWidget);
       },
     );
   });

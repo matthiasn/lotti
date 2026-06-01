@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -53,6 +54,14 @@ class AudioMetadataExtractor {
   /// This flag is exposed for backward compatibility with existing test code.
   /// In production, this should always be false.
   static bool bypassMediaKitInTests = false;
+
+  /// Factory used to construct the MediaKit [Player] in [extractDuration].
+  ///
+  /// Production code uses the default ([Player.new]). Tests can override this
+  /// to inject a fake player and exercise the duration-extraction logic without
+  /// a real libmpv backend. Always restore it to [Player.new] in tearDown.
+  @visibleForTesting
+  static Player Function() playerFactory = Player.new;
 
   /// Parses timestamp from audio filename if it matches Lotti's format.
   ///
@@ -154,7 +163,7 @@ class AudioMetadataExtractor {
       if (bypassMediaKitInTests) {
         return Duration.zero;
       }
-      player = Player();
+      player = playerFactory();
       try {
         // Guard against environments where media backends are unavailable.
         await player

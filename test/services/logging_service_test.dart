@@ -413,6 +413,56 @@ void main() {
     },
   );
 
+  test(
+    'dispose cancels config-flag subscriptions so later events are ignored',
+    () async {
+      final loggingController = StreamController<bool>();
+      final slowQueryController = StreamController<bool>();
+      addTearDown(loggingController.close);
+      addTearDown(slowQueryController.close);
+
+      when(
+        () => journalDb.watchConfigFlag(enableLoggingFlag),
+      ).thenAnswer((_) => loggingController.stream);
+      when(
+        () => journalDb.watchConfigFlag(logSlowQueriesFlag),
+      ).thenAnswer((_) => slowQueryController.stream);
+
+      final svc = LoggingService()..listenToConfigFlag();
+
+      // Enable both flags so the slow-query gate is on, proving the
+      // subscriptions are live before dispose.
+      loggingController.add(true);
+      slowQueryController.add(true);
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        SlowQueryLoggingGate.isEnabled,
+        isTrue,
+        reason: 'gate should reflect live subscriptions before dispose',
+      );
+
+      // dispose() awaits cancellation of both subscriptions (lines 70-72).
+      await svc.dispose();
+
+      // After dispose, further stream events must NOT mutate the gate, proving
+      // both subscriptions were cancelled.
+      loggingController.add(false);
+      slowQueryController.add(false);
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        SlowQueryLoggingGate.isEnabled,
+        isTrue,
+        reason: 'cancelled subscriptions must ignore post-dispose events',
+      );
+    },
+  );
+
+  test('dispose is safe when listenToConfigFlag was never called', () async {
+    final svc = LoggingService();
+    // Both subscriptions are null; dispose must complete without throwing.
+    await expectLater(svc.dispose(), completes);
+  });
+
   test('captureException with null stackTrace handles gracefully', () {
     fakeAsync((async) {
       logging.captureException(
@@ -511,6 +561,89 @@ void main() {
 
     File? findGeneralLog() => _findLogFile(bufferedTempDocs);
     File? findSyncLog() => _findLogFile(bufferedTempDocs, prefix: 'sync-');
+
+    test(
+      'single buffered line is flushed when the 500 ms flush timer fires',
+      () async {
+        // A lone, non-force info event neither hits the line threshold nor
+        // force-flushes, so the only thing that drains it is the buffered
+        // flush timer scheduled in `_appendToNamedFile` (lines 94-100 of
+        // logging_service.dart). We deliberately do NOT call
+        // `flushAllForTest()` to trigger the buffering — only the timer
+        // firing performs the drain. The `timerFactory` seam lets us drive
+        // that 500 ms timer deterministically under `fakeAsync` instead of
+        // polling wall-clock time, which was flaky on slow CI.
+        Duration? scheduledDelay;
+        void Function()? productionFlushCallback;
+
+        // Override the production timer factory so the buffered-flush timer is
+        // driven by `fakeAsync` (via a virtual `Timer.new`) while the actual
+        // file-write callback runs OUTSIDE the fake zone. The production
+        // callback performs genuine async file I/O, which a virtual clock
+        // cannot complete; capturing it and invoking it in the real zone keeps
+        // the assertion deterministic without losing 500 ms-timer coverage.
+        bufferedLogging.timerFactory = (duration, callback) {
+          scheduledDelay = duration;
+          // Virtual timer: `async.elapse` advances it. When it fires we record
+          // the production flush callback rather than running its real I/O
+          // inside the fake zone.
+          return Timer(duration, () => productionFlushCallback = callback);
+        };
+
+        fakeAsync((async) {
+          bufferedLogging.captureEvent(
+            'timer flushed line',
+            domain: 'TIMER_FLUSH',
+          );
+          // Drain the captureEvent microtasks so the buffered line is queued
+          // and the flush timer is scheduled.
+          async.flushMicrotasks();
+
+          // Buffered only — the flush timer was scheduled at 500 ms but has
+          // not fired, so nothing is on disk and the callback isn't captured.
+          expect(scheduledDelay, const Duration(milliseconds: 500));
+          expect(findGeneralLog(), isNull);
+
+          // Just shy of 500 ms: still buffered, timer not yet fired.
+          async
+            ..elapse(const Duration(milliseconds: 499))
+            ..flushMicrotasks();
+          expect(productionFlushCallback, isNull);
+          expect(findGeneralLog(), isNull);
+
+          // Crossing 500 ms fires the virtual timer, capturing the production
+          // flush callback.
+          async
+            ..elapse(const Duration(milliseconds: 1))
+            ..flushMicrotasks();
+        });
+
+        // The timer fired inside the fake zone; now run the production flush
+        // callback in the real zone so its async file write actually lands.
+        expect(
+          productionFlushCallback,
+          isNotNull,
+          reason: 'the 500 ms flush timer should have fired its callback',
+        );
+        productionFlushCallback!();
+        // Deterministically drain the genuine async file write the callback
+        // kicked off. `pumpEventQueue()` runs the real event loop until it is
+        // idle — no fixed sleep, no wall-clock polling — so the timer-initiated
+        // write has landed once it returns.
+        await pumpEventQueue();
+
+        final file = findGeneralLog();
+        expect(
+          file,
+          isNotNull,
+          reason: 'firing the 500 ms flush timer should have written the file',
+        );
+        expect(
+          file!.readAsStringSync(),
+          contains('[INFO] TIMER_FLUSH: timer flushed line'),
+        );
+      },
+    );
 
     test('buffered lines are flushed to file', () async {
       bufferedLogging.captureEvent(

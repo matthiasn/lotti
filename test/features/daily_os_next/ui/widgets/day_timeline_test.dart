@@ -1166,5 +1166,125 @@ void main() {
         expect(find.text('24:00'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'without an injected clock the now-line tracks the real clock and the '
+      'per-minute timer keeps it mounted across a tick',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 1200)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        // The widget falls back to DateTime.now() when no clock is injected,
+        // so place the draft on the real calendar day to make the now-line
+        // fall inside the window. DateTime.now() is not fakeable, but the
+        // value is stable within a single (sub-second) test run.
+        final wallNow = DateTime.now();
+        final today = DateTime(wallNow.year, wallNow.month, wallNow.day);
+        final draft = DraftPlan(
+          dayDate: today,
+          blocks: [
+            TimeBlock(
+              id: 'anchor',
+              title: 'Anchor block',
+              start: today.add(const Duration(hours: 8)),
+              end: today.add(const Duration(hours: 9)),
+              type: TimeBlockType.ai,
+              state: TimeBlockState.drafted,
+              category: _work,
+              reason: 'Window selected for focused work.',
+            ),
+          ],
+          bands: const [],
+          capacityMinutes: 480,
+          scheduledMinutes: 60,
+        );
+
+        await tester.pumpWidget(_wrap(DayTimeline(draft: draft)));
+        await tester.pump();
+
+        // The red now-badge (bold, error colour) carries the live HH:mm. Read
+        // it back from the tree instead of recomputing, so a minute rollover
+        // mid-test cannot make the assertion flaky.
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        final errorColor = tokens.colors.alert.error.defaultColor;
+        Finder nowBadge() => find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              w.style?.color == errorColor &&
+              w.style?.fontWeight == tokens.typography.weight.bold,
+        );
+
+        expect(nowBadge(), findsOneWidget);
+        final labelBefore = tester.widget<Text>(nowBadge()).data;
+        expect(labelBefore, isNotNull);
+        // Looks like a clock value, e.g. 14:07.
+        expect(RegExp(r'^\d{2}:\d{2}$').hasMatch(labelBefore!), isTrue);
+
+        // Advance fake time past a full minute so the scheduled Timer fires.
+        // The callback re-reads DateTime.now(), calls setState, and reschedules
+        // (lines covering the timer body). The widget must stay mounted and the
+        // now-line must survive the rebuild.
+        await tester.pump(const Duration(minutes: 1));
+
+        expect(nowBadge(), findsOneWidget);
+        expect(find.text('Anchor block'), findsOneWidget);
+
+        // Dispose cancels the live (rescheduled) timer; a leaked timer would
+        // fail the test, proving the reschedule produced a cancellable timer.
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+
+    testWidgets(
+      'wide layout horizontal pinch-out switches both → paged comparison mode',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draft(),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
+          ),
+        );
+        await tester.pump();
+
+        // Wide screen (>= desktop breakpoint) defaults to side-by-side "both".
+        expect(find.byType(PageView), findsNothing);
+
+        final center = tester.getCenter(find.byType(DayTimeline));
+        final firstFinger = await tester.createGesture(pointer: 301);
+        final secondFinger = await tester.createGesture(pointer: 302);
+
+        // Fingers start close, then spread far apart horizontally so
+        // horizontalScale > 1.08 (pinch-out) and the horizontal axis dominates.
+        await firstFinger.down(center.translate(-10, 0));
+        await secondFinger.down(center.translate(10, 0));
+        await tester.pump();
+
+        await firstFinger.moveTo(center.translate(-200, 0));
+        await secondFinger.moveTo(center.translate(200, 0));
+        await tester.pump();
+
+        await firstFinger.up();
+        await secondFinger.up();
+        await tester.pump();
+
+        // Pinch-out collapses the side-by-side view back to the paged carousel.
+        expect(find.byType(PageView), findsOneWidget);
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        expect(
+          find.byTooltip(messages.dailyOsNextTimelineShowBoth),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

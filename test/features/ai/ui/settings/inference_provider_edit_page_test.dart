@@ -1838,6 +1838,99 @@ void main() {
       expect(find.text('Accept & finish'), findsOneWidget);
     });
 
+    testWidgets(
+      'Run Setup -> Accept & finish -> Start using AI runs the full FTUE '
+      'workflow, persists models and clears the running spinner',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final geminiProvider = AiConfig.inferenceProvider(
+          id: 'gemini-provider-id',
+          name: 'My Gemini',
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        // Capture every persisted config so we can assert the FTUE
+        // workflow (driven via the `_AiSetupSection` Run Setup button)
+        // actually wrote models to the repository.
+        final savedConfigs = <AiConfig>[];
+        when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
+          savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
+          return Future.value();
+        });
+        when(
+          () => mockRepository.getConfigById('gemini-provider-id'),
+        ).thenAnswer((_) async => geminiProvider);
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([]));
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
+        );
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [geminiProvider]);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            configId: 'gemini-provider-id',
+            existingProviders: [geminiProvider],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+
+        // Open the FTUE preview from the `_AiSetupSection` Run Setup button.
+        final runSetupButton = find.text(strings.aiSetupWizardRunButton);
+        await tester.ensureVisible(runSetupButton);
+        await tester.pump();
+        await tester.tap(runSetupButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Confirm the preview -> drives `runFtueSetupForType` -> result modal.
+        // The sheet's barrier animation never settles fully, so pump the
+        // route transition explicitly instead of `pumpAndSettle`.
+        expect(find.text('Accept & finish'), findsOneWidget);
+        await tester.tap(find.text('Accept & finish'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Result modal lands on the "Start using AI" CTA.
+        expect(find.text('Start using AI'), findsOneWidget);
+
+        // Tapping it returns `AiProviderSetupResultAction.startUsingAi`,
+        // which exits the workflow (popAiSettingsDetail is a no-op on the
+        // root MaterialApp.home test surface) and runs the `finally`
+        // block that clears `_isRunning`.
+        await tester.tap(find.text('Start using AI'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The workflow actually created Gemini models in the repository.
+        final modelsCreated = savedConfigs.whereType<AiConfigModel>().length;
+        expect(modelsCreated, greaterThan(0));
+
+        // The result modal is gone and the spinner is cleared: the button
+        // is back to its idle "Run Setup" label, not "Running…".
+        expect(find.text('Start using AI'), findsNothing);
+        expect(find.text(strings.aiSetupWizardRunButton), findsOneWidget);
+        expect(find.text(strings.aiSetupWizardRunningButton), findsNothing);
+      },
+    );
+
     testWidgets('displays all localized strings correctly', (
       WidgetTester tester,
     ) async {

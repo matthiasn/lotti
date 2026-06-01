@@ -341,6 +341,86 @@ void main() {
       ).called(1);
     });
 
+    test('logs duration error but still imports with zero duration', () async {
+      // Override the reader to throw; the import must swallow the error,
+      // log it under the duration subdomain, and proceed with zero duration.
+      getIt
+        ..unregister<AudioMetadataReader>()
+        ..registerSingleton<AudioMetadataReader>(
+          (_) async => throw Exception('duration extraction failed'),
+        );
+
+      final testFile = await createTestAudioFile('duration-fail.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      await importDroppedAudio(data: dropDetails);
+
+      // The duration-extraction failure is logged under its own subdomain.
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'importDroppedAudio_duration',
+        ),
+      ).called(1);
+
+      // Import still succeeds: an audio entry is created with zero duration.
+      final captured =
+          verify(
+                () => mockPersistenceLogic.createDbEntity(
+                  captureAny(that: isA<JournalAudio>()),
+                  linkedId: any(named: 'linkedId'),
+                  shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                  enqueueSync: any(named: 'enqueueSync'),
+                ),
+              ).captured.single
+              as JournalAudio;
+      expect(captured.data.duration, Duration.zero);
+    });
+
+    test('logs cleanup error when deleting copied file fails', () async {
+      // Make entry creation fail so the result==null cleanup branch runs.
+      when(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).thenThrow(Exception('DB creation failed'));
+
+      // The reader runs after the copy and before the delete. Use it as a
+      // seam: replace the just-copied file with a NON-EMPTY directory at the
+      // exact target path so the later File(...).delete() throws and the
+      // nested cleanup catch (and its error log) is exercised.
+      getIt
+        ..unregister<AudioMetadataReader>()
+        ..registerSingleton<AudioMetadataReader>((filePath) async {
+          await File(filePath).delete();
+          await Directory(filePath).create();
+          await File(path.join(filePath, 'inner.txt')).writeAsString('x');
+          return Duration.zero;
+        });
+
+      final testFile = await createTestAudioFile('cleanup-fail.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      await importDroppedAudio(data: dropDetails);
+
+      // The failed delete is logged under the cleanup subdomain.
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'importDroppedAudio_cleanup',
+        ),
+      ).called(1);
+    });
+
     test('parses timestamp from Lotti filename format', () async {
       final testFile = await createTestAudioFile(
         '2025-10-20_16-49-32-203.m4a',

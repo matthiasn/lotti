@@ -1579,6 +1579,41 @@ void main() {
       expect(builderWithResolver.items[0].args['id'], 'label-2');
     });
 
+    test(
+      'redundant label detail falls back to truncated id when name is null',
+      () async {
+        // The label is already assigned but the name resolver yields null,
+        // so the redundancy detail must use the truncated label id.
+        final builderWithResolver = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          existingLabelIdsResolver: () async => {'label-abcdef123'},
+          labelNameResolver: (id) async => null,
+        );
+
+        final result = await builderWithResolver.addBatchItem(
+          toolName: 'assign_task_labels',
+          args: {
+            'labels': [
+              {'id': 'label-abcdef123', 'confidence': 'high'},
+            ],
+          },
+          summaryPrefix: 'Label',
+        );
+
+        expect(result.added, 0);
+        expect(result.redundant, 1);
+        // _truncateId keeps the first 8 chars plus an ellipsis.
+        expect(
+          result.redundantDetails.single,
+          'Label "label-ab…" is already assigned',
+        );
+        expect(builderWithResolver.items, isEmpty);
+      },
+    );
+
     test('filters duplicate label IDs within the same batch', () async {
       final builderWithResolver = ChangeSetBuilder(
         agentId: 'agent-001',
@@ -2150,6 +2185,88 @@ void main() {
         expect(updatedSet.items[1].status, ChangeItemStatus.pending);
         expect(updatedSet.items[1].args['summary'], 'Other timer text');
         expect(updatedSet.items.last.args['summary'], 'Latest timer text');
+      },
+    );
+
+    test(
+      'leaves sets without superseded timer items untouched during merge',
+      () async {
+        // A new running-timer update for timer-1 supersedes a pending one in
+        // the first existing set, while a second existing set carries only an
+        // unrelated item and must pass through _markItemsRetracted unchanged.
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateRunningTimer,
+          args: const {
+            'timerId': 'timer-1',
+            'summary': 'Newest timer text',
+          },
+          humanSummary: 'Update running timer text: "Newest timer text"',
+        );
+
+        final timerSet = makeTestChangeSet(
+          id: 'cs-timer',
+          createdAt: DateTime(2024, 3, 15, 10),
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {'timerId': 'timer-1', 'summary': 'Stale timer text'},
+              humanSummary: 'Update running timer text: "Stale timer text"',
+            ),
+          ],
+        );
+        final unrelatedSet = makeTestChangeSet(
+          id: 'cs-unrelated',
+          createdAt: DateTime(2024, 3, 15, 11),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN_PROGRESS'},
+              humanSummary: 'Set status',
+            ),
+          ],
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [timerSet, unrelatedSet],
+        );
+
+        // The newer unrelated set is the survivor; its single item is
+        // preserved verbatim (passed through _markItemsRetracted unchanged).
+        expect(result, isNotNull);
+        expect(result!.id, 'cs-unrelated');
+        final statusItem = result.items.singleWhere(
+          (i) => i.toolName == 'set_task_status',
+        );
+        expect(statusItem.status, ChangeItemStatus.pending);
+        expect(statusItem.args, {'status': 'IN_PROGRESS'});
+
+        // The stale timer item lands in the survivor as retracted, and the
+        // new timer update is appended as pending.
+        final timerItems = result.items
+            .where((i) => i.toolName == TaskAgentToolNames.updateRunningTimer)
+            .toList();
+        expect(timerItems, hasLength(2));
+        expect(
+          timerItems
+              .singleWhere((i) => i.args['summary'] == 'Stale timer text')
+              .status,
+          ChangeItemStatus.retracted,
+        );
+        expect(
+          timerItems
+              .singleWhere((i) => i.args['summary'] == 'Newest timer text')
+              .status,
+          ChangeItemStatus.pending,
+        );
+
+        // A retraction decision is recorded against the original timer set.
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final decision = captured.whereType<ChangeDecisionEntity>().single;
+        expect(decision.changeSetId, 'cs-timer');
+        expect(decision.verdict, ChangeDecisionVerdict.retracted);
       },
     );
 
@@ -3056,6 +3173,41 @@ void main() {
       },
     );
 
+    test(
+      'redundant update detail falls back to truncated id when title is null',
+      () async {
+        // Resolver returns a known checked state but no title, so the
+        // redundant-update detail must fall back to the truncated item id.
+        final resolverBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (id) async =>
+              (title: null, isChecked: true),
+        );
+
+        final result = await resolverBuilder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'abcdef1234567890', 'isChecked': true},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
+
+        expect(resolverBuilder.items, isEmpty);
+        expect(result.added, 0);
+        expect(result.redundant, 1);
+        // _truncateId keeps the first 8 chars plus an ellipsis.
+        expect(
+          result.redundantDetails.single,
+          '"abcdef12…" is already checked',
+        );
+      },
+    );
+
     test('allows non-redundant check update to pass through', () async {
       final resolverBuilder = ChangeSetBuilder(
         agentId: 'agent-001',
@@ -3642,6 +3794,54 @@ void main() {
       expect(item.toolName, 'create_follow_up_task');
       expect(item.args['title'], 'Follow-Up B');
       expect(item.args['_placeholderTaskId'], placeholder);
+    });
+
+    test(
+      'strips whitespace-only dueDate and priority from enriched args',
+      () async {
+        // dueDate and priority are present as strings but canonicalize to
+        // empty, so they must be removed from the enriched args entirely
+        // (rather than stored as empty strings).
+        await builder.addFollowUpTask(
+          args: {
+            'title': 'Follow-Up E',
+            'dueDate': '   ',
+            'priority': '  ',
+          },
+          humanSummary: 'Create follow-up task E',
+        );
+
+        expect(builder.items, hasLength(1));
+        final args = builder.items.first.args;
+        expect(args.containsKey('dueDate'), isFalse);
+        expect(args.containsKey('priority'), isFalse);
+        expect(args['title'], 'Follow-Up E');
+        // The placeholder is keyed on the canonical (empty) due/priority.
+        expect(
+          args['_placeholderTaskId'],
+          ChangeSetBuilder.deterministicPlaceholder(
+            'task-001',
+            'Follow-Up E||',
+          ),
+        );
+      },
+    );
+
+    test('keeps and canonicalizes non-empty dueDate and priority', () async {
+      // Counterpart to the strip case: non-empty values must survive and be
+      // canonicalized (trimmed, priority upper-cased).
+      await builder.addFollowUpTask(
+        args: {
+          'title': 'Follow-Up F',
+          'dueDate': '  2026-06-15  ',
+          'priority': '  high  ',
+        },
+        humanSummary: 'Create follow-up task F',
+      );
+
+      final args = builder.items.single.args;
+      expect(args['dueDate'], '2026-06-15');
+      expect(args['priority'], 'HIGH');
     });
 
     test('uses placeholder as default groupId', () async {

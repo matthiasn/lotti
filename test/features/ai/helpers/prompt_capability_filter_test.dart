@@ -724,6 +724,111 @@ void main() {
         expect(result, isFalse);
       });
 
+      test(
+        'filterPromptsByPlatform keeps cloud prompts and drops local-only '
+        'ones on mobile',
+        () async {
+          // Override platform to simulate mobile so the non-desktop branch
+          // of filterPromptsByPlatform (Future.wait + list comprehension) runs.
+          platform.isDesktop = false;
+          platform.isMobile = true;
+
+          // Arrange: one cloud-backed prompt (kept) and one Whisper-backed
+          // prompt (local-only, dropped), interleaved so order is asserted.
+          final cloudPrompt = AiTestDataFactory.createTestPrompt(
+            id: 'cloud-prompt',
+            defaultModelId: 'cloud-model',
+          );
+          final whisperPrompt = AiTestDataFactory.createTestPrompt(
+            id: 'whisper-prompt',
+            defaultModelId: 'whisper-model',
+          );
+          final secondCloudPrompt = AiTestDataFactory.createTestPrompt(
+            id: 'second-cloud-prompt',
+            defaultModelId: 'cloud-model',
+          );
+
+          final cloudModel = AiTestDataFactory.createTestModel(
+            id: 'cloud-model',
+            inferenceProviderId: 'cloud-provider',
+          );
+          final whisperModel = AiTestDataFactory.createTestModel(
+            id: 'whisper-model',
+            inferenceProviderId: 'whisper-provider',
+          );
+
+          final cloudProvider = AiTestDataFactory.createTestProvider(
+            id: 'cloud-provider',
+            type: InferenceProviderType.openAi,
+          );
+          final whisperProvider = AiTestDataFactory.createTestProvider(
+            id: 'whisper-provider',
+            type: InferenceProviderType.whisper,
+          );
+
+          when(
+            () => mockRepo.getConfigById('cloud-model'),
+          ).thenAnswer((_) async => cloudModel);
+          when(
+            () => mockRepo.getConfigById('whisper-model'),
+          ).thenAnswer((_) async => whisperModel);
+          when(
+            () => mockRepo.getConfigById('cloud-provider'),
+          ).thenAnswer((_) async => cloudProvider);
+          when(
+            () => mockRepo.getConfigById('whisper-provider'),
+          ).thenAnswer((_) async => whisperProvider);
+
+          // Act
+          final result = await filter.filterPromptsByPlatform([
+            cloudPrompt,
+            whisperPrompt,
+            secondCloudPrompt,
+          ]);
+
+          // Assert: only the cloud-backed prompts survive, in original order.
+          expect(
+            result.map((p) => p.id).toList(),
+            equals(['cloud-prompt', 'second-cloud-prompt']),
+          );
+        },
+      );
+
+      test(
+        'filterPromptsByPlatform returns empty list when every prompt is '
+        'local-only on mobile',
+        () async {
+          platform.isDesktop = false;
+          platform.isMobile = true;
+
+          final ollamaPrompt = AiTestDataFactory.createTestPrompt(
+            id: 'ollama-prompt',
+            defaultModelId: 'ollama-model',
+          );
+          final ollamaModel = AiTestDataFactory.createTestModel(
+            id: 'ollama-model',
+            inferenceProviderId: 'ollama-provider',
+          );
+          final ollamaProvider = AiTestDataFactory.createTestProvider(
+            id: 'ollama-provider',
+            type: InferenceProviderType.ollama,
+          );
+
+          when(
+            () => mockRepo.getConfigById('ollama-model'),
+          ).thenAnswer((_) async => ollamaModel);
+          when(
+            () => mockRepo.getConfigById('ollama-provider'),
+          ).thenAnswer((_) async => ollamaProvider);
+
+          // Act
+          final result = await filter.filterPromptsByPlatform([ollamaPrompt]);
+
+          // Assert: comprehension excludes the only (local-only) prompt.
+          expect(result, isEmpty);
+        },
+      );
+
       test('allows cloud providers on mobile', () async {
         // Override platform to simulate mobile
         platform.isDesktop = false;
@@ -996,6 +1101,63 @@ void main() {
         // Assert - Desktop returns true immediately
         expect(result, isTrue);
       });
+    });
+
+    group('promptCapabilityFilterProvider', () {
+      late bool originalIsDesktop;
+      late bool originalIsMobile;
+
+      setUp(() {
+        originalIsDesktop = platform.isDesktop;
+        originalIsMobile = platform.isMobile;
+      });
+
+      tearDown(() {
+        platform.isDesktop = originalIsDesktop;
+        platform.isMobile = originalIsMobile;
+      });
+
+      test(
+        'builds a PromptCapabilityFilter wired to the container Ref',
+        () async {
+          // Read the provider WITHOUT overriding it so the factory body
+          // (PromptCapabilityFilter(ref)) actually executes.
+          final builtFilter = container.read(promptCapabilityFilterProvider);
+
+          // Same instance is returned for repeated reads (Provider caches it).
+          expect(
+            container.read(promptCapabilityFilterProvider),
+            same(builtFilter),
+          );
+
+          // Force the non-desktop branch so availability *must* consult the
+          // repository through the wired Ref. On desktop the filter short-
+          // circuits to true without ever reading the repo, which would let
+          // a mis-wired Ref pass undetected.
+          platform.isDesktop = false;
+          platform.isMobile = true;
+
+          final prompt = AiTestDataFactory.createTestPrompt(
+            id: 'wired-prompt',
+            defaultModelId: 'wired-model',
+          );
+          // Missing model -> prompt is unavailable on mobile, so it is dropped.
+          when(
+            () => mockRepo.getConfigById('wired-model'),
+          ).thenAnswer((_) async => null);
+
+          final filtered = await builtFilter.filterPromptsByPlatform([prompt]);
+
+          // The prompt was dropped because the wired Ref resolved the
+          // overridden mockRepo and got a null model back.
+          expect(filtered, isEmpty);
+
+          // And prove the lookup went through the overridden repository: if the
+          // provider stopped wiring the container Ref to mockRepo, this call
+          // would never have happened.
+          verify(() => mockRepo.getConfigById('wired-model')).called(1);
+        },
+      );
     });
   });
 }

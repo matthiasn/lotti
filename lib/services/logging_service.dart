@@ -33,6 +33,15 @@ class LoggingService {
   final Map<String, List<String>> _pendingFileLinesByStem =
       <String, List<String>>{};
   final Map<String, Timer> _fileFlushTimers = <String, Timer>{};
+
+  /// Seam for scheduling the buffered-flush timer. Defaults to the real
+  /// [Timer] constructor; tests override it so the 500 ms flush path can be
+  /// driven deterministically under `fakeAsync` (whose virtual clock cannot
+  /// otherwise advance a real `Timer`). Production behavior is identical to
+  /// `Timer(duration, callback)` by default.
+  @visibleForTesting
+  Timer Function(Duration duration, void Function() callback) timerFactory =
+      Timer.new;
   final Map<String, Future<void>> _fileDrains = <String, Future<void>>{};
   final List<Future<void>> _pendingWrites = <Future<void>>[];
 
@@ -91,7 +100,7 @@ class LoggingService {
         forceFlush || pendingLines.length >= _fileFlushLineThreshold;
 
     if (!shouldFlushNow) {
-      _fileFlushTimers[fileStem] ??= Timer(
+      _fileFlushTimers[fileStem] ??= timerFactory(
         _fileFlushInterval,
         () {
           _fileFlushTimers.remove(fileStem);

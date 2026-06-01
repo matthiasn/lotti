@@ -1,9 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -17,6 +20,9 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
+import '../../test_data/ai_config_factories.dart';
+import '../../test_data/entity_factories.dart';
+import '../../test_data/template_factories.dart';
 
 /// Tests for the AI summary card's "Assign Agent" CTA path. The CTA
 /// drives `_createTaskAgent` in `assign_agent_cta_part.dart`, which
@@ -25,9 +31,23 @@ import '../../../../widget_test_utils.dart';
 /// * the entry resolves to a non-`Task` (or null) — short-circuit
 /// * templates are unavailable — warning toast, no agent created
 /// * the template service throws — error toast, no agent created
+/// * the full success path — a category-scoped template lookup, the
+///   creation modal opening, and `createTaskAgent` being dispatched
+///   with the task's category in `allowedCategoryIds`
 class _NullEntryController extends EntryController {
   @override
   Future<EntryState?> build({required String id}) async => null;
+}
+
+/// Emits a fixed list of inference profiles so the creation modal's
+/// profile page renders selectable rows.
+class _FakeInferenceProfileController extends InferenceProfileController {
+  _FakeInferenceProfileController(this._profiles);
+
+  final List<AiConfig> _profiles;
+
+  @override
+  Stream<List<AiConfig>> build() => Stream.value(_profiles);
 }
 
 class _TaskEntryController extends EntryController {
@@ -224,6 +244,120 @@ void main() {
           ),
         );
         expect(find.text('Assign Agent'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'success path: category lookup, modal, then createTaskAgent + invalidate',
+      (tester) async {
+        // A task that carries a categoryId so `_createTaskAgent` takes the
+        // `categoryId != null` branches: it queries the category-scoped
+        // template list and threads the category into `allowedCategoryIds`.
+        const categoryId = 'cat-123';
+        final task = testTask.copyWith(
+          meta: testTask.meta.copyWith(categoryId: categoryId),
+        );
+
+        final template = makeTestTemplate(
+          id: 'tpl-success',
+          agentId: 'tpl-success',
+          displayName: 'Single Task Template',
+        );
+
+        final templateService = MockAgentTemplateService();
+        when(
+          () => templateService.listTemplatesForCategory(categoryId),
+        ).thenAnswer((_) async => [template]);
+
+        final taskAgentService = MockTaskAgentService();
+        when(
+          () => taskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => makeTestIdentity());
+
+        final profile = testInferenceProfile(id: 'prof-success', name: 'Solo');
+
+        // taskAgentProvider must flip from null (CTA shown) to a real
+        // identity after creation so the invalidate at the end of the
+        // success path can re-resolve without throwing.
+        var agentAttached = false;
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(900, 1000)),
+            overrides: [
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(true),
+              ),
+              taskAgentProvider.overrideWith(
+                (ref, id) async => agentAttached ? makeTestIdentity() : null,
+              ),
+              entryControllerProvider(
+                id: task.meta.id,
+              ).overrideWith(() => _TaskEntryController(task)),
+              agentTemplateServiceProvider.overrideWith(
+                (ref) => templateService,
+              ),
+              taskAgentServiceProvider.overrideWith(
+                (ref) => taskAgentService,
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                () => _FakeInferenceProfileController([profile]),
+              ),
+            ],
+            child: AiSummaryCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Assign Agent'));
+        await tester.pumpAndSettle();
+
+        // A single available template auto-skips the template page; the
+        // modal opens straight onto the profile page (line 74 reached, so
+        // the modal is on screen).
+        expect(find.text('Solo'), findsOneWidget);
+
+        // Selecting the profile pops the modal with a result, driving
+        // `service.createTaskAgent(...)` and the subsequent invalidate.
+        agentAttached = true;
+        await tester.tap(find.text('Solo'));
+        await tester.pumpAndSettle();
+
+        // The category-scoped lookup ran (categoryId != null branch); the
+        // global fallback was never needed.
+        verify(
+          () => templateService.listTemplatesForCategory(categoryId),
+        ).called(1);
+        // ignore: unnecessary_lambdas
+        verifyNever(() => templateService.listTemplates());
+
+        // createTaskAgent is dispatched with the picked template/profile and
+        // the task's category folded into allowedCategoryIds. mocktail returns
+        // captured args in the order the captureAny matchers appear in the
+        // verify call: allowedCategoryIds, then templateId, then profileId.
+        final captured = verify(
+          () => taskAgentService.createTaskAgent(
+            taskId: task.meta.id,
+            allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
+            templateId: captureAny(named: 'templateId'),
+            profileId: captureAny(named: 'profileId'),
+          ),
+        ).captured;
+        expect(captured, [
+          {categoryId},
+          'tpl-success',
+          'prof-success',
+        ]);
+
+        // After a successful create the provider was invalidated and now
+        // resolves to an attached agent, so the CTA is gone and the summary
+        // shell has replaced it.
+        expect(find.text('Assign Agent'), findsNothing);
       },
     );
   });

@@ -263,6 +263,75 @@ void main() {
       );
     });
 
+    testWidgets('applies pressed-state track colors for on and off values', (
+      tester,
+    ) async {
+      const onKey = Key('toggle-pressed-on');
+      const offKey = Key('toggle-pressed-off');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DesignSystemToggle(
+                key: onKey,
+                value: true,
+                label: 'Pressed on',
+                forcedState: DesignSystemToggleVisualState.pressed,
+                onChanged: _noopToggle,
+              ),
+              DesignSystemToggle(
+                key: offKey,
+                value: false,
+                label: 'Pressed off',
+                forcedState: DesignSystemToggleVisualState.pressed,
+                onChanged: _noopToggle,
+              ),
+            ],
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final expectations = <Key, ({Color track, Color border})>{
+        onKey: (
+          track: dsTokensLight.colors.interactive.pressed,
+          border: dsTokensLight.colors.decorative.level02,
+        ),
+        offKey: (
+          track: dsTokensLight.colors.surface.focusPressed,
+          border: dsTokensLight.colors.interactive.pressed,
+        ),
+      };
+
+      for (final entry in expectations.entries) {
+        final track = tester.widget<AnimatedContainer>(
+          find.descendant(
+            of: find.byKey(entry.key),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is AnimatedContainer &&
+                  widget.constraints?.maxWidth == dsTokensLight.spacing.step8 &&
+                  widget.constraints?.maxHeight == dsTokensLight.spacing.step6,
+            ),
+          ),
+        );
+        final decoration = track.decoration! as BoxDecoration;
+
+        expect(
+          decoration.color,
+          entry.value.track,
+          reason: 'track color for ${entry.key}',
+        );
+        expect(
+          (decoration.border! as Border).top.color,
+          entry.value.border,
+          reason: 'track border color for ${entry.key}',
+        );
+      }
+    });
+
     testWidgets('omits optional label and tooltip icon when not provided', (
       tester,
     ) async {

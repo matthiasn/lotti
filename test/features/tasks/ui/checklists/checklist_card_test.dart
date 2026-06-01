@@ -5,7 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/utils/platform.dart' as platform_utils;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -892,5 +895,128 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
       expect(find.byKey(_addFieldKey).hitTestable(), findsNothing);
     });
+
+    // ── Open filter tab onTap ───────────────────────────────────────────────
+
+    testWidgets(
+      'tapping the Open tab restores the openOnly filter (its text goes bold '
+      'and the Done tab loses bold)',
+      (tester) async {
+        // Empty itemIds keeps the row ListView empty (real ChecklistItemRow
+        // providers are not wired in this test), while totalCount > 0 keeps
+        // the filter strip visible.
+        await _pump(
+          tester,
+          initiallyExpanded: true,
+          completedCount: 0,
+          totalCount: 3,
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Move off the default openOnly filter by selecting Done, so Open is
+        // no longer bold.
+        await tester.tap(find.text('Done'));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        final openWhileDone = tester
+            .widgetList<Text>(find.text('Open'))
+            .toList();
+        expect(
+          openWhileDone.every((t) => t.style?.fontWeight != FontWeight.w600),
+          isTrue,
+          reason: 'Open tab should not be bold while Done is selected',
+        );
+
+        // Tap the Open tab — exercises its onTap → onFilterChanged(openOnly).
+        await tester.tap(find.text('Open'));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The openOnly callback fired: the Open tab is bold again and Done is
+        // no longer bold.
+        final openAfter = tester.widgetList<Text>(find.text('Open')).toList();
+        expect(
+          openAfter.any((t) => t.style?.fontWeight == FontWeight.w600),
+          isTrue,
+          reason: 'Open tab should be bold after being re-selected',
+        );
+        final doneAfter = tester.widgetList<Text>(find.text('Done')).toList();
+        expect(
+          doneAfter.every((t) => t.style?.fontWeight != FontWeight.w600),
+          isTrue,
+          reason: 'Done tab should not be bold after Open is re-selected',
+        );
+      },
+    );
+
+    // ── Delete dialog cancel ────────────────────────────────────────────────
+
+    testWidgets(
+      'tapping Cancel in the delete dialog dismisses it without invoking '
+      'onDelete',
+      (tester) async {
+        var deleted = false;
+        await _pump(
+          tester,
+          initiallyExpanded: true,
+          onDelete: () => deleted = true,
+        );
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+
+        // Open the confirmation dialog via the Delete menu entry.
+        await tester.tap(find.text('Delete checklist?'));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
+
+        // Tap Cancel → Navigator.pop(false) → onDelete must NOT be called.
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(deleted, isFalse);
+      },
+    );
+
+    // ── Filter preference string-path migration ─────────────────────────────
+
+    testWidgets(
+      'restores a persisted string filter preference on first build',
+      (tester) async {
+        // In the normal test env, makeSharedPrefsService().getString returns
+        // null unconditionally, so the string-parse path in
+        // _loadFilterPreference is never taken. Temporarily disable the test
+        // env so the real SharedPreferences-backed getString runs and returns
+        // the seeded value.
+        SharedPreferences.setMockInitialValues({
+          'checklist_filter_mode_cl-1': ChecklistFilter.doneOnly.name,
+        });
+        final prevIsTestEnv = platform_utils.isTestEnv;
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = prevIsTestEnv);
+
+        await _pump(
+          tester,
+          initiallyExpanded: true,
+          itemIds: const ['x'],
+          completedCount: 0,
+          totalCount: 1,
+        );
+        // Let the async _loadFilterPreference future resolve and the filter
+        // strip animation settle.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The persisted doneOnly filter must now be active: the Done tab is
+        // bold and the doneOnly empty state is shown.
+        final doneTexts = tester.widgetList<Text>(find.text('Done')).toList();
+        expect(
+          doneTexts.any((t) => t.style?.fontWeight == FontWeight.w600),
+          isTrue,
+          reason: 'Done tab should be bold from the persisted preference',
+        );
+        expect(find.text('No completed items yet.'), findsOneWidget);
+      },
+    );
   });
 }

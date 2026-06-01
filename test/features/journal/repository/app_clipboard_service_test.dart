@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
+import 'package:riverpod/riverpod.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +54,33 @@ void main() {
       await service.writePlainText(value);
       final data = await Clipboard.getData('text/plain');
       expect(data?.text, value);
+    });
+  });
+
+  group('appClipboardProvider', () {
+    test('exposes a working AppClipboard that writes plain text', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      String? stored;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'Clipboard.setData') {
+              stored = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+
+      final clipboard = container.read(appClipboardProvider);
+      await clipboard.writePlainText('Provider value');
+
+      // The provider returns a real AppClipboard wired to writePlainText; in the
+      // test env that routes through Flutter's Clipboard channel.
+      expect(stored, 'Provider value');
     });
   });
 }

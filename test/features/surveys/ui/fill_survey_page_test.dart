@@ -1,8 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:lotti/services/dev_logger.dart';
-import 'package:research_package/model.dart';
+import 'package:research_package/research_package.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,127 +18,131 @@ void main() {
     DevLogger.suppressOutput = false;
   });
 
-  group('SurveyWidget Tests -', () {
-    testWidgets('SurveyWidget renders with task', (tester) async {
-      // Create a simple ordered task with one step
-      final task = RPOrderedTask(
-        identifier: 'test_task',
-        steps: [
-          RPInstructionStep(
-            identifier: 'intro',
-            title: 'Welcome',
-            text: 'This is a test survey',
-          ),
-        ],
-      );
+  RPOrderedTask buildTask(String identifier) => RPOrderedTask(
+    identifier: identifier,
+    steps: [
+      RPInstructionStep(
+        identifier: 'intro',
+        title: 'Welcome',
+        text: 'This is a test survey',
+      ),
+    ],
+  );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SurveyWidget(
-              task,
-              (result) {
-                // Callback when survey is completed
-              },
-            ),
-          ),
+  /// Pumps a [SurveyWidget] and returns the rendered [RPUITask] so tests can
+  /// drive the real `onSubmit` / `onCancel` closures defined in
+  /// `SurveyWidget.build`.
+  Future<RPUITask> pumpSurvey(
+    WidgetTester tester, {
+    required RPOrderedTask task,
+    required void Function(RPTaskResult) resultCallback,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SurveyWidget(task, resultCallback),
         ),
-      );
+      ),
+    );
+    await tester.pump();
+    return tester.widget<RPUITask>(find.byType(RPUITask));
+  }
 
-      await tester.pumpAndSettle();
-
-      // Verify the widget renders
-      expect(find.byType(SurveyWidget), findsOneWidget);
-
-      // The survey widget should show something from research_package
-      // The exact text depends on research_package implementation
-    });
-
-    testWidgets('SurveyWidget renders with cancel-enabled task', (
+  group('SurveyWidget', () {
+    testWidgets('builds an RPUITask wired to the provided task and callback', (
       tester,
     ) async {
-      final task = RPOrderedTask(
-        identifier: 'cancel_test_task',
-        steps: [
-          RPInstructionStep(
-            identifier: 'intro',
-            title: 'Test',
-            text: 'Testing cancel',
-          ),
-        ],
+      final task = buildTask('build_task');
+      void cb(RPTaskResult _) {}
+
+      final rpuiTask = await pumpSurvey(
+        tester,
+        task: task,
+        resultCallback: cb,
       );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SurveyWidget(
-              task,
-              (result) {},
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // The RPUITask widget handles cancel internally via research_package.
-      // We verify the widget renders without error.
-      expect(find.byType(SurveyWidget), findsOneWidget);
+      // The RPUITask is built with the exact task passed in and the
+      // resultCallback wired directly to onSubmit.
+      expect(rpuiTask.task, same(task));
+      expect(rpuiTask.task.identifier, 'build_task');
+      expect(rpuiTask.onSubmit, same(cb));
+      expect(rpuiTask.onCancel, isNotNull);
     });
 
-    test('SurveyWidget task identifier is accessible', () {
-      // Test that SurveyWidget exposes task correctly
-      final task = RPOrderedTask(
-        identifier: 'direct_test',
-        steps: [],
+    testWidgets('onSubmit forwards the result to resultCallback', (
+      tester,
+    ) async {
+      RPTaskResult? submitted;
+      final rpuiTask = await pumpSurvey(
+        tester,
+        task: buildTask('submit_task'),
+        resultCallback: (result) => submitted = result,
       );
 
-      final widget = SurveyWidget(
-        task,
-        (result) {},
-      );
+      final result = RPTaskResult(identifier: 'submit_result');
+      rpuiTask.onSubmit!(result);
 
-      // Verify the task is accessible
-      expect(widget.task.identifier, 'direct_test');
+      // The widget passes resultCallback straight through to RPUITask.onSubmit,
+      // so driving onSubmit must deliver the same result instance.
+      expect(submitted, same(result));
+      expect(submitted!.identifier, 'submit_result');
     });
 
-    test(
-      'DevLogger.log is called with SurveyWidget name for cancel with result',
-      () {
-        // Direct test of the logging pattern
-        DevLogger.clear();
-
-        // Simulate what cancelCallBack does
-        DevLogger.log(
-          name: 'SurveyWidget',
-          message: 'The result so far:\n{"test": "data"}',
+    testWidgets(
+      'onCancel with a non-null result logs the encoded result via cancelCallBack',
+      (tester) async {
+        var callbackFired = false;
+        final rpuiTask = await pumpSurvey(
+          tester,
+          task: buildTask('cancel_task'),
+          resultCallback: (_) => callbackFired = true,
         );
 
-        expect(
-          DevLogger.capturedLogs.any(
-            (log) =>
-                log.contains('SurveyWidget') &&
-                log.contains('The result so far:'),
-          ),
-          isTrue,
-          reason: 'DevLogger should capture SurveyWidget cancel logs',
+        final result = RPTaskResult(identifier: 'cancel_result_id');
+        rpuiTask.onCancel!(result);
+
+        // cancelCallBack does not invoke the submit callback.
+        expect(callbackFired, isFalse);
+
+        // The produced log line is "[SurveyWidget] The result so far:\n<json>".
+        final logLine = DevLogger.capturedLogs.singleWhere(
+          (log) => log.contains('The result so far:'),
+          orElse: () => '',
         );
+        expect(logLine, contains('[SurveyWidget]'));
+
+        // The JSON body produced by SurveyWidget._encode must be valid JSON and
+        // must contain the result's identifier under the "identifier" key.
+        final jsonBody = logLine.split('The result so far:\n').last;
+        final decoded = jsonDecode(jsonBody) as Map<String, dynamic>;
+        expect(decoded['identifier'], 'cancel_result_id');
+
+        // _encode uses an indented encoder, so the body is pretty-printed.
+        expect(jsonBody, contains('\n'));
       },
     );
 
-    test('DevLogger.log is called with No result message for null cancel', () {
-      // Direct test of the logging pattern for null result
-      DevLogger.clear();
+    testWidgets('onCancel with a null result logs "No result"', (
+      tester,
+    ) async {
+      var callbackFired = false;
+      final rpuiTask = await pumpSurvey(
+        tester,
+        task: buildTask('null_cancel_task'),
+        resultCallback: (_) => callbackFired = true,
+      );
 
-      // Simulate what onCancel does when result is null
-      DevLogger.log(name: 'SurveyWidget', message: 'No result');
+      rpuiTask.onCancel!(null);
 
+      expect(callbackFired, isFalse);
       expect(
-        DevLogger.capturedLogs.any(
-          (log) => log.contains('SurveyWidget') && log.contains('No result'),
-        ),
-        isTrue,
-        reason: 'DevLogger should capture SurveyWidget null cancel logs',
+        DevLogger.capturedLogs,
+        contains('[SurveyWidget] No result'),
+      );
+      // The null branch must not emit the encoded-result log line.
+      expect(
+        DevLogger.capturedLogs.any((log) => log.contains('The result so far:')),
+        isFalse,
       );
     });
   });
