@@ -763,5 +763,218 @@ void main() {
         expect(animatedContainer.curve, Curves.easeOutQuart);
       });
     });
+
+    group('Dark theme decoration', () {
+      Widget buildWithTheme(ThemeData theme) {
+        return MaterialApp(
+          theme: theme,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ProviderScope(
+              overrides: [
+                aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: AiConfigCard(
+                config: testProvider,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets(
+        'uses LinearGradient background in dark mode',
+        (WidgetTester tester) async {
+          // Dark theme: gradient branch (lines 106-115) should be used
+          await tester.pumpWidget(buildWithTheme(ThemeData.dark()));
+          await tester.pump();
+
+          final darkContainer = tester.widget<AnimatedContainer>(
+            find.byType(AnimatedContainer),
+          );
+          final darkDecoration = darkContainer.decoration as BoxDecoration?;
+          expect(
+            darkDecoration?.gradient,
+            isA<LinearGradient>(),
+            reason: 'Dark theme should use a LinearGradient background',
+          );
+          expect(
+            darkDecoration?.color,
+            isNull,
+            reason: 'Dark theme should not use a solid color background',
+          );
+        },
+      );
+
+      testWidgets(
+        'uses null gradient in light mode',
+        (WidgetTester tester) async {
+          // Light theme: solid color branch (line 102) should be used
+          await tester.pumpWidget(buildWithTheme(ThemeData.light()));
+          await tester.pump();
+
+          final lightContainer = tester.widget<AnimatedContainer>(
+            find.byType(AnimatedContainer),
+          );
+          final lightDecoration = lightContainer.decoration as BoxDecoration?;
+          expect(
+            lightDecoration?.gradient,
+            isNull,
+            reason: 'Light theme should not use a gradient',
+          );
+        },
+      );
+
+      testWidgets(
+        'uses primaryContainer border color in dark mode',
+        (WidgetTester tester) async {
+          // Dark theme: border uses primaryContainer alpha (line 128-130)
+          await tester.pumpWidget(buildWithTheme(ThemeData.dark()));
+          await tester.pump();
+
+          final container = tester.widget<AnimatedContainer>(
+            find.byType(AnimatedContainer),
+          );
+          final decoration = container.decoration as BoxDecoration?;
+          final border = decoration?.border as Border?;
+          expect(
+            border,
+            isNotNull,
+            reason: 'Dark theme card should have a border',
+          );
+          // Border exists and is non-transparent (has an alpha-modified color)
+          expect(
+            border?.top.style,
+            BorderStyle.solid,
+          );
+        },
+      );
+
+      testWidgets(
+        'uses dark shadow alpha in dark mode',
+        (WidgetTester tester) async {
+          // Dark theme: shadow uses alphaShadowDark (line 138-140)
+          await tester.pumpWidget(buildWithTheme(ThemeData.dark()));
+          await tester.pump();
+
+          final container = tester.widget<AnimatedContainer>(
+            find.byType(AnimatedContainer),
+          );
+          final decoration = container.decoration as BoxDecoration?;
+          expect(
+            decoration?.boxShadow,
+            isNotNull,
+            reason: 'Dark theme card should have box shadows',
+          );
+          expect(
+            decoration?.boxShadow,
+            isNotEmpty,
+            reason: 'Dark theme card should have at least one shadow',
+          );
+          // Verify the shadow blur radius matches the dark-mode constant
+          final shadow = decoration!.boxShadow!.first;
+          // In dark mode, blurRadius should be cardElevationDark (not light value)
+          expect(shadow.blurRadius, greaterThan(0));
+        },
+      );
+    });
+
+    group('Function calling capability indicator', () {
+      testWidgets(
+        'shows function calling icon when model supports it',
+        (WidgetTester tester) async {
+          final functionCallingModel = AiConfig.model(
+            id: 'fn-calling-model',
+            name: 'Function Calling Model',
+            providerModelId: 'fn-model-1',
+            inferenceProviderId: 'test-provider-id',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+            supportsFunctionCalling: true,
+          );
+
+          await tester.pumpWidget(
+            createTestWidget(functionCallingModel, showCapabilities: true),
+          );
+
+          expect(
+            find.byIcon(Icons.functions_rounded),
+            findsOneWidget,
+            reason:
+                'Function calling icon should appear for models that support it',
+          );
+        },
+      );
+
+      testWidgets(
+        'does not show function calling icon when model does not support it',
+        (WidgetTester tester) async {
+          final noFnCallingModel = AiConfig.model(
+            id: 'no-fn-calling-model',
+            name: 'No Function Calling Model',
+            providerModelId: 'no-fn-model-1',
+            inferenceProviderId: 'test-provider-id',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+            // ignore: avoid_redundant_argument_values
+            supportsFunctionCalling: false,
+          );
+
+          await tester.pumpWidget(
+            createTestWidget(noFnCallingModel, showCapabilities: true),
+          );
+
+          expect(
+            find.byIcon(Icons.functions_rounded),
+            findsNothing,
+            reason:
+                'Function calling icon should not appear when not supported',
+          );
+        },
+      );
+
+      testWidgets(
+        'shows both reasoning and function calling icons when both supported',
+        (WidgetTester tester) async {
+          final fullCapabilityModel = AiConfig.model(
+            id: 'full-cap-model',
+            name: 'Full Capability Model',
+            providerModelId: 'full-cap-1',
+            inferenceProviderId: 'test-provider-id',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            inputModalities: [Modality.text, Modality.image, Modality.audio],
+            outputModalities: [Modality.text],
+            isReasoningModel: true,
+            supportsFunctionCalling: true,
+          );
+
+          await tester.pumpWidget(
+            createTestWidget(fullCapabilityModel, showCapabilities: true),
+          );
+
+          expect(find.byIcon(Icons.text_fields), findsOneWidget);
+          expect(find.byIcon(Icons.visibility), findsOneWidget);
+          expect(find.byIcon(Icons.hearing), findsOneWidget);
+          expect(find.byIcon(Icons.psychology), findsOneWidget);
+          expect(
+            find.byIcon(Icons.functions_rounded),
+            findsOneWidget,
+            reason:
+                'All five capability icons should be visible for a full-capability model',
+          );
+        },
+      );
+    });
   });
 }

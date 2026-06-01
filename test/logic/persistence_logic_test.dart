@@ -1338,6 +1338,183 @@ void main() {
       );
       expect(metaCleared.labelIds, isNull);
     });
+
+    test(
+      'createMeasurementEntry enables geolocation when data time is close to now',
+      () async {
+        // Use DateTime.now() so shouldAddGeolocation evaluates to true.
+        // This covers line 239 (the `true` branch of shouldAddGeolocation).
+        final now = DateTime.now();
+        await getIt<JournalDb>().upsertMeasurableDataType(measurableWater);
+        final measurement = await getIt<PersistenceLogic>()
+            .createMeasurementEntry(
+              data: MeasurementData(
+                dateFrom: now,
+                dateTo: now,
+                value: 250,
+                dataTypeId: measurableWater.id,
+              ),
+              private: false,
+            );
+
+        expect(measurement, isNotNull);
+        expect(measurement?.data.value, 250);
+
+        // Drain the event queue so the fire-and-forget geolocation addition
+        // (triggered by shouldAddGeolocation=true) has a chance to complete.
+        await pumpEventQueue();
+
+        // Assert the geolocation side effect: the entry in DB must now have
+        // geolocation attached (from mockDeviceLocation.getCurrentGeoLocation).
+        final persisted = await getIt<JournalDb>().journalEntityById(
+          measurement!.meta.id,
+        );
+        expect(persisted?.geolocation, isNotNull);
+        expect(persisted?.geolocation?.latitude, 37.7749);
+        expect(persisted?.geolocation?.longitude, -122.4194);
+      },
+    );
+
+    test(
+      'createHabitCompletionEntry enables geolocation when data time is close to now',
+      () async {
+        // Use DateTime.now() so shouldAddGeolocation evaluates to true.
+        // This covers line 282 (the `true` branch of shouldAddGeolocation).
+        final now = DateTime.now();
+        await getIt<PersistenceLogic>().upsertEntityDefinition(habitFlossing);
+
+        final completion = await getIt<PersistenceLogic>()
+            .createHabitCompletionEntry(
+              data: HabitCompletionData(
+                dateFrom: now,
+                dateTo: now,
+                habitId: habitFlossing.id,
+              ),
+              habitDefinition: habitFlossing,
+            );
+
+        expect(completion, isNotNull);
+        expect(completion?.data.habitId, habitFlossing.id);
+
+        // Drain the event queue so the fire-and-forget geolocation addition
+        // (triggered by shouldAddGeolocation=true) has a chance to complete.
+        await pumpEventQueue();
+
+        // Assert the geolocation side effect: the entry in DB must now have
+        // geolocation attached (from mockDeviceLocation.getCurrentGeoLocation).
+        final persisted = await getIt<JournalDb>().journalEntityById(
+          completion!.meta.id,
+        );
+        expect(persisted?.geolocation, isNotNull);
+        expect(persisted?.geolocation?.latitude, 37.7749);
+        expect(persisted?.geolocation?.longitude, -122.4194);
+      },
+    );
+
+    test(
+      'updateJournalEntityText clears import flag on JournalAudio when flag is EntryFlag.import',
+      () async {
+        final persistenceLogic = getIt<PersistenceLogic>();
+
+        // Create an audio entry with EntryFlag.import so the `true` branch of
+        // `newMeta.flag == EntryFlag.import ? EntryFlag.none : newMeta.flag`
+        // is exercised (lines 624-626).
+        final audioData = AudioData(
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 35),
+          audioFile: 'import_test.m4a',
+          audioDirectory: '/audio/2024-01-01/',
+          duration: const Duration(seconds: 30),
+        );
+        final audioMeta = await persistenceLogic.createMetadata(
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          flag: EntryFlag.import,
+        );
+        final audioEntry = JournalEntity.journalAudio(
+          data: audioData,
+          meta: audioMeta,
+        );
+        await persistenceLogic.createDbEntity(
+          audioEntry,
+          shouldAddGeolocation: false,
+        );
+
+        // Confirm the entry starts with the import flag
+        final before =
+            await getIt<JournalDb>().journalEntityById(audioEntry.meta.id)
+                as JournalAudio?;
+        expect(before?.meta.flag, EntryFlag.import);
+
+        // Update text — this should clear the import flag
+        const newText = EntryText(plainText: 'Transcribed from import');
+        final success = await persistenceLogic.updateJournalEntityText(
+          audioEntry.meta.id,
+          newText,
+          DateTime(2024, 3, 15, 10, 36),
+        );
+
+        expect(success, isTrue);
+
+        final after =
+            await getIt<JournalDb>().journalEntityById(audioEntry.meta.id)
+                as JournalAudio?;
+        // The import flag must be cleared after text update
+        expect(after?.meta.flag, EntryFlag.none);
+        expect(after?.entryText?.plainText, 'Transcribed from import');
+      },
+    );
+
+    test(
+      'updateJournalEntityText clears import flag on JournalImage when flag is EntryFlag.import',
+      () async {
+        final persistenceLogic = getIt<PersistenceLogic>();
+
+        // Create a JournalImage entry with EntryFlag.import so the `true`
+        // branch of the ternary in the JournalImage block is exercised
+        // (lines 637-639).
+        final imageData = ImageData(
+          capturedAt: DateTime(2024, 3, 15, 11),
+          imageId: 'import-image-id',
+          imageFile: 'import.jpg',
+          imageDirectory: '/images/2024-01-01/',
+        );
+        final imageMeta = await persistenceLogic.createMetadata(
+          dateFrom: DateTime(2024, 3, 15, 11),
+          flag: EntryFlag.import,
+        );
+        final imageEntity = JournalEntity.journalImage(
+          data: imageData,
+          meta: imageMeta,
+        );
+        await persistenceLogic.createDbEntity(
+          imageEntity,
+          shouldAddGeolocation: false,
+        );
+
+        // Confirm the entry starts with the import flag
+        final before =
+            await getIt<JournalDb>().journalEntityById(imageEntity.meta.id)
+                as JournalImage?;
+        expect(before?.meta.flag, EntryFlag.import);
+
+        // Update text — this should clear the import flag
+        const newText = EntryText(plainText: 'Image caption');
+        final success = await persistenceLogic.updateJournalEntityText(
+          imageEntity.meta.id,
+          newText,
+          DateTime(2024, 3, 15, 11, 5),
+        );
+
+        expect(success, isTrue);
+
+        final after =
+            await getIt<JournalDb>().journalEntityById(imageEntity.meta.id)
+                as JournalImage?;
+        // The import flag must be cleared after text update
+        expect(after?.meta.flag, EntryFlag.none);
+        expect(after?.entryText?.plainText, 'Image caption');
+      },
+    );
   });
 
   // Error-path coverage for the `_loggingService.error(...)` calls inside the
@@ -1399,6 +1576,15 @@ void main() {
           vectorClock: null,
         ),
       );
+      registerFallbackValue(
+        const ConfigFlag(
+          name: 'fallback',
+          description: 'fallback config flag',
+          status: false,
+        ),
+      );
+      // EntityDefinition fallback for upsertEntityDefinition stubs
+      registerFallbackValue(FakeHabitDefinition());
     });
 
     setUp(() async {
@@ -1844,6 +2030,208 @@ void main() {
         },
       );
     });
+
+    test(
+      'createLink swallows and logs outbox enqueue failure after VC commit',
+      () async {
+        // Make upsertEntryLink succeed so the VC is "committed"
+        when(
+          () => journalDb.upsertEntryLink(any<EntryLink>()),
+        ).thenAnswer((_) async => 1);
+        // Make the outbox throw after the link is persisted
+        when(
+          () => outboxService.enqueueMessage(any<SyncMessage>()),
+        ).thenThrow(StateError(boom));
+
+        final created = await logic.createLink(
+          fromId: 'from-id',
+          toId: 'to-id',
+        );
+
+        // The link was persisted — createLink must still return true
+        expect(created, isTrue);
+        // The failure is logged through DomainLogger via getIt
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(named: 'message'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'createLink.enqueue',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'createDbEntity swallows and logs outbox enqueue failure after VC commit',
+      () async {
+        when(
+          () => journalDb.updateJournalEntity(
+            any<JournalEntity>(),
+            overrideComparison: any<bool>(named: 'overrideComparison'),
+            overwrite: any<bool>(named: 'overwrite'),
+          ),
+        ).thenAnswer((_) async => JournalUpdateResult.applied());
+        when(
+          () => outboxService.enqueueMessage(any<SyncMessage>()),
+        ).thenThrow(StateError(boom));
+
+        final saved = await logic.createDbEntity(
+          buildEntry(clock: const VectorClock({'host': 3})),
+          shouldAddGeolocation: false,
+        );
+
+        // DB write succeeded; enqueue failure is swallowed
+        expect(saved, isTrue);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(named: 'message'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'createDbEntity.enqueue',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'updateDbEntity swallows and logs outbox enqueue failure after VC commit',
+      () async {
+        when(
+          () => journalDb.updateJournalEntity(
+            any<JournalEntity>(),
+            overrideComparison: any<bool>(named: 'overrideComparison'),
+            overwrite: any<bool>(named: 'overwrite'),
+          ),
+        ).thenAnswer((_) async => JournalUpdateResult.applied());
+        when(
+          () => outboxService.enqueueMessage(any<SyncMessage>()),
+        ).thenThrow(StateError(boom));
+
+        final applied = await logic.updateDbEntity(
+          buildEntry(clock: const VectorClock({'host': 4})),
+        );
+
+        // DB write succeeded; enqueue failure is swallowed
+        expect(applied, isTrue);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(named: 'message'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'updateDbEntity.enqueue',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'updateJournalEntity returns false when DB rejects the write (applied=false)',
+      () async {
+        // updateJournalEntity calls updateDbEntity which calls
+        // journalDb.updateJournalEntity; returning skipped() means applied=false,
+        // which exercises commitWhen: (applied) => applied with false.
+        when(
+          () => journalDb.updateJournalEntity(
+            any<JournalEntity>(),
+            overrideComparison: any<bool>(named: 'overrideComparison'),
+            overwrite: any<bool>(named: 'overwrite'),
+          ),
+        ).thenAnswer(
+          (_) async => JournalUpdateResult.skipped(
+            reason: JournalUpdateSkipReason.olderOrEqual,
+          ),
+        );
+        when(
+          () => journalDb.journalEntityById(any<String>()),
+        ).thenAnswer((_) async => null);
+
+        final entry = buildEntry(clock: const VectorClock({'host': 5}));
+        final result = await logic.updateJournalEntity(entry, entry.meta);
+
+        // The write was rejected — result is false and no log error
+        expect(result, isFalse);
+      },
+    );
+
+    test(
+      'upsertEntityDefinition emits labelsNotification for LabelDefinition',
+      () async {
+        when(
+          () => journalDb.upsertEntityDefinition(any<EntityDefinition>()),
+        ).thenAnswer((_) async => 1);
+
+        final label = LabelDefinition(
+          id: 'label-test-id',
+          name: 'TestLabel',
+          color: '#123456',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+        );
+
+        final result = await logic.upsertEntityDefinition(label);
+
+        expect(result, 1);
+        // Verify that the labelsNotification was included in the notify call
+        final captured = verify(
+          () => updateNotifications.notify(captureAny<Set<String>>()),
+        ).captured;
+        final notifiedIds = captured.last as Set<String>;
+        expect(notifiedIds, contains('LABELS_CHANGED'));
+        expect(notifiedIds, contains('label-test-id'));
+      },
+    );
+
+    test(
+      'setConfigFlag notifies privateToggleNotification when flag name is private',
+      () async {
+        when(
+          () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
+        ).thenAnswer((_) async => 1);
+
+        const flag = ConfigFlag(
+          name: 'private',
+          description: 'Private mode',
+          status: true,
+        );
+
+        await logic.setConfigFlag(flag);
+
+        final captured = verify(
+          () => updateNotifications.notify(captureAny<Set<String>>()),
+        ).captured;
+        final notifiedIds = captured.last as Set<String>;
+        // The private flag triggers the special privateToggleNotification
+        expect(notifiedIds, contains('PRIVATE_FLAG_TOGGLED'));
+      },
+    );
+
+    test(
+      'setConfigFlag does not notify privateToggleNotification for other flags',
+      () async {
+        when(
+          () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
+        ).thenAnswer((_) async => 1);
+
+        const flag = ConfigFlag(
+          name: 'enableLogging',
+          description: 'Enable logging',
+          status: false,
+        );
+
+        await logic.setConfigFlag(flag);
+
+        // No notify call expected for non-private flags
+        verifyNever(
+          () => updateNotifications.notify(any<Set<String>>()),
+        );
+      },
+    );
   });
 }
 

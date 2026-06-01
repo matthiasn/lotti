@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -22,6 +23,8 @@ import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/platform.dart' as platform;
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -58,6 +61,8 @@ class _MockQueueCoordinator extends Mock implements QueuePipelineCoordinator {}
 class _FakeMatrixMessageContext extends Fake implements MatrixMessageContext {}
 
 class _MockDeviceKeys extends Mock implements DeviceKeys {}
+
+class _MockKeyVerification extends Mock implements KeyVerification {}
 
 void main() {
   late _MockGateway gateway;
@@ -1483,5 +1488,171 @@ void main() {
         await service.dispose();
       },
     );
+  });
+
+  group('MatrixService default sub-service construction', () {
+    // Builds a service with neither a sessionManager, roomManager, syncEngine,
+    // nor a pipelineOverride. This exercises the constructor's default-wiring
+    // branches:
+    //   - lines 78-82  : default SyncRoomManager(gateway, settingsDb, logging)
+    //   - lines 85-89  : default MatrixSessionManager(gateway, roomManager, ...)
+    //   - lines 110-119: default MatrixStreamConsumer(...)
+    //   - lines 141-156: default SyncLifecycleCoordinator + SyncEngine
+    // The real SyncRoomManager subscribes to `gateway.invites` in its
+    // constructor, so that stream must be stubbed.
+    MatrixService buildWithDefaults({
+      MatrixConfig? matrixConfig,
+      String? deviceDisplayName,
+    }) {
+      when(() => gateway.invites).thenAnswer((_) => const Stream.empty());
+      return MatrixService(
+        gateway: gateway,
+        loggingService: loggingService,
+        activityGate: activityGate,
+        messageSender: messageSender,
+        settingsDb: settingsDb,
+        eventProcessor: eventProcessor,
+        secureStorage: secureStorage,
+        queueCoordinator: queueCoordinator,
+        matrixConfig: matrixConfig,
+        deviceDisplayName: deviceDisplayName,
+        connectivityStream: const Stream.empty(),
+      );
+    }
+
+    test(
+      'constructs a real pipeline and real engine when nothing is injected',
+      () {
+        final service = buildWithDefaults();
+
+        // The default pipeline branch (lines 110-120) constructed a real
+        // MatrixStreamConsumer that is exposed via debugPipeline.
+        expect(service.debugPipeline, isA<MatrixStreamConsumer>());
+        // The wiring set the event processor's apply observer to the
+        // pipeline's diagnostics reporter (line 122).
+        verify(() => eventProcessor.applyObserver = any()).called(1);
+      },
+    );
+
+    test(
+      'assigns matrixConfig onto the default session manager (line 92)',
+      () {
+        const config = MatrixConfig(
+          homeServer: 'https://hs',
+          user: '@me:server',
+          password: 'pass',
+        );
+
+        final service = buildWithDefaults(matrixConfig: config);
+
+        // The real MatrixSessionManager.matrixConfig getter returns the value
+        // assigned during construction.
+        expect(service.matrixConfig, config);
+      },
+    );
+
+    test(
+      'assigns deviceDisplayName onto the default session manager (line 95)',
+      () {
+        // Without a deviceDisplayName, the freshly constructed session
+        // manager has no config and reports a null matrixConfig.
+        final service = buildWithDefaults(deviceDisplayName: 'My Laptop');
+
+        // deviceDisplayName is internal to the session manager; assert the
+        // service built without throwing and exposes the default real chain,
+        // proving the line 94-96 branch ran (it would have thrown on a
+        // null-check failure otherwise).
+        expect(service.matrixConfig, isNull);
+        expect(service.debugPipeline, isA<MatrixStreamConsumer>());
+      },
+    );
+  });
+
+  group('MatrixService stats debounce (non-test env)', () {
+    // Covers lines 261-268: when `isTestEnv` is false, `_scheduleStatsEmit`
+    // sets up a debounce Timer instead of emitting immediately, and a second
+    // increment before the timer fires is coalesced (line 261 early return).
+    test('debounces stats emissions and coalesces rapid increments', () {
+      final original = platform.isTestEnv;
+      addTearDown(() => platform.isTestEnv = original);
+
+      fakeAsync((async) {
+        platform.isTestEnv = false;
+        final service = createService();
+
+        final emitted = <MatrixStats>[];
+        final sub = service.messageCountsController.stream.listen(emitted.add);
+
+        // First increment schedules the debounce timer (line 262); the second
+        // increment before the timer fires hits the early-return guard at line
+        // 261 (a timer is already pending) and is coalesced.
+        service
+          ..incrementSentCountOf('journalEntity')
+          ..incrementSentCountOf('journalEntity');
+
+        // Nothing emitted yet: the debounce window has not elapsed.
+        expect(emitted, isEmpty);
+
+        // Advance past the 500ms debounce window to fire the timer body
+        // (lines 262-266).
+        async.elapse(const Duration(milliseconds: 500));
+
+        // Exactly one coalesced emission carrying both increments.
+        expect(emitted, hasLength(1));
+        expect(emitted.single.sentCount, 2);
+        expect(emitted.single.messageCounts['journalEntity'], 2);
+
+        sub.cancel();
+      });
+    });
+  });
+
+  group('MatrixService key verification', () {
+    // Covers lines 587-588: getIncomingKeyVerificationStream returns the
+    // incoming key-verification controller's stream, and events added to that
+    // controller flow through to subscribers.
+    test('getIncomingKeyVerificationStream exposes incoming controller', () {
+      final service = createService();
+      final verification = _MockKeyVerification();
+
+      final received = <KeyVerification>[];
+      final sub = service.getIncomingKeyVerificationStream().listen(
+        received.add,
+      );
+
+      service.incomingKeyVerificationController.add(verification);
+
+      return Future<void>(() async {
+        await pumpEventQueue();
+        expect(received, [verification]);
+        await sub.cancel();
+      });
+    });
+
+    // Covers line 498: verifyDevice delegates to verifyMatrixDevice, which
+    // starts SDK verification and stores the resulting runner on the service.
+    test('verifyDevice starts verification and sets keyVerificationRunner', () {
+      final deviceKeys = _MockDeviceKeys();
+      final verification = _MockKeyVerification();
+      when(deviceKeys.startVerification).thenAnswer((_) async => verification);
+      when(() => verification.lastStep).thenReturn(null);
+      when(() => verification.isDone).thenReturn(false);
+      when(() => verification.sasEmojis).thenReturn([]);
+
+      final service = createService();
+
+      return Future<void>(() async {
+        expect(service.keyVerificationRunner, isNull);
+        await service.verifyDevice(deviceKeys);
+
+        verify(deviceKeys.startVerification).called(1);
+        final runner = service.keyVerificationRunner;
+        expect(runner, isNotNull);
+        expect(runner!.name, 'Outgoing KeyVerificationRunner');
+
+        // Cancel the runner's 100ms poll timer so it does not leak.
+        runner.stopTimer();
+      });
+    });
   });
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -21,6 +23,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart' hide MockNavService;
 import '../../../../test_helper.dart';
 
@@ -2195,6 +2198,359 @@ void main() {
       expect(mockNavService.navigationHistory, contains('/tasks/$testTaskId'));
     });
   });
+
+  group('TimeBudgetCard - View Mode Toggle', () {
+    // ignore: no_leading_underscores_for_local_identifiers
+    Task _createTaskForToggle({required String id, required String title}) {
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          categoryId: testCategory.id,
+        ),
+        data: TaskData(
+          title: title,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          statusHistory: const [],
+          status: TaskStatus.inProgress(
+            id: 'status-$id',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+    }
+
+    // ignore: no_leading_underscores_for_local_identifiers
+    TimeBudgetProgress _createProgressForToggle() {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          TaskDayProgress(
+            task: _createTaskForToggle(id: 'task-t1', title: 'Toggle Task 1'),
+            timeSpentOnDay: const Duration(minutes: 30),
+            wasCompletedOnDay: false,
+          ),
+        ],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+    }
+
+    testWidgets(
+      'tapping view toggle switches from list to grid and shows view_list icon',
+      (tester) async {
+        // Use a togglable controller that starts in list mode.
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              highlightedCategoryIdProvider.overrideWith((ref) => null),
+              runningTimerCategoryIdProvider.overrideWithValue(null),
+              taskViewPreferenceProvider(
+                categoryId: testCategory.id,
+              ).overrideWith(_TogglableTaskViewPreferenceController.new),
+            ],
+            child: TimeBudgetCard(
+              progress: _createProgressForToggle(),
+              selectedDate: testDate,
+              isFocusActive: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Initially in list mode: grid_view_rounded toggle icon is shown.
+        expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.view_list_rounded), findsNothing);
+
+        // Tap the view toggle icon.
+        final toggleIcon = find.byIcon(Icons.grid_view_rounded);
+        await tester.ensureVisible(toggleIcon);
+        await tester.tap(toggleIcon);
+        await tester.pump();
+
+        // After toggle: now in grid mode, view_list_rounded is shown.
+        expect(find.byIcon(Icons.view_list_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.grid_view_rounded), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping view toggle from grid back to list shows grid_view icon',
+      (tester) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              highlightedCategoryIdProvider.overrideWith((ref) => null),
+              runningTimerCategoryIdProvider.overrideWithValue(null),
+              taskViewPreferenceProvider(
+                categoryId: testCategory.id,
+              ).overrideWith(_TestTaskViewPreferenceController.new),
+            ],
+            child: TimeBudgetCard(
+              progress: _createProgressForToggle(),
+              selectedDate: testDate,
+              isFocusActive: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // In grid mode initially: view_list_rounded is shown.
+        expect(find.byIcon(Icons.view_list_rounded), findsOneWidget);
+      },
+    );
+  });
+
+  group('TimeBudgetCard - Task Row Navigation', () {
+    late MockNavService mockNavService;
+    late MockPersistenceLogic mockPersistenceLogic;
+
+    setUp(() async {
+      await getIt.reset();
+      mockNavService = MockNavService();
+      mockPersistenceLogic = MockPersistenceLogic();
+      final mockEntitiesCache = MockEntitiesCacheService();
+      when(() => mockEntitiesCache.getCategoryById(any())).thenReturn(null);
+
+      getIt
+        ..registerSingleton<NavService>(mockNavService)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCache);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    // ignore: no_leading_underscores_for_local_identifiers
+    Task _createNavTask({required String id, required String title}) {
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          categoryId: testCategory.id,
+        ),
+        data: TaskData(
+          title: title,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          statusHistory: const [],
+          status: TaskStatus.inProgress(
+            id: 'status-$id',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+    }
+
+    // ignore: no_leading_underscores_for_local_identifiers
+    TimeBudgetProgress _createProgressForNav(String taskId, String taskTitle) {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          TaskDayProgress(
+            task: _createNavTask(id: taskId, title: taskTitle),
+            timeSpentOnDay: const Duration(minutes: 30),
+            wasCompletedOnDay: false,
+          ),
+        ],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+    }
+
+    testWidgets(
+      'tapping a task row navigates to the task detail page',
+      (tester) async {
+        const taskId = 'nav-task-123';
+        const taskTitle = 'Navigable Task';
+
+        await tester.pumpWidget(
+          createTestWidget(
+            progress: _createProgressForNav(taskId, taskTitle),
+            isFocusActive: true,
+          ),
+        );
+        await tester.pump();
+
+        // Task title should be visible.
+        expect(find.text(taskTitle), findsOneWidget);
+
+        // Tap the task row.
+        await tester.ensureVisible(find.text(taskTitle));
+        await tester.tap(find.text(taskTitle));
+        await tester.pump();
+
+        // Navigation to the task detail page should have occurred.
+        expect(
+          mockNavService.navigationHistory,
+          contains('/tasks/$taskId'),
+        );
+      },
+    );
+
+    testWidgets(
+      'grid tile renders with task title and GestureDetector with onTap',
+      (tester) async {
+        const taskId = 'grid-nav-task-456';
+        const taskTitle = 'Grid Navigable Task';
+
+        await tester.pumpWidget(
+          createTestWidget(
+            progress: _createProgressForNav(taskId, taskTitle),
+            isFocusActive: true,
+            overrides: [
+              taskViewPreferenceProvider(
+                categoryId: testCategory.id,
+              ).overrideWith(_TestTaskViewPreferenceController.new),
+            ],
+          ),
+        );
+        // Let AnimatedSize and AnimatedContainer settle.
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Task title is displayed in the grid tile.
+        expect(find.text(taskTitle), findsOneWidget);
+
+        // The grid tile wraps a GestureDetector (for navigation on tap).
+        final gestureDetector = find.ancestor(
+          of: find.text(taskTitle),
+          matching: find.byType(GestureDetector),
+        );
+        expect(gestureDetector, findsWidgets);
+        // Verify the GestureDetector widget has onTap set.
+        final gestureDetectorWidget = tester.widget<GestureDetector>(
+          gestureDetector.first,
+        );
+        expect(gestureDetectorWidget.onTap, isNotNull);
+      },
+    );
+
+    testWidgets(
+      'grid tile with coverArtId renders CoverArtThumbnail widget',
+      (tester) async {
+        const taskId = 'cover-art-task-789';
+        const coverArtImageId = 'cover-image-id-abc';
+
+        final taskWithCoverArt = Task(
+          meta: Metadata(
+            id: taskId,
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
+            categoryId: testCategory.id,
+          ),
+          data: TaskData(
+            title: 'Cover Art Task',
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
+            coverArtId: coverArtImageId,
+            statusHistory: const [],
+            status: TaskStatus.inProgress(
+              id: 'status-cover',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
+          ),
+        );
+
+        final progressWithCoverArt = TimeBudgetProgress(
+          categoryId: testCategory.id,
+          category: testCategory,
+          plannedDuration: const Duration(hours: 2),
+          recordedDuration: const Duration(hours: 1),
+          status: BudgetProgressStatus.underBudget,
+          contributingEntries: const [],
+          taskProgressItems: [
+            TaskDayProgress(
+              task: taskWithCoverArt,
+              timeSpentOnDay: const Duration(minutes: 30),
+              wasCompletedOnDay: false,
+            ),
+          ],
+          blocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: testCategory.id,
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 11)),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              highlightedCategoryIdProvider.overrideWith((ref) => null),
+              runningTimerCategoryIdProvider.overrideWithValue(null),
+              taskViewPreferenceProvider(
+                categoryId: testCategory.id,
+              ).overrideWith(_TestTaskViewPreferenceController.new),
+              // Provide a stub so CoverArtThumbnail does not call real DB.
+              entryControllerProvider(id: coverArtImageId).overrideWith(
+                () => FakeEntryController(
+                  JournalEntity.journalEntry(
+                    meta: Metadata(
+                      id: coverArtImageId,
+                      createdAt: testDate,
+                      updatedAt: testDate,
+                      dateFrom: testDate,
+                      dateTo: testDate,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            child: TimeBudgetCard(
+              progress: progressWithCoverArt,
+              selectedDate: testDate,
+              isFocusActive: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // CoverArtThumbnail should be rendered for the coverArtId branch.
+        expect(find.byType(CoverArtThumbnail), findsOneWidget);
+        final thumbnail = tester.widget<CoverArtThumbnail>(
+          find.byType(CoverArtThumbnail),
+        );
+        expect(thumbnail.imageId, equals(coverArtImageId));
+      },
+    );
+  });
 }
 
 /// Test controller that returns grid mode.
@@ -2202,5 +2558,21 @@ class _TestTaskViewPreferenceController extends TaskViewPreference {
   @override
   Future<TaskViewMode> build({required String categoryId}) async {
     return TaskViewMode.grid;
+  }
+}
+
+/// Test controller that starts in list mode and can toggle to grid.
+class _TogglableTaskViewPreferenceController extends TaskViewPreference {
+  @override
+  Future<TaskViewMode> build({required String categoryId}) async {
+    return TaskViewMode.list;
+  }
+
+  @override
+  Future<void> toggle() async {
+    final current = state.value ?? TaskViewMode.list;
+    state = AsyncValue.data(
+      current == TaskViewMode.list ? TaskViewMode.grid : TaskViewMode.list,
+    );
   }
 }

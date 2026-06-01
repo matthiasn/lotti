@@ -21,11 +21,13 @@ void main() {
 
   group('ApiKeyValue validator', () {
     for (final testCase
-        in <({
-          String value,
-          InferenceProviderType? type,
-          ProviderFormError? error,
-        })>[
+        in <
+          ({
+            String value,
+            InferenceProviderType? type,
+            ProviderFormError? error,
+          })
+        >[
           // Local providers never require a key.
           (value: '', type: InferenceProviderType.ollama, error: null),
           (value: '', type: InferenceProviderType.whisper, error: null),

@@ -9,6 +9,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -18,6 +19,33 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/mocks.dart';
+
+/// Minimal base subclass of [IOOverrides] that lets the outer [IOOverrides]
+/// scope call the default (real) file factory without re-entering the zone and
+/// causing infinite recursion.
+base class _BaseIO extends IOOverrides {}
+
+/// A [File] wrapper whose [existsSync] always returns `true` and whose
+/// [deleteSync] always throws a [FileSystemException].  All other calls are
+/// forwarded to the real [File] delegate.  Used to exercise the catch branch
+/// inside `_sweepLocalFiles` without any chmod / external-process dependency.
+class _UndeletableFile implements File {
+  _UndeletableFile(this._real);
+  final File _real;
+
+  @override
+  String get path => _real.path;
+
+  @override
+  bool existsSync() => true;
+
+  @override
+  void deleteSync({bool recursive = false}) =>
+      throw FileSystemException('injected failure in test', path);
+
+  @override
+  dynamic noSuchMethod(Invocation i) => _real.noSuchMethod(i);
+}
 
 class _MockQueuePipelineCoordinator extends Mock
     implements QueuePipelineCoordinator {}
@@ -2294,6 +2322,418 @@ void main() {
                   '(periodic / nudge) restores the configured debounce',
             );
           });
+        },
+      );
+    });
+
+    group('_onQueueDepth via depth subscription in start()', () {
+      test(
+        'start() subscribes to queue depth changes when coordinator has a '
+        'non-null queue, and _onQueueDepth skips nudge when no prior work',
+        () {
+          fakeAsync((async) {
+            final mockQueue = MockInboundQueue();
+            final coordinator = _MockQueuePipelineCoordinator();
+            final depthController =
+                StreamController<QueueDepthSignal>.broadcast();
+            addTearDown(depthController.close);
+
+            when(() => coordinator.queue).thenReturn(mockQueue);
+            when(() => coordinator.isBridgeInFlight).thenReturn(false);
+            when(
+              () => mockQueue.depthChanges,
+            ).thenAnswer((_) => depthController.stream);
+
+            when(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                minAge: any(named: 'minAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) async => []);
+
+            final service = BackfillRequestService(
+              sequenceLogService: mockSequenceService,
+              syncDatabase: mockSyncDatabase,
+              outboxService: mockOutboxService,
+              vectorClockService: mockVcService,
+              loggingService: mockLogging,
+              queueCoordinator: coordinator,
+              requestInterval: const Duration(minutes: 10),
+            );
+            addTearDown(service.dispose);
+
+            service.start();
+            async.flushMicrotasks();
+
+            // Emit a zero-depth signal without any prior work — the guard
+            // on line 143 (_queueHadWork == false) should prevent nudge.
+            depthController.add(
+              const QueueDepthSignal(
+                total: 0,
+                byProducer: {},
+                oldestEnqueuedAt: null,
+              ),
+            );
+            async.flushMicrotasks();
+
+            // nudgeAfterDrain would call _processBackfillRequests which calls
+            // getMissingEntriesWithLimits; verify it was never called.
+            verifyNever(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                minAge: any(named: 'minAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            );
+          });
+        },
+      );
+
+      test(
+        '_onQueueDepth sets _queueHadWork on total > 0, then triggers '
+        'nudgeAfterDrain (with debounce bypassed) when total drops to 0',
+        () {
+          fakeAsync((async) {
+            final mockQueue = MockInboundQueue();
+            final coordinator = _MockQueuePipelineCoordinator();
+            final depthController =
+                StreamController<QueueDepthSignal>.broadcast();
+            addTearDown(depthController.close);
+
+            when(() => coordinator.queue).thenReturn(mockQueue);
+            when(() => coordinator.isBridgeInFlight).thenReturn(false);
+            when(
+              () => mockQueue.depthChanges,
+            ).thenAnswer((_) => depthController.stream);
+
+            final missingEntry = _createMissingLogItem(aliceHostId, 7);
+            final minAges = <Duration>[];
+
+            when(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                minAge: any(named: 'minAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((inv) async {
+              minAges.add(inv.namedArguments[#minAge] as Duration);
+              return [missingEntry];
+            });
+            when(
+              () => mockOutboxService.enqueueMessage(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockSequenceService.markAsRequested(any()),
+            ).thenAnswer((_) async {});
+
+            final service = BackfillRequestService(
+              sequenceLogService: mockSequenceService,
+              syncDatabase: mockSyncDatabase,
+              outboxService: mockOutboxService,
+              vectorClockService: mockVcService,
+              loggingService: mockLogging,
+              queueCoordinator: coordinator,
+              requestInterval: const Duration(minutes: 10),
+              missingDebounce: const Duration(minutes: 5),
+            );
+            addTearDown(service.dispose);
+
+            service.start();
+            async.flushMicrotasks();
+
+            // Emit a positive-depth signal: _queueHadWork becomes true.
+            depthController.add(
+              const QueueDepthSignal(
+                total: 3,
+                byProducer: {},
+                oldestEnqueuedAt: null,
+              ),
+            );
+            async.flushMicrotasks();
+
+            // Verify no nudge yet — work latch set but queue not drained.
+            expect(minAges, isEmpty);
+
+            // Now drain to zero — _onQueueDepth should call nudgeAfterDrain
+            // which bypasses the debounce (minAge == Duration.zero).
+            depthController.add(
+              const QueueDepthSignal(
+                total: 0,
+                byProducer: {},
+                oldestEnqueuedAt: null,
+              ),
+            );
+            async.flushMicrotasks();
+
+            expect(minAges, hasLength(1));
+            expect(
+              minAges.single,
+              Duration.zero,
+              reason: 'nudgeAfterDrain must bypass the missing debounce',
+            );
+            verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+          });
+        },
+      );
+
+      test(
+        '_onQueueDepth silently returns when service is disposed before '
+        'the depth signal arrives',
+        () {
+          fakeAsync((async) {
+            final mockQueue = MockInboundQueue();
+            final coordinator = _MockQueuePipelineCoordinator();
+            final depthController =
+                StreamController<QueueDepthSignal>.broadcast();
+            addTearDown(depthController.close);
+
+            when(() => coordinator.queue).thenReturn(mockQueue);
+            when(() => coordinator.isBridgeInFlight).thenReturn(false);
+            when(
+              () => mockQueue.depthChanges,
+            ).thenAnswer((_) => depthController.stream);
+
+            when(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                minAge: any(named: 'minAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) async => []);
+
+            final service = BackfillRequestService(
+              sequenceLogService: mockSequenceService,
+              syncDatabase: mockSyncDatabase,
+              outboxService: mockOutboxService,
+              vectorClockService: mockVcService,
+              loggingService: mockLogging,
+              queueCoordinator: coordinator,
+              requestInterval: const Duration(minutes: 10),
+            );
+
+            service.start();
+            async.flushMicrotasks();
+
+            // Prime _queueHadWork so the drain path would fire, then dispose.
+            depthController.add(
+              const QueueDepthSignal(
+                total: 2,
+                byProducer: {},
+                oldestEnqueuedAt: null,
+              ),
+            );
+            async.flushMicrotasks();
+
+            service.dispose();
+            async.flushMicrotasks();
+
+            // Emit the drain signal after disposal — the disposed guard
+            // on line 138 must prevent any further processing.
+            depthController.add(
+              const QueueDepthSignal(
+                total: 0,
+                byProducer: {},
+                oldestEnqueuedAt: null,
+              ),
+            );
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                minAge: any(named: 'minAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            );
+          });
+        },
+      );
+    });
+
+    group('_sweepLocalFiles notification payload type', () {
+      test(
+        'sweeps notification files on re-request using derived path',
+        () {
+          fakeAsync((async) {
+            final tmp = Directory.systemTemp.createTempSync(
+              'backfill_sweep_notif',
+            );
+            addTearDown(() => tmp.deleteSync(recursive: true));
+
+            // Pre-create the zombie notification file at the expected path.
+            final notifFile = File('${tmp.path}/notifications/notif-42.json')
+              ..createSync(recursive: true)
+              ..writeAsStringSync('{"stale":"notif"}');
+
+            final service = BackfillRequestService(
+              sequenceLogService: mockSequenceService,
+              syncDatabase: mockSyncDatabase,
+              outboxService: mockOutboxService,
+              vectorClockService: mockVcService,
+              loggingService: mockLogging,
+              documentsDirectory: tmp,
+              requestInterval: const Duration(minutes: 5),
+              maxBatchSize: 50,
+            );
+
+            final requestedEntries = [
+              _createRequestedLogItemWithPayload(
+                aliceHostId,
+                20,
+                entryId: 'notif-42',
+                payloadType: SyncSequencePayloadType.notification,
+              ),
+            ];
+
+            when(
+              () => mockSequenceService.getRequestedEntries(
+                limit: 50,
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((inv) async {
+              final offset = inv.namedArguments[#offset] as int;
+              return offset == 0 ? requestedEntries : [];
+            });
+            when(
+              () => mockSequenceService.resetRequestCounts(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockOutboxService.enqueueMessage(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockSequenceService.markAsRequested(any()),
+            ).thenAnswer((_) async {});
+
+            service.processReRequest();
+            async.flushMicrotasks();
+
+            expect(
+              notifFile.existsSync(),
+              isFalse,
+              reason:
+                  'notification zombie file must be deleted so the next '
+                  'download can start fresh',
+            );
+
+            service.dispose();
+          });
+        },
+      );
+
+      test(
+        'logs trace and continues when file.deleteSync() throws during sweep',
+        () async {
+          final tmp = Directory.systemTemp.createTempSync(
+            'backfill_sweep_err',
+          );
+          addTearDown(() => tmp.deleteSync(recursive: true));
+
+          // Create the zombie file so it genuinely exists on disk.
+          // We use IOOverrides.runZoned below to intercept the specific file
+          // path and make deleteSync() throw, exercising the catch branch on
+          // lines 484-485 — no chmod or external process needed.
+          final agentEntitiesDir = Directory('${tmp.path}/agent_entities')
+            ..createSync();
+          final entityFilePath = '${agentEntitiesDir.path}/entity-99.json';
+          File(entityFilePath)
+            ..createSync()
+            ..writeAsStringSync('stale');
+
+          // Use a base IOOverrides instance to call the real file factory
+          // inside the zone without causing infinite recursion.
+          final baseIO = _BaseIO();
+
+          final traceMessages = <String>[];
+          when(
+            () => mockLogging.log(
+              any<LogDomain>(),
+              any<String>(),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).thenAnswer((inv) {
+            traceMessages.add(inv.positionalArguments[1] as String);
+          });
+
+          // Pass mockLogging as the domainLogger so _trace() calls reach it.
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            domainLogger: mockLogging,
+            documentsDirectory: tmp,
+            requestInterval: const Duration(minutes: 5),
+            maxBatchSize: 50,
+          );
+          addTearDown(service.dispose);
+
+          final requestedEntries = [
+            _createRequestedLogItemWithPayload(
+              aliceHostId,
+              30,
+              entryId: 'entity-99',
+              payloadType: SyncSequencePayloadType.agentEntity,
+            ),
+          ];
+
+          when(
+            () => mockSequenceService.getRequestedEntries(
+              limit: 50,
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((inv) async {
+            final offset = inv.namedArguments[#offset] as int;
+            return offset == 0 ? requestedEntries : [];
+          });
+          when(
+            () => mockSequenceService.resetRequestCounts(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockSequenceService.markAsRequested(any()),
+          ).thenAnswer((_) async {});
+
+          // Run processReRequest inside an IOOverrides zone so that the
+          // specific entity file returns existsSync()==true but throws on
+          // deleteSync() — this is the portable way to exercise the catch
+          // branch without chmod or any external process.
+          await IOOverrides.runZoned(
+            service.processReRequest,
+            createFile: (path) => path == entityFilePath
+                ? _UndeletableFile(baseIO.createFile(path))
+                : baseIO.createFile(path),
+          );
+
+          // The catch block on lines 484-485 must trace the failure and
+          // then continue without crashing.
+          expect(
+            traceMessages.any(
+              (m) =>
+                  m.contains('sweepLocalFiles: failed to delete') &&
+                  m.contains('entity-99'),
+            ),
+            isTrue,
+            reason: 'catch block must log the failed delete',
+          );
         },
       );
     });

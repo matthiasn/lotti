@@ -60,11 +60,14 @@ class _SumByDayScenario {
 }
 
 extension _AnySumByDay on Any {
-  Generator<_DaySpec> get daySpec =>
-      combine2(intInRange(0, 7), intInRange(-3, 11), (int offset, int value) => (
-        offset: offset,
-        value: value,
-      ));
+  Generator<_DaySpec> get daySpec => combine2(
+    intInRange(0, 7),
+    intInRange(-3, 11),
+    (int offset, int value) => (
+      offset: offset,
+      value: value,
+    ),
+  );
 
   Generator<_SumByDayScenario> get sumByDayScenario => combine2(
     intInRange(1, 8),
@@ -452,26 +455,29 @@ void main() {
   });
 
   group('aggregateMeasurementNone', () {
-    test('maps each measurement to an observation and drops other entities', () {
-      final result = aggregateMeasurementNone([
-        buildMeasurementEntry(
-          id: 'a',
-          timestamp: DateTime(2024, 3, 10, 9),
-          value: 4,
-        ),
-        testTextEntry, // ignored via orElse
-        buildMeasurementEntry(
-          id: 'b',
-          timestamp: DateTime(2024, 3, 11, 9),
-          value: 8,
-        ),
-      ]);
+    test(
+      'maps each measurement to an observation and drops other entities',
+      () {
+        final result = aggregateMeasurementNone([
+          buildMeasurementEntry(
+            id: 'a',
+            timestamp: DateTime(2024, 3, 10, 9),
+            value: 4,
+          ),
+          testTextEntry, // ignored via orElse
+          buildMeasurementEntry(
+            id: 'b',
+            timestamp: DateTime(2024, 3, 11, 9),
+            value: 8,
+          ),
+        ]);
 
-      expect(result, hasLength(2));
-      expect(result[0].dateTime, DateTime(2024, 3, 10, 9));
-      expect(result[0].value, 4);
-      expect(result[1].value, 8);
-    });
+        expect(result, hasLength(2));
+        expect(result[0].dateTime, DateTime(2024, 3, 10, 9));
+        expect(result[0].value, 4);
+        expect(result[1].value, 8);
+      },
+    );
   });
 
   group('habitSorter', () {

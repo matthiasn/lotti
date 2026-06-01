@@ -15,7 +15,10 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/features/ai/functions/label_functions.dart';
+import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
@@ -35,6 +38,7 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart'
     show checklistRepositoryProvider;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5365,6 +5369,1494 @@ Take into account the following task context:
           ),
         ),
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // New coverage tests for previously uncovered branches
+  // ---------------------------------------------------------------------------
+
+  group('Constructor with AgentDatabase registered in GetIt', () {
+    test(
+      'creates repository using AgentRepository when AgentDatabase is registered',
+      () {
+        // Register a mock AgentDatabase in GetIt before constructing the repo
+        final mockAgentDb = MockAgentDatabase();
+        if (!getIt.isRegistered<AgentDatabase>()) {
+          getIt.registerSingleton<AgentDatabase>(mockAgentDb);
+        }
+        addTearDown(() {
+          if (getIt.isRegistered<AgentDatabase>()) {
+            getIt.unregister<AgentDatabase>();
+          }
+        });
+
+        // Constructing the repository should hit the branch at line 69
+        final ref = container.read(testRefProvider);
+        final repo = UnifiedAiInferenceRepository(ref)
+          ..autoChecklistServiceForTesting = mockAutoChecklistService;
+
+        // The object should be constructed without error
+        expect(repo, isNotNull);
+      },
+    );
+  });
+
+  group('autoChecklistService lazy getter', () {
+    test('creates AutoChecklistService lazily when not set via testing setter', () {
+      // AutoChecklistService internally calls getIt<DomainLogger>(), register it.
+      final mockDomainLogger = MockDomainLogger();
+      if (!getIt.isRegistered<DomainLogger>()) {
+        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+      }
+      addTearDown(() {
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
+        }
+      });
+
+      // Create a fresh repository WITHOUT calling autoChecklistServiceForTesting
+      final ref = container.read(testRefProvider);
+      final repo = UnifiedAiInferenceRepository(ref);
+      // Accessing the getter should initialise _autoChecklistService (line 89)
+      final svc = repo.autoChecklistService;
+      expect(svc, isNotNull);
+      // Second access returns the same instance (lazy initialised once)
+      expect(repo.autoChecklistService, same(svc));
+    });
+  });
+
+  group('_isPromptActiveForEntity – JournalAudio + promptGeneration + hasTask', () {
+    test(
+      'returns true when audio is linked to a task and prompt is promptGeneration',
+      () async {
+        // This covers lines 182-185 (special case for audio + promptGeneration)
+        final audioEntity = JournalAudio(
+          meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        final linkedTask = Task(
+          meta: _createMetadata().copyWith(id: 'task-id'),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              utcOffset: 0,
+            ),
+            title: 'Linked Task',
+            statusHistory: [],
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+          ),
+        );
+
+        // promptGeneration requires task context but NOT audio files
+        final promptGenPrompt = _createPrompt(
+          id: 'prompt-gen',
+          name: 'Coding Prompt Generation',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.promptGeneration,
+        );
+
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [promptGenPrompt]);
+
+        // Audio linked to task → should return the prompt
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => [linkedTask]);
+
+        final result = await repository!.getActivePromptsForContext(
+          entity: audioEntity,
+        );
+
+        expect(result.length, 1);
+        expect(result.first.id, 'prompt-gen');
+      },
+    );
+
+    test(
+      'returns false when audio has no linked task and prompt is promptGeneration',
+      () async {
+        final audioEntity = JournalAudio(
+          meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        final promptGenPrompt = _createPrompt(
+          id: 'prompt-gen',
+          name: 'Coding Prompt Generation',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.promptGeneration,
+        );
+
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [promptGenPrompt]);
+
+        // No linked task → should NOT return prompt
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
+
+        final result = await repository!.getActivePromptsForContext(
+          entity: audioEntity,
+        );
+
+        expect(result.isEmpty, true);
+      },
+    );
+  });
+
+  group('runInference – legacy type guard', () {
+    test(
+      'skips inference for legacy taskSummary response type (lines 208-210)',
+      () async {
+        final legacyPrompt = AiConfigPrompt(
+          id: 'legacy-task-summary',
+          name: 'Legacy Task Summary',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
+          requiredInputData: const [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        final statusChanges = <InferenceStatus>[];
+
+        // Should return without calling any inference machinery
+        await repository!.runInference(
+          entityId: 'test-id',
+          promptConfig: legacyPrompt,
+          onProgress: (_) {},
+          onStatusChange: statusChanges.add,
+        );
+
+        // Status never changed because we returned early
+        expect(statusChanges, isEmpty);
+        verifyNever(() => mockAiInputRepo.getEntity(any()));
+      },
+    );
+
+    test('skips inference for legacy checklistUpdates response type', () async {
+      final legacyPrompt = AiConfigPrompt(
+        id: 'legacy-checklist',
+        name: 'Legacy Checklist Updates',
+        systemMessage: 'System',
+        userMessage: 'User',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime(2024, 3, 15),
+        useReasoning: false,
+        requiredInputData: const [InputDataType.task],
+        // ignore: deprecated_member_use_from_same_package
+        aiResponseType: AiResponseType.checklistUpdates,
+      );
+
+      final statusChanges = <InferenceStatus>[];
+
+      await repository!.runInference(
+        entityId: 'test-id',
+        promptConfig: legacyPrompt,
+        onProgress: (_) {},
+        onStatusChange: statusChanges.add,
+      );
+
+      expect(statusChanges, isEmpty);
+      verifyNever(() => mockAiInputRepo.getEntity(any()));
+    });
+  });
+
+  group('runInference – entity not found error', () {
+    test('throws when entity cannot be found (line 253)', () async {
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      // getEntity returns null → should throw 'Entity not found'
+      when(
+        () => mockAiInputRepo.getEntity('missing-entity-id'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer(
+        (_) async => _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        ),
+      );
+
+      await expectLater(
+        repository!.runInference(
+          entityId: 'missing-entity-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Entity not found: missing-entity-id'),
+          ),
+        ),
+      );
+    });
+  });
+
+  group('runInference – usage tokens captured (line 333)', () {
+    test('captures usage data from stream chunk', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: const [],
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      );
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      // A stream that includes a chunk with usage data
+      // ignore: prefer_const_constructors
+      final chunkWithUsage = CreateChatCompletionStreamResponse(
+        id: 'response-with-usage',
+        choices: [
+          const ChatCompletionStreamResponseChoice(
+            index: 0,
+            delta: ChatCompletionStreamResponseDelta(content: 'Answer'),
+            finishReason: ChatCompletionFinishReason.stop,
+          ),
+        ],
+        usage: const CompletionUsage(
+          promptTokens: 50,
+          completionTokens: 20,
+          totalTokens: 70,
+        ),
+        object: 'chat.completion.chunk',
+        created: 1710493800,
+      );
+      final mockStream = Stream.fromIterable([chunkWithUsage]);
+
+      _stubInferenceContext(
+        mockAiInputRepo: mockAiInputRepo,
+        mockAiConfigRepo: mockAiConfigRepo,
+        entity: taskEntity,
+        model: model,
+        provider: provider,
+      );
+      _stubGenerate(mockCloudInferenceRepo, stream: mockStream);
+
+      AiResponseData? capturedData;
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: captureAny(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedData = invocation.namedArguments[#data] as AiResponseData;
+        return null;
+      });
+
+      await repository!.runInference(
+        entityId: taskEntity.id,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Usage tokens should have been captured and placed in the response data
+      expect(capturedData, isNotNull);
+      expect(capturedData!.inputTokens, 50);
+      expect(capturedData!.outputTokens, 20);
+    });
+  });
+
+  group('_handlePostProcessing – promptGeneration case (lines 821-827)', () {
+    test(
+      'promptGeneration response type completes without post-processing',
+      () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: const [],
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-gen',
+          name: 'Prompt Generation',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.promptGeneration,
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        final statusChanges = <InferenceStatus>[];
+
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: taskEntity,
+          model: model,
+          provider: provider,
+        );
+        _stubGenerate(
+          mockCloudInferenceRepo,
+          stream: _createMockTextStream(['Generated prompt content']),
+        );
+        _stubCreateAiResponseEntry(mockAiInputRepo);
+
+        await repository!.runInference(
+          entityId: taskEntity.id,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: statusChanges.add,
+        );
+
+        // Should complete normally with no journal entity update
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+      },
+    );
+  });
+
+  group(
+    '_handlePostProcessing – imagePromptGeneration case (lines 828-834)',
+    () {
+      test(
+        'imagePromptGeneration response type completes without post-processing',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15, 10, 30),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+            ),
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'img-prompt-gen',
+            name: 'Image Prompt Generation',
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.imagePromptGeneration,
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          final statusChanges = <InferenceStatus>[];
+
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: taskEntity,
+            model: model,
+            provider: provider,
+          );
+          _stubGenerate(
+            mockCloudInferenceRepo,
+            stream: _createMockTextStream(['A beautiful landscape, 4K']),
+          );
+          _stubCreateAiResponseEntry(mockAiInputRepo);
+
+          await repository!.runInference(
+            entityId: taskEntity.id,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          );
+
+          expect(statusChanges, [
+            InferenceStatus.running,
+            InferenceStatus.idle,
+          ]);
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
+    },
+  );
+
+  group('runInference – imageGeneration legacy guard (line 207)', () {
+    test(
+      'skips inference for imageGeneration (legacy type, lines 208-213)',
+      () async {
+        // AiResponseType.imageGeneration is a legacy type — runInference returns
+        // early before any status change, identical to taskSummary/checklistUpdates.
+        final promptConfig = _createPrompt(
+          id: 'img-gen',
+          name: 'Image Generation',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.imageGeneration,
+        );
+
+        final statusChanges = <InferenceStatus>[];
+
+        await repository!.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: statusChanges.add,
+        );
+
+        // Early return — no status change, no inference calls
+        expect(statusChanges, isEmpty);
+        verifyNever(() => mockAiInputRepo.getEntity(any()));
+      },
+    );
+  });
+
+  group('_handlePostProcessing – image analysis updateJournalEntity failure', () {
+    test(
+      'logs error and continues when updateJournalEntity throws for image',
+      () async {
+        final tempDir = Directory.systemTemp.createTempSync(
+          'image_error_test_',
+        );
+        overrideTempDirs.add(tempDir);
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        final imageEntity = JournalImage(
+          meta: _createMetadata(),
+          data: ImageData(
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
+            imageId: 'test-image',
+            imageFile: 'test.jpg',
+            imageDirectory: '/images/',
+          ),
+        );
+
+        Directory('${tempDir.path}/images').createSync(recursive: true);
+        File(
+          '${tempDir.path}/images/test.jpg',
+        ).writeAsBytesSync(Uint8List.fromList([1, 2, 3, 4]));
+
+        final promptConfig = _createPrompt(
+          id: 'img-analysis',
+          name: 'Image Analysis',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4-vision',
+        );
+
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: imageEntity,
+          model: model,
+          provider: provider,
+          taskDetailsJson: '{"image":"test.jpg"}',
+        );
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
+
+        // Entity state helper re-fetches the image before update
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => imageEntity);
+
+        // Make updateJournalEntity throw to cover the error-catch at lines 760-761
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('DB write error'));
+
+        _stubGenerateWithImages(
+          mockCloudInferenceRepo,
+          stream: _createMockTextStream(['Analysis result']),
+        );
+        _stubCreateAiResponseEntry(mockAiInputRepo);
+
+        // Should complete without rethrowing
+        final statusChanges = <InferenceStatus>[];
+        await repository!.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: statusChanges.add,
+        );
+
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
+      },
+    );
+  });
+
+  group(
+    '_handlePostProcessing – audio transcription updateJournalEntity failure',
+    () {
+      test(
+        'logs error and continues when updateJournalEntity throws for audio',
+        () async {
+          final tempDir = Directory.systemTemp.createTempSync(
+            'audio_error_test_',
+          );
+          overrideTempDirs.add(tempDir);
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+          final audioEntity = JournalAudio(
+            meta: _createMetadata(),
+            data: AudioData(
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+              audioFile: 'test.mp3',
+              audioDirectory: '/audio/',
+              duration: const Duration(seconds: 30),
+            ),
+          );
+
+          Directory('${tempDir.path}/audio').createSync(recursive: true);
+          File(
+            '${tempDir.path}/audio/test.mp3',
+          ).writeAsBytesSync(Uint8List.fromList([1, 2, 3, 4, 5]));
+
+          final promptConfig = _createPrompt(
+            id: 'audio-transcript',
+            name: 'Audio Transcription',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'whisper-1',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: audioEntity,
+            model: model,
+            provider: provider,
+            taskDetailsJson: '{"audio":"test.mp3"}',
+          );
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []);
+
+          // Entity state helper re-fetches
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => audioEntity);
+
+          // Throw to cover lines 814-815
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenThrow(Exception('DB write error'));
+
+          _stubGenerateWithAudio(
+            mockCloudInferenceRepo,
+            stream: _createMockTextStream(['Transcribed text']),
+          );
+          _stubCreateAiResponseEntry(mockAiInputRepo);
+
+          final statusChanges = <InferenceStatus>[];
+          await repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          );
+
+          expect(statusChanges, [
+            InferenceStatus.running,
+            InferenceStatus.idle,
+          ]);
+        },
+      );
+    },
+  );
+
+  group(
+    'processToolCalls – language detection (setTaskLanguage) branches (lines 1120-1178)',
+    () {
+      Task makeTask({String? languageCode, String id = 'task-lang-test'}) {
+        return Task(
+          meta: _createMetadata(id: id),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 0,
+            ),
+            title: 'Language Test Task',
+            statusHistory: const [],
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            languageCode: languageCode,
+          ),
+        );
+      }
+
+      ChatCompletionMessageToolCall langCall(String json) {
+        return _createMockMessageToolCall(
+          id: 'lang-call-1',
+          functionName: TaskFunctions.setTaskLanguage,
+          arguments: json,
+        );
+      }
+
+      test(
+        'sets language when task has no language yet (lines 1149-1162)',
+        () async {
+          final task = makeTask();
+          when(
+            () => mockJournalRepo.getJournalEntityById(task.id),
+          ).thenAnswer((_) async => task);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              langCall(
+                '{"languageCode":"en","confidence":"high","reason":"Detected English"}',
+              ),
+            ],
+            task: task,
+          );
+
+          expect(result, isTrue); // languageWasSet
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        },
+      );
+
+      test(
+        'skips language update when task already has a language set (lines 1171-1174)',
+        () async {
+          final task = makeTask(languageCode: 'de');
+          when(
+            () => mockJournalRepo.getJournalEntityById(task.id),
+          ).thenAnswer((_) async => task);
+
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              langCall(
+                '{"languageCode":"en","confidence":"high","reason":"Detected English"}',
+              ),
+            ],
+            task: task,
+          );
+
+          expect(result, isFalse); // languageWasSet stays false
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
+
+      test(
+        'skips language update when freshEntity is not a Task (lines 1138-1143)',
+        () async {
+          final task = makeTask();
+          // Return a non-Task entity to hit line 1138
+          when(
+            () => mockJournalRepo.getJournalEntityById(task.id),
+          ).thenAnswer((_) async => JournalEntry(meta: _createMetadata()));
+
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              langCall(
+                '{"languageCode":"fr","confidence":"medium","reason":"French"}',
+              ),
+            ],
+            task: task,
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
+
+      test(
+        'handles updateJournalEntity failure when setting language (lines 1164-1168)',
+        () async {
+          final task = makeTask();
+          when(
+            () => mockJournalRepo.getJournalEntityById(task.id),
+          ).thenAnswer((_) async => task);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenThrow(Exception('DB write error'));
+
+          // Should not throw despite update failure
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              langCall(
+                '{"languageCode":"es","confidence":"low","reason":"Maybe Spanish"}',
+              ),
+            ],
+            task: task,
+          );
+
+          // languageWasSet should be false because update threw
+          expect(result, isFalse);
+        },
+      );
+
+      test(
+        'handles malformed setTaskLanguage JSON (lines 1176-1181)',
+        () async {
+          final task = makeTask();
+
+          // Should not throw — error is caught internally
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              _createMockMessageToolCall(
+                id: 'bad-lang-call',
+                functionName: TaskFunctions.setTaskLanguage,
+                arguments: 'not-valid-json',
+              ),
+            ],
+            task: task,
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
+    },
+  );
+
+  group(
+    'processToolCalls – language triggers auto-rerun when response is empty (lines 619-634)',
+    () {
+      test(
+        're-runs inference when language is detected and response is empty',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15, 10, 30),
+                utcOffset: 0,
+              ),
+              title: 'Language Detection Test',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+            ),
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          // First call: returns only a language tool call with empty text
+          // Second call (re-run): returns actual text
+          var callCount = 0;
+          when(
+            () => mockAiInputRepo.getEntity(taskEntity.id),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+          ).thenAnswer((_) async => '{"task":"details"}');
+
+          when(
+            () => mockJournalRepo.getJournalEntityById(taskEntity.id),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).thenAnswer((_) {
+            callCount++;
+            if (callCount == 1) {
+              // First run: language tool call, no text
+              return Stream.fromIterable([
+                _createStreamChunkWithToolCalls([
+                  _createMockToolCall(
+                    index: 0,
+                    id: 'lang-1',
+                    functionName: TaskFunctions.setTaskLanguage,
+                    arguments:
+                        '{"languageCode":"de","confidence":"high","reason":"German text"}',
+                  ),
+                ]),
+              ]);
+            } else {
+              // Second run (re-run): returns the actual summary
+              return _createMockTextStream(['Task summary in German']);
+            }
+          });
+
+          _stubCreateAiResponseEntry(mockAiInputRepo);
+
+          final statusChanges = <InferenceStatus>[];
+          await repository!.runInference(
+            entityId: taskEntity.id,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          );
+
+          // Both runs completed → language was set and rerun happened
+          expect(callCount, 2);
+          expect(statusChanges, contains(InferenceStatus.idle));
+        },
+      );
+    },
+  );
+
+  group('processToolCalls – suggestChecklistCompletion edge cases', () {
+    Task makeTask2({String id = 'task-1'}) {
+      return Task(
+        meta: _createMetadata(id: id),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 0,
+          ),
+          title: 'Edge Case Task',
+          statusHistory: const [],
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          checklistIds: const ['checklist-1'],
+        ),
+      );
+    }
+
+    test(
+      'skips when arguments contain no valid JSON object (line 906-911 — empty jsonObjects)',
+      () async {
+        final task = makeTask2();
+
+        final result = await repository!.processToolCalls(
+          toolCalls: [
+            _createMockMessageToolCall(
+              id: 'bad-call',
+              functionName:
+                  ChecklistCompletionFunctions.suggestChecklistCompletion,
+              // No {} braces → no JSON objects found
+              arguments: 'no-braces-here',
+            ),
+          ],
+          task: task,
+        );
+
+        expect(result, isFalse);
+        expect(testChecklistCompletionService.capturedSuggestions, isEmpty);
+      },
+    );
+
+    test(
+      'uses orElse confidence fallback for unknown confidence value (line 932)',
+      () async {
+        final task = makeTask2();
+
+        when(
+          () => mockJournalRepo.getJournalEntityById(any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await repository!.processToolCalls(
+          toolCalls: [
+            _createMockMessageToolCall(
+              id: 'unknown-confidence',
+              functionName:
+                  ChecklistCompletionFunctions.suggestChecklistCompletion,
+              // 'extreme' is not a valid confidence level → orElse fallback
+              arguments:
+                  '{"checklistItemId":"item-x","reason":"Test","confidence":"extreme"}',
+            ),
+          ],
+          task: task,
+        );
+
+        expect(result, isFalse);
+        expect(testChecklistCompletionService.capturedSuggestions.length, 1);
+        expect(
+          testChecklistCompletionService.capturedSuggestions.first.confidence,
+          ChecklistCompletionConfidence.low,
+        );
+      },
+    );
+
+    test(
+      'logs and skips invalid JSON within arguments (lines 942-946)',
+      () async {
+        final task = makeTask2();
+
+        // A valid outer JSON structure is needed so jsonObjects is non-empty, but
+        // the inner content has a broken type cast.
+        final result = await repository!.processToolCalls(
+          toolCalls: [
+            _createMockMessageToolCall(
+              id: 'bad-inner',
+              functionName:
+                  ChecklistCompletionFunctions.suggestChecklistCompletion,
+              // checklistItemId is missing → cast to String throws
+              arguments: '{"reason":"test","confidence":"high"}',
+            ),
+          ],
+          task: task,
+        );
+
+        expect(result, isFalse);
+        // No suggestion should have been added because parsing threw
+        expect(testChecklistCompletionService.capturedSuggestions, isEmpty);
+      },
+    );
+  });
+
+  group('processToolCalls – add_multiple_checklist_items edge cases', () {
+    Task makeTaskNoChecklists() {
+      return Task(
+        meta: _createMetadata(id: 'task-no-cl'),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 0,
+          ),
+          title: 'No Checklist Task',
+          statusHistory: const [],
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+      );
+    }
+
+    test('skips when items field is not a List (line 958-963)', () async {
+      final task = makeTaskNoChecklists();
+
+      final result = await repository!.processToolCalls(
+        toolCalls: [
+          _createMockMessageToolCall(
+            id: 'bad-items',
+            functionName:
+                ChecklistCompletionFunctions.addMultipleChecklistItems,
+            arguments: '{"items":"not-a-list"}',
+          ),
+        ],
+        task: task,
+      );
+
+      expect(result, isFalse);
+      verifyNever(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: any(named: 'taskId'),
+          suggestions: any(named: 'suggestions'),
+        ),
+      );
+    });
+
+    test('skips when batch size exceeds maximum (lines 968-973)', () async {
+      // Build an array with 21 items (maxBatchSize is 20)
+      final items = List.generate(
+        21,
+        (i) => '{"title":"Item $i","isChecked":false}',
+      ).join(',');
+
+      final task = makeTaskNoChecklists();
+
+      final result = await repository!.processToolCalls(
+        toolCalls: [
+          _createMockMessageToolCall(
+            id: 'too-many',
+            functionName:
+                ChecklistCompletionFunctions.addMultipleChecklistItems,
+            arguments: '{"items":[$items]}',
+          ),
+        ],
+        task: task,
+      );
+
+      expect(result, isFalse);
+      verifyNever(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: any(named: 'taskId'),
+          suggestions: any(named: 'suggestions'),
+        ),
+      );
+    });
+
+    test(
+      'breaks out of loop when task is not found after checklist creation (lines 1031-1036)',
+      () async {
+        // Task starts with no checklist IDs
+        final task = Task(
+          meta: _createMetadata(id: 'task-disappears'),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 0,
+            ),
+            title: 'Disappearing Task',
+            statusHistory: const [],
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            checklistIds: const [],
+          ),
+        );
+
+        // autoCreateChecklist succeeds
+        when(
+          () => mockAutoChecklistService.autoCreateChecklist(
+            taskId: task.id,
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            success: true,
+            checklistId: 'new-cl',
+            createdItems: <({String id, String title, bool isChecked})>[],
+            error: null,
+          ),
+        );
+
+        // But the journalDb can no longer find the task after creation
+        // (simulates concurrent deletion)
+        when(
+          () => mockJournalDb.journalEntityById(task.id),
+        ).thenAnswer((_) async => null);
+
+        final result = await repository!.processToolCalls(
+          toolCalls: [
+            _createMockMessageToolCall(
+              id: 'add-cl',
+              functionName:
+                  ChecklistCompletionFunctions.addMultipleChecklistItems,
+              arguments:
+                  '{"items":[{"title":"Do something","isChecked":false}]}',
+            ),
+          ],
+          task: task,
+        );
+
+        expect(result, isFalse);
+      },
+    );
+
+    test(
+      'logs error when autoCreateChecklist fails (lines 1039-1043)',
+      () async {
+        final task = Task(
+          meta: _createMetadata(id: 'task-cl-fail'),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 0,
+            ),
+            title: 'Failing Checklist Task',
+            statusHistory: const [],
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            checklistIds: const [],
+          ),
+        );
+
+        when(
+          () => mockAutoChecklistService.autoCreateChecklist(
+            taskId: task.id,
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            success: false,
+            checklistId: null,
+            createdItems: null,
+            error: 'Creation failed',
+          ),
+        );
+
+        final result = await repository!.processToolCalls(
+          toolCalls: [
+            _createMockMessageToolCall(
+              id: 'add-fail',
+              functionName:
+                  ChecklistCompletionFunctions.addMultipleChecklistItems,
+              arguments: '{"items":[{"title":"Item 1","isChecked":false}]}',
+            ),
+          ],
+          task: task,
+        );
+
+        expect(result, isFalse);
+      },
+    );
+  });
+
+  group(
+    'processToolCalls – update_checklist_items failure path (lines 1093-1116)',
+    () {
+      test(
+        'logs when processFunctionCall returns failure (lines 1093-1097)',
+        () async {
+          final task = Task(
+            meta: _createMetadata(id: 'task-update-fail'),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15),
+                utcOffset: 0,
+              ),
+              title: 'Update Fail Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              checklistIds: const ['checklist-1'],
+            ),
+          );
+
+          // Invalid JSON structure → processFunctionCall returns failure
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              _createMockMessageToolCall(
+                id: 'bad-update',
+                functionName: ChecklistCompletionFunctions.updateChecklistItems,
+                arguments: '{"items": "not-array"}',
+              ),
+            ],
+            task: task,
+          );
+
+          expect(result, isFalse);
+        },
+      );
+
+      test(
+        'catches exception thrown during update_checklist_items (lines 1110-1115)',
+        () async {
+          final task = Task(
+            meta: _createMetadata(id: 'task-update-throw'),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15),
+                utcOffset: 0,
+              ),
+              title: 'Update Throw Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              checklistIds: const ['checklist-1'],
+            ),
+          );
+
+          // DB throws during entriesForIds lookup inside executeUpdates
+          final mockSelectable = MockSelectableSimple<JournalDbEntity>();
+          when(mockSelectable.get).thenThrow(Exception('DB exploded'));
+          when(
+            () => mockJournalDb.entriesForIds(any()),
+          ).thenReturn(mockSelectable);
+
+          // Should not rethrow; caught internally
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              _createMockMessageToolCall(
+                id: 'throw-update',
+                functionName: ChecklistCompletionFunctions.updateChecklistItems,
+                arguments: '{"items":[{"id":"item-1","isChecked":true}]}',
+              ),
+            ],
+            task: task,
+          );
+
+          expect(result, isFalse);
+        },
+      );
+    },
+  );
+
+  group(
+    'processToolCalls – assign_task_labels empty requested set (line 1193)',
+    () {
+      test(
+        'skips when parseLabelCallArgs returns empty selected IDs',
+        () async {
+          final task = Task(
+            meta: _createMetadata(id: 'task-empty-labels'),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15),
+                utcOffset: 0,
+              ),
+              title: 'Label Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+            ),
+          );
+
+          // Empty labelIds → parseLabelCallArgs returns no selectedIds
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              _createMockMessageToolCall(
+                id: 'empty-labels',
+                functionName: LabelFunctions.assignTaskLabels,
+                arguments: '{"labelIds":[]}',
+              ),
+            ],
+            task: task,
+          );
+
+          expect(result, isFalse);
+          verifyNever(
+            () => mockLabelsRepository.addLabels(
+              journalEntityId: any(named: 'journalEntityId'),
+              addedLabelIds: any(named: 'addedLabelIds'),
+            ),
+          );
+        },
+      );
+    },
+  );
+
+  group(
+    'processToolCalls – assign_task_labels successful path (lines 1246-1247)',
+    () {
+      test(
+        'calls processAssignment and logs result when labels are valid',
+        () async {
+          final task = Task(
+            meta: _createMetadata(id: 'task-valid-labels'),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15),
+                utcOffset: 0,
+              ),
+              title: 'Label Assignment Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+            ),
+          );
+
+          // LabelAssignmentProcessor calls getIt<DomainLogger>() in its
+          // constructor — register a mock so the constructor doesn't throw.
+          final mockDomainLogger = MockDomainLogger();
+          if (!getIt.isRegistered<DomainLogger>()) {
+            getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+          }
+          addTearDown(() {
+            if (getIt.isRegistered<DomainLogger>()) {
+              getIt.unregister<DomainLogger>();
+            }
+          });
+
+          // Build real LabelDefinition fixtures — global (no applicableCategoryIds)
+          // and not deleted (no deletedAt) so the validator marks them valid.
+          LabelDefinition makeLabelDef(String id) => LabelDefinition(
+            id: id,
+            name: id,
+            color: '#000000',
+            vectorClock: null,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+          );
+          final labelA = makeLabelDef('label-A');
+          final labelB = makeLabelDef('label-B');
+
+          // LabelAssignmentProcessor uses getIt<JournalDb>() directly:
+          // stub journalEntityById so task suppression fetch works.
+          when(
+            () => mockJournalDb.journalEntityById(task.id),
+          ).thenAnswer((_) async => task);
+          // Return matching LabelDefinition for each requested ID so the
+          // LabelValidator places them in the "valid" bucket.
+          when(
+            () => mockJournalDb.getLabelDefinitionById('label-A'),
+          ).thenAnswer((_) async => labelA);
+          when(
+            () => mockJournalDb.getLabelDefinitionById('label-B'),
+          ).thenAnswer((_) async => labelB);
+          // Stub addLabels so the repository call in the success path completes.
+          when(
+            () => mockLabelsRepository.addLabels(
+              journalEntityId: task.id,
+              addedLabelIds: any(named: 'addedLabelIds'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              _createMockMessageToolCall(
+                id: 'valid-labels',
+                functionName: LabelFunctions.assignTaskLabels,
+                arguments: '{"labelIds":["label-A","label-B"]}',
+              ),
+            ],
+            task: task,
+          );
+
+          // processToolCalls returns languageWasSet; label assignment doesn't
+          // flip that flag.
+          expect(result, isFalse);
+          // The success path (lines 1246-1247) must have called addLabels with
+          // both validated label IDs.
+          final captured = verify(
+            () => mockLabelsRepository.addLabels(
+              journalEntityId: task.id,
+              addedLabelIds: captureAny(named: 'addedLabelIds'),
+            ),
+          ).captured;
+          final assignedIds = captured.single as List<String>;
+          expect(assignedIds, containsAll(['label-A', 'label-B']));
+          expect(assignedIds, hasLength(2));
+        },
+      );
+    },
+  );
+
+  group('processToolCalls – unknown tool call (lines 1261-1262)', () {
+    test('logs and skips unknown function name', () async {
+      final task = Task(
+        meta: _createMetadata(id: 'task-unknown-tool'),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 0,
+          ),
+          title: 'Unknown Tool Task',
+          statusHistory: const [],
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+      );
+
+      // Should not throw
+      final result = await repository!.processToolCalls(
+        toolCalls: [
+          _createMockMessageToolCall(
+            id: 'unknown-tool',
+            functionName: 'completely_unknown_function',
+            arguments: '{}',
+          ),
+        ],
+        task: task,
+      );
+
+      expect(result, isFalse);
     });
   });
 }

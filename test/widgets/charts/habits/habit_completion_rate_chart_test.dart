@@ -16,6 +16,19 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
+// Minimal TitleMeta for testing title widget callbacks.
+TitleMeta _makeMeta() => TitleMeta(
+  min: 0,
+  max: 100,
+  appliedInterval: 20,
+  axisPosition: 0,
+  formattedValue: '',
+  parentAxisSize: 400,
+  sideTitles: const SideTitles(showTitles: true),
+  axisSide: AxisSide.left,
+  rotationQuarterTurns: 0,
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -108,13 +121,18 @@ void main() {
       // Tap the chart
       await tester.tapAt(chartCenter);
 
-      // Pump to allow addPostFrameCallback to execute
+      // Pump to allow addPostFrameCallback to execute. The original bug
+      // modified provider state during paint (setState/markNeedsBuild while
+      // painting), which throws a FlutterError. setInfoYmd is now deferred
+      // via addPostFrameCallback, so draining the post-frame callback here
+      // must not surface any exception.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // The test verifies the tap doesn't cause an error
-      // (the previous bug was modifying state during paint)
-      // The actual setInfoYmd call is deferred via addPostFrameCallback
+      // Regression guard: no exception was thrown while the deferred
+      // paint-time callback ran, and the chart is still mounted.
+      expect(tester.takeException(), isNull);
+      expect(find.byType(LineChart), findsOneWidget);
     });
 
     testWidgets('displays percentage info when day is selected', (
@@ -197,6 +215,279 @@ void main() {
       // Should render without errors
       expect(find.byType(LineChart), findsOneWidget);
     });
+
+    test('preferredSize returns toolbar height', () {
+      const chart = HabitCompletionRateChart();
+      expect(chart.preferredSize, const Size.fromHeight(kToolbarHeight));
+    });
+  });
+
+  group('getTooltipItems callback', () {
+    testWidgets(
+      'returns empty list when spots is empty',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(_WithDaysController.new),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: HabitCompletionRateChart()),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+        final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+
+        final items = tooltipData.getTooltipItems([]);
+        expect(items, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'does not throw when spot index is out of bounds',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(_WithDaysController.new),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: HabitCompletionRateChart()),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+        final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+
+        // Use an x value far beyond the days list length
+        final barDataObj = LineChartBarData(spots: const [FlSpot(999, 50)]);
+        final spots = [LineBarSpot(barDataObj, 0, const FlSpot(999, 50))];
+
+        // Must not throw; returns one null per spot
+        final items = tooltipData.getTooltipItems(spots);
+        expect(items, hasLength(1));
+        expect(items.first, isNull);
+      },
+    );
+  });
+
+  group('leftTitleWidgets', () {
+    for (final testCase in [
+      (value: 20.0, expected: '20%'),
+      (value: 40.0, expected: '40%'),
+      (value: 60.0, expected: '60%'),
+      (value: 80.0, expected: '80%'),
+      (value: 100.0, expected: '100%'),
+    ]) {
+      testWidgets(
+        'returns ChartLabel with "${testCase.expected}" for value '
+        '${testCase.value}',
+        (tester) async {
+          final meta = _makeMeta();
+          final widget = leftTitleWidgets(testCase.value, meta);
+          await tester.pumpWidget(
+            MaterialApp(home: Scaffold(body: widget)),
+          );
+          expect(find.text(testCase.expected), findsOneWidget);
+        },
+      );
+    }
+
+    testWidgets('returns empty Container for non-labelled values', (
+      tester,
+    ) async {
+      final meta = _makeMeta();
+      // Values like 0, 10, 30, 50 are not labelled.
+      for (final value in [0.0, 10.0, 30.0, 50.0, 70.0, 90.0]) {
+        final widget = leftTitleWidgets(value, meta);
+        await tester.pumpWidget(
+          MaterialApp(home: Scaffold(body: widget)),
+        );
+        expect(find.byType(Container), findsWidgets);
+        expect(
+          find.text(value.toInt().toString()),
+          findsNothing,
+          reason: 'No label expected for value $value',
+        );
+      }
+    });
+  });
+
+  group('barData pure function', () {
+    HabitsState makeState({
+      List<HabitDefinition> habitDefinitions = const [],
+      Map<String, Set<String>> allByDay = const {},
+      Map<String, Set<String>> successfulByDay = const {},
+      Map<String, Set<String>> skippedByDay = const {},
+      Map<String, Set<String>> failedByDay = const {},
+    }) {
+      return HabitsState.initial().copyWith(
+        habitDefinitions: habitDefinitions,
+        allByDay: allByDay,
+        successfulByDay: successfulByDay,
+        skippedByDay: skippedByDay,
+        failedByDay: failedByDay,
+      );
+    }
+
+    test('produces zero y-value when habitCount is 0', () {
+      const day = '2024-03-15';
+      final state = makeState(); // no habits, no allByDay entries
+      final result = barData(
+        days: [day],
+        habitDefinitions: [],
+        successfulByDay: {},
+        skippedByDay: {},
+        failedByDay: {},
+        state: state,
+        showSuccessful: true,
+        showSkipped: true,
+        showFailed: true,
+        color: Colors.blue,
+      );
+
+      expect(result.spots, hasLength(1));
+      expect(result.spots.first.y, 0.0);
+    });
+
+    test('computes correct rate when showSuccessful only', () {
+      const day = '2024-03-15';
+      final state = makeState(
+        allByDay: {
+          day: {'h1', 'h2', 'h3', 'h4'},
+        },
+        successfulByDay: {
+          day: {'h1', 'h2'},
+        },
+        skippedByDay: {
+          day: {'h3'},
+        },
+        failedByDay: {
+          day: {'h4'},
+        },
+      );
+
+      final result = barData(
+        days: [day],
+        habitDefinitions: [],
+        successfulByDay: {
+          day: {'h1', 'h2'},
+        },
+        skippedByDay: {
+          day: {'h3'},
+        },
+        failedByDay: {
+          day: {'h4'},
+        },
+        state: state,
+        showSuccessful: true,
+        showSkipped: false,
+        showFailed: false,
+        color: Colors.green,
+      );
+
+      // 2 successful out of 4 total → 50 %
+      expect(result.spots, hasLength(1));
+      expect(result.spots.first.y, closeTo(50.0, 0.001));
+    });
+
+    test('computes correct rate when showSuccessful + showSkipped', () {
+      const day = '2024-03-15';
+      final state = makeState(
+        allByDay: {
+          day: {'h1', 'h2', 'h3', 'h4'},
+        },
+        successfulByDay: {
+          day: {'h1', 'h2'},
+        },
+        skippedByDay: {
+          day: {'h3'},
+        },
+        failedByDay: {
+          day: {'h4'},
+        },
+      );
+
+      final result = barData(
+        days: [day],
+        habitDefinitions: [],
+        successfulByDay: {
+          day: {'h1', 'h2'},
+        },
+        skippedByDay: {
+          day: {'h3'},
+        },
+        failedByDay: {
+          day: {'h4'},
+        },
+        state: state,
+        showSuccessful: true,
+        showSkipped: true,
+        showFailed: false,
+        color: Colors.orange,
+      );
+
+      // 2 successful + 1 skipped = 3 out of 4 → 75 %
+      expect(result.spots.first.y, closeTo(75.0, 0.001));
+    });
+
+    test('clamps rate to 100 when value exceeds total', () {
+      const day = '2024-03-15';
+      // 5 successful out of only 4 total would exceed 100 — must be capped.
+      final state = makeState(
+        allByDay: {
+          day: {'h1', 'h2', 'h3', 'h4'},
+        },
+        successfulByDay: {
+          day: {'h1', 'h2', 'h3', 'h4', 'h5'},
+        },
+      );
+
+      final result = barData(
+        days: [day],
+        habitDefinitions: [],
+        successfulByDay: {
+          day: {'h1', 'h2', 'h3', 'h4', 'h5'},
+        },
+        skippedByDay: {},
+        failedByDay: {},
+        state: state,
+        showSuccessful: true,
+        showSkipped: false,
+        showFailed: false,
+        color: Colors.teal,
+      );
+
+      expect(result.spots.first.y, 100.0);
+    });
+
+    test('aboveColor is applied when provided', () {
+      const day = '2024-03-15';
+      final state = makeState();
+      const aboveColor = Colors.red;
+
+      final result = barData(
+        days: [day],
+        habitDefinitions: [],
+        successfulByDay: {},
+        skippedByDay: {},
+        failedByDay: {},
+        state: state,
+        showSuccessful: true,
+        showSkipped: false,
+        showFailed: false,
+        color: Colors.blue,
+        aboveColor: aboveColor,
+      );
+
+      expect(result.aboveBarData, isNotNull);
+      expect(result.aboveBarData.show, isTrue);
+    });
   });
 }
 
@@ -242,6 +533,28 @@ class _ZeroBasedController extends HabitsController {
     return HabitsState.initial().copyWith(
       zeroBased: true,
       minY: 50,
+    );
+  }
+}
+
+/// Test controller with multiple days so tooltip callback can resolve valid
+/// day indices.
+class _WithDaysController extends HabitsController {
+  @override
+  HabitsState build() {
+    return HabitsState.initial().copyWith(
+      days: ['2024-03-13', '2024-03-14', '2024-03-15'],
+      timeSpanDays: 3,
+      successfulByDay: {
+        '2024-03-13': {'h1'},
+        '2024-03-14': {'h1'},
+        '2024-03-15': {'h1'},
+      },
+      allByDay: {
+        '2024-03-13': {'h1', 'h2'},
+        '2024-03-14': {'h1', 'h2'},
+        '2024-03-15': {'h1', 'h2'},
+      },
     );
   }
 }

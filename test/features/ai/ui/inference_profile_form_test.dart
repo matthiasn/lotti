@@ -1363,6 +1363,556 @@ void main() {
     });
   });
 
+  group('model slot onModelSelected callbacks', () {
+    // Shared models for each slot type.
+    final imageRecognitionModel =
+        AiConfig.model(
+              id: 'ir-1',
+              name: 'Vision Model',
+              providerModelId: 'models/vision',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.text, Modality.image],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            )
+            as AiConfigModel;
+
+    final transcriptionModel =
+        AiConfig.model(
+              id: 'tr-1',
+              name: 'Whisper',
+              providerModelId: 'models/whisper',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.audio],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            )
+            as AiConfigModel;
+
+    final imageGenerationModel =
+        AiConfig.model(
+              id: 'ig-1',
+              name: 'Imagen',
+              providerModelId: 'models/imagen',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.image],
+              isReasoningModel: false,
+            )
+            as AiConfigModel;
+
+    final thinkingModel =
+        AiConfig.model(
+              id: 'tm-1',
+              name: 'Flash',
+              providerModelId: 'models/flash',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              supportsFunctionCalling: true,
+            )
+            as AiConfigModel;
+
+    testWidgets(
+      'selecting image recognition model sets imageRecognitionModelId on save',
+      (tester) async {
+        final profile = testInferenceProfile(
+          id: 'p1',
+          name: 'IR Profile',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [thinkingModel, imageRecognitionModel],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Scroll to the Image Recognition slot.
+        await tester.scrollUntilVisible(
+          find.text('Image Recognition'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // Open the image recognition picker.
+        final irSlot = find.ancestor(
+          of: find.text('Image Recognition'),
+          matching: find.byType(InkWell),
+        );
+        await tester.ensureVisible(irSlot.first);
+        await tester.tap(irSlot.first);
+        await tester.pumpAndSettle();
+
+        // Select the vision model.
+        await tester.tap(find.text('Vision Model'));
+        await tester.pumpAndSettle();
+
+        // Scroll back to save.
+        await tester.scrollUntilVisible(
+          find.text('Save'),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        expect(
+          fakeProfileController.savedProfiles.first.imageRecognitionModelId,
+          'models/vision',
+        );
+      },
+    );
+
+    testWidgets(
+      'selecting transcription model sets transcriptionModelId on save',
+      (tester) async {
+        final profile = testInferenceProfile(
+          id: 'p2',
+          name: 'Transcription Profile',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [thinkingModel, transcriptionModel],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Scroll to the Transcription slot.
+        await tester.scrollUntilVisible(
+          find.text('Transcription'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // Open the transcription picker.
+        final trSlot = find.ancestor(
+          of: find.text('Transcription'),
+          matching: find.byType(InkWell),
+        );
+        await tester.ensureVisible(trSlot.first);
+        await tester.tap(trSlot.first);
+        await tester.pumpAndSettle();
+
+        // Select the whisper model.
+        await tester.tap(find.text('Whisper'));
+        await tester.pumpAndSettle();
+
+        // Scroll back to save.
+        await tester.scrollUntilVisible(
+          find.text('Save'),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        expect(
+          fakeProfileController.savedProfiles.first.transcriptionModelId,
+          'models/whisper',
+        );
+      },
+    );
+
+    testWidgets(
+      'selecting image generation model sets imageGenerationModelId on save',
+      (tester) async {
+        final profile = testInferenceProfile(
+          id: 'p3',
+          name: 'Image Gen Profile',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [thinkingModel, imageGenerationModel],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Scroll to the Image Generation slot.
+        await tester.scrollUntilVisible(
+          find.text('Image Generation'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // Open the image generation picker.
+        final igSlot = find.ancestor(
+          of: find.text('Image Generation'),
+          matching: find.byType(InkWell),
+        );
+        await tester.ensureVisible(igSlot.first);
+        await tester.tap(igSlot.first);
+        await tester.pumpAndSettle();
+
+        // Select the imagen model.
+        await tester.tap(find.text('Imagen'));
+        await tester.pumpAndSettle();
+
+        // Scroll back to save.
+        await tester.scrollUntilVisible(
+          find.text('Save'),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        expect(
+          fakeProfileController.savedProfiles.first.imageGenerationModelId,
+          'models/imagen',
+        );
+      },
+    );
+  });
+
+  testWidgets(
+    'ProfilePinningSelector onChanged updates pinnedHostId on save',
+    (tester) async {
+      // Provide a sync node so the pinning dropdown has an eligible option.
+      final knownNode = SyncNodeProfile(
+        hostId: 'host-device-x',
+        displayName: 'Device X',
+        platform: 'macos',
+        // No capabilities → eligible when profile has no local-only models.
+        capabilities: const [],
+        updatedAt: DateTime(2024),
+      );
+
+      final profile = testInferenceProfile(
+        id: 'pinning-profile',
+        name: 'Pinning Test',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          existingProfile: profile,
+          knownNodes: [knownNode],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Scroll to the pinning dropdown.
+      await tester.scrollUntilVisible(
+        find.text('Not pinned (no auto-trigger)'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dropdown and pick Device X.
+      await tester.tap(find.text('Not pinned (no auto-trigger)'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Device X').last);
+      await tester.pumpAndSettle();
+
+      // Scroll to save button.
+      await tester.scrollUntilVisible(
+        find.text('Save'),
+        -200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(fakeProfileController.savedProfiles, hasLength(1));
+      expect(
+        fakeProfileController.savedProfiles.first.pinnedHostId,
+        'host-device-x',
+      );
+    },
+  );
+
+  group('_sanitizedSkillAssignments edge cases', () {
+    // A thinking model used for save to succeed.
+    final thinkingModel =
+        AiConfig.model(
+              id: 'tm-1',
+              name: 'Flash',
+              providerModelId: 'models/flash',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              supportsFunctionCalling: true,
+            )
+            as AiConfigModel;
+
+    testWidgets(
+      'unknown skillId is preserved as-is in saved skillAssignments',
+      (tester) async {
+        // An assignment with a skill ID that is NOT in builtInSkills —
+        // exercises the `unknown.add(a)` path (line 342).
+        const unknownAssignment = SkillAssignment(
+          skillId: 'skill-unknown-999',
+          automate: true,
+        );
+
+        final profile = testInferenceProfile(
+          id: 'unk-p',
+          name: 'Unknown Skill',
+          skillAssignments: [unknownAssignment],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [thinkingModel],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Save without changes.
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        final saved = fakeProfileController.savedProfiles.first;
+        // The unknown assignment must survive sanitization unchanged.
+        expect(
+          saved.skillAssignments.any(
+            (a) => a.skillId == 'skill-unknown-999' && a.automate,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    testWidgets(
+      'automated skill with model present is kept automated after save',
+      (tester) async {
+        // automate: true + model slot populated → `if (hasModel) return a`
+        // path (line 357) — assignment is preserved as automated.
+        const transcribeAssignment = SkillAssignment(
+          skillId: skillTranscribeId,
+          automate: true,
+        );
+
+        final profile = testInferenceProfile(
+          id: 'has-model-p',
+          name: 'Has Model',
+          transcriptionModelId: 'models/whisper',
+          skillAssignments: [transcribeAssignment],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [thinkingModel],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        final saved = fakeProfileController.savedProfiles.first;
+        // The assignment must remain automate: true because the model slot
+        // is populated.
+        expect(
+          saved.skillAssignments.any(
+            (a) => a.skillId == skillTranscribeId && a.automate,
+          ),
+          isTrue,
+        );
+      },
+    );
+  });
+
+  group('_toggleSkillAssignment', () {
+    final thinkingModel =
+        AiConfig.model(
+              id: 'tm-1',
+              name: 'Flash',
+              providerModelId: 'models/flash',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              supportsFunctionCalling: true,
+            )
+            as AiConfigModel;
+
+    testWidgets(
+      'toggling a skill OFF removes its automate flag — exercises else '
+      'branch (line 379) and saves assignment with automate: false',
+      (tester) async {
+        // Start with the transcription skill enabled.
+        const transcribeAssignment = SkillAssignment(
+          skillId: skillTranscribeId,
+          automate: true,
+        );
+
+        final profile = testInferenceProfile(
+          id: 'toggle-off-p',
+          name: 'Toggle Off',
+          transcriptionModelId: 'models/whisper',
+          skillAssignments: [transcribeAssignment],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [thinkingModel],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Scroll to skill assignments.
+        await tester.scrollUntilVisible(
+          find.text('Automated Skills'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // Verify the toggle is currently ON.
+        final tileFinder = find.widgetWithText(
+          SwitchListTile,
+          'Transcribe Audio',
+        );
+        var tile = tester.widget<SwitchListTile>(tileFinder);
+        expect(tile.value, isTrue);
+
+        // Toggle it OFF.
+        await tester.tap(tileFinder);
+        await tester.pumpAndSettle();
+
+        tile = tester.widget<SwitchListTile>(tileFinder);
+        expect(tile.value, isFalse);
+
+        // Scroll to save.
+        await tester.scrollUntilVisible(
+          find.text('Save'),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        final saved = fakeProfileController.savedProfiles.first;
+        // The assignment must exist but with automate: false.
+        expect(
+          saved.skillAssignments.any(
+            (a) => a.skillId == skillTranscribeId && !a.automate,
+          ),
+          isTrue,
+        );
+        expect(
+          saved.skillAssignments.any(
+            (a) => a.skillId == skillTranscribeId && a.automate,
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets(
+      'toggling a second same-type skill ON removes the first — exercises '
+      'the removeWhere same-type path (line 376) ensuring mutual exclusion',
+      (tester) async {
+        // Both transcription skills exist; start with skillTranscribeId ON.
+        const transcribeAssignment = SkillAssignment(
+          skillId: skillTranscribeId,
+          automate: true,
+        );
+
+        final profile = testInferenceProfile(
+          id: 'mutual-excl-p',
+          name: 'Mutual Exclusion',
+          transcriptionModelId: 'models/whisper',
+          skillAssignments: [transcribeAssignment],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [thinkingModel],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Scroll to the skills section.
+        await tester.scrollUntilVisible(
+          find.text('Automated Skills'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // Find the "Transcribe (Task Context)" tile and toggle it ON.
+        // That skill is the same SkillType.transcription, so the first
+        // skill must be removed (line 376).
+        final contextTileFinder = find.widgetWithText(
+          SwitchListTile,
+          'Transcribe (Task Context)',
+        );
+        await tester.ensureVisible(contextTileFinder);
+        await tester.tap(contextTileFinder);
+        await tester.pumpAndSettle();
+
+        // Scroll to save.
+        await tester.scrollUntilVisible(
+          find.text('Save'),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        final saved = fakeProfileController.savedProfiles.first;
+
+        // Only skillTranscribeContextId should be automated now.
+        expect(
+          saved.skillAssignments.any(
+            (a) => a.skillId == skillTranscribeContextId && a.automate,
+          ),
+          isTrue,
+        );
+        // The original skill must NOT be automated.
+        expect(
+          saved.skillAssignments.any(
+            (a) => a.skillId == skillTranscribeId && a.automate,
+          ),
+          isFalse,
+        );
+      },
+    );
+  });
+
   /// Modular coverage for the URL-driven entry point. Each test
   /// exercises ONE branch of the `aiConfigByIdProvider.when(...)` switch
   /// (loading / error / not-a-profile data / matching profile data) by

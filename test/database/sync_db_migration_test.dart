@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as path;
@@ -273,6 +274,119 @@ void main() {
 
       await db.close();
     });
+
+    test(
+      'v3 migration adds payload_type column to sync_sequence_log when '
+      'upgrading from exactly v2',
+      () async {
+        // Seed a v2 database: sync_sequence_log exists but predates the
+        // payload_type (v3) and json_path (v7) columns. Starting at exactly
+        // v2 is the only path that takes the `else if (from < 3)` branch
+        // (m.addColumn(syncSequenceLog, syncSequenceLog.payloadType)).
+        final dbFile = File(path.join(testDirectory!.path, 'test_sync_v3.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS outbox (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            status INTEGER NOT NULL DEFAULT 0,
+            retries INTEGER NOT NULL DEFAULT 0,
+            message TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            file_path TEXT
+          )
+        ''');
+        // v2 sync_sequence_log: no payload_type, no json_path.
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS sync_sequence_log (
+            host_id TEXT NOT NULL,
+            counter INTEGER NOT NULL,
+            entry_id TEXT,
+            originating_host_id TEXT,
+            status INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            request_count INTEGER NOT NULL DEFAULT 0,
+            last_requested_at INTEGER,
+            PRIMARY KEY (host_id, counter)
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS host_activity (
+            host_id TEXT NOT NULL PRIMARY KEY,
+            last_seen_at INTEGER NOT NULL
+          )
+        ''');
+
+        // Insert a v2 row so we can prove it survives and defaults its
+        // freshly-added payload_type to the journalEntity sentinel (0).
+        final createdAtSeconds =
+            DateTime(2024, 2, 2).millisecondsSinceEpoch ~/ 1000;
+        sqlite.execute('''
+          INSERT INTO sync_sequence_log
+            (host_id, counter, entry_id, status, created_at, updated_at,
+             request_count)
+          VALUES ('host-v2', 7, 'entry-v2', 0, $createdAtSeconds,
+            $createdAtSeconds, 0)
+        ''');
+
+        sqlite.execute('PRAGMA user_version = 2');
+        sqlite.dispose();
+
+        // Open with SyncDatabase to trigger the v2→v3→…→v24 migration.
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v3.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 24);
+
+        // The payload_type column must now exist on the table.
+        final columns = await db
+            .customSelect('PRAGMA table_info(sync_sequence_log)')
+            .get();
+        final columnNames = columns
+            .map((row) => row.read<String>('name'))
+            .toSet();
+        expect(columnNames, contains('payload_type'));
+        // The v7 json_path add also runs because from >= 2 && from < 7.
+        expect(columnNames, contains('json_path'));
+
+        // The pre-existing v2 row survived and its payload_type defaulted to
+        // SyncSequencePayloadType.journalEntity.index (0).
+        final preExisting = await db.getEntryByHostAndCounter('host-v2', 7);
+        expect(preExisting, isNotNull);
+        expect(preExisting!.entryId, 'entry-v2');
+        expect(
+          preExisting.payloadType,
+          SyncSequencePayloadType.journalEntity.index,
+        );
+
+        // The new column is writable: record an entry with an explicit
+        // non-default payload type and read it back.
+        await db.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-v3'),
+            counter: const Value(1),
+            entryId: const Value('entry-v3'),
+            payloadType: Value(SyncSequencePayloadType.agentEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(DateTime(2024, 3, 3)),
+            updatedAt: Value(DateTime(2024, 3, 3)),
+          ),
+        );
+        final recorded = await db.getEntryByHostAndCounter('host-v3', 1);
+        expect(recorded, isNotNull);
+        expect(
+          recorded!.payloadType,
+          SyncSequencePayloadType.agentEntity.index,
+        );
+
+        await db.close();
+      },
+    );
 
     test('v5 migration adds payload_size column to outbox', () async {
       // Create a v4 database with the outbox table lacking payload_size
@@ -722,6 +836,163 @@ void main() {
           indexSql,
           contains('host_id, entry_id, counter DESC, status'),
         );
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v13 migration adds the Phase-3 ledger columns and swaps the drain '
+      'indexes when upgrading from exactly v12',
+      () async {
+        // Seed a v12 database: inbound_event_queue + queue_markers exist in
+        // their pre-Phase-3 shape (no status/committed_at/abandoned_at/
+        // last_error_reason/resurrection_count/json_path). Starting at exactly
+        // v12 is the only path that takes the `from >= 12 && from < 13` branch
+        // — upgrades crossing v12 hit `from < 12`'s createTable instead.
+        final dbFile = File(path.join(testDirectory!.path, 'test_sync_v13.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS outbox (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            status INTEGER NOT NULL DEFAULT 0,
+            retries INTEGER NOT NULL DEFAULT 0,
+            message TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            file_path TEXT,
+            outbox_entry_id TEXT,
+            payload_size INTEGER,
+            priority INTEGER NOT NULL DEFAULT 2
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS sync_sequence_log (
+            host_id TEXT NOT NULL,
+            counter INTEGER NOT NULL,
+            entry_id TEXT,
+            payload_type INTEGER NOT NULL DEFAULT 0,
+            originating_host_id TEXT,
+            status INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            request_count INTEGER NOT NULL DEFAULT 0,
+            last_requested_at INTEGER,
+            json_path TEXT,
+            PRIMARY KEY (host_id, counter)
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS host_activity (
+            host_id TEXT NOT NULL PRIMARY KEY,
+            last_seen_at INTEGER NOT NULL
+          )
+        ''');
+        // v12 inbound_event_queue: the Phase-1 shape, WITHOUT the Phase-3
+        // ledger columns that the v13 migration adds.
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS inbound_event_queue (
+            queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL UNIQUE,
+            room_id TEXT NOT NULL,
+            origin_ts INTEGER NOT NULL,
+            producer TEXT NOT NULL,
+            raw_json TEXT NOT NULL,
+            enqueued_at INTEGER NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            next_due_at INTEGER NOT NULL DEFAULT 0,
+            lease_until INTEGER NOT NULL DEFAULT 0
+          )
+        ''');
+        // v12 drain index that the migration must DROP and recreate as a
+        // status-partial index.
+        sqlite.execute(
+          'CREATE INDEX idx_inbound_event_queue_ready '
+          'ON inbound_event_queue (next_due_at, origin_ts, queue_id)',
+        );
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS queue_markers (
+            room_id TEXT NOT NULL PRIMARY KEY,
+            last_applied_event_id TEXT,
+            last_applied_ts INTEGER NOT NULL DEFAULT 0,
+            last_applied_commit_seq INTEGER NOT NULL DEFAULT 0
+          )
+        ''');
+
+        // Insert a v12 queue row to prove it survives and the new status
+        // column backfills to the 'enqueued' default.
+        sqlite.execute(r'''
+          INSERT INTO inbound_event_queue
+            (event_id, room_id, origin_ts, producer, raw_json, enqueued_at)
+          VALUES ('$evt-v12', '!room-v12:example.org', 1700000000000,
+            'live', '{}', 1700000000000)
+        ''');
+
+        sqlite.execute('PRAGMA user_version = 12');
+        sqlite.dispose();
+
+        // Open with SyncDatabase to trigger the v12→v13→…→v24 migration.
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v13.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 24);
+
+        // All Phase-3 ledger columns must now exist on the queue table.
+        final columns = await db
+            .customSelect('PRAGMA table_info(inbound_event_queue)')
+            .get();
+        final columnNames = columns
+            .map((row) => row.read<String>('name'))
+            .toSet();
+        expect(
+          columnNames,
+          containsAll(<String>[
+            'status',
+            'committed_at',
+            'abandoned_at',
+            'last_error_reason',
+            'resurrection_count',
+            'json_path',
+          ]),
+        );
+
+        // The surviving v12 row backfilled status to 'enqueued' and
+        // resurrection_count to 0.
+        final survivor = await db
+            .customSelect(
+              'SELECT status, resurrection_count, committed_at '
+              'FROM inbound_event_queue '
+              r"WHERE event_id = '$evt-v12'",
+            )
+            .getSingle();
+        expect(survivor.read<String>('status'), 'enqueued');
+        expect(survivor.read<int>('resurrection_count'), 0);
+        expect(survivor.readNullable<int>('committed_at'), isNull);
+
+        // The drain index was rebuilt as a status-partial index covering
+        // only the active (enqueued/retrying) rows.
+        final readyIndex = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_inbound_event_queue_ready'",
+            )
+            .getSingle();
+        final readySql = readyIndex.read<String>('sql');
+        expect(readySql, contains('next_due_at, origin_ts, queue_id'));
+        expect(readySql, contains("'enqueued', 'retrying'"));
+
+        // The Phase-3 abandoned-path index was created.
+        final abandonedIndex = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_inbound_event_queue_abandoned_path'",
+            )
+            .get();
+        expect(abandonedIndex, hasLength(1));
 
         await db.close();
       },

@@ -635,5 +635,215 @@ void main() {
         expect(navService.currentPath, '/settings');
       });
     });
+
+    group('page-enabled flag getters', () {
+      test(
+        'reports correct flag states when all optional tabs are enabled',
+        () {
+          // The shared NavService was set up with all four optional flags ON.
+          final navService = getIt<NavService>();
+
+          expect(navService.isHabitsPageEnabled, isTrue);
+          expect(navService.isDashboardsPageEnabled, isTrue);
+          expect(navService.isDailyOsPageEnabled, isTrue);
+          expect(navService.isProjectsPageEnabled, isTrue);
+        },
+      );
+
+      test(
+        'reports false for all optional flags when none are enabled',
+        () async {
+          final localSettingsDb = SettingsDb(inMemoryDatabase: true);
+          final localJournalDb = mockJournalDbWithMeasurableTypes([]);
+          when(
+            () => localJournalDb.watchConfigFlag(any()),
+          ).thenAnswer((_) => Stream<bool>.value(false));
+
+          final navService = NavService(
+            journalDb: localJournalDb,
+            settingsDb: localSettingsDb,
+          );
+          addTearDown(navService.dispose);
+          await pumpEventQueue();
+
+          expect(navService.isHabitsPageEnabled, isFalse);
+          expect(navService.isDashboardsPageEnabled, isFalse);
+          expect(navService.isDailyOsPageEnabled, isFalse);
+          expect(navService.isProjectsPageEnabled, isFalse);
+        },
+      );
+    });
+
+    group('setPath with unknown path falls back to tasks', () {
+      test('setPath with unknown path resets index to 0 and path to tasks', () {
+        final localSettingsDb = SettingsDb(inMemoryDatabase: true);
+        final localJournalDb = mockJournalDbWithMeasurableTypes([]);
+        when(
+          () => localJournalDb.watchConfigFlag(any()),
+        ).thenAnswer((invocation) {
+          final flagName = invocation.positionalArguments.first as String;
+          final enabledFlags = {
+            enableProjectsFlag,
+            enableDailyOsPageFlag,
+            enableHabitsPageFlag,
+            enableDashboardsPageFlag,
+          };
+          return Stream<bool>.value(enabledFlags.contains(flagName));
+        });
+
+        final navService = NavService(
+          journalDb: localJournalDb,
+          settingsDb: localSettingsDb,
+        );
+        addTearDown(navService.dispose);
+
+        // First navigate somewhere valid.
+        navService.setPath('/journal');
+        expect(navService.index, navService.journalIndex);
+        expect(navService.currentPath, '/journal');
+
+        // Now call setPath with a path that has no matching enabled spec.
+        navService.setPath('/completely/unknown/path');
+        expect(navService.currentPath, '/tasks');
+        expect(navService.index, 0);
+      });
+    });
+
+    group('getIndexStream', () {
+      // getIndexStream() returns the indexStreamController.stream.
+      // We verify the return type and that it is in fact a broadcast stream
+      // (i.e. supports multiple simultaneous subscribers).
+      test('returns a broadcast Stream<int>', () {
+        final navService = getIt<NavService>();
+        final stream = navService.getIndexStream();
+        expect(stream, isA<Stream<int>>());
+        expect(stream.isBroadcast, isTrue);
+      });
+
+      test('emits the new index after tapIndex switches tab', () async {
+        // Use the shared, fully-initialised NavService.
+        final navService = getIt<NavService>();
+
+        // Ensure we are on a known tab (tasks = 0) before we subscribe.
+        navService.beamToNamed('/tasks'); // ignore: cascade_invocations
+        expect(navService.index, 0);
+
+        // Subscribe first, then trigger the navigation so the emission
+        // happens after the listener is attached.
+        final nextIndex = navService.getIndexStream().first;
+
+        // tapIndex to journal fires setIndex → emitState.
+        navService.tapIndex(navService.journalIndex);
+
+        // Await the first emitted value.
+        expect(await nextIndex, navService.journalIndex);
+      });
+    });
+
+    group('beamBack', () {
+      test('calls beamBack on the current delegate without throwing', () {
+        // beamBack delegates to the active BeamerDelegate. Since Beamer
+        // delegates in tests are real (not mocked) we just verify that the
+        // call does not throw — the delegate handles its own no-history case.
+        final navService = getIt<NavService>()..beamToNamed('/journal');
+
+        // Should not throw even if there is no history to go back to.
+        expect(navService.beamBack, returnsNormally);
+      });
+    });
+
+    group('resetDesktopTaskDetail selectedTaskId sync', () {
+      setUp(() {
+        getIt<NavService>().resetDesktopTaskDetail(null);
+      });
+
+      test(
+        'resetDesktopTaskDetail re-syncs desktopSelectedTaskId to stack.last '
+        'when it had drifted',
+        () {
+          final navService = getIt<NavService>()
+            ..resetDesktopTaskDetail('base')
+            ..pushDesktopTaskDetail('linked');
+
+          expect(navService.desktopSelectedTaskId.value, 'linked');
+
+          // Manually drift desktopSelectedTaskId away from current.last to
+          // simulate a state where the notifier is out of sync.
+          navService.desktopSelectedTaskId.value = 'something-else';
+
+          // A second reset with the same base task must re-sync the
+          // selectedTaskId to current.last ('linked') — line 290 path.
+          navService.resetDesktopTaskDetail('base');
+
+          expect(navService.desktopTaskDetailStack.value, ['base', 'linked']);
+          expect(navService.desktopSelectedTaskId.value, 'linked');
+        },
+      );
+    });
+
+    group('_handleNavigationFlagsUpdated fallback', () {
+      test(
+        'falls back to tasks when current path becomes unreachable after '
+        'flag update',
+        () async {
+          final localSettingsDb = SettingsDb(inMemoryDatabase: true);
+          final localJournalDb = mockJournalDbWithMeasurableTypes([]);
+          final projectsController = StreamController<bool>.broadcast(
+            sync: true,
+          );
+          final dailyOsController = StreamController<bool>.broadcast(
+            sync: true,
+          );
+          final habitsController = StreamController<bool>.broadcast(sync: true);
+          final dashboardsController = StreamController<bool>.broadcast(
+            sync: true,
+          );
+
+          when(
+            () => localJournalDb.watchConfigFlag(any()),
+          ).thenAnswer((invocation) {
+            final flagName = invocation.positionalArguments.first as String;
+            return switch (flagName) {
+              enableProjectsFlag => projectsController.stream,
+              enableDailyOsPageFlag => dailyOsController.stream,
+              enableHabitsPageFlag => habitsController.stream,
+              enableDashboardsPageFlag => dashboardsController.stream,
+              _ => Stream<bool>.value(false),
+            };
+          });
+
+          final navService = NavService(
+            journalDb: localJournalDb,
+            settingsDb: localSettingsDb,
+          );
+          addTearDown(() async {
+            await navService.dispose();
+            await Future.wait([
+              projectsController.close(),
+              dailyOsController.close(),
+              habitsController.close(),
+              dashboardsController.close(),
+            ]);
+          });
+
+          // Enable all optional tabs and navigate to habits.
+          projectsController.add(true);
+          dailyOsController.add(true);
+          habitsController.add(true);
+          dashboardsController.add(true);
+
+          navService.beamToNamed('/habits');
+          expect(navService.currentPath, '/habits');
+          expect(navService.index, navService.habitsIndex);
+
+          // Disable habits — the current path is now unreachable, triggering
+          // the matchingSpec == null branch in _handleNavigationFlagsUpdated.
+          habitsController.add(false);
+
+          expect(navService.currentPath, '/tasks');
+          expect(navService.index, 0);
+        },
+      );
+    });
   });
 }

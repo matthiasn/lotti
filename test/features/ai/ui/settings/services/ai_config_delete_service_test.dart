@@ -6,6 +6,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../widget_test_utils.dart'
+    show setUpTestGetIt, tearDownTestGetIt;
 import '../../../test_utils.dart';
 
 void main() {
@@ -891,6 +893,225 @@ void main() {
         const service2 = AiConfigDeleteService();
         expect(identical(service1, service2), isTrue);
       });
+    });
+
+    group('deleteConfig() - Skill Deletion', () {
+      late AiConfigSkill testSkill;
+
+      setUp(() {
+        testSkill =
+            AiConfig.skill(
+                  id: 'test-skill-id',
+                  name: 'Test Skill',
+                  description: 'A test skill for deletion',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imageAnalysis,
+                  requiredInputModalities: const [Modality.image],
+                  systemInstructions: 'Analyze the image.',
+                  userInstructions: 'Please describe this image.',
+                )
+                as AiConfigSkill;
+      });
+
+      testWidgets('should successfully delete skill and show skill toast', (
+        WidgetTester tester,
+      ) async {
+        when(
+          () => mockRepository.deleteConfig(testSkill.id),
+        ).thenAnswer((_) async {});
+
+        bool? result;
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Skill'),
+            onPressed: (context, ref) async {
+              result = await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testSkill,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Delete Skill'));
+        await tester.pumpAndSettle();
+
+        // Confirm the deletion in the dialog
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
+
+        expect(result, isTrue);
+        verify(() => mockRepository.deleteConfig(testSkill.id)).called(1);
+        // The DS toast shows the skill-specific title and an undo action.
+        expect(find.text('Skill deleted'), findsOneWidget);
+        expect(find.text('Undo'), findsOneWidget);
+      });
+
+      testWidgets(
+        'should display skill confirmation dialog with correct elements',
+        (
+          WidgetTester tester,
+        ) async {
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Skill'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testSkill,
+                );
+              },
+            ),
+          );
+
+          await tester.tap(find.text('Delete Skill'));
+          await tester.pumpAndSettle();
+
+          // Dialog title, warning text, and icon must all reflect the Skill type.
+          expect(find.text('Delete Skill'), findsNWidgets(2));
+          expect(find.text(testSkill.name), findsOneWidget);
+          expect(find.byIcon(Icons.auto_fix_high), findsOneWidget);
+          expect(
+            find.text('This will permanently delete the skill.'),
+            findsOneWidget,
+          );
+          // Skills have no cascade warning.
+          expect(
+            find.text('Associated models will also be deleted'),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets('should cancel skill deletion when user cancels', (
+        WidgetTester tester,
+      ) async {
+        bool? result;
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Skill'),
+            onPressed: (context, ref) async {
+              result = await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testSkill,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Delete Skill'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(result, isFalse);
+        verifyNever(() => mockRepository.deleteConfig(any()));
+      });
+    });
+
+    // Tests for the DomainLogger logging paths inside undo error handlers.
+    // These paths execute when getIt<DomainLogger>() resolves (i.e. getIt is
+    // set up) and the saveConfig call throws during undo.
+    group('Undo Error Logging (with DomainLogger in GetIt)', () {
+      setUp(() async {
+        await setUpTestGetIt();
+      });
+
+      tearDown(() async {
+        await tearDownTestGetIt();
+      });
+
+      testWidgets(
+        'should log via DomainLogger when config undo fails with logger available',
+        (WidgetTester tester) async {
+          when(
+            () => mockRepository.deleteConfig(testModel.id),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockRepository.saveConfig(testModel),
+          ).thenThrow(Exception('Undo failed – logger path'));
+
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Model'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testModel,
+                );
+              },
+            ),
+          );
+
+          await tester.tap(find.text('Delete Model'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 800));
+          await tester.tap(find.text('Undo'));
+          await tester.pumpAndSettle();
+
+          // saveConfig was called (and threw); the service must not re-throw.
+          verify(() => mockRepository.saveConfig(testModel)).called(1);
+          // The UI stays stable — no error shown to the user for undo failures.
+          expect(find.text("Couldn't delete ${testModel.name}"), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'should log via DomainLogger when provider undo fails with logger available',
+        (WidgetTester tester) async {
+          final cascadeResult = CascadeDeletionResult(
+            deletedModels: associatedModels,
+            providerName: testProvider.name,
+          );
+
+          when(
+            () => mockRepository.deleteInferenceProviderWithModels(
+              testProvider.id,
+            ),
+          ).thenAnswer((_) async => cascadeResult);
+          // saveConfig throws on any call (provider restore + model restores).
+          when(
+            () => mockRepository.saveConfig(any()),
+          ).thenThrow(Exception('Provider undo failed – logger path'));
+
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Provider'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testProvider,
+                );
+              },
+            ),
+          );
+
+          await tester.tap(find.text('Delete Provider'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 800));
+          await tester.tap(find.text('Undo'));
+          await tester.pumpAndSettle();
+
+          // saveConfig was called (and threw); service must not propagate.
+          verify(() => mockRepository.saveConfig(any())).called(1);
+          // The UI stays stable — no error shown to the user for undo failures.
+          expect(
+            find.text("Couldn't delete ${testProvider.name}"),
+            findsNothing,
+          );
+        },
+      );
     });
   });
 }

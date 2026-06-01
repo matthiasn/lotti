@@ -2,9 +2,15 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_list_item_view_model.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -497,6 +503,274 @@ void main() {
         },
       );
     }
+
+    // OutboxStatus.sending (index=3) has its own icon/chipIcon/color branches
+    // that were not exercised by any existing test.  All four switch arms land
+    // in this single parameterised loop so no copy-paste permutations are needed.
+    group('OutboxStatus.sending status fields', () {
+      testWidgets(
+        'sending status maps to tertiary color, sync icons, and Pending label',
+        (tester) async {
+          late OutboxListItemViewModel viewModel;
+          late BuildContext capturedContext;
+
+          final item = OutboxItem(
+            id: 200,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            status: OutboxStatus.sending.index, // index 3
+            retries: 0,
+            message: jsonEncode({
+              'runtimeType': 'aiConfigDelete',
+              'id': 'cfg-send',
+            }),
+            subject: 'sending-subject',
+            priority: OutboxPriority.low.index,
+          );
+
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              Builder(
+                builder: (context) {
+                  capturedContext = context;
+                  viewModel = OutboxListItemViewModel.fromItem(
+                    context: context,
+                    item: item,
+                  );
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // statusLabel: sending maps to the "pending" localized string
+          expect(viewModel.statusLabel, 'Pending');
+          // statusColor: sending → tertiary (same as pending)
+          expect(
+            viewModel.statusColor,
+            Theme.of(capturedContext).colorScheme.tertiary,
+          );
+          // statusIcon: sending → Icons.sync_rounded
+          expect(viewModel.statusIcon, Icons.sync_rounded);
+          // statusChipIcon: sending → Icons.sync_rounded
+          expect(viewModel.statusChipIcon, Icons.sync_rounded);
+        },
+      );
+    });
+
+    group('_payloadKindLabel non-map JSON', () {
+      testWidgets(
+        'returns unknown payload label when message is a JSON array',
+        (tester) async {
+          late OutboxListItemViewModel viewModel;
+          late BuildContext capturedContext;
+
+          // A top-level JSON array is valid JSON but is not a Map → line 149
+          final item = OutboxItem(
+            id: 201,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            message: jsonEncode(['not', 'a', 'map']),
+            subject: 'array-subject',
+            priority: OutboxPriority.low.index,
+          );
+
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              Builder(
+                builder: (context) {
+                  capturedContext = context;
+                  viewModel = OutboxListItemViewModel.fromItem(
+                    context: context,
+                    item: item,
+                  );
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            viewModel.payloadKindLabel,
+            capturedContext.messages.syncListUnknownPayload,
+          );
+        },
+      );
+    });
+
+    // Lines 153-156, 158, 172: payload-kind label branches for the four
+    // SyncMessage variants that were not yet covered.  A single loop avoids
+    // copy-paste and keeps the intent clear.
+    group('_payloadKindLabel remaining sync message variants', () {
+      // Helper shared by all cases in this group.
+      Future<({OutboxListItemViewModel viewModel, BuildContext ctx})>
+      pumpWithMessage(
+        WidgetTester tester,
+        int rowId,
+        String encodedMessage,
+      ) async {
+        late OutboxListItemViewModel viewModel;
+        late BuildContext ctx;
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Builder(
+              builder: (context) {
+                ctx = context;
+                viewModel = OutboxListItemViewModel.fromItem(
+                  context: context,
+                  item: OutboxItem(
+                    id: rowId,
+                    createdAt: DateTime(2024, 3, 15),
+                    updatedAt: DateTime(2024, 3, 15),
+                    status: OutboxStatus.pending.index,
+                    retries: 0,
+                    message: encodedMessage,
+                    subject: 'test-subject',
+                    priority: OutboxPriority.low.index,
+                  ),
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        return (viewModel: viewModel, ctx: ctx);
+      }
+
+      testWidgets('journalEntity payload label (line 153)', (tester) async {
+        const msg = SyncMessage.journalEntity(
+          id: 'je-001',
+          jsonPath: '/entries/je-001.json',
+          vectorClock: VectorClock({'host-1': 1}),
+          status: SyncEntryStatus.update,
+        );
+        final result = await pumpWithMessage(
+          tester,
+          300,
+          jsonEncode(msg.toJson()),
+        );
+        expect(
+          result.viewModel.payloadKindLabel,
+          result.ctx.messages.syncPayloadJournalEntity,
+        );
+      });
+
+      testWidgets('entityDefinition payload label (line 154)', (tester) async {
+        final msg = SyncMessage.entityDefinition(
+          entityDefinition: EntityDefinition.measurableDataType(
+            id: 'mdt-001',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            displayName: 'Weight',
+            description: 'Body weight in kg',
+            unitName: 'kg',
+            version: 1,
+            vectorClock: null,
+          ),
+          status: SyncEntryStatus.update,
+        );
+        final result = await pumpWithMessage(
+          tester,
+          301,
+          jsonEncode(msg.toJson()),
+        );
+        expect(
+          result.viewModel.payloadKindLabel,
+          result.ctx.messages.syncPayloadEntityDefinition,
+        );
+      });
+
+      testWidgets('entryLink payload label (line 155)', (tester) async {
+        final msg = SyncMessage.entryLink(
+          entryLink: EntryLink.basic(
+            id: 'link-001',
+            fromId: 'from-001',
+            toId: 'to-001',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
+          status: SyncEntryStatus.update,
+        );
+        final result = await pumpWithMessage(
+          tester,
+          302,
+          jsonEncode(msg.toJson()),
+        );
+        expect(
+          result.viewModel.payloadKindLabel,
+          result.ctx.messages.syncPayloadEntryLink,
+        );
+      });
+
+      testWidgets('aiConfig payload label (line 156)', (tester) async {
+        final msg = SyncMessage.aiConfig(
+          aiConfig: AiConfig.inferenceProvider(
+            id: 'provider-001',
+            name: 'Test Provider',
+            apiKey: 'key-abc',
+            baseUrl: 'https://api.example.invalid/v1',
+            createdAt: DateTime(2024, 3, 15),
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          ),
+          status: SyncEntryStatus.update,
+        );
+        final result = await pumpWithMessage(
+          tester,
+          303,
+          jsonEncode(msg.toJson()),
+        );
+        expect(
+          result.viewModel.payloadKindLabel,
+          result.ctx.messages.syncPayloadAiConfig,
+        );
+      });
+
+      testWidgets('themingSelection payload label (line 158)', (tester) async {
+        const msg = SyncMessage.themingSelection(
+          lightThemeName: 'Indigo',
+          darkThemeName: 'Shark',
+          themeMode: 'dark',
+          updatedAt: 1234567890,
+          status: SyncEntryStatus.update,
+        );
+        final result = await pumpWithMessage(
+          tester,
+          304,
+          jsonEncode(msg.toJson()),
+        );
+        expect(
+          result.viewModel.payloadKindLabel,
+          result.ctx.messages.syncPayloadThemingSelection,
+        );
+      });
+
+      testWidgets('syncNodeProfile payload label (line 172)', (tester) async {
+        final msg = SyncMessage.syncNodeProfile(
+          profile: SyncNodeProfile(
+            hostId: 'host-profile-001',
+            displayName: 'Test Node',
+            platform: 'macos',
+            capabilities: const [NodeCapability.mlxAudio],
+            updatedAt: DateTime(2024, 3, 15),
+          ),
+        );
+        final result = await pumpWithMessage(
+          tester,
+          305,
+          jsonEncode(msg.toJson()),
+        );
+        expect(
+          result.viewModel.payloadKindLabel,
+          result.ctx.messages.syncPayloadSyncNodeProfile,
+        );
+      });
+    });
 
     group('payloadSizeLabel', () {
       OutboxItem makeItem({int? payloadSize}) => OutboxItem(

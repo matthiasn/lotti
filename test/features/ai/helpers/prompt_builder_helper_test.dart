@@ -1410,8 +1410,9 @@ void main() {
           );
 
           final mockCache = MockEntitiesCacheService();
-          when(() => mockCache.getCategoryById(categoryId))
-              .thenReturn(category);
+          when(
+            () => mockCache.getCategoryById(categoryId),
+          ).thenReturn(category);
 
           await setUpTestGetIt(
             additionalSetup: () {
@@ -1437,57 +1438,61 @@ void main() {
         },
       );
 
-      test('sorts examples by capturedAt descending (most recent first)',
-          () async {
-        const categoryId = 'cat-sort';
-        final examples = [
-          ChecklistCorrectionExample(
-            before: 'alpha',
-            after: 'A',
-            capturedAt: DateTime(2024, 1, 1),
-          ),
-          ChecklistCorrectionExample(
-            before: 'gamma',
-            after: 'C',
-            capturedAt: DateTime(2024, 3, 1),
-          ),
-          ChecklistCorrectionExample(
-            before: 'beta',
-            after: 'B',
-            capturedAt: DateTime(2024, 2, 1),
-          ),
-        ];
-        final category = CategoryTestUtils.createTestCategory(
-          id: categoryId,
-          correctionExamples: examples,
-        );
+      test(
+        'sorts examples by capturedAt descending (most recent first)',
+        () async {
+          const categoryId = 'cat-sort';
+          final examples = [
+            ChecklistCorrectionExample(
+              before: 'alpha',
+              after: 'A',
+              capturedAt: DateTime(2024, 1, 1),
+            ),
+            ChecklistCorrectionExample(
+              before: 'gamma',
+              after: 'C',
+              capturedAt: DateTime(2024, 3, 1),
+            ),
+            ChecklistCorrectionExample(
+              before: 'beta',
+              after: 'B',
+              capturedAt: DateTime(2024, 2, 1),
+            ),
+          ];
+          final category = CategoryTestUtils.createTestCategory(
+            id: categoryId,
+            correctionExamples: examples,
+          );
 
-        final mockCache = MockEntitiesCacheService();
-        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+          final mockCache = MockEntitiesCacheService();
+          when(
+            () => mockCache.getCategoryById(categoryId),
+          ).thenReturn(category);
 
-        await setUpTestGetIt(
-          additionalSetup: () {
-            getIt.registerSingleton<EntitiesCacheService>(mockCache);
-          },
-        );
-        addTearDown(tearDownTestGetIt);
+          await setUpTestGetIt(
+            additionalSetup: () {
+              getIt.registerSingleton<EntitiesCacheService>(mockCache);
+            },
+          );
+          addTearDown(tearDownTestGetIt);
 
-        final task = taskWithCategory('task-sort', categoryId);
-        final config = correctionExamplesConfig();
+          final task = taskWithCategory('task-sort', categoryId);
+          final config = correctionExamplesConfig();
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: task,
+          );
 
-        // gamma (2024-03-01) must appear before beta (2024-02-01) which must
-        // appear before alpha (2024-01-01) in the output.
-        final gammaIdx = result!.indexOf('"gamma"');
-        final betaIdx = result.indexOf('"beta"');
-        final alphaIdx = result.indexOf('"alpha"');
-        expect(gammaIdx, lessThan(betaIdx));
-        expect(betaIdx, lessThan(alphaIdx));
-      });
+          // gamma (2024-03-01) must appear before beta (2024-02-01) which must
+          // appear before alpha (2024-01-01) in the output.
+          final gammaIdx = result!.indexOf('"gamma"');
+          final betaIdx = result.indexOf('"beta"');
+          final alphaIdx = result.indexOf('"alpha"');
+          expect(gammaIdx, lessThan(betaIdx));
+          expect(betaIdx, lessThan(alphaIdx));
+        },
+      );
 
       test('caps examples at _kMaxCorrectionExamples (500)', () async {
         const categoryId = 'cat-cap';
@@ -1524,8 +1529,7 @@ void main() {
         );
 
         // Count how many formatted lines are in the output
-        final lineCount =
-            RegExp('- ".*?" → ".*?"').allMatches(result!).length;
+        final lineCount = RegExp('- ".*?" → ".*?"').allMatches(result!).length;
         expect(lineCount, equals(500));
       });
 
@@ -1588,33 +1592,37 @@ void main() {
         expect(result, equals('Transcribe: '));
       });
 
-      test('returns empty string when category has no correction examples',
-          () async {
-        const categoryId = 'cat-empty';
-        final category = CategoryTestUtils.createTestCategory(
-          id: categoryId,
-          correctionExamples: const [],
-        );
+      test(
+        'returns empty string when category has no correction examples',
+        () async {
+          const categoryId = 'cat-empty';
+          final category = CategoryTestUtils.createTestCategory(
+            id: categoryId,
+            correctionExamples: const [],
+          );
 
-        final mockCache = MockEntitiesCacheService();
-        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+          final mockCache = MockEntitiesCacheService();
+          when(
+            () => mockCache.getCategoryById(categoryId),
+          ).thenReturn(category);
 
-        await setUpTestGetIt(
-          additionalSetup: () {
-            getIt.registerSingleton<EntitiesCacheService>(mockCache);
-          },
-        );
-        addTearDown(tearDownTestGetIt);
+          await setUpTestGetIt(
+            additionalSetup: () {
+              getIt.registerSingleton<EntitiesCacheService>(mockCache);
+            },
+          );
+          addTearDown(tearDownTestGetIt);
 
-        final task = taskWithCategory('task-empty', categoryId);
+          final task = taskWithCategory('task-empty', categoryId);
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: correctionExamplesConfig(),
-          entity: task,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: correctionExamplesConfig(),
+            entity: task,
+          );
 
-        expect(result, equals('Transcribe: '));
-      });
+          expect(result, equals('Transcribe: '));
+        },
+      );
 
       test(
         'returns empty string and does not inject when entity is a '
@@ -1673,8 +1681,9 @@ void main() {
         'cache.getCategoryById throws',
         () async {
           final mockCache = MockEntitiesCacheService();
-          when(() => mockCache.getCategoryById(any()))
-              .thenThrow(Exception('cache exploded'));
+          when(
+            () => mockCache.getCategoryById(any()),
+          ).thenThrow(Exception('cache exploded'));
 
           await setUpTestGetIt(
             additionalSetup: () {
@@ -1712,8 +1721,9 @@ void main() {
           );
 
           final mockCache = MockEntitiesCacheService();
-          when(() => mockCache.getCategoryById(categoryId))
-              .thenReturn(category);
+          when(
+            () => mockCache.getCategoryById(categoryId),
+          ).thenReturn(category);
 
           await setUpTestGetIt(
             additionalSetup: () {

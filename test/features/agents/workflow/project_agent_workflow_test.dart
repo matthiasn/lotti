@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -2548,6 +2549,391 @@ void main() {
 
         expect(capturedMessage, isNot(contains('Linked Tasks')));
       });
+
+      test(
+        'skips duplicate scheduled wake when second state read shows wake '
+        'already handled elsewhere',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 6, 30);
+          // Initial state has a past scheduled wake.
+          final initialState = makeTestState(
+            slots: const AgentSlots(activeProjectId: projectId),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          // Second read returns a state where the wake has already been
+          // rolled forward — no longer due.
+          final alreadyHandledState = makeTestState(
+            slots: const AgentSlots(activeProjectId: projectId),
+            scheduledWakeAt: DateTime(2026, 3, 21, 6),
+          );
+
+          var callCount = 0;
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async {
+            callCount++;
+            return callCount == 1 ? initialState : alreadyHandledState;
+          });
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => makeTestReport());
+
+          late WakeResult result;
+          await withClock(Clock.fixed(testDate), () async {
+            result = await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+          });
+
+          // Should return success without running the conversation.
+          expect(result.success, isTrue);
+          expect(result.error, isNull);
+          // No conversation was started, so conversation repo had no deletions.
+          expect(mockConversationRepository.deletedConversationIds, isEmpty);
+          // No template provenance was recorded.
+          verifyNever(
+            () => mockAgentRepository.updateWakeRunTemplate(
+              any(),
+              any(),
+              any(),
+              resolvedModelId: any(named: 'resolvedModelId'),
+              soulId: any(named: 'soulId'),
+              soulVersionId: any(named: 'soulVersionId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'logs error via domainLogger when updateWakeRunTemplate throws',
+        () async {
+          final mockDomainLogger = MockDomainLogger();
+          when(
+            () => mockDomainLogger.log(
+              any(),
+              any(),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).thenReturn(null);
+          when(
+            () => mockDomainLogger.error(
+              any(),
+              any(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: any(named: 'subDomain'),
+              message: any(named: 'message'),
+            ),
+          ).thenReturn(null);
+
+          final loggingWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            domainLogger: mockDomainLogger,
+          );
+
+          when(
+            () => mockAgentRepository.updateWakeRunTemplate(
+              any(),
+              any(),
+              any(),
+              resolvedModelId: any(named: 'resolvedModelId'),
+              soulId: any(named: 'soulId'),
+              soulVersionId: any(named: 'soulVersionId'),
+            ),
+          ).thenThrow(Exception('DB unavailable'));
+
+          final result = await loggingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          // Execution still succeeds — provenance failure is non-fatal.
+          expect(result.success, isTrue);
+
+          // domainLogger.error must have been called with the provenance error.
+          verify(
+            () => mockDomainLogger.error(
+              any(),
+              any(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: any(named: 'subDomain'),
+              message: any(named: 'message'),
+            ),
+          ).called(greaterThanOrEqualTo(1));
+        },
+      );
+
+      test(
+        'system prompt includes Report Directive section when reportDirective '
+        'is non-empty',
+        () async {
+          when(
+            () => mockTemplateService.getActiveVersion(testTemplate.id),
+          ).thenAnswer(
+            (_) async => makeTestTemplateVersion(
+              generalDirective: 'Assess project health.',
+              reportDirective: 'Always include risk matrix.',
+            ),
+          );
+
+          String? capturedSystemMessage;
+          final capturingRepo = _MockConversationRepository(
+            mockConversationManager,
+            onSystemMessage: (msg) => capturedSystemMessage = msg,
+          );
+          final capturingWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+          );
+
+          await capturingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(capturedSystemMessage, isNotNull);
+          expect(capturedSystemMessage, contains('## Report Directive'));
+          expect(
+            capturedSystemMessage,
+            contains('Always include risk matrix.'),
+          );
+        },
+      );
+
+      test(
+        'system prompt uses legacy directives field as fallback when '
+        'generalDirective and reportDirective are empty but directives is set',
+        () async {
+          // No generalDirective, no reportDirective → hasNewDirectives is false
+          // → falls into the legacy branch using version.directives.
+          when(
+            () => mockTemplateService.getActiveVersion(testTemplate.id),
+          ).thenAnswer(
+            (_) async => makeTestTemplateVersion(
+              directives: 'Legacy combined directives text.',
+              // ignore: avoid_redundant_argument_values
+              generalDirective: '',
+              // ignore: avoid_redundant_argument_values
+              reportDirective: '',
+            ),
+          );
+
+          String? capturedSystemMessage;
+          final capturingRepo = _MockConversationRepository(
+            mockConversationManager,
+            onSystemMessage: (msg) => capturedSystemMessage = msg,
+          );
+          final capturingWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+          );
+
+          await capturingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(capturedSystemMessage, isNotNull);
+          expect(
+            capturedSystemMessage,
+            contains('Legacy combined directives text.'),
+          );
+          expect(
+            capturedSystemMessage,
+            contains('## Your Personality & Directives'),
+          );
+        },
+      );
+
+      test(
+        'system prompt uses version.directives as effective general directive '
+        'when generalDirective is empty but a new reportDirective exists',
+        () async {
+          // hasNewDirectives is true (reportDirective not empty), but
+          // generalDirective is empty → effectiveGeneralDirective falls back
+          // to version.directives (line 732).
+          when(
+            () => mockTemplateService.getActiveVersion(testTemplate.id),
+          ).thenAnswer(
+            (_) async => makeTestTemplateVersion(
+              directives: 'Fallback directives from legacy field.',
+              // ignore: avoid_redundant_argument_values
+              generalDirective: '',
+              reportDirective: 'Focus on risks.',
+            ),
+          );
+
+          String? capturedSystemMessage;
+          final capturingRepo = _MockConversationRepository(
+            mockConversationManager,
+            onSystemMessage: (msg) => capturedSystemMessage = msg,
+          );
+          final capturingWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+          );
+
+          await capturingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(capturedSystemMessage, isNotNull);
+          expect(capturedSystemMessage, contains('Focus on risks.'));
+          expect(
+            capturedSystemMessage,
+            contains('Fallback directives from legacy field.'),
+          );
+          expect(
+            capturedSystemMessage,
+            contains('## Your Personality & Directives'),
+          );
+        },
+      );
+
+      test(
+        'writes raw entity string in user message when project entity is not '
+        'a project type',
+        () async {
+          // Return a task entity instead of a project entity — triggers the
+          // orElse branch in _writeProjectContext.
+          final taskAsProject = _fakeTaskEntity(
+            id: projectId,
+            title: 'Mismatched Entity',
+          );
+          when(
+            () => mockJournalRepository.getJournalEntityById(projectId),
+          ).thenAnswer((_) async => taskAsProject);
+
+          String? capturedMessage;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                capturedMessage = message;
+                return null;
+              };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          // The fallback writes "Project entity: <entity>" to the buffer.
+          expect(capturedMessage, contains('Project entity:'));
+          // No structured project fields should appear.
+          expect(capturedMessage, isNot(contains('**Title**')));
+          expect(capturedMessage, isNot(contains('**Status**')));
+        },
+      );
+
+      test(
+        'recommend_next_steps with empty steps list uses singular fallback '
+        'summary',
+        () async {
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy != null) {
+                  final toolCalls = [
+                    ChatCompletionMessageToolCall(
+                      id: 'call-rec-empty',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: ProjectAgentToolNames.recommendNextSteps,
+                        arguments: jsonEncode({'steps': <dynamic>[]}),
+                      ),
+                    ),
+                  ];
+
+                  final manager = mockConversationRepository.getConversation(
+                    conversationId,
+                  )!;
+                  when(
+                    () => manager.addToolResponse(
+                      toolCallId: any(named: 'toolCallId'),
+                      response: any(named: 'response'),
+                    ),
+                  ).thenReturn(null);
+
+                  await strategy.processToolCalls(
+                    toolCalls: toolCalls,
+                    manager: manager,
+                  );
+                }
+                return null;
+              };
+
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+
+          final changeSets = captured.whereType<ChangeSetEntity>().toList();
+          expect(changeSets, hasLength(1));
+          expect(
+            changeSets.first.items.first.humanSummary,
+            'Recommend next steps',
+          );
+        },
+      );
     });
   });
 }

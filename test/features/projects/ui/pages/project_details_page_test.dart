@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -24,6 +26,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
+import '../../../categories/test_utils.dart';
 import '../../test_utils.dart';
 
 /// Test controller that allows direct state manipulation without a repository.
@@ -49,6 +52,43 @@ class _TestProjectDetailController extends ProjectDetailController {
 
   @override
   Future<void> saveChanges() async {}
+}
+
+/// A tracking variant that records calls to [updateCategoryId],
+/// [updateTargetDate], and [saveChanges] for assertion.
+class _TrackingProjectDetailController extends ProjectDetailController {
+  _TrackingProjectDetailController(this._initialState, String projectId)
+    : super(projectId);
+
+  final ProjectDetailState _initialState;
+
+  final List<String?> updatedCategoryIds = [];
+  final List<DateTime?> updatedTargetDates = [];
+  int saveChangesCallCount = 0;
+
+  @override
+  ProjectDetailState build() => _initialState;
+
+  @override
+  void updateTitle(String title) {}
+
+  @override
+  void updateTargetDate(DateTime? targetDate) {
+    updatedTargetDates.add(targetDate);
+  }
+
+  @override
+  void updateCategoryId(String? categoryId) {
+    updatedCategoryIds.add(categoryId);
+  }
+
+  @override
+  void updateStatus(ProjectStatus newStatus) {}
+
+  @override
+  Future<void> saveChanges() async {
+    saveChangesCallCount++;
+  }
 }
 
 const _projectId = 'test-project-id';
@@ -992,6 +1032,255 @@ void main() {
           await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byType(DatePickerDialog), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'confirming a date in the date picker calls updateTargetDate and '
+        'saveChanges on the controller',
+        (tester) async {
+          // Fix clock so _pickTargetDate's clock.now() is deterministic.
+          await withClock(
+            Clock.fixed(DateTime(2026, 3, 28, 9, 30)),
+            () async {
+              late _TrackingProjectDetailController trackingController;
+
+              final initialState = ProjectDetailState(
+                project: testProject,
+                linkedTasks: const [],
+                isLoading: false,
+                isSaving: false,
+                hasChanges: false,
+              );
+
+              final overrides = [
+                projectDetailControllerProvider(_projectId).overrideWith(() {
+                  return trackingController = _TrackingProjectDetailController(
+                    initialState,
+                    _projectId,
+                  );
+                }),
+                projectDetailRecordProvider(_projectId).overrideWith(
+                  (ref) => testRecord,
+                ),
+                projectDetailNowProvider.overrideWithValue(
+                  () => DateTime(2026, 3, 28, 9, 30),
+                ),
+                projectAgentProvider(_projectId).overrideWith(
+                  (ref) async => null,
+                ),
+                agentIsRunningProvider.overrideWith(
+                  (ref, agentId) => Stream.value(false),
+                ),
+              ];
+
+              await tester.pumpWidget(
+                ProviderScope(
+                  overrides: overrides,
+                  child: makeTestableWidget2(
+                    Theme(
+                      data: DesignSystemTheme.dark(),
+                      child: const ProjectDetailsPage(projectId: _projectId),
+                    ),
+                  ),
+                ),
+              );
+              await tester.pump();
+              await tester.pump();
+
+              final content = tester.widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              );
+
+              // Open the date picker.
+              content.onTargetDateTap!();
+              await tester.pump(const Duration(milliseconds: 300));
+
+              expect(find.byType(DatePickerDialog), findsOneWidget);
+
+              // Tap "OK" to confirm the default date selection.
+              final okButton = find.text('OK');
+              await tester.ensureVisible(okButton);
+              await tester.tap(okButton);
+              await tester.pumpAndSettle();
+
+              // The clock is fixed at 2026-03-28T09:30. Since testProject has
+              // no targetDate, _pickTargetDate uses clock.now() as initialDate,
+              // which the date picker strips to date-only → DateTime(2026, 3,
+              // 28).
+              expect(trackingController.updatedTargetDates, hasLength(1));
+              expect(
+                trackingController.updatedTargetDates.first,
+                DateTime(2026, 3, 28),
+              );
+              expect(trackingController.saveChangesCallCount, 1);
+            },
+          );
+        },
+      );
+    });
+
+    group('onTaskTap navigation', () {
+      testWidgets(
+        'invoking onTaskTap calls beamToNamed with the task route',
+        (tester) async {
+          final capturedPaths = <String>[];
+          beamToNamedOverride = capturedPaths.add;
+          addTearDown(() => beamToNamedOverride = null);
+
+          final task = makeTestTask(id: 'task-nav-1', title: 'Nav Task');
+          final taskSummary = makeTestTaskSummary(task: task);
+          final recordWithTask = makeTestProjectRecord(
+            project: testProject,
+            highlightedTaskSummaries: [taskSummary],
+          );
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: recordWithTask,
+          );
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+
+          content.onTaskTap!(taskSummary);
+
+          expect(capturedPaths, hasLength(1));
+          expect(capturedPaths.first, '/tasks/task-nav-1');
+        },
+      );
+    });
+
+    group('category selection saves changes', () {
+      testWidgets(
+        'selecting a category from the modal calls updateCategoryId and '
+        'saveChanges on the controller',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          final testCategory = CategoryTestUtils.createTestCategory(
+            id: 'cat-select-1',
+            name: 'UniqueTestCategory',
+          );
+
+          final mockCache = MockEntitiesCacheService();
+          when(() => mockCache.sortedCategories).thenReturn([testCategory]);
+          getIt.registerSingleton<EntitiesCacheService>(mockCache);
+
+          late _TrackingProjectDetailController trackingController;
+
+          final initialState = ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          );
+
+          final overrides = [
+            projectDetailControllerProvider(_projectId).overrideWith(() {
+              return trackingController = _TrackingProjectDetailController(
+                initialState,
+                _projectId,
+              );
+            }),
+            projectDetailRecordProvider(_projectId).overrideWith(
+              (ref) => testRecord,
+            ),
+            projectDetailNowProvider.overrideWithValue(
+              () => DateTime(2026, 3, 28, 9, 30),
+            ),
+            projectAgentProvider(_projectId).overrideWith((ref) async => null),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+          ];
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: overrides,
+              child: makeTestableWidget2(
+                Theme(
+                  data: DesignSystemTheme.dark(),
+                  child: const ProjectDetailsPage(projectId: _projectId),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+
+          // Open the category picker modal.
+          content.onCategoryTap!();
+          await tester.pumpAndSettle();
+
+          expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+
+          // Tap the 'UniqueTestCategory' option inside the modal.
+          final categoryTile = find.text('UniqueTestCategory');
+          await tester.ensureVisible(categoryTile);
+          await tester.tap(categoryTile);
+          await tester.pumpAndSettle();
+
+          // The controller should have received the selected category id.
+          expect(trackingController.updatedCategoryIds, hasLength(1));
+          expect(
+            trackingController.updatedCategoryIds.first,
+            'cat-select-1',
+          );
+          expect(trackingController.saveChangesCallCount, 1);
+        },
+      );
+    });
+
+    group('back navigation without route stack', () {
+      testWidgets(
+        '_handleBack calls beamToNamed("/projects") when navigator cannot pop',
+        (tester) async {
+          final capturedPaths = <String>[];
+          beamToNamedOverride = capturedPaths.add;
+          addTearDown(() => beamToNamedOverride = null);
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+          );
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+
+          // Invoke onBack directly — the test widget tree has no extra route
+          // so Navigator.canPop() returns false and beamToNamed is used.
+          content.onBack!();
+          await tester.pump();
+
+          expect(capturedPaths, contains('/projects'));
         },
       );
     });

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:genui/genui.dart' as genui;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
@@ -13,8 +14,10 @@ import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_state.dar
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -26,6 +29,42 @@ class _FakeSoulEvolutionChatState extends SoulEvolutionChatState {
 
   @override
   Future<EvolutionChatData> build(String soulId) => _buildFn(soulId);
+}
+
+/// Fake that records the last [sendMessage] call without calling the real
+/// implementation (which would require a wired-up workflow).
+class _TrackingSoulEvolutionChatState extends SoulEvolutionChatState {
+  _TrackingSoulEvolutionChatState(this._buildFn);
+
+  final Future<EvolutionChatData> Function(String) _buildFn;
+  String? lastSentMessage;
+
+  @override
+  Future<EvolutionChatData> build(String soulId) => _buildFn(soulId);
+
+  @override
+  Future<void> sendMessage(
+    String text, {
+    bool skipApprovalCheck = false,
+  }) async {
+    lastSentMessage = text;
+  }
+}
+
+/// Fake that exposes a [pushUpdate] helper so tests can drive state changes
+/// after the initial build (needed to exercise `didUpdateWidget` on the private
+/// `_MessageList` widget).
+class _ControllableSoulEvolutionChatState extends SoulEvolutionChatState {
+  _ControllableSoulEvolutionChatState(this._buildFn);
+
+  final Future<EvolutionChatData> Function(String) _buildFn;
+
+  @override
+  Future<EvolutionChatData> build(String soulId) => _buildFn(soulId);
+
+  void pushUpdate(EvolutionChatData data) {
+    state = AsyncData(data);
+  }
 }
 
 void main() {
@@ -314,6 +353,275 @@ void main() {
       await tester.pump();
 
       expect(find.text('...'), findsOneWidget);
+    });
+
+    testWidgets(
+      'onPopInvokedWithResult callback is exercised on back navigation',
+      (tester) async {
+        // Push SoulEvolutionChatPage onto a real navigator so that a pop can be
+        // triggered, which exercises the onPopInvokedWithResult closure (line 42).
+        final defaultSoul = makeTestSoulDocument(displayName: 'Laura');
+        final defaultChatData = EvolutionChatData(
+          sessionId: 'session-1',
+          messages: [
+            EvolutionChatMessage.assistant(
+              text: 'Hello!',
+              timestamp: DateTime(2024, 3, 15),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Navigator(
+              onGenerateRoute: (_) => MaterialPageRoute<void>(
+                builder: (_) => Builder(
+                  builder: (context) => Scaffold(
+                    body: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              const SoulEvolutionChatPage(soulId: kTestSoulId),
+                        ),
+                      ),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            overrides: [
+              soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
+              soulEvolutionChatStateProvider.overrideWith(
+                () => _FakeSoulEvolutionChatState((_) async => defaultChatData),
+              ),
+            ],
+          ),
+        );
+
+        // Navigate to the page.
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SoulEvolutionChatPage), findsOneWidget);
+
+        // Pop back — this invokes onPopInvokedWithResult with didPop == true.
+        tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+        await tester.pumpAndSettle();
+
+        // The page was popped and we are back on the root route.
+        expect(find.byType(SoulEvolutionChatPage), findsNothing);
+      },
+    );
+
+    testWidgets('_handleSend routes typed text to the notifier sendMessage', (
+      tester,
+    ) async {
+      // Use the tracking fake to capture what text reaches the notifier.
+      late _TrackingSoulEvolutionChatState notifierInstance;
+
+      final defaultSoul = makeTestSoulDocument(displayName: 'Laura');
+      final initialData = EvolutionChatData(
+        sessionId: 'session-1',
+        messages: [
+          EvolutionChatMessage.assistant(
+            text: 'Hello!',
+            timestamp: DateTime(2024, 3, 15),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const SoulEvolutionChatPage(soulId: kTestSoulId),
+          overrides: [
+            soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
+            soulEvolutionChatStateProvider.overrideWith(() {
+              final n = _TrackingSoulEvolutionChatState(
+                (_) async => initialData,
+              );
+              notifierInstance = n;
+              return n;
+            }),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Type a message in the TextField inside EvolutionMessageInput.
+      await tester.enterText(find.byType(TextField), 'Hello from test');
+      await tester.pump();
+
+      // Submit via the TextInputAction (calls _handleSend in the input widget,
+      // which in turn fires SoulEvolutionChatPage._handleSend).
+      await tester.testTextInput.receiveAction(TextInputAction.send);
+      await tester.pump();
+
+      expect(notifierInstance.lastSentMessage, 'Hello from test');
+    });
+
+    testWidgets(
+      '_MessageList.didUpdateWidget schedules scroll when messages are added',
+      (tester) async {
+        // Build the page with a controllable fake notifier.
+        final defaultSoul = makeTestSoulDocument(displayName: 'Laura');
+        final initialData = EvolutionChatData(
+          sessionId: 'session-1',
+          messages: [
+            EvolutionChatMessage.assistant(
+              text: 'First message',
+              timestamp: DateTime(2024, 3, 15),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const SoulEvolutionChatPage(soulId: kTestSoulId),
+            overrides: [
+              soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
+              soulEvolutionChatStateProvider.overrideWith(
+                () => _ControllableSoulEvolutionChatState(
+                  (_) async => initialData,
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Confirm first message rendered.
+        expect(find.text('First message'), findsOneWidget);
+
+        // Push a new data state with an extra message to trigger didUpdateWidget
+        // on _MessageList (messages.length changed).
+        final element = tester.element(find.byType(SoulEvolutionChatPage));
+        final container = ProviderScope.containerOf(element);
+        (container.read(soulEvolutionChatStateProvider(kTestSoulId).notifier)
+                as _ControllableSoulEvolutionChatState)
+            .pushUpdate(
+              EvolutionChatData(
+                sessionId: 'session-1',
+                messages: [
+                  EvolutionChatMessage.assistant(
+                    text: 'First message',
+                    timestamp: DateTime(2024, 3, 15),
+                  ),
+                  EvolutionChatMessage.assistant(
+                    text: 'Second message',
+                    timestamp: DateTime(2024, 3, 15),
+                  ),
+                ],
+              ),
+            );
+        await tester.pump();
+
+        // Both messages are now visible — didUpdateWidget ran without error.
+        expect(find.text('Second message'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '_MessageList.didUpdateWidget schedules scroll when isWaiting changes',
+      (tester) async {
+        final defaultSoul = makeTestSoulDocument(displayName: 'Laura');
+        final initialData = EvolutionChatData(
+          sessionId: 'session-1',
+          messages: [
+            EvolutionChatMessage.assistant(
+              text: 'Hello!',
+              timestamp: DateTime(2024, 3, 15),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const SoulEvolutionChatPage(soulId: kTestSoulId),
+            overrides: [
+              soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
+              soulEvolutionChatStateProvider.overrideWith(
+                () => _ControllableSoulEvolutionChatState(
+                  (_) async => initialData,
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Flip isWaiting to true — this changes the value without adding messages,
+        // exercising the second branch of the didUpdateWidget condition.
+        final element = tester.element(find.byType(SoulEvolutionChatPage));
+        final container = ProviderScope.containerOf(element);
+        (container.read(soulEvolutionChatStateProvider(kTestSoulId).notifier)
+                as _ControllableSoulEvolutionChatState)
+            .pushUpdate(
+              EvolutionChatData(
+                sessionId: 'session-1',
+                messages: [
+                  EvolutionChatMessage.assistant(
+                    text: 'Hello!',
+                    timestamp: DateTime(2024, 3, 15),
+                  ),
+                ],
+                isWaiting: true,
+              ),
+            );
+        // Use pump() to avoid settling on the new spinner animation.
+        await tester.pump();
+        await tester.pump();
+
+        // The loading indicator ('...') should now appear.
+        expect(find.text('...'), findsOneWidget);
+      },
+    );
+
+    testWidgets('surface message with processor renders Surface widget', (
+      tester,
+    ) async {
+      // Set up a MockSurfaceController whose contextFor returns a stubbed
+      // SurfaceContext with a null definition so the Surface widget renders
+      // SizedBox.shrink() internally — but lines 179-180 are still hit.
+      final mockProcessor = MockSurfaceController();
+      final mockContext = MockSurfaceContext();
+      final definitionNotifier = ValueNotifier<genui.SurfaceDefinition?>(null);
+      addTearDown(definitionNotifier.dispose);
+
+      when(() => mockProcessor.contextFor('surf-42')).thenReturn(mockContext);
+      when(() => mockContext.surfaceId).thenReturn('surf-42');
+      when(() => mockContext.definition).thenReturn(definitionNotifier);
+
+      final defaultSoul = makeTestSoulDocument(displayName: 'Laura');
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const SoulEvolutionChatPage(soulId: kTestSoulId),
+          overrides: [
+            soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
+            soulEvolutionChatStateProvider.overrideWith(
+              () => _FakeSoulEvolutionChatState(
+                (_) async => EvolutionChatData(
+                  sessionId: 'session-1',
+                  messages: [
+                    EvolutionChatMessage.surface(
+                      surfaceId: 'surf-42',
+                      timestamp: DateTime(2024, 3, 15),
+                    ),
+                  ],
+                  processor: mockProcessor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // contextFor should have been called when the Surface widget was built.
+      verify(() => mockProcessor.contextFor('surf-42')).called(greaterThan(0));
+      // With null definition the Surface renders SizedBox.shrink; no chat bubble.
+      expect(find.byType(EvolutionChatBubble), findsNothing);
     });
   });
 }

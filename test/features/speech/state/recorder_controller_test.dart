@@ -9,7 +9,9 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
@@ -49,6 +51,17 @@ class MockRecAudioRecorder extends Mock implements rec.AudioRecorder {}
 
 class MockAutomaticPromptTrigger extends Mock
     implements AutomaticPromptTrigger {}
+
+/// An AudioPlayerController whose pause() throws so _pauseAudioPlayer()'s
+/// catch block (lines 707, 709) is exercised.
+class _PauseThrowingAudioPlayerController extends AudioPlayerController {
+  @override
+  AudioPlayerState build() =>
+      const AudioPlayerState(status: AudioPlayerStatus.playing);
+
+  @override
+  Future<void> pause() => throw Exception('player gone');
+}
 
 // Fake config for realtimeAvailableProvider tests
 final ({AiConfigModel model, AiConfigInferenceProvider provider})
@@ -1719,6 +1732,542 @@ void main() {
         expect(state.enableSpeechRecognition, isTrue);
       });
     });
+  });
+
+  group('AudioRecorderController - Additional Coverage', () {
+    group('stop() triggers automatic prompts (lines 276, 282-283)', () {
+      test(
+        'stop with valid audioNote and linkedId triggers automaticPrompts',
+        () async {
+          final mockPersistence = MockPersistenceLogic();
+          if (!getIt.isRegistered<PersistenceLogic>()) {
+            getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+          }
+
+          when(
+            () => mockPersistence.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => Metadata(
+              id: 'stop-entry-id',
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+            ),
+          );
+          when(
+            () => mockPersistence.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final promptCompleter = Completer<void>();
+          final mockTrigger = MockAutomaticPromptTrigger();
+          when(
+            () => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              any(),
+              linkedTaskId: any(named: 'linkedTaskId'),
+              realtimeTranscriptProvided: any(
+                named: 'realtimeTranscriptProvided',
+              ),
+            ),
+          ).thenAnswer((_) async {
+            promptCompleter.complete();
+          });
+
+          final localContainer = ProviderContainer(
+            overrides: [
+              audioRecorderRepositoryProvider.overrideWithValue(
+                mockAudioRecorderRepository,
+              ),
+              playerFactoryProvider.overrideWithValue(() => mockPlayer),
+              automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
+            ],
+          );
+          addTearDown(localContainer.dispose);
+
+          when(
+            () => mockAudioRecorderRepository.hasPermission(),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockAudioRecorderRepository.isPaused(),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockAudioRecorderRepository.isRecording(),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockAudioRecorderRepository.startRecording(),
+          ).thenAnswer(
+            (_) async => AudioNote(
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              audioFile: 'test.m4a',
+              audioDirectory: '/audio/',
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          when(
+            () => mockAudioRecorderRepository.stopRecording(),
+          ).thenAnswer((_) async {});
+
+          final controller = localContainer.read(
+            audioRecorderControllerProvider.notifier,
+          );
+
+          // Start recording with a linkedId so _linkedId is set
+          await controller.record(linkedId: 'linked-task-id');
+          expect(
+            localContainer.read(audioRecorderControllerProvider).status,
+            AudioRecorderStatus.recording,
+          );
+
+          // Stop — this sets entryId (line 276) and triggers prompts (282-283)
+          final entryId = await controller.stop();
+
+          expect(entryId, 'stop-entry-id');
+          expect(
+            localContainer.read(audioRecorderControllerProvider).status,
+            AudioRecorderStatus.stopped,
+          );
+
+          // Wait for the unawaited triggerAutomaticPrompts call to complete.
+          await promptCompleter.future;
+
+          verify(
+            () => mockTrigger.triggerAutomaticPrompts(
+              'stop-entry-id',
+              any(),
+              linkedTaskId: 'linked-task-id',
+              // ignore: avoid_redundant_argument_values
+              realtimeTranscriptProvided: false,
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    group('_pauseAudioPlayer catch block (lines 707, 709)', () {
+      test(
+        'logs error when audio player pause() throws (lines 707, 709)',
+        () async {
+          // Use a container where audioPlayerControllerProvider is overridden with
+          // a notifier that returns a playing state but throws from pause() without
+          // catching, so the catch block inside _pauseAudioPlayer fires.
+          final localContainer = ProviderContainer(
+            overrides: [
+              audioRecorderRepositoryProvider.overrideWithValue(
+                mockAudioRecorderRepository,
+              ),
+              audioPlayerControllerProvider.overrideWith(
+                _PauseThrowingAudioPlayerController.new,
+              ),
+            ],
+          );
+          addTearDown(localContainer.dispose);
+
+          // Read audioPlayerControllerProvider so ref.exists returns true
+          expect(
+            localContainer.read(audioPlayerControllerProvider).status,
+            AudioPlayerStatus.playing,
+          );
+
+          // record() calls _pauseAudioPlayer(); playerState.status == playing,
+          // so pause() is called and throws; the catch at line 706 fires.
+          await localContainer
+              .read(audioRecorderControllerProvider.notifier)
+              .record(linkedId: 'x');
+
+          // Lines 707 and 709 log the error
+          verify(
+            () => mockDomainLogger.log(
+              LogDomain.speech,
+              any<String>(
+                that: contains('Audio player not available'),
+              ),
+              subDomain: 'pauseAudioPlayer',
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    group('stopRealtime() without prior recordRealtime (line 461)', () {
+      late MockRealtimeTranscriptionService mockRealtimeService2;
+      late MockRecAudioRecorder mockRecorder2;
+      late StreamController<double> amplitudeCtrl2;
+      late StreamController<Uint8List> pcmCtrl2;
+
+      setUp(() {
+        mockRealtimeService2 = MockRealtimeTranscriptionService();
+        mockRecorder2 = MockRecAudioRecorder();
+        amplitudeCtrl2 = StreamController<double>.broadcast();
+        pcmCtrl2 = StreamController<Uint8List>.broadcast();
+
+        when(
+          () => mockRealtimeService2.amplitudeStream,
+        ).thenAnswer((_) => amplitudeCtrl2.stream);
+        when(
+          () => mockRealtimeService2.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer(
+          (_) async => const RealtimeStopResult(
+            transcript: '',
+            // ignore: avoid_redundant_argument_values
+            audioFilePath: null,
+          ),
+        );
+        when(
+          () => mockRealtimeService2.dispose(),
+        ).thenAnswer((_) async {});
+
+        when(() => mockRecorder2.hasPermission()).thenAnswer((_) async => true);
+        when(
+          () => mockRecorder2.startStream(any()),
+        ).thenAnswer((_) async => pcmCtrl2.stream);
+        when(() => mockRecorder2.stop()).thenAnswer((_) async => null);
+        when(() => mockRecorder2.dispose()).thenAnswer((_) async {});
+        when(
+          () => mockRealtimeService2.startRealtimeTranscription(
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRealtimeService2.resolveRealtimeConfig(),
+        ).thenAnswer((_) async => _fakeRealtimeConfig);
+      });
+
+      tearDown(() async {
+        await amplitudeCtrl2.close();
+        await pcmCtrl2.close();
+      });
+
+      test(
+        'uses state.progress when _realtimeStartTime is null (line 461)',
+        () async {
+          final tempDir = await Directory.systemTemp.createTemp('rt_no_start_');
+          addTearDown(() => tempDir.delete(recursive: true));
+          if (!getIt.isRegistered<Directory>()) {
+            getIt.registerSingleton<Directory>(tempDir);
+          }
+
+          final localContainer = ProviderContainer(
+            overrides: [
+              audioRecorderRepositoryProvider.overrideWithValue(
+                mockAudioRecorderRepository,
+              ),
+              playerFactoryProvider.overrideWithValue(() => mockPlayer),
+              realtimeTranscriptionServiceProvider.overrideWithValue(
+                mockRealtimeService2,
+              ),
+              realtimeRecorderFactoryProvider.overrideWithValue(
+                () => mockRecorder2,
+              ),
+            ],
+          );
+          addTearDown(localContainer.dispose);
+
+          final controller = localContainer.read(
+            audioRecorderControllerProvider.notifier,
+          );
+
+          // Call stopRealtime() without calling recordRealtime() first.
+          // _realtimeStartTime is null, so line 461 (state.progress fallback) runs.
+          final result = await controller.stopRealtime();
+
+          // No audio file was produced (null), so no entry created — returns null.
+          expect(result, isNull);
+          expect(
+            localContainer.read(audioRecorderControllerProvider).status,
+            AudioRecorderStatus.stopped,
+          );
+        },
+      );
+    });
+
+    group('stopRealtime() stopRecorder callback is invoked (lines 476-477)', () {
+      late MockRealtimeTranscriptionService mockRealtimeService3;
+      late MockRecAudioRecorder mockRecorder3;
+      late StreamController<double> amplitudeCtrl3;
+      late StreamController<Uint8List> pcmCtrl3;
+
+      setUp(() {
+        mockRealtimeService3 = MockRealtimeTranscriptionService();
+        mockRecorder3 = MockRecAudioRecorder();
+        amplitudeCtrl3 = StreamController<double>.broadcast();
+        pcmCtrl3 = StreamController<Uint8List>.broadcast();
+
+        when(
+          () => mockRealtimeService3.amplitudeStream,
+        ).thenAnswer((_) => amplitudeCtrl3.stream);
+        when(() => mockRecorder3.hasPermission()).thenAnswer((_) async => true);
+        when(
+          () => mockRecorder3.startStream(any()),
+        ).thenAnswer((_) async => pcmCtrl3.stream);
+        when(() => mockRecorder3.stop()).thenAnswer((_) async => null);
+        when(() => mockRecorder3.dispose()).thenAnswer((_) async {});
+        when(
+          () => mockRealtimeService3.startRealtimeTranscription(
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRealtimeService3.resolveRealtimeConfig(),
+        ).thenAnswer((_) async => _fakeRealtimeConfig);
+        when(
+          () => mockRealtimeService3.dispose(),
+        ).thenAnswer((_) async {});
+      });
+
+      tearDown(() async {
+        await amplitudeCtrl3.close();
+        await pcmCtrl3.close();
+      });
+
+      test('stopRecorder lambda calls recorder.stop() (lines 476-477)', () async {
+        final tempDir = await Directory.systemTemp.createTemp('rt_stoprec_');
+        addTearDown(() => tempDir.delete(recursive: true));
+        if (!getIt.isRegistered<Directory>()) {
+          getIt.registerSingleton<Directory>(tempDir);
+        }
+
+        // Capture the stopRecorder callback and call it to exercise lines 476-477
+        Future<void> Function()? capturedStopRecorder;
+        when(
+          () => mockRealtimeService3.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedStopRecorder =
+              invocation.namedArguments[#stopRecorder]
+                  as Future<void> Function();
+          // Execute the callback to cover lines 476-477
+          await capturedStopRecorder!();
+          return const RealtimeStopResult(
+            transcript: '',
+            // ignore: avoid_redundant_argument_values
+            audioFilePath: null,
+          );
+        });
+
+        final localContainer = ProviderContainer(
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
+            realtimeTranscriptionServiceProvider.overrideWithValue(
+              mockRealtimeService3,
+            ),
+            realtimeRecorderFactoryProvider.overrideWithValue(
+              () => mockRecorder3,
+            ),
+          ],
+        );
+        addTearDown(localContainer.dispose);
+
+        final controller = localContainer.read(
+          audioRecorderControllerProvider.notifier,
+        );
+
+        await controller.recordRealtime();
+        await controller.stopRealtime();
+
+        // The stopRecorder callback was captured and invoked by our answer,
+        // which called recorder.stop() — verifying lines 476-477 are covered.
+        expect(capturedStopRecorder, isNotNull);
+        verify(() => mockRecorder3.stop()).called(
+          greaterThanOrEqualTo(1),
+        );
+      });
+    });
+
+    group(
+      '_saveRealtimeTranscript sets parentId from DB links (lines 660-662)',
+      () {
+        late MockRealtimeTranscriptionService mockRealtimeService4;
+        late MockRecAudioRecorder mockRecorder4;
+        late StreamController<double> amplitudeCtrl4;
+        late StreamController<Uint8List> pcmCtrl4;
+
+        setUp(() {
+          mockRealtimeService4 = MockRealtimeTranscriptionService();
+          mockRecorder4 = MockRecAudioRecorder();
+          amplitudeCtrl4 = StreamController<double>.broadcast();
+          pcmCtrl4 = StreamController<Uint8List>.broadcast();
+
+          when(
+            () => mockRealtimeService4.amplitudeStream,
+          ).thenAnswer((_) => amplitudeCtrl4.stream);
+          when(
+            () => mockRecorder4.hasPermission(),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockRecorder4.startStream(any()),
+          ).thenAnswer((_) async => pcmCtrl4.stream);
+          when(() => mockRecorder4.stop()).thenAnswer((_) async => null);
+          when(() => mockRecorder4.dispose()).thenAnswer((_) async {});
+          when(
+            () => mockRealtimeService4.startRealtimeTranscription(
+              pcmStream: any(named: 'pcmStream'),
+              onDelta: any(named: 'onDelta'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockRealtimeService4.resolveRealtimeConfig(),
+          ).thenAnswer((_) async => _fakeRealtimeConfig);
+          when(
+            () => mockRealtimeService4.dispose(),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockRealtimeService4.stop(
+              stopRecorder: any(named: 'stopRecorder'),
+              outputPath: any(named: 'outputPath'),
+            ),
+          ).thenAnswer(
+            (_) async => const RealtimeStopResult(
+              transcript: 'hello from realtime',
+              audioFilePath: '/tmp/audio.m4a',
+            ),
+          );
+        });
+
+        tearDown(() async {
+          await amplitudeCtrl4.close();
+          await pcmCtrl4.close();
+        });
+
+        test(
+          'uses parentId from linksForEntryIds when links are non-empty',
+          () async {
+            final tempDir = await Directory.systemTemp.createTemp('rt_links_');
+            addTearDown(() => tempDir.delete(recursive: true));
+            if (!getIt.isRegistered<Directory>()) {
+              getIt.registerSingleton<Directory>(tempDir);
+            }
+
+            final mockPersistence = MockPersistenceLogic();
+            if (!getIt.isRegistered<PersistenceLogic>()) {
+              getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+            }
+
+            when(
+              () => mockPersistence.createMetadata(
+                dateFrom: any(named: 'dateFrom'),
+                dateTo: any(named: 'dateTo'),
+                uuidV5Input: any(named: 'uuidV5Input'),
+                flag: any(named: 'flag'),
+                categoryId: any(named: 'categoryId'),
+              ),
+            ).thenAnswer(
+              (_) async => Metadata(
+                id: 'links-entry-id',
+                createdAt: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+              ),
+            );
+            when(
+              () => mockPersistence.createDbEntity(
+                any(),
+                linkedId: any(named: 'linkedId'),
+              ),
+            ).thenAnswer((_) async => true);
+            when(() => mockPersistence.updateMetadata(any())).thenAnswer(
+              (inv) async => inv.positionalArguments[0] as Metadata,
+            );
+
+            // Capture the linkedId passed to updateDbEntity to verify parentId
+            String? capturedLinkedId;
+            when(
+              () => mockPersistence.updateDbEntity(
+                any(),
+                linkedId: any(named: 'linkedId'),
+              ),
+            ).thenAnswer((inv) async {
+              capturedLinkedId = inv.namedArguments[#linkedId] as String?;
+              return true;
+            });
+
+            // Set up JournalDb mock to return a non-empty link list (lines 660-662)
+            final mockDb = MockJournalDb();
+            if (!getIt.isRegistered<JournalDb>()) {
+              getIt.registerSingleton<JournalDb>(mockDb);
+            }
+            when(
+              () => mockDb.linksForEntryIds(any()),
+            ).thenAnswer(
+              (_) async => [
+                EntryLink.basic(
+                  id: 'link-id',
+                  fromId: 'parent-task-id',
+                  toId: 'links-entry-id',
+                  createdAt: DateTime(2024),
+                  updatedAt: DateTime(2024),
+                  vectorClock: null,
+                ),
+              ],
+            );
+
+            final mockTrigger = MockAutomaticPromptTrigger();
+            when(
+              () => mockTrigger.triggerAutomaticPrompts(
+                any(),
+                any(),
+                linkedTaskId: any(named: 'linkedTaskId'),
+                realtimeTranscriptProvided: any(
+                  named: 'realtimeTranscriptProvided',
+                ),
+              ),
+            ).thenAnswer((_) async {});
+
+            final localContainer = ProviderContainer(
+              overrides: [
+                audioRecorderRepositoryProvider.overrideWithValue(
+                  mockAudioRecorderRepository,
+                ),
+                playerFactoryProvider.overrideWithValue(() => mockPlayer),
+                realtimeTranscriptionServiceProvider.overrideWithValue(
+                  mockRealtimeService4,
+                ),
+                realtimeRecorderFactoryProvider.overrideWithValue(
+                  () => mockRecorder4,
+                ),
+                automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
+              ],
+            );
+            addTearDown(localContainer.dispose);
+
+            final controller = localContainer.read(
+              audioRecorderControllerProvider.notifier,
+            );
+
+            await controller.recordRealtime(linkedId: 'linked-task');
+            final entryId = await controller.stopRealtime();
+
+            expect(entryId, 'links-entry-id');
+
+            // The DB had a non-empty links list, so parentId = 'parent-task-id'
+            // and updateDbEntity should be called with linkedId = 'parent-task-id'
+            // (lines 660-662 executed to populate parentId)
+            expect(capturedLinkedId, 'parent-task-id');
+            verify(() => mockDb.linksForEntryIds(any())).called(1);
+          },
+        );
+      },
+    );
   });
 
   group('realtimeAvailableProvider', () {

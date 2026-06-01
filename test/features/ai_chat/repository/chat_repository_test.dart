@@ -3,14 +3,20 @@
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
+import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/system_message_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -1223,6 +1229,139 @@ void main() {
         expect(sys, contains('start_date'));
         expect(sys, contains('end_date'));
       });
+    });
+
+    group('chatRepositoryProvider', () {
+      late MockAiConfigRepository providerAiConfigRepo;
+      late MockCloudInferenceRepository providerCloudInferenceRepo;
+      late MockTaskSummaryRepository providerTaskSummaryRepo;
+      late ProviderContainer container;
+
+      setUp(() {
+        providerAiConfigRepo = MockAiConfigRepository();
+        providerCloudInferenceRepo = MockCloudInferenceRepository();
+        providerTaskSummaryRepo = MockTaskSummaryRepository();
+
+        // chatRepositoryProvider calls getIt<DomainLogger>() so we must
+        // register a real (or fake) one before reading the provider.
+        if (!getIt.isRegistered<LoggingService>()) {
+          getIt.registerSingleton<LoggingService>(LoggingService());
+        }
+        if (!getIt.isRegistered<DomainLogger>()) {
+          getIt.registerSingleton<DomainLogger>(
+            DomainLogger(loggingService: getIt<LoggingService>()),
+          );
+        }
+
+        container = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(providerAiConfigRepo),
+            cloudInferenceRepositoryProvider.overrideWithValue(
+              providerCloudInferenceRepo,
+            ),
+            taskSummaryRepositoryProvider.overrideWithValue(
+              providerTaskSummaryRepo,
+            ),
+            systemMessageServiceProvider.overrideWithValue(
+              SystemMessageService(now: () => DateTime(2024, 3, 15)),
+            ),
+          ],
+        );
+      });
+
+      tearDown(() async {
+        container.dispose();
+        if (getIt.isRegistered<DomainLogger>()) {
+          await getIt.unregister<DomainLogger>();
+        }
+        if (getIt.isRegistered<LoggingService>()) {
+          await getIt.unregister<LoggingService>();
+        }
+      });
+
+      test(
+        'chatRepositoryProvider constructs a ChatRepository with injected deps',
+        () {
+          final repo = container.read(chatRepositoryProvider);
+
+          // Verify the provider built a real ChatRepository wired to the mocks.
+          expect(repo, isA<ChatRepository>());
+          expect(repo.aiConfigRepository, same(providerAiConfigRepo));
+          expect(
+            repo.cloudInferenceRepository,
+            same(providerCloudInferenceRepo),
+          );
+          expect(repo.taskSummaryRepository, same(providerTaskSummaryRepo));
+        },
+      );
+    });
+
+    group('searchSessions — message content matching and limit', () {
+      test(
+        'matches session whose message content contains query but title does not',
+        () async {
+          // Create a session whose title is unrelated to the query.
+          final session = await repository.createSession(
+            categoryId: 'cat-content',
+            title: 'Unrelated title',
+          );
+
+          // Attach a message whose content does contain the query term.
+          final msg = ChatMessage.user('The answer is forty-two');
+          final sessionWithMsg = session.copyWith(messages: [msg]);
+          await repository.saveSession(sessionWithMsg);
+
+          // Search by a term only present in the message content.
+          final results = await repository.searchSessions(
+            query: 'forty-two',
+            categoryId: 'cat-content',
+            limit: 10,
+          );
+
+          expect(results.length, 1);
+          expect(results.first.id, session.id);
+          // Confirm the title was NOT the match source.
+          expect(
+            results.first.title.toLowerCase(),
+            isNot(contains('forty-two')),
+          );
+          expect(results.first.messages.first.content, contains('forty-two'));
+        },
+      );
+
+      test(
+        'searchSessions applies limit when matching results exceed it',
+        () async {
+          // Create more sessions that all match the query than the limit allows.
+          for (var i = 0; i < 5; i++) {
+            final s = await repository.createSession(
+              categoryId: 'cat-limit',
+              title: 'searchable session $i',
+            );
+            // Stagger lastMessageAt so ordering is deterministic.
+            await repository.saveSession(
+              s.copyWith(
+                lastMessageAt: DateTime(2024, 1, 1, i),
+              ),
+            );
+          }
+
+          final results = await repository.searchSessions(
+            query: 'searchable',
+            categoryId: 'cat-limit',
+            limit: 3,
+          );
+
+          // The limit branch (line 276) must have truncated the 5 matches to 3.
+          expect(results.length, 3);
+          // Results should be ordered newest-first (descending lastMessageAt).
+          final times = results.map((s) => s.lastMessageAt).toList();
+          expect(
+            times,
+            equals([...times]..sort((a, b) => b.compareTo(a))),
+          );
+        },
+      );
     });
   });
 }

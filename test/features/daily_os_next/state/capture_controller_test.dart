@@ -1083,6 +1083,269 @@ void main() {
     );
   });
 
+  group(
+    'CaptureController realtime path — amplitude clipping and error handlers',
+    () {
+      late MockRealtimeTranscriptionService realtimeService;
+      late MockAudioTranscriptionService transcriber;
+      late _FakeRealtimeRecorder fakeRecorder;
+      late StreamController<double> realtimeAmpController;
+      late StreamController<Uint8List> pcmController;
+      late void Function(String delta)? capturedOnDelta;
+
+      setUp(() {
+        realtimeService = MockRealtimeTranscriptionService();
+        transcriber = MockAudioTranscriptionService();
+        fakeRecorder = _FakeRealtimeRecorder();
+        realtimeAmpController = StreamController<double>.broadcast();
+        pcmController = StreamController<Uint8List>.broadcast();
+        capturedOnDelta = null;
+
+        fakeRecorder.pcmStream = pcmController.stream;
+
+        when(
+          () => realtimeService.resolveRealtimeConfig(),
+        ).thenAnswer(
+          (_) async => (provider: _FakeProvider(), model: _FakeModel()),
+        );
+        when(realtimeService.dispose).thenAnswer((_) async {});
+        when(
+          () => realtimeService.amplitudeStream,
+        ).thenAnswer((_) => realtimeAmpController.stream);
+        when(
+          () => realtimeService.startRealtimeTranscription(
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+            config: any(named: 'config'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedOnDelta =
+              invocation.namedArguments[#onDelta] as void Function(String);
+        });
+        when(
+          () => realtimeService.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer((invocation) async {
+          final stopRecorder =
+              invocation.namedArguments[#stopRecorder]
+                  as Future<void> Function();
+          final outputPath = invocation.namedArguments[#outputPath] as String;
+          await stopRecorder();
+          return RealtimeStopResult(
+            transcript: 'hello realtime',
+            audioFilePath: '$outputPath.m4a',
+          );
+        });
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer((_) async => 'hello realtime');
+      });
+
+      tearDown(() async {
+        await realtimeAmpController.close();
+        await pcmController.close();
+      });
+
+      ProviderContainer buildContainer() {
+        final container = ProviderContainer(
+          overrides: [
+            captureControllerProvider.overrideWith(
+              () => CaptureController(
+                realtimeService: realtimeService,
+                transcriber: transcriber,
+                realtimeRecorderFactory: () => fakeRecorder,
+                persistAudio: (_) async => _persistedAudio(),
+                docDir: Directory.systemTemp.createTempSync,
+                now: () => _recordingStartedAt,
+              ),
+            ),
+          ],
+        )..listen(captureControllerProvider, (_, _) {});
+        return container;
+      }
+
+      test(
+        'realtime amplitudes clip to the rolling window of 80 samples',
+        () async {
+          final container = buildContainer();
+          addTearDown(container.dispose);
+
+          await container.read(captureControllerProvider.notifier).toggle();
+          expect(
+            container.read(captureControllerProvider).phase,
+            CapturePhase.listening,
+          );
+
+          // Emit 85 amplitude samples — only the last 80 should be kept.
+          for (var i = 0; i < 85; i++) {
+            realtimeAmpController.add(-10);
+            await Future<void>.delayed(Duration.zero);
+          }
+
+          final amplitudes = container
+              .read(captureControllerProvider)
+              .amplitudes;
+          expect(amplitudes.length, 80);
+        },
+      );
+
+      test(
+        'realtime amplitude stream onError is swallowed and keeps recording',
+        () async {
+          final container = buildContainer();
+          addTearDown(container.dispose);
+
+          await container.read(captureControllerProvider.notifier).toggle();
+          expect(
+            container.read(captureControllerProvider).phase,
+            CapturePhase.listening,
+          );
+
+          // Add a valid sample then trigger a stream error.
+          realtimeAmpController.add(-10);
+          await Future<void>.delayed(Duration.zero);
+          realtimeAmpController.addError(StateError('amp hw error'));
+          await Future<void>.delayed(Duration.zero);
+
+          // The recording continues — phase is still listening and the
+          // valid amplitude sample is present.
+          final state = container.read(captureControllerProvider);
+          expect(state.phase, CapturePhase.listening);
+          expect(state.amplitudes, hasLength(1));
+        },
+      );
+
+      test(
+        '_onRealtimeDelta is a no-op when phase is not listening or transcribing',
+        () async {
+          final container = buildContainer();
+          addTearDown(container.dispose);
+
+          final notifier = container.read(captureControllerProvider.notifier);
+          await notifier.toggle();
+          await notifier.toggle(); // → captured; onDelta still captured
+
+          // Phase is now captured — delta should be silently discarded.
+          capturedOnDelta!('should be ignored');
+          await Future<void>.delayed(Duration.zero);
+
+          final state = container.read(captureControllerProvider);
+          expect(state.phase, CapturePhase.captured);
+          // partialTranscript must remain empty (was cleared when captured).
+          expect(state.partialTranscript, '');
+          // The final transcript must not be contaminated by the late delta.
+          expect(state.transcript, 'hello realtime');
+        },
+      );
+    },
+  );
+
+  group(
+    'CaptureController batch path — amplitude clipping and error handlers',
+    () {
+      late MockAudioRecorderRepository recorder;
+      late MockAudioTranscriptionService transcriber;
+      late MockRealtimeTranscriptionService realtimeService;
+      late StreamController<Amplitude> ampController;
+
+      setUp(() {
+        recorder = MockAudioRecorderRepository();
+        transcriber = MockAudioTranscriptionService();
+        realtimeService = MockRealtimeTranscriptionService();
+        ampController = StreamController<Amplitude>.broadcast();
+
+        when(
+          () => realtimeService.resolveRealtimeConfig(),
+        ).thenAnswer((_) async => null);
+        when(realtimeService.dispose).thenAnswer((_) async {});
+        when(recorder.hasPermission).thenAnswer((_) async => true);
+        when(
+          () => recorder.amplitudeStream,
+        ).thenAnswer((_) => ampController.stream);
+        when(
+          recorder.startRecording,
+        ).thenAnswer((_) async => _audioNoteFixture());
+        when(recorder.stopRecording).thenAnswer((_) async {});
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer((_) async => 'hello world');
+      });
+
+      tearDown(() async {
+        await ampController.close();
+      });
+
+      test(
+        'batch amplitudes clip to the rolling window of 80 samples',
+        () async {
+          final container = _aliveContainer(
+            recorder: recorder,
+            transcriber: transcriber,
+            realtimeService: realtimeService,
+            persistAudio: (_) async => _persistedAudio(),
+          );
+          addTearDown(container.dispose);
+
+          await container.read(captureControllerProvider.notifier).toggle();
+          expect(
+            container.read(captureControllerProvider).phase,
+            CapturePhase.listening,
+          );
+
+          // Emit 85 amplitude samples — only the last 80 should be kept.
+          for (var i = 0; i < 85; i++) {
+            ampController.add(Amplitude(current: -10, max: 0));
+            await Future<void>.delayed(Duration.zero);
+          }
+
+          final amplitudes = container
+              .read(captureControllerProvider)
+              .amplitudes;
+          expect(amplitudes.length, 80);
+        },
+      );
+
+      test(
+        'batch amplitude stream onError is swallowed and keeps recording',
+        () async {
+          final container = _aliveContainer(
+            recorder: recorder,
+            transcriber: transcriber,
+            realtimeService: realtimeService,
+            persistAudio: (_) async => _persistedAudio(),
+          );
+          addTearDown(container.dispose);
+
+          await container.read(captureControllerProvider.notifier).toggle();
+          expect(
+            container.read(captureControllerProvider).phase,
+            CapturePhase.listening,
+          );
+
+          // Add a valid sample then trigger a stream error.
+          ampController.add(Amplitude(current: -10, max: 0));
+          await Future<void>.delayed(Duration.zero);
+          ampController.addError(StateError('amp hw error'));
+          await Future<void>.delayed(Duration.zero);
+
+          // The recording continues — phase is still listening and the
+          // valid amplitude sample is present.
+          final state = container.read(captureControllerProvider);
+          expect(state.phase, CapturePhase.listening);
+          expect(state.amplitudes, hasLength(1));
+        },
+      );
+    },
+  );
+
   group('CaptureController attaches batch transcripts to journal audio', () {
     late MockAudioRecorderRepository recorder;
     late MockAudioTranscriptionService transcriber;
