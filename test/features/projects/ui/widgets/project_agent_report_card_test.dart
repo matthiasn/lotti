@@ -101,9 +101,10 @@ void main() {
 
       final context = tester.element(find.byType(ProjectAgentReportCard));
 
-      // The error branch renders only an empty SizedBox: no section, no
-      // agent content, no provisioning affordance.
-      expect(find.byType(SizedBox), findsOneWidget);
+      // The error branch renders SizedBox.shrink(), i.e. nothing meaningful:
+      // no section header, no agent content, no provisioning affordance.
+      // Assert the absence of the card's real content rather than counting
+      // raw SizedBoxes (Material scaffolding adds unrelated ones).
       expect(
         find.text(context.messages.projectAgentSectionTitle),
         findsNothing,

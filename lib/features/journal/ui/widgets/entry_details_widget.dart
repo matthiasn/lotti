@@ -275,8 +275,11 @@ class _PulsingBorderState extends State<_PulsingBorder>
     final items = <TweenSequenceItem<double>>[];
     for (var i = 0; i < n; i++) {
       final isLast = i == n - 1;
+      // The very first up-tween starts fully transparent so the border stays
+      // hidden during the `startDelay` window (controller value 0.0) and only
+      // becomes visible once `_controller.forward()` runs.
       final upTween = Tween<double>(
-        begin: low,
+        begin: i == 0 ? 0.0 : low,
         end: high,
       ).chain(CurveTween(curve: Curves.easeInOutSine));
       final downCurve = isLast ? Curves.easeOutCubic : Curves.easeInOutSine;

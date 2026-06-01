@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:drift/drift.dart' hide isNull;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
@@ -679,6 +681,93 @@ void main() {
         expect(result.length, 1);
         expect(result.first.taskId, testTask.meta.id);
       });
+
+      test(
+        'returns empty list when linked entities contain no tasks',
+        () async {
+          // Links exist (so linkedTaskIds is non-empty), but every linked
+          // entity resolves to a non-task. This drives actualTasks (and thus
+          // tasksToProcess) to empty, exercising the early return after the
+          // whereType<Task>() filter without short-circuiting earlier.
+          final request = TaskSummaryRequest(
+            startDate: testStartDate.ymd,
+            endDate: testEndDate.ymd,
+          );
+
+          final nonTaskA = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: 'non-task-a',
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+            ),
+            entryText: const EntryText(plainText: 'Not a task A'),
+          );
+          final nonTaskB = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: 'non-task-b',
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+            ),
+            entryText: const EntryText(plainText: 'Not a task B'),
+          );
+
+          final linkToNonTaskA = EntryLink.basic(
+            id: 'link-non-task-a',
+            fromId: nonTaskA.meta.id,
+            toId: testJournalDbEntry.id,
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          );
+          final linkToNonTaskB = EntryLink.basic(
+            id: 'link-non-task-b',
+            fromId: nonTaskB.meta.id,
+            toId: testJournalDbEntry.id,
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          );
+
+          final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
+          when(
+            () => mockJournalDb.workEntriesInDateRange(
+              any(),
+              any(),
+              any(),
+              any(),
+            ),
+          ).thenReturn(mockWorkEntriesSelectable);
+          when(
+            mockWorkEntriesSelectable.get,
+          ).thenAnswer((_) async => [testJournalDbEntry]);
+
+          when(
+            () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
+          ).thenAnswer((_) async => [linkToNonTaskA, linkToNonTaskB]);
+
+          when(
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered({
+              nonTaskA.meta.id,
+              nonTaskB.meta.id,
+            }),
+          ).thenAnswer((_) async => [nonTaskA, nonTaskB]);
+
+          // Act
+          final result = await repository.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          );
+
+          // Assert: empty result, and the pipeline stopped before bulk
+          // linked-entity resolution because there were no tasks to process.
+          expect(result, isEmpty);
+          verifyNever(() => mockJournalDb.getBulkLinkedEntities(any()));
+        },
+      );
 
       test(
         'returns task without AI summary when no AI responses found',
@@ -1394,5 +1483,169 @@ void main() {
         expect(result, isEmpty);
       });
     });
+  });
+
+  group('taskSummaryRepository provider', () {
+    late MockJournalDb providerJournalDb;
+
+    setUp(() {
+      providerJournalDb = MockJournalDb();
+      if (getIt.isRegistered<JournalDb>()) {
+        getIt.unregister<JournalDb>();
+      }
+      getIt.registerSingleton<JournalDb>(providerJournalDb);
+    });
+
+    tearDown(getIt.reset);
+
+    /// Stubs [providerJournalDb] so that an end-to-end call resolves to a
+    /// single task summary, proving the provider-built repository is wired to
+    /// the GetIt-registered [JournalDb] and runs the full pipeline.
+    void stubSingleTaskPipeline() {
+      final workEntry = JournalDbEntity(
+        id: 'provider-entry',
+        createdAt: DateTime(2024, 1, 15),
+        updatedAt: DateTime(2024, 1, 15),
+        dateFrom: DateTime(2024, 1, 15),
+        dateTo: DateTime(2024, 1, 15, 0, 0, 30),
+        deleted: false,
+        starred: false,
+        private: false,
+        task: false,
+        flag: 0,
+        type: 'JournalEntry',
+        serialized: '{}',
+        schemaVersion: 1,
+        plainText: 'Work',
+        category: 'cat-provider',
+      );
+      final task = JournalEntity.task(
+        meta: Metadata(
+          id: 'provider-task',
+          createdAt: DateTime(2024, 1, 15),
+          updatedAt: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+          dateTo: DateTime(2024, 1, 15),
+        ),
+        data: TaskData(
+          title: 'Provider Task',
+          status: TaskStatus.open(
+            id: 'provider-status',
+            createdAt: DateTime(2024, 1, 15),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime(2024, 1, 15),
+          dateTo: DateTime(2024, 1, 15),
+          statusHistory: const [],
+        ),
+      );
+      final selectable = MockSelectable<JournalDbEntity>();
+      when(
+        () => providerJournalDb.workEntriesInDateRange(
+          any(),
+          any(),
+          any(),
+          any(),
+        ),
+      ).thenReturn(selectable);
+      when(selectable.get).thenAnswer((_) async => [workEntry]);
+      when(
+        () => providerJournalDb.linksForEntryIds({workEntry.id}),
+      ).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'provider-link',
+            fromId: task.meta.id,
+            toId: workEntry.id,
+            createdAt: DateTime(2024, 1, 15),
+            updatedAt: DateTime(2024, 1, 15),
+            vectorClock: null,
+          ),
+        ],
+      );
+      when(
+        () => providerJournalDb.getJournalEntitiesForIdsUnordered({
+          task.meta.id,
+        }),
+      ).thenAnswer((_) async => [task]);
+      when(
+        () => providerJournalDb.getBulkLinkedEntities({task.meta.id}),
+      ).thenAnswer((_) async => {task.meta.id: <JournalEntity>[]});
+    }
+
+    test(
+      'builds a working repository wired to the GetIt JournalDb without '
+      'an AgentDatabase registered',
+      () async {
+        expect(getIt.isRegistered<AgentDatabase>(), isFalse);
+        stubSingleTaskPipeline();
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final repo = container.read(taskSummaryRepositoryProvider);
+
+        // Wired to the GetIt-registered JournalDb instance.
+        expect(identical(repo.journalDb, providerJournalDb), isTrue);
+
+        // Resolver was constructed without an agent repository (null branch),
+        // so resolveMany never touches an agent DB and falls back to legacy.
+        final summaries = await repo.taskSummaryResolver.resolveMany(
+          {'provider-task'},
+        );
+        expect(summaries, isEmpty);
+
+        // Full pipeline runs against the provided JournalDb.
+        final results = await repo.getTaskSummaries(
+          categoryId: 'cat-provider',
+          request: const TaskSummaryRequest(
+            startDate: '2024-01-01',
+            endDate: '2024-01-31',
+          ),
+        );
+        expect(results.length, 1);
+        expect(results.first.taskId, 'provider-task');
+        expect(
+          results.first.summary,
+          'No AI summary available for this task.',
+        );
+      },
+    );
+
+    test(
+      'builds a repository with an AgentRepository-backed resolver when an '
+      'AgentDatabase is registered',
+      () async {
+        final agentDb = MockAgentDatabase();
+        getIt.registerSingleton<AgentDatabase>(agentDb);
+        expect(getIt.isRegistered<AgentDatabase>(), isTrue);
+        stubSingleTaskPipeline();
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final repo = container.read(taskSummaryRepositoryProvider);
+
+        expect(identical(repo.journalDb, providerJournalDb), isTrue);
+
+        // The pipeline still completes end-to-end: the agent lookup against the
+        // unstubbed mock fails inside resolveMany and is caught, falling back
+        // to the legacy (here empty) summary. Reaching this result proves the
+        // AgentRepository branch was taken at provider-build time.
+        final results = await repo.getTaskSummaries(
+          categoryId: 'cat-provider',
+          request: const TaskSummaryRequest(
+            startDate: '2024-01-01',
+            endDate: '2024-01-31',
+          ),
+        );
+        expect(results.length, 1);
+        expect(results.first.taskId, 'provider-task');
+        expect(
+          results.first.summary,
+          'No AI summary available for this task.',
+        );
+      },
+    );
   });
 }

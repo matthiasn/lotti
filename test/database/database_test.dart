@@ -464,11 +464,14 @@ void main() {
           addTearDown(throwingDb.close);
           await initConfigFlags(throwingDb, inMemoryDatabase: true);
 
-          // The coalescer merges concurrent single-id reads into one wave; when
-          // the underlying bulk fetch throws, the wave completes with the error
-          // and every joined caller surfaces it.
+          // Issue two callers concurrently (without awaiting between them) so
+          // they join the SAME coalescing wave; when the underlying bulk fetch
+          // throws, the wave completes with the error and every joined caller
+          // surfaces it.
+          final a = throwingDb.journalEntityById('any-id');
+          final b = throwingDb.journalEntityById('other-id');
           await expectLater(
-            throwingDb.journalEntityById('any-id'),
+            a,
             throwsA(
               isA<StateError>().having(
                 (e) => e.message,
@@ -477,11 +480,12 @@ void main() {
               ),
             ),
           );
+          await expectLater(b, throwsA(isA<StateError>()));
 
-          // A second caller in a fresh wave still fails the same way, proving
+          // A third caller in a fresh wave still fails the same way, proving
           // the error path is reached per wave rather than a one-off.
           await expectLater(
-            throwingDb.journalEntityById('other-id'),
+            throwingDb.journalEntityById('third-id'),
             throwsA(isA<StateError>()),
           );
         },
@@ -8474,7 +8478,7 @@ class _EntitiesByIdsFetchThrowsJournalDb extends JournalDb {
   _EntitiesByIdsFetchThrowsJournalDb() : super(inMemoryDatabase: true);
 
   @override
-  Future<List<JournalDbEntity>> runEntitiesByIdsFetch(Set<String> ids) {
+  Future<List<JournalDbEntity>> runEntitiesByIdsFetch(Set<String> ids) async {
     throw StateError('bulk fetch failed for $ids');
   }
 }

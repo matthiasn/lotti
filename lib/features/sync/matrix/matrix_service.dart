@@ -107,29 +107,43 @@ class MatrixService {
       }
       _syncEngine = syncEngine;
     } else {
-      final pipeline =
-          pipelineOverride ??
-          MatrixStreamConsumer(
-            sessionManager: _sessionManager,
-            roomManager: _roomManager,
-            loggingService: _loggingService,
-            settingsDb: _settingsDb,
-            eventProcessor: _eventProcessor,
-            collectMetrics: collectSyncMetrics,
-          );
+      // Share a single pipeline instance between the coordinator (which drives
+      // its lifecycle) and this service (which observes its metrics and
+      // diagnostics). Constructing a separate local pipeline while the injected
+      // coordinator drives its own would split-brain the two.
+      final SyncLifecycleCoordinator coordinator;
+      final MatrixStreamConsumer? pipeline;
+      if (lifecycleCoordinator != null) {
+        coordinator = lifecycleCoordinator;
+        // The coordinator already owns a pipeline; adopt it as the effective
+        // pipeline so saveRoom/metrics/diagnostics observe the same instance
+        // the coordinator drives.
+        pipeline = lifecycleCoordinator.pipeline as MatrixStreamConsumer?;
+      } else {
+        pipeline =
+            pipelineOverride ??
+            MatrixStreamConsumer(
+              sessionManager: _sessionManager,
+              roomManager: _roomManager,
+              loggingService: _loggingService,
+              settingsDb: _settingsDb,
+              eventProcessor: _eventProcessor,
+              collectMetrics: collectSyncMetrics,
+            );
+        coordinator = SyncLifecycleCoordinator(
+          gateway: _gateway,
+          sessionManager: _sessionManager,
+          roomManager: _roomManager,
+          loggingService: _loggingService,
+          pipeline: pipeline,
+        );
+      }
       _pipeline = pipeline;
 
-      _eventProcessor.applyObserver = pipeline.reportDbApplyDiagnostics;
+      if (pipeline != null) {
+        _eventProcessor.applyObserver = pipeline.reportDbApplyDiagnostics;
+      }
 
-      final coordinator =
-          lifecycleCoordinator ??
-          SyncLifecycleCoordinator(
-            gateway: _gateway,
-            sessionManager: _sessionManager,
-            roomManager: _roomManager,
-            loggingService: _loggingService,
-            pipeline: pipeline,
-          );
       _syncEngine = SyncEngine(
         sessionManager: _sessionManager,
         roomManager: _roomManager,

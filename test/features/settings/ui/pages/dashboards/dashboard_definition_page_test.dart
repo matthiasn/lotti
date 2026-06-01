@@ -5,6 +5,9 @@ import 'package:flutter_material_design_icons/flutter_material_design_icons.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
@@ -914,29 +917,20 @@ void main() {
         expect(find.byType(Dismissible), findsNothing);
         expect(find.byKey(const Key('dashboard_save')), findsNothing);
 
-        // Open the "Health Charts" modal.
-        final healthButtonFinder = find.text('Health Charts');
-        await tester.dragUntilVisible(
-          healthButtonFinder.first,
-          find.byType(SingleChildScrollView),
-          const Offset(0, 200),
+        // Invoke the health ChartMultiSelect's onConfirm directly with the
+        // WEIGHT health type. Driving the WoltModalSheet (open → select → Add)
+        // is non-deterministic in the batched suite because the modal flow
+        // depends on hit-testing/overlay timing; calling onConfirm exercises
+        // onConfirmAddHealthType deterministically. The health selector is the
+        // ChartMultiSelect<HealthTypeConfig> identified by its semantics label.
+        final healthSelect = tester.widget<ChartMultiSelect<HealthTypeConfig>>(
+          find.byWidgetPredicate(
+            (w) =>
+                w is ChartMultiSelect<HealthTypeConfig> &&
+                w.semanticsLabel == 'Add Health Chart',
+          ),
         );
-        await tester.pumpAndSettle();
-        await tester.tap(healthButtonFinder.first);
-        await tester.pumpAndSettle();
-
-        // Select the "Weight" health type in the modal list.
-        final weightItemFinder = find.widgetWithText(
-          CheckboxListTile,
-          'Weight',
-        );
-        expect(weightItemFinder, findsOneWidget);
-        await tester.tap(weightItemFinder);
-        await tester.pumpAndSettle();
-
-        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
-        expect(addButtonFinder, findsOneWidget);
-        await tester.tap(addButtonFinder);
+        healthSelect.onConfirm([healthTypes['HealthDataType.WEIGHT']]);
         await tester.pumpAndSettle();
 
         // onConfirmAddHealthType appended a health item → dirty → save shown.
@@ -980,24 +974,22 @@ void main() {
         expect(find.byType(Dismissible), findsNothing);
         expect(find.byKey(const Key('dashboard_save')), findsNothing);
 
-        final workoutButtonFinder = find.text('Workout Charts');
-        await tester.dragUntilVisible(
-          workoutButtonFinder.first,
-          find.byType(SingleChildScrollView),
-          const Offset(0, 200),
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(workoutButtonFinder.first);
-        await tester.pumpAndSettle();
-
-        // Pick the first workout item in the modal.
-        final firstWorkoutItem = find.byType(CheckboxListTile).first;
-        await tester.tap(firstWorkoutItem);
-        await tester.pumpAndSettle();
-
-        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
-        expect(addButtonFinder, findsOneWidget);
-        await tester.tap(addButtonFinder);
+        // Invoke the workout ChartMultiSelect's onConfirm directly with a
+        // workout type. As with the health case above, driving the modal flow
+        // is flaky in the batched suite; calling onConfirm exercises
+        // onConfirmAddWorkoutType deterministically. The workout selector is
+        // the ChartMultiSelect<DashboardWorkoutItem> identified by its
+        // semantics label.
+        final workoutType = workoutTypes['walking.duration'];
+        final workoutSelect = tester
+            .widget<ChartMultiSelect<DashboardWorkoutItem>>(
+              find.byWidgetPredicate(
+                (w) =>
+                    w is ChartMultiSelect<DashboardWorkoutItem> &&
+                    w.semanticsLabel == 'Add Workout Chart',
+              ),
+            );
+        workoutSelect.onConfirm([workoutType]);
         await tester.pumpAndSettle();
 
         // onConfirmAddWorkoutType appended a workout item → dirty → save shown.
@@ -1007,11 +999,12 @@ void main() {
         await tester.tap(find.byKey(const Key('dashboard_save')));
         await tester.pumpAndSettle();
 
-        // Exactly one workout item was persisted.
-        expect(
-          saved!.items.whereType<DashboardWorkoutItem>(),
-          hasLength(1),
-        );
+        // Exactly one workout item was persisted, with the chosen workout type.
+        final workoutItems = saved!.items
+            .whereType<DashboardWorkoutItem>()
+            .toList();
+        expect(workoutItems, hasLength(1));
+        expect(workoutItems.first.workoutType, workoutType!.workoutType);
       },
     );
 

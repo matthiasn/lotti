@@ -725,6 +725,13 @@ void main() {
       // Empty note -> note section is not rendered, only the dimension + Skip.
       expect(find.text('some_dimension'), findsOneWidget);
       expect(find.widgetWithText(OutlinedButton, 'Skip'), findsOneWidget);
+
+      // The read-only note section (a Padding wrapping a Text, lines 322-332)
+      // is conditional on a non-empty note, so it must be absent entirely.
+      // Prove it disappeared: the note text from the populated sibling test is
+      // gone, and no note Text widget renders the empty string.
+      expect(find.text('A stored read-only note'), findsNothing);
+      expect(find.text(''), findsNothing);
     });
   });
 }

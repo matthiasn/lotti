@@ -2615,6 +2615,13 @@ void main() {
         // loop ran the zero-delay continuation and the non-zero reschedule.
         await scriptedQueue.exhausted.future;
 
+        // `exhausted` completes inside the final `drain()` call, before the
+        // non-zero delay is returned and the reschedule timer is scheduled.
+        // Drain the microtask queue so the returned delay propagates back up
+        // the drain loop and the reschedule branch runs deterministically
+        // before we assert (and before stop() cancels the pending timer).
+        await pumpEventQueue();
+
         expect(scriptedQueue.drainCalls, 2);
 
         // stop() cancels the pending reschedule timer, preventing timer leaks.

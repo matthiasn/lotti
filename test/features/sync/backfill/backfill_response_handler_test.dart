@@ -182,10 +182,22 @@ void main() {
 
         await handler.handleBackfillRequest(request);
 
-        // Every entry is processed: exactly batch-size lookups, no truncation.
-        verify(
-          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
-        ).called(SyncTuning.maxBackfillResponseBatchSize);
+        // Every entry is processed: capture the counters looked up and assert
+        // the exact set is 1..N (not just the right COUNT, which would pass
+        // even if the wrong subset of counters were processed).
+        final captured = verify(
+          () => mockSequenceService.getEntryByHostAndCounter(
+            bobHostId,
+            captureAny(),
+          ),
+        ).captured.cast<int>();
+        expect(
+          captured,
+          List.generate(
+            SyncTuning.maxBackfillResponseBatchSize,
+            (i) => i + 1,
+          ),
+        );
       },
     );
 
@@ -212,17 +224,30 @@ void main() {
 
         // Only the first batch-size entries (counters 1..N) are looked up; the
         // overflow tail (counters N+1..N+overflow) is dropped by truncation.
-        verify(
-          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
-        ).called(SyncTuning.maxBackfillResponseBatchSize);
-
-        // The last (overflow) counters were never looked up.
-        verifyNever(
+        // Capture the exact counters to prove the correct prefix is processed,
+        // not merely that the right number of lookups happened.
+        final captured = verify(
           () => mockSequenceService.getEntryByHostAndCounter(
             bobHostId,
-            SyncTuning.maxBackfillResponseBatchSize + overflow,
+            captureAny(),
+          ),
+        ).captured.cast<int>();
+        expect(
+          captured,
+          List.generate(
+            SyncTuning.maxBackfillResponseBatchSize,
+            (i) => i + 1,
           ),
         );
+
+        // None of the overflow tail counters (N+1..N+overflow) were looked up.
+        for (
+          var counter = SyncTuning.maxBackfillResponseBatchSize + 1;
+          counter <= SyncTuning.maxBackfillResponseBatchSize + overflow;
+          counter++
+        ) {
+          expect(captured, isNot(contains(counter)));
+        }
       },
     );
 
