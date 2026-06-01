@@ -92,7 +92,11 @@ AgentStateEntity _$AgentStateEntityFromJson(Map<String, dynamic> json) =>
       latestSummaryMessageId: json['latestSummaryMessageId'] as String?,
       consecutiveFailureCount:
           (json['consecutiveFailureCount'] as num?)?.toInt() ?? 0,
-      wakeCounter: (json['wakeCounter'] as num?)?.toInt() ?? 0,
+      wakeCounter: json['wakeCounterByHost'] == null
+          ? const GCounter.empty()
+          : GCounter.fromJson(
+              json['wakeCounterByHost'] as Map<String, dynamic>,
+            ),
       processedCounterByHost:
           (json['processedCounterByHost'] as Map<String, dynamic>?)?.map(
             (k, e) => MapEntry(k, (e as num).toInt()),
@@ -125,7 +129,7 @@ Map<String, dynamic> _$AgentStateEntityToJson(AgentStateEntity instance) =>
       'recentHeadMessageId': instance.recentHeadMessageId,
       'latestSummaryMessageId': instance.latestSummaryMessageId,
       'consecutiveFailureCount': instance.consecutiveFailureCount,
-      'wakeCounter': instance.wakeCounter,
+      'wakeCounterByHost': instance.wakeCounter,
       'processedCounterByHost': instance.processedCounterByHost,
       'toolCounterByKey': instance.toolCounterByKey,
       'awaitingContent': instance.awaitingContent,

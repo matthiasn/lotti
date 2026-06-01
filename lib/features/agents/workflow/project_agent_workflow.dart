@@ -485,6 +485,7 @@ class ProjectAgentWorkflow {
         final nextSlots = scheduledWakeWasDue
             ? latestState.slots.copyWith(lastDailyWakeAt: now)
             : latestState.slots;
+        final hostId = await syncService.localHost();
         await syncService.upsertEntity(
           latestState.copyWith(
             revision: latestState.revision + 1,
@@ -495,7 +496,7 @@ class ProjectAgentWorkflow {
             scheduledWakeAt: nextScheduledWakeAt,
             updatedAt: now,
             consecutiveFailureCount: 0,
-            wakeCounter: latestState.wakeCounter + 1,
+            wakeCounter: latestState.wakeCounter.increment(hostId),
           ),
         );
       });
@@ -539,6 +540,7 @@ class ProjectAgentWorkflow {
     required AgentStateEntity state,
     required DateTime now,
   }) async {
+    final hostId = await syncService.localHost();
     await syncService.runInTransaction(() async {
       await syncService.upsertEntity(
         state.copyWith(
@@ -550,7 +552,7 @@ class ProjectAgentWorkflow {
           ),
           updatedAt: now,
           consecutiveFailureCount: 0,
-          wakeCounter: state.wakeCounter + 1,
+          wakeCounter: state.wakeCounter.increment(hostId),
         ),
       );
     });

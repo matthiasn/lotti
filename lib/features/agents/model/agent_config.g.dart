@@ -31,7 +31,11 @@ _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
       ? null
       : DateTime.parse(json['lastFeedbackScanAt'] as String),
   feedbackWindowDays: (json['feedbackWindowDays'] as num?)?.toInt(),
-  totalSessionsCompleted: (json['totalSessionsCompleted'] as num?)?.toInt(),
+  totalSessionsCompleted: json['totalSessionsCompletedByHost'] == null
+      ? const GCounter.empty()
+      : GCounter.fromJson(
+          json['totalSessionsCompletedByHost'] as Map<String, dynamic>,
+        ),
   recursionDepth: (json['recursionDepth'] as num?)?.toInt(),
   lastDailyWakeAt: json['lastDailyWakeAt'] == null
       ? null
@@ -39,7 +43,11 @@ _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
   lastWeeklyReviewAt: json['lastWeeklyReviewAt'] == null
       ? null
       : DateTime.parse(json['lastWeeklyReviewAt'] as String),
-  weeklyReviewCount: (json['weeklyReviewCount'] as num?)?.toInt(),
+  weeklyReviewCount: json['weeklyReviewCountByHost'] == null
+      ? const GCounter.empty()
+      : GCounter.fromJson(
+          json['weeklyReviewCountByHost'] as Map<String, dynamic>,
+        ),
   pendingProjectActivityAt: json['pendingProjectActivityAt'] == null
       ? null
       : DateTime.parse(json['pendingProjectActivityAt'] as String),
@@ -54,11 +62,11 @@ Map<String, dynamic> _$AgentSlotsToJson(_AgentSlots instance) =>
       'lastOneOnOneAt': instance.lastOneOnOneAt?.toIso8601String(),
       'lastFeedbackScanAt': instance.lastFeedbackScanAt?.toIso8601String(),
       'feedbackWindowDays': instance.feedbackWindowDays,
-      'totalSessionsCompleted': instance.totalSessionsCompleted,
+      'totalSessionsCompletedByHost': instance.totalSessionsCompleted,
       'recursionDepth': instance.recursionDepth,
       'lastDailyWakeAt': instance.lastDailyWakeAt?.toIso8601String(),
       'lastWeeklyReviewAt': instance.lastWeeklyReviewAt?.toIso8601String(),
-      'weeklyReviewCount': instance.weeklyReviewCount,
+      'weeklyReviewCountByHost': instance.weeklyReviewCount,
       'pendingProjectActivityAt': instance.pendingProjectActivityAt
           ?.toIso8601String(),
     };

@@ -74,7 +74,7 @@ final class ChatSessionControllerProvider
 }
 
 String _$chatSessionControllerHash() =>
-    r'90f79f43074b2e54248429fa3e7a2e0552ea3b38';
+    r'10d7203ebe14e9c9a663d0234edc19ae7b800b70';
 
 /// Riverpod controller for a single AI chat session.
 ///

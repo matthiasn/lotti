@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 
 part 'agent_config.freezed.dart';
 part 'agent_config.g.dart';
@@ -46,8 +47,11 @@ abstract class AgentSlots with _$AgentSlots {
     /// Configurable ritual frequency in days (default 7).
     int? feedbackWindowDays,
 
-    /// Total one-on-one sessions completed by this improver.
-    int? totalSessionsCompleted,
+    /// Total one-on-one sessions completed by this improver (per-host G-counter
+    /// so concurrent multi-device increments converge to the exact total).
+    @Default(GCounter.empty())
+    @JsonKey(name: 'totalSessionsCompletedByHost')
+    GCounter totalSessionsCompleted,
 
     /// Recursion depth: 0 = task improver, 1 = meta-improver.
     int? recursionDepth,
@@ -58,8 +62,11 @@ abstract class AgentSlots with _$AgentSlots {
     /// When the last weekly review completed for project agents.
     DateTime? lastWeeklyReviewAt,
 
-    /// Total weekly review sessions completed by this project agent.
-    int? weeklyReviewCount,
+    /// Total weekly review sessions completed by this project agent (per-host
+    /// G-counter; not yet incremented anywhere — wired up when the feature lands).
+    @Default(GCounter.empty())
+    @JsonKey(name: 'weeklyReviewCountByHost')
+    GCounter weeklyReviewCount,
 
     /// Most recent project-linked activity that is not reflected in the
     /// current project report yet. `null` means the summary is up to date.

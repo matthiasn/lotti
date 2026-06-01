@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -192,7 +193,7 @@ void main() {
         slots: const AgentSlots(),
         updatedAt: testDate,
         vectorClock: testVectorClock,
-        wakeCounter: 42,
+        wakeCounter: const GCounter({'host-a': 41, 'host-b': 1}),
       );
 
       final msg = SyncMessage.agentEntity(
@@ -213,7 +214,9 @@ void main() {
       expect(decodedEntity, isA<AgentStateEntity>());
       final state = decodedEntity as AgentStateEntity;
       expect(state.revision, 5);
-      expect(state.wakeCounter, 42);
+      // Full per-host equality, not just the sum — proves the by-host map
+      // survives the JSON round-trip rather than being flattened to a value.
+      expect(state.wakeCounter, const GCounter({'host-a': 41, 'host-b': 1}));
     });
 
     test('round-trips agent message entity', () {

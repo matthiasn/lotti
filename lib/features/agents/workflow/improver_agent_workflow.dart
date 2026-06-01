@@ -165,9 +165,10 @@ class ImproverAgentWorkflow {
 
       // 7. Update improver state watermarks.
       final now = clock.now();
+      final hostId = await syncService.localHost();
       final updatedState = state.copyWith(
         slots: state.slots.copyWith(lastFeedbackScanAt: now),
-        wakeCounter: state.wakeCounter + 1,
+        wakeCounter: state.wakeCounter.increment(hostId),
         updatedAt: now,
       );
       await syncService.upsertEntity(updatedState);

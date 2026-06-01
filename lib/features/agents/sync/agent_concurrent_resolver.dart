@@ -1,3 +1,4 @@
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Which of two concurrent versions of the same entity/link id should win.
@@ -28,15 +29,13 @@ enum ConcurrentWinner {
 /// a skewed physical clock that wins outright by a strictly-greater `updatedAt`
 /// is a separate concern requiring a monotonic/hybrid clock; out of scope here.)
 ///
-/// **Convergent but lossy.** This picks a whole-version winner and discards the
-/// loser; it does not merge. For a register that bundles *cumulative* fields —
-/// notably `AgentStateEntity`'s `wakeCounter` / `processedCounterByHost` /
-/// `toolCounterByKey` — the losing side's increments are lost under concurrent
-/// (partition/split-brain) writes. The deterministic tiebreak only makes the
-/// loser agree across replicas; it does not make the result non-lossy. Counter
-/// fields should instead be derived from the append-only log or use a
-/// counter-CRDT (roadmap PR 4 field-classification / PR 10); until then this is
-/// a deliberate, lease-guarded (PR 7) bridge, not a "nothing is lost" merge.
+/// **Whole-version winner for non-counter fields.** This picks one version and
+/// discards the loser's *non-counter* fields, so a concurrent non-counter edit
+/// is LWW-lossy (the tiebreak only makes the loser agree across replicas). The
+/// *cumulative* counters — `AgentStateEntity`'s `wakeCounter` and the `slots`
+/// session counters — are per-host G-counters and are instead merged
+/// element-wise by [mergeAgentStateCounters] (PR 2b), so no increment is ever
+/// lost. (`processedCounterByHost` relocates to the sequence layer in PR 4.)
 ConcurrentWinner resolveConcurrent({
   required VectorClock localVc,
   required VectorClock incomingVc,
@@ -67,4 +66,33 @@ int compareClocksCanonically(VectorClock a, VectorClock b) {
     if (counterA != counterB) return counterA > counterB ? 1 : -1;
   }
   return 0;
+}
+
+/// Merges the convergent (per-host G-counter) fields of two **concurrent**
+/// [AgentStateEntity] versions into [winner]: each counter becomes the
+/// element-wise max (CRDT join) of [local] and [incoming], so no increment from
+/// either device is lost, while every *non-counter* field stays as the
+/// deterministic LWW winner ([winner], chosen by [resolveConcurrent]).
+///
+/// The winner's vector clock is kept deliberately: a future update that causally
+/// dominates it necessarily saw — and (since every replica applies this same
+/// merge symmetrically) merged — both sides, so its counters are a superset and
+/// a later whole-row overwrite on the `b_gt_a` path loses nothing. Pure: same
+/// inputs → same result on every device.
+AgentStateEntity mergeAgentStateCounters({
+  required AgentStateEntity winner,
+  required AgentStateEntity local,
+  required AgentStateEntity incoming,
+}) {
+  return winner.copyWith(
+    wakeCounter: local.wakeCounter.merge(incoming.wakeCounter),
+    slots: winner.slots.copyWith(
+      totalSessionsCompleted: local.slots.totalSessionsCompleted.merge(
+        incoming.slots.totalSessionsCompleted,
+      ),
+      weeklyReviewCount: local.slots.weeklyReviewCount.merge(
+        incoming.slots.weeklyReviewCount,
+      ),
+    ),
+  );
 }

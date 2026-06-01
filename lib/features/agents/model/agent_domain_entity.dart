@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'agent_domain_entity.freezed.dart';
@@ -44,7 +45,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     String? recentHeadMessageId,
     String? latestSummaryMessageId,
     @Default(0) int consecutiveFailureCount,
-    @Default(0) int wakeCounter,
+    @Default(GCounter.empty())
+    @JsonKey(name: 'wakeCounterByHost')
+    GCounter wakeCounter,
     @Default({}) Map<String, int> processedCounterByHost,
     @Default({}) Map<String, int> toolCounterByKey,
 

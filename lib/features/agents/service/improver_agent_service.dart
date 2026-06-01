@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
@@ -131,7 +132,7 @@ class ImproverAgentService {
           activeTemplateId: targetTemplateId,
           feedbackWindowDays: feedbackWindowDays,
           recursionDepth: recursionDepth,
-          totalSessionsCompleted: 0,
+          totalSessionsCompleted: const GCounter.empty(),
         ),
         scheduledWakeAt: scheduledWakeAt,
         updatedAt: now,
@@ -224,11 +225,14 @@ class ImproverAgentService {
     final now = clock.now();
     final nextWake = now.add(Duration(days: feedbackWindowDays));
 
+    final hostId = await syncService.localHost();
     final updatedState = state.copyWith(
       scheduledWakeAt: nextWake,
       slots: state.slots.copyWith(
         lastOneOnOneAt: now,
-        totalSessionsCompleted: (state.slots.totalSessionsCompleted ?? 0) + 1,
+        totalSessionsCompleted: state.slots.totalSessionsCompleted.increment(
+          hostId,
+        ),
       ),
       updatedAt: now,
     );

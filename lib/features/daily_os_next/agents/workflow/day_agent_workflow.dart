@@ -296,13 +296,14 @@ class DayAgentWorkflow {
           observations: strategy.extractObservations(),
           now: now,
         );
+        final hostId = await syncService.localHost();
         await syncService.upsertEntity(
           latestState.copyWith(
             revision: latestState.revision + 1,
             lastWakeAt: now,
             updatedAt: now,
             consecutiveFailureCount: 0,
-            wakeCounter: latestState.wakeCounter + 1,
+            wakeCounter: latestState.wakeCounter.increment(hostId),
             scheduledWakeAt: _remainingScheduledWakeAt(latestState, now),
           ),
         );

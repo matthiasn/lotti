@@ -398,7 +398,7 @@ void main() {
         final finalState = upsertedEntities.whereType<AgentStateEntity>().last;
         expect(finalState.lastWakeAt, now);
         expect(finalState.consecutiveFailureCount, 0);
-        expect(finalState.wakeCounter, 1);
+        expect(finalState.wakeCounter.value, 1);
 
         final payloads = upsertedEntities
             .whereType<AgentMessagePayloadEntity>();
