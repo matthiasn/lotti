@@ -75,6 +75,19 @@ void main() {
       expect((e2.first as ThinkingFinal).text, 'Y');
     });
 
+    test('carries partial close token across chunks', () {
+      final p = ChatStreamParser();
+      final e1 = p.processChunk('<thinking>reasoning</thin');
+      expect(e1, isEmpty);
+
+      final e2 = p.processChunk('king>answer');
+      expect(e2, hasLength(2));
+      expect(e2.first, isA<ThinkingFinal>());
+      expect((e2.first as ThinkingFinal).text, 'reasoning');
+      expect(e2[1], isA<VisibleAppend>());
+      expect((e2[1] as VisibleAppend).text, 'answer');
+    });
+
     test('unterminated thinking is flushed on finish', () {
       final p = ChatStreamParser();
       final e1 = p.processChunk('<thinking>incomplete');
@@ -319,6 +332,16 @@ extension _AnyChatStreamParser on glados.Any {
         _GeneratedStreamTextToken.word,
         _GeneratedStreamTextToken.number,
         _GeneratedStreamTextToken.space,
+        _GeneratedStreamTextToken.newline,
+        _GeneratedStreamTextToken.punctuation,
+        _GeneratedStreamTextToken.markdown,
+      ]);
+
+  glados.Generator<_GeneratedStreamTextToken> get _visibleStreamTextToken =>
+      glados.AnyUtils(this).choose(const [
+        _GeneratedStreamTextToken.word,
+        _GeneratedStreamTextToken.number,
+        _GeneratedStreamTextToken.space,
         _GeneratedStreamTextToken.punctuation,
         _GeneratedStreamTextToken.markdown,
       ]);
@@ -326,11 +349,16 @@ extension _AnyChatStreamParser on glados.Any {
   glados.Generator<List<_GeneratedStreamTextToken>> get _streamText =>
       glados.ListAnys(this).listWithLengthInRange(0, 8, _streamTextToken);
 
+  glados.Generator<List<_GeneratedStreamTextToken>> get _visibleStreamText =>
+      glados.ListAnys(
+        this,
+      ).listWithLengthInRange(0, 8, _visibleStreamTextToken);
+
   glados.Generator<_GeneratedChatStreamScenario>
   get generatedChatStreamScenario => glados.CombinableAny(this).combine5(
+    _visibleStreamText,
     _streamText,
-    _streamText,
-    _streamText,
+    _visibleStreamText,
     _thinkingTokenKind,
     glados.IntAnys(this).intInRange(1, 12),
     (

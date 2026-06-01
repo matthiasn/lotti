@@ -605,6 +605,15 @@ class _GeneratedChatMessage {
     isStreaming: isStreaming,
   );
 
+  _GeneratedChatMessage withStreaming({required bool isStreaming}) =>
+      _GeneratedChatMessage(
+        idSlot: idSlot,
+        content: content,
+        role: role,
+        timestampSlot: timestampSlot,
+        isStreaming: isStreaming,
+      );
+
   @override
   String toString() {
     return '_GeneratedChatMessage('
@@ -650,11 +659,31 @@ extension _AnyChatUiModels on glados.Any {
         ),
       );
 
+  glados.Generator<List<_GeneratedChatMessage>>
+  get _chatMessagesWithAtMostOneStreaming =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(this).listWithLengthInRange(0, 5, _chatMessage),
+        glados.IntAnys(this).intInRange(0, 6),
+        (
+          List<_GeneratedChatMessage> messages,
+          int streamingIndexSlot,
+        ) {
+          final streamingIndex = streamingIndexSlot < messages.length
+              ? streamingIndexSlot
+              : null;
+
+          return [
+            for (final (index, message) in messages.indexed)
+              message.withStreaming(isStreaming: index == streamingIndex),
+          ];
+        },
+      );
+
   glados.Generator<_GeneratedChatSessionUiModel>
   get generatedChatSessionUiModel => glados.CombinableAny(this).combine9(
     glados.IntAnys(this).intInRange(0, 80),
     _chatText,
-    glados.ListAnys(this).listWithLengthInRange(0, 5, _chatMessage),
+    _chatMessagesWithAtMostOneStreaming,
     this.bool,
     this.bool,
     glados.IntAnys(this).intInRange(0, 20),

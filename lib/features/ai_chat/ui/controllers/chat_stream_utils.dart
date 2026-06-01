@@ -98,26 +98,28 @@ class ChatStreamUtils {
   /// tokens. The parser uses this to avoid appending a partial close marker to
   /// the thinking buffer before the following chunk completes it.
   static String computeCloseTagCarry(String s, String activeCloseToken) {
-    if (activeCloseToken.startsWith('<')) {
+    if (activeCloseToken.length > 1 &&
+        (activeCloseToken.startsWith('<') ||
+            activeCloseToken.startsWith('['))) {
+      final partialToken = activeCloseToken.substring(
+        0,
+        activeCloseToken.length - 1,
+      );
       final whitespaceTail = RegExp(
-        r'</think(?:ing)?\s*$',
+        '${RegExp.escape(partialToken)}\\s*\$',
         caseSensitive: false,
       ).firstMatch(s);
       if (whitespaceTail != null && whitespaceTail.end == s.length) {
         return s.substring(whitespaceTail.start);
       }
-      return _computeTokenPrefixCarry(s, const ['</thinking', '</think']);
-    }
 
-    if (activeCloseToken.startsWith('[')) {
-      final whitespaceTail = RegExp(
-        r'\[/(?:think|thinking)\s*$',
-        caseSensitive: false,
-      ).firstMatch(s);
-      if (whitespaceTail != null && whitespaceTail.end == s.length) {
-        return s.substring(whitespaceTail.start);
-      }
-      return _computeTokenPrefixCarry(s, const ['[/thinking', '[/think']);
+      final tokens = partialToken.endsWith('ing')
+          ? <String>[
+              partialToken,
+              partialToken.substring(0, partialToken.length - 3),
+            ]
+          : <String>[partialToken];
+      return _computeTokenPrefixCarry(s, tokens);
     }
 
     final lower = s.toLowerCase();

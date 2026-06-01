@@ -117,7 +117,7 @@ class _GeneratedInvalidUuidScenario {
 
 extension _AnyUuid on glados.Any {
   glados.Generator<int> get _hexNibble =>
-      glados.IntAnys(this).intInRange(0, 15);
+      glados.IntAnys(this).intInRange(0, 16);
 
   glados.Generator<_GeneratedUuid> get generatedUuid => glados.ListAnys(
     this,

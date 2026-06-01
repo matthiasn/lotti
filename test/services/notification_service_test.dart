@@ -203,6 +203,14 @@ void main() {
       await expectLater(service.cancelNotification(7), completes);
       verifyNever(() => sharedDb.getConfigFlag(any()));
     });
+
+    test('returns normally on Windows without reading the database', () async {
+      final service = NotificationService();
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+
+      await expectLater(service.cancelNotification(7), completes);
+      verifyNever(() => sharedDb.getConfigFlag(any()));
+    });
   });
 
   group('scheduleHabitNotification', () {

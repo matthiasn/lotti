@@ -78,6 +78,17 @@ void main() {
       );
     });
 
+    test('carries partial custom close tokens from the active token', () {
+      expect(
+        ChatStreamUtils.computeCloseTagCarry('body</thou', '</thought>'),
+        '</thou',
+      );
+      expect(
+        ChatStreamUtils.computeCloseTagCarry('body[/custom  ', '[/custom]'),
+        '[/custom  ',
+      );
+    });
+
     glados.Glados(
       glados.any.generatedCloseCarryScenario,
       glados.ExploreConfig(numRuns: 120),

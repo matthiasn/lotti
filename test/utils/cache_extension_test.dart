@@ -26,12 +26,11 @@ void main() {
         expect(container.read(testProvider), initialValue);
         expect(buildCount, 1);
 
-        // Advance past cache duration — keepAlive link is closed,
-        // but provider stays alive as long as something reads it
-        async.elapse(const Duration(milliseconds: 60));
-
-        // Invalidate to force re-evaluation now that keepAlive expired
-        container.invalidate(testProvider);
+        // Advance past cache duration — keepAlive link is closed and the
+        // autoDispose provider is allowed to dispose naturally.
+        async
+          ..elapse(const Duration(milliseconds: 60))
+          ..flushMicrotasks();
         final newValue = container.read(testProvider);
         expect(newValue, 2);
         expect(buildCount, 2);
@@ -64,8 +63,9 @@ void main() {
             );
             expect(buildCount, 1, reason: '$scenario');
 
-            async.elapse(scenario.untilAfterExpiry);
-            container.invalidate(testProvider);
+            async
+              ..elapse(scenario.untilAfterExpiry)
+              ..flushMicrotasks();
             expect(container.read(testProvider), 2, reason: '$scenario');
             expect(buildCount, 2, reason: '$scenario');
           } finally {
