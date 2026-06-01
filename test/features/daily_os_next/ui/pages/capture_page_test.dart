@@ -293,7 +293,7 @@ void main() {
       await tester.pump();
 
       expect(
-        find.text(messages.dailyOsNextCaptureTranscriptLabel),
+        find.byKey(const Key('daily_os_capture_transcript_editor')),
         findsOneWidget,
       );
       expect(find.byType(VoiceButton), findsOneWidget);
@@ -367,7 +367,7 @@ void main() {
           tokens.typography.styles.subtitle.subtitle2.letterSpacing,
         );
         expect(
-          find.text(messages.dailyOsNextCaptureTranscriptLabel),
+          find.byKey(const Key('daily_os_capture_transcript_editor')),
           findsOneWidget,
         );
 
@@ -730,6 +730,49 @@ void main() {
     );
 
     testWidgets(
+      'listening preview keeps a readable viewport on very small phone layouts',
+      (tester) async {
+        const liveTranscript = 'live words appear while speaking';
+        await tester.binding.setSurfaceSize(const Size(320, 568));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            mediaQueryData: const MediaQueryData(size: Size(320, 568)),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  const CaptureState(
+                    phase: CapturePhase.listening,
+                    transcript: '',
+                    amplitudes: [0.2, 0.4, 0.6],
+                    partialTranscript: liveTranscript,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final tokens = tester.element(find.byType(CapturePage)).designTokens;
+        expect(find.text(liveTranscript), findsOneWidget);
+        expect(
+          tester
+              .getSize(
+                find.byKey(
+                  const Key('daily_os_capture_live_transcript_viewport'),
+                ),
+              )
+              .height,
+          greaterThanOrEqualTo(tokens.typography.lineHeight.bodyMedium * 3),
+        );
+        expect(tester.getTopLeft(find.text(liveTranscript)).dy, greaterThan(0));
+      },
+    );
+
+    testWidgets(
       'capture state slot keeps the voice button stable while listening starts',
       (tester) async {
         const stateSlotKey = Key('daily_os_capture_state_slot');
@@ -788,6 +831,9 @@ void main() {
     testWidgets(
       'capture body reserves the mobile bottom navigation area',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
         await tester.pumpWidget(
           _wrap(
             const CapturePage(),
@@ -797,7 +843,11 @@ void main() {
                 _StubCaptureController.factory(
                   const CaptureState(
                     phase: CapturePhase.captured,
-                    transcript: 'Reviewable transcript',
+                    transcript:
+                        'Reviewable transcript line one. '
+                        'Reviewable transcript line two. '
+                        'Reviewable transcript line three. '
+                        'Reviewable transcript line four.',
                     amplitudes: [],
                   ),
                 ),
@@ -824,6 +874,60 @@ void main() {
               .dy,
           lessThan(844),
         );
+        final field = tester.widget<TextField>(
+          find.descendant(
+            of: find.byKey(const Key('daily_os_capture_transcript_editor')),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(field.minLines, greaterThanOrEqualTo(4));
+        expect(field.maxLines, isNull);
+      },
+    );
+
+    testWidgets(
+      'captured transcript editor compacts on very small phone viewports',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(320, 568));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            mediaQueryData: const MediaQueryData(size: Size(320, 568)),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  const CaptureState(
+                    phase: CapturePhase.captured,
+                    transcript: 'Reviewable transcript',
+                    amplitudes: [],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final field = tester.widget<TextField>(
+          find.descendant(
+            of: find.byKey(const Key('daily_os_capture_transcript_editor')),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(field.minLines, 2);
+        expect(field.maxLines, isNull);
+        expect(field.scrollPhysics, isA<NeverScrollableScrollPhysics>());
+
+        final context = tester.element(find.byType(CapturePage));
+        final ctaFinder = find.text(
+          context.messages.dailyOsNextCaptureReconcileCta,
+        );
+        await tester.ensureVisible(ctaFinder);
+        await tester.pump();
+
+        expect(tester.getBottomLeft(ctaFinder).dy, lessThan(568));
       },
     );
 

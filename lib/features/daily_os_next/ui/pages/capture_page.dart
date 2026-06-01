@@ -169,7 +169,14 @@ class _CaptureLayoutMetrics {
     required CapturePhase phase,
     required double viewportHeight,
   }) {
-    final minimumSlotHeight = tokens.spacing.step13 + tokens.spacing.step4;
+    final minimumReviewTranscriptLineCount = _minimumReviewTranscriptLineCount(
+      viewportHeight,
+    );
+    final minimumSlotHeight = _minimumSlotHeight(
+      tokens,
+      phase,
+      minimumReviewTranscriptLineCount: minimumReviewTranscriptLineCount,
+    );
     final maximumSlotHeight = tokens.spacing.step13 + tokens.spacing.step11;
     final availableForState =
         viewportHeight - _fixedVerticalChrome(tokens, phase);
@@ -187,6 +194,7 @@ class _CaptureLayoutMetrics {
       reviewTranscriptLineCount: _reviewTranscriptLineCount(
         tokens,
         stateSlotHeight,
+        minimumLineCount: minimumReviewTranscriptLineCount,
       ),
     );
   }
@@ -215,6 +223,27 @@ class _CaptureLayoutMetrics {
         capturedActionsHeight;
   }
 
+  static double _minimumSlotHeight(
+    DsTokens tokens,
+    CapturePhase phase, {
+    required int minimumReviewTranscriptLineCount,
+  }) {
+    return switch (phase) {
+      CapturePhase.listening => math.max(
+        tokens.spacing.step13 + tokens.spacing.step4,
+        _listeningChromeHeight(tokens) +
+            tokens.typography.lineHeight.bodyMedium * 3,
+      ),
+      CapturePhase.captured =>
+        _reviewTranscriptChromeHeight(tokens) +
+            tokens.typography.lineHeight.bodySmall *
+                minimumReviewTranscriptLineCount,
+      CapturePhase.idle ||
+      CapturePhase.transcribing ||
+      CapturePhase.error => tokens.spacing.step13 + tokens.spacing.step4,
+    };
+  }
+
   static int _liveTranscriptLineCount(DsTokens tokens, double slotHeight) {
     final textHeight = slotHeight - _listeningChromeHeight(tokens);
     return math.max(
@@ -223,18 +252,29 @@ class _CaptureLayoutMetrics {
     );
   }
 
-  static int _reviewTranscriptLineCount(DsTokens tokens, double slotHeight) {
-    final textHeight =
-        slotHeight -
-        tokens.typography.lineHeight.subtitle2 -
-        tokens.spacing.step5 -
-        tokens.spacing.step4 * 2 -
-        tokens.typography.lineHeight.caption -
-        tokens.spacing.step2;
+  static int _reviewTranscriptLineCount(
+    DsTokens tokens,
+    double slotHeight, {
+    required int minimumLineCount,
+  }) {
+    final textHeight = slotHeight - _reviewTranscriptChromeHeight(tokens);
     return math.max(
-      4,
+      minimumLineCount,
       math.min(6, textHeight ~/ tokens.typography.lineHeight.bodySmall),
     );
+  }
+
+  static int _minimumReviewTranscriptLineCount(double viewportHeight) {
+    if (viewportHeight < 560) return 2;
+    if (viewportHeight < 700) return 3;
+    return 4;
+  }
+
+  static double _reviewTranscriptChromeHeight(DsTokens tokens) {
+    return tokens.typography.lineHeight.subtitle2 +
+        tokens.spacing.step5 +
+        tokens.spacing.step4 * 2 +
+        tokens.spacing.step3;
   }
 
   static double _listeningChromeHeight(DsTokens tokens) {
@@ -503,18 +543,28 @@ class _StateSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final row = Align(
+      alignment: Alignment.topCenter,
+      child: _StateRow(
+        state: state,
+        height: height,
+        liveTranscriptLineCount: liveTranscriptLineCount,
+        reviewTranscriptLineCount: reviewTranscriptLineCount,
+      ),
+    );
+
+    if (state.phase == CapturePhase.captured) {
+      return ConstrainedBox(
+        key: const Key('daily_os_capture_state_slot'),
+        constraints: BoxConstraints(minHeight: height),
+        child: row,
+      );
+    }
+
     return SizedBox(
       key: const Key('daily_os_capture_state_slot'),
       height: height,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: _StateRow(
-          state: state,
-          height: height,
-          liveTranscriptLineCount: liveTranscriptLineCount,
-          reviewTranscriptLineCount: reviewTranscriptLineCount,
-        ),
-      ),
+      child: row,
     );
   }
 }
@@ -599,6 +649,7 @@ class _StateRow extends ConsumerWidget {
         );
       case CapturePhase.captured:
         return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               messages.dailyOsNextCaptureCaptured,

@@ -13,6 +13,8 @@ class TranscriptEditor extends StatelessWidget {
 
   final String transcript;
   final ValueChanged<String> onChanged;
+
+  /// Minimum number of rows to reserve before the editor grows with content.
   final int lineCount;
   final Key? fieldKey;
 
@@ -37,7 +39,9 @@ class TranscriptEditor extends StatelessWidget {
           key: fieldKey,
           initialValue: transcript,
           minLines: lineCount,
-          maxLines: lineCount,
+          maxLines: null,
+          keyboardType: TextInputType.multiline,
+          scrollPhysics: const NeverScrollableScrollPhysics(),
           textInputAction: TextInputAction.newline,
           cursorColor: tokens.colors.interactive.enabled,
           style: fieldTextStyle,
@@ -55,15 +59,6 @@ class TranscriptEditor extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
           ),
           onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-}
-              ),
-              onChanged: onChanged,
-            ),
-          ],
         ),
       ),
     );
