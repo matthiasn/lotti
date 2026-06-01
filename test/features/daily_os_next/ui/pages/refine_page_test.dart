@@ -67,11 +67,17 @@ class _RecordingAgent implements DayAgentInterface {
     required this.diff,
     DraftPlan? acceptedPlan,
     this.proposeError,
+    this.proposeGate,
   }) : acceptedPlan = acceptedPlan ?? diff.updatedPlan;
 
   final PlanDiff diff;
   final DraftPlan acceptedPlan;
   final Error? proposeError;
+
+  /// When set, `proposePlanDiff` blocks on this future before returning,
+  /// keeping the refine controller pinned in `RefinePhase.thinking` so
+  /// tests can observe that transient phase.
+  final Future<void>? proposeGate;
 
   PlanDiff? capturedDiff;
   String? proposedTranscript;
@@ -88,6 +94,8 @@ class _RecordingAgent implements DayAgentInterface {
   }) async {
     proposeCount++;
     proposedTranscript = voiceTranscript;
+    final gate = proposeGate;
+    if (gate != null) await gate;
     final error = proposeError;
     if (error != null) throw error;
     return diff;
@@ -239,14 +247,39 @@ CaptureController _stubCapture() {
   );
 }
 
+/// Capture controller that lets tests push arbitrary [CaptureState]
+/// transitions so the refine panel's `ref.listen` on
+/// [captureControllerProvider] can be exercised directly, without
+/// driving the real mic / realtime lifecycle.
+class _DriveableCaptureController extends CaptureController {
+  @override
+  CaptureState build() => const CaptureState.idle();
+
+  /// Pushes a new capture state, triggering the panel's listener.
+  // ignore: use_setters_to_change_properties
+  void emit(CaptureState next) => state = next;
+
+  // The panel calls these on a voice-button tap; the driveable tests
+  // never tap the button, but keep them no-ops for safety.
+  @override
+  void reset() {}
+
+  @override
+  void skipRealtimeTranscriptVerificationForNextCapture() {}
+
+  @override
+  Future<void> toggle() async {}
+}
+
 Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
   Size size = const Size(1280, 900),
+  CaptureController Function()? captureFactory,
 }) {
   return ProviderScope(
     overrides: [
-      captureControllerProvider.overrideWith(_stubCapture),
+      captureControllerProvider.overrideWith(captureFactory ?? _stubCapture),
       ...overrides,
     ],
     child: makeTestableWidget2(
@@ -254,6 +287,16 @@ Widget _wrap(
       mediaQueryData: MediaQueryData(size: size),
     ),
   );
+}
+
+/// Reads the driveable capture controller for the page so tests can push
+/// capture-state transitions.
+_DriveableCaptureController _readCapture(WidgetTester tester) {
+  final element = tester.element(find.byType(RefinePage));
+  return ProviderScope.containerOf(
+        element,
+      ).read(captureControllerProvider.notifier)
+      as _DriveableCaptureController;
 }
 
 /// Returns the controller for the page's draft so tests can drive phase
@@ -701,6 +744,94 @@ void main() {
       expect(find.text(messages.dailyOsNextRefineStatusIdle), findsOneWidget);
       expect(find.byType(LiveWaveform), findsNothing);
     });
+
+    testWidgets('close button pops the page', (tester) async {
+      final draft = _emptyPlan();
+      var poppedAfterOpen = false;
+      await tester.pumpWidget(
+        _wrap(
+          Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () async {
+                  await Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => RefinePage(draft: draft),
+                    ),
+                  );
+                  poppedAfterOpen = true;
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      _setWideSurface(tester);
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.byType(RefinePage), findsOneWidget);
+
+      // Tap the leading close IconButton → Navigator.maybePop pops the route.
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.byType(RefinePage), findsNothing);
+      expect(poppedAfterOpen, isTrue);
+    });
+
+    testWidgets(
+      'thinking phase shows the thinking status and ignores voice taps',
+      (tester) async {
+        final draft = _emptyPlan();
+        final gate = Completer<void>();
+        final agent = _RecordingAgent(
+          diff: _diffWithTwoChanges(draft),
+          proposeGate: gate.future,
+        );
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+        _setWideSurface(tester);
+
+        // Kick off a proposal that blocks on the gate, pinning the
+        // controller in RefinePhase.thinking.
+        final notifier = _readNotifier(tester, draft);
+        notifier.beginListening(resetTranscript: true);
+        unawaited(notifier.finishWithTranscript('rearrange the morning'));
+        await tester.pump();
+
+        final messages = tester.element(find.byType(RefinePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextRefineStatusThinking),
+          findsOneWidget,
+        );
+
+        // Tapping the voice button while thinking is a no-op: the proposal
+        // is still pending (count stays at 1) and the phase is unchanged.
+        await tester.tap(find.byType(VoiceButton));
+        await tester.pump();
+        expect(agent.proposeCount, 1);
+        expect(
+          find.text(messages.dailyOsNextRefineStatusThinking),
+          findsOneWidget,
+        );
+
+        // Release the gate so the controller settles into diffReady and the
+        // pending future completes before teardown.
+        gate.complete();
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(DiffRow), findsNWidgets(2));
+      },
+    );
   });
 
   group('showRefineModal', () {
@@ -914,6 +1045,113 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
 
         expect(find.text('rearrange things'), findsOneWidget);
+      },
+    );
+  });
+
+  // Drives the capture controller directly so the panel's
+  // `ref.listen(captureControllerProvider, ...)` forwarding into the
+  // refine controller is exercised end to end.
+  group('RefinePage capture → refine forwarding', () {
+    testWidgets(
+      'partial transcript while listening is forwarded to the refine panel',
+      (tester) async {
+        final draft = _emptyPlan();
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            captureFactory: _DriveableCaptureController.new,
+          ),
+        );
+        await tester.pump();
+
+        // Refine must already be listening for updateActiveTranscript to
+        // take effect (it ignores updates outside RefinePhase.listening).
+        _readNotifier(tester, draft).beginListening(resetTranscript: true);
+        await tester.pump();
+
+        // Capture goes live and streams a partial transcript → the panel's
+        // listener forwards it via refineNotifier.updateActiveTranscript.
+        _readCapture(tester).emit(
+          const CaptureState(
+            phase: CapturePhase.listening,
+            transcript: '',
+            amplitudes: <double>[],
+            partialTranscript: '  move lunch later  ',
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('move lunch later'), findsOneWidget);
+
+        // A blank partial transcript is ignored (the trimmed-empty guard),
+        // so the previously forwarded text is preserved.
+        _readCapture(tester).emit(
+          const CaptureState(
+            phase: CapturePhase.transcribing,
+            transcript: '',
+            amplitudes: <double>[],
+            partialTranscript: '   ',
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('move lunch later'), findsOneWidget);
+        final refineState = ProviderScope.containerOf(
+          tester.element(find.byType(RefinePage)),
+        ).read(refineControllerProvider(draft));
+        expect(refineState.transcript, 'move lunch later');
+      },
+    );
+
+    testWidgets(
+      'captured capture state moves refine into reviewing with the transcript',
+      (tester) async {
+        final draft = _emptyPlan();
+        await tester.pumpWidget(
+          _wrap(
+            RefinePage(draft: draft),
+            captureFactory: _DriveableCaptureController.new,
+          ),
+        );
+        await tester.pump();
+
+        _readNotifier(tester, draft).beginListening(resetTranscript: true);
+        await tester.pump();
+
+        // Capture finishes → CapturePhase.captured forwards the final
+        // transcript via refineNotifier.reviewTranscript, flipping the
+        // refine panel into the reviewing (editable) surface.
+        _readCapture(tester).emit(
+          const CaptureState(
+            phase: CapturePhase.captured,
+            transcript: 'add a wrap-up block at five',
+            amplitudes: <double>[],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(RefinePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextCaptureCaptured),
+          findsOneWidget,
+        );
+        final editor = find.byKey(
+          const Key('daily_os_refine_transcript_editor'),
+        );
+        expect(editor, findsOneWidget);
+        expect(
+          tester
+              .widget<EditableText>(
+                find.descendant(
+                  of: editor,
+                  matching: find.byType(EditableText),
+                ),
+              )
+              .controller
+              .text,
+          'add a wrap-up block at five',
+        );
       },
     );
   });

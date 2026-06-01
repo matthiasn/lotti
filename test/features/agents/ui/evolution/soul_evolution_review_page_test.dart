@@ -7,6 +7,9 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
+import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_page.dart';
+import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/soul_evolution_review_page.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -14,6 +17,15 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
+
+/// Fake chat state that stays in the loading state forever so that, when the
+/// review page navigates to [SoulEvolutionChatPage], that page renders a
+/// [CircularProgressIndicator] instead of crashing on its real dependencies.
+class _LoadingChatState extends SoulEvolutionChatState {
+  @override
+  Future<EvolutionChatData> build(String soulId) =>
+      Completer<EvolutionChatData>().future;
+}
 
 void main() {
   setUp(setUpTestGetIt);
@@ -45,6 +57,9 @@ void main() {
         templatesUsingSoulProvider.overrideWith(
           (ref, id) async => templateIds,
         ),
+        // Keep the destination chat page in a loading state so navigation
+        // assertions don't depend on the chat page's real dependencies.
+        soulEvolutionChatStateProvider.overrideWith(_LoadingChatState.new),
         ...extraOverrides,
       ],
     );
@@ -283,5 +298,96 @@ void main() {
       );
       expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
     });
+
+    testWidgets(
+      'tapping start card action navigates to chat page',
+      (tester) async {
+        // No pending session + templates present -> _StartCard has an enabled
+        // onPressed that calls _openChat.
+        await tester.pumpWidget(
+          buildSubject(pendingOverride: () async => null),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(SoulEvolutionReviewPage));
+        await tester.tap(
+          find.text(context.messages.agentSoulReviewStartAction),
+        );
+        // Route transition; do not settle — the destination chat page is kept
+        // in a perpetual loading state.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(find.byType(SoulEvolutionChatPage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping pending session action navigates to chat page',
+      (tester) async {
+        final session = makeTestEvolutionSession(
+          agentId: kTestSoulId,
+          templateId: kTestSoulId,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(pendingOverride: () async => session),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(SoulEvolutionReviewPage));
+        await tester.tap(
+          find.text(context.messages.agentSoulReviewStartAction),
+        );
+        // Route transition; do not settle — the destination chat page is kept
+        // in a perpetual loading state.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(find.byType(SoulEvolutionChatPage), findsOneWidget);
+      },
+    );
+
+    // The pending provider's error branch falls back to _StartCard, with the
+    // action enabled only when templates use the soul. The history provider is
+    // also driven to an error so the pending AsyncValue reliably settles into
+    // its terminal error state on this provider graph.
+    for (final (templateIds, actionEnabled) in [
+      (['template-1'], true),
+      (<String>[], false),
+    ]) {
+      testWidgets(
+        'pending provider error shows start card '
+        '(templates=${templateIds.length}, enabled=$actionEnabled)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              templateIds: templateIds,
+              mediaQueryData: phoneMediaQueryData.copyWith(
+                size: const Size(390, 2000),
+              ),
+              pendingOverride: () => throw Exception('pending failed'),
+              historyOverride: () => throw Exception('history failed'),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final context = tester.element(find.byType(SoulEvolutionReviewPage));
+          // _StartCard is rendered (its start hint is unique to that card).
+          expect(
+            find.text(
+              context.messages.agentSoulReviewStartHint,
+              skipOffstage: false,
+            ),
+            findsOneWidget,
+          );
+
+          final button = tester.widget<DesignSystemButton>(
+            find.byType(DesignSystemButton, skipOffstage: false),
+          );
+          expect(button.onPressed, actionEnabled ? isNotNull : isNull);
+        },
+      );
+    }
   });
 }

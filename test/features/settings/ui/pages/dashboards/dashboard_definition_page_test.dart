@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -883,6 +884,432 @@ void main() {
 
         // The DashboardDefinitionPage title text is rendered.
         expect(find.text(testDashboardName), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'adding a health chart via modal appends a health item and sets dirty',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        DashboardDefinition? saved;
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((invocation) async {
+          saved = invocation.positionalArguments.first as DashboardDefinition;
+          return 1;
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: emptyTestDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // No item cards and save button hidden before interaction.
+        expect(find.byType(Dismissible), findsNothing);
+        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+
+        // Open the "Health Charts" modal.
+        final healthButtonFinder = find.text('Health Charts');
+        await tester.dragUntilVisible(
+          healthButtonFinder.first,
+          find.byType(SingleChildScrollView),
+          const Offset(0, 200),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(healthButtonFinder.first);
+        await tester.pumpAndSettle();
+
+        // Select the "Weight" health type in the modal list.
+        final weightItemFinder = find.widgetWithText(
+          CheckboxListTile,
+          'Weight',
+        );
+        expect(weightItemFinder, findsOneWidget);
+        await tester.tap(weightItemFinder);
+        await tester.pumpAndSettle();
+
+        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        expect(addButtonFinder, findsOneWidget);
+        await tester.tap(addButtonFinder);
+        await tester.pumpAndSettle();
+
+        // onConfirmAddHealthType appended a health item → dirty → save shown.
+        expect(find.byType(Dismissible), findsOneWidget);
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+
+        // Saving persists exactly one DashboardHealthItem for the WEIGHT type.
+        await tester.tap(find.byKey(const Key('dashboard_save')));
+        await tester.pumpAndSettle();
+
+        final healthItems = saved!.items.whereType<DashboardHealthItem>();
+        expect(healthItems, hasLength(1));
+        expect(healthItems.first.healthType, 'HealthDataType.WEIGHT');
+        expect(healthItems.first.color, 'color');
+      },
+    );
+
+    testWidgets(
+      'adding a workout chart via modal appends a workout item and sets dirty',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        DashboardDefinition? saved;
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((invocation) async {
+          saved = invocation.positionalArguments.first as DashboardDefinition;
+          return 1;
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: emptyTestDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Dismissible), findsNothing);
+        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+
+        final workoutButtonFinder = find.text('Workout Charts');
+        await tester.dragUntilVisible(
+          workoutButtonFinder.first,
+          find.byType(SingleChildScrollView),
+          const Offset(0, 200),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(workoutButtonFinder.first);
+        await tester.pumpAndSettle();
+
+        // Pick the first workout item in the modal.
+        final firstWorkoutItem = find.byType(CheckboxListTile).first;
+        await tester.tap(firstWorkoutItem);
+        await tester.pumpAndSettle();
+
+        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        expect(addButtonFinder, findsOneWidget);
+        await tester.tap(addButtonFinder);
+        await tester.pumpAndSettle();
+
+        // onConfirmAddWorkoutType appended a workout item → dirty → save shown.
+        expect(find.byType(Dismissible), findsOneWidget);
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('dashboard_save')));
+        await tester.pumpAndSettle();
+
+        // Exactly one workout item was persisted.
+        expect(
+          saved!.items.whereType<DashboardWorkoutItem>(),
+          hasLength(1),
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping a measurable item card invokes updateItem and marks dirty',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        // A dashboard with a single measurable item whose card renders a
+        // tappable ListTile (the measurable type resolves to Water).
+        final singleMeasurableDashboard = emptyTestDashboardConfig.copyWith(
+          items: const [
+            DashboardMeasurementItem(
+              id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+              aggregationType: AggregationType.dailySum,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: singleMeasurableDashboard,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Initially nothing is dirty.
+        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+
+        // The measurable item card title renders the resolved display name
+        // with the aggregation suffix.
+        final cardTitleFinder = find.text(
+          '${measurableWater.displayName} [dailySum]',
+        );
+        expect(cardTitleFinder, findsOneWidget);
+
+        // Tapping the card's ListTile fires updateItemFn (updateItem), which
+        // also opens the edit modal. updateItem sets dirty = true.
+        await tester.tap(cardTitleFinder);
+        await tester.pump();
+
+        // updateItem marked the page dirty → save button now visible.
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'copying a dashboard containing a habit item hits the habit copy branch',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        DashboardDefinition? saved;
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((invocation) async {
+          saved = invocation.positionalArguments.first as DashboardDefinition;
+          return 1;
+        });
+
+        when(
+          () => mockJournalDb.getHabitById(habitFlossing.id),
+        ).thenAnswer((_) async => habitFlossing);
+
+        // A dashboard whose only item is a habit chart so copyDashboard's
+        // switch reaches the DashboardHabitItem branch.
+        final habitDashboard = testDashboardConfig.copyWith(
+          items: [
+            DashboardItem.habitChart(habitId: habitFlossing.id),
+          ],
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: habitDashboard,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Mark dirty so the copy persists a meaningful, valid dashboard.
+        await tester.enterText(
+          find.byKey(const Key('dashboard_name_field')),
+          'Copied dashboard',
+        );
+        await tester.pump();
+
+        final copyButtonFinder = find.byIcon(Icons.copy);
+        await tester.dragUntilVisible(
+          copyButtonFinder,
+          find.byType(SingleChildScrollView),
+          const Offset(0, 500),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(copyButtonFinder);
+        await tester.pumpAndSettle();
+
+        // copyDashboard saved the dashboard and iterated its items without
+        // throwing on the habit branch; the habit item is preserved.
+        verify(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).called(1);
+        // getMeasurableDataTypeById must NOT be queried: a habit item takes
+        // the break branch, not the measurement branch.
+        verifyNever(() => mockJournalDb.getMeasurableDataTypeById(any()));
+        expect(saved!.items.whereType<DashboardHabitItem>(), hasLength(1));
+      },
+    );
+
+    testWidgets(
+      'reordering items via semantics reorders dashboardItems and persists',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        DashboardDefinition? saved;
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((invocation) async {
+          saved = invocation.positionalArguments.first as DashboardDefinition;
+          return 1;
+        });
+
+        // Two health items render their titles synchronously from the
+        // healthTypes map (no DB dependency), giving us stable reorder targets.
+        final twoHealthDashboard = testDashboardConfig.copyWith(
+          items: const [
+            DashboardHealthItem(
+              color: '#0000FF',
+              healthType: 'HealthDataType.WEIGHT',
+            ),
+            DashboardHealthItem(
+              color: '#0000FF',
+              healthType: 'HealthDataType.BODY_FAT_PERCENTAGE',
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: twoHealthDashboard,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final handle = tester.ensureSemantics();
+
+        // The ReorderableListView attaches the "Move up" custom action to an
+        // ancestor of the item's title text node. Walk up from the text node
+        // to find the node that actually carries the action.
+        final moveUpId = CustomSemanticsAction.getIdentifier(
+          const CustomSemanticsAction(label: 'Move up'),
+        );
+        SemanticsNode? node = tester.getSemantics(
+          find.text('Body Fat Percentage'),
+        );
+        while (node != null &&
+            !(node.getSemanticsData().customSemanticsActionIds ?? const [])
+                .contains(moveUpId)) {
+          node = node.parent;
+        }
+        expect(
+          node,
+          isNotNull,
+          reason: 'A reorderable node must expose the "Move up" action',
+        );
+
+        // "Move up" on the second item → onReorderItem(1, 0). The handler
+        // moves "Body Fat Percentage" ahead of "Weight".
+        // ignore: deprecated_member_use
+        tester.binding.pipelineOwner.semanticsOwner!.performAction(
+          node!.id,
+          SemanticsAction.customAction,
+          moveUpId,
+        );
+        await tester.pumpAndSettle();
+
+        // Reorder set dirty → save button visible.
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('dashboard_save')));
+        await tester.pumpAndSettle();
+
+        // The persisted item order reflects the reorder: Body Fat Percentage
+        // (BODY_FAT_PERCENTAGE) now precedes Weight (WEIGHT).
+        final healthItems = saved!.items
+            .whereType<DashboardHealthItem>()
+            .toList();
+        expect(healthItems, hasLength(2));
+        expect(
+          healthItems.first.healthType,
+          'HealthDataType.BODY_FAT_PERCENTAGE',
+        );
+        expect(healthItems.last.healthType, 'HealthDataType.WEIGHT');
+
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'moving the first item down hits the newIndex > oldIndex reorder branch',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        DashboardDefinition? saved;
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((invocation) async {
+          saved = invocation.positionalArguments.first as DashboardDefinition;
+          return 1;
+        });
+
+        // Two health items render their titles synchronously from the
+        // healthTypes map (no DB dependency), giving us stable reorder targets.
+        final twoHealthDashboard = testDashboardConfig.copyWith(
+          items: const [
+            DashboardHealthItem(
+              color: '#0000FF',
+              healthType: 'HealthDataType.WEIGHT',
+            ),
+            DashboardHealthItem(
+              color: '#0000FF',
+              healthType: 'HealthDataType.BODY_FAT_PERCENTAGE',
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: twoHealthDashboard,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final handle = tester.ensureSemantics();
+
+        // Walk up from the first item's title text node to the reorderable node
+        // that actually carries the "Move down" custom action.
+        final moveDownId = CustomSemanticsAction.getIdentifier(
+          const CustomSemanticsAction(label: 'Move down'),
+        );
+        SemanticsNode? node = tester.getSemantics(find.text('Weight'));
+        while (node != null &&
+            !(node.getSemanticsData().customSemanticsActionIds ?? const [])
+                .contains(moveDownId)) {
+          node = node.parent;
+        }
+        expect(
+          node,
+          isNotNull,
+          reason: 'A reorderable node must expose the "Move down" action',
+        );
+
+        // "Move down" on the first item makes Flutter call
+        // onReorderItem(0, 1): newIndex(1) > oldIndex(0), so the handler takes
+        // the `newIndex - 1` branch (insertionIndex = 0) and the order is
+        // unchanged, but the previously-uncovered branch is exercised.
+        // ignore: deprecated_member_use
+        tester.binding.pipelineOwner.semanticsOwner!.performAction(
+          node!.id,
+          SemanticsAction.customAction,
+          moveDownId,
+        );
+        await tester.pumpAndSettle();
+
+        // Reorder set dirty → save button visible.
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('dashboard_save')));
+        await tester.pumpAndSettle();
+
+        // Moving the first item down by one with the newIndex - 1 adjustment is
+        // an identity reorder: order is preserved but the branch ran.
+        final healthItems = saved!.items
+            .whereType<DashboardHealthItem>()
+            .toList();
+        expect(healthItems, hasLength(2));
+        expect(healthItems.first.healthType, 'HealthDataType.WEIGHT');
+        expect(
+          healthItems.last.healthType,
+          'HealthDataType.BODY_FAT_PERCENTAGE',
+        );
+
+        handle.dispose();
       },
     );
   });

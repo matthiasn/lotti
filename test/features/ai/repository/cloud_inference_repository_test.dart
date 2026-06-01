@@ -3944,4 +3944,461 @@ void main() {
       });
     },
   );
+
+  group('CloudInferenceRepository - dedicated provider routing', () {
+    late MockHttpClient mockHttpClient;
+    late MockOllamaInferenceRepository mockOllamaRepo;
+    late MockGeminiInferenceRepository mockGeminiRepo;
+    late ProviderContainer container;
+    late CloudInferenceRepository repository;
+
+    setUp(() {
+      mockHttpClient = MockHttpClient();
+      mockOllamaRepo = MockOllamaInferenceRepository();
+      mockGeminiRepo = MockGeminiInferenceRepository();
+
+      container = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+        ],
+      );
+
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+    });
+
+    tearDown(() {
+      mockHttpClient.close();
+      container.dispose();
+    });
+
+    AiConfigInferenceProvider mistralProvider() => AiConfigInferenceProvider(
+      id: 'mistral-provider',
+      name: 'Mistral',
+      baseUrl: 'https://api.mistral.ai/v1',
+      apiKey: 'mistral-key',
+      createdAt: DateTime(2024, 3, 15),
+      inferenceProviderType: InferenceProviderType.mistral,
+    );
+
+    /// Stubs the underlying http client's `send` so the real
+    /// MistralInferenceRepository / VoxtralInferenceRepository SSE parser
+    /// produces a single content chunk.
+    void stubSseSend(String content) {
+      when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+        final sse =
+            'data: ${jsonEncode({
+              'id': 'chunk-1',
+              'choices': [
+                {
+                  'index': 0,
+                  'delta': {'content': content},
+                },
+              ],
+            })}\n\n'
+            'data: [DONE]\n\n';
+        return http.StreamedResponse(
+          Stream.value(utf8.encode(sse)),
+          200,
+        );
+      });
+    }
+
+    test(
+      'generate routes Mistral provider to MistralInferenceRepository',
+      () async {
+        stubSseSend('Bonjour');
+
+        final result = await repository
+            .generate(
+              'Hello',
+              model: 'mistral-large',
+              temperature: 0.3,
+              baseUrl: 'https://api.mistral.ai/v1',
+              apiKey: 'mistral-key',
+              systemMessage: 'Be brief',
+              provider: mistralProvider(),
+            )
+            .toList();
+
+        expect(result, hasLength(1));
+        expect(result.first.choices?.first.delta?.content, 'Bonjour');
+
+        // Verify the request went to Mistral's chat/completions endpoint and
+        // carried the prompt + system message in the serialized body.
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        expect(
+          request.url.toString(),
+          'https://api.mistral.ai/v1/chat/completions',
+        );
+        expect(request.body, contains('Hello'));
+        expect(request.body, contains('Be brief'));
+      },
+    );
+
+    test(
+      'generateWithMessages routes Mistral provider to MistralInferenceRepository',
+      () async {
+        stubSseSend('Salut');
+
+        final result = await repository
+            .generateWithMessages(
+              messages: const [
+                ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.string('Hi'),
+                ),
+              ],
+              model: 'mistral-large',
+              temperature: 0.5,
+              provider: mistralProvider(),
+            )
+            .toList();
+
+        expect(result, hasLength(1));
+        expect(result.first.choices?.first.delta?.content, 'Salut');
+
+        // generateWithMessages reads baseUrl/apiKey from the provider itself.
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        expect(
+          request.url.toString(),
+          'https://api.mistral.ai/v1/chat/completions',
+        );
+        expect(request.headers['Authorization'], 'Bearer mistral-key');
+      },
+    );
+
+    test(
+      'generateWithAudio routes Voxtral provider to VoxtralInferenceRepository',
+      () async {
+        stubSseSend('transcribed words');
+
+        // OpenAIClient (constructed unconditionally before the Voxtral branch)
+        // asserts the baseUrl must not end with '/', so use a slash-free URL.
+        const voxtralBaseUrl = 'http://localhost:11344';
+        final voxtralProvider = AiConfigInferenceProvider(
+          id: 'voxtral-provider',
+          name: 'Voxtral',
+          baseUrl: voxtralBaseUrl,
+          apiKey: '',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.voxtral,
+        );
+
+        final result = await repository
+            .generateWithAudio(
+              'Transcribe',
+              model: 'voxtral-mini',
+              audioBase64: 'YXVkaW8=',
+              baseUrl: voxtralBaseUrl,
+              apiKey: '',
+              provider: voxtralProvider,
+            )
+            .toList();
+
+        expect(result, hasLength(1));
+        expect(result.first.choices?.first.delta?.content, 'transcribed words');
+
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        expect(
+          request.url.toString(),
+          'http://localhost:11344/v1/chat/completions',
+        );
+      },
+    );
+  });
+
+  group('CloudInferenceRepository - tools and system message logging', () {
+    late MockOpenAIClient mockClient;
+    late MockGeminiInferenceRepository mockGeminiRepo;
+    late ProviderContainer container;
+    late CloudInferenceRepository repository;
+
+    const baseUrl = 'https://api.openai.com/v1';
+    const apiKey = 'test-key';
+
+    final tools = [
+      const ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(
+          name: 'lookup',
+          description: 'Look something up',
+        ),
+      ),
+    ];
+
+    setUp(() {
+      mockClient = MockOpenAIClient();
+      mockGeminiRepo = MockGeminiInferenceRepository();
+
+      container = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(
+            MockOllamaInferenceRepository(),
+          ),
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+        ],
+      );
+
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref);
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test(
+      'generateWithImages includes system message and tools in request',
+      () async {
+        await repository
+            .generateWithImages(
+              'Describe',
+              model: 'gpt-4o',
+              temperature: 0.4,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              images: const ['imgbase64'],
+              systemMessage: 'You see images',
+              tools: tools,
+              overrideClient: mockClient,
+            )
+            .toList();
+
+        final captured = verify(
+          () => mockClient.createChatCompletionStream(
+            request: captureAny(named: 'request'),
+          ),
+        ).captured;
+        final request = captured.first as CreateChatCompletionRequest;
+
+        // System message prepended (line 277) + user image message.
+        expect(request.messages, hasLength(2));
+        expect(request.messages.first.role, ChatCompletionMessageRole.system);
+        expect(request.toString(), contains('You see images'));
+        // Tools forwarded (lines 266-268 logging branch executed).
+        expect(request.tools, hasLength(1));
+        expect(request.tools!.first.function.name, 'lookup');
+      },
+    );
+
+    test(
+      'generateWithAudio includes system message and tools in request',
+      () async {
+        final provider = AiConfigInferenceProvider(
+          id: 'generic-provider',
+          name: 'Generic',
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        await repository
+            .generateWithAudio(
+              'Transcribe',
+              model: 'gpt-4o-audio-preview',
+              audioBase64: 'YXVkaW8=',
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              provider: provider,
+              systemMessage: 'You transcribe',
+              tools: tools,
+              overrideClient: mockClient,
+            )
+            .toList();
+
+        final captured = verify(
+          () => mockClient.createChatCompletionStream(
+            request: captureAny(named: 'request'),
+          ),
+        ).captured;
+        final request = captured.first as CreateChatCompletionRequest;
+
+        // System message prepended (line 457) + user audio message.
+        expect(request.messages, hasLength(2));
+        expect(request.messages.first.role, ChatCompletionMessageRole.system);
+        expect(request.toString(), contains('You transcribe'));
+        // Tools forwarded (lines 440-442 logging branch executed).
+        expect(request.tools, hasLength(1));
+        expect(request.tools!.first.function.name, 'lookup');
+      },
+    );
+
+    test(
+      'generateWithMessages extracts system message for Gemini multi-turn',
+      () async {
+        final geminiProvider = AiConfigInferenceProvider(
+          id: 'gemini-provider',
+          name: 'Gemini',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'gemini-key',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        String? capturedSystemMessage;
+        when(
+          () => mockGeminiRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            thinkingConfig: any(named: 'thinkingConfig'),
+            provider: any(named: 'provider'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedSystemMessage =
+              invocation.namedArguments[#systemMessage] as String?;
+          return const Stream.empty();
+        });
+
+        await repository
+            .generateWithMessages(
+              messages: const [
+                ChatCompletionMessage.system(content: 'System directive here'),
+                ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.string('Question'),
+                ),
+              ],
+              model: 'gemini-2.5-pro',
+              temperature: 0.6,
+              provider: geminiProvider,
+            )
+            .toList();
+
+        // Line 547: firstWhereOrNull(system).mapOrNull extracts the content.
+        expect(capturedSystemMessage, 'System directive here');
+      },
+    );
+
+    test(
+      'generateWithMessages forwards tools on the OpenAI-compatible path',
+      () {
+        final provider = AiConfigInferenceProvider(
+          id: 'openai-provider',
+          name: 'OpenAI',
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        // The OpenAI-compatible branch builds its own client; we only assert
+        // that the synchronous tools-logging branch (lines 595-597) runs and a
+        // broadcast stream is returned without throwing.
+        final stream = repository.generateWithMessages(
+          messages: const [
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string('Hi'),
+            ),
+          ],
+          model: 'gpt-4o',
+          temperature: 0.5,
+          provider: provider,
+          tools: tools,
+        );
+
+        expect(stream.isBroadcast, isTrue);
+      },
+    );
+  });
+
+  group('CloudInferenceRepository - generateImage unsupported providers', () {
+    late ProviderContainer container;
+    late CloudInferenceRepository repository;
+
+    setUp(() {
+      container = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(
+            MockOllamaInferenceRepository(),
+          ),
+          geminiInferenceRepositoryProvider.overrideWithValue(
+            MockGeminiInferenceRepository(),
+          ),
+        ],
+      );
+
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref);
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    // Covers the remaining unsupported switch cases in generateImage,
+    // including voxtral and whisper (lines 700-701).
+    for (final type in const [
+      InferenceProviderType.voxtral,
+      InferenceProviderType.whisper,
+      InferenceProviderType.mistral,
+      InferenceProviderType.nebiusAiStudio,
+      InferenceProviderType.openRouter,
+    ]) {
+      test('throws UnsupportedError for ${type.name} provider', () {
+        final provider = AiConfigInferenceProvider(
+          id: '${type.name}-provider',
+          name: type.name,
+          baseUrl: 'https://example.com',
+          apiKey: 'key',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: type,
+        );
+
+        expect(
+          () => repository.generateImage(
+            prompt: 'Make art',
+            model: 'some-model',
+            provider: provider,
+          ),
+          throwsA(
+            isA<UnsupportedError>().having(
+              (e) => e.message,
+              'message',
+              allOf(
+                contains('not supported for'),
+                contains(type.toString()),
+              ),
+            ),
+          ),
+        );
+      });
+    }
+  });
 }

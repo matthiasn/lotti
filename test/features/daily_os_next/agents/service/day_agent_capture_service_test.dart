@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -12,6 +13,8 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1921,6 +1924,118 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.output, contains('failed to create task'));
+      },
+    );
+
+    // ── _defaultTaskFactory delegates to PersistenceLogic (lines 961-987) ─────
+
+    test(
+      'default task factory delegates to PersistenceLogic.createTaskEntry',
+      () async {
+        // Construct the service WITHOUT a taskFactory override so the
+        // production _defaultTaskFactory (getIt<PersistenceLogic>()) is used.
+        final persistenceLogic = MockPersistenceLogic();
+        if (getIt.isRegistered<PersistenceLogic>()) {
+          getIt.unregister<PersistenceLogic>();
+        }
+        getIt.registerSingleton<PersistenceLogic>(persistenceLogic);
+        addTearDown(() => getIt.unregister<PersistenceLogic>());
+
+        final category =
+            EntityDefinition.categoryDefinition(
+                  id: 'work',
+                  createdAt: _now,
+                  updatedAt: _now,
+                  name: 'Work',
+                  vectorClock: null,
+                  private: false,
+                  active: true,
+                  defaultProfileId: 'profile-work',
+                )
+                as CategoryDefinition;
+        when(() => journalDb.getCategoryById('work')).thenAnswer(
+          (_) async => category,
+        );
+
+        final createdTask = _task(
+          id: 'persisted-task-1',
+          title: 'Run integration tests',
+          status: _openStatus(),
+        );
+        when(
+          () => persistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => createdTask);
+
+        final service = DayAgentCaptureService(
+          agentRepository: agentRepository,
+          syncService: syncService,
+          journalDb: journalDb,
+          journalRepository: journalRepository,
+          fts5Db: fts5Db,
+          orchestrator: orchestrator,
+          domainLogger: domainLogger,
+          onPersistedStateChanged: notifications.add,
+        );
+
+        final result = await withClock(Clock.fixed(_now), () {
+          return service.executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {
+              'phrase': 'Run integration tests',
+              'category': 'work',
+              'estimate': 45,
+              'dueAnchor': 'tomorrow',
+            },
+          );
+        });
+
+        // The persisted task flows back through the tool result.
+        expect(result.success, isTrue);
+        final decoded = jsonDecode(result.output) as Map<String, dynamic>;
+        expect(decoded['title'], 'Run integration tests');
+
+        // Capture and assert the arguments the default factory forwarded to
+        // PersistenceLogic.createTaskEntry.
+        final captured = verify(
+          () => persistenceLogic.createTaskEntry(
+            data: captureAny(named: 'data'),
+            entryText: captureAny(named: 'entryText'),
+            categoryId: captureAny(named: 'categoryId'),
+          ),
+        ).captured;
+        final data = captured[0] as TaskData;
+        final entryText = captured[1] as EntryText;
+        final categoryId = captured[2] as String?;
+
+        expect(categoryId, 'work');
+        expect(data.title, 'Run integration tests');
+        expect(data.estimate, const Duration(minutes: 45));
+        // profileId is taken from the resolved category's defaultProfileId.
+        expect(data.profileId, 'profile-work');
+        // due is the end of tomorrow (dueAnchor: 'tomorrow' relative to _now).
+        expect(data.due, isNotNull);
+        expect(data.due!.day, _now.add(const Duration(days: 1)).day);
+        // dateFrom/dateTo are pinned to clock.now().
+        expect(data.dateFrom, _now);
+        expect(data.dateTo, _now);
+        // Fresh tasks start in the open state with a generated status id.
+        expect(data.status.toDbString, 'OPEN');
+        expect(data.status.id, isNotEmpty);
+        expect(data.status.createdAt, _now);
+        expect(
+          data.status.utcOffset,
+          _now.timeZoneOffset.inMinutes,
+        );
+        // entryText mirrors the phrase as both plain text and markdown.
+        expect(entryText.plainText, 'Run integration tests');
+        expect(entryText.markdown, 'Run integration tests');
       },
     );
 

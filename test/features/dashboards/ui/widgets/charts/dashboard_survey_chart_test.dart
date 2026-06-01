@@ -7,6 +7,8 @@ import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:research_package/research_package.dart';
 
@@ -98,6 +100,12 @@ void main() {
   setUp(() async {
     final mocks = await setUpTestGetIt();
     mockJournalDb = mocks.journalDb;
+
+    // The add-button (onTapAdd) builds a resultCallback via
+    // createResultCallback, which eagerly reads getIt<PersistenceLogic>().
+    // Register a mock so tapping the button does not throw. Cleared by
+    // tearDownTestGetIt -> getIt.reset().
+    getIt.registerSingleton<PersistenceLogic>(MockPersistenceLogic());
   });
 
   tearDown(tearDownTestGetIt);
@@ -571,5 +579,88 @@ void main() {
         expect(lineChart.data.maxY, 92.0);
       },
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // onTapAdd: tapping the add-button opens the matching survey modal.
+  // Each surveyType routes to a different runXxx() helper, which loads a
+  // distinct RPOrderedTask. We assert on the task identifier of the rendered
+  // RPUITask, which uniquely identifies the survey that was launched.
+  // -------------------------------------------------------------------------
+  group('DashboardSurveyChart — add-button launches survey', () {
+    /// Taps the add-button and lets the survey modal sheet open.
+    Future<void> tapAdd(WidgetTester tester) async {
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    // surveyType -> expected RPOrderedTask identifier launched on tap.
+    final cases = <(String surveyType, String surveyName, String taskId)>[
+      (cfq11SurveyTaskName, 'CFQ11', 'cfq11SurveyTask'),
+      (panasSurveyTaskName, 'PANAS', 'panasSurveyTask'),
+      (ghq12SurveyTaskName, 'GHQ12', 'ghq12SurveyTask'),
+    ];
+
+    for (final (surveyType, surveyName, taskId) in cases) {
+      testWidgets('tapping add for $surveyName launches the $taskId task', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.getSurveyCompletionsByType(
+            type: any(named: 'type'),
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await _pumpSurveyChart(
+          tester,
+          chartConfig: DashboardSurveyItem(
+            surveyType: surveyType,
+            surveyName: surveyName,
+            colorsByScoreKey: const {'k': '#82E6CE'},
+          ),
+        );
+
+        // No survey is open before tapping.
+        expect(find.byType(RPUITask), findsNothing);
+
+        await tapAdd(tester);
+
+        // Exactly the matching survey's task is now driving the modal, proving
+        // the correct branch of onTapAdd fired and routed to the right runXxx().
+        final task = tester.widget<RPUITask>(find.byType(RPUITask)).task;
+        expect(
+          task.identifier,
+          taskId,
+          reason: 'Tapping add for $surveyType must launch the $taskId survey.',
+        );
+      });
+    }
+
+    testWidgets('unknown survey type opens no survey on tap', (tester) async {
+      when(
+        () => mockJournalDb.getSurveyCompletionsByType(
+          type: any(named: 'type'),
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await _pumpSurveyChart(
+        tester,
+        chartConfig: const DashboardSurveyItem(
+          surveyType: 'unknownSurveyTask',
+          surveyName: 'Unknown',
+          colorsByScoreKey: {'k': '#82E6CE'},
+        ),
+      );
+
+      await tapAdd(tester);
+
+      // Every if-condition in onTapAdd evaluated false, so no survey opened.
+      expect(find.byType(RPUITask), findsNothing);
+    });
   });
 }

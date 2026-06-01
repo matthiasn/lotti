@@ -121,39 +121,21 @@ class MatrixService {
 
       _eventProcessor.applyObserver = pipeline.reportDbApplyDiagnostics;
 
-      if (syncEngine != null) {
-        if (pipelineOverride == null) {
-          throw ArgumentError(
-            'Providing a SyncEngine requires supplying pipelineOverride so '
-            'MatrixService and the engine share the same pipeline instance.',
+      final coordinator =
+          lifecycleCoordinator ??
+          SyncLifecycleCoordinator(
+            gateway: _gateway,
+            sessionManager: _sessionManager,
+            roomManager: _roomManager,
+            loggingService: _loggingService,
+            pipeline: pipeline,
           );
-        }
-        final coordinatorFromEngine = syncEngine.lifecycleCoordinator;
-        if (lifecycleCoordinator != null &&
-            !identical(coordinatorFromEngine, lifecycleCoordinator)) {
-          throw ArgumentError(
-            'Provided SyncEngine and SyncLifecycleCoordinator must reference '
-            'the same instance.',
-          );
-        }
-        _syncEngine = syncEngine;
-      } else {
-        final coordinator =
-            lifecycleCoordinator ??
-            SyncLifecycleCoordinator(
-              gateway: _gateway,
-              sessionManager: _sessionManager,
-              roomManager: _roomManager,
-              loggingService: _loggingService,
-              pipeline: pipeline,
-            );
-        _syncEngine = SyncEngine(
-          sessionManager: _sessionManager,
-          roomManager: _roomManager,
-          lifecycleCoordinator: coordinator,
-          loggingService: _loggingService,
-        );
-      }
+      _syncEngine = SyncEngine(
+        sessionManager: _sessionManager,
+        roomManager: _roomManager,
+        lifecycleCoordinator: coordinator,
+        loggingService: _loggingService,
+      );
     }
 
     incomingKeyVerificationRunnerController =

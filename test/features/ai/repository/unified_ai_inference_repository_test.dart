@@ -14,6 +14,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart' show toDbEntity;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
@@ -6859,6 +6860,177 @@ Take into account the following task context:
       expect(result, isFalse);
     });
   });
+
+  group(
+    'processToolCalls – assign_task_labels suppressed-only short-circuit '
+    '(lines 1213-1233)',
+    () {
+      test(
+        'skips processAssignment when every requested label is suppressed',
+        () async {
+          // LabelAssignmentProcessor's constructor resolves getIt<DomainLogger>
+          // even though processAssignment is never reached on this path.
+          final mockDomainLogger = MockDomainLogger();
+          if (!getIt.isRegistered<DomainLogger>()) {
+            getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+          }
+          addTearDown(() {
+            if (getIt.isRegistered<DomainLogger>()) {
+              getIt.unregister<DomainLogger>();
+            }
+          });
+
+          // Both requested labels (X, Y) are on the task's suppression set, so
+          // `proposed` becomes empty while `requested` is non-empty, taking the
+          // suppressed-only short-circuit (builds the skipped list + noop result
+          // and logs it, then continues without assigning).
+          final task = Task(
+            meta: _createMetadata(id: 'task-suppressed-only'),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15),
+                utcOffset: 0,
+              ),
+              title: 'Suppressed Labels Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              aiSuppressedLabelIds: const {'X', 'Y'},
+            ),
+          );
+
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              _createMockMessageToolCall(
+                id: 'suppressed-labels',
+                functionName: LabelFunctions.assignTaskLabels,
+                arguments: '{"labelIds":["X","Y"]}',
+              ),
+            ],
+            task: task,
+          );
+
+          // languageWasSet is never flipped by label assignment.
+          expect(result, isFalse);
+          // The short-circuit must NOT persist anything: processAssignment is
+          // skipped, so addLabels is never invoked.
+          verifyNever(
+            () => mockLabelsRepository.addLabels(
+              journalEntityId: any(named: 'journalEntityId'),
+              addedLabelIds: any(named: 'addedLabelIds'),
+            ),
+          );
+        },
+      );
+    },
+  );
+
+  group(
+    'processToolCalls – update_checklist_items refreshes task on success '
+    '(line 1085 onTaskUpdated)',
+    () {
+      test(
+        'invokes onTaskUpdated after a successful item update',
+        () async {
+          final task = Task(
+            meta: _createMetadata(id: 'task-update-success'),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15),
+                utcOffset: 0,
+              ),
+              title: 'Update Success Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              checklistIds: const ['checklist-1'],
+            ),
+          );
+
+          // A real checklist item that belongs to the task's checklist and is
+          // currently unchecked — flipping isChecked is a genuine change.
+          final checklistItem = ChecklistItem(
+            meta: _createMetadata(id: 'item-1'),
+            data: const ChecklistItemData(
+              title: 'Buy milk',
+              isChecked: false,
+              linkedChecklists: ['checklist-1'],
+              // Agent-owned so the sovereignty guard allows the override.
+              checkedBy: ChangeSource.agent,
+            ),
+          );
+
+          // executeUpdates fetches items via entriesForIds(...).get() and
+          // converts each row back through fromDbEntity, so we round-trip the
+          // real ChecklistItem through toDbEntity.
+          final mockSelectable = MockSelectableSimple<JournalDbEntity>();
+          when(
+            mockSelectable.get,
+          ).thenAnswer((_) async => [toDbEntity(checklistItem)]);
+          when(
+            () => mockJournalDb.entriesForIds(['item-1']),
+          ).thenReturn(mockSelectable);
+
+          // The actual write succeeds, driving successCount > 0.
+          when(
+            () => mockChecklistRepo.updateChecklistItem(
+              checklistItemId: 'item-1',
+              data: any(named: 'data'),
+              taskId: task.id,
+            ),
+          ).thenAnswer((_) async => true);
+
+          // After a successful update the handler re-fetches the task; returning
+          // a Task triggers the onTaskUpdated callback (line 1085) which swaps
+          // currentTask for the refreshed instance.
+          final refreshedTask = task.copyWith(
+            data: task.data.copyWith(title: 'Refreshed Task Title'),
+          );
+          when(
+            () => mockJournalDb.journalEntityById(task.id),
+          ).thenAnswer((_) async => refreshedTask);
+
+          final result = await repository!.processToolCalls(
+            toolCalls: [
+              _createMockMessageToolCall(
+                id: 'update-success',
+                functionName: ChecklistCompletionFunctions.updateChecklistItems,
+                arguments:
+                    '{"items":[{"id":"item-1","isChecked":true,'
+                    '"reason":"Confirmed done in the latest standup notes"}]}',
+              ),
+            ],
+            task: task,
+          );
+
+          // update_checklist_items never sets language.
+          expect(result, isFalse);
+          // The write must have happened with the flipped, agent-stamped state.
+          verify(
+            () => mockChecklistRepo.updateChecklistItem(
+              checklistItemId: 'item-1',
+              data: any(
+                named: 'data',
+                that: isA<ChecklistItemData>()
+                    .having((d) => d.isChecked, 'isChecked', true)
+                    .having(
+                      (d) => d.checkedBy,
+                      'checkedBy',
+                      ChangeSource.agent,
+                    ),
+              ),
+              taskId: task.id,
+            ),
+          ).called(1);
+          // The success branch re-fetched the task to refresh currentTask,
+          // proving the onTaskUpdated callback path executed.
+          verify(() => mockJournalDb.journalEntityById(task.id)).called(1);
+        },
+      );
+    },
+  );
 }
 
 // Helper methods to create test objects

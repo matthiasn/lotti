@@ -205,6 +205,14 @@ class SlowQueryInterceptor extends QueryInterceptor {
     return _SlowQueryFileSink.instance.flushAll();
   }
 
+  /// Number of paths with an in-flight (or not-yet-cleaned-up) chained write.
+  ///
+  /// Exposed only so tests can assert that completed writes are removed from
+  /// the per-path tracking map instead of leaking forever.
+  @visibleForTesting
+  static int get pendingWriteCountForTest =>
+      _SlowQueryFileSink.instance.pendingWriteCount;
+
   Future<T> _measure<T>({
     required String operation,
     required String statement,
@@ -398,12 +406,20 @@ class _SlowQueryFileSink {
       }
     });
 
-    _pendingWritesByPath[path] = next.whenComplete(() {
-      if (identical(_pendingWritesByPath[path], next)) {
+    late final Future<void> tracked;
+    tracked = next.whenComplete(() {
+      // Only drop the entry if no newer write has superseded this one. The
+      // stored value and the compared value must be the SAME object, so we
+      // compare against `tracked` (what we put in the map), not `next` (the
+      // inner future, which is a distinct object after `whenComplete`).
+      if (identical(_pendingWritesByPath[path], tracked)) {
         _pendingWritesByPath.remove(path);
       }
     });
+    _pendingWritesByPath[path] = tracked;
   }
+
+  int get pendingWriteCount => _pendingWritesByPath.length;
 
   Future<void> flushAll() async {
     await Future.wait(_pendingWritesByPath.values.toList(growable: false));

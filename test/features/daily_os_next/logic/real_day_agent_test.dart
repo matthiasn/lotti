@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -2186,6 +2189,370 @@ void main() {
       const ex = DayAgentInteractionException('oops');
       expect(ex.toString(), contains('oops'));
       expect(ex.message, 'oops');
+    });
+  });
+
+  group('RealDayAgent.draftDayPlan cancellation + baseline supersede', () {
+    late MockDayAgentCaptureService captureService;
+    late MockDayAgentPlanService planService;
+    late MockDayAgentService dayAgentService;
+    late MockJournalDb journalDb;
+    late RealDayAgent adapter;
+
+    setUp(() {
+      captureService = MockDayAgentCaptureService();
+      planService = MockDayAgentPlanService();
+      dayAgentService = MockDayAgentService();
+      journalDb = MockJournalDb();
+      adapter = RealDayAgent(
+        captureService: captureService,
+        planService: planService,
+        dayAgentService: dayAgentService,
+        journalDb: journalDb,
+        mockFallback: MockDayAgent(),
+      );
+    });
+
+    DayPlanEntity buildDayPlan({
+      required String agentId,
+      required String dayId,
+      required DateTime updatedAt,
+      List<PlannedBlock> blocks = const <PlannedBlock>[],
+    }) {
+      return AgentDomainEntity.dayPlan(
+            id: 'day_agent_plan:$dayId',
+            agentId: agentId,
+            dayId: dayId,
+            planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
+            data: DayPlanData(
+              planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: blocks,
+            ),
+            createdAt: updatedAt,
+            updatedAt: updatedAt,
+            vectorClock: null,
+          )
+          as DayPlanEntity;
+    }
+
+    void stubIdentity(String agentId) {
+      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: agentId,
+          agentId: agentId,
+          kind: AgentKinds.dayAgent,
+        ),
+      );
+    }
+
+    void stubEnqueueOk() {
+      when(
+        () => dayAgentService.enqueueDraftingWake(
+          dayDate: any(named: 'dayDate'),
+          captureId: any(named: 'captureId'),
+          decidedTaskIds: any(named: 'decidedTaskIds'),
+          decidedCaptureItemIds: any(named: 'decidedCaptureItemIds'),
+        ),
+      ).thenAnswer((_) async => true);
+    }
+
+    test(
+      'throws immediately when isCancelled is true on the first poll check '
+      'before any delay',
+      () {
+        const agentId = 'agent-cancel-1';
+        stubIdentity(agentId);
+        stubEnqueueOk();
+        // Baseline read returns null; the loop should never reach a second
+        // draftPlanForDay read because cancellation fires first.
+        when(
+          () => planService.draftPlanForDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        Object? caught;
+        fakeAsync((async) {
+          final fakeClock = async.getClock(_asOf);
+          withClock(fakeClock, () {
+            unawaited(() async {
+              try {
+                await adapter.draftDayPlan(
+                  captureId: const CaptureId('cap'),
+                  decidedTaskIds: const [],
+                  dayDate: _asOf,
+                  isCancelled: () => true,
+                );
+              } catch (e) {
+                caught = e;
+              }
+            }());
+          });
+          async.flushMicrotasks();
+        });
+
+        expect(caught, isA<DayAgentInteractionException>());
+        expect(
+          (caught! as DayAgentInteractionException).message,
+          contains('cancelled by caller'),
+        );
+        // Only the baseline read happened — cancellation short-circuited the
+        // loop before the post-delay read.
+        verify(
+          () => planService.draftPlanForDay(
+            agentId: agentId,
+            dayId: dayAgentIdForDate(_asOf),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'throws on the second poll check after the delay when cancellation '
+      'arrives mid-poll',
+      () {
+        const agentId = 'agent-cancel-2';
+        stubIdentity(agentId);
+        stubEnqueueOk();
+        when(
+          () => planService.draftPlanForDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        var checks = 0;
+        Object? caught;
+        fakeAsync((async) {
+          final fakeClock = async.getClock(_asOf);
+          withClock(fakeClock, () {
+            unawaited(() async {
+              try {
+                await adapter.draftDayPlan(
+                  captureId: const CaptureId('cap'),
+                  decidedTaskIds: const [],
+                  dayDate: _asOf,
+                  // false on the first (pre-delay) check, true on the second
+                  // (post-delay) check.
+                  isCancelled: () {
+                    checks += 1;
+                    return checks >= 2;
+                  },
+                );
+              } catch (e) {
+                caught = e;
+              }
+            }());
+          });
+          // Drive the 500ms poll delay so the second cancel check runs.
+          async
+            ..elapse(const Duration(milliseconds: 500))
+            ..flushMicrotasks();
+        });
+
+        expect(checks, 2);
+        expect(caught, isA<DayAgentInteractionException>());
+        expect(
+          (caught! as DayAgentInteractionException).message,
+          contains('cancelled by caller'),
+        );
+      },
+    );
+
+    test(
+      'returns the freshly drafted plan once a baseline is superseded by a '
+      'newer updatedAt',
+      () {
+        const agentId = 'agent-baseline';
+        final dayId = dayAgentIdForDate(_asOf);
+        final baselineAt = _asOf;
+        final supersededAt = _asOf.add(const Duration(seconds: 30));
+        stubIdentity(agentId);
+        stubEnqueueOk();
+        when(
+          () => journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+
+        var reads = 0;
+        when(
+          () => planService.draftPlanForDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer((_) async {
+          reads += 1;
+          // First read is the (non-null) baseline; later reads return a plan
+          // with a strictly newer updatedAt so the supersede branch fires.
+          return buildDayPlan(
+            agentId: agentId,
+            dayId: dayId,
+            updatedAt: reads == 1 ? baselineAt : supersededAt,
+            blocks: reads == 1
+                ? const <PlannedBlock>[]
+                : [
+                    PlannedBlock(
+                      id: 'block_fresh',
+                      categoryId: 'work',
+                      startTime: _asOf.add(const Duration(hours: 1)),
+                      endTime: _asOf.add(const Duration(hours: 2)),
+                      title: 'Fresh block',
+                    ),
+                  ],
+          );
+        });
+
+        DraftPlan? result;
+        fakeAsync((async) {
+          final fakeClock = async.getClock(_asOf);
+          withClock(fakeClock, () {
+            adapter
+                .draftDayPlan(
+                  captureId: const CaptureId('cap'),
+                  decidedTaskIds: const [],
+                  dayDate: _asOf,
+                )
+                .then((plan) => result = plan);
+          });
+          // One poll interval is enough to read the superseded plan.
+          async
+            ..elapse(const Duration(milliseconds: 500))
+            ..flushMicrotasks();
+        });
+
+        expect(result, isNotNull);
+        expect(result!.blocks, hasLength(1));
+        expect(result!.blocks.single.title, 'Fresh block');
+        // Baseline read + at least one post-delay read.
+        expect(reads, greaterThanOrEqualTo(2));
+      },
+    );
+  });
+
+  group('RealDayAgent.proposePlanDiff cancellation', () {
+    late MockDayAgentCaptureService captureService;
+    late MockDayAgentPlanService planService;
+    late MockDayAgentService dayAgentService;
+    late MockJournalDb journalDb;
+    late RealDayAgent adapter;
+
+    setUp(() {
+      captureService = MockDayAgentCaptureService();
+      planService = MockDayAgentPlanService();
+      dayAgentService = MockDayAgentService();
+      journalDb = MockJournalDb();
+      adapter = RealDayAgent(
+        captureService: captureService,
+        planService: planService,
+        dayAgentService: dayAgentService,
+        journalDb: journalDb,
+        mockFallback: MockDayAgent(),
+      );
+    });
+
+    DraftPlan buildCurrentPlan() => DraftPlan(
+      dayDate: _asOf,
+      blocks: const [],
+      bands: const [],
+      capacityMinutes: 480,
+      scheduledMinutes: 0,
+    );
+
+    void stubReady(String agentId) {
+      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: agentId,
+          agentId: agentId,
+          kind: AgentKinds.dayAgent,
+        ),
+      );
+      when(
+        () => planService.pendingPlanDiffsForDay(
+          agentId: any(named: 'agentId'),
+          dayId: any(named: 'dayId'),
+        ),
+      ).thenAnswer((_) async => const <ChangeSetEntity>[]);
+      when(
+        () => dayAgentService.enqueueRefineWake(
+          dayDate: any(named: 'dayDate'),
+          transcript: any(named: 'transcript'),
+        ),
+      ).thenAnswer((_) async => true);
+    }
+
+    test('throws on the first poll check when isCancelled is true', () {
+      const agentId = 'agent-prop-cancel-1';
+      stubReady(agentId);
+
+      Object? caught;
+      fakeAsync((async) {
+        final fakeClock = async.getClock(_asOf);
+        withClock(fakeClock, () {
+          unawaited(() async {
+            try {
+              await adapter.proposePlanDiff(
+                currentPlan: buildCurrentPlan(),
+                voiceTranscript: 'move it',
+                isCancelled: () => true,
+              );
+            } catch (e) {
+              caught = e;
+            }
+          }());
+        });
+        async.flushMicrotasks();
+      });
+
+      expect(caught, isA<DayAgentInteractionException>());
+      expect(
+        (caught! as DayAgentInteractionException).message,
+        contains('cancelled by caller'),
+      );
+      // Only the baseline diff read happened before cancellation.
+      verify(
+        () => planService.pendingPlanDiffsForDay(
+          agentId: agentId,
+          dayId: dayAgentIdForDate(_asOf),
+        ),
+      ).called(1);
+    });
+
+    test('throws on the second poll check after the delay', () {
+      const agentId = 'agent-prop-cancel-2';
+      stubReady(agentId);
+
+      var checks = 0;
+      Object? caught;
+      fakeAsync((async) {
+        final fakeClock = async.getClock(_asOf);
+        withClock(fakeClock, () {
+          unawaited(() async {
+            try {
+              await adapter.proposePlanDiff(
+                currentPlan: buildCurrentPlan(),
+                voiceTranscript: 'move it',
+                isCancelled: () {
+                  checks += 1;
+                  return checks >= 2;
+                },
+              );
+            } catch (e) {
+              caught = e;
+            }
+          }());
+        });
+        async
+          ..elapse(const Duration(milliseconds: 500))
+          ..flushMicrotasks();
+      });
+
+      expect(checks, 2);
+      expect(caught, isA<DayAgentInteractionException>());
+      expect(
+        (caught! as DayAgentInteractionException).message,
+        contains('cancelled by caller'),
+      );
     });
   });
 }

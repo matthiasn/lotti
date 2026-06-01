@@ -4139,22 +4139,28 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('UnifiedDailyOsDataController - refresh concurrency (line 174)', () {
-    /// When a second notification arrives while _refreshInFlight is true,
-    /// _pendingRefresh should be set so a follow-up refresh happens once the
-    /// in-flight one completes.
+    /// When a second notification arrives while a refresh is already in-flight
+    /// (`_refreshInFlight == true`), `_refreshFromNotifications` takes the
+    /// early-return branch at line 174: it sets `_pendingRefresh = true` and
+    /// returns, so the in-flight refresh loops once more after it completes.
+    ///
+    /// To reliably exercise this, the FIRST refresh's `_fetchAllData` must stay
+    /// pending while the second notification fires. We block the refresh's
+    /// `getDayPlan` on a Completer that we control.
     test('queues second refresh when one is already in-flight', () {
       fakeAsync((async) {
-        // The first getDayPlan call blocks until we complete the completer;
-        // subsequent calls return immediately so the queued refresh runs.
-        final firstCallCompleter = Completer<DayPlanEntry?>();
+        // getDayPlan call 1 -> initial build (resolves immediately).
+        // getDayPlan call 2 -> first refresh fetch (blocks on completer so the
+        //   refresh stays in-flight while the 2nd notification arrives).
+        // getDayPlan call 3 -> queued re-run triggered by line 174 (returns a
+        //   plan with a block so we can observe the queued refresh ran).
+        final refreshFetchCompleter = Completer<DayPlanEntry?>();
         var callCount = 0;
 
         when(() => mockDayPlanRepository.getDayPlan(testDate)).thenAnswer((_) {
           callCount++;
-          if (callCount == 1) return firstCallCompleter.future;
-          // Second initial load
-          if (callCount == 2) return Future.value(createTestPlan());
-          // Queued refresh call (after in-flight completes)
+          if (callCount == 1) return Future.value(createTestPlan());
+          if (callCount == 2) return refreshFetchCompleter.future;
           return Future.value(
             createTestPlan(
               plannedBlocks: [
@@ -4175,35 +4181,45 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
 
-        // Start initial load (completes via firstCallCompleter)
+        // Initial load fully completes (_hasLoadedInitialData = true).
         container.read(
           unifiedDailyOsDataControllerProvider(date: testDate).future,
         );
         async.flushMicrotasks();
 
-        // First notification triggers _refreshFromNotifications.
-        // Because initial load is still pending, _pendingRefresh is set but
-        // no in-flight yet. Complete initial load so _hasLoadedInitialData = true.
-        firstCallCompleter.complete(createTestPlan());
-        async.flushMicrotasks();
-
-        // Now fire two notifications back-to-back. The first starts a refresh
-        // (in-flight); the second should set _pendingRefresh (line 174).
+        // First notification -> starts a refresh whose fetch (call 2) blocks on
+        // refreshFetchCompleter. The refresh is now in-flight.
         updateStreamController.add({planId});
         async.flushMicrotasks();
-        // While the first refresh is in-flight, send another:
+        expect(callCount, equals(2)); // initial + in-flight refresh fetch
+
+        // Second notification WHILE the first refresh is in-flight ->
+        // _refreshInFlight is true, so line 174 sets _pendingRefresh and returns
+        // without starting a new fetch (callCount stays 2).
         updateStreamController.add({planId});
         async.flushMicrotasks();
+        expect(callCount, equals(2));
 
-        // Allow both refreshes to complete
-        // ignore: cascade_invocations
+        // Completing the in-flight fetch lets the do/while loop see the queued
+        // _pendingRefresh and run exactly one more fetch (call 3).
+        refreshFetchCompleter.complete(createTestPlan());
         async.flushMicrotasks();
 
-        // After all is settled, getDayPlan should have been called at least 3x
-        // (initial + 2 refreshes), confirming the queued path was taken.
+        expect(callCount, equals(3));
         verify(
           () => mockDayPlanRepository.getDayPlan(testDate),
-        ).called(greaterThanOrEqualTo(2));
+        ).called(3);
+
+        // The queued refresh's data (block from call 3) is the final state,
+        // proving the line-174 re-run actually applied fresh data.
+        final state = container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate),
+        );
+        expect(state.value?.dayPlan.data.plannedBlocks, hasLength(1));
+        expect(
+          state.value?.dayPlan.data.plannedBlocks.first.id,
+          equals('queued-block'),
+        );
       });
     });
   });
@@ -4343,47 +4359,87 @@ void main() {
   group(
     'UnifiedDailyOsDataController - disposed _fetchAllData (lines 290-294 & 863-867)',
     () {
+      /// `_fetchAllData` short-circuits to an empty [DailyOsData] when the
+      /// controller is already disposed (lines 290-294), building its timeline
+      /// via `_createEmptyTimelineData` (lines 863-867).
+      ///
+      /// The only reachable caller that invokes `_fetchAllData` without first
+      /// guarding on `_isDisposed` is `build`'s post-load
+      /// `if (_pendingRefresh) _refreshFromNotifications()` (line 108-110): the
+      /// first iteration of `_refreshFromNotifications`'s do/while always runs
+      /// one fetch. So we:
+      ///   1. Block the INITIAL load so `_hasLoadedInitialData` is still false.
+      ///   2. Fire a notification -> listener sets `_pendingRefresh = true`.
+      ///   3. Dispose the container -> `_isDisposed = true`.
+      ///   4. Complete the initial load -> `build` resumes, sees
+      ///      `_pendingRefresh`, calls `_refreshFromNotifications`, whose first
+      ///      `_fetchAllData()` now hits the disposed early-return.
+      ///
+      /// Observable signal: the disposed branch returns BEFORE touching the DB
+      /// or repository again, so `getDayPlan` / `sortedCalendarEntries` are each
+      /// called exactly once (initial load only). Without the early-return the
+      /// post-load refresh would fetch a second time (cf. the "queues one
+      /// refresh during initial load" test which sees `getDayPlan` called 2x).
       test(
-        'returns empty data when controller is disposed before fetch runs',
-        () async {
-          // Set up normal mocks
-          when(
-            () => mockDayPlanRepository.getDayPlan(testDate),
-          ).thenAnswer((_) async => createTestPlan());
-          when(
-            () => mockDb.sortedCalendarEntries(
-              rangeStart: any(named: 'rangeStart'),
-              rangeEnd: any(named: 'rangeEnd'),
-            ),
-          ).thenAnswer((_) async => []);
+        'short-circuits the post-load refresh fetch when disposed',
+        () {
+          fakeAsync((async) {
+            final initialLoadCompleter = Completer<DayPlanEntry?>();
 
-          // Read and await the initial result so the controller is alive.
-          final result = await container.read(
-            unifiedDailyOsDataControllerProvider(date: testDate).future,
-          );
-
-          // Verify normal load works first
-          expect(result.date, equals(testDate));
-
-          // Dispose the container — this sets _isDisposed = true on the notifier.
-          container.dispose();
-
-          // Recreate a fresh container to test the disposed path.
-          // We do this by examining _createEmptyTimelineData output indirectly:
-          // When _isDisposed is true, _fetchAllData returns an empty DailyOsData.
-          // That path initialises timelineData via _createEmptyTimelineData
-          // (lines 863-867), which should have dayStartHour=8, dayEndHour=18.
-          expect(result.timelineData.dayStartHour, equals(8));
-          expect(result.timelineData.dayEndHour, equals(18));
-
-          // Recreate container so tearDown can dispose it safely.
-          container = ProviderContainer(
-            overrides: [
-              dayPlanRepositoryProvider.overrideWithValue(
-                mockDayPlanRepository,
+            when(
+              () => mockDayPlanRepository.getDayPlan(testDate),
+            ).thenAnswer((_) => initialLoadCompleter.future);
+            when(
+              () => mockDb.sortedCalendarEntries(
+                rangeStart: any(named: 'rangeStart'),
+                rangeEnd: any(named: 'rangeEnd'),
               ),
-            ],
-          );
+            ).thenAnswer((_) async => []);
+
+            // Start the build; the initial _fetchAllData blocks on the completer.
+            container.read(
+              unifiedDailyOsDataControllerProvider(date: testDate).future,
+            );
+            async.flushMicrotasks();
+
+            // Notification during initial load -> _pendingRefresh = true.
+            updateStreamController.add({planId});
+            async.flushMicrotasks();
+
+            // Dispose before the initial load resolves -> _isDisposed = true.
+            container.dispose();
+            async.flushMicrotasks();
+
+            // Resolve the initial load. build resumes, sees _pendingRefresh and
+            // calls _refreshFromNotifications, whose first _fetchAllData() takes
+            // the disposed early-return (lines 290-294 + 863-867) instead of
+            // fetching again.
+            initialLoadCompleter.complete(createTestPlan());
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(milliseconds: 1))
+              ..flushMicrotasks();
+
+            // Exactly one fetch: the disposed branch never re-queried the DB.
+            verify(
+              () => mockDayPlanRepository.getDayPlan(testDate),
+            ).called(1);
+            verify(
+              () => mockDb.sortedCalendarEntries(
+                rangeStart: any(named: 'rangeStart'),
+                rangeEnd: any(named: 'rangeEnd'),
+              ),
+            ).called(1);
+
+            // Recreate container so tearDown can dispose it safely.
+            container = ProviderContainer(
+              overrides: [
+                dayPlanRepositoryProvider.overrideWithValue(
+                  mockDayPlanRepository,
+                ),
+              ],
+            );
+          });
         },
       );
     },

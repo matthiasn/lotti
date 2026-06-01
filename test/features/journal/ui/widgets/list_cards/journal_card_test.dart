@@ -8,6 +8,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -32,6 +33,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:lotti/widgets/events/event_status.dart';
@@ -174,6 +176,117 @@ void main() {
 
       expect(find.byType(ModernJournalCard), findsOneWidget);
       expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+    });
+
+    testWidgets('renders image entry body text in compact mode', (
+      tester,
+    ) async {
+      // Exercises the JournalImage branch of _buildBody, rendering its
+      // entryText via _buildTextContent. In compact mode the plain text is
+      // rendered directly so we can assert on the displayed content.
+      final imageEntry = testImageEntry;
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: imageEntry, isCompact: true),
+        ),
+      );
+
+      expect(find.byType(ModernJournalCard), findsOneWidget);
+      expect(find.text(imageEntry.entryText!.plainText), findsOneWidget);
+    });
+
+    testWidgets('audio icon uses active color when transcripts present', (
+      tester,
+    ) async {
+      // transcripts != null && isNotEmpty -> onSurfaceVariant color branch.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: testAudioEntryWithTranscripts),
+        ),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(ModernJournalCard),
+      );
+      final micIcon = tester.widget<Icon>(find.byIcon(Icons.mic_rounded));
+      expect(micIcon.color, context.colorScheme.onSurfaceVariant);
+    });
+
+    testWidgets('audio icon uses muted error color without transcripts', (
+      tester,
+    ) async {
+      // transcripts empty/null -> errorColor.withValues(alpha: 0.4) branch.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: testAudioEntry),
+        ),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(ModernJournalCard),
+      );
+      final micIcon = tester.widget<Icon>(find.byIcon(Icons.mic_rounded));
+      expect(
+        micIcon.color,
+        context.colorScheme.error.withValues(alpha: 0.4),
+      );
+    });
+
+    testWidgets('renders day plan entry with custom label', (tester) async {
+      // DayPlanEntry branch of _buildBody using the provided dayLabel.
+      final dayPlanEntry = JournalEntity.dayPlan(
+        meta: Metadata(
+          id: 'day-plan-id',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          categoryId: 'test-category-id',
+        ),
+        data: DayPlanData(
+          planDate: DateTime(2024, 3, 15),
+          status: const DayPlanStatus.draft(),
+          dayLabel: 'Focused Workday',
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: dayPlanEntry),
+        ),
+      );
+
+      expect(find.byType(ModernJournalCard), findsOneWidget);
+      expect(find.text('Focused Workday'), findsOneWidget);
+    });
+
+    testWidgets('renders day plan entry with fallback label', (tester) async {
+      // DayPlanEntry branch with null dayLabel -> localized fallback.
+      final dayPlanEntry = JournalEntity.dayPlan(
+        meta: Metadata(
+          id: 'day-plan-fallback-id',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          categoryId: 'test-category-id',
+        ),
+        data: DayPlanData(
+          planDate: DateTime(2024, 3, 15),
+          status: const DayPlanStatus.draft(),
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: dayPlanEntry),
+        ),
+      );
+
+      expect(find.byType(ModernJournalCard), findsOneWidget);
+      // Falls back to the localized "Day Plan" label.
+      expect(find.text('Day Plan'), findsOneWidget);
     });
 
     testWidgets('renders task entry with title', (tester) async {

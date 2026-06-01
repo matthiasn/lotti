@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:beamer/beamer.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -9,12 +10,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    as ai_repo;
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
@@ -22,6 +33,8 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/theming/state/theming_controller.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
@@ -32,9 +45,12 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
+import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
@@ -217,6 +233,7 @@ Future<void> _pumpAppScreen(
   required MockNavService navService,
   MockJournalDb? journalDb,
   Size viewportSize = _phoneViewportSize,
+  AudioRecorderState? audioRecorderState,
   List<Override> extraOverrides = const [],
 }) async {
   _useViewport(tester, viewportSize);
@@ -259,14 +276,15 @@ Future<void> _pumpAppScreen(
         journalDbProvider.overrideWithValue(effectiveJournalDb),
         audioRecorderControllerProvider.overrideWith(
           () => _TestAudioRecorderController(
-            AudioRecorderState(
-              status: AudioRecorderStatus.stopped,
-              progress: Duration.zero,
-              vu: -20,
-              dBFS: -160,
-              showIndicator: false,
-              modalVisible: false,
-            ),
+            audioRecorderState ??
+                AudioRecorderState(
+                  status: AudioRecorderStatus.stopped,
+                  progress: Duration.zero,
+                  vu: -20,
+                  dBFS: -160,
+                  showIndicator: false,
+                  modalVisible: false,
+                ),
           ),
         ),
         shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
@@ -307,6 +325,7 @@ Future<void> _pumpAppScreenCustomProviders(
   Future<bool> Function(Ref)? shouldAutoShowWhatsNew,
   AiSetupPromptService Function()? aiSetupPromptOverride,
   WhatsNewController Function()? whatsNewOverride,
+  List<Override> extraOverrides = const [],
 }) async {
   _useViewport(tester, viewportSize);
 
@@ -369,6 +388,7 @@ Future<void> _pumpAppScreenCustomProviders(
         ),
         currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
         tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+        ...extraOverrides,
       ],
       child: MaterialApp.router(
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
@@ -386,12 +406,22 @@ Future<void> _pumpAppScreenCustomProviders(
   await tester.pump();
 }
 
-Future<void> _registerAppScreenGetIt(MockNavService navService) async {
+Future<void> _registerAppScreenGetIt(
+  MockNavService navService, {
+  JournalEntity? runningTimer,
+}) async {
   final mockTimeService = MockTimeService();
-  when(mockTimeService.getStream).thenAnswer(_emptyTimeStream);
-  // SidebarTimerSection seeds its StreamBuilder with getCurrent() so it
-  // doesn't flicker on first frame when a timer is already running.
-  when(mockTimeService.getCurrent).thenReturn(null);
+  if (runningTimer != null) {
+    when(
+      mockTimeService.getStream,
+    ).thenAnswer((_) => Stream<JournalEntity?>.value(runningTimer));
+    when(mockTimeService.getCurrent).thenReturn(runningTimer);
+  } else {
+    when(mockTimeService.getStream).thenAnswer(_emptyTimeStream);
+    // SidebarTimerSection seeds its StreamBuilder with getCurrent() so it
+    // doesn't flicker on first frame when a timer is already running.
+    when(mockTimeService.getCurrent).thenReturn(null);
+  }
 
   await setUpTestGetIt(
     additionalSetup: () {
@@ -407,6 +437,12 @@ Stream<JournalEntity?> _emptyTimeStream(Invocation _) =>
     const Stream<JournalEntity?>.empty();
 
 void main() {
+  setUpAll(() {
+    // The AI provider FTUE path stubs AiConfigRepository.getConfigsByType,
+    // whose argument is an AiConfigType — mocktail needs a fallback for `any()`.
+    registerFallbackValue(AiConfigType.inferenceProvider);
+  });
+
   group('Navigation Index Clamping Logic Tests', () {
     test('clamps index when optional tabs are disabled and index is high', () {
       final clampedIndex = calculateClampedIndex(
@@ -1444,6 +1480,498 @@ void main() {
       },
     );
   });
+
+  group('AppScreen listener happy-path side effects', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        ..physicalSize = const Size(800, 1200)
+        ..devicePixelRatio = 1.0;
+    });
+    tearDown(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+    });
+
+    testWidgets(
+      "shouldAutoShowWhatsNew data(true) shows the What's New modal",
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        // shouldAutoShowWhatsNew resolves to true → the post-frame callback in
+        // AppScreen invokes WhatsNewModal.show. whatsNewController reports no
+        // unseen content, so WhatsNewModal.show takes its empty-modal branch
+        // ("You're all caught up!"), which is enough to prove the listener's
+        // data(true) arm ran and opened the modal.
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          shouldAutoShowWhatsNew: (ref) async => true,
+          whatsNewOverride: _EmptyWhatsNewController.new,
+        );
+
+        // Let the post-frame callback fire and the modal route animate in.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text("You're all caught up!"), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'aiSetupPrompt data(true) opens the AI provider selection modal',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        // aiSetupPromptService resolves to true → post-frame callback runs
+        // _showAiSetupPrompt, which opens AiProviderSelectionModal.
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          aiSetupPromptOverride: _ShowAiSetupPromptService.new,
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(AiProviderSelectionModal), findsOneWidget);
+        expect(find.text('Set Up AI Features'), findsOneWidget);
+
+        // Dismiss the modal so the route is torn down before the widget is
+        // disposed (avoids a dangling dialog route in teardown).
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'AI modal "Don\'t Show Again" runs onDismiss → dismissPrompt',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        var dismissCount = 0;
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          aiSetupPromptOverride: () =>
+              _DismissCountingAiSetupPromptService(() => dismissCount++),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(AiProviderSelectionModal), findsOneWidget);
+
+        // Tap "Don't Show Again": the modal pops, then a post-frame callback
+        // inside AiProviderSelectionModal.show invokes the onDismiss lambda
+        // wired in _showAiSetupPrompt, which calls dismissPrompt().
+        await tester.tap(find.text("Don't Show Again"));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(dismissCount, 1);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'AI modal Continue runs onProviderSelected → navigateToCreateProvider',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        final mockAiConfigRepo = MockAiConfigRepository();
+        when(
+          () => mockAiConfigRepo.getConfigsByType(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAiConfigRepo.watchConfigsByType(any()),
+        ).thenAnswer((_) => const Stream.empty());
+
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          aiSetupPromptOverride: _ShowAiSetupPromptService.new,
+          extraOverrides: [
+            ai_repo.aiConfigRepositoryProvider.overrideWithValue(
+              mockAiConfigRepo,
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(AiProviderSelectionModal), findsOneWidget);
+
+        // Select the Gemini provider, then tap Continue. The modal pops with
+        // the chosen type and a post-frame callback invokes onProviderSelected,
+        // which routes through AiSettingsNavigationService.navigateToCreateProvider
+        // and pushes the InferenceProviderEditPage onto the navigator.
+        await tester.tap(find.text('Google Gemini'));
+        await tester.pump();
+        await tester.tap(find.text('Continue'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The provider-create page was pushed (the FTUE "Set Up AI" entry).
+        expect(find.byType(AiProviderSelectionModal), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+  });
+
+  group('AppScreen desktop sidebar aboveSettings gaps', () {
+    testWidgets(
+      'inserts wake→below gap when wakes visible and a timer is running',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        // A running timer makes hasTimer (and therefore hasBelowWake) true.
+        await _registerAppScreenGetIt(
+          mockNavService,
+          runningTimer: _runningTimerEntry,
+        );
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+          extraOverrides: [
+            // Enable the wake-queue section and give it an ongoing wake so
+            // sidebarWakeQueueHasVisibleContent → true.
+            configFlagProvider(showSidebarWakeQueueFlag).overrideWith(
+              (ref) => Stream<bool>.value(true),
+            ),
+            ongoingWakeRecordsProvider.overrideWith(
+              (ref) async => [
+                OngoingWakeRecord(
+                  agentId: 'agent-1',
+                  title: 'Running wake',
+                  startedAt: DateTime(2024, 3, 15, 10),
+                ),
+              ],
+            ),
+            pendingWakeRecordsProvider.overrideWith((ref) async => const []),
+          ],
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The wake card renders, proving wakesVisible == true. With a running
+        // timer, the wake→below spacer takes its non-zero (step3) branch.
+        expect(find.byType(SidebarWakeQueue), findsOneWidget);
+        expect(find.byType(SidebarTimerSection), findsOneWidget);
+        final tokens = tester
+            .element(find.byType(SidebarWakeQueue))
+            .designTokens;
+        final gap = _aboveSettingsGapHeight(
+          tester,
+          belowChildType: SidebarAudioRecordingSection,
+        );
+        expect(gap, tokens.spacing.step3);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'inserts audio→timer gap when recording and a timer is running',
+      (tester) async {
+        // Audio recording is hidden on Flatpak builds, so audioVisible can
+        // never be true there — the gap stays at 0. Skip on Flatpak hosts.
+        if (_isFlatpakTestHost()) {
+          return;
+        }
+
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(
+          mockNavService,
+          runningTimer: _runningTimerEntry,
+        );
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+          // Active recording (modal not visible) → audioVisible == true.
+          audioRecorderState: AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: Duration.zero,
+            vu: -20,
+            dBFS: -40,
+            showIndicator: true,
+            modalVisible: false,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final tokens = tester
+            .element(find.byType(SidebarAudioRecordingSection))
+            .designTokens;
+        final gap = _aboveSettingsGapHeight(
+          tester,
+          belowChildType: SidebarTimerSection,
+        );
+        expect(gap, tokens.spacing.step3);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+  });
+
+  group('MyBeamerApp activity tracking and focus', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        ..physicalSize = const Size(800, 1200)
+        ..devicePixelRatio = 1.0;
+    });
+    tearDown(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+    });
+
+    testWidgets(
+      'pointer events call updateActivity and a tap unfocuses primary focus',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: const Stream<int>.empty(),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        final spyActivity = _SpyUserActivityService();
+        addTearDown(spyActivity.dispose);
+
+        final mockMatrix = MockMatrixService();
+        when(
+          mockMatrix.getIncomingKeyVerificationStream,
+        ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+        when(
+          () => mockMatrix.incomingKeyVerificationRunnerStream,
+        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+
+        final mockOutboxService = MockOutboxService();
+        when(
+          () => mockOutboxService.notLoggedInGateStream,
+        ).thenAnswer((_) => const Stream<void>.empty());
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              themingControllerProvider.overrideWith(
+                _ReadyThemingController.new,
+              ),
+              enableTooltipsProvider.overrideWith((ref) => Stream.value(true)),
+              zoomControllerProvider.overrideWith(_TestZoomController.new),
+              agentInitializationProvider.overrideWith((ref) async {}),
+              matrixServiceProvider.overrideWithValue(mockMatrix),
+              loginStateStreamProvider.overrideWith(
+                (ref) => Stream.value(LoginState.loggedIn),
+              ),
+              outboxServiceProvider.overrideWithValue(mockOutboxService),
+              aiSetupPromptServiceProvider.overrideWith(
+                _MockAiSetupPromptService.new,
+              ),
+              audioRecorderControllerProvider.overrideWith(
+                () => _TestAudioRecorderController(
+                  AudioRecorderState(
+                    status: AudioRecorderStatus.stopped,
+                    progress: Duration.zero,
+                    vu: -20,
+                    dBFS: -160,
+                    showIndicator: false,
+                    modalVisible: false,
+                  ),
+                ),
+              ),
+              shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
+              savedTaskFiltersControllerProvider.overrideWith(
+                () => _StubSavedTaskFiltersController(const []),
+              ),
+              currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
+              tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+            ],
+            child: MyBeamerApp(
+              navService: mockNavService,
+              userActivityService: spyActivity,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // The full app tree is up (not the loading shell).
+        expect(find.byType(ZoomWrapper), findsOneWidget);
+        expect(find.byType(DesktopMenuWrapper), findsOneWidget);
+
+        // A pointer-down on the app surface drives the Listener callbacks.
+        final gesture = await tester.startGesture(const Offset(20, 20));
+        final afterDown = spyActivity.updateCount;
+        expect(afterDown, greaterThan(0));
+        await gesture.moveBy(const Offset(5, 5));
+        await gesture.up();
+        await tester.pump();
+        expect(spyActivity.updateCount, greaterThan(afterDown));
+
+        // A scroll wheel signal drives onPointerSignal → updateActivity.
+        final beforeSignal = spyActivity.updateCount;
+        final pointer = TestPointer(2, PointerDeviceKind.mouse);
+        await tester.sendEventToBinding(
+          pointer.hover(const Offset(30, 30)),
+        );
+        await tester.sendEventToBinding(
+          pointer.scroll(const Offset(0, 20)),
+        );
+        await tester.pump();
+        expect(spyActivity.updateCount, greaterThan(beforeSignal));
+
+        // Trackpad pan/zoom gestures drive the panZoom* listeners.
+        final beforePanZoom = spyActivity.updateCount;
+        final trackpad = TestPointer(3, PointerDeviceKind.trackpad);
+        await tester.sendEventToBinding(
+          trackpad.panZoomStart(const Offset(40, 40)),
+        );
+        await tester.sendEventToBinding(
+          trackpad.panZoomUpdate(const Offset(40, 40), pan: const Offset(5, 5)),
+        );
+        await tester.sendEventToBinding(trackpad.panZoomEnd());
+        await tester.pump();
+        expect(spyActivity.updateCount, greaterThan(beforePanZoom + 1));
+
+        // Focus a node inside the app, then tap empty space: the outer
+        // GestureDetector.onTap clears the primary focus.
+        final node = FocusNode();
+        addTearDown(node.dispose);
+        final context = tester.element(find.byType(ZoomWrapper));
+        FocusScope.of(context).requestFocus(node);
+        await tester.pump();
+        expect(FocusManager.instance.primaryFocus, node);
+
+        await tester.tapAt(const Offset(20, 20));
+        await tester.pump();
+        expect(FocusManager.instance.primaryFocus, isNot(node));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+  });
+}
+
+/// Reads the height of the animated gap [SizedBox] that sits immediately above
+/// [belowChildType] inside the desktop sidebar's `aboveSettings` column. The gap
+/// is an `AnimatedSize` wrapping a single `SizedBox`, and it is the element that
+/// directly precedes [belowChildType] in the column's `children` list.
+double _aboveSettingsGapHeight(
+  WidgetTester tester, {
+  required Type belowChildType,
+}) {
+  // The aboveSettings column is the one that contains the SidebarTimerSection
+  // and uses MainAxisSize.min with a stretch cross-axis.
+  final column = tester
+      .widgetList<Column>(find.byType(Column))
+      .firstWhere(
+        (c) =>
+            c.mainAxisSize == MainAxisSize.min &&
+            c.crossAxisAlignment == CrossAxisAlignment.stretch &&
+            c.children.any((w) => w is SidebarTimerSection),
+      );
+
+  final children = column.children;
+  final sectionIndex = children.indexWhere(
+    (w) => w.runtimeType == belowChildType,
+  );
+  // The gap AnimatedSize precedes the section directly.
+  final gapWidget = children[sectionIndex - 1] as AnimatedSize;
+  final sizedBox = gapWidget.child! as SizedBox;
+  return sizedBox.height ?? 0;
 }
 
 class _ArbitraryLocation extends BeamLocation<BeamState> {
@@ -1494,6 +2022,77 @@ class _ErrorAiSetupPromptService extends AiSetupPromptService {
   @override
   Future<bool> build() async => throw Exception('ai-setup-error');
 }
+
+/// An [AiSetupPromptService] that resolves to `true`, so the `data(true)`
+/// arm of the listener in [AppScreen] runs `_showAiSetupPrompt` and opens
+/// the AI provider selection modal.
+class _ShowAiSetupPromptService extends AiSetupPromptService {
+  @override
+  Future<bool> build() async => true;
+}
+
+/// Like [_ShowAiSetupPromptService] but records [dismissPrompt] invocations so
+/// tests can assert the modal's "Don't Show Again" wiring runs onDismiss.
+class _DismissCountingAiSetupPromptService extends AiSetupPromptService {
+  _DismissCountingAiSetupPromptService(this.onDismiss);
+  final void Function() onDismiss;
+
+  @override
+  Future<bool> build() async => true;
+
+  @override
+  Future<void> dismissPrompt() async {
+    onDismiss();
+    state = const AsyncData(false);
+  }
+}
+
+/// A [WhatsNewController] with no unseen releases, used so the What's New modal
+/// takes its empty ("You're all caught up!") branch — enough to prove the
+/// `shouldAutoShowWhatsNew` data(true) arm opened the modal.
+class _EmptyWhatsNewController extends WhatsNewController {
+  @override
+  Future<WhatsNewState> build() async => const WhatsNewState();
+}
+
+/// Ready theming state so [MyBeamerApp] renders the full app tree instead of
+/// the "Loading..." shell.
+class _ReadyThemingController extends ThemingController {
+  @override
+  ThemingState build() => ThemingState(
+    darkTheme: resolveTestTheme(ThemeData.dark()),
+    lightTheme: resolveTestTheme(ThemeData.light()),
+  );
+}
+
+class _TestZoomController extends ZoomController {
+  @override
+  double build() => defaultZoomScale;
+}
+
+/// Counts [updateActivity] calls so the [MyBeamerApp] pointer listeners can be
+/// asserted on.
+class _SpyUserActivityService extends UserActivityService {
+  int updateCount = 0;
+
+  @override
+  void updateActivity() {
+    updateCount++;
+    super.updateActivity();
+  }
+}
+
+/// A running-timer journal entry so the desktop sidebar's TimeService stream
+/// reports `hasTimer == true`.
+final JournalEntity _runningTimerEntry = JournalEntity.journalEntry(
+  meta: Metadata(
+    id: 'running-timer',
+    createdAt: DateTime(2024, 3, 15, 10),
+    updatedAt: DateTime(2024, 3, 15, 10),
+    dateFrom: DateTime(2024, 3, 15, 10),
+    dateTo: DateTime(2024, 3, 15, 10, 5),
+  ),
+);
 
 /// A single unseen release used to seed [_UnseenToSeenWhatsNewController] so
 /// that its first state genuinely has `hasUnseenRelease == true`.

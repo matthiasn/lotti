@@ -30,10 +30,6 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   /// while keeping retry logic intact. Production code should use the default.
   static Duration retryBaseDelay = const Duration(seconds: 2);
 
-  // Toggle for verbose streaming logs useful during debugging. Disabled by
-  // default to avoid console noise in production.
-  static const bool kVerboseStreamLogging = false;
-
   /// Model prefix for Gemma 4 family (supports thinking mode).
   static const String _gemma4Prefix = 'gemma4';
 
@@ -436,12 +432,6 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
           // Cast message once to avoid dynamic calls
           final message = json['message'] as Map<String, dynamic>?;
-          if (kVerboseStreamLogging) {
-            developer.log(
-              'Ollama response chunk: $chunk',
-              name: 'OllamaInferenceRepository',
-            );
-          }
 
           // Check if this is a tool call response
           if (message != null) {

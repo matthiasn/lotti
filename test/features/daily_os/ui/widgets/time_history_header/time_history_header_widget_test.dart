@@ -1,10 +1,12 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
+import 'package:lotti/features/daily_os/ui/widgets/time_history_header/day_segment.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_header_widget.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_stream_chart.dart';
 
@@ -36,6 +38,25 @@ class ErrorTimeHistoryController extends TimeHistoryHeaderController {
   @override
   Future<TimeHistoryData> build() {
     throw Exception('forced error');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Notifier that first resolves with data (so the widget renders DaySegments),
+// then can be flipped into AsyncError. A synchronously-throwing build() stays
+// in AsyncLoading inside the test harness, so to exercise the *error* branch of
+// historyDataAsync.when (line 386) we transition AsyncData -> AsyncError.
+// ---------------------------------------------------------------------------
+class TransitionToErrorController extends TimeHistoryHeaderController {
+  TransitionToErrorController(this._data);
+
+  final TimeHistoryData _data;
+
+  @override
+  Future<TimeHistoryData> build() async => _data;
+
+  void emitError() {
+    state = AsyncError(Exception('forced error'), StackTrace.current);
   }
 }
 
@@ -89,6 +110,66 @@ void main() {
         // The skeleton renders Containers with fixed dimensions as placeholders
         final containers = tester.widgetList<Container>(find.byType(Container));
         // At least the skeleton items (14 containers: 2 per 7 items)
+        expect(containers.length, greaterThanOrEqualTo(7));
+      },
+    );
+
+    testWidgets(
+      'transitions from day segments to skeleton when state becomes error',
+      (tester) async {
+        // A synchronously-throwing build() stays in AsyncLoading inside the
+        // test harness, so the error closure on line 386 of
+        // time_history_header_widget.dart never runs. To exercise that branch
+        // we render real data first (DaySegments visible) and then flip the
+        // notifier to AsyncError, which routes historyDataAsync.when through
+        // the error: callback that rebuilds the skeleton.
+        tester.view.physicalSize = const Size(800, 200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final historyData = createTestHistoryData(
+          days: createTestDays(count: 3),
+        );
+        final controller = TransitionToErrorController(historyData);
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              dailyOsSelectedDateProvider.overrideWith(
+                () => TestDailyOsSelectedDate(testDate),
+              ),
+              timeHistoryHeaderControllerProvider.overrideWith(
+                () => controller,
+              ),
+              unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+                () => TestUnifiedController(createUnifiedData()),
+              ),
+              dayBudgetStatsProvider(date: testDate).overrideWith(
+                (ref) async => const DayBudgetStats(
+                  totalPlanned: Duration.zero,
+                  totalRecorded: Duration.zero,
+                  budgetCount: 0,
+                  overBudgetCount: 0,
+                ),
+              ),
+            ],
+            child: const TimeHistoryHeader(),
+          ),
+        );
+        await tester.pump();
+
+        // Data state: real DaySegments are rendered (data: branch, not error).
+        expect(find.byType(DaySegment), findsWidgets);
+
+        // Flip the notifier into AsyncError — drives historyDataAsync.when
+        // through the error: (_, _) => _buildDaySelectorSkeleton() branch.
+        controller.emitError();
+        await tester.pump();
+
+        // The error skeleton replaces the day selector: no more DaySegments,
+        // and the 7-item placeholder ListView is shown instead.
+        expect(find.byType(DaySegment), findsNothing);
+        final containers = tester.widgetList<Container>(find.byType(Container));
         expect(containers.length, greaterThanOrEqualTo(7));
       },
     );

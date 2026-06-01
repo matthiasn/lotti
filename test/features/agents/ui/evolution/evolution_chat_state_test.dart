@@ -276,6 +276,53 @@ void main() {
           expect(data.messages[1], isA<EvolutionSurfaceMessage>());
         },
       );
+
+      test(
+        'abandons the active session on dispose, swallowing failures',
+        () async {
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Welcome!');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(),
+              modelId: 'model-1',
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(null);
+          // Fail the abandon on dispose to exercise the catchError log branch.
+          // Return a failing Future (not a sync throw) so the production
+          // `.catchError` handler is the one that catches it.
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) => Future<void>.error(Exception('abandon failed')));
+
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
+
+          // Disposing the provider runs ref.onDispose, which abandons the
+          // still-active session. The failing future must be swallowed
+          // (logged via catchError) without surfacing an error.
+          container.invalidate(evolutionChatStateProvider(kTestTemplateId));
+          await Future<void>.value();
+
+          verify(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).called(1);
+        },
+      );
     });
 
     group('sendMessage', () {
@@ -526,6 +573,88 @@ void main() {
               sessionId: 'session-1',
             ),
           ).called(1);
+        },
+      );
+
+      test(
+        'falls back to recap content when the recap tldr is blank',
+        () async {
+          final approvedVersion = makeTestTemplateVersion(version: 2);
+          // Whitespace-only tldr forces the fallback to recap content.
+          const recap = PendingRitualRecap(
+            tldr: '   ',
+            content: '## Recap\n\nFalling back to the full recap content.',
+          );
+
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Please review this proposal.');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(),
+              modelId: 'model-1',
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(
+            const PendingProposal(
+              generalDirective: 'new directives',
+              reportDirective: '',
+              rationale: 'Better fit for the user.',
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentRecap(sessionId: 'session-1'),
+          ).thenReturn(recap);
+          when(
+            () => mockWorkflow.approveProposal(
+              sessionId: 'session-1',
+            ),
+          ).thenAnswer((_) async => approvedVersion);
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
+
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
+
+          await withClock(
+            testClock,
+            () => container
+                .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+                .approveProposal(),
+          );
+
+          final data = container
+              .read(evolutionChatStateProvider(kTestTemplateId))
+              .value!;
+
+          // The assistant bubble uses the trimmed recap content, not the
+          // blank tldr.
+          final assistantMessages = data.messages
+              .whereType<EvolutionAssistantMessage>()
+              .toList();
+          expect(
+            assistantMessages.any((m) => m.text == recap.content.trim()),
+            isTrue,
+          );
+          expect(
+            data.messages.whereType<EvolutionSystemMessage>().any(
+              (m) => m.text == 'session_completed:2',
+            ),
+            isTrue,
+          );
         },
       );
 
@@ -1041,6 +1170,204 @@ void main() {
               sessionId: 'session-1',
             ),
           ).called(1);
+        },
+      );
+    });
+
+    group('GenUI soul proposal actions', () {
+      test(
+        'soul_proposal_approved callback routes through approveSoulProposal',
+        () async {
+          final processor = SurfaceController(
+            catalogs: [buildEvolutionCatalog()],
+          );
+          final bridge = GenUiBridge(processor: processor);
+          final eventHandler = GenUiEventHandler(processor: processor)
+            ..listen();
+          final soulVersion = makeTestSoulDocumentVersion(version: 4);
+
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Review the soul proposal.');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(genUiBridge: bridge),
+              modelId: 'model-1',
+              processor: processor,
+              genUiBridge: bridge,
+              eventHandler: eventHandler,
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(null);
+          when(
+            () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
+          ).thenAnswer((_) async => soulVersion);
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
+
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
+
+          await withClock(testClock, () async {
+            eventHandler.onSoulProposalAction?.call(
+              'surface-1',
+              'soul_proposal_approved',
+            );
+            await Future<void>.value();
+          });
+
+          final data = container
+              .read(evolutionChatStateProvider(kTestTemplateId))
+              .value!;
+          expect(
+            data.messages.whereType<EvolutionSystemMessage>().any(
+              (m) => m.text == 'soul_version_created:v4',
+            ),
+            isTrue,
+          );
+          verify(
+            () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'soul_proposal_rejected callback routes through rejectSoulProposal',
+        () async {
+          final processor = SurfaceController(
+            catalogs: [buildEvolutionCatalog()],
+          );
+          final bridge = GenUiBridge(processor: processor);
+          final eventHandler = GenUiEventHandler(processor: processor)
+            ..listen();
+
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Review the soul proposal.');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(genUiBridge: bridge),
+              modelId: 'model-1',
+              processor: processor,
+              genUiBridge: bridge,
+              eventHandler: eventHandler,
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(null);
+          when(
+            () => mockWorkflow.rejectSoulProposal(sessionId: 'session-1'),
+          ).thenReturn(null);
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
+
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
+
+          withClock(testClock, () {
+            eventHandler.onSoulProposalAction?.call(
+              'surface-1',
+              'soul_proposal_rejected',
+            );
+          });
+
+          final data = container
+              .read(evolutionChatStateProvider(kTestTemplateId))
+              .value!;
+          expect(
+            data.messages.whereType<EvolutionSystemMessage>().any(
+              (m) => m.text == 'soul_proposal_rejected',
+            ),
+            isTrue,
+          );
+          verify(
+            () => mockWorkflow.rejectSoulProposal(sessionId: 'session-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'unknown soul proposal action is ignored',
+        () async {
+          final processor = SurfaceController(
+            catalogs: [buildEvolutionCatalog()],
+          );
+          final bridge = GenUiBridge(processor: processor);
+          final eventHandler = GenUiEventHandler(processor: processor)
+            ..listen();
+
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Review the soul proposal.');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(genUiBridge: bridge),
+              modelId: 'model-1',
+              processor: processor,
+              genUiBridge: bridge,
+              eventHandler: eventHandler,
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(null);
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
+
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
+
+          withClock(testClock, () {
+            eventHandler.onSoulProposalAction?.call('surface-1', 'noop_action');
+          });
+
+          // Neither approve nor reject should have been triggered.
+          verifyNever(
+            () => mockWorkflow.approveSoulProposal(
+              sessionId: any(named: 'sessionId'),
+            ),
+          );
+          verifyNever(
+            () => mockWorkflow.rejectSoulProposal(
+              sessionId: any(named: 'sessionId'),
+            ),
+          );
         },
       );
     });

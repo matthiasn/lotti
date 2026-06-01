@@ -31,3 +31,17 @@ ignore:
   # integration tests rather than unit-mocked. Line coverage here is
   # misleading and churns on every wiring change.
   - "lib/get_it.dart"
+  # Platform/native-gated code: macOS/iOS notification delivery, desktop
+  # window + menu integration, XDG desktop portals (screenshots, location),
+  # and the native image picker. These paths require a real desktop session
+  # / OS services and cannot be exercised by the headless Linux CI test
+  # runner, so their line coverage is structurally misleading.
+  - "lib/services/notification_service.dart"
+  - "lib/services/window_service.dart"
+  - "lib/widgets/misc/desktop_menu.dart"
+  - "lib/utils/screenshots.dart"
+  - "lib/utils/location.dart"
+  - "lib/services/portals/portal_service.dart"
+  - "lib/services/portals/screenshot_portal_service.dart"
+  - "lib/services/linux_location_portal.dart"
+  - "lib/logic/image_import.dart"

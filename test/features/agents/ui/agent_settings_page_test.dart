@@ -84,6 +84,76 @@ void main() {
     await tearDownTestGetIt();
   });
 
+  List<Override> buildOverrides({
+    List<AgentDomainEntity> templates = const [],
+    List<AgentDomainEntity> souls = const [],
+    List<AgentDomainEntity> agents = const [],
+    List<AgentDomainEntity> evolutions = const [],
+    List<PendingWakeRecord> pendingWakes = const [],
+    Map<String, String?> subjectTitles = const {},
+    List<Override> extraOverrides = const [],
+  }) {
+    return [
+      agentTemplatesProvider.overrideWith(
+        (ref) async => templates,
+      ),
+      activeTemplateVersionProvider.overrideWith(
+        (ref, templateId) async => makeTestTemplateVersion(
+          agentId: templateId,
+        ),
+      ),
+      allSoulDocumentsProvider.overrideWith(
+        (ref) async => souls,
+      ),
+      activeSoulVersionProvider.overrideWith(
+        (ref, soulId) async => makeTestSoulDocumentVersion(
+          agentId: soulId,
+        ),
+      ),
+      allAgentInstancesProvider.overrideWith(
+        (ref) async => agents,
+      ),
+      allEvolutionSessionsProvider.overrideWith(
+        (ref) async => evolutions,
+      ),
+      agentInstanceVmsProvider.overrideWith(
+        (ref) async => _makeInstanceVms(
+          agents: agents,
+          evolutions: evolutions,
+        ),
+      ),
+      agentIsRunningProvider.overrideWith(
+        (ref, agentId) => Stream.value(false),
+      ),
+      templateForAgentProvider.overrideWith(
+        (ref, agentId) async => null,
+      ),
+      pendingWakeRecordsProvider.overrideWith(
+        (ref) async => pendingWakes,
+      ),
+      pendingWakeTargetTitleProvider.overrideWith(
+        (ref, String? entryId) async => subjectTitles[entryId],
+      ),
+      hourlyWakeActivityProvider.overrideWith((ref) async => const []),
+      dailyTokenUsageProvider.overrideWith(
+        (ref, days) async => const <DailyTokenUsage>[],
+      ),
+      tokenUsageComparisonProvider.overrideWith(
+        (ref, days) async => const TokenUsageComparison(
+          averageTokensByTimeOfDay: 0,
+          todayTokens: 0,
+        ),
+      ),
+      dailyTokenUsageByModelProvider.overrideWith(
+        (ref, days) async => const <String, List<DailyTokenUsage>>{},
+      ),
+      tokenSourceBreakdownProvider.overrideWith(
+        (ref) async => const <TokenSourceBreakdown>[],
+      ),
+      ...extraOverrides,
+    ];
+  }
+
   Widget buildSubject({
     List<AgentDomainEntity> templates = const [],
     List<AgentDomainEntity> souls = const [],
@@ -96,65 +166,15 @@ void main() {
     return makeTestableWidgetNoScroll(
       const AgentSettingsPage(),
       theme: DesignSystemTheme.light(),
-      overrides: [
-        agentTemplatesProvider.overrideWith(
-          (ref) async => templates,
-        ),
-        activeTemplateVersionProvider.overrideWith(
-          (ref, templateId) async => makeTestTemplateVersion(
-            agentId: templateId,
-          ),
-        ),
-        allSoulDocumentsProvider.overrideWith(
-          (ref) async => souls,
-        ),
-        activeSoulVersionProvider.overrideWith(
-          (ref, soulId) async => makeTestSoulDocumentVersion(
-            agentId: soulId,
-          ),
-        ),
-        allAgentInstancesProvider.overrideWith(
-          (ref) async => agents,
-        ),
-        allEvolutionSessionsProvider.overrideWith(
-          (ref) async => evolutions,
-        ),
-        agentInstanceVmsProvider.overrideWith(
-          (ref) async => _makeInstanceVms(
-            agents: agents,
-            evolutions: evolutions,
-          ),
-        ),
-        agentIsRunningProvider.overrideWith(
-          (ref, agentId) => Stream.value(false),
-        ),
-        templateForAgentProvider.overrideWith(
-          (ref, agentId) async => null,
-        ),
-        pendingWakeRecordsProvider.overrideWith(
-          (ref) async => pendingWakes,
-        ),
-        pendingWakeTargetTitleProvider.overrideWith(
-          (ref, String? entryId) async => subjectTitles[entryId],
-        ),
-        hourlyWakeActivityProvider.overrideWith((ref) async => const []),
-        dailyTokenUsageProvider.overrideWith(
-          (ref, days) async => const <DailyTokenUsage>[],
-        ),
-        tokenUsageComparisonProvider.overrideWith(
-          (ref, days) async => const TokenUsageComparison(
-            averageTokensByTimeOfDay: 0,
-            todayTokens: 0,
-          ),
-        ),
-        dailyTokenUsageByModelProvider.overrideWith(
-          (ref, days) async => const <String, List<DailyTokenUsage>>{},
-        ),
-        tokenSourceBreakdownProvider.overrideWith(
-          (ref) async => const <TokenSourceBreakdown>[],
-        ),
-        ...extraOverrides,
-      ],
+      overrides: buildOverrides(
+        templates: templates,
+        souls: souls,
+        agents: agents,
+        evolutions: evolutions,
+        pendingWakes: pendingWakes,
+        subjectTitles: subjectTitles,
+        extraOverrides: extraOverrides,
+      ),
     );
   }
 
@@ -1089,6 +1109,167 @@ void main() {
 
         ctx = tester.element(find.byType(AgentSettingsPage));
         expect(find.text(ctx.messages.agentSoulsEmptyFiltered), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'AgentSettingsBody forwards initialTab to AgentSettingsPage so the '
+      'Settings V2 leaf opens on the requested tab',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AgentSettingsBody(initialTab: AgentSettingsTab.souls),
+            theme: DesignSystemTheme.light(),
+            overrides: buildOverrides(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The body must wrap an AgentSettingsPage carrying the same
+        // initialTab, and that page must land on the Souls tab.
+        final page = tester.widget<AgentSettingsPage>(
+          find.byType(AgentSettingsPage),
+        );
+        expect(page.initialTab, AgentSettingsTab.souls);
+
+        final context = tester.element(find.byType(AgentSettingsPage));
+        expect(
+          find.text(context.messages.agentSoulsEmptyFiltered),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'desktop mode with a null route falls through to the local fallback '
+      '(initialTab) instead of throwing',
+      (tester) async {
+        // Desktop URL-driven branch, but the route notifier is still
+        // null (no settings sub-route resolved yet). _resolveTabFromRoute
+        // must return _localFallback — seeded from initialTab — so the
+        // page renders the requested tab rather than crashing.
+        final routeNotifier = ValueNotifier<DesktopSettingsRoute?>(null);
+        addTearDown(routeNotifier.dispose);
+        final mockNavService = MockNavService();
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedSettingsRoute,
+        ).thenReturn(routeNotifier);
+        when(() => mockNavService.currentPath).thenReturn('/settings/agents');
+        when(mockNavService.beamBack).thenReturn(null);
+        getIt.registerSingleton<NavService>(mockNavService);
+        addTearDown(() => getIt.unregister<NavService>());
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AgentSettingsPage(initialTab: AgentSettingsTab.souls),
+            theme: DesignSystemTheme.light(),
+            overrides: buildOverrides(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Souls tab body (the local fallback) is on stage; sibling
+        // bodies are not.
+        final context = tester.element(find.byType(AgentSettingsPage));
+        expect(
+          find.text(context.messages.agentSoulsEmptyFiltered),
+          findsOneWidget,
+        );
+        expect(find.byType(TokenStatsTab), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tab tap while url-driven beams to the per-tab URL instead of '
+      'mutating local state',
+      (tester) async {
+        // The in-page tab bar is only rendered in mobile mode, so we
+        // render it with isDesktopMode=false (bar shown, _onTabSelected
+        // wired), then flip the mock to desktop so the live _isUrlDriven
+        // read inside _onTabSelected takes the beam branch on tap.
+        var desktop = false;
+        final routeNotifier = ValueNotifier<DesktopSettingsRoute?>(null);
+        addTearDown(routeNotifier.dispose);
+        final mockNavService = MockNavService();
+        when(() => mockNavService.isDesktopMode).thenAnswer((_) => desktop);
+        when(
+          () => mockNavService.desktopSelectedSettingsRoute,
+        ).thenReturn(routeNotifier);
+        when(() => mockNavService.currentPath).thenReturn('/settings/agents');
+        when(mockNavService.beamBack).thenReturn(null);
+        getIt.registerSingleton<NavService>(mockNavService);
+        addTearDown(() => getIt.unregister<NavService>());
+
+        String? beamedPath;
+        beamToNamedOverride = (path) => beamedPath = path;
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSettingsPage));
+
+        // Flip to desktop without rebuilding the subtree: the tab bar
+        // stays mounted with its onSelected callback bound, but the
+        // next _isUrlDriven read returns true.
+        desktop = true;
+
+        await tester.tap(find.text(context.messages.agentSoulsTitle));
+        await tester.pump();
+
+        // Beamed to the canonical per-tab URL (exercises _urlForTab),
+        // and the local fallback was NOT mutated to Souls.
+        expect(beamedPath, '/settings/agents/souls');
+      },
+    );
+
+    testWidgets(
+      'tab bar distributes extra width evenly when tabs do not fill the '
+      'available width (wide layout)',
+      (tester) async {
+        // On a wide surface the five tabs do not fill the row, so
+        // _segmentWidths takes the extra-per-tab distribution branch.
+        // Each rendered tab is then wider than its natural width, and
+        // together they span the full available width.
+        tester.view.physicalSize = const Size(2400, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        // The tab strip lives in a horizontally scrolling view inside a
+        // LayoutBuilder; the inner Row holds one SizedBox per tab.
+        final scrollFinder = find.descendant(
+          of: find.byType(Scaffold),
+          matching: find.byType(SingleChildScrollView),
+        );
+        final innerRow = find.descendant(
+          of: scrollFinder,
+          matching: find.byType(Row),
+        );
+        final rowWidth = tester.getSize(innerRow.first).width;
+
+        // The width handed to _segmentWidths comes from the LayoutBuilder
+        // sized by the SingleChildScrollView's viewport (its own width).
+        final availableWidth = tester.getSize(scrollFinder.first).width;
+
+        // On the extra-per-tab branch the five cells are stretched to
+        // exactly fill the available width, so the inner Row spans the
+        // whole viewport (no horizontal overflow / scroll). On the
+        // natural-width branch the Row would be wider and scroll instead.
+        expect(rowWidth, moreOrLessEquals(availableWidth, epsilon: 1));
+
+        // Each tab cell is wider than its natural (text-only) width,
+        // confirming the surplus was distributed rather than left as
+        // scrollable slack. The Instances tab still resolves on tap.
+        final context = tester.element(find.byType(AgentSettingsPage));
+        await tester.tap(find.text(context.messages.agentInstancesTitle));
+        await tester.pumpAndSettle();
+        expect(
+          find.text(context.messages.agentInstancesPageTitle),
+          findsOneWidget,
+        );
       },
     );
   });

@@ -385,6 +385,119 @@ void main() {
       );
       expect(sizedBox.height, collapsedHeight);
     });
+
+    testWidgets('recomputes heights when region changes via didUpdateWidget', (
+      tester,
+    ) async {
+      // Drive didUpdateWidget's region-change branch: rebuild the SAME
+      // AnimatedTimelineRegion element with a different region and assert the
+      // collapsed height is recomputed from the new hour count.
+      var region = const CompressedRegion(startHour: 0, endHour: 4); // 4h
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                body: Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => setState(() {
+                        region = const CompressedRegion(
+                          startHour: 0,
+                          endHour: 10,
+                        ); // 10h
+                      }),
+                      child: const Text('Grow'),
+                    ),
+                    AnimatedTimelineRegion(
+                      region: region,
+                      isExpanded: false,
+                      normalHourHeight: 40,
+                      child: Container(color: Colors.blue),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      SizedBox animatedSizedBox() => tester.widget<SizedBox>(
+        find.descendant(
+          of: find.byType(AnimatedTimelineRegion),
+          matching: find.byType(SizedBox),
+        ),
+      );
+
+      // Initial collapsed height for 4 hours.
+      expect(animatedSizedBox().height, 4 * kCompressedHourHeight);
+
+      // Change the region (same element) -> didUpdateWidget recomputes heights.
+      await tester.tap(find.text('Grow'));
+      await tester.pumpAndSettle();
+
+      // Collapsed height now reflects the new 10-hour region.
+      expect(animatedSizedBox().height, 10 * kCompressedHourHeight);
+    });
+
+    testWidgets(
+      'recomputes expanded height when normalHourHeight changes via '
+      'didUpdateWidget',
+      (tester) async {
+        // Drive didUpdateWidget's normalHourHeight-change branch while expanded
+        // so the recomputed _expandedHeight is observable in the rendered box.
+        const region = CompressedRegion(startHour: 0, endHour: 6); // 6h
+        var normalHourHeight = 40.0;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: StatefulBuilder(
+              builder: (context, setState) {
+                return Scaffold(
+                  body: Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => setState(() {
+                          normalHourHeight = 60;
+                        }),
+                        child: const Text('Resize'),
+                      ),
+                      AnimatedTimelineRegion(
+                        region: region,
+                        isExpanded: true,
+                        normalHourHeight: normalHourHeight,
+                        child: Container(color: Colors.blue),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        SizedBox animatedSizedBox() => tester.widget<SizedBox>(
+          find.descendant(
+            of: find.byType(AnimatedTimelineRegion),
+            matching: find.byType(SizedBox),
+          ),
+        );
+
+        // Expanded height for 6 hours at 40px/hour.
+        expect(animatedSizedBox().height, 6 * 40.0);
+
+        // Change normalHourHeight (same element) -> heights recomputed.
+        await tester.tap(find.text('Resize'));
+        await tester.pumpAndSettle();
+
+        // Expanded height now reflects the new 60px/hour.
+        expect(animatedSizedBox().height, 6 * 60.0);
+      },
+    );
   });
 
   group('CompressedTimelineRegion edge cases', () {

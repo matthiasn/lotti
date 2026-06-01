@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 // animation library is not required for these assertions
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
@@ -1958,6 +1960,293 @@ void main() {
 
         // shouldRepaint was called; CustomPaint is still in the tree.
         expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Coverage: onToggleCollapse auto-scroll path (line 552).
+  //
+  // When a collapsed, collapsible entry is expanded AND its card top has been
+  // scrolled above the visible viewport, the delayed callback calls
+  // `Scrollable.ensureVisible` to bring it back into view. Reaching this
+  // requires a real Scrollable/viewport ancestor scrolled past the card so that
+  // `revealedOffset.offset < currentOffset` evaluates to true.
+  // ---------------------------------------------------------------------------
+
+  group('EntryDetailsContent coverage – auto-scroll on expand', () {
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockEditorStateService mockEditorStateService;
+    late MockTimeService mockTimeService;
+    late JournalDb mockJournalDb;
+
+    setUpAll(() {
+      setFakeDocumentsPath();
+      // EntryLink fallback for mocktail any() on updateLink(EntryLink).
+      registerFallbackValue(
+        EntryLink.basic(
+          id: 'fallback-link',
+          fromId: 'fallback-from',
+          toId: 'fallback-to',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        ),
+      );
+    });
+
+    setUp(() async {
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+      mockEditorStateService = MockEditorStateService();
+      mockTimeService = MockTimeService();
+      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+
+      final mockPersistenceLogic = MockPersistenceLogic();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<NavService>(MockNavService());
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
+      when(
+        () => mockEntitiesCacheService.getLabelById(any()),
+      ).thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
+
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+
+      when(
+        () => mockJournalDb.watchConfigFlags(),
+      ).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(any(), any()),
+      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
+
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    // Line 552: Scrollable.ensureVisible runs when the expanded card's top is
+    // above the current scroll offset. We embed the collapsible entry inside a
+    // scrollable, jump the scroll position below the card, then tap the chevron
+    // (collapsed → expand) so isExpanding=true and the delayed branch fires.
+    testWidgets(
+      'expanding a scrolled-past collapsed entry triggers ensureVisible',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenAnswer((_) async => true);
+
+        // Collapsed link so tapping the chevron expands (isExpanding=true).
+        final collapsedLink = EntryLink.basic(
+          id: 'link-autoscroll',
+          fromId: testTask.meta.id,
+          toId: testTextEntry.meta.id,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          collapsed: true,
+        );
+
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+              ],
+              // Fixed-height box gives the inner CustomScrollView a bounded
+              // viewport so we can scroll the entry above the visible area.
+              // A large cacheExtent keeps the entry's render object alive even
+              // after its top is scrolled just above the viewport, so the
+              // delayed callback can still resolve a render object + viewport.
+              child: SizedBox(
+                height: 400,
+                child: CustomScrollView(
+                  controller: scrollController,
+                  scrollCacheExtent: const ScrollCacheExtent.pixels(2000),
+                  slivers: [
+                    // Entry first (top at offset 0) so it is rendered on the
+                    // initial frame and we can capture its toggle closure.
+                    SliverToBoxAdapter(
+                      child: EntryDetailsContent(
+                        testTextEntry.meta.id,
+                        linkedFrom: testTask,
+                        link: collapsedLink,
+                      ),
+                    ),
+                    // Trailing filler so we can scroll past the entry.
+                    const SliverToBoxAdapter(child: SizedBox(height: 2000)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Grab the production onToggleCollapse closure while the header (and its
+        // chevron) is rendered at the top of the viewport (offset 0).
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        final header = tester.widget<EntryDetailHeader>(
+          find.byType(EntryDetailHeader),
+        );
+        final toggle = header.onToggleCollapse;
+        expect(toggle, isNotNull);
+
+        // Scroll down so the entry's card top (offset 0) is above the current
+        // scroll offset. The large cacheExtent keeps its render object alive.
+        scrollController.jumpTo(300);
+        await tester.pump();
+
+        // Invoke the expand toggle directly (collapsed → expand) so
+        // isExpanding=true and the delayed auto-scroll branch is scheduled.
+        toggle!();
+        await tester.pump();
+
+        // updateLink is called with collapsed flipped to false.
+        final captured = verify(
+          () => mockJournalRepository.updateLink(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        expect((captured.first as EntryLink).collapsed, isFalse);
+
+        final offsetBeforeDelay = scrollController.position.pixels;
+        expect(offsetBeforeDelay, 300);
+
+        // Advance past the 600 ms collapseAnimationDuration so the delayed
+        // callback runs. Because the card top (offset 0) is above the current
+        // offset (300), revealedOffset.offset < currentOffset, so
+        // Scrollable.ensureVisible is invoked (line 552).
+        await tester.pump(const Duration(milliseconds: 700));
+        // Let the 400 ms ensureVisible animation run.
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // ensureVisible scrolled the entry back toward the top: the offset has
+        // decreased from where it was when the delayed callback fired.
+        expect(
+          scrollController.position.pixels,
+          lessThan(offsetBeforeDelay),
+        );
+
+        await tester.pumpAndSettle();
+      },
+    );
+
+    // Negative control: when NOT scrolled past the card (offset 0), the
+    // revealedOffset.offset < currentOffset guard is false, so ensureVisible is
+    // never called and the scroll position stays put after the delay.
+    testWidgets(
+      'expanding an in-view collapsed entry does not auto-scroll',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenAnswer((_) async => true);
+
+        final collapsedLink = EntryLink.basic(
+          id: 'link-no-autoscroll',
+          fromId: testTask.meta.id,
+          toId: testTextEntry.meta.id,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          collapsed: true,
+        );
+
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+              ],
+              child: SizedBox(
+                height: 600,
+                child: CustomScrollView(
+                  controller: scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: EntryDetailsContent(
+                        testTextEntry.meta.id,
+                        linkedFrom: testTask,
+                        link: collapsedLink,
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 2000)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Entry is at the very top (offset 0) — nothing is scrolled past it.
+        expect(scrollController.position.pixels, 0);
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+
+        verify(
+          () => mockJournalRepository.updateLink(any()),
+        ).called(1);
+
+        // Run the delayed branch: card top (0) is not above current offset (0),
+        // so the guard is false and ensureVisible is skipped.
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Scroll position is unchanged — no auto-scroll occurred.
+        expect(scrollController.position.pixels, 0);
+
+        await tester.pumpAndSettle();
       },
     );
   });

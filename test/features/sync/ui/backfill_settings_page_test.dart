@@ -1076,4 +1076,277 @@ void main() {
       expect(find.textContaining('resurrect boom'), findsOneWidget);
     });
   });
+
+  // ----- Per-action "Processing…" CTA labels. ----- //
+  //
+  // Each recovery action swaps its CTA label to a "processing" string
+  // while its own controller op is in flight. We drive each flag true
+  // by hanging the underlying service call with a [Completer], then
+  // assert the row's button now carries the processing label, is busy,
+  // and is disabled. `populatedStats` (unresolvable=3, requested=2,
+  // missing=5) keeps every action enabled so each one is tappable.
+  group('BackfillSettingsBody · in-flight processing labels', () {
+    // Opens the advanced recovery group and returns the localized
+    // messages bundle for the body under test.
+    Future<AppLocalizations> openRecovery(WidgetTester tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(
+          child: SingleChildScrollView(child: BackfillSettingsBody()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final messages = messagesOf(tester);
+      await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
+      await tester.pumpAndSettle();
+      return messages;
+    }
+
+    // Asserts the button found by [processingLabel] is busy (no leading
+    // icon) and disabled, and that its idle [triggerLabel] is gone.
+    void expectBusy(
+      WidgetTester tester, {
+      required String triggerLabel,
+      required String processingLabel,
+    }) {
+      expect(find.text(triggerLabel), findsNothing);
+      final btn = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, processingLabel),
+      );
+      expect(btn.onPressed, isNull, reason: 'busy action must be disabled');
+      expect(btn.leadingIcon, isNull, reason: 'busy action hides its icon');
+    }
+
+    testWidgets(
+      'reset-unresolvable shows the resetting label while in flight',
+      (
+        tester,
+      ) async {
+        final completer = Completer<int>();
+        when(
+          () => mockSequenceService.resetUnresolvableEntries(),
+        ).thenAnswer((_) => completer.future);
+
+        final messages = await openRecovery(tester);
+
+        final btn = find.widgetWithText(
+          DesignSystemButton,
+          messages.backfillResetUnresolvableTrigger,
+        );
+        await tester.ensureVisible(btn);
+        await tester.pumpAndSettle();
+        await tester.tap(btn);
+        await tester.pump();
+
+        expectBusy(
+          tester,
+          triggerLabel: messages.backfillResetUnresolvableTrigger,
+          processingLabel: messages.backfillResetUnresolvableProcessing,
+        );
+
+        completer.complete(0);
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('re-request shows the re-requesting label while in flight', (
+      tester,
+    ) async {
+      final completer = Completer<int>();
+      when(
+        () => mockBackfillService.processReRequest(),
+      ).thenAnswer((_) => completer.future);
+
+      final messages = await openRecovery(tester);
+
+      final btn = find.widgetWithText(
+        DesignSystemButton,
+        messages.backfillReRequestTrigger,
+      );
+      await tester.ensureVisible(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(btn);
+      await tester.pump();
+
+      expectBusy(
+        tester,
+        triggerLabel: messages.backfillReRequestTrigger,
+        processingLabel: messages.backfillReRequestProcessing,
+      );
+
+      completer.complete(0);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('ask-peers shows the reopening label after confirm', (
+      tester,
+    ) async {
+      final completer = Completer<int>();
+      when(
+        () => mockSequenceService.resetAllUnresolvableEntries(),
+      ).thenAnswer((_) => completer.future);
+
+      final messages = await openRecovery(tester);
+
+      final btn = find.widgetWithText(
+        DesignSystemButton,
+        messages.backfillAskPeersTrigger(3),
+      );
+      await tester.ensureVisible(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+
+      // Confirm the dialog so the controller op actually kicks off.
+      await tester.tap(find.text(messages.backfillAskPeersConfirmAccept));
+      await tester.pump();
+
+      expectBusy(
+        tester,
+        triggerLabel: messages.backfillAskPeersTrigger(3),
+        processingLabel: messages.backfillAskPeersProcessing,
+      );
+
+      completer.complete(0);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('retire-stuck shows the retiring label after confirm', (
+      tester,
+    ) async {
+      final completer = Completer<int>();
+      when(
+        () => mockSequenceService.retireAgedOutRequestedEntries(
+          amnestyWindow: any(named: 'amnestyWindow'),
+        ),
+      ).thenAnswer((_) => completer.future);
+
+      final messages = await openRecovery(tester);
+
+      // Open count = missing (5) + requested (2) = 7.
+      final btn = find.widgetWithText(
+        DesignSystemButton,
+        messages.backfillRetireStuckTrigger(7),
+      );
+      await tester.ensureVisible(btn);
+      await tester.pumpAndSettle();
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(messages.backfillRetireStuckConfirmAccept));
+      await tester.pump();
+
+      expectBusy(
+        tester,
+        triggerLabel: messages.backfillRetireStuckTrigger(7),
+        processingLabel: messages.backfillRetireStuckProcessing,
+      );
+
+      completer.complete(0);
+      await tester.pumpAndSettle();
+    });
+  });
+
+  // ----- Queue rebind: _QueueDepthScope.didUpdateWidget. ----- //
+  //
+  // When the body rebuilds with a *different* InboundQueue instance,
+  // the scope cancels its old subscription, drops the stale `_latest`,
+  // resets `_liveSignalSeen`, and binds to the new queue. We exercise
+  // that by swapping `coordinator.queue` between rebuilds and proving
+  // the status row follows the NEW queue's stream — and that a late
+  // emission from the OLD queue is ignored.
+  group('BackfillSettingsBody · queue rebind', () {
+    testWidgets('rebinds to a new queue and ignores the stale one', (
+      tester,
+    ) async {
+      final matrixService = MockMatrixService();
+      final coordinator = MockQueuePipelineCoordinator();
+      final queueA = MockInboundQueue();
+      final queueB = MockInboundQueue();
+      final ctlA = StreamController<QueueDepthSignal>.broadcast();
+      final ctlB = StreamController<QueueDepthSignal>.broadcast();
+      addTearDown(ctlA.close);
+      addTearDown(ctlB.close);
+
+      const idleStats = QueueStats(
+        total: 0,
+        byProducer: {},
+        readyNow: 0,
+        oldestEnqueuedAt: null,
+      );
+      when(() => queueA.depthChanges).thenAnswer((_) => ctlA.stream);
+      when(() => queueB.depthChanges).thenAnswer((_) => ctlB.stream);
+      // ignore: unnecessary_lambdas
+      when(() => queueA.stats()).thenAnswer((_) async => idleStats);
+      // ignore: unnecessary_lambdas
+      when(() => queueB.stats()).thenAnswer((_) async => idleStats);
+
+      // `coordinator.queue` flips from A to B once we toggle this flag,
+      // letting a single body rebuild swap the queue identity that the
+      // scope sees in `didUpdateWidget`.
+      var useB = false;
+      when(() => matrixService.queueCoordinator).thenReturn(coordinator);
+      when(
+        () => coordinator.queue,
+      ).thenAnswer((_) => useB ? queueB : queueA);
+
+      getIt.registerSingleton<MatrixService>(matrixService);
+
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(
+          child: SingleChildScrollView(child: BackfillSettingsBody()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Queue A drives the inbound count to 11.
+      ctlA.add(
+        const QueueDepthSignal(
+          total: 11,
+          byProducer: {},
+          oldestEnqueuedAt: null,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('11'), findsWidgets);
+
+      // Swap to queue B and force a body rebuild via a stats refresh.
+      useB = true;
+      final messages = messagesOf(tester);
+      clearInteractions(mockSequenceService);
+      when(
+        () => mockSequenceService.getBackfillStats(),
+      ).thenAnswer((_) async => emptyStats);
+      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.pumpAndSettle();
+
+      // After the rebind `_latest` was reset to null, so the inbound
+      // cell falls back to 0 — A's "11" is gone.
+      expect(find.text('11'), findsNothing);
+
+      // A late emission from the OLD queue must NOT update the row.
+      ctlA.add(
+        const QueueDepthSignal(
+          total: 99,
+          byProducer: {},
+          oldestEnqueuedAt: null,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('99'), findsNothing);
+
+      // The NEW queue B drives the row instead.
+      ctlB.add(
+        const QueueDepthSignal(
+          total: 42,
+          byProducer: {},
+          oldestEnqueuedAt: null,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('42'), findsWidgets);
+
+      // Sanity: messages bundle resolved from the live body.
+      expect(messages.backfillStatusInboundQueue, isNotEmpty);
+    });
+  });
 }

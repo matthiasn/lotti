@@ -115,6 +115,29 @@ void main() {
     });
 
     group('processFunctionCall', () {
+      test('should fail when function name does not match', () {
+        // Arrange
+        final toolCall = TestDataFactory.createToolCall(
+          id: 'mismatch-call',
+          functionName: 'some_other_function',
+          arguments: '{"items": [{"title": "item1"}]}',
+        );
+
+        // Act
+        final result = handler.processFunctionCall(toolCall);
+
+        // Assert
+        expect(result.success, false);
+        expect(result.functionName, 'add_multiple_checklist_items');
+        expect(result.arguments, '{"items": [{"title": "item1"}]}');
+        expect(result.data, {'toolCallId': 'mismatch-call'});
+        expect(
+          result.error,
+          'Function name mismatch: expected '
+          '"add_multiple_checklist_items", got "some_other_function"',
+        );
+      });
+
       test('should process array of item objects (required)', () {
         // Arrange
         final toolCall = TestDataFactory.createToolCall(
@@ -1033,6 +1056,123 @@ void main() {
         // Also ensure the update callback fired with a Task
         expect(callbackInvoked, isTrue);
         expect(updatedTask, isA<Task>());
+      });
+
+      test(
+        'stops and skips callback when task is deleted after adding items',
+        () async {
+          // Arrange: existing-checklist path; the post-create refresh returns
+          // null (task was deleted), exercising the early-return branch.
+          var callbackInvoked = false;
+          handler = LottiBatchChecklistHandler(
+            task: testTask,
+            autoChecklistService: mockAutoChecklistService,
+            checklistRepository: mockChecklistRepository,
+            onTaskUpdated: (_) => callbackInvoked = true,
+          );
+
+          final taskWithChecklist = TestDataFactory.createTask(
+            id: testTask.meta.id,
+            checklistIds: ['checklist-1'],
+          );
+
+          final result = FunctionCallResult(
+            success: true,
+            functionName: 'add_multiple_checklist_items',
+            arguments: '',
+            data: {
+              'items': [
+                {'title': 'cheese'},
+                {'title': 'tomatoes'},
+              ],
+              'taskId': taskWithChecklist.meta.id,
+            },
+          );
+
+          // First lookup (line 198) returns the task with a checklist; the
+          // post-create refresh (line 292) returns null → task deleted.
+          var lookupCount = 0;
+          when(
+            () => mockJournalDb.journalEntityById(taskWithChecklist.meta.id),
+          ).thenAnswer((_) async {
+            lookupCount++;
+            return lookupCount == 1 ? taskWithChecklist : null;
+          });
+
+          when(
+            () => mockChecklistRepository.addItemToChecklist(
+              checklistId: 'checklist-1',
+              title: any(named: 'title'),
+              isChecked: any(named: 'isChecked'),
+              categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
+            ),
+          ).thenAnswer((invocation) async {
+            final title = invocation.namedArguments[#title] as String;
+            return ChecklistItem(
+              meta: Metadata(
+                id: _uuid.v4(),
+                createdAt: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                categoryId: 'test-category',
+              ),
+              data: ChecklistItemData(
+                title: title,
+                isChecked: false,
+                linkedChecklists: const [],
+              ),
+            );
+          });
+
+          // Act
+          final count = await handler.createBatchItems(result);
+
+          // Assert: both items were created and counted, but because the task
+          // was deleted the update callback must NOT fire.
+          expect(count, 2);
+          expect(callbackInvoked, isFalse);
+          // The refresh lookup was performed (returning null).
+          verify(
+            () => mockJournalDb.journalEntityById(taskWithChecklist.meta.id),
+          ).called(2);
+        },
+      );
+
+      test('returns 0 and swallows error when a lookup throws', () async {
+        // Arrange: the very first task lookup throws, exercising the
+        // catch block which logs and returns the partial success count (0).
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'add_multiple_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'title': 'cheese'},
+            ],
+            'taskId': testTask.meta.id,
+          },
+        );
+
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenThrow(Exception('db boom'));
+
+        // Act
+        final count = await handler.createBatchItems(result);
+
+        // Assert: error is swallowed, no items recorded.
+        expect(count, 0);
+        expect(handler.successfulItems, isEmpty);
+        expect(handler.failedItems, isEmpty);
+        verifyNever(
+          () => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          ),
+        );
       });
     });
 

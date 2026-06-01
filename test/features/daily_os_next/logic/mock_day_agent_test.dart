@@ -65,6 +65,34 @@ void main() {
       expect(sameId.kind, ParsedItemKind.newTask);
     });
 
+    test(
+      'deletePlanForDate resolves to true (mock has no persistence)',
+      () async {
+        final deleted = await agent.deletePlanForDate(DateTime(2026, 5, 25));
+        expect(deleted, isTrue);
+      },
+    );
+
+    test(
+      'breakCaptureLink throws StateError for an id not in the scripted list',
+      () async {
+        // The id is recorded in the broken-links set, then the scripted
+        // list is rebuilt — but since the id is not one of the four
+        // scripted parsed items, firstWhere falls through to the orElse
+        // and surfaces a StateError rather than returning a stale match.
+        await expectLater(
+          agent.breakCaptureLink('p_not_a_real_item'),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('p_not_a_real_item'),
+            ),
+          ),
+        );
+      },
+    );
+
     test('surfacePendingDecisions exposes the three core reasons', () async {
       final items = await agent.surfacePendingDecisions();
       expect(items, hasLength(3));
@@ -325,6 +353,207 @@ void main() {
         final noMatch = await agent.surfaceTaskCorpus(query: 'zzzz');
         expect(noMatch, isEmpty);
       });
+
+      test('categoryId filter narrows to matching items only', () async {
+        final health = await agent.surfaceTaskCorpus(categoryId: 'cat_health');
+        expect(health, isNotEmpty);
+        expect(
+          health.every((i) => i.category.id == 'cat_health'),
+          isTrue,
+        );
+        // Items in other categories are filtered out — the corpus has
+        // work/study/meals rows that must not leak through.
+        expect(
+          health.any((i) => i.category.id != 'cat_health'),
+          isFalse,
+        );
+
+        final none = await agent.surfaceTaskCorpus(categoryId: 'cat_nope');
+        expect(none, isEmpty);
+      });
+    });
+
+    group('proposePlanDiff', () {
+      test(
+        'returns an empty diff when the current plan has no blocks',
+        () async {
+          final empty = DraftPlan(
+            dayDate: DateTime(2026, 5, 25),
+            blocks: const [],
+            bands: const [],
+            capacityMinutes: 480,
+            scheduledMinutes: 0,
+          );
+
+          final diff = await agent.proposePlanDiff(
+            currentPlan: empty,
+            voiceTranscript: 'skip onboarding',
+          );
+
+          expect(diff.changes, isEmpty);
+          expect(diff.transcript, 'skip onboarding');
+          // The unchanged plan flows straight back so the Refine
+          // controller treats it as immediately resolved.
+          expect(diff.updatedPlan, same(empty));
+          expect(diff.id, startsWith('diff_'));
+        },
+      );
+
+      test(
+        'diff id increments across successive calls',
+        () async {
+          final empty = DraftPlan(
+            dayDate: DateTime(2026, 5, 25),
+            blocks: const [],
+            bands: const [],
+            capacityMinutes: 480,
+            scheduledMinutes: 0,
+          );
+
+          final first = await agent.proposePlanDiff(
+            currentPlan: empty,
+            voiceTranscript: 'a',
+          );
+          final second = await agent.proposePlanDiff(
+            currentPlan: empty,
+            voiceTranscript: 'b',
+          );
+          expect(first.id, isNot(second.id));
+        },
+      );
+
+      test(
+        'falls back to first/last block when the named blocks are absent and '
+        'scripts the morning-run outcome',
+        () async {
+          // No b_deep_work / b_run_review blocks: the deck firstWhere
+          // hits orElse -> blocks.first, the onboarding firstWhere hits
+          // orElse -> blocks.last. We also tag the first block with the
+          // t_morning_run taskId so the agenda projection exercises the
+          // scripted 't_morning_run' outcome branch.
+          final start = DateTime(2026, 5, 25, 8);
+          final plan = DraftPlan(
+            dayDate: DateTime(2026, 5, 25),
+            blocks: [
+              TimeBlock(
+                id: 'b_alpha',
+                title: 'Morning run · 5km',
+                start: start,
+                end: start.add(const Duration(minutes: 30)),
+                type: TimeBlockType.ai,
+                state: TimeBlockState.drafted,
+                category: const DayAgentCategory(
+                  id: 'cat_health',
+                  name: 'Health',
+                  colorHex: '7AB889',
+                ),
+                taskId: 't_morning_run',
+                reason: 'placeholder',
+              ),
+              TimeBlock(
+                id: 'b_omega',
+                title: 'Wrap up',
+                start: start.add(const Duration(hours: 2)),
+                end: start.add(const Duration(hours: 3)),
+                type: TimeBlockType.ai,
+                state: TimeBlockState.drafted,
+                category: const DayAgentCategory(
+                  id: 'cat_work',
+                  name: 'Work',
+                  colorHex: '5ED4B7',
+                ),
+                taskId: 't_deck_review',
+                reason: 'placeholder',
+              ),
+            ],
+            bands: const [],
+            capacityMinutes: 480,
+            scheduledMinutes: 0,
+          );
+
+          final diff = await agent.proposePlanDiff(
+            currentPlan: plan,
+            voiceTranscript: 'reshape my afternoon',
+          );
+
+          // First block was treated as the "deck" and moved 30m earlier.
+          final moved = diff.changes.firstWhere(
+            (c) => c.kind == PlanDiffChangeKind.moved,
+          );
+          expect(moved.affectedBlockId, 'b_alpha');
+          expect(
+            moved.toStart,
+            start.subtract(const Duration(minutes: 30)),
+          );
+
+          // Last block was treated as the "onboarding" block and dropped.
+          final dropped = diff.changes.firstWhere(
+            (c) => c.kind == PlanDiffChangeKind.dropped,
+          );
+          expect(dropped.affectedBlockId, 'b_omega');
+
+          // A buffer was added.
+          expect(
+            diff.changes.any((c) => c.kind == PlanDiffChangeKind.added),
+            isTrue,
+          );
+
+          // The morning-run scripted outcome surfaced on the agenda
+          // projection of the moved deck block.
+          final runAgenda = diff.updatedPlan.agendaItems.firstWhere(
+            (a) => a.taskId == 't_morning_run',
+          );
+          expect(
+            runAgenda.outcome,
+            '5 km logged before the day starts.',
+          );
+        },
+      );
+
+      test(
+        'uses the named blocks when both b_deep_work and b_run_review exist',
+        () async {
+          final plan = await agent.draftDayPlan(
+            captureId: const CaptureId('cap'),
+            decidedTaskIds: const ['t_deck_review', 't_onboarding_doc'],
+            dayDate: DateTime(2026, 5, 25),
+          );
+
+          final diff = await agent.proposePlanDiff(
+            currentPlan: plan,
+            voiceTranscript: 'skip onboarding, move the deck earlier',
+          );
+
+          // The moved change targets the named deep-work block, not a
+          // fallback first/last block.
+          final moved = diff.changes.firstWhere(
+            (c) => c.kind == PlanDiffChangeKind.moved,
+          );
+          expect(moved.affectedBlockId, 'b_deep_work');
+
+          final dropped = diff.changes.firstWhere(
+            (c) => c.kind == PlanDiffChangeKind.dropped,
+          );
+          expect(dropped.affectedBlockId, 'b_run_review');
+
+          // The dropped onboarding block is gone from the updated plan.
+          expect(
+            diff.updatedPlan.blocks.any((b) => b.id == 'b_run_review'),
+            isFalse,
+          );
+          // The moved deck block starts 30 minutes earlier than before.
+          final originalDeck = plan.blocks.firstWhere(
+            (b) => b.id == 'b_deep_work',
+          );
+          final updatedDeck = diff.updatedPlan.blocks.firstWhere(
+            (b) => b.id == 'b_deep_work',
+          );
+          expect(
+            updatedDeck.start,
+            originalDeck.start.subtract(const Duration(minutes: 30)),
+          );
+        },
+      );
     });
   });
 }

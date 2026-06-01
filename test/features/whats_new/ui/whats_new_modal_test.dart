@@ -9,6 +9,8 @@ import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -535,6 +537,61 @@ void main() {
       expect(markedAllSeen, isNotEmpty);
       // Modal should be dismissed
       expect(find.text('v0.9.980'), findsNothing);
+    });
+
+    testWidgets('custom link builder renders a tappable in-app link that '
+        'routes through NavService', (tester) async {
+      // Register a NavService so handleMarkdownLinkTap routes internally.
+      final mockNavService = MockNavService();
+      getIt.registerSingleton<NavService>(mockNavService);
+
+      // Markdown containing an internal route link exercises the custom
+      // _buildLink linkBuilder (lines 29, 36-50): InkWell + Text.rich whose
+      // onTap calls handleMarkdownLinkTap.
+      final contentWithLink = WhatsNewContent(
+        release: testRelease1,
+        headerMarkdown:
+            '# January Update\n\nSee [your tasks](/tasks/abc) for details.',
+        sections: const [],
+        bannerImageUrl: 'https://example.com/banner1.png',
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            WhatsNewState(unseenContent: [contentWithLink]),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
+
+      // The custom _buildLink builder produces an InkWell using the click
+      // cursor. There should be exactly one such link in the rendered markdown.
+      final linkFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is InkWell &&
+            widget.mouseCursor == SystemMouseCursors.click &&
+            widget.child is Text,
+      );
+      expect(linkFinder, findsOneWidget);
+
+      // The rendered link span carries the blue underline styling from
+      // _buildLink.
+      final linkText = tester.widget<Text>(
+        find.descendant(of: linkFinder, matching: find.byType(Text)),
+      );
+      final linkSpanStyle = (linkText.textSpan! as TextSpan).style!;
+      expect(linkSpanStyle.color, Colors.blue);
+      expect(linkSpanStyle.decoration, TextDecoration.underline);
+
+      // Tapping the link invokes handleMarkdownLinkTap which, for an internal
+      // route, beams via NavService.
+      await tester.tap(linkFinder);
+      await tester.pumpAndSettle();
+
+      verify(() => mockNavService.beamToNamed('/tasks/abc')).called(1);
     });
   });
 }

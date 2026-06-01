@@ -250,6 +250,34 @@ void main() {
         ),
       ).called(1);
     });
+
+    testWidgets('cancel button navigates back without saving', (tester) async {
+      await tester.pumpWidget(
+        buildCreateSubject(profiles: [_testProfile]),
+      );
+      await tester.pumpAndSettle();
+
+      // Cancel is always present in create mode.
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+      await tester.tap(find.text(context.messages.cancelButton));
+      await tester.pump();
+
+      // The create-mode Cancel routes through navigateBackFromAgent, which
+      // calls beamBack on the (settings-path) NavService.
+      verify(() => _mockNavService.beamBack()).called(1);
+      verifyNever(
+        () => mockTemplateService.createTemplate(
+          displayName: any(named: 'displayName'),
+          kind: any(named: 'kind'),
+          modelId: any(named: 'modelId'),
+          directives: any(named: 'directives'),
+          authoredBy: any(named: 'authoredBy'),
+          profileId: any(named: 'profileId'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
+        ),
+      );
+    });
   });
 
   group('AgentTemplateDetailPage - Edit mode', () {
@@ -397,6 +425,118 @@ void main() {
       ).called(1);
     });
 
+    testWidgets(
+      'editing directive fields marks form dirty and saves new text',
+      (tester) async {
+        when(
+          () => mockTemplateService.getAgentsForTemplate(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTemplateService.updateTemplate(
+            templateId: any(named: 'templateId'),
+            displayName: any(named: 'displayName'),
+            modelId: any(named: 'modelId'),
+            profileId: any(named: 'profileId'),
+            clearProfileId: any(named: 'clearProfileId'),
+          ),
+        ).thenAnswer((_) async => makeTestTemplate(id: templateId));
+        when(
+          () => mockTemplateService.createVersion(
+            templateId: any(named: 'templateId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        ).thenAnswer((_) async => makeTestTemplateVersion(version: 2));
+
+        await tester.pumpWidget(
+          buildEditSubject(templateId: templateId),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+        // Initially clean: only the review button is shown, no Save.
+        expect(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+          findsNothing,
+        );
+
+        // Type into the general directive text area (the second multiline
+        // field after the name TextField). Entering text fires the field's
+        // onChanged -> setState, which recomputes _isDirty.
+        final generalField = find.widgetWithText(
+          TextField,
+          'You are a helpful agent.',
+        );
+        expect(generalField, findsOneWidget);
+        await tester.enterText(generalField, 'New general directive');
+        await tester.pump();
+
+        // The onChanged callback flipped the form to dirty -> Save appears.
+        expect(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+          findsOneWidget,
+        );
+
+        // Type into the report directive field as well (covers its onChanged).
+        // It starts empty, so locate it by its label text.
+        final reportField = find.ancestor(
+          of: find.text(context.messages.agentTemplateReportDirectiveLabel),
+          matching: find.byType(TextField),
+        );
+        expect(reportField, findsOneWidget);
+        await tester.enterText(reportField, 'New report directive');
+        await tester.pump();
+
+        // Save the new version and assert the edited directive text is what
+        // gets persisted.
+        await tester.tap(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockTemplateService.createVersion(
+            templateId: templateId,
+            directives: any(named: 'directives'),
+            authoredBy: 'user',
+            generalDirective: 'New general directive',
+            reportDirective: 'New report directive',
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets('clean form review button beams to review route', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
+
+      final beamedPaths = <String>[];
+      beamToNamedOverride = beamedPaths.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Clean form -> review button shown. Tapping it triggers beamToNamed.
+      await tester.tap(find.text(context.messages.agentRitualReviewTitle));
+      await tester.pump();
+
+      expect(
+        beamedPaths,
+        equals(['/settings/agents/templates/$templateId/review']),
+      );
+    });
+
     testWidgets('version history shows versions', (tester) async {
       when(
         () => mockTemplateService.getAgentsForTemplate(any()),
@@ -518,6 +658,75 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('rollback dialog cancel dismisses without rolling back', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.rollbackToVersion(
+          templateId: any(named: 'templateId'),
+          versionId: any(named: 'versionId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final v1 = makeTestTemplateVersion(
+        id: 'v1',
+        agentId: templateId,
+        status: AgentTemplateVersionStatus.archived,
+      );
+      final v2 = makeTestTemplateVersion(
+        id: 'v2',
+        agentId: templateId,
+        version: 2,
+      );
+
+      await tester.pumpWidget(
+        buildEditSubject(
+          templateId: templateId,
+          activeVersion: v2,
+          versionHistory: [v2, v1],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.restore),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.restore));
+      await tester.pumpAndSettle();
+
+      // The rollback confirmation dialog is open.
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      // Tap Cancel in the dialog (the dialog's cancelButton, not anywhere else).
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(context.messages.cancelButton),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Dialog dismissed and no rollback was performed.
+      expect(find.byType(AlertDialog), findsNothing);
+      verifyNever(
+        () => mockTemplateService.rollbackToVersion(
+          templateId: any(named: 'templateId'),
+          versionId: any(named: 'versionId'),
+        ),
+      );
+    });
+
     testWidgets('delete calls deleteTemplate', (tester) async {
       when(
         () => mockTemplateService.getAgentsForTemplate(any()),
@@ -556,6 +765,52 @@ void main() {
       verify(
         () => mockTemplateService.deleteTemplate(templateId),
       ).called(1);
+    });
+
+    testWidgets('delete dialog cancel dismisses without deleting', (
+      tester,
+    ) async {
+      when(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.deleteTemplate(any()),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.delete_outline),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      // Confirmation dialog is open.
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      // Tap Cancel inside the dialog.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(context.messages.cancelButton),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Dialog dismissed, nothing deleted.
+      expect(find.byType(AlertDialog), findsNothing);
+      verifyNever(() => mockTemplateService.deleteTemplate(any()));
     });
 
     testWidgets('shows error when deleting template with instances', (
@@ -1088,6 +1343,88 @@ void main() {
       expect(find.text('Version 2 directives'), findsOneWidget);
       expect(find.text('Version 1 directives'), findsNothing);
     });
+
+    testWidgets(
+      'reseeds prefers generalDirective over legacy directives on change',
+      (tester) async {
+        when(
+          () => mockTemplateService.getAgentsForTemplate(any()),
+        ).thenAnswer((_) async => []);
+
+        final v1 = makeTestTemplateVersion(
+          id: 'v1',
+          agentId: templateId,
+          generalDirective: 'V1 general directive',
+        );
+        // v2 carries BOTH a legacy directives blob and a modern
+        // generalDirective; the re-seed must take the generalDirective.
+        final v2 = makeTestTemplateVersion(
+          id: 'v2',
+          agentId: templateId,
+          version: 2,
+          directives: 'V2 legacy directives',
+          generalDirective: 'V2 general directive',
+        );
+
+        var currentVersion = v1;
+
+        final overrides = [
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          agentTemplateProvider.overrideWith(
+            (ref, id) async => makeTestTemplate(
+              id: templateId,
+              agentId: templateId,
+              profileId: 'profile-1',
+            ),
+          ),
+          activeTemplateVersionProvider.overrideWith(
+            (ref, id) async => currentVersion,
+          ),
+          templateVersionHistoryProvider.overrideWith(
+            (ref, id) async => <AgentDomainEntity>[currentVersion],
+          ),
+          agentTemplatesProvider.overrideWith(
+            (ref) async => <AgentDomainEntity>[],
+          ),
+          ..._templateStatsOverrides(),
+          ..._profileOverrides(),
+        ];
+
+        final container = ProviderContainer(overrides: overrides);
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MediaQuery(
+              data: MediaQueryData(size: Size(400, 800)),
+              child: MaterialApp(
+                localizationsDelegates: [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: AgentTemplateDetailPage(templateId: templateId),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('V1 general directive'), findsOneWidget);
+
+        // Switch active version to v2 and invalidate to trigger the re-seed.
+        currentVersion = v2;
+        container.invalidate(activeTemplateVersionProvider(templateId));
+        await tester.pumpAndSettle();
+
+        // generalDirective wins over the legacy directives field.
+        expect(find.text('V2 general directive'), findsOneWidget);
+        expect(find.text('V2 legacy directives'), findsNothing);
+      },
+    );
 
     testWidgets('shows 1-on-1 review button when form is clean', (
       tester,

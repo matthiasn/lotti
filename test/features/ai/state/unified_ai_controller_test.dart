@@ -164,7 +164,139 @@ void main() {
     container.dispose();
   });
 
+  group('UnifiedAiState equality', () {
+    test('compares message and error fields and derives hashCode', () {
+      final errorA = Exception('boom-a');
+      final errorB = Exception('boom-b');
+
+      const base = UnifiedAiState(message: 'hello');
+      const sameAsBase = UnifiedAiState(message: 'hello');
+      const differentMessage = UnifiedAiState(message: 'world');
+      final withErrorA = UnifiedAiState(message: 'hello', error: errorA);
+      final withSameErrorA = UnifiedAiState(message: 'hello', error: errorA);
+      final withErrorB = UnifiedAiState(message: 'hello', error: errorB);
+
+      // identical short-circuit and field-by-field equality.
+      expect(base, equals(base));
+      expect(base, equals(sameAsBase));
+
+      // Differing message => not equal.
+      expect(base == differentMessage, isFalse);
+
+      // Same message but one carries an error => line 44 (error mismatch).
+      expect(base == withErrorA, isFalse);
+
+      // Same message + same error instance => equal, and hashCode matches.
+      expect(withErrorA == withSameErrorA, isTrue);
+      expect(withErrorA.hashCode, withSameErrorA.hashCode);
+
+      // Same message but different error instances => not equal.
+      expect(withErrorA == withErrorB, isFalse);
+
+      // hashCode (lines 46-47) folds both message and error in; the
+      // no-error state and the with-error state must differ.
+      expect(base.hashCode, sameAsBase.hashCode);
+      expect(base.hashCode == withErrorA.hashCode, isFalse);
+
+      // Type guard branch: a non-UnifiedAiState object is never equal.
+      // ignore: unrelated_type_equality_checks
+      expect(base == 'hello', isFalse);
+    });
+  });
+
   group('UnifiedAiController', () {
+    test(
+      'joins an in-flight run instead of starting a second inference',
+      () async {
+        final promptConfig = AiConfigPrompt(
+          id: 'prompt-join',
+          name: 'Test Prompt',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        final completer = Completer<void>();
+        var runInferenceCallCount = 0;
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            aiConfigByIdProvider('prompt-join').overrideWith(
+              (ref) => Future.value(promptConfig),
+            ),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        when(
+          () => mockRepository.runInference(
+            entityId: any(named: 'entityId'),
+            promptConfig: any(named: 'promptConfig'),
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+            linkedEntityId: any(named: 'linkedEntityId'),
+          ),
+        ).thenAnswer((_) async {
+          runInferenceCallCount++;
+          await completer.future;
+        });
+
+        final controller = testContainer.read(
+          unifiedAiControllerProvider((
+            entityId: 'join-entity',
+            promptId: 'prompt-join',
+          )).notifier,
+        );
+
+        // First call starts the run (still in-flight, blocked on completer).
+        final first = controller.runInference(linkedEntityId: 'linked-1');
+        // Second call, while the first is still in-flight, must join the
+        // existing future (lines 197-203) rather than start a new run.
+        final second = controller.runInference(linkedEntityId: 'linked-2');
+
+        // The "already running" branch logs the join with the active run id.
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.ai,
+            any<String>(
+              that: allOf(
+                contains('already running for join-entity'),
+                contains('Joining existing run'),
+                contains('incoming linked: linked-2'),
+                contains('active linked: linked-1'),
+              ),
+            ),
+            subDomain: 'runInference',
+          ),
+        ).called(1);
+
+        completer.complete();
+        await first;
+        await second;
+
+        // The repository only ran a single inference despite two calls.
+        expect(runInferenceCallCount, 1);
+        verify(
+          () => mockRepository.runInference(
+            entityId: 'join-entity',
+            promptConfig: promptConfig,
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+            linkedEntityId: 'linked-1',
+          ),
+        ).called(1);
+      },
+    );
+
     test('successfully runs inference and updates state', () {
       fakeAsync((async) {
         final promptConfig = AiConfigPrompt(
@@ -2224,8 +2356,115 @@ void main() {
       },
     );
 
-    // Note: null linkedTaskId is already guarded by an early return before
-    // the skill type switch. The image generation case has a redundant
-    // null check as defense-in-depth, but it's unreachable.
+    test(
+      'throws and logs when imageGeneration skill runs without a linkedTaskId',
+      () async {
+        // An imageGeneration skill with the default ContextPolicy.none is NOT
+        // hidden for standalone entries and is NOT caught by the fullTask
+        // early-return guard, so it reaches the switch with a null
+        // linkedTaskId. The imageGeneration case then throws a StateError
+        // (line 579), which is caught and routed to loggingService.error
+        // (line 597).
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-imggen-no-task',
+                  name: 'Generate Cover Art',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imageGeneration,
+                  requiredInputModalities: [Modality.text],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        final entity = JournalEntry(
+          meta: Metadata(
+            id: 'entry-imggen',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            categoryId: 'cat-imggen',
+          ),
+        );
+
+        final imageGenProvider =
+            AiConfig.inferenceProvider(
+                  id: 'gemini-prov',
+                  name: 'Gemini',
+                  inferenceProviderType: InferenceProviderType.gemini,
+                  apiKey: 'key',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+        final resolvedProfile = ResolvedProfile(
+          thinkingModelId: 'flash',
+          thinkingProvider: imageGenProvider,
+          imageGenerationModelId: 'imagen-model',
+          imageGenerationProvider: imageGenProvider,
+        );
+
+        when(
+          () => mockJournalDb.journalEntityById('entry-imggen'),
+        ).thenAnswer((_) async => entity);
+        when(
+          () => mockResolver.resolveForCategory('cat-imggen'),
+        ).thenAnswer((_) async => resolvedProfile);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        // The provider swallows the thrown StateError in its catch block, so
+        // the awaited future resolves normally.
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'entry-imggen',
+            skillId: 'skill-imggen-no-task',
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+          )).future,
+        );
+
+        // The runner was never asked to generate an image because the guard
+        // threw before reaching it.
+        verifyNever(
+          () => mockRunner.runImageGeneration(
+            entryId: any(named: 'entryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            referenceImages: any(named: 'referenceImages'),
+          ),
+        );
+
+        // The caught StateError is logged via loggingService.error with the
+        // entity id embedded in the message.
+        final captured = verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            captureAny<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'triggerSkillProvider',
+          ),
+        ).captured;
+        expect(captured.single, isA<StateError>());
+        expect(
+          (captured.single as StateError).message,
+          contains('Image generation requires a linkedTaskId'),
+        );
+        expect(
+          (captured.single as StateError).message,
+          contains('entry-imggen'),
+        );
+      },
+    );
   });
 }

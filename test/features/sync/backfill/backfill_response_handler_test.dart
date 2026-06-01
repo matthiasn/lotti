@@ -161,33 +161,70 @@ void main() {
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
 
-    test('truncates large requests to maxBackfillResponseBatchSize', () async {
-      // Create a request with more entries than maxBackfillResponseBatchSize
-      final manyEntries = List.generate(
-        100, // More than maxBackfillResponseBatchSize (50)
-        (i) => BackfillRequestEntry(hostId: bobHostId, counter: i + 1),
-      );
-      final request = SyncBackfillRequest(
-        entries: manyEntries,
-        requesterId: requesterId,
-      );
+    test(
+      'processes all entries when at or below maxBackfillResponseBatchSize',
+      () async {
+        // A batch exactly at the limit must NOT be truncated.
+        final entries = List.generate(
+          SyncTuning.maxBackfillResponseBatchSize,
+          (i) => BackfillRequestEntry(hostId: bobHostId, counter: i + 1),
+        );
+        final request = SyncBackfillRequest(
+          entries: entries,
+          requesterId: requesterId,
+        );
 
-      // All entries are for bob (not our host), so they'll be skipped
-      // but the truncation logic should still apply
-      when(
-        () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
-      ).thenAnswer((_) async => null);
+        // All entries are for bob (not our host) with no log row, so each is
+        // looked up and skipped silently.
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
+        ).thenAnswer((_) async => null);
 
-      await handler.handleBackfillRequest(request);
+        await handler.handleBackfillRequest(request);
 
-      // Should process all 100 entries (maxBackfillResponseBatchSize is 100)
-      // Since these are bob's counters (not ours), we skip them silently
-      verify(
-        () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
-      ).called(100);
+        // Every entry is processed: exactly batch-size lookups, no truncation.
+        verify(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
+        ).called(SyncTuning.maxBackfillResponseBatchSize);
+      },
+    );
 
-      // Logging now goes through DomainLogger (not injected in tests)
-    });
+    test(
+      'truncates request to maxBackfillResponseBatchSize when oversized',
+      () async {
+        // Exercises the `.take(...).toList()` truncation branch: a request
+        // larger than the batch cap must only process the first N entries.
+        const overflow = 5;
+        final entries = List.generate(
+          SyncTuning.maxBackfillResponseBatchSize + overflow,
+          (i) => BackfillRequestEntry(hostId: bobHostId, counter: i + 1),
+        );
+        final request = SyncBackfillRequest(
+          entries: entries,
+          requesterId: requesterId,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
+        ).thenAnswer((_) async => null);
+
+        await handler.handleBackfillRequest(request);
+
+        // Only the first batch-size entries (counters 1..N) are looked up; the
+        // overflow tail (counters N+1..N+overflow) is dropped by truncation.
+        verify(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
+        ).called(SyncTuning.maxBackfillResponseBatchSize);
+
+        // The last (overflow) counters were never looked up.
+        verifyNever(
+          () => mockSequenceService.getEntryByHostAndCounter(
+            bobHostId,
+            SyncTuning.maxBackfillResponseBatchSize + overflow,
+          ),
+        );
+      },
+    );
 
     test(
       'ignores request when entry not in sequence log and not our host',
@@ -466,6 +503,110 @@ void main() {
       expect(hint.payloadId, entryId);
       expect(hint.deleted, isFalse);
     });
+
+    test(
+      'covering search skips a candidate whose payload VC is behind, then '
+      'uses the next candidate that covers',
+      () async {
+        // Foreign host (bob): exact counter 3 missing, so the handler walks
+        // covering candidates. The first candidate at counter 5 maps to a
+        // payload whose VC ({bob: 2}) is BEHIND the requested counter 3, so it
+        // is rejected and the search advances to counter 6. The second
+        // candidate at counter 10 maps to a payload whose VC ({bob: 12})
+        // covers counter 3, so it is used.
+        const staleEntryId = 'stale-covering-id';
+        const coveringEntryId = 'good-covering-id';
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: bobHostId, counter: 3),
+          ],
+          requesterId: requesterId,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 3),
+        ).thenAnswer((_) async => null);
+
+        // First covering candidate at counter 5 — VC behind, will be skipped.
+        when(
+          () => mockSequenceService.getNearestCoveringEntry(bobHostId, 3),
+        ).thenAnswer(
+          (_) async => _createLogItem(
+            bobHostId,
+            5,
+            entryId: staleEntryId,
+            originatingHostId: bobHostId,
+          ),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(staleEntryId),
+        ).thenAnswer(
+          (_) async => _createJournalEntry(
+            staleEntryId,
+            vectorClock: const VectorClock({bobHostId: 2}),
+          ),
+        );
+
+        // Search advances to counter 6 (covering.counter + 1). The next
+        // candidate at counter 10 has a VC that covers counter 3.
+        when(
+          () => mockSequenceService.getNearestCoveringEntry(bobHostId, 6),
+        ).thenAnswer(
+          (_) async => _createLogItem(
+            bobHostId,
+            10,
+            entryId: coveringEntryId,
+            originatingHostId: bobHostId,
+          ),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(coveringEntryId),
+        ).thenAnswer(
+          (_) async => _createJournalEntry(
+            coveringEntryId,
+            vectorClock: const VectorClock({bobHostId: 12}),
+          ),
+        );
+
+        final captured = <SyncMessage>[];
+        when(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).thenAnswer((inv) async {
+          captured.add(inv.positionalArguments.first as SyncMessage);
+        });
+
+        await handler.handleBackfillRequest(request);
+
+        // The stale candidate must have been consulted (proves the skip path
+        // ran) and then the next candidate at counter 6.
+        verify(
+          () => mockSequenceService.getNearestCoveringEntry(bobHostId, 3),
+        ).called(1);
+        verify(
+          () => mockSequenceService.getNearestCoveringEntry(bobHostId, 6),
+        ).called(1);
+
+        // The good covering entry is re-sent, plus a hint mapping counter 3 to
+        // it (VC counter 12 != requested 3).
+        expect(captured, hasLength(2));
+        expect(captured[0], isA<SyncJournalEntity>());
+        expect((captured[0] as SyncJournalEntity).id, coveringEntryId);
+        expect(
+          captured[1],
+          isA<SyncBackfillResponse>()
+              .having((r) => r.hostId, 'hostId', bobHostId)
+              .having((r) => r.counter, 'counter', 3)
+              .having((r) => r.payloadId, 'payloadId', coveringEntryId)
+              .having((r) => r.deleted, 'deleted', false),
+        );
+
+        // The stale payload must never be sent.
+        expect(
+          captured.whereType<SyncJournalEntity>().map((m) => m.id),
+          isNot(contains(staleEntryId)),
+        );
+      },
+    );
 
     test(
       'rejects covering entry when payload VC does not cover counter '
@@ -804,6 +945,75 @@ void main() {
             ),
       );
     });
+
+    test(
+      'own-host entry with null payload VC re-sends the entity then sends '
+      'unresolvable via the hint-or-unresolvable path',
+      () async {
+        // The exact-row staleness guard only fires when the payload VC is
+        // non-null. Here the journal entity has a NULL vector clock, so that
+        // guard is bypassed and the entity is re-sent. Afterwards the
+        // requested counter is absent from the (null) VC, so the
+        // hint-or-unresolvable decision runs: own host + vcCounter == null
+        // means the mapping can never self-heal, so an unresolvable response
+        // is emitted (not a hint).
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          ],
+          requesterId: requesterId,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+        ).thenAnswer(
+          (_) async => _createLogItem(aliceHostId, 3, entryId: entryId),
+        );
+
+        // Entry exists locally but carries NO vector clock.
+        when(
+          () => mockJournalDb.journalEntityById(entryId),
+        ).thenAnswer((_) async => _createJournalEntryWithoutVC(entryId));
+
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handleBackfillRequest(request);
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured.cast<SyncMessage>();
+
+        // First the entity is re-sent, then the unresolvable response.
+        expect(captured.length, 2);
+        expect(captured[0], isA<SyncJournalEntity>());
+        expect((captured[0] as SyncJournalEntity).id, entryId);
+        expect(
+          captured[1],
+          isA<SyncBackfillResponse>()
+              .having((r) => r.hostId, 'hostId', aliceHostId)
+              .having((r) => r.counter, 'counter', 3)
+              .having((r) => r.deleted, 'deleted', false)
+              .having((r) => r.unresolvable, 'unresolvable', true)
+              .having(
+                (r) => r.payloadType,
+                'payloadType',
+                SyncSequencePayloadType.journalEntity,
+              ),
+        );
+
+        // The unresolvable path also terminalizes our own counter locally.
+        verify(
+          () => mockSequenceService.markOwnCounterUnresolvable(
+            hostId: aliceHostId,
+            counter: 3,
+            // ignore: avoid_redundant_argument_values
+            payloadType: SyncSequencePayloadType.journalEntity,
+          ),
+        ).called(1);
+      },
+    );
 
     test(
       'own-host exact row with stale VC sends unresolvable — does NOT '

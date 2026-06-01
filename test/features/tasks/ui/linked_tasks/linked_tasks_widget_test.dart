@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
@@ -15,9 +18,15 @@ import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../features/categories/test_utils.dart';
+import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
@@ -60,6 +69,7 @@ void main() {
     required List<Task> outgoing,
     bool manageMode = false,
     MediaQueryData? mediaQueryData,
+    List<Override> extraOverrides = const [],
   }) async {
     final journalRepo = MockJournalRepository();
     when(
@@ -100,6 +110,7 @@ void main() {
             () => MockLinkedEntriesController(outgoingLinks),
           ),
           journalRepositoryProvider.overrideWithValue(journalRepo),
+          ...extraOverrides,
         ],
         child: WidgetTestBench(
           mediaQueryData: mediaQueryData,
@@ -114,12 +125,18 @@ void main() {
   late MockNavService mockNavService;
   late MockFts5Db mockFts5Db;
   late MockPersistenceLogic mockPersistenceLogic;
+  late MockEntitiesCacheService mockEntitiesCacheService;
+  late MockVectorClockService mockVectorClockService;
   late TestGetItMocks getItMocks;
+
+  setUpAll(registerAllFallbackValues);
 
   setUp(() async {
     mockNavService = MockNavService();
     mockFts5Db = MockFts5Db();
     mockPersistenceLogic = MockPersistenceLogic();
+    mockEntitiesCacheService = MockEntitiesCacheService();
+    mockVectorClockService = MockVectorClockService();
 
     when(
       () => mockFts5Db.watchFullTextMatches(any()),
@@ -130,7 +147,13 @@ void main() {
         getIt
           ..registerSingleton<NavService>(mockNavService)
           ..registerSingleton<Fts5Db>(mockFts5Db)
-          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+          ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+          ..registerSingleton<VectorClockService>(mockVectorClockService)
+          // Eagerly read by EntryController's field initializer; the
+          // create-new-linked-task flow reads entryControllerProvider to
+          // inherit the parent category.
+          ..registerSingleton<EditorStateService>(MockEditorStateService());
       },
     );
 
@@ -142,6 +165,12 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => <JournalEntity>[]);
+
+    // Project inheritance runs after creating a linked task; with no project
+    // for the source task it returns early without touching the VC service.
+    when(
+      () => getItMocks.journalDb.getProjectForTask(any()),
+    ).thenAnswer((_) async => null);
   });
 
   tearDown(() async {
@@ -547,6 +576,206 @@ void main() {
       );
       expect(rowInkWell.onTap, isNull);
     });
+  });
+
+  group('LinkedTasksWidget create new linked task', () {
+    // Builds the parent task whose detail view hosts the card. Its category id
+    // is what _createNewLinkedTask forwards to createTask().
+    Task parentTaskWithCategory(String? categoryId) {
+      return Task(
+        meta: Metadata(
+          id: 'task-main',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+          categoryId: categoryId,
+        ),
+        data: TaskData(
+          status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+          dateFrom: now,
+          dateTo: now,
+          statusHistory: const [],
+          title: 'Parent',
+        ),
+      );
+    }
+
+    // Stubs PersistenceLogic.createTaskEntry to return [created] (or null) and
+    // captures the linkedId/categoryId it was invoked with for assertions.
+    void stubCreateTaskEntry(Task? created) {
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => created);
+    }
+
+    List<Override> createFlowOverrides({
+      required String? parentCategoryId,
+      CategoryDefinition? newTaskCategory,
+    }) {
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(newTaskCategory);
+      return [
+        createEntryControllerOverride(parentTaskWithCategory(parentCategoryId)),
+        taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+      ];
+    }
+
+    Future<void> tapCreateNewLinkedTask(WidgetTester tester) async {
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create new linked task...'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'forwards the parent category id and linkedId to createTask',
+      (tester) async {
+        final created = buildTask(id: 'new-task', title: 'New');
+        stubCreateTaskEntry(created);
+
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraOverrides: createFlowOverrides(
+            parentCategoryId: 'cat-1',
+            // No defaultTemplateId → autoAssignCategoryAgent returns early
+            // without invoking the agent service.
+            newTaskCategory: CategoryTestUtils.createTestCategory(id: 'cat-1'),
+          ),
+        );
+
+        await tapCreateNewLinkedTask(tester);
+
+        final captured = verify(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: captureAny(named: 'linkedId'),
+            categoryId: captureAny(named: 'categoryId'),
+          ),
+        ).captured;
+        expect(captured, ['task-main', 'cat-1']);
+      },
+    );
+
+    testWidgets(
+      'auto-assigns a category agent when the new task category has a '
+      'default template',
+      (tester) async {
+        // The new task carries the parent category id in its metadata; the
+        // agent service is invoked when that category has a defaultTemplateId.
+        final created = Task(
+          meta: Metadata(
+            id: 'new-task',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+            categoryId: 'cat-1',
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            dateFrom: now,
+            dateTo: now,
+            statusHistory: const [],
+            title: 'New',
+          ),
+        );
+        stubCreateTaskEntry(created);
+
+        final agentService = MockTaskAgentService();
+        when(
+          () => agentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        ).thenThrow(StateError('not asserted on the identity result'));
+
+        when(
+          () => mockEntitiesCacheService.getCategoryById(any()),
+        ).thenReturn(
+          CategoryTestUtils.createTestCategory(
+            id: 'cat-1',
+            defaultTemplateId: 'tmpl-1',
+            defaultProfileId: 'prof-1',
+          ),
+        );
+
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraOverrides: [
+            createEntryControllerOverride(parentTaskWithCategory('cat-1')),
+            taskAgentServiceProvider.overrideWithValue(agentService),
+          ],
+        );
+
+        await tapCreateNewLinkedTask(tester);
+
+        verify(
+          () => agentService.createTaskAgent(
+            taskId: 'new-task',
+            templateId: 'tmpl-1',
+            profileId: 'prof-1',
+            allowedCategoryIds: {'cat-1'},
+            awaitContent: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'does nothing further when createTask returns null',
+      (tester) async {
+        stubCreateTaskEntry(null);
+
+        final agentService = MockTaskAgentService();
+
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          extraOverrides: [
+            createEntryControllerOverride(parentTaskWithCategory('cat-1')),
+            taskAgentServiceProvider.overrideWithValue(agentService),
+          ],
+        );
+
+        await tapCreateNewLinkedTask(tester);
+
+        // createTask was attempted...
+        verify(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).called(1);
+        // ...but the null result short-circuits the agent assignment.
+        verifyNever(
+          () => agentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        );
+      },
+    );
   });
 
   group('LinkedTasksWidget unlink flows', () {

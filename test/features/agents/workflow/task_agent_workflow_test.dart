@@ -2393,6 +2393,101 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'swallows errors thrown while embedding the report',
+        () async {
+          // _embedAgentReport runs fire-and-forget after the transaction
+          // commits. If the category lookup throws, the failure must be
+          // caught (logged) and never surface as a wake failure, and no
+          // embedding/deletion side effects should run.
+          final mockEmbeddingStore = MockEmbeddingStore();
+          final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+          final workflowWithEmbeddings = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            domainLogger: DomainLogger(loggingService: LoggingService())
+              ..enabledDomains.add(LogDomain.agentWorkflow),
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepository,
+          );
+
+          when(
+            () => mockAgentRepository.getReportHead(agentId, 'current'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfigRepository.resolveOllamaBaseUrl(),
+          ).thenAnswer((_) async => 'http://localhost:11434');
+          // The category lookup inside _embedAgentReport throws — this is the
+          // branch we want to exercise (the catch on line 885).
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenThrow(Exception('db unavailable'));
+
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'rpt-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'update_report',
+                          arguments:
+                              r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"done","tldr":"done."}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          final result = await workflowWithEmbeddings.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          // The wake itself still succeeds — embedding is best-effort.
+          expect(result.success, isTrue);
+          await pumpEventQueue();
+
+          // The throwing lookup short-circuits before any embed/delete call.
+          verifyNever(
+            () => mockEmbeddingRepository.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+            ),
+          );
+          verifyNever(
+            () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+          );
+        },
+      );
     });
 
     group('_executeToolHandler dispatch', () {
@@ -3037,6 +3132,75 @@ void main() {
         },
       );
 
+      test(
+        'tolerates a failing batch agent_task link lookup',
+        () async {
+          // getLinksToMultiple throwing must be caught: the linked-task
+          // section still renders (the rows themselves came from the JSON),
+          // but no per-task agent report is injected.
+          when(
+            () => mockAgentRepository.getLinksToMultiple(
+              any(),
+              type: any(named: 'type'),
+            ),
+          ).thenThrow(Exception('link batch failed'));
+
+          final message = await executeAndCaptureMessage(
+            linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
+          );
+
+          expect(message, isNotNull);
+          // The section renders from the linked rows themselves.
+          expect(message, contains('## Linked Tasks'));
+          expect(message, contains('Related'));
+          // No report enrichment happened because the lookup failed.
+          expect(message, isNot(contains('latestTaskAgentReportTldr')));
+        },
+      );
+
+      test(
+        'tolerates a failing batch agent report lookup',
+        () async {
+          // Links resolve, so linkedAgentIds is non-empty and the report
+          // batch fetch runs — but getLatestReportsByAgentIds throws. The
+          // catch must swallow it: the section renders without a report.
+          final link = AgentLink.agentTask(
+            id: 'link-1',
+            fromId: 'linked-agent-1',
+            toId: 't2',
+            createdAt: DateTime(2024, 6, 14),
+            updatedAt: DateTime(2024, 6, 14),
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepository.getLinksToMultiple(
+              any(),
+              type: any(named: 'type'),
+            ),
+          ).thenAnswer(
+            (_) async => {
+              't2': [link],
+            },
+          );
+          when(
+            () => mockAgentRepository.getLatestReportsByAgentIds(
+              any(),
+              any(),
+            ),
+          ).thenThrow(Exception('report batch failed'));
+
+          final message = await executeAndCaptureMessage(
+            linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
+          );
+
+          expect(message, isNotNull);
+          expect(message, contains('## Linked Tasks'));
+          expect(message, contains('Related'));
+          // The report lookup failed, so no tldr is injected.
+          expect(message, isNot(contains('latestTaskAgentReportTldr')));
+        },
+      );
+
       test('omits linked tasks section when empty', () async {
         final message = await executeAndCaptureMessage();
 
@@ -3562,6 +3726,51 @@ void main() {
             expect(message, contains('\u21ba `update_task_priority`'));
             expect(message, contains('by agent'));
             expect(message, contains('(reason: "Already P1")'));
+          },
+        );
+
+        test(
+          'renders resolved entry with null verdict/actor using status '
+          'fallback and circle icon',
+          () async {
+            // A resolved entry with no verdict and no actor: the formatter
+            // must fall back to the status name for the label, the ○ circle
+            // icon for the missing verdict, and an empty actor suffix (no
+            // " by user"/" by agent").
+            stubLedger(
+              ProposalLedger(
+                open: const [],
+                resolved: [
+                  LedgerEntry(
+                    changeSetId: 'cs-stale',
+                    itemIndex: 0,
+                    toolName: 'set_task_title',
+                    args: const {'title': 'Stale'},
+                    humanSummary: 'Rename task to "Stale"',
+                    fingerprint: ChangeItem.fingerprintFromParts(
+                      'set_task_title',
+                      const {'title': 'Stale'},
+                    ),
+                    status: ChangeItemStatus.deferred,
+                    createdAt: DateTime(2024, 6, 15, 10),
+                    resolvedAt: DateTime(2024, 6, 15, 11),
+                    // verdict and resolvedBy intentionally left null.
+                  ),
+                ],
+              ),
+            );
+
+            final message = await executeAndCaptureMessage();
+
+            expect(message, isNotNull);
+            expect(message, contains('### Resolved (1, most recent)'));
+            // Circle icon for the null verdict branch.
+            expect(message, contains('○ `set_task_title`'));
+            // Verdict label falls back to the status name.
+            expect(message, contains('— deferred'));
+            // No actor suffix is appended for a null resolvedBy.
+            expect(message, isNot(contains('deferred by user')));
+            expect(message, isNot(contains('deferred by agent')));
           },
         );
 
@@ -4353,6 +4562,49 @@ void main() {
       });
 
       test(
+        'assign_task_labels resolves the label name into the proposal summary',
+        () async {
+          // The workflow's labelNameResolver looks up the definition and
+          // returns its name; the change set builder folds that name into the
+          // human-readable summary the user reviews. Stub the lookup and
+          // assert the resolved name reaches the persisted change set.
+          when(
+            () => mockJournalDb.getLabelDefinitionById('label-1'),
+          ).thenAnswer(
+            (_) async => LabelDefinition(
+              id: 'label-1',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              name: 'Bug',
+              color: '#FF0000',
+              vectorClock: null,
+            ),
+          );
+
+          final result = await executeWithToolCallOnRealTask(
+            'assign_task_labels',
+            '{"labels":[{"id":"label-1","confidence":"high"}]}',
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockJournalDb.getLabelDefinitionById('label-1'),
+          ).called(1);
+
+          final changeSets = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<ChangeSetEntity>().toList();
+          final summaries = changeSets
+              .expand((s) => s.items)
+              .map((i) => i.humanSummary)
+              .toList();
+          // The resolved name "Bug" (not the raw id) appears in the summary,
+          // proving labelNameResolver returned label.name.
+          expect(summaries, contains(contains('Bug')));
+        },
+      );
+
+      test(
         'add_multiple_checklist_items with non-array items is deferred',
         () async {
           final result = await executeWithToolCallOnRealTask(
@@ -4675,6 +4927,65 @@ void main() {
           expect(result.success, isTrue);
           verifyDeferredToolResponse(mockConversationManager);
         });
+
+        test(
+          'add_multiple_checklist_items resolves existing titles and '
+          'suppresses a duplicate against them',
+          () async {
+            // The workflow's existingChecklistTitlesResolver lower-cases and
+            // trims each existing item title into a dedup set. Stub the task
+            // to report one existing checklist item; the matching new
+            // proposal must then be filtered out as redundant.
+            final existingItem =
+                JournalEntity.checklistItem(
+                      meta: Metadata(
+                        id: 'cl-existing',
+                        createdAt: DateTime(2024, 3, 15),
+                        dateFrom: DateTime(2024, 3, 15),
+                        dateTo: DateTime(2024, 3, 15),
+                        updatedAt: DateTime(2024, 3, 15),
+                      ),
+                      data: const ChecklistItemData(
+                        title: '  Buy Milk  ',
+                        isChecked: false,
+                        linkedChecklists: [],
+                      ),
+                    )
+                    as ChecklistItem;
+
+            when(
+              () => mockChecklistRepository.getChecklistItemsForTask(
+                task: taskWithCategory,
+              ),
+            ).thenAnswer((_) async => [existingItem]);
+
+            final result = await executeWithToolCallOnRealTask(
+              'add_multiple_checklist_items',
+              '{"items":[{"title":"buy milk"}]}',
+            );
+
+            expect(result.success, isTrue);
+            // The resolver was consulted with the real task entity.
+            verify(
+              () => mockChecklistRepository.getChecklistItemsForTask(
+                task: taskWithCategory,
+              ),
+            ).called(1);
+            // Capture every tool response sent back to the LLM. The
+            // case-insensitive dedup against the trimmed existing title must
+            // have reported the proposal as redundant.
+            final responses = verify(
+              () => mockConversationManager.addToolResponse(
+                toolCallId: any(named: 'toolCallId'),
+                response: captureAny(named: 'response'),
+              ),
+            ).captured.cast<String>();
+            expect(
+              responses,
+              contains(contains('already exists on the task')),
+            );
+          },
+        );
 
         test(
           'update_checklist_items resolves title from DB for ID-only items',

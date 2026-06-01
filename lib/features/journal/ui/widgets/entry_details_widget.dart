@@ -244,7 +244,7 @@ class _PulsingBorder extends StatefulWidget {
     required this.radius,
     required this.strokeWidth,
     required this.duration,
-    this.loopCount,
+    required this.loopCount,
     this.startDelay = Duration.zero,
   });
 
@@ -252,7 +252,7 @@ class _PulsingBorder extends StatefulWidget {
   final double radius;
   final double strokeWidth;
   final Duration duration;
-  final int? loopCount; // if set, run this many loops, then stop
+  final int loopCount; // run this many loops, then stop
   final Duration startDelay;
 
   @override
@@ -270,54 +270,28 @@ class _PulsingBorderState extends State<_PulsingBorder>
   late final Animation<double> _opacity = () {
     const low = 0.4;
     const high = 1.0;
-    if (widget.loopCount != null) {
-      // Build N loops (low->high->low), but end last loop by fading to 0
-      final n = widget.loopCount!.clamp(1, 10);
-      final items = <TweenSequenceItem<double>>[];
-      for (var i = 0; i < n; i++) {
-        final isLast = i == n - 1;
-        final upTween = Tween<double>(
-          begin: low,
-          end: high,
-        ).chain(CurveTween(curve: Curves.easeInOutSine));
-        final downCurve = isLast ? Curves.easeOutCubic : Curves.easeInOutSine;
-        final downEnd = isLast ? 0.0 : low;
-        final downTween = Tween<double>(
-          begin: high,
-          end: downEnd,
-        ).chain(CurveTween(curve: downCurve));
+    // Build N loops (low->high->low), but end last loop by fading to 0
+    final n = widget.loopCount.clamp(1, 10);
+    final items = <TweenSequenceItem<double>>[];
+    for (var i = 0; i < n; i++) {
+      final isLast = i == n - 1;
+      final upTween = Tween<double>(
+        begin: low,
+        end: high,
+      ).chain(CurveTween(curve: Curves.easeInOutSine));
+      final downCurve = isLast ? Curves.easeOutCubic : Curves.easeInOutSine;
+      final downEnd = isLast ? 0.0 : low;
+      final downTween = Tween<double>(
+        begin: high,
+        end: downEnd,
+      ).chain(CurveTween(curve: downCurve));
 
-        items
-          ..add(TweenSequenceItem(tween: upTween, weight: 50))
-          ..add(TweenSequenceItem(tween: downTween, weight: 50));
-      }
-      final sequence = TweenSequence<double>(items);
-      return _controller.drive(sequence);
+      items
+        ..add(TweenSequenceItem(tween: upTween, weight: 50))
+        ..add(TweenSequenceItem(tween: downTween, weight: 50));
     }
-    // One-shot: low -> high (brief hold) -> long, gentle fade to low
-    return TweenSequence<double>([
-      // Rise
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: low,
-          end: high,
-        ).chain(CurveTween(curve: Curves.easeInSine)),
-        weight: 25,
-      ),
-      // Brief plateau at peak to reduce perceived abruptness
-      TweenSequenceItem(
-        tween: ConstantTween<double>(high),
-        weight: 10,
-      ),
-      // Long fade with slow tail for softness
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: high,
-          end: low,
-        ).chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 65,
-      ),
-    ]).animate(_controller);
+    final sequence = TweenSequence<double>(items);
+    return _controller.drive(sequence);
   }();
 
   @override

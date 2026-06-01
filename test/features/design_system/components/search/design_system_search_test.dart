@@ -282,6 +282,146 @@ void main() {
     });
 
     testWidgets(
+      'swapping from an external controller to internal rewires listeners',
+      (tester) async {
+        final externalController = TextEditingController(
+          text: 'external value',
+        );
+        addTearDown(externalController.dispose);
+
+        await tester.pumpWidget(
+          _swapHarness(controller: externalController),
+        );
+
+        // External controller drives the field and its non-empty text shows
+        // the clear button.
+        expect(find.text('external value'), findsOneWidget);
+        expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+
+        // Rebuild with no controller -> falls back to a fresh internal
+        // controller (lines 71-72), which is empty.
+        await tester.pumpWidget(_swapHarness());
+        await tester.pump();
+
+        expect(find.text('external value'), findsNothing);
+        expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+
+        // Mutating the now-detached external controller must NOT rebuild the
+        // widget (its listener was removed on line 69).
+        externalController.text = 'detached';
+        await tester.pump();
+        expect(find.text('detached'), findsNothing);
+
+        // The freshly created internal controller is wired up: typing rebuilds
+        // and surfaces the clear button (listener re-added on line 77).
+        await tester.enterText(find.byType(TextField), 'typed internally');
+        await tester.pump();
+        expect(find.text('typed internally'), findsOneWidget);
+        expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'swapping from internal to an external controller disposes the internal',
+      (tester) async {
+        // Start with no controller so an internal one is created lazily and
+        // its text is observed.
+        await tester.pumpWidget(_swapHarness(initialText: 'internal value'));
+        expect(find.text('internal value'), findsOneWidget);
+
+        final externalController = TextEditingController(text: 'now external');
+        addTearDown(externalController.dispose);
+
+        // Rebuild with an external controller -> internal is nulled out and
+        // disposed (lines 74-75). No exception means the dispose path ran
+        // cleanly and the old internal controller is no longer referenced.
+        await tester.pumpWidget(_swapHarness(controller: externalController));
+        await tester.pump();
+
+        expect(find.text('internal value'), findsNothing);
+        expect(find.text('now external'), findsOneWidget);
+        expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // The external controller's listener was re-added (line 77): clearing
+        // it rebuilds and hides the clear button.
+        externalController.clear();
+        await tester.pump();
+        expect(find.text('now external'), findsNothing);
+        expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'swapping between two external controllers keeps the field in sync',
+      (tester) async {
+        final controllerA = TextEditingController(text: 'value A');
+        final controllerB = TextEditingController(text: 'value B');
+        addTearDown(controllerA.dispose);
+        addTearDown(controllerB.dispose);
+
+        await tester.pumpWidget(_swapHarness(controller: controllerA));
+        expect(find.text('value A'), findsOneWidget);
+
+        // Swap to a different external controller. There is no internal
+        // controller to dispose, so the else-branch (lines 74-77) runs without
+        // disposing anything and re-wires the listener to controller B.
+        await tester.pumpWidget(_swapHarness(controller: controllerB));
+        await tester.pump();
+
+        expect(find.text('value A'), findsNothing);
+        expect(find.text('value B'), findsOneWidget);
+
+        // controllerA is detached: mutating it does not rebuild the field.
+        controllerA.text = 'changed A';
+        await tester.pump();
+        expect(find.text('changed A'), findsNothing);
+
+        // controllerB is wired: mutating it rebuilds the field.
+        controllerB.text = 'changed B';
+        await tester.pump();
+        expect(find.text('changed B'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'changing initialText with no controller syncs the internal controller',
+      (tester) async {
+        // Create the internal controller lazily by rendering once.
+        await tester.pumpWidget(_swapHarness(initialText: 'first'));
+        expect(find.text('first'), findsOneWidget);
+
+        // Changing initialText to a different value drives
+        // _syncInternalControllerText, which rewrites the controller value
+        // (lines 230-234) and collapses the selection to the end.
+        await tester.pumpWidget(_swapHarness(initialText: 'second'));
+        await tester.pump();
+
+        final editableText = tester.widget<EditableText>(
+          find.byType(EditableText),
+        );
+        expect(editableText.controller.text, 'second');
+        expect(
+          editableText.controller.selection,
+          const TextSelection.collapsed(offset: 6),
+        );
+        expect(find.text('second'), findsOneWidget);
+
+        // Re-pumping with the SAME initialText hits the early-return guard
+        // (text already equals nextText) and leaves the field unchanged.
+        await tester.pumpWidget(_swapHarness(initialText: 'second'));
+        await tester.pump();
+        expect(
+          tester
+              .widget<EditableText>(find.byType(EditableText))
+              .controller
+              .text,
+          'second',
+        );
+      },
+    );
+
+    testWidgets(
       'scales line height from scaled font size for non-linear text scaling',
       (
         tester,
@@ -342,6 +482,23 @@ class _ShiftTextScaler extends TextScaler {
 
   @override
   int get hashCode => delta.hashCode;
+}
+
+Widget _swapHarness({
+  TextEditingController? controller,
+  String? initialText,
+}) {
+  return makeTestableWidgetWithScaffold(
+    SizedBox(
+      width: 244,
+      child: DesignSystemSearch(
+        hintText: 'Type user',
+        controller: controller,
+        initialText: initialText,
+      ),
+    ),
+    theme: DesignSystemTheme.light(),
+  );
 }
 
 Finder _visibleText(String text) {

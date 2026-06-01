@@ -1815,5 +1815,141 @@ void main() {
         },
       );
     });
+
+    group('Create Mode Color Selection', () {
+      testWidgets(
+        'selecting a color then creating passes the selected color hex to '
+        'the repository',
+        (tester) async {
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
+
+          when(
+            () => mockRepository.createCategory(
+              name: any(named: 'name'),
+              color: any(named: 'color'),
+              icon: any(named: 'icon'),
+            ),
+          ).thenAnswer(
+            (_) async => CategoryTestUtils.createTestCategory(),
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: const CategoryDetailsPage(),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // Open the color picker (default selected color is null → the
+          // picker seeds at Colors.red).
+          await tester.tap(find.byIcon(Icons.palette_outlined));
+          await tester.pumpAndSettle();
+          expect(find.byType(AlertDialog), findsOneWidget);
+
+          // Tap "Select" → CategoryColorPicker.onColorChanged fires with the
+          // seeded red, which runs setState(_selectedColor = color) on the
+          // page. The dialog dismisses.
+          await tester.tap(find.text('Select'));
+          await tester.pumpAndSettle();
+          expect(find.byType(AlertDialog), findsNothing);
+
+          // The color row now shows the selected hex (the picker seeds at
+          // Colors.red, the Material swatch #F44336) instead of the
+          // "select color" hint — proving _selectedColor was assigned via
+          // setState in the page's onColorChanged callback.
+          expect(find.text('#F44336'), findsOneWidget);
+
+          // Enter a name and create. Because _selectedColor is now non-null,
+          // _handleCreate takes the colorToCssHex(_selectedColor!) branch.
+          await tester.enterText(find.byType(TextField), 'Red Category');
+          await tester.pump();
+
+          await tester.tap(find.byType(LottiPrimaryButton));
+          await tester.pumpAndSettle();
+
+          // Repository received the selected color (red swatch), not the blue
+          // default — confirming the non-null color branch executed.
+          final captured =
+              verify(
+                    () => mockRepository.createCategory(
+                      name: 'Red Category',
+                      color: captureAny(named: 'color'),
+                      // ignore: avoid_redundant_argument_values
+                      icon: null,
+                    ),
+                  ).captured.single
+                  as String;
+          expect(captured, '#F44336');
+          expect(beamedTo, '/settings/categories');
+        },
+      );
+    });
+
+    group('Edit Mode Language Selection', () {
+      testWidgets(
+        'picking a different language updates the form and dismisses the modal',
+        (tester) async {
+          // Tall viewport so the language dropdown is on-screen without
+          // scrolling.
+          tester.view.physicalSize = const Size(800, 2400);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          final category = CategoryTestUtils.createTestCategory(
+            defaultLanguageCode: 'en',
+          );
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          streamController.add(category);
+          await tester.pumpAndSettle();
+
+          // Save starts disabled (no changes yet).
+          expect(findEnabledPrimaryButton(tester), isNull);
+
+          // Open the language selector modal.
+          await tester.tap(find.byType(CategoryLanguageDropdown));
+          await tester.pumpAndSettle();
+          expect(find.byType(LanguageSelectionModalContent), findsOneWidget);
+
+          // The current language ('en' → "English") renders as the selected
+          // card; pick a different one ("German") from the remaining list.
+          // Tapping it invokes onLanguageSelected(SupportedLanguage.de),
+          // which calls controller.updateFormField(defaultLanguageCode: 'de')
+          // and pops the modal.
+          final germanCard = find.text('German');
+          expect(germanCard, findsOneWidget);
+          await tester.tap(germanCard, warnIfMissed: false);
+          await tester.pumpAndSettle();
+
+          // Modal dismissed (Navigator.pop ran).
+          expect(find.byType(LanguageSelectionModalContent), findsNothing);
+
+          // Form is now dirty ('de' != original 'en') → save is enabled,
+          // proving updateFormField was invoked with the new code.
+          expect(findEnabledPrimaryButton(tester), isNotNull);
+
+          await streamController.close();
+        },
+      );
+    });
   });
 }

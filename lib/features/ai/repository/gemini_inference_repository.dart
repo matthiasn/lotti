@@ -49,11 +49,6 @@ class GeminiInferenceRepository {
   // Configuration constants
   // -------------------------------------------------------------------------
 
-  /// Toggle for verbose streaming logs useful during debugging.
-  /// Set to `true` to enable detailed logging of raw chunks, parsed objects,
-  /// and processing metrics. Disabled by default to avoid console noise.
-  static const bool kVerboseStreamLogging = false;
-
   /// Maximum characters to show in debug log previews and error messages.
   static const int kPreviewLength = 200;
 
@@ -148,16 +143,6 @@ class GeminiInferenceRepository {
       context:
           'Gemini streamGenerateContent (model=$model, baseUrl=${provider.baseUrl})',
     );
-    if (kVerboseStreamLogging) {
-      developer.log(
-        'Gemini streaming status: ${streamed.statusCode}',
-        name: 'GeminiInferenceRepository',
-      );
-      developer.log(
-        'Response headers: ${streamed.headers}',
-        name: 'GeminiInferenceRepository',
-      );
-    }
     if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
       final bytes = await streamed.stream.toBytes();
       final reason = utf8.decode(bytes);
@@ -178,10 +163,6 @@ class GeminiInferenceRepository {
     // Robust NDJSON/SSE parser (extracted utility)
     final parser = GeminiStreamParser();
     var emittedAny = false;
-    var rawChunkLogs = 0;
-    // Metrics
-    final requestStart = DateTime.now();
-    var chunkProcessingMicros = 0;
     var thinkingChars = 0;
     var visibleChars = 0;
     var totalCharsEmitted = 0;
@@ -192,17 +173,6 @@ class GeminiInferenceRepository {
     int? thoughtsTokens;
     int? cachedTokens;
     await for (final chunk in streamed.stream.transform(utf8.decoder)) {
-      if (kVerboseStreamLogging && rawChunkLogs < 3) {
-        final preview = chunk.length > kPreviewLength
-            ? chunk.substring(0, kPreviewLength)
-            : chunk;
-        developer.log(
-          'raw chunk (${chunk.length} chars): ${preview.replaceAll('\n', r'\n')}',
-          name: 'GeminiInferenceRepository',
-        );
-        rawChunkLogs++;
-      }
-      final sw = Stopwatch()..start();
       // Use extracted incremental parser to decode mixed-framing chunks
       {
         final objs = parser.addChunk(chunk);
@@ -221,13 +191,6 @@ class GeminiInferenceRepository {
 
           final candidates = obj['candidates'];
           if (candidates is! List || candidates.isEmpty) {
-            if (kVerboseStreamLogging) {
-              final keys = obj.keys.join(',');
-              developer.log(
-                'no candidates; obj keys=[$keys]',
-                name: 'GeminiInferenceRepository',
-              );
-            }
             continue;
           }
           final first = candidates.first;
@@ -235,22 +198,10 @@ class GeminiInferenceRepository {
               ? first['content']
               : null;
           if (content is! Map<String, dynamic>) {
-            if (kVerboseStreamLogging) {
-              developer.log(
-                'candidate.content missing or not a map',
-                name: 'GeminiInferenceRepository',
-              );
-            }
             continue;
           }
           final parts = content['parts'];
           if (parts is! List) {
-            if (kVerboseStreamLogging) {
-              developer.log(
-                'content.parts missing or not a list',
-                name: 'GeminiInferenceRepository',
-              );
-            }
             continue;
           }
 
@@ -293,12 +244,6 @@ class GeminiInferenceRepository {
               );
               thinkingBuffer.clear();
               inThinking = false;
-              if (kVerboseStreamLogging) {
-                developer.log(
-                  'Flushed thinking block',
-                  name: 'GeminiInferenceRepository',
-                );
-              }
             }
 
             // Regular text part
@@ -314,12 +259,6 @@ class GeminiInferenceRepository {
                 model: model,
                 text: text,
               );
-              if (kVerboseStreamLogging) {
-                developer.log(
-                  'Text delta (${text.length} chars)',
-                  name: 'GeminiInferenceRepository',
-                );
-              }
               if (totalCharsEmitted >= kMaxStreamingChars) {
                 developer.log(
                   'Max streaming char cap reached ($kMaxStreamingChars). Terminating stream early.',
@@ -358,17 +297,9 @@ class GeminiInferenceRepository {
                 name: name,
                 arguments: args,
               );
-              if (kVerboseStreamLogging) {
-                developer.log(
-                  'Tool call: $name',
-                  name: 'GeminiInferenceRepository',
-                );
-              }
             }
           }
         }
-        sw.stop();
-        chunkProcessingMicros += sw.elapsedMicroseconds;
         continue; // next network chunk
       }
     }
@@ -381,23 +312,6 @@ class GeminiInferenceRepository {
         created: created,
         model: model,
         thinking: thinkingBuffer.toString(),
-      );
-      if (kVerboseStreamLogging) {
-        developer.log(
-          'Flushed trailing thinking block',
-          name: 'GeminiInferenceRepository',
-        );
-      }
-    }
-
-    if (kVerboseStreamLogging) {
-      final totalLatency = DateTime.now().difference(requestStart);
-      final denom = visibleChars + thinkingChars;
-      final thinkingRatio = denom > 0 ? (thinkingChars / denom) : 0.0;
-      developer.log(
-        'Gemini stream finished. latency=${totalLatency.inMilliseconds}ms, processing=$chunkProcessingMicrosµs, '
-        'visibleChars=$visibleChars, thinkingChars=$thinkingChars, thinkingRatio=${thinkingRatio.toStringAsFixed(3)}',
-        name: 'GeminiInferenceRepository',
       );
     }
 
