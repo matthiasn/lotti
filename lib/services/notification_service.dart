@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -23,6 +22,10 @@ class NotificationConstants {
 }
 
 final JournalDb _db = getIt<JournalDb>();
+
+bool get _skipNotificationsOnCurrentPlatform =>
+    defaultTargetPlatform == TargetPlatform.windows ||
+    defaultTargetPlatform == TargetPlatform.linux;
 
 class NotificationService {
   NotificationService() {
@@ -57,7 +60,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> _requestPermissions() async {
-    if (Platform.isWindows || Platform.isLinux) {
+    if (_skipNotificationsOnCurrentPlatform) {
       return;
     }
 
@@ -83,7 +86,7 @@ class NotificationService {
   Future<void> updateBadge() async {
     final notifyEnabled = await _db.getConfigFlag(enableNotificationsFlag);
 
-    if (Platform.isWindows || Platform.isLinux) {
+    if (_skipNotificationsOnCurrentPlatform) {
       return;
     }
 
@@ -191,7 +194,7 @@ class NotificationService {
   }) async {
     final notifyEnabled = await _db.getConfigFlag(enableNotificationsFlag);
 
-    if (!notifyEnabled || Platform.isWindows || Platform.isLinux) {
+    if (!notifyEnabled || _skipNotificationsOnCurrentPlatform) {
       return;
     }
 
@@ -251,7 +254,7 @@ class NotificationService {
   }) async {
     final notifyEnabled = await _db.getConfigFlag(enableNotificationsFlag);
 
-    if (!notifyEnabled || Platform.isWindows || Platform.isLinux) {
+    if (!notifyEnabled || _skipNotificationsOnCurrentPlatform) {
       return;
     }
 
@@ -299,7 +302,7 @@ class NotificationService {
   }) async {
     final notifyEnabled = await _db.getConfigFlag(enableNotificationsFlag);
 
-    if (!notifyEnabled || Platform.isWindows || Platform.isLinux) {
+    if (!notifyEnabled || _skipNotificationsOnCurrentPlatform) {
       return;
     }
 
@@ -333,7 +336,7 @@ class NotificationService {
   }
 
   Future<void> cancelNotification(int notificationId) async {
-    if (Platform.isWindows || Platform.isLinux) {
+    if (_skipNotificationsOnCurrentPlatform) {
       return;
     }
 

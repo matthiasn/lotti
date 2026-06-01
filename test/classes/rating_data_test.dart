@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -206,6 +207,19 @@ void main() {
       expect(dim.optionLabels, hasLength(3));
       expect(dim.optionValues, isNull);
     });
+
+    glados.Glados(
+      glados.any.generatedRatingDimension,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('round-trips generated dimensions through JSON', (scenario) {
+      final dimension = scenario.dimension;
+
+      final restored = RatingDimension.fromJson(
+        jsonDecode(jsonEncode(dimension.toJson())) as Map<String, dynamic>,
+      );
+
+      expect(restored, equals(dimension), reason: '$scenario');
+    }, tags: 'glados');
   });
 
   group('RatingData', () {
@@ -419,6 +433,22 @@ void main() {
       expect(restored.catalogId, equals('task_completed'));
       expect(restored, equals(data));
     });
+
+    glados.Glados(
+      glados.any.generatedRatingData,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('round-trips generated rating data through JSON', (scenario) {
+      final data = scenario.data;
+
+      final restored = RatingData.fromJson(
+        jsonDecode(jsonEncode(data.toJson())) as Map<String, dynamic>,
+      );
+
+      expect(restored, equals(data), reason: '$scenario');
+      expect(restored.targetId, data.targetId, reason: '$scenario');
+      expect(restored.catalogId, data.catalogId, reason: '$scenario');
+      expect(restored.dimensions, data.dimensions, reason: '$scenario');
+    }, tags: 'glados');
   });
 
   group('RatingEntry', () {
@@ -443,4 +473,175 @@ void main() {
       expect(entry.affectedIds, contains('rating-1'));
     });
   });
+}
+
+class _GeneratedRatingDimension {
+  const _GeneratedRatingDimension({
+    required this.key,
+    required this.valueSlot,
+    required this.questionSlot,
+    required this.descriptionSlot,
+    required this.inputTypeSlot,
+    required this.optionLabels,
+    required this.optionValueSlots,
+  });
+
+  final String key;
+  final int valueSlot;
+  final int questionSlot;
+  final int descriptionSlot;
+  final int inputTypeSlot;
+  final List<String> optionLabels;
+  final List<int> optionValueSlots;
+
+  RatingDimension get dimension => RatingDimension(
+    key: key,
+    value: valueSlot / 100,
+    question: _optionalText(questionSlot, 'Question'),
+    description: _optionalText(descriptionSlot, 'Description'),
+    inputType: _optionalInputType(inputTypeSlot),
+    optionLabels: optionLabels.isEmpty ? null : optionLabels,
+    optionValues: optionValueSlots.isEmpty
+        ? null
+        : optionValueSlots.map((slot) => slot / 100).toList(),
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedRatingDimension('
+        'key: "$key", '
+        'valueSlot: $valueSlot, '
+        'questionSlot: $questionSlot, '
+        'descriptionSlot: $descriptionSlot, '
+        'inputTypeSlot: $inputTypeSlot, '
+        'optionLabels: $optionLabels, '
+        'optionValueSlots: $optionValueSlots)';
+  }
+}
+
+class _GeneratedRatingData {
+  const _GeneratedRatingData({
+    required this.targetId,
+    required this.dimensions,
+    required this.catalogId,
+    required this.schemaVersion,
+    required this.noteSlot,
+  });
+
+  final String targetId;
+  final List<_GeneratedRatingDimension> dimensions;
+  final String catalogId;
+  final int schemaVersion;
+  final int noteSlot;
+
+  RatingData get data => RatingData(
+    targetId: targetId,
+    dimensions: dimensions.map((generated) => generated.dimension).toList(),
+    catalogId: catalogId,
+    schemaVersion: schemaVersion,
+    note: _optionalText(noteSlot, 'Note'),
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedRatingData('
+        'targetId: "$targetId", '
+        'dimensions: $dimensions, '
+        'catalogId: "$catalogId", '
+        'schemaVersion: $schemaVersion, '
+        'noteSlot: $noteSlot)';
+  }
+}
+
+extension _AnyRatingData on glados.Any {
+  glados.Generator<String> get _ratingText =>
+      glados.AnyUtils(this).choose(const [
+        '',
+        'productivity',
+        'energy',
+        'challenge_skill',
+        'Text with spaces',
+        'Text with "quotes"',
+        r'Text with \ slash',
+      ]);
+
+  glados.Generator<_GeneratedRatingDimension> get generatedRatingDimension =>
+      glados.CombinableAny(this).combine7(
+        _ratingText,
+        glados.IntAnys(this).intInRange(0, 100),
+        glados.IntAnys(this).intInRange(0, 20),
+        glados.IntAnys(this).intInRange(0, 20),
+        glados.IntAnys(this).intInRange(0, 20),
+        glados.ListAnys(this).listWithLengthInRange(0, 4, _ratingText),
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          4,
+          glados.IntAnys(this).intInRange(0, 100),
+        ),
+        (
+          String key,
+          int valueSlot,
+          int questionSlot,
+          int descriptionSlot,
+          int inputTypeSlot,
+          List<String> optionLabels,
+          List<int> optionValueSlots,
+        ) => _GeneratedRatingDimension(
+          key: key,
+          valueSlot: valueSlot,
+          questionSlot: questionSlot,
+          descriptionSlot: descriptionSlot,
+          inputTypeSlot: inputTypeSlot,
+          optionLabels: optionLabels,
+          optionValueSlots: optionValueSlots,
+        ),
+      );
+
+  glados.Generator<_GeneratedRatingData> get generatedRatingData =>
+      glados.CombinableAny(this).combine5(
+        _ratingText,
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          5,
+          generatedRatingDimension,
+        ),
+        _ratingText,
+        glados.IntAnys(this).intInRange(1, 8),
+        glados.IntAnys(this).intInRange(0, 20),
+        (
+          String targetId,
+          List<_GeneratedRatingDimension> dimensions,
+          String catalogId,
+          int schemaVersion,
+          int noteSlot,
+        ) => _GeneratedRatingData(
+          targetId: targetId,
+          dimensions: dimensions,
+          catalogId: catalogId,
+          schemaVersion: schemaVersion,
+          noteSlot: noteSlot,
+        ),
+      );
+}
+
+String? _optionalText(int slot, String prefix) {
+  if (slot % 4 == 0) {
+    return null;
+  }
+
+  return switch (slot % 4) {
+    1 => '$prefix $slot',
+    2 => '$prefix with "quotes" $slot',
+    _ => '$prefix with \\ slash',
+  };
+}
+
+String? _optionalInputType(int slot) {
+  return switch (slot % 5) {
+    0 => null,
+    1 => 'tapBar',
+    2 => 'segmented',
+    3 => 'boolean',
+    _ => 'future-input',
+  };
 }

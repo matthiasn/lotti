@@ -92,6 +92,55 @@ class ChatStreamUtils {
     return carry;
   }
 
+  /// Computes a trailing partial closing token to carry while inside thinking.
+  ///
+  /// Closing tokens can arrive split across stream chunks just like opening
+  /// tokens. The parser uses this to avoid appending a partial close marker to
+  /// the thinking buffer before the following chunk completes it.
+  static String computeCloseTagCarry(String s, String activeCloseToken) {
+    if (activeCloseToken.startsWith('<')) {
+      final whitespaceTail = RegExp(
+        r'</think(?:ing)?\s*$',
+        caseSensitive: false,
+      ).firstMatch(s);
+      if (whitespaceTail != null && whitespaceTail.end == s.length) {
+        return s.substring(whitespaceTail.start);
+      }
+      return _computeTokenPrefixCarry(s, const ['</thinking', '</think']);
+    }
+
+    if (activeCloseToken.startsWith('[')) {
+      final whitespaceTail = RegExp(
+        r'\[/(?:think|thinking)\s*$',
+        caseSensitive: false,
+      ).firstMatch(s);
+      if (whitespaceTail != null && whitespaceTail.end == s.length) {
+        return s.substring(whitespaceTail.start);
+      }
+      return _computeTokenPrefixCarry(s, const ['[/thinking', '[/think']);
+    }
+
+    final lower = s.toLowerCase();
+    if (lower.endsWith('``')) return s.substring(s.length - 2);
+    if (lower.endsWith('`')) return s.substring(s.length - 1);
+    return '';
+  }
+
+  static String _computeTokenPrefixCarry(String s, List<String> tokens) {
+    final lower = s.toLowerCase();
+    var carry = '';
+    for (final token in tokens) {
+      for (var i = token.length; i > 0; i--) {
+        final prefix = token.substring(0, i);
+        if (lower.endsWith(prefix) && i > carry.length) {
+          carry = s.substring(s.length - i);
+          break;
+        }
+      }
+    }
+    return carry;
+  }
+
   /// Finds the earliest thinking open token in [chunk] starting at [fromIndex].
   /// Returns a match record with indices and close token, or null if none.
   static ({int idx, int end, String closeToken})? findEarliestOpenMatch(

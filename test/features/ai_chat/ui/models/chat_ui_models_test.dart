@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
@@ -312,6 +313,51 @@ void main() {
         expect(modelWithTitle.displayTitle, equals('Custom Title'));
         expect(emptyModel.displayTitle, equals('New Chat'));
       });
+
+      glados.Glados(
+        glados.any.generatedChatSessionUiModel,
+        glados.ExploreConfig(numRuns: 160),
+      ).test(
+        'matches generated derived-state and domain-conversion model',
+        (
+          scenario,
+        ) {
+          final model = scenario.model;
+          final domain = model.toDomain();
+
+          expect(
+            model.completedMessages,
+            model.messages.where((message) => !message.isStreaming).toList(),
+            reason: '$scenario',
+          );
+          expect(
+            model.streamingMessage,
+            scenario.expectedStreamingMessage,
+            reason: '$scenario',
+          );
+          expect(model.hasMessages, model.messages.isNotEmpty);
+          expect(model.canSendMessage, scenario.expectedCanSend);
+          expect(model.displayTitle, scenario.expectedDisplayTitle);
+          expect(domain.id, model.id, reason: '$scenario');
+          expect(domain.title, model.title, reason: '$scenario');
+          expect(domain.messages, model.messages, reason: '$scenario');
+          expect(domain.metadata, scenario.expectedDomainMetadata);
+
+          if (model.messages.isNotEmpty) {
+            expect(
+              domain.createdAt,
+              model.messages.first.timestamp,
+              reason: '$scenario',
+            );
+            expect(
+              domain.lastMessageAt,
+              model.messages.last.timestamp,
+              reason: '$scenario',
+            );
+          }
+        },
+        tags: 'glados',
+      );
     });
   });
 
@@ -409,6 +455,286 @@ void main() {
           expect(model.isAnySessionLoading, isFalse);
         },
       );
+
+      glados.Glados(
+        glados.any.generatedChatStateUiModel,
+        glados.ExploreConfig(numRuns: 120),
+      ).test('matches generated aggregate loading model', (scenario) {
+        final model = scenario.model;
+
+        expect(
+          model.isAnySessionLoading,
+          scenario.expectedIsAnySessionLoading,
+          reason: '$scenario',
+        );
+        expect(model.clearError().error, isNull, reason: '$scenario');
+      }, tags: 'glados');
     });
   });
+}
+
+class _GeneratedChatSessionUiModel {
+  const _GeneratedChatSessionUiModel({
+    required this.idSlot,
+    required this.title,
+    required this.messages,
+    required this.isLoading,
+    required this.isStreaming,
+    required this.metadataSlot,
+    required this.selectedModelSlot,
+    required this.errorSlot,
+    required this.streamingMessageIdSlot,
+  });
+
+  final int idSlot;
+  final String title;
+  final List<_GeneratedChatMessage> messages;
+  final bool isLoading;
+  final bool isStreaming;
+  final int metadataSlot;
+  final int selectedModelSlot;
+  final int errorSlot;
+  final int streamingMessageIdSlot;
+
+  ChatSessionUiModel get model => ChatSessionUiModel(
+    id: 'session-$idSlot',
+    title: title,
+    messages: messages.map((message) => message.message).toList(),
+    isLoading: isLoading,
+    isStreaming: isStreaming,
+    metadata: metadata,
+    selectedModelId: selectedModelId,
+    error: _optionalText(errorSlot, 'error'),
+    streamingMessageId: _optionalText(streamingMessageIdSlot, 'streaming'),
+  );
+
+  Map<String, dynamic>? get metadata => _metadata(metadataSlot);
+
+  String? get selectedModelId => _optionalText(selectedModelSlot, 'model');
+
+  ChatMessage? get expectedStreamingMessage {
+    for (final generated in messages) {
+      final message = generated.message;
+      if (message.isStreaming) {
+        return message;
+      }
+    }
+    return null;
+  }
+
+  bool get expectedCanSend =>
+      !isLoading && !isStreaming && selectedModelId != null;
+
+  String get expectedDisplayTitle => title.isEmpty ? 'New Chat' : title;
+
+  Map<String, dynamic> get expectedDomainMetadata => <String, dynamic>{
+    ...?metadata,
+    if (selectedModelId != null) 'selectedModelId': selectedModelId,
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedChatSessionUiModel('
+        'idSlot: $idSlot, '
+        'title: "$title", '
+        'messages: $messages, '
+        'isLoading: $isLoading, '
+        'isStreaming: $isStreaming, '
+        'metadataSlot: $metadataSlot, '
+        'selectedModelSlot: $selectedModelSlot, '
+        'errorSlot: $errorSlot, '
+        'streamingMessageIdSlot: $streamingMessageIdSlot)';
+  }
+}
+
+class _GeneratedChatStateUiModel {
+  const _GeneratedChatStateUiModel({
+    required this.currentSessionSlot,
+    required this.currentSession,
+    required this.recentSessions,
+    required this.errorSlot,
+  });
+
+  final int currentSessionSlot;
+  final _GeneratedChatSessionUiModel currentSession;
+  final List<_GeneratedChatSessionUiModel> recentSessions;
+  final int errorSlot;
+
+  ChatStateUiModel get model => ChatStateUiModel(
+    currentSession: currentSessionSlot.isEven ? currentSession.model : null,
+    recentSessions: recentSessions
+        .map((session) => session.model)
+        .toList(growable: false),
+    error: _optionalText(errorSlot, 'state-error'),
+  );
+
+  bool get expectedIsAnySessionLoading =>
+      (currentSessionSlot.isEven && currentSession.isLoading) ||
+      recentSessions.any((session) => session.isLoading);
+
+  @override
+  String toString() {
+    return '_GeneratedChatStateUiModel('
+        'currentSessionSlot: $currentSessionSlot, '
+        'currentSession: $currentSession, '
+        'recentSessions: $recentSessions, '
+        'errorSlot: $errorSlot)';
+  }
+}
+
+class _GeneratedChatMessage {
+  const _GeneratedChatMessage({
+    required this.idSlot,
+    required this.content,
+    required this.role,
+    required this.timestampSlot,
+    required this.isStreaming,
+  });
+
+  final int idSlot;
+  final String content;
+  final ChatMessageRole role;
+  final int timestampSlot;
+  final bool isStreaming;
+
+  ChatMessage get message => ChatMessage(
+    id: 'message-$idSlot',
+    content: content,
+    role: role,
+    timestamp: _date(timestampSlot),
+    isStreaming: isStreaming,
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedChatMessage('
+        'idSlot: $idSlot, '
+        'content: "$content", '
+        'role: $role, '
+        'timestampSlot: $timestampSlot, '
+        'isStreaming: $isStreaming)';
+  }
+}
+
+extension _AnyChatUiModels on glados.Any {
+  glados.Generator<String> get _chatText => glados.AnyUtils(this).choose(const [
+    '',
+    'Chat',
+    'Text with "quotes"',
+    r'Text with \ slash',
+    'Line\nbreak',
+  ]);
+
+  glados.Generator<ChatMessageRole> get _chatRole =>
+      glados.AnyUtils(this).choose(ChatMessageRole.values);
+
+  glados.Generator<_GeneratedChatMessage> get _chatMessage =>
+      glados.CombinableAny(this).combine5(
+        glados.IntAnys(this).intInRange(0, 80),
+        _chatText,
+        _chatRole,
+        glados.IntAnys(this).intInRange(0, 240),
+        this.bool,
+        (
+          int idSlot,
+          String content,
+          ChatMessageRole role,
+          int timestampSlot,
+          bool isStreaming,
+        ) => _GeneratedChatMessage(
+          idSlot: idSlot,
+          content: content,
+          role: role,
+          timestampSlot: timestampSlot,
+          isStreaming: isStreaming,
+        ),
+      );
+
+  glados.Generator<_GeneratedChatSessionUiModel>
+  get generatedChatSessionUiModel => glados.CombinableAny(this).combine9(
+    glados.IntAnys(this).intInRange(0, 80),
+    _chatText,
+    glados.ListAnys(this).listWithLengthInRange(0, 5, _chatMessage),
+    this.bool,
+    this.bool,
+    glados.IntAnys(this).intInRange(0, 20),
+    glados.IntAnys(this).intInRange(0, 20),
+    glados.IntAnys(this).intInRange(0, 20),
+    glados.IntAnys(this).intInRange(0, 20),
+    (
+      int idSlot,
+      String title,
+      List<_GeneratedChatMessage> messages,
+      bool isLoading,
+      bool isStreaming,
+      int metadataSlot,
+      int selectedModelSlot,
+      int errorSlot,
+      int streamingMessageIdSlot,
+    ) => _GeneratedChatSessionUiModel(
+      idSlot: idSlot,
+      title: title,
+      messages: messages,
+      isLoading: isLoading,
+      isStreaming: isStreaming,
+      metadataSlot: metadataSlot,
+      selectedModelSlot: selectedModelSlot,
+      errorSlot: errorSlot,
+      streamingMessageIdSlot: streamingMessageIdSlot,
+    ),
+  );
+
+  glados.Generator<_GeneratedChatStateUiModel> get generatedChatStateUiModel =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 20),
+        generatedChatSessionUiModel,
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          4,
+          generatedChatSessionUiModel,
+        ),
+        glados.IntAnys(this).intInRange(0, 20),
+        (
+          int currentSessionSlot,
+          _GeneratedChatSessionUiModel currentSession,
+          List<_GeneratedChatSessionUiModel> recentSessions,
+          int errorSlot,
+        ) => _GeneratedChatStateUiModel(
+          currentSessionSlot: currentSessionSlot,
+          currentSession: currentSession,
+          recentSessions: recentSessions,
+          errorSlot: errorSlot,
+        ),
+      );
+}
+
+DateTime _date(int slot) {
+  return DateTime.utc(
+    2024 + (slot % 4),
+    (slot % 12) + 1,
+    (slot % 28) + 1,
+    slot % 24,
+    slot % 60,
+  );
+}
+
+String? _optionalText(int slot, String prefix) {
+  return switch (slot % 4) {
+    0 => null,
+    1 => '$prefix-$slot',
+    2 => '$prefix "$slot"',
+    _ => '$prefix \\ $slot',
+  };
+}
+
+Map<String, dynamic>? _metadata(int slot) {
+  return switch (slot % 4) {
+    0 => null,
+    1 => <String, dynamic>{'source': 'generated-$slot'},
+    2 => <String, dynamic>{'selectedModelId': 'domain-model-$slot'},
+    _ => <String, dynamic>{
+      'nested': <String, dynamic>{'slot': slot},
+      'tags': <String>['chat', 'ui'],
+    },
+  };
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
@@ -157,6 +158,31 @@ void main() {
         ),
       ).called(1);
     });
+
+    glados.Glados(
+      glados.any.generatedInternalMarkdownRoute,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'routes generated app-local markdown URLs through NavService',
+      (scenario) async {
+        getIt.pushNewScope();
+        final mockNavService = MockNavService();
+        getIt.registerSingleton<NavService>(mockNavService);
+
+        try {
+          await handleMarkdownLinkTap(scenario.url, 'Generated');
+
+          verify(
+            () => mockNavService.beamToNamed(scenario.expectedRoute),
+          ).called(1);
+          verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+        } finally {
+          await getIt.resetScope();
+          await getIt.popScope();
+        }
+      },
+      tags: 'glados',
+    );
   });
 
   group('buildMarkdownLink', () {
@@ -272,4 +298,135 @@ void main() {
       verify(() => mockNavService.beamToNamed('/tasks/task-789')).called(1);
     });
   });
+}
+
+enum _GeneratedMarkdownRouteRoot {
+  calendar,
+  dashboards,
+  habits,
+  journal,
+  projects,
+  settings,
+  tasks,
+}
+
+enum _GeneratedMarkdownRouteShape {
+  absolutePath,
+  lottiHost,
+  lottiPath,
+}
+
+enum _GeneratedMarkdownPathSegment {
+  alpha,
+  numeric,
+  dashed,
+  underscored,
+}
+
+enum _GeneratedMarkdownQueryValue {
+  none,
+  alpha,
+  encodedSpace,
+  numeric,
+}
+
+class _GeneratedInternalMarkdownRoute {
+  const _GeneratedInternalMarkdownRoute({
+    required this.root,
+    required this.shape,
+    required this.segments,
+    required this.queryValue,
+  });
+
+  final _GeneratedMarkdownRouteRoot root;
+  final _GeneratedMarkdownRouteShape shape;
+  final List<_GeneratedMarkdownPathSegment> segments;
+  final _GeneratedMarkdownQueryValue queryValue;
+
+  String get path {
+    final suffix = segments.isEmpty
+        ? ''
+        : '/${segments.map((segment) => segment.text).join('/')}';
+    return '${root.path}$suffix';
+  }
+
+  String get query => switch (queryValue) {
+    _GeneratedMarkdownQueryValue.none => '',
+    _GeneratedMarkdownQueryValue.alpha => 'q=alpha',
+    _GeneratedMarkdownQueryValue.encodedSpace => 'q=hello%20world',
+    _GeneratedMarkdownQueryValue.numeric => 'page=2',
+  };
+
+  String get expectedRoute => query.isEmpty ? path : '$path?$query';
+
+  String get url {
+    final withQuery = query.isEmpty ? path : '$path?$query';
+    return switch (shape) {
+      _GeneratedMarkdownRouteShape.absolutePath => withQuery,
+      _GeneratedMarkdownRouteShape.lottiHost =>
+        'lotti://${withQuery.substring(1)}',
+      _GeneratedMarkdownRouteShape.lottiPath => 'lotti:$withQuery',
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedInternalMarkdownRoute('
+        'url: $url, '
+        'expectedRoute: $expectedRoute)';
+  }
+}
+
+extension on _GeneratedMarkdownRouteRoot {
+  String get path => switch (this) {
+    _GeneratedMarkdownRouteRoot.calendar => '/calendar',
+    _GeneratedMarkdownRouteRoot.dashboards => '/dashboards',
+    _GeneratedMarkdownRouteRoot.habits => '/habits',
+    _GeneratedMarkdownRouteRoot.journal => '/journal',
+    _GeneratedMarkdownRouteRoot.projects => '/projects',
+    _GeneratedMarkdownRouteRoot.settings => '/settings',
+    _GeneratedMarkdownRouteRoot.tasks => '/tasks',
+  };
+}
+
+extension on _GeneratedMarkdownPathSegment {
+  String get text => switch (this) {
+    _GeneratedMarkdownPathSegment.alpha => 'alpha',
+    _GeneratedMarkdownPathSegment.numeric => '2024',
+    _GeneratedMarkdownPathSegment.dashed => 'dash-name',
+    _GeneratedMarkdownPathSegment.underscored => 'under_score',
+  };
+}
+
+extension _AnyMarkdownLinkUtils on glados.Any {
+  glados.Generator<_GeneratedMarkdownRouteRoot> get _routeRoot =>
+      glados.AnyUtils(this).choose(_GeneratedMarkdownRouteRoot.values);
+
+  glados.Generator<_GeneratedMarkdownRouteShape> get _routeShape =>
+      glados.AnyUtils(this).choose(_GeneratedMarkdownRouteShape.values);
+
+  glados.Generator<_GeneratedMarkdownPathSegment> get _pathSegment =>
+      glados.AnyUtils(this).choose(_GeneratedMarkdownPathSegment.values);
+
+  glados.Generator<_GeneratedMarkdownQueryValue> get _queryValue =>
+      glados.AnyUtils(this).choose(_GeneratedMarkdownQueryValue.values);
+
+  glados.Generator<_GeneratedInternalMarkdownRoute>
+  get generatedInternalMarkdownRoute => glados.CombinableAny(this).combine4(
+    _routeRoot,
+    _routeShape,
+    glados.ListAnys(this).listWithLengthInRange(0, 3, _pathSegment),
+    _queryValue,
+    (
+      _GeneratedMarkdownRouteRoot root,
+      _GeneratedMarkdownRouteShape shape,
+      List<_GeneratedMarkdownPathSegment> segments,
+      _GeneratedMarkdownQueryValue queryValue,
+    ) => _GeneratedInternalMarkdownRoute(
+      root: root,
+      shape: shape,
+      segments: segments,
+      queryValue: queryValue,
+    ),
+  );
 }

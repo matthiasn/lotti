@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -207,5 +208,183 @@ void main() {
 
       expect(link1, equals(link2));
     });
+
+    glados.Glados(
+      glados.any.generatedEntryLink,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('round-trips generated link variants through JSON', (scenario) {
+      final link = scenario.link;
+
+      final restored = EntryLink.fromJson(
+        jsonDecode(jsonEncode(link.toJson())) as Map<String, dynamic>,
+      );
+
+      expect(restored, equals(link), reason: '$scenario');
+      expect(restored.collapsed, link.collapsed, reason: '$scenario');
+      expect(restored.hidden, link.hidden, reason: '$scenario');
+      expect(restored.runtimeType, link.runtimeType, reason: '$scenario');
+    }, tags: 'glados');
   });
+}
+
+enum _GeneratedEntryLinkKind { basic, rating, project }
+
+class _GeneratedEntryLink {
+  const _GeneratedEntryLink({
+    required this.kind,
+    required this.idSlot,
+    required this.fromSlot,
+    required this.toSlot,
+    required this.createdAtSlot,
+    required this.updatedAtSlot,
+    required this.vectorClockSlot,
+    required this.hiddenSlot,
+    required this.collapsedSlot,
+    required this.deletedAtSlot,
+  });
+
+  final _GeneratedEntryLinkKind kind;
+  final int idSlot;
+  final int fromSlot;
+  final int toSlot;
+  final int createdAtSlot;
+  final int updatedAtSlot;
+  final int vectorClockSlot;
+  final int hiddenSlot;
+  final int collapsedSlot;
+  final int deletedAtSlot;
+
+  EntryLink get link {
+    final common = (
+      id: 'link-$idSlot',
+      fromId: 'from-$fromSlot',
+      toId: 'to-$toSlot',
+      createdAt: _linkDate(createdAtSlot),
+      updatedAt: _linkDate(updatedAtSlot),
+      vectorClock: _vectorClock(vectorClockSlot),
+      hidden: _optionalBool(hiddenSlot),
+      collapsed: _optionalBool(collapsedSlot),
+      deletedAt: deletedAtSlot.isEven ? null : _linkDate(deletedAtSlot),
+    );
+
+    return switch (kind) {
+      _GeneratedEntryLinkKind.basic => EntryLink.basic(
+        id: common.id,
+        fromId: common.fromId,
+        toId: common.toId,
+        createdAt: common.createdAt,
+        updatedAt: common.updatedAt,
+        vectorClock: common.vectorClock,
+        hidden: common.hidden,
+        collapsed: common.collapsed,
+        deletedAt: common.deletedAt,
+      ),
+      _GeneratedEntryLinkKind.rating => EntryLink.rating(
+        id: common.id,
+        fromId: common.fromId,
+        toId: common.toId,
+        createdAt: common.createdAt,
+        updatedAt: common.updatedAt,
+        vectorClock: common.vectorClock,
+        hidden: common.hidden,
+        collapsed: common.collapsed,
+        deletedAt: common.deletedAt,
+      ),
+      _GeneratedEntryLinkKind.project => EntryLink.project(
+        id: common.id,
+        fromId: common.fromId,
+        toId: common.toId,
+        createdAt: common.createdAt,
+        updatedAt: common.updatedAt,
+        vectorClock: common.vectorClock,
+        hidden: common.hidden,
+        collapsed: common.collapsed,
+        deletedAt: common.deletedAt,
+      ),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedEntryLink('
+        'kind: $kind, '
+        'idSlot: $idSlot, '
+        'fromSlot: $fromSlot, '
+        'toSlot: $toSlot, '
+        'createdAtSlot: $createdAtSlot, '
+        'updatedAtSlot: $updatedAtSlot, '
+        'vectorClockSlot: $vectorClockSlot, '
+        'hiddenSlot: $hiddenSlot, '
+        'collapsedSlot: $collapsedSlot, '
+        'deletedAtSlot: $deletedAtSlot)';
+  }
+}
+
+extension _AnyEntryLink on glados.Any {
+  glados.Generator<_GeneratedEntryLinkKind> get _entryLinkKind =>
+      glados.AnyUtils(this).choose(_GeneratedEntryLinkKind.values);
+
+  glados.Generator<_GeneratedEntryLink> get generatedEntryLink =>
+      glados.CombinableAny(this).combine9(
+        _entryLinkKind,
+        glados.IntAnys(this).intInRange(0, 80),
+        glados.IntAnys(this).intInRange(0, 80),
+        glados.IntAnys(this).intInRange(0, 80),
+        glados.IntAnys(this).intInRange(0, 240),
+        glados.IntAnys(this).intInRange(0, 240),
+        glados.IntAnys(this).intInRange(0, 20),
+        glados.IntAnys(this).intInRange(0, 20),
+        glados.IntAnys(this).intInRange(0, 20),
+        (
+          _GeneratedEntryLinkKind kind,
+          int idSlot,
+          int fromSlot,
+          int toSlot,
+          int createdAtSlot,
+          int updatedAtSlot,
+          int vectorClockSlot,
+          int hiddenSlot,
+          int collapsedSlot,
+        ) => _GeneratedEntryLink(
+          kind: kind,
+          idSlot: idSlot,
+          fromSlot: fromSlot,
+          toSlot: toSlot,
+          createdAtSlot: createdAtSlot,
+          updatedAtSlot: updatedAtSlot,
+          vectorClockSlot: vectorClockSlot,
+          hiddenSlot: hiddenSlot,
+          collapsedSlot: collapsedSlot,
+          deletedAtSlot: hiddenSlot + collapsedSlot,
+        ),
+      );
+}
+
+DateTime _linkDate(int slot) {
+  return DateTime.utc(
+    2024 + (slot % 4),
+    (slot % 12) + 1,
+    (slot % 28) + 1,
+    slot % 24,
+    slot % 60,
+  );
+}
+
+VectorClock? _vectorClock(int slot) {
+  if (slot % 4 == 0) {
+    return null;
+  }
+
+  return VectorClock({
+    'host-${slot % 3}': slot + 1,
+    'shared': slot % 7,
+  });
+}
+
+bool? _optionalBool(int slot) {
+  return switch (slot % 3) {
+    0 => null,
+    1 => true,
+    _ => false,
+  };
 }

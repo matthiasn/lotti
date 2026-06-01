@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/audio_note.dart';
 
 void main() {
@@ -94,5 +95,90 @@ void main() {
       expect(updated.audioDirectory, '/old');
       expect(updated.duration, duration);
     });
+
+    glados.Glados(
+      glados.any.generatedAudioNote,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('round-trips generated notes through JSON', (scenario) {
+      final note = scenario.note;
+
+      final decoded = AudioNote.fromJson(
+        jsonDecode(jsonEncode(note.toJson())) as Map<String, dynamic>,
+      );
+
+      expect(decoded, equals(note), reason: '$scenario');
+      expect(decoded.createdAt, note.createdAt, reason: '$scenario');
+      expect(decoded.duration, note.duration, reason: '$scenario');
+    }, tags: 'glados');
   });
+}
+
+class _GeneratedAudioNote {
+  const _GeneratedAudioNote({
+    required this.createdAtSlot,
+    required this.audioFile,
+    required this.audioDirectory,
+    required this.durationMicroseconds,
+  });
+
+  final int createdAtSlot;
+  final String audioFile;
+  final String audioDirectory;
+  final int durationMicroseconds;
+
+  AudioNote get note => AudioNote(
+    createdAt: DateTime.utc(
+      2024 + (createdAtSlot % 4),
+      (createdAtSlot % 12) + 1,
+      (createdAtSlot % 28) + 1,
+      createdAtSlot % 24,
+      createdAtSlot % 60,
+      createdAtSlot % 60,
+      createdAtSlot % 1000,
+      createdAtSlot % 1000,
+    ),
+    audioFile: audioFile,
+    audioDirectory: audioDirectory,
+    duration: Duration(microseconds: durationMicroseconds),
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedAudioNote('
+        'createdAtSlot: $createdAtSlot, '
+        'audioFile: "$audioFile", '
+        'audioDirectory: "$audioDirectory", '
+        'durationMicroseconds: $durationMicroseconds)';
+  }
+}
+
+extension _AnyAudioNote on glados.Any {
+  glados.Generator<String> get _audioText =>
+      glados.AnyUtils(this).choose(const [
+        '',
+        'clip.m4a',
+        'voice note.ogg',
+        'nested/path/audio.wav',
+        r'escaped\name.m4a',
+        'unicode-äudio.m4a',
+      ]);
+
+  glados.Generator<_GeneratedAudioNote> get generatedAudioNote =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 720),
+        _audioText,
+        _audioText,
+        glados.IntAnys(this).intInRange(0, 900000000),
+        (
+          int createdAtSlot,
+          String audioFile,
+          String audioDirectory,
+          int durationMicroseconds,
+        ) => _GeneratedAudioNote(
+          createdAtSlot: createdAtSlot,
+          audioFile: audioFile,
+          audioDirectory: audioDirectory,
+          durationMicroseconds: durationMicroseconds,
+        ),
+      );
 }

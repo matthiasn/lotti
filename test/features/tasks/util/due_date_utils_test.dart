@@ -1,6 +1,95 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/themes/colors.dart';
+
+class _GeneratedDueDateScenario {
+  const _GeneratedDueDateScenario({
+    required this.referenceYear,
+    required this.referenceMonth,
+    required this.referenceDaySeed,
+    required this.referenceMinuteOfDay,
+    required this.dayOffset,
+    required this.dueMinuteOfDay,
+  });
+
+  final int referenceYear;
+  final int referenceMonth;
+  final int referenceDaySeed;
+  final int referenceMinuteOfDay;
+  final int dayOffset;
+  final int dueMinuteOfDay;
+
+  int get referenceDay =>
+      (referenceDaySeed % DateTime(referenceYear, referenceMonth + 1, 0).day) +
+      1;
+
+  DateTime get referenceDate => DateTime(
+    referenceYear,
+    referenceMonth,
+    referenceDay,
+    referenceMinuteOfDay ~/ 60,
+    referenceMinuteOfDay % 60,
+  );
+
+  DateTime get dueDate {
+    final dueMidnight = DateTime(
+      referenceYear,
+      referenceMonth,
+      referenceDay + dayOffset,
+    );
+    return DateTime(
+      dueMidnight.year,
+      dueMidnight.month,
+      dueMidnight.day,
+      dueMinuteOfDay ~/ 60,
+      dueMinuteOfDay % 60,
+    );
+  }
+
+  DueDateUrgency get expectedUrgency {
+    if (dayOffset < 0) return DueDateUrgency.overdue;
+    if (dayOffset == 0) return DueDateUrgency.dueToday;
+    return DueDateUrgency.normal;
+  }
+
+  bool get expectedUrgent => dayOffset <= 0;
+
+  @override
+  String toString() {
+    return '_GeneratedDueDateScenario('
+        'referenceDate: $referenceDate, '
+        'dueDate: $dueDate, '
+        'dayOffset: $dayOffset)';
+  }
+}
+
+extension _AnyDueDateScenario on glados.Any {
+  glados.Generator<_GeneratedDueDateScenario> get dueDateScenario =>
+      glados.CombinableAny(this).combine6(
+        glados.IntAnys(this).intInRange(2000, 2031),
+        glados.IntAnys(this).intInRange(1, 13),
+        glados.IntAnys(this).intInRange(0, 400),
+        glados.IntAnys(this).intInRange(0, 24 * 60),
+        glados.IntAnys(this).intInRange(-400, 401),
+        glados.IntAnys(this).intInRange(0, 24 * 60),
+        (
+          int referenceYear,
+          int referenceMonth,
+          int referenceDaySeed,
+          int referenceMinuteOfDay,
+          int dayOffset,
+          int dueMinuteOfDay,
+        ) => _GeneratedDueDateScenario(
+          referenceYear: referenceYear,
+          referenceMonth: referenceMonth,
+          referenceDaySeed: referenceDaySeed,
+          referenceMinuteOfDay: referenceMinuteOfDay,
+          dayOffset: dayOffset,
+          dueMinuteOfDay: dueMinuteOfDay,
+        ),
+      );
+}
 
 void main() {
   group('getDueDateStatus', () {
@@ -98,6 +187,24 @@ void main() {
       expect(status.urgency, DueDateUrgency.normal);
       expect(status.daysUntilDue, 1);
     });
+
+    glados.Glados(
+      glados.any.dueDateScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'classifies generated date offsets and ignores time of day',
+      (scenario) {
+        final status = getDueDateStatus(
+          dueDate: scenario.dueDate,
+          referenceDate: scenario.referenceDate,
+        );
+
+        expect(status.urgency, scenario.expectedUrgency, reason: '$scenario');
+        expect(status.daysUntilDue, scenario.dayOffset, reason: '$scenario');
+        expect(status.isUrgent, scenario.expectedUrgent, reason: '$scenario');
+      },
+      tags: 'glados',
+    );
   });
 
   group('DueDateStatus', () {

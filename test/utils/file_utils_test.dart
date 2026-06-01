@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -12,6 +13,171 @@ import 'package:path_provider/path_provider.dart';
 import 'package:research_package/model.dart';
 
 import '../helpers/path_provider.dart';
+
+enum _GeneratedPathSegmentShape {
+  alpha,
+  numeric,
+  dashed,
+  underscored,
+  dotted,
+}
+
+enum _GeneratedPathSeparator {
+  slash,
+  backslash,
+}
+
+class _GeneratedPathSegment {
+  const _GeneratedPathSegment({
+    required this.seed,
+    required this.shape,
+  });
+
+  final int seed;
+  final _GeneratedPathSegmentShape shape;
+
+  String get text => switch (shape) {
+    _GeneratedPathSegmentShape.alpha => 'segment$seed',
+    _GeneratedPathSegmentShape.numeric => '42$seed',
+    _GeneratedPathSegmentShape.dashed => 'segment-$seed',
+    _GeneratedPathSegmentShape.underscored => 'segment_$seed',
+    _GeneratedPathSegmentShape.dotted => 'segment.$seed.json',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedPathSegment(seed: $seed, shape: $shape)';
+  }
+}
+
+class _GeneratedAttachmentIndexKey {
+  const _GeneratedAttachmentIndexKey({
+    required this.segments,
+    required this.leadingSeparatorCount,
+    required this.leadingSeparator,
+    required this.innerSeparator,
+  });
+
+  final List<_GeneratedPathSegment> segments;
+  final int leadingSeparatorCount;
+  final _GeneratedPathSeparator leadingSeparator;
+  final _GeneratedPathSeparator innerSeparator;
+
+  String get rawPath {
+    final leading = _separatorText(leadingSeparator) * leadingSeparatorCount;
+    return '$leading${segments.map((segment) => segment.text).join(
+      _separatorText(innerSeparator),
+    )}';
+  }
+
+  String get expectedKey =>
+      '/${segments.map((segment) => segment.text).join('/')}';
+
+  @override
+  String toString() {
+    return '_GeneratedAttachmentIndexKey('
+        'segments: $segments, '
+        'leadingSeparatorCount: $leadingSeparatorCount, '
+        'leadingSeparator: $leadingSeparator, '
+        'innerSeparator: $innerSeparator)';
+  }
+}
+
+class _GeneratedPayloadId {
+  const _GeneratedPayloadId({
+    required this.parts,
+    required this.separator,
+    required this.prefix,
+    required this.suffix,
+  });
+
+  final List<_GeneratedPathSegment> parts;
+  final String separator;
+  final String prefix;
+  final String suffix;
+
+  String get text =>
+      '$prefix${parts.map((part) => part.text).join(separator)}'
+      '$suffix';
+
+  String get encoded => Uri.encodeComponent(text);
+
+  @override
+  String toString() {
+    return '_GeneratedPayloadId('
+        'parts: $parts, '
+        'separator: $separator, '
+        'prefix: $prefix, '
+        'suffix: $suffix)';
+  }
+}
+
+String _separatorText(_GeneratedPathSeparator separator) {
+  return switch (separator) {
+    _GeneratedPathSeparator.slash => '/',
+    _GeneratedPathSeparator.backslash => r'\',
+  };
+}
+
+extension _AnyFileUtilsPath on glados.Any {
+  glados.Generator<_GeneratedPathSegmentShape> get pathSegmentShape =>
+      glados.AnyUtils(this).choose(_GeneratedPathSegmentShape.values);
+
+  glados.Generator<_GeneratedPathSeparator> get pathSeparator =>
+      glados.AnyUtils(this).choose(_GeneratedPathSeparator.values);
+
+  glados.Generator<String> get payloadAffix =>
+      glados.AnyUtils(this).choose(const ['', 'id ', '#', '%']);
+
+  glados.Generator<String> get payloadSeparator =>
+      glados.AnyUtils(this).choose(const ['', '-', '_', ' ', '/', '?']);
+
+  glados.Generator<_GeneratedPathSegment> get pathSegment =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 10000),
+        pathSegmentShape,
+        (int seed, _GeneratedPathSegmentShape shape) =>
+            _GeneratedPathSegment(seed: seed, shape: shape),
+      );
+
+  glados.Generator<_GeneratedAttachmentIndexKey> get attachmentIndexKey =>
+      glados.CombinableAny(this).combine4(
+        glados.ListAnys(this).listWithLengthInRange(1, 7, pathSegment),
+        glados.IntAnys(this).intInRange(0, 5),
+        pathSeparator,
+        pathSeparator,
+        (
+          List<_GeneratedPathSegment> segments,
+          int leadingSeparatorCount,
+          _GeneratedPathSeparator leadingSeparator,
+          _GeneratedPathSeparator innerSeparator,
+        ) => _GeneratedAttachmentIndexKey(
+          segments: segments,
+          leadingSeparatorCount: leadingSeparatorCount,
+          leadingSeparator: leadingSeparator,
+          innerSeparator: innerSeparator,
+        ),
+      );
+
+  glados.Generator<_GeneratedPayloadId> get payloadId =>
+      glados.CombinableAny(this).combine4(
+        glados.ListAnys(this).listWithLengthInRange(0, 5, pathSegment),
+        payloadSeparator,
+        payloadAffix,
+        payloadAffix,
+        (
+          List<_GeneratedPathSegment> parts,
+          String separator,
+          String prefix,
+          String suffix,
+        ) => _GeneratedPayloadId(
+          parts: parts,
+          separator: separator,
+          prefix: prefix,
+          suffix: suffix,
+        ),
+      );
+}
 
 void main() {
   final dt = DateTime.fromMillisecondsSinceEpoch(1638265606966);
@@ -273,6 +439,22 @@ void main() {
         '/agent_entities/a.json',
       );
     });
+
+    glados.Glados(
+      glados.any.attachmentIndexKey,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'canonicalizes generated relative paths to one slash-prefixed key',
+      (scenario) {
+        final normalized = normalizeAttachmentIndexKey(scenario.rawPath);
+
+        expect(normalized, scenario.expectedKey, reason: '$scenario');
+        expect(normalized.startsWith('/'), isTrue, reason: '$scenario');
+        expect(normalized.startsWith('//'), isFalse, reason: '$scenario');
+        expect(normalized.contains(r'\'), isFalse, reason: '$scenario');
+      },
+      tags: 'glados',
+    );
   });
 
   group('outbox bundle payload paths', () {
@@ -290,6 +472,42 @@ void main() {
       );
     });
 
+    glados.Glados(
+      glados.any.payloadId,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'URI-encodes generated outbox bundle ids under the bundle segment',
+      (payloadId) {
+        final path = relativeOutboxBundlePath(payloadId.text);
+
+        expect(
+          path,
+          '$outboxBundlesSegment${payloadId.encoded}.json',
+          reason: '$payloadId',
+        );
+        expect(isAgentPayloadPath(path), isFalse, reason: '$payloadId');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.payloadId,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'URI-encodes generated notification ids under the notification segment',
+      (payloadId) {
+        final path = relativeNotificationPath(payloadId.text);
+
+        expect(
+          path,
+          '$notificationsSegment${payloadId.encoded}.json',
+          reason: '$payloadId',
+        );
+        expect(isAgentPayloadPath(path), isFalse, reason: '$payloadId');
+      },
+      tags: 'glados',
+    );
+
     test(
       'outbox bundle paths are NOT classified as agent payload paths — '
       'agent payloads share a VC-dominance re-download skip optimization '
@@ -298,6 +516,26 @@ void main() {
       () {
         expect(isAgentPayloadPath('/outbox_bundles/abc.json'), isFalse);
       },
+    );
+
+    glados.Glados(
+      glados.any.payloadId,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'classifies generated agent entity and link paths as agent payloads',
+      (payloadId) {
+        expect(
+          isAgentPayloadPath(relativeAgentEntityPath(payloadId.encoded)),
+          isTrue,
+          reason: '$payloadId',
+        );
+        expect(
+          isAgentPayloadPath(relativeAgentLinkPath(payloadId.encoded)),
+          isTrue,
+          reason: '$payloadId',
+        );
+      },
+      tags: 'glados',
     );
   });
 }

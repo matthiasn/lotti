@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/supported_language.dart';
 
 void main() {
@@ -65,5 +66,82 @@ void main() {
         expect(result, equals(language));
       }
     });
+
+    glados.Glados(
+      glados.any.generatedSupportedLanguage,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('looks up generated languages by their exact code', (language) {
+      expect(
+        SupportedLanguage.fromCode(language.code),
+        equals(language),
+        reason: '${language.code} should resolve to $language',
+      );
+    }, tags: 'glados');
+
+    glados.Glados(
+      glados.any.generatedInvalidLanguageCode,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('rejects generated non-canonical language codes', (scenario) {
+      expect(
+        SupportedLanguage.fromCode(scenario.code),
+        isNull,
+        reason: '$scenario',
+      );
+    }, tags: 'glados');
   });
+}
+
+enum _GeneratedInvalidLanguageCodeKind {
+  empty,
+  uppercase,
+  leadingWhitespace,
+  trailingWhitespace,
+  suffix,
+  prefix,
+  unknown,
+}
+
+class _GeneratedInvalidLanguageCode {
+  const _GeneratedInvalidLanguageCode({
+    required this.language,
+    required this.kind,
+  });
+
+  final SupportedLanguage language;
+  final _GeneratedInvalidLanguageCodeKind kind;
+
+  String get code => switch (kind) {
+    _GeneratedInvalidLanguageCodeKind.empty => '',
+    _GeneratedInvalidLanguageCodeKind.uppercase => language.code.toUpperCase(),
+    _GeneratedInvalidLanguageCodeKind.leadingWhitespace => ' ${language.code}',
+    _GeneratedInvalidLanguageCodeKind.trailingWhitespace => '${language.code} ',
+    _GeneratedInvalidLanguageCodeKind.suffix => '${language.code}-x',
+    _GeneratedInvalidLanguageCodeKind.prefix => 'x-${language.code}',
+    _GeneratedInvalidLanguageCodeKind.unknown => 'zz',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedInvalidLanguageCode('
+        'language: $language, kind: $kind, code: "$code")';
+  }
+}
+
+extension _AnySupportedLanguage on glados.Any {
+  glados.Generator<SupportedLanguage> get generatedSupportedLanguage =>
+      glados.AnyUtils(this).choose(SupportedLanguage.values);
+
+  glados.Generator<_GeneratedInvalidLanguageCodeKind>
+  get _invalidLanguageCodeKind =>
+      glados.AnyUtils(this).choose(_GeneratedInvalidLanguageCodeKind.values);
+
+  glados.Generator<_GeneratedInvalidLanguageCode>
+  get generatedInvalidLanguageCode => glados.CombinableAny(this).combine2(
+    generatedSupportedLanguage,
+    _invalidLanguageCodeKind,
+    (
+      SupportedLanguage language,
+      _GeneratedInvalidLanguageCodeKind kind,
+    ) => _GeneratedInvalidLanguageCode(language: language, kind: kind),
+  );
 }

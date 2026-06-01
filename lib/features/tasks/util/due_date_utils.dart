@@ -60,12 +60,12 @@ DueDateStatus getDueDateStatus({
     return const DueDateStatus.none();
   }
 
-  final today = DateTime(
+  final today = DateTime.utc(
     referenceDate.year,
     referenceDate.month,
     referenceDate.day,
   );
-  final dueDateDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+  final dueDateDay = DateTime.utc(dueDate.year, dueDate.month, dueDate.day);
   final daysUntilDue = dueDateDay.difference(today).inDays;
 
   final DueDateUrgency urgency;

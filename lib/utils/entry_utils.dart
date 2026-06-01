@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:lotti/classes/entry_text.dart';
 
 EntryText? entryTextFromPlain(String? plain) {
@@ -5,9 +7,12 @@ EntryText? entryTextFromPlain(String? plain) {
     return null;
   }
 
+  final plainText = '$plain\n';
   return EntryText(
-    plainText: '$plain\n',
-    quill: '[{"insert":"$plain\\n"}]',
-    markdown: '$plain\n',
+    plainText: plainText,
+    quill: jsonEncode([
+      {'insert': plainText},
+    ]),
+    markdown: plainText,
   );
 }

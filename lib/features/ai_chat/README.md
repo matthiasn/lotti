@@ -213,6 +213,11 @@ Behavior that matters:
 
 - visible answer text streams into a dedicated assistant bubble
 - reasoning segments are finalized as separate assistant messages
+- opening and closing reasoning markers can arrive split across provider chunks;
+  the parser carries partial markers until they are complete instead of leaking
+  them into either the visible answer or reasoning text
+- pending visible soft breaks are flushed at thinking boundaries and at stream
+  completion, so chunk boundaries do not drop the final line break
 - copying assistant output strips hidden reasoning by default
 - Gemini-specific "thinking" behavior is normalized at the provider layer and then hidden or shown by the chat UI
 

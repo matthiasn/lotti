@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_item_data.dart';
 
 void main() {
@@ -104,5 +107,113 @@ void main() {
 
       expect(data.checkedBy, ChangeSource.user);
     });
+
+    glados.Glados(
+      glados.any.generatedChecklistItemData,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('round-trips generated checklist item data through JSON', (
+      scenario,
+    ) {
+      final data = scenario.data;
+
+      final json = data.toJson();
+      final restored = ChecklistItemData.fromJson(
+        jsonDecode(jsonEncode(json)) as Map<String, dynamic>,
+      );
+
+      expect(restored, equals(data), reason: '$scenario');
+      expect(json['checkedBy'], data.checkedBy.name, reason: '$scenario');
+      expect(json['checkedAt'], data.checkedAt?.toIso8601String());
+    }, tags: 'glados');
   });
+}
+
+class _GeneratedChecklistItemData {
+  const _GeneratedChecklistItemData({
+    required this.title,
+    required this.isChecked,
+    required this.linkedChecklists,
+    required this.isArchived,
+    required this.idSlot,
+    required this.checkedBy,
+    required this.checkedAtSlot,
+  });
+
+  final String title;
+  final bool isChecked;
+  final List<String> linkedChecklists;
+  final bool isArchived;
+  final int idSlot;
+  final ChangeSource checkedBy;
+  final int checkedAtSlot;
+
+  ChecklistItemData get data => ChecklistItemData(
+    title: title,
+    isChecked: isChecked,
+    linkedChecklists: linkedChecklists,
+    isArchived: isArchived,
+    id: idSlot.isEven ? null : 'item-$idSlot',
+    checkedBy: checkedBy,
+    checkedAt: checkedAtSlot.isEven
+        ? null
+        : DateTime.utc(
+            2026,
+            2,
+            (checkedAtSlot % 28) + 1,
+            checkedAtSlot % 24,
+            checkedAtSlot % 60,
+          ),
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedChecklistItemData('
+        'title: "$title", '
+        'isChecked: $isChecked, '
+        'linkedChecklists: $linkedChecklists, '
+        'isArchived: $isArchived, '
+        'idSlot: $idSlot, '
+        'checkedBy: $checkedBy, '
+        'checkedAtSlot: $checkedAtSlot)';
+  }
+}
+
+extension _AnyChecklistItemData on glados.Any {
+  glados.Generator<String> get _checklistText =>
+      glados.AnyUtils(this).choose(const [
+        '',
+        'Plain item',
+        'Needs "quotes"',
+        r'Backslash \ item',
+        'Line\nbreak',
+        'Comma, colon: semicolon;',
+      ]);
+
+  glados.Generator<_GeneratedChecklistItemData>
+  get generatedChecklistItemData => glados.CombinableAny(this).combine7(
+    _checklistText,
+    this.bool,
+    glados.ListAnys(this).listWithLengthInRange(0, 5, _checklistText),
+    this.bool,
+    glados.IntAnys(this).intInRange(0, 40),
+    glados.AnyUtils(this).choose(ChangeSource.values),
+    glados.IntAnys(this).intInRange(0, 240),
+    (
+      String title,
+      bool isChecked,
+      List<String> linkedChecklists,
+      bool isArchived,
+      int idSlot,
+      ChangeSource checkedBy,
+      int checkedAtSlot,
+    ) => _GeneratedChecklistItemData(
+      title: title,
+      isChecked: isChecked,
+      linkedChecklists: linkedChecklists,
+      isArchived: isArchived,
+      idSlot: idSlot,
+      checkedBy: checkedBy,
+      checkedAtSlot: checkedAtSlot,
+    ),
+  );
 }

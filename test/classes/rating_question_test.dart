@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/rating_question.dart';
 
 void main() {
@@ -24,6 +25,20 @@ void main() {
       expect(a, b);
       expect(a, isNot(c));
     });
+
+    glados.Glados(
+      glados.any.generatedRatingQuestionOption,
+      glados.ExploreConfig(numRuns: 140),
+    ).test('round-trips generated options through JSON', (scenario) {
+      final option = scenario.option;
+
+      final decoded = RatingQuestionOption.fromJson(
+        jsonDecode(jsonEncode(option.toJson())) as Map<String, dynamic>,
+      );
+
+      expect(decoded, equals(option), reason: '$scenario');
+      expect(decoded.value, option.value, reason: '$scenario');
+    }, tags: 'glados');
   });
 
   group('RatingQuestion', () {
@@ -127,5 +142,156 @@ void main() {
       expect(base, isNot(base.copyWith(question: 'q2')));
       expect(base, isNot(base.copyWith(description: 'd2')));
     });
+
+    glados.Glados(
+      glados.any.generatedRatingQuestion,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('round-trips generated questions through JSON', (scenario) {
+      final question = scenario.questionModel;
+
+      final decoded = RatingQuestion.fromJson(
+        jsonDecode(jsonEncode(question.toJson())) as Map<String, dynamic>,
+      );
+
+      expect(decoded, equals(question), reason: '$scenario');
+      expect(
+        decoded.inputType,
+        scenario.expectedInputType,
+        reason: '$scenario',
+      );
+      expect(decoded.options, question.options, reason: '$scenario');
+    }, tags: 'glados');
   });
+}
+
+class _GeneratedRatingQuestionOption {
+  const _GeneratedRatingQuestionOption({
+    required this.label,
+    required this.valueSlot,
+  });
+
+  final String label;
+  final int valueSlot;
+
+  RatingQuestionOption get option => RatingQuestionOption(
+    label: label,
+    value: valueSlot / 100,
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedRatingQuestionOption('
+        'label: "$label", valueSlot: $valueSlot)';
+  }
+}
+
+class _GeneratedRatingQuestion {
+  const _GeneratedRatingQuestion({
+    required this.key,
+    required this.question,
+    required this.description,
+    required this.inputTypeSlot,
+    required this.options,
+  });
+
+  final String key;
+  final String question;
+  final String description;
+  final int inputTypeSlot;
+  final List<_GeneratedRatingQuestionOption> options;
+
+  String? get inputType => switch (inputTypeSlot % 5) {
+    0 => null,
+    1 => 'tapBar',
+    2 => 'segmented',
+    3 => 'boolean',
+    _ => 'future-input',
+  };
+
+  String get expectedInputType => inputType ?? 'tapBar';
+
+  RatingQuestion get questionModel {
+    final generatedOptions = options.isEmpty
+        ? null
+        : options.map((option) => option.option).toList();
+
+    final inputType = this.inputType;
+    if (inputType == null) {
+      return RatingQuestion(
+        key: key,
+        question: question,
+        description: description,
+        options: generatedOptions,
+      );
+    }
+
+    return RatingQuestion(
+      key: key,
+      question: question,
+      description: description,
+      inputType: inputType,
+      options: generatedOptions,
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedRatingQuestion('
+        'key: "$key", '
+        'question: "$question", '
+        'description: "$description", '
+        'inputTypeSlot: $inputTypeSlot, '
+        'options: $options)';
+  }
+}
+
+extension _AnyRatingQuestion on glados.Any {
+  glados.Generator<String> get _ratingQuestionText =>
+      glados.AnyUtils(this).choose(const [
+        '',
+        'productivity',
+        'How productive?',
+        'Text with "quotes"',
+        r'Text with \ slash',
+        'Line\nbreak',
+      ]);
+
+  glados.Generator<_GeneratedRatingQuestionOption>
+  get generatedRatingQuestionOption => glados.CombinableAny(this).combine2(
+    _ratingQuestionText,
+    glados.IntAnys(this).intInRange(0, 100),
+    (
+      String label,
+      int valueSlot,
+    ) => _GeneratedRatingQuestionOption(
+      label: label,
+      valueSlot: valueSlot,
+    ),
+  );
+
+  glados.Generator<_GeneratedRatingQuestion> get generatedRatingQuestion =>
+      glados.CombinableAny(this).combine5(
+        _ratingQuestionText,
+        _ratingQuestionText,
+        _ratingQuestionText,
+        glados.IntAnys(this).intInRange(0, 20),
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          4,
+          generatedRatingQuestionOption,
+        ),
+        (
+          String key,
+          String question,
+          String description,
+          int inputTypeSlot,
+          List<_GeneratedRatingQuestionOption> options,
+        ) => _GeneratedRatingQuestion(
+          key: key,
+          question: question,
+          description: description,
+          inputTypeSlot: inputTypeSlot,
+          options: options,
+        ),
+      );
 }
