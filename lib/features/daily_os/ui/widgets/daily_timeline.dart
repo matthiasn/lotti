@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
@@ -505,7 +506,7 @@ class _FoldedTimelineGrid extends ConsumerWidget {
   }
 
   bool _isToday(DateTime date) {
-    final now = DateTime.now();
+    final now = clock.now();
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;
@@ -1103,7 +1104,7 @@ class _CurrentTimeIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = clock.now();
 
     // Hide indicator if current time is in a collapsed compressed region
     if (isHourInCompressedRegion(

@@ -22,6 +22,8 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/whats_new/model/whats_new_content.dart';
+import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -85,6 +87,20 @@ int calculateClampedIndex({
 class _MockAiSetupPromptService extends AiSetupPromptService {
   @override
   Future<bool> build() async => false;
+}
+
+/// An [AiSetupPromptService] that invokes [onBuild] every time its `build`
+/// runs, so tests can count rebuilds (including those caused by
+/// `ref.invalidate`, which re-runs `build`).
+class _CountingAiSetupPromptService extends AiSetupPromptService {
+  _CountingAiSetupPromptService(this.onBuild);
+  final void Function() onBuild;
+
+  @override
+  Future<bool> build() async {
+    onBuild();
+    return false;
+  }
 }
 
 class _TestAudioRecorderController extends AudioRecorderController {
@@ -1397,21 +1413,31 @@ void main() {
           tester,
           navService: mockNavService,
           whatsNewOverride: _UnseenToSeenWhatsNewController.new,
-          aiSetupPromptOverride: () {
-            aiSetupBuildCount++;
-            return _MockAiSetupPromptService();
-          },
+          aiSetupPromptOverride: () =>
+              _CountingAiSetupPromptService(() => aiSetupBuildCount++),
         );
 
-        // Advance the frame so the microtask in _UnseenToSeenWhatsNewController
-        // fires and triggers the listener.
+        // Resolve the initial build: whatsNew settles on AsyncData(unseen) and
+        // aiSetupPromptServiceProvider has been built once at this point.
         await tester.pump();
+        final buildsBeforeTransition = aiSetupBuildCount;
+
+        // Advance time so the scheduled unseen -> seen transition fires. The
+        // listener then sees prevHasUnseen=true && !nextHasUnseen and
+        // invalidates aiSetupPromptServiceProvider, forcing a rebuild.
+        await tester.pump(const Duration(milliseconds: 1));
         await tester.pump();
 
-        // AppScreen is still alive.
+        // AppScreen is still alive and the provider rebuilt after the
+        // invalidation triggered by the unseen -> seen transition.
         expect(find.text('Tasks'), findsOneWidget);
-        // The provider was built at least once (initial build on construction).
-        expect(aiSetupBuildCount, greaterThanOrEqualTo(1));
+        expect(
+          aiSetupBuildCount,
+          greaterThan(buildsBeforeTransition),
+          reason:
+              'aiSetupPromptServiceProvider should rebuild after the '
+              'unseen -> seen transition invalidates it',
+        );
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -1469,9 +1495,23 @@ class _ErrorAiSetupPromptService extends AiSetupPromptService {
   Future<bool> build() async => throw Exception('ai-setup-error');
 }
 
-/// A [WhatsNewController] that starts with an unseen release (hasUnseenRelease=true)
-/// and then transitions to seen (hasUnseenRelease=false) on the next frame, which
-/// triggers the `prevHasUnseen && !nextHasUnseen` branch in [AppScreen].
+/// A single unseen release used to seed [_UnseenToSeenWhatsNewController] so
+/// that its first state genuinely has `hasUnseenRelease == true`.
+final _unseenWhatsNewContent = WhatsNewContent(
+  release: WhatsNewRelease(
+    version: '0.9.999',
+    date: DateTime(2026, 1, 7),
+    title: 'Test Release',
+    folder: '0.9.999',
+  ),
+  headerMarkdown: '# Test Release',
+  sections: const ['## Feature'],
+);
+
+/// A [WhatsNewController] that starts with an unseen release
+/// (`hasUnseenRelease == true`) and then transitions to seen
+/// (`hasUnseenRelease == false`), which drives the
+/// `prevHasUnseen && !nextHasUnseen` branch of the listener in [AppScreen].
 class _UnseenToSeenWhatsNewController extends WhatsNewController {
   var _firstBuild = true;
 
@@ -1479,19 +1519,20 @@ class _UnseenToSeenWhatsNewController extends WhatsNewController {
   Future<WhatsNewState> build() async {
     if (_firstBuild) {
       _firstBuild = false;
-      // Schedule a transition to the "all seen" state.
+      // Schedule the unseen -> seen transition on a real (1ms) timer rather
+      // than a microtask: a timer is guaranteed to fire *after* this build's
+      // future resolves, so the listener reliably observes
+      // AsyncData(unseen) -> AsyncData(seen) instead of a racy ordering.
       unawaited(
-        Future.microtask(() {
+        Future<void>.delayed(const Duration(milliseconds: 1), () {
           if (ref.mounted) {
             state = const AsyncData(WhatsNewState());
           }
         }),
       );
-      // Return a state with an unseen release so the listener sees a change.
-      // WhatsNewState() with empty unseenContent means hasUnseenRelease=false,
-      // so we simply return the empty state — the controller test covers the
-      // actual unseen-content path; here we just need the listener to fire.
-      return const WhatsNewState();
+      // First state has an unseen release so the later transition to the empty
+      // (all-seen) state is a real prevHasUnseen=true -> nextHasUnseen=false.
+      return WhatsNewState(unseenContent: [_unseenWhatsNewContent]);
     }
     return const WhatsNewState();
   }

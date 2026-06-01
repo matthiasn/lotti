@@ -1106,13 +1106,17 @@ Generate a widget that renders a login form.''',
         // Should show AiErrorDisplay with a retry button
         expect(find.byType(AiErrorDisplay), findsOneWidget);
 
-        // Tap the retry button
-        final retryBtn = find.text('Retry');
-        if (retryBtn.evaluate().isNotEmpty) {
-          await tester.tap(retryBtn);
-          await tester.pump();
-          expect(triggerCalled, isTrue);
-        }
+        // The generic error categorises as InferenceErrorType.unknown, which is
+        // retryable, so AiErrorDisplay renders its retry button labelled
+        // "Try Again" (the localized aiInferenceErrorRetryButton). Tapping it
+        // calls _handleRetry → triggerNewInferenceProvider. Assert the button
+        // exists rather than guarding the tap, so a missing/unwired button
+        // fails the test instead of silently passing.
+        final retryBtn = find.text('Try Again');
+        expect(retryBtn, findsOneWidget);
+        await tester.tap(retryBtn);
+        await tester.pump();
+        expect(triggerCalled, isTrue);
       },
     );
   });

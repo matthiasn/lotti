@@ -2624,7 +2624,8 @@ void main() {
       ).thenAnswer((_) async => testAudioEntry);
     });
 
-    test('calls SpeechRepository.updateLanguage for non-audio entry', () async {
+    test('completes without calling SpeechRepository.updateLanguage for '
+        'non-audio entry', () async {
       if (!getIt.isRegistered<DomainLogger>()) {
         getIt.registerSingleton<DomainLogger>(
           DomainLogger(loggingService: getIt<LoggingService>()),
@@ -2679,7 +2680,7 @@ void main() {
     });
 
     test(
-      'emits dirty state with shouldShowEditorToolBar=true when focus gained',
+      'focusNodeListener leaves toolbar hidden when focus state is unchanged',
       () async {
         final container = makeProviderContainer();
         final entryId = testTextEntry.meta.id;
@@ -2739,9 +2740,10 @@ void main() {
           ..focusNodeListener()
           ..focusNodeListener();
 
-        // Verify no state explosion.
+        // The early-return guard must leave the toolbar flag untouched.
         final stateAfter = container.read(provider).value;
         expect(stateAfter, isNotNull);
+        expect(stateAfter?.shouldShowEditorToolBar, isFalse);
       },
     );
   });

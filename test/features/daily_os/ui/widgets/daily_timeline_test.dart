@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -2454,181 +2455,189 @@ void main() {
   });
 
   group('DailyTimeline - _isToday branch coverage', () {
-    // today is 2026-06-01. A date with same year+month but different day
-    // exercises the third condition in _isToday (day != now.day → false).
+    // _isToday reads clock.now(), so the test freezes the clock at 2026-06-01.
+    // A date with the same year+month but a different day exercises the third
+    // condition in _isToday (day != now.day → false) deterministically,
+    // regardless of the wall-clock date when the suite runs.
     testWidgets('date same year and month but different day is not today', (
       tester,
     ) async {
-      when(
-        () => mockCacheService.getCategoryById('cat-1'),
-      ).thenReturn(testCategory);
+      await withClock(Clock.fixed(DateTime(2026, 6)), () async {
+        when(
+          () => mockCacheService.getCategoryById('cat-1'),
+        ).thenReturn(testCategory);
 
-      // 2026-06-05: same year (2026) and month (June) as today, but day differs.
-      final samemonthDate = DateTime(2026, 6, 5);
-      final unifiedData = DailyOsData(
-        date: samemonthDate,
-        dayPlan: DayPlanEntry(
-          meta: Metadata(
-            id: dayPlanId(samemonthDate),
-            createdAt: samemonthDate,
-            updatedAt: samemonthDate,
-            dateFrom: samemonthDate,
-            dateTo: samemonthDate.add(const Duration(days: 1)),
-          ),
-          data: DayPlanData(
-            planDate: samemonthDate,
-            status: const DayPlanStatus.draft(),
-          ),
-        ),
-        timelineData: DailyTimelineData(
+        // 2026-06-05: same year (2026) and month (June) as the frozen "today"
+        // (2026-06-01), but the day differs.
+        final samemonthDate = DateTime(2026, 6, 5);
+        final unifiedData = DailyOsData(
           date: samemonthDate,
-          plannedSlots: [
-            PlannedTimeSlot(
-              block: PlannedBlock(
-                id: 'block-same-month',
-                categoryId: testCategory.id,
+          dayPlan: DayPlanEntry(
+            meta: Metadata(
+              id: dayPlanId(samemonthDate),
+              createdAt: samemonthDate,
+              updatedAt: samemonthDate,
+              dateFrom: samemonthDate,
+              dateTo: samemonthDate.add(const Duration(days: 1)),
+            ),
+            data: DayPlanData(
+              planDate: samemonthDate,
+              status: const DayPlanStatus.draft(),
+            ),
+          ),
+          timelineData: DailyTimelineData(
+            date: samemonthDate,
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-same-month',
+                  categoryId: testCategory.id,
+                  startTime: samemonthDate.add(const Duration(hours: 9)),
+                  endTime: samemonthDate.add(const Duration(hours: 10)),
+                ),
                 startTime: samemonthDate.add(const Duration(hours: 9)),
                 endTime: samemonthDate.add(const Duration(hours: 10)),
+                categoryId: testCategory.id,
               ),
-              startTime: samemonthDate.add(const Duration(hours: 9)),
-              endTime: samemonthDate.add(const Duration(hours: 10)),
-              categoryId: testCategory.id,
-            ),
-          ],
-          actualSlots: const [],
-          dayStartHour: 8,
-          dayEndHour: 18,
-        ),
-        budgetProgress: const [],
-      );
+            ],
+            actualSlots: const [],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+          budgetProgress: const [],
+        );
 
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWithValue(samemonthDate),
-            unifiedDailyOsDataControllerProvider(
-              date: samemonthDate,
-            ).overrideWith(() => _TestUnifiedController(unifiedData)),
-            highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
-          ],
-          child: const SingleChildScrollView(child: DailyTimeline()),
-        ),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              dailyOsSelectedDateProvider.overrideWithValue(samemonthDate),
+              unifiedDailyOsDataControllerProvider(
+                date: samemonthDate,
+              ).overrideWith(() => _TestUnifiedController(unifiedData)),
+              highlightedCategoryIdProvider.overrideWith((ref) => null),
+              runningTimerCategoryIdProvider.overrideWithValue(null),
+            ],
+            child: const SingleChildScrollView(child: DailyTimeline()),
+          ),
+        );
+        await tester.pump();
 
-      // Timeline renders (not today, so no current-time indicator).
-      expect(find.byType(DailyTimeline), findsOneWidget);
-      // The planned block category name is visible.
-      expect(find.text('Work'), findsOneWidget);
-      // No current-time indicator (red dot) since this date is not today.
-      expect(
-        find.byWidgetPredicate((w) {
-          if (w is Container) {
-            final decoration = w.decoration;
-            if (decoration is BoxDecoration) {
-              return decoration.color == Colors.redAccent &&
-                  decoration.shape == BoxShape.circle;
+        // Timeline renders (not today, so no current-time indicator).
+        expect(find.byType(DailyTimeline), findsOneWidget);
+        // The planned block category name is visible.
+        expect(find.text('Work'), findsOneWidget);
+        // No current-time indicator (red dot) since this date is not today.
+        expect(
+          find.byWidgetPredicate((w) {
+            if (w is Container) {
+              final decoration = w.decoration;
+              if (decoration is BoxDecoration) {
+                return decoration.color == Colors.redAccent &&
+                    decoration.shape == BoxShape.circle;
+              }
             }
-          }
-          return false;
-        }),
-        findsNothing,
-      );
+            return false;
+          }),
+          findsNothing,
+        );
+      });
     });
   });
 
   group('DailyTimeline - Current Time Indicator', () {
-    // Today is 2026-06-01. Using this date exercises the isToday == true branch
-    // and renders _CurrentTimeIndicator (lines 386-388, 1095-1194).
+    // The clock is frozen at midday on 2026-06-01 so isToday == true for that
+    // date and the current hour (12) sits inside the visible cluster, rendering
+    // _CurrentTimeIndicator deterministically regardless of the run date.
     testWidgets("shows current time indicator on today's date", (
       tester,
     ) async {
-      when(
-        () => mockCacheService.getCategoryById('cat-1'),
-      ).thenReturn(testCategory);
+      await withClock(Clock.fixed(DateTime(2026, 6, 1, 12)), () async {
+        when(
+          () => mockCacheService.getCategoryById('cat-1'),
+        ).thenReturn(testCategory);
 
-      final today = DateTime(2026, 6);
-      final unifiedData = DailyOsData(
-        date: today,
-        dayPlan: DayPlanEntry(
-          meta: Metadata(
-            id: dayPlanId(today),
-            createdAt: today,
-            updatedAt: today,
-            dateFrom: today,
-            dateTo: today.add(const Duration(days: 1)),
-          ),
-          data: DayPlanData(
-            planDate: today,
-            status: const DayPlanStatus.draft(),
-          ),
-        ),
-        timelineData: DailyTimelineData(
+        final today = DateTime(2026, 6);
+        final unifiedData = DailyOsData(
           date: today,
-          plannedSlots: [
-            PlannedTimeSlot(
-              block: PlannedBlock(
-                id: 'block-today',
-                categoryId: testCategory.id,
-                // Span most of the day so the visible cluster covers many hours,
-                // making it likely the current hour is visible (not compressed).
+          dayPlan: DayPlanEntry(
+            meta: Metadata(
+              id: dayPlanId(today),
+              createdAt: today,
+              updatedAt: today,
+              dateFrom: today,
+              dateTo: today.add(const Duration(days: 1)),
+            ),
+            data: DayPlanData(
+              planDate: today,
+              status: const DayPlanStatus.draft(),
+            ),
+          ),
+          timelineData: DailyTimelineData(
+            date: today,
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-today',
+                  categoryId: testCategory.id,
+                  // Span most of the day so the visible cluster covers many hours,
+                  // making it likely the current hour is visible (not compressed).
+                  startTime: today,
+                  endTime: today.add(const Duration(hours: 23)),
+                ),
                 startTime: today,
                 endTime: today.add(const Duration(hours: 23)),
+                categoryId: testCategory.id,
               ),
-              startTime: today,
-              endTime: today.add(const Duration(hours: 23)),
-              categoryId: testCategory.id,
-            ),
-          ],
-          actualSlots: const [],
-          dayStartHour: 0,
-          dayEndHour: 24,
-        ),
-        budgetProgress: const [],
-      );
+            ],
+            actualSlots: const [],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+          budgetProgress: const [],
+        );
 
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWithValue(today),
-            unifiedDailyOsDataControllerProvider(date: today).overrideWith(
-              () => _TestUnifiedController(unifiedData),
-            ),
-            highlightedCategoryIdProvider.overrideWith((ref) => null),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
-          ],
-          child: const SingleChildScrollView(child: DailyTimeline()),
-        ),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              dailyOsSelectedDateProvider.overrideWithValue(today),
+              unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+                () => _TestUnifiedController(unifiedData),
+              ),
+              highlightedCategoryIdProvider.overrideWith((ref) => null),
+              runningTimerCategoryIdProvider.overrideWithValue(null),
+            ],
+            child: const SingleChildScrollView(child: DailyTimeline()),
+          ),
+        );
+        await tester.pump();
 
-      // The red current-time dot (BoxShape.circle, Colors.redAccent) must appear
-      // because isToday == true and the current hour is in the wide visible cluster.
-      expect(
-        find.byWidgetPredicate((w) {
-          if (w is Container) {
-            final decoration = w.decoration;
-            if (decoration is BoxDecoration) {
-              return decoration.color == Colors.redAccent &&
-                  decoration.shape == BoxShape.circle;
+        // The red current-time dot (BoxShape.circle, Colors.redAccent) must appear
+        // because isToday == true and the current hour is in the wide visible cluster.
+        expect(
+          find.byWidgetPredicate((w) {
+            if (w is Container) {
+              final decoration = w.decoration;
+              if (decoration is BoxDecoration) {
+                return decoration.color == Colors.redAccent &&
+                    decoration.shape == BoxShape.circle;
+              }
             }
-          }
-          return false;
-        }),
-        findsOneWidget,
-      );
+            return false;
+          }),
+          findsOneWidget,
+        );
 
-      // The red horizontal line must also be present.
-      expect(
-        find.byWidgetPredicate((w) {
-          if (w is Container) {
-            return w.color == Colors.redAccent;
-          }
-          return false;
-        }),
-        findsWidgets,
-      );
+        // The red horizontal line must also be present.
+        expect(
+          find.byWidgetPredicate((w) {
+            if (w is Container) {
+              return w.color == Colors.redAccent;
+            }
+            return false;
+          }),
+          findsWidgets,
+        );
+      });
     });
   });
 

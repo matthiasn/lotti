@@ -1223,67 +1223,73 @@ void main() {
       });
     });
 
-    test('invalidates self when date crosses midnight', () async {
-      // Start just before midnight so the initial date is "day A",
-      // then advance time to "day B" to trigger midnight crossing.
+    test('invalidates self when date crosses midnight', () {
+      // Use an advancing fake clock so the poll loop actually observes a new
+      // day. Start just before midnight on day A, then elapse past the
+      // 15-second poll delay so the next iteration lands on day B.
       final dayA = DateTime(2024, 3, 15);
       final dayB = DateTime(2024, 3, 16);
       final justBeforeMidnight = DateTime(2024, 3, 15, 23, 59, 59);
 
-      await withClock(Clock.fixed(justBeforeMidnight), () async {
-        final today = clock.now().dayAtMidnight; // dayA
-
-        final testContainer = ProviderContainer(
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWithValue(today),
-            unifiedDailyOsDataControllerProvider(date: dayA).overrideWith(
-              () => _TestUnifiedController(
-                DailyOsData(
-                  date: dayA,
-                  dayPlan: createTestPlan(),
-                  timelineData: createTestTimelineData(),
-                  budgetProgress: [],
+      fakeAsync((async) {
+        withClock(async.getClock(justBeforeMidnight), () {
+          final testContainer = ProviderContainer(
+            overrides: [
+              dailyOsSelectedDateProvider.overrideWithValue(dayA),
+              unifiedDailyOsDataControllerProvider(date: dayA).overrideWith(
+                () => _TestUnifiedController(
+                  DailyOsData(
+                    date: dayA,
+                    dayPlan: createTestPlan(),
+                    timelineData: createTestTimelineData(),
+                    budgetProgress: [],
+                  ),
                 ),
               ),
-            ),
-            unifiedDailyOsDataControllerProvider(date: dayB).overrideWith(
-              () => _TestUnifiedController(
-                DailyOsData(
-                  date: dayB,
-                  dayPlan: createTestPlan(),
-                  timelineData: createTestTimelineData(),
-                  budgetProgress: [],
+              unifiedDailyOsDataControllerProvider(date: dayB).overrideWith(
+                () => _TestUnifiedController(
+                  DailyOsData(
+                    date: dayB,
+                    dayPlan: createTestPlan(),
+                    timelineData: createTestTimelineData(),
+                    budgetProgress: [],
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-        addTearDown(testContainer.dispose);
+            ],
+          );
+          addTearDown(testContainer.dispose);
 
-        // Collect emissions before the clock jumps.
-        final emissions = <String?>[];
-        testContainer.listen<AsyncValue<String?>>(
-          activeFocusCategoryIdProvider,
-          (previous, next) {
-            if (next.hasValue) emissions.add(next.value);
-          },
-          fireImmediately: true,
-        );
+          final emissions = <String?>[];
+          testContainer.listen<AsyncValue<String?>>(
+            activeFocusCategoryIdProvider,
+            (previous, next) {
+              if (next.hasValue) emissions.add(next.value);
+            },
+            fireImmediately: true,
+          );
 
-        // Wait for first emission with dayA data.
-        final firstEmit = Completer<void>();
-        testContainer.listen<AsyncValue<String?>>(
-          activeFocusCategoryIdProvider,
-          (_, next) {
-            if (next.hasValue && !firstEmit.isCompleted) firstEmit.complete();
-          },
-          fireImmediately: true,
-        );
+          // First emission for day A (still before midnight).
+          async.flushMicrotasks();
+          final emissionsBeforeMidnight = emissions.length;
+          expect(emissionsBeforeMidnight, greaterThan(0));
 
-        await firstEmit.future.timeout(const Duration(seconds: 5));
-        expect(emissions, isNotEmpty);
+          // Cross midnight: advancing past the 15-second poll delay makes the
+          // next loop iteration see today (day B) != currentDate (day A), so it
+          // calls ref.invalidateSelf(). The rebuilt provider re-establishes the
+          // dependency on day B's data and emits again.
+          async
+            ..elapse(const Duration(seconds: 16))
+            ..flushMicrotasks();
 
-        testContainer.dispose();
+          expect(
+            emissions.length,
+            greaterThan(emissionsBeforeMidnight),
+            reason:
+                'crossing midnight should invalidate self and re-emit for '
+                'the new day',
+          );
+        });
       });
     });
   });
