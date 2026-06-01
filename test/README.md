@@ -1,5 +1,29 @@
 # Test Guidelines
 
+## Running tests locally
+
+- Use `fvm` for every Flutter command — `.fvmrc` pins the version CI uses (currently 3.44.0). Running with a different local SDK can make a test pass locally and fail in CI (or vice versa).
+- Iterate on a single file with `fvm flutter test test/path/foo_test.dart` (optionally `--plain-name '<test name>'`). Run targeted files, not the whole suite — the full run is slow.
+- **Never pass `--coverage` to an ad-hoc `flutter test <file>` run.** It rewrites the shared `coverage/lcov.info` with only that file's data, clobbering a full-suite report someone else may be relying on. Generate coverage only through the `make` targets (`make test` / `make coverage` / `make coverage_standard`), which manage `coverage/` as a unit.
+- Prefer `tester.pump(duration)` over `tester.pumpAndSettle()` (10s default timeout → hangs if an animation never settles). Never pass `pumpAndSettle` a duration > 1s.
+
+## Streams & async teardown
+
+Holding a `StreamController` open across `tester.runAsync(...)` and widget teardown causes a hard-to-debug hang that surfaces as:
+
+```
+Bad state: Cannot close sink while adding stream.
+Bad state: Cannot add event while adding stream.
+```
+
+It happens when the widget's `await for` is still attached to the controller's stream while the test ends and `addTearDown(controller.close)` fires mid-delivery. Avoid it:
+
+- Drive widget streams with a **finite** stream (`Stream.fromIterable([...])`) so the `await for` completes on its own, instead of an open `StreamController` you feed one event at a time.
+- If you must use a controller, `await controller.close()` **inside** the test body (before it returns) so the consumer drains before teardown — don't defer the close to `addTearDown`.
+- A test that asserts a transient mid-stream UI state ("…while an event is in flight") is inherently racy; assert the settled state after a finite stream completes instead.
+
+For broader test conventions — centralized mocks/fallbacks (`test/mocks/mocks.dart`, `test/helpers/fallbacks.dart`), `setUpTestGetIt()` / `makeTestableWidget()`, the "every test must assert something meaningful" rule, and one-test-file-per-source-file — see the **Testing Guidelines** section of `AGENTS.md`.
+
 ## Property-Based Tests with Glados
 
 We use [`package:glados`](https://pub.dev/packages/glados) for property-based ("generative") testing of pure logic. Going forward, **any new code with non-trivial pure logic should reach for Glados first** — it explores far more inputs than hand-rolled examples and shrinks failing cases automatically. Reach for Glados when you have:
