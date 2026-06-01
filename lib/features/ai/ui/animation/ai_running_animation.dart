@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:siri_wave/siri_wave.dart';
@@ -107,6 +108,15 @@ class AiRunningDecoderBars extends ConsumerStatefulWidget {
   @visibleForTesting
   static const Key indicatorKey = ValueKey('ai-running-decoder-bars');
 
+  @visibleForTesting
+  static double resolveShaderWidth(BoxConstraints constraints, Size mediaSize) {
+    if (constraints.hasBoundedWidth) {
+      return constraints.maxWidth;
+    }
+
+    return mediaSize.width;
+  }
+
   final String entryId;
   final Set<AiResponseType> responseTypes;
   final double height;
@@ -135,6 +145,20 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
         setState(() => _buildBars = false);
       }
     });
+
+    // `ref.listen` (in build) only reacts to subsequent changes, so seed the
+    // presence here for inference that is already running when this widget
+    // first mounts — fully shown, without an entry animation.
+    final isRunning = ref.read(
+      inferenceRunningControllerProvider(
+        id: widget.entryId,
+        responseTypes: widget.responseTypes,
+      ),
+    );
+    if (isRunning) {
+      _buildBars = true;
+      _presenceController.value = 1;
+    }
   }
 
   @override
@@ -145,7 +169,9 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
 
   void _syncPresence(bool isRunning) {
     if (isRunning) {
-      _buildBars = true;
+      if (!_buildBars) {
+        setState(() => _buildBars = true);
+      }
       if (_presenceController.value < 1 &&
           _presenceController.status != AnimationStatus.forward) {
         _presenceController.forward();
@@ -153,9 +179,8 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
       return;
     }
 
-    if ((_buildBars || _presenceController.value > 0) &&
-        _presenceController.status != AnimationStatus.reverse &&
-        _presenceController.value > 0) {
+    if (_presenceController.value > 0 &&
+        _presenceController.status != AnimationStatus.reverse) {
       _presenceController.reverse();
     }
   }
@@ -167,12 +192,15 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
 
   @override
   Widget build(BuildContext context) {
-    final provider = inferenceRunningControllerProvider(
-      id: widget.entryId,
-      responseTypes: widget.responseTypes,
+    // React to running-state changes via a listener rather than mutating the
+    // controller during build (which would be a build-phase side effect).
+    ref.listen<bool>(
+      inferenceRunningControllerProvider(
+        id: widget.entryId,
+        responseTypes: widget.responseTypes,
+      ),
+      (_, isRunning) => _syncPresence(isRunning),
     );
-    final isRunning = ref.watch(provider);
-    _syncPresence(isRunning);
 
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
@@ -197,9 +225,10 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
               width: double.infinity,
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final width = constraints.hasBoundedWidth
-                      ? constraints.maxWidth
-                      : MediaQuery.sizeOf(context).width;
+                  final width = AiRunningDecoderBars.resolveShaderWidth(
+                    constraints,
+                    MediaQuery.sizeOf(context),
+                  );
                   return AiThinkingLineShader(
                     width: width,
                     height: shaderHeight,
@@ -225,15 +254,19 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
       return bars;
     }
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _handleAiActivityTap(
-        context: context,
-        ref: ref,
-        entryId: widget.entryId,
-        responseTypes: widget.responseTypes,
+    return Semantics(
+      button: true,
+      label: context.messages.aiRunningActivityOpenProgress,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _handleAiActivityTap(
+          context: context,
+          ref: ref,
+          entryId: widget.entryId,
+          responseTypes: widget.responseTypes,
+        ),
+        child: bars,
       ),
-      child: bars,
     );
   }
 }

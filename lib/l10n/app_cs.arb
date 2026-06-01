@@ -661,6 +661,7 @@
   "aiResponseTypeImagePromptGeneration": "Prompt pro obrázek",
   "aiResponseTypePromptGeneration": "Vygenerovaný prompt",
   "aiResponseTypeTaskSummary": "Shrnutí úkolu",
+  "aiRunningActivityOpenProgress": "Zobrazit průběh AI",
   "aiSettingsAddedLabel": "Přidáno",
   "aiSettingsAddModelButton": "Přidat model",
   "aiSettingsAddModelTooltip": "Přidat tento model ke svému poskytovateli",

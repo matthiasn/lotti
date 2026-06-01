@@ -821,6 +821,7 @@
   "aiResponseTypeImagePromptGeneration": "Prompt de Imagen",
   "aiResponseTypePromptGeneration": "Prompt generado",
   "aiResponseTypeTaskSummary": "Resumen de tarea",
+  "aiRunningActivityOpenProgress": "Mostrar progreso de la AI",
   "aiSettingsAddedLabel": "Añadido",
   "aiSettingsAddModelButton": "Añadir modelo",
   "aiSettingsAddModelTooltip": "Añadir este modelo a tu proveedor",

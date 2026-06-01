@@ -350,5 +350,7 @@ void main() {
         uBackgroundColor.a);
   }
 
-  fragColor = vec4(color.rgb * opacity, saturate(color.a * opacity));
+  // Attenuate alpha only (not RGB) so fades match AiThinkingLineFallbackPainter,
+  // which scales stroke alpha while keeping colors at full saturation.
+  fragColor = vec4(color.rgb, saturate(color.a * opacity));
 }

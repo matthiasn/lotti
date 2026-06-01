@@ -1786,6 +1786,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiResponseTypeTaskSummary => 'Aufgabenzusammenfassung';
 
   @override
+  String get aiRunningActivityOpenProgress => 'KI-Fortschritt anzeigen';
+
+  @override
   String get aiSettingsAddedLabel => 'Hinzugefügt';
 
   @override

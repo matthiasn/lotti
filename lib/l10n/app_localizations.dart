@@ -3115,6 +3115,12 @@ abstract class AppLocalizations {
   /// **'Task Summary'**
   String get aiResponseTypeTaskSummary;
 
+  /// No description provided for @aiRunningActivityOpenProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Show AI progress'**
+  String get aiRunningActivityOpenProgress;
+
   /// No description provided for @aiSettingsAddedLabel.
   ///
   /// In en, this message translates to:

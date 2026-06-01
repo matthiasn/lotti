@@ -294,13 +294,15 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
     // extends edge-to-edge into that inset, while the touchable row sits
     // above it.
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
-    final topPadding = widget.topSlot == null ? spacing.step4 : spacing.step2;
 
     return DesignSystemGlassStrip(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           spacing.step5,
-          topPadding,
+          // The optional activity slot collapses to zero height when idle and
+          // brings its own bottom gap when active, so keep the bar's standard
+          // top padding in both cases rather than tightening it.
+          spacing.step4,
           spacing.step5,
           spacing.step4 + safeBottomInset,
         ),
