@@ -657,7 +657,14 @@ mixin _$AgentMessageMetadata {
 ///
 /// Forward-compatible: a milestone value an older client doesn't recognise
 /// deserialises to `null` rather than throwing.
-@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) AgentMilestone? get milestone;
+@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) AgentMilestone? get milestone;/// When set, this is a **retraction** event (ADR 0020): the captured input
+/// source identified by this `contentEntryId` is soft-retracted from the
+/// agent's active consideration as of this message's position in the log
+/// (the user deleted or unlinked it). The original content snapshot stays
+/// in the log — auditable — and a later capture of the same source un-does
+/// the retraction. `projectInputFrontier` folds these to exclude retracted
+/// sources from the wake context. Null on every non-retraction message.
+ String? get retractsContentEntryId;
 /// Create a copy of AgentMessageMetadata
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -670,16 +677,16 @@ $AgentMessageMetadataCopyWith<AgentMessageMetadata> get copyWith => _$AgentMessa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentMessageMetadata&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.policyDenied, policyDenied) || other.policyDenied == policyDenied)&&(identical(other.denialReason, denialReason) || other.denialReason == denialReason)&&(identical(other.milestone, milestone) || other.milestone == milestone));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentMessageMetadata&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.policyDenied, policyDenied) || other.policyDenied == policyDenied)&&(identical(other.denialReason, denialReason) || other.denialReason == denialReason)&&(identical(other.milestone, milestone) || other.milestone == milestone)&&(identical(other.retractsContentEntryId, retractsContentEntryId) || other.retractsContentEntryId == retractsContentEntryId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,runKey,toolName,operationId,errorMessage,policyDenied,denialReason,milestone);
+int get hashCode => Object.hash(runtimeType,runKey,toolName,operationId,errorMessage,policyDenied,denialReason,milestone,retractsContentEntryId);
 
 @override
 String toString() {
-  return 'AgentMessageMetadata(runKey: $runKey, toolName: $toolName, operationId: $operationId, errorMessage: $errorMessage, policyDenied: $policyDenied, denialReason: $denialReason, milestone: $milestone)';
+  return 'AgentMessageMetadata(runKey: $runKey, toolName: $toolName, operationId: $operationId, errorMessage: $errorMessage, policyDenied: $policyDenied, denialReason: $denialReason, milestone: $milestone, retractsContentEntryId: $retractsContentEntryId)';
 }
 
 
@@ -690,7 +697,7 @@ abstract mixin class $AgentMessageMetadataCopyWith<$Res>  {
   factory $AgentMessageMetadataCopyWith(AgentMessageMetadata value, $Res Function(AgentMessageMetadata) _then) = _$AgentMessageMetadataCopyWithImpl;
 @useResult
 $Res call({
- String? runKey, String? toolName, String? operationId, String? errorMessage, bool policyDenied, String? denialReason,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) AgentMilestone? milestone
+ String? runKey, String? toolName, String? operationId, String? errorMessage, bool policyDenied, String? denialReason,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) AgentMilestone? milestone, String? retractsContentEntryId
 });
 
 
@@ -707,7 +714,7 @@ class _$AgentMessageMetadataCopyWithImpl<$Res>
 
 /// Create a copy of AgentMessageMetadata
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? runKey = freezed,Object? toolName = freezed,Object? operationId = freezed,Object? errorMessage = freezed,Object? policyDenied = null,Object? denialReason = freezed,Object? milestone = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? runKey = freezed,Object? toolName = freezed,Object? operationId = freezed,Object? errorMessage = freezed,Object? policyDenied = null,Object? denialReason = freezed,Object? milestone = freezed,Object? retractsContentEntryId = freezed,}) {
   return _then(_self.copyWith(
 runKey: freezed == runKey ? _self.runKey : runKey // ignore: cast_nullable_to_non_nullable
 as String?,toolName: freezed == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
@@ -716,7 +723,8 @@ as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMes
 as String?,policyDenied: null == policyDenied ? _self.policyDenied : policyDenied // ignore: cast_nullable_to_non_nullable
 as bool,denialReason: freezed == denialReason ? _self.denialReason : denialReason // ignore: cast_nullable_to_non_nullable
 as String?,milestone: freezed == milestone ? _self.milestone : milestone // ignore: cast_nullable_to_non_nullable
-as AgentMilestone?,
+as AgentMilestone?,retractsContentEntryId: freezed == retractsContentEntryId ? _self.retractsContentEntryId : retractsContentEntryId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -801,10 +809,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentMilestone? milestone)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentMilestone? milestone,  String? retractsContentEntryId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentMessageMetadata() when $default != null:
-return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason,_that.milestone);case _:
+return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason,_that.milestone,_that.retractsContentEntryId);case _:
   return orElse();
 
 }
@@ -822,10 +830,10 @@ return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentMilestone? milestone)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentMilestone? milestone,  String? retractsContentEntryId)  $default,) {final _that = this;
 switch (_that) {
 case _AgentMessageMetadata():
-return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason,_that.milestone);case _:
+return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason,_that.milestone,_that.retractsContentEntryId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -842,10 +850,10 @@ return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentMilestone? milestone)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentMilestone? milestone,  String? retractsContentEntryId)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentMessageMetadata() when $default != null:
-return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason,_that.milestone);case _:
+return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason,_that.milestone,_that.retractsContentEntryId);case _:
   return null;
 
 }
@@ -857,7 +865,7 @@ return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage
 @JsonSerializable()
 
 class _AgentMessageMetadata implements AgentMessageMetadata {
-  const _AgentMessageMetadata({this.runKey, this.toolName, this.operationId, this.errorMessage, this.policyDenied = false, this.denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.milestone});
+  const _AgentMessageMetadata({this.runKey, this.toolName, this.operationId, this.errorMessage, this.policyDenied = false, this.denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.milestone, this.retractsContentEntryId});
   factory _AgentMessageMetadata.fromJson(Map<String, dynamic> json) => _$AgentMessageMetadataFromJson(json);
 
 /// The run key of the wake that produced this message.
@@ -883,6 +891,14 @@ class _AgentMessageMetadata implements AgentMessageMetadata {
 /// Forward-compatible: a milestone value an older client doesn't recognise
 /// deserialises to `null` rather than throwing.
 @override@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) final  AgentMilestone? milestone;
+/// When set, this is a **retraction** event (ADR 0020): the captured input
+/// source identified by this `contentEntryId` is soft-retracted from the
+/// agent's active consideration as of this message's position in the log
+/// (the user deleted or unlinked it). The original content snapshot stays
+/// in the log — auditable — and a later capture of the same source un-does
+/// the retraction. `projectInputFrontier` folds these to exclude retracted
+/// sources from the wake context. Null on every non-retraction message.
+@override final  String? retractsContentEntryId;
 
 /// Create a copy of AgentMessageMetadata
 /// with the given fields replaced by the non-null parameter values.
@@ -897,16 +913,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentMessageMetadata&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.policyDenied, policyDenied) || other.policyDenied == policyDenied)&&(identical(other.denialReason, denialReason) || other.denialReason == denialReason)&&(identical(other.milestone, milestone) || other.milestone == milestone));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentMessageMetadata&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.policyDenied, policyDenied) || other.policyDenied == policyDenied)&&(identical(other.denialReason, denialReason) || other.denialReason == denialReason)&&(identical(other.milestone, milestone) || other.milestone == milestone)&&(identical(other.retractsContentEntryId, retractsContentEntryId) || other.retractsContentEntryId == retractsContentEntryId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,runKey,toolName,operationId,errorMessage,policyDenied,denialReason,milestone);
+int get hashCode => Object.hash(runtimeType,runKey,toolName,operationId,errorMessage,policyDenied,denialReason,milestone,retractsContentEntryId);
 
 @override
 String toString() {
-  return 'AgentMessageMetadata(runKey: $runKey, toolName: $toolName, operationId: $operationId, errorMessage: $errorMessage, policyDenied: $policyDenied, denialReason: $denialReason, milestone: $milestone)';
+  return 'AgentMessageMetadata(runKey: $runKey, toolName: $toolName, operationId: $operationId, errorMessage: $errorMessage, policyDenied: $policyDenied, denialReason: $denialReason, milestone: $milestone, retractsContentEntryId: $retractsContentEntryId)';
 }
 
 
@@ -917,7 +933,7 @@ abstract mixin class _$AgentMessageMetadataCopyWith<$Res> implements $AgentMessa
   factory _$AgentMessageMetadataCopyWith(_AgentMessageMetadata value, $Res Function(_AgentMessageMetadata) _then) = __$AgentMessageMetadataCopyWithImpl;
 @override @useResult
 $Res call({
- String? runKey, String? toolName, String? operationId, String? errorMessage, bool policyDenied, String? denialReason,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) AgentMilestone? milestone
+ String? runKey, String? toolName, String? operationId, String? errorMessage, bool policyDenied, String? denialReason,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) AgentMilestone? milestone, String? retractsContentEntryId
 });
 
 
@@ -934,7 +950,7 @@ class __$AgentMessageMetadataCopyWithImpl<$Res>
 
 /// Create a copy of AgentMessageMetadata
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? runKey = freezed,Object? toolName = freezed,Object? operationId = freezed,Object? errorMessage = freezed,Object? policyDenied = null,Object? denialReason = freezed,Object? milestone = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? runKey = freezed,Object? toolName = freezed,Object? operationId = freezed,Object? errorMessage = freezed,Object? policyDenied = null,Object? denialReason = freezed,Object? milestone = freezed,Object? retractsContentEntryId = freezed,}) {
   return _then(_AgentMessageMetadata(
 runKey: freezed == runKey ? _self.runKey : runKey // ignore: cast_nullable_to_non_nullable
 as String?,toolName: freezed == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
@@ -943,7 +959,8 @@ as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMes
 as String?,policyDenied: null == policyDenied ? _self.policyDenied : policyDenied // ignore: cast_nullable_to_non_nullable
 as bool,denialReason: freezed == denialReason ? _self.denialReason : denialReason // ignore: cast_nullable_to_non_nullable
 as String?,milestone: freezed == milestone ? _self.milestone : milestone // ignore: cast_nullable_to_non_nullable
-as AgentMilestone?,
+as AgentMilestone?,retractsContentEntryId: freezed == retractsContentEntryId ? _self.retractsContentEntryId : retractsContentEntryId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

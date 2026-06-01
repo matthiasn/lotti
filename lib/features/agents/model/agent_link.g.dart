@@ -100,6 +100,10 @@ MessagePayloadLink _$MessagePayloadLinkFromJson(Map<String, dynamic> json) =>
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      contentEntryId: json['contentEntryId'] as String?,
+      sourceCreatedAt: json['sourceCreatedAt'] == null
+          ? null
+          : DateTime.parse(json['sourceCreatedAt'] as String),
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -114,6 +118,8 @@ Map<String, dynamic> _$MessagePayloadLinkToJson(MessagePayloadLink instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
+      'contentEntryId': instance.contentEntryId,
+      'sourceCreatedAt': instance.sourceCreatedAt?.toIso8601String(),
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };

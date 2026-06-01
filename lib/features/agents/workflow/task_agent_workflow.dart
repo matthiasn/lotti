@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/service/change_set_notification_service.da
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
+import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -92,6 +94,7 @@ class TaskAgentWorkflow {
     this.taskAgentService,
     this.projectRepository,
     this.changeSetNotificationService,
+    this.inputCaptureService,
   });
 
   final AgentRepository agentRepository;
@@ -128,6 +131,13 @@ class TaskAgentWorkflow {
   /// Optional bridge that keeps task-suggestion notifications aligned with
   /// agent change-set resolution.
   final ChangeSetNotificationService? changeSetNotificationService;
+
+  /// Optional input-capture service (ADR 0020). When present, each wake
+  /// snapshots the user-content sources it read (per-source, content-addressed)
+  /// into the append-only log, so the agent's inputs become a projection of the
+  /// log rather than a live journal read. Null disables capture (unit tests
+  /// that don't exercise it); production wires it in `agent_workflow_providers`.
+  final AgentInputCaptureService? inputCaptureService;
 
   static const _uuid = Uuid();
 
@@ -332,6 +342,27 @@ class TaskAgentWorkflow {
     } catch (e) {
       _logError('failed to persist user message', error: e);
       // Non-fatal: continue with execution even if audit fails.
+    }
+
+    // 6b. Capture the user-content sources this wake read into the log
+    // (ADR 0020), per-source and content-addressed, so the agent's inputs are a
+    // projection of the log. Shadow for now — assembly still reads the journal
+    // (the read flips in PR 5 C4). Non-fatal: a capture failure must not abort
+    // the wake.
+    final captureService = inputCaptureService;
+    if (captureService != null) {
+      try {
+        final linked = await journalDb.getLinkedEntities(taskId);
+        await captureService.captureWakeInputs(
+          agentId: agentId,
+          sources: renderTaskSources(linked),
+          at: now,
+          threadId: threadId,
+          runKey: runKey,
+        );
+      } catch (e) {
+        _logError('failed to capture wake inputs', error: e);
+      }
     }
 
     try {

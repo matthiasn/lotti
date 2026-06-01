@@ -123,6 +123,15 @@ abstract class AgentMessageMetadata with _$AgentMessageMetadata {
     /// deserialises to `null` rather than throwing.
     @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
     AgentMilestone? milestone,
+
+    /// When set, this is a **retraction** event (ADR 0020): the captured input
+    /// source identified by this `contentEntryId` is soft-retracted from the
+    /// agent's active consideration as of this message's position in the log
+    /// (the user deleted or unlinked it). The original content snapshot stays
+    /// in the log — auditable — and a later capture of the same source un-does
+    /// the retraction. `projectInputFrontier` folds these to exclude retracted
+    /// sources from the wake context. Null on every non-retraction message.
+    String? retractsContentEntryId,
   }) = _AgentMessageMetadata;
 
   factory AgentMessageMetadata.fromJson(Map<String, dynamic> json) =>

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -219,6 +220,7 @@ TaskAgentWorkflow createTestWorkflow({
   required MockAgentSyncService syncService,
   required MockAgentTemplateService templateService,
   MockSoulDocumentService? soulDocumentService,
+  AgentInputCaptureService? inputCaptureService,
 }) {
   return TaskAgentWorkflow(
     agentRepository: agentRepository,
@@ -233,6 +235,7 @@ TaskAgentWorkflow createTestWorkflow({
     syncService: syncService,
     templateService: templateService,
     soulDocumentService: soulDocumentService,
+    inputCaptureService: inputCaptureService,
   );
 }
 

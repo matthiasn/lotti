@@ -13,6 +13,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/projection/input_capture.dart';
+import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
@@ -5426,7 +5428,161 @@ void main() {
         },
       );
     });
+
+    group('input capture (ADR 0020)', () {
+      test(
+        'captures the rendered task sources when a capture service is wired',
+        () async {
+          final capture = _RecordingCaptureService();
+          final linkedEntry = _makeLinkedTimeEntry(
+            id: 'linked-1',
+            dateFrom: DateTime(2024, 6),
+            dateTo: DateTime(2024, 6),
+            text: 'a captured note',
+          );
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [linkedEntry]);
+
+          final workflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            inputCaptureService: capture,
+          );
+          stubFullExecutePath(
+            mockAgentRepository: mockAgentRepository,
+            mockAiInputRepository: mockAiInputRepository,
+            mockAiConfigRepository: mockAiConfigRepository,
+            mockConversationManager: mockConversationManager,
+            testAgentState: testAgentState,
+            geminiModel: geminiModel,
+            geminiProvider: geminiProvider,
+            agentId: agentId,
+            taskId: taskId,
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(capture.callCount, 1);
+          expect(capture.agentId, agentId);
+          expect(capture.threadId, threadId);
+          expect(capture.runKey, runKey);
+          // The workflow rendered the linked journal entry into a source.
+          expect(capture.sources.map((s) => s.contentEntryId), ['linked-1']);
+          expect(capture.sources.single.content['text'], 'a captured note');
+        },
+      );
+
+      test(
+        'a capture failure is non-fatal — the wake still succeeds',
+        () async {
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => const []);
+          final workflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            inputCaptureService: _ThrowingCaptureService(),
+          );
+          stubFullExecutePath(
+            mockAgentRepository: mockAgentRepository,
+            mockAiInputRepository: mockAiInputRepository,
+            mockAiConfigRepository: mockAiConfigRepository,
+            mockConversationManager: mockConversationManager,
+            testAgentState: testAgentState,
+            geminiModel: geminiModel,
+            geminiProvider: geminiProvider,
+            agentId: agentId,
+            taskId: taskId,
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+        },
+      );
+    });
   });
+}
+
+/// Records [AgentInputCaptureService.captureWakeInputs] calls so the wiring test
+/// can assert what the workflow captured, without a real log.
+class _RecordingCaptureService implements AgentInputCaptureService {
+  int callCount = 0;
+  String? agentId;
+  List<RenderedSource> sources = const [];
+  DateTime? at;
+  String? threadId;
+  String? runKey;
+
+  @override
+  Future<CaptureDelta> captureWakeInputs({
+    required String agentId,
+    required List<RenderedSource> sources,
+    required DateTime at,
+    String? threadId,
+    String? runKey,
+    List<AgentMessageEntity>? systemMessages,
+    List<AgentLink>? links,
+  }) async {
+    callCount++;
+    this.agentId = agentId;
+    this.sources = sources;
+    this.at = at;
+    this.threadId = threadId;
+    this.runKey = runKey;
+    return const CaptureDelta(
+      newPayloads: [],
+      newReferences: [],
+      retractedEntryIds: [],
+    );
+  }
+}
+
+/// A capture service that always throws, to prove the workflow treats capture
+/// as non-fatal (the wake completes anyway).
+class _ThrowingCaptureService implements AgentInputCaptureService {
+  @override
+  Future<CaptureDelta> captureWakeInputs({
+    required String agentId,
+    required List<RenderedSource> sources,
+    required DateTime at,
+    String? threadId,
+    String? runKey,
+    List<AgentMessageEntity>? systemMessages,
+    List<AgentLink>? links,
+  }) async {
+    throw StateError('capture boom');
+  }
 }
 
 Task _makeTask(String id) {

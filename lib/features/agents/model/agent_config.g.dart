@@ -89,6 +89,7 @@ _AgentMessageMetadata _$AgentMessageMetadataFromJson(
     json['milestone'],
     unknownValue: JsonKey.nullForUndefinedEnumValue,
   ),
+  retractsContentEntryId: json['retractsContentEntryId'] as String?,
 );
 
 Map<String, dynamic> _$AgentMessageMetadataToJson(
@@ -101,6 +102,7 @@ Map<String, dynamic> _$AgentMessageMetadataToJson(
   'policyDenied': instance.policyDenied,
   'denialReason': instance.denialReason,
   'milestone': _$AgentMilestoneEnumMap[instance.milestone],
+  'retractsContentEntryId': instance.retractsContentEntryId,
 };
 
 const _$AgentMilestoneEnumMap = {
