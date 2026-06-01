@@ -1079,6 +1079,403 @@ void main() {
         expect(thinking.content.contains('</thinking>'), isTrue);
         sub.close();
       });
+
+      test(
+        'flushes visible segment from parser.finish() when stream ends mid-text',
+        () async {
+          // Initialize empty session
+          when(
+            () => mockChatRepository.createSession(categoryId: 'test-category'),
+          ).thenAnswer(
+            (_) async => ChatSession(
+              id: 's1',
+              title: 'New Chat',
+              createdAt: DateTime(2024),
+              lastMessageAt: DateTime(2024),
+              messages: [],
+            ),
+          );
+
+          final streamController = StreamController<String>();
+          when(
+            () => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            ),
+          ).thenAnswer((_) => streamController.stream);
+          when(() => mockChatRepository.saveSession(any())).thenAnswer(
+            (_) async => ChatSession(
+              id: 's1',
+              title: 'New Chat',
+              createdAt: DateTime(2024),
+              lastMessageAt: DateTime(2024),
+              messages: const [],
+            ),
+          );
+
+          final sub = container.listen(
+            chatSessionControllerProvider('test-category'),
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          final controller = container.read(
+            chatSessionControllerProvider('test-category').notifier,
+          );
+          await controller.initializeSession();
+          await controller.setModel('model-1');
+
+          // Start streaming with a thinking block that contains visible text after
+          // Close the stream without a </thinking> so parser.finish() emits a
+          // ThinkingFinal; then also emit visible text so appendVisible is
+          // called from the finish() flush path (line 178).
+          // ignore: unawaited_futures
+          controller.sendMessage('Hi');
+          await Future<void>.delayed(Duration.zero);
+          // Emit a complete thinking block then visible text to exercise
+          // parser.finish() flushing a VisibleAppend.
+          streamController
+            ..add('<thinking>Reasoning</thinking>')
+            ..add('Answer text');
+          await streamController.close();
+          await Future<void>.delayed(Duration.zero);
+
+          final state = container.read(
+            chatSessionControllerProvider('test-category'),
+          );
+          // user + thinking + visible answer messages
+          expect(state.isStreaming, isFalse);
+          expect(state.isLoading, isFalse);
+          expect(state.messages.length, greaterThanOrEqualTo(2));
+          final lastMsg = state.messages.last;
+          expect(lastMsg.role, ChatMessageRole.assistant);
+          expect(lastMsg.content, contains('Answer text'));
+          sub.close();
+        },
+      );
+
+      test(
+        'removes streaming message with content on error (exercises _removeStreamingMessage body)',
+        () async {
+          when(
+            () => mockChatRepository.createSession(categoryId: 'test-category'),
+          ).thenAnswer(
+            (_) async => ChatSession(
+              id: 's1',
+              title: 'New Chat',
+              createdAt: DateTime(2024),
+              lastMessageAt: DateTime(2024),
+              messages: [],
+            ),
+          );
+
+          // Stream emits some content then throws to trigger _removeStreamingMessage
+          // with a non-null _currentStreamingMessageId already set.
+          final streamController = StreamController<String>();
+          when(
+            () => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            ),
+          ).thenAnswer((_) => streamController.stream);
+          when(() => mockChatRepository.saveSession(any())).thenAnswer(
+            (_) async => ChatSession(
+              id: 's1',
+              title: 'New Chat',
+              createdAt: DateTime(2024),
+              lastMessageAt: DateTime(2024),
+              messages: const [],
+            ),
+          );
+
+          final sub = container.listen(
+            chatSessionControllerProvider('test-category'),
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          final controller = container.read(
+            chatSessionControllerProvider('test-category').notifier,
+          );
+          await controller.initializeSession();
+          await controller.setModel('model-1');
+
+          // ignore: unawaited_futures
+          controller.sendMessage('Hi');
+          await Future<void>.delayed(Duration.zero);
+
+          // Emit real content so a streaming message is added (non-null ID)
+          streamController.add('Partial response');
+          await Future<void>.delayed(Duration.zero);
+
+          // Now add an error to trigger the catch block with an active streaming
+          // message, exercising _removeStreamingMessage lines 287-297.
+          streamController.addError(Exception('mid-stream error'));
+          await Future<void>.delayed(Duration.zero);
+
+          final state = container.read(
+            chatSessionControllerProvider('test-category'),
+          );
+          // Streaming message should be removed; only user message remains
+          expect(
+            state.messages.where((m) => m.role == ChatMessageRole.user).length,
+            1,
+          );
+          expect(
+            state.messages
+                .where((m) => m.role == ChatMessageRole.assistant)
+                .length,
+            0,
+          );
+          expect(state.isStreaming, isFalse);
+          expect(state.isLoading, isFalse);
+          expect(state.error, contains('Failed to send message'));
+          sub.close();
+        },
+      );
+
+      test(
+        '_saveCurrentSession logs error and does not expose it on save failure',
+        () async {
+          when(
+            () => mockChatRepository.createSession(categoryId: 'test-category'),
+          ).thenAnswer(
+            (_) async => ChatSession(
+              id: 's1',
+              title: 'New Chat',
+              createdAt: DateTime(2024),
+              lastMessageAt: DateTime(2024),
+              messages: [],
+            ),
+          );
+
+          when(
+            () => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            ),
+          ).thenAnswer((_) async* {
+            yield 'Response text';
+          });
+
+          // saveSession throws so _saveCurrentSession catch (line 314) is hit
+          when(
+            () => mockChatRepository.saveSession(any()),
+          ).thenThrow(Exception('save failed'));
+
+          final sub = container.listen(
+            chatSessionControllerProvider('test-category'),
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          final controller = container.read(
+            chatSessionControllerProvider('test-category').notifier,
+          );
+          await controller.initializeSession();
+
+          // Use updateState to set the model directly, bypassing the setModel
+          // path that also calls saveSession (which would throw and revert).
+          controller.updateState((s) => s.copyWith(selectedModelId: 'model-1'));
+
+          await controller.sendMessage('Hello');
+
+          final state = container.read(
+            chatSessionControllerProvider('test-category'),
+          );
+          // Error should NOT be exposed to the user for save failures
+          expect(state.error, isNull);
+          // But the logger should have been called
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.chat,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: '_saveCurrentSession',
+            ),
+          ).called(1);
+          sub.close();
+        },
+      );
+
+      test(
+        '_saveCurrentSession persists completed messages to repository after send',
+        () async {
+          when(
+            () => mockChatRepository.createSession(categoryId: 'test-category'),
+          ).thenAnswer(
+            (_) async => ChatSession(
+              id: 'session-42',
+              title: 'New Chat',
+              createdAt: DateTime(2024),
+              lastMessageAt: DateTime(2024),
+              messages: [],
+            ),
+          );
+
+          when(
+            () => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            ),
+          ).thenAnswer((_) async* {
+            yield 'Saved response';
+          });
+
+          final savedSessions = <ChatSession>[];
+          when(
+            () => mockChatRepository.saveSession(any()),
+          ).thenAnswer((invocation) async {
+            final session = invocation.positionalArguments.first as ChatSession;
+            savedSessions.add(session);
+            return session;
+          });
+
+          final sub = container.listen(
+            chatSessionControllerProvider('test-category'),
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          final controller = container.read(
+            chatSessionControllerProvider('test-category').notifier,
+          );
+          await controller.initializeSession();
+          controller.updateState((s) => s.copyWith(selectedModelId: 'model-1'));
+
+          await controller.sendMessage('Persist me');
+
+          // _saveCurrentSession should have been called once with the full session
+          expect(savedSessions, hasLength(1));
+          final saved = savedSessions.first;
+          expect(saved.id, equals('session-42'));
+          expect(
+            saved.messages.any((m) => m.content == 'Persist me'),
+            isTrue,
+          );
+          expect(
+            saved.messages.any((m) => m.content == 'Saved response'),
+            isTrue,
+          );
+          sub.close();
+        },
+      );
+    });
+
+    group('deleteSession error handling', () {
+      test(
+        'sets error state when deleteSession throws (lines 360, 366-367)',
+        () async {
+          when(
+            () => mockChatRepository.deleteSession(any()),
+          ).thenThrow(Exception('delete failed'));
+
+          final controller = container.read(
+            chatSessionControllerProvider('test-category').notifier,
+          );
+
+          // Set a non-empty session id so deleteSession proceeds past the guard
+          // ignore: cascade_invocations
+          controller.updateState((s) => s.copyWith(id: 'session-to-delete'));
+
+          await controller.deleteSession();
+
+          final state = container.read(
+            chatSessionControllerProvider('test-category'),
+          );
+          expect(state.error, contains('Failed to delete session'));
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.chat,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'deleteSession',
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    group('_finalizeStreamingMessage edge cases', () {
+      test(
+        'handles missing streaming message gracefully (line 256: clears id and returns)',
+        () async {
+          when(
+            () => mockChatRepository.createSession(categoryId: 'test-category'),
+          ).thenAnswer(
+            (_) async => ChatSession(
+              id: 's1',
+              title: 'New Chat',
+              createdAt: DateTime(2024),
+              lastMessageAt: DateTime(2024),
+              messages: [],
+            ),
+          );
+
+          final streamController = StreamController<String>();
+          when(
+            () => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            ),
+          ).thenAnswer((_) => streamController.stream);
+          when(() => mockChatRepository.saveSession(any())).thenAnswer(
+            (_) async => ChatSession(
+              id: 's1',
+              title: 'New Chat',
+              createdAt: DateTime(2024),
+              lastMessageAt: DateTime(2024),
+              messages: const [],
+            ),
+          );
+
+          final sub = container.listen(
+            chatSessionControllerProvider('test-category'),
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          final controller = container.read(
+            chatSessionControllerProvider('test-category').notifier,
+          );
+          await controller.initializeSession();
+          await controller.setModel('model-1');
+
+          // ignore: unawaited_futures
+          controller.sendMessage('Hi');
+          await Future<void>.delayed(Duration.zero);
+
+          // Emit visible content to create a streaming message
+          streamController.add('Some text');
+          await Future<void>.delayed(Duration.zero);
+
+          // Remove all messages from state while the streaming ID is still set,
+          // so when _finalizeStreamingMessage runs it cannot find the message
+          // and hits the "existing == null" guard on line 255-257.
+          controller.updateState((s) => s.copyWith(messages: []));
+
+          await streamController.close();
+          await Future<void>.delayed(Duration.zero);
+
+          final state = container.read(
+            chatSessionControllerProvider('test-category'),
+          );
+          // Controller should complete gracefully with no crash and clear flags
+          expect(state.isStreaming, isFalse);
+          expect(state.isLoading, isFalse);
+          sub.close();
+        },
+      );
     });
   });
 }

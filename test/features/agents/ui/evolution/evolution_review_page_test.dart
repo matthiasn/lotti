@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/ritual_summary_card.dart';
@@ -15,6 +17,15 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
+
+/// Fake [EvolutionChatState] that stays in the loading state indefinitely,
+/// allowing navigation tests to verify that [EvolutionChatPage] is pushed
+/// without triggering the real workflow.
+class _LoadingChatState extends EvolutionChatState {
+  @override
+  Future<EvolutionChatData> build(String templateId) =>
+      Completer<EvolutionChatData>().future;
+}
 
 void main() {
   setUp(setUpTestGetIt);
@@ -358,5 +369,180 @@ void main() {
         findsNothing,
       );
     });
+
+    testWidgets(
+      'shows start card when pending ritual provider errors',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const EvolutionReviewPage(templateId: kTestTemplateId),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: const Size(390, 1600),
+            ),
+            overrides: [
+              agentTemplateProvider.overrideWith(
+                (ref, id) async =>
+                    makeTestTemplate(displayName: 'Daily Standup'),
+              ),
+              pendingRitualReviewProvider.overrideWith(
+                (ref, id) => Future<AgentDomainEntity?>.error(
+                  // Use StateError (a Dart Error, not Exception) to bypass
+                  // Riverpod's default retry policy for Exception types.
+                  StateError('simulated network error'),
+                ),
+              ),
+              ritualSummaryMetricsProvider.overrideWith(
+                (ref, id) async => summaryMetrics,
+              ),
+              ritualSessionHistoryProvider.overrideWith(
+                (ref, id) async => const [],
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(EvolutionReviewPage));
+
+        // Error branch (lines 63-64): _StartCard is shown, not pending card.
+        await tester.scrollUntilVisible(
+          find.text(context.messages.agentRitualSummaryStartHint),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(
+          find.text(context.messages.agentRitualSummaryStartHint),
+          findsOneWidget,
+        );
+        expect(
+          find.text(context.messages.agentRitualReviewAction),
+          findsOneWidget,
+        );
+        // The pending session card (with session badge) is NOT shown — only
+        // the generic start card from the error branch is rendered.
+        expect(
+          find.text(context.messages.agentEvolutionSessionProgress(1, 1)),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'shows commonError text in history card when history fails',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const EvolutionReviewPage(templateId: kTestTemplateId),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: const Size(390, 1600),
+            ),
+            overrides: [
+              agentTemplateProvider.overrideWith(
+                (ref, id) async =>
+                    makeTestTemplate(displayName: 'Daily Standup'),
+              ),
+              pendingRitualReviewProvider.overrideWith(
+                (ref, id) async => null,
+              ),
+              ritualSummaryMetricsProvider.overrideWith(
+                (ref, id) async => summaryMetrics,
+              ),
+              ritualSessionHistoryProvider.overrideWith(
+                (ref, id) => Future<List<RitualSessionHistoryEntry>>.error(
+                  // Use StateError (a Dart Error, not Exception) to bypass
+                  // Riverpod's default retry policy for Exception types.
+                  StateError('simulated db error'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(EvolutionReviewPage));
+
+        // Error branch (lines 93-94): _EmptyHistoryCard shows commonError.
+        await tester.scrollUntilVisible(
+          find.text(context.messages.commonError),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.text(context.messages.commonError), findsOneWidget);
+        // No session history cards are shown.
+        expect(find.byType(RitualSessionHistoryCard), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping action button on start card navigates to EvolutionChatPage',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: const Size(390, 1600),
+            ),
+            // pendingOverride returns null → _StartCard shown (line 54).
+            extraOverrides: [
+              evolutionChatStateProvider.overrideWith(_LoadingChatState.new),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(EvolutionReviewPage));
+
+        final actionButton = find.text(
+          context.messages.agentRitualReviewAction,
+        );
+        expect(actionButton, findsOneWidget);
+
+        // Tap the action button — _openChat pushes EvolutionChatPage.
+        await tester.tap(actionButton);
+        // Use pump instead of pumpAndSettle: the pushed EvolutionChatPage shows
+        // a CircularProgressIndicator (loading state) that never settles.
+        await tester.pump();
+        await tester.pump();
+
+        // EvolutionChatPage should now be in the widget tree (lines 102-106).
+        expect(find.byType(EvolutionChatPage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping action button on pending session card navigates to EvolutionChatPage',
+      (tester) async {
+        final session = makeTestEvolutionSession();
+
+        await tester.pumpWidget(
+          buildSubject(
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: const Size(390, 1600),
+            ),
+            pendingOverride: () async => session,
+            extraOverrides: [
+              evolutionChatStateProvider.overrideWith(_LoadingChatState.new),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(EvolutionReviewPage));
+
+        final actionButton = find.text(
+          context.messages.agentRitualReviewAction,
+        );
+        expect(actionButton, findsOneWidget);
+
+        // Tap the action button on the pending session card (line 59).
+        await tester.tap(actionButton);
+        // Use pump instead of pumpAndSettle: the pushed EvolutionChatPage shows
+        // a CircularProgressIndicator (loading state) that never settles.
+        await tester.pump();
+        await tester.pump();
+
+        // EvolutionChatPage should now be in the widget tree (lines 102-106).
+        expect(find.byType(EvolutionChatPage), findsOneWidget);
+      },
+    );
   });
 }

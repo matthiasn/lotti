@@ -204,6 +204,8 @@ class MockEvent extends Mock implements Event {
 
 class MockSurfaceController extends Mock implements genui.SurfaceController {}
 
+class MockSurfaceContext extends Mock implements genui.SurfaceContext {}
+
 class MockMatrixClient extends Mock implements Client {}
 
 class MockMatrixDatabase extends Mock implements DatabaseApi {}

@@ -237,5 +237,135 @@ void main() {
         expect(find.text('April 2025'), findsOneWidget);
       },
     );
+
+    // Lines 234–237: _selectDay updates _selectedDate and _visibleMonth
+    testWidgets(
+      'interactive picker updates selected day when a day cell is tapped',
+      (tester) async {
+        await pumpInteractivePicker(
+          tester,
+          presentation: DesignSystemTimeCalendarPickerPresentation.regular,
+          mode: DesignSystemTimeCalendarPickerMode.light,
+        );
+
+        // Day 17 is initially selected (accent background).
+        final day17Before = tester.widget<Text>(find.text('17'));
+        expect(
+          day17Before.style?.color,
+          dsTokensLight.colors.text.onInteractiveAlert,
+        );
+
+        // Tap day 10 — this exercises _selectDay (lines 234–237).
+        await tester.tap(find.text('10'));
+        await tester.pump();
+
+        // Day 10 is now the selected day (onAccent color).
+        final day10After = tester.widget<Text>(find.text('10'));
+        expect(
+          day10After.style?.color,
+          dsTokensLight.colors.text.onInteractiveAlert,
+        );
+
+        // Day 17 is no longer selected — reverts to highEmphasis color.
+        final day17After = tester.widget<Text>(find.text('17'));
+        expect(
+          day17After.style?.color,
+          dsTokensLight.colors.text.highEmphasis,
+        );
+      },
+    );
+
+    // Lines 228–230 + 250–251: _changeMonth via prev/next arrow buttons
+    testWidgets(
+      'interactive picker previous/next buttons navigate months',
+      (tester) async {
+        await pumpInteractivePicker(
+          tester,
+          presentation: DesignSystemTimeCalendarPickerPresentation.regular,
+          mode: DesignSystemTimeCalendarPickerMode.light,
+        );
+
+        expect(find.text('April 2025'), findsOneWidget);
+
+        final headerButtons = find.byWidgetPredicate(
+          (widget) => widget is IconButton && widget.onPressed != null,
+        );
+
+        // Tap the "previous" (left) button → exercises _changeMonth(-1), line 250.
+        await tester.tap(headerButtons.first);
+        await tester.pump();
+        expect(find.text('March 2025'), findsOneWidget);
+
+        // Tap the "next" (right) button twice to go back to April then May.
+        await tester.tap(headerButtons.last);
+        await tester.pump();
+        expect(find.text('April 2025'), findsOneWidget);
+
+        await tester.tap(headerButtons.last);
+        await tester.pump();
+        // → exercises _changeMonth(+1), line 251.
+        expect(find.text('May 2025'), findsOneWidget);
+      },
+    );
+
+    // Lines 482–483: year prev/next in _MonthSelectionDialogCard
+    testWidgets(
+      'month dialog year navigation changes displayed year',
+      (tester) async {
+        await pumpPicker(
+          tester,
+          presentation: DesignSystemTimeCalendarPickerPresentation.monthDialog,
+          mode: DesignSystemTimeCalendarPickerMode.light,
+          onMonthPressed: (_) {},
+        );
+
+        expect(find.text('2025'), findsOneWidget);
+
+        final yearButtons = find.byWidgetPredicate(
+          (widget) => widget is IconButton && widget.onPressed != null,
+        );
+
+        // Tap previous → _visibleYear -= 1 (line 482).
+        await tester.tap(yearButtons.first);
+        await tester.pump();
+        expect(find.text('2024'), findsOneWidget);
+        expect(find.text('2025'), findsNothing);
+
+        // Tap next → _visibleYear += 1 (line 483).
+        await tester.tap(yearButtons.last);
+        await tester.pump();
+        expect(find.text('2025'), findsOneWidget);
+        expect(find.text('2024'), findsNothing);
+      },
+    );
+
+    // Line 186: no-op onTap on the GestureDetector wrapping the picker card
+    // inside the month dialog prevents taps on the card from closing the dialog.
+    testWidgets(
+      'tapping inside the dialog card does not dismiss the month dialog',
+      (tester) async {
+        await pumpInteractivePicker(
+          tester,
+          presentation: DesignSystemTimeCalendarPickerPresentation.compact,
+          mode: DesignSystemTimeCalendarPickerMode.light,
+        );
+
+        // Open the month dialog.
+        await tester.tap(find.text('April 2025'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(find.text('2025'), findsOneWidget);
+
+        // Tap a month label inside the card — the inner GestureDetector's no-op
+        // onTap (line 186) prevents the tap from reaching the barrier dismisser.
+        await tester.tap(find.text('Jan'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        // Dialog is dismissed after selecting a month.
+        expect(find.text('2025'), findsNothing);
+        expect(find.text('January 2025'), findsOneWidget);
+      },
+    );
   });
 }

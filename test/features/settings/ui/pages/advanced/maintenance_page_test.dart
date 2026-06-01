@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -6,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
@@ -13,6 +16,7 @@ import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/debug_overlays.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +25,20 @@ import '../../../../../mocks/mocks.dart';
 import '../../../../../test_helper.dart';
 import '../../../../../widget_test_utils.dart';
 import '../../../test_utils.dart';
+
+/// A minimal [GeminiSetupPromptService] whose [resetDismissal] records
+/// calls without touching any real I/O.
+class _FakeGeminiService extends GeminiSetupPromptService {
+  int resetDismissalCallCount = 0;
+
+  @override
+  Future<bool> build() async => false;
+
+  @override
+  Future<void> resetDismissal() async {
+    resetDismissalCallCount++;
+  }
+}
 
 Widget _constrainedMaintenancePage() {
   return ConstrainedBox(
@@ -193,6 +211,36 @@ void main() {
       expect(find.text('CANCEL'), findsOneWidget);
     });
 
+    testWidgets(
+      'delete agents database - confirm calls deleteAgentDb',
+      (tester) async {
+        // Override deleteAgentDb with a never-completing future so
+        // that exit(0) is never reached. This covers lines 121-122
+        // (the confirmed branch that invokes the method). Line 123
+        // (exit(0)) is inherently untestable in a widget test because
+        // it would kill the test process.
+        when(
+          () => getIt<Maintenance>().deleteAgentDb(),
+        ).thenAnswer((_) => Completer<void>().future);
+
+        await tester.pumpWidget(
+          makeTestableWidget(_constrainedMaintenancePage()),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Delete Agents Database'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('YES, DELETE DATABASE'));
+        // One pump drives the modal dismiss and starts the async
+        // callback up to the suspended deleteAgentDb await.
+        await tester.pump();
+
+        // deleteAgentDb() was invoked (lines 121-122 covered).
+        verify(() => getIt<Maintenance>().deleteAgentDb()).called(1);
+      },
+    );
+
     testWidgets('purge deleted entries button opens purge modal', (
       tester,
     ) async {
@@ -352,5 +400,130 @@ void main() {
         debugRepaintRainbowEnabled = false;
       },
     );
+  });
+
+  group('MaintenancePage - Gemini reset', () {
+    setUp(() {
+      final mockJournalDb = MockJournalDb();
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([]),
+      );
+
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<Maintenance>(MockMaintenance());
+      ensureThemingServicesRegistered();
+    });
+
+    tearDown(getIt.reset);
+
+    testWidgets('cancel does not call resetDismissal', (tester) async {
+      final fakeService = _FakeGeminiService();
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _constrainedMaintenancePage(),
+          overrides: [
+            geminiSetupPromptServiceProvider.overrideWith(
+              () => fakeService,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final resetButton = find.text('Reset Gemini Setup Dialog');
+      await tester.ensureVisible(resetButton);
+      await tester.tap(resetButton);
+      await tester.pumpAndSettle();
+
+      // Confirmation dialog should be visible.
+      expect(
+        find.text('This will show the Gemini setup dialog again. Continue?'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('CANCEL'));
+      await tester.pumpAndSettle();
+
+      expect(fakeService.resetDismissalCallCount, 0);
+    });
+
+    testWidgets('confirm calls resetDismissal', (tester) async {
+      final fakeService = _FakeGeminiService();
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _constrainedMaintenancePage(),
+          overrides: [
+            geminiSetupPromptServiceProvider.overrideWith(
+              () => fakeService,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final resetButton = find.text('Reset Gemini Setup Dialog');
+      await tester.ensureVisible(resetButton);
+      await tester.tap(resetButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('This will show the Gemini setup dialog again. Continue?'),
+        findsOneWidget,
+      );
+
+      // The confirm label for Gemini reset is "RESET" (uppercased from "Reset").
+      await tester.tap(find.text('RESET'));
+      await tester.pumpAndSettle();
+
+      expect(fakeService.resetDismissalCallCount, 1);
+    });
+  });
+
+  group('MaintenancePage - embeddings modal', () {
+    setUp(() {
+      final mockJournalDb = MockJournalDb();
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([]),
+      );
+
+      final mockCacheService = MockEntitiesCacheService();
+      when(
+        () => mockCacheService.sortedCategories,
+      ).thenReturn([]);
+
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<Maintenance>(MockMaintenance())
+        ..registerSingleton<EmbeddingStore>(MockEmbeddingStore())
+        ..registerSingleton<EntitiesCacheService>(mockCacheService);
+      ensureThemingServicesRegistered();
+    });
+
+    tearDown(getIt.reset);
+
+    testWidgets('tapping Generate Embeddings opens the backfill modal', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const MaintenancePage()),
+      );
+      await tester.pumpAndSettle();
+
+      final generateButton = find.text('Generate Embeddings').first;
+      await tester.ensureVisible(generateButton);
+      await tester.tap(generateButton);
+      await tester.pumpAndSettle();
+
+      // The backfill modal shows its confirmation message.
+      expect(
+        find.text('Select categories to generate embeddings for.'),
+        findsOneWidget,
+      );
+    });
   });
 }

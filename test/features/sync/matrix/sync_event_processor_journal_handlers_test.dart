@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -780,5 +782,410 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('_maybeSkipSupersededStaleDescriptor error paths -', () {
+    test(
+      'logs and returns null when journalEntityById throws during stale-skip '
+      'lookup',
+      () async {
+        // Arrange: stale descriptor error + lookup throws → must log and
+        // return null (no skip, no rethrow).
+        final entryId = fallbackJournalEntity.meta.id;
+        final message = SyncMessage.journalEntity(
+          id: entryId,
+          jsonPath: '/entity.json',
+          vectorClock: const VectorClock({'a': 5}),
+          status: SyncEntryStatus.initial,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/entity.json',
+            incomingVectorClock: any(named: 'incomingVectorClock'),
+          ),
+        ).thenThrow(
+          const FileSystemException('stale attachment json after refresh'),
+        );
+        // journalEntityById throws — this is the path that hits line 75.
+        when(
+          () => journalDb.journalEntityById(entryId),
+        ).thenThrow(Exception('db lookup error'));
+
+        // Act: because the lookup threw and returned null, the stale path
+        // falls through to "not superseded → rethrow the FileSystemException".
+        await expectLater(
+          processor.process(event: event, journalDb: journalDb),
+          throwsA(isA<FileSystemException>()),
+        );
+
+        // The lookup error must be logged under staleDescriptor.lookup.
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'apply.staleDescriptor.lookup',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'logs and returns null when stale-skip recordReceivedEntry throws',
+      () async {
+        // This path is inside _maybeSkipSupersededStaleDescriptor, after the
+        // entity is confirmed superseded, when the sequence log call throws.
+        final mockSequenceService = MockSyncSequenceLogService();
+        final entryId = fallbackJournalEntity.meta.id;
+        const vc = VectorClock({'a': 11}); // equal to testTextEntry's vc
+        final message = SyncMessage.journalEntity(
+          id: entryId,
+          jsonPath: '/entity.json',
+          vectorClock: vc,
+          status: SyncEntryStatus.initial,
+          originatingHostId: 'host-X',
+        );
+
+        final processorWithSeq = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSequenceService,
+        );
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/entity.json',
+            incomingVectorClock: any(named: 'incomingVectorClock'),
+          ),
+        ).thenThrow(
+          const FileSystemException('stale attachment json after refresh'),
+        );
+        // Local entity has equal vector clock → skip applies.
+        when(
+          () => journalDb.journalEntityById(entryId),
+        ).thenAnswer((_) async => fallbackJournalEntity);
+        // recordReceivedEntry throws → must be caught and logged.
+        when(
+          () => mockSequenceService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+            jsonPath: any(named: 'jsonPath'),
+          ),
+        ).thenThrow(Exception('seq log failure'));
+
+        // The skip itself should still succeed (error is swallowed).
+        await processorWithSeq.process(event: event, journalDb: journalDb);
+
+        // Verify the sequence-log error was logged under 'recordReceived'.
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'recordReceived',
+          ),
+        ).called(1);
+        // Entity was NOT written.
+        verifyNever(() => journalDb.updateJournalEntity(any()));
+      },
+    );
+  });
+
+  group('_persistJournalEntity - applyObserver and sequence log paths -', () {
+    test(
+      'computes predictedStatus from existing+incoming VCs when applyObserver '
+      'is set and both VCs are present',
+      () async {
+        // Lines 326-327, 329: applyObserver path in _persistJournalEntity.
+        // The existing entity has vc {a:5} and the incoming entity has vc
+        // {a:11} → incoming is newer → predictedStatus = b_gt_a.
+        const incomingVc = VectorClock({'a': 11});
+        final incomingEntity = JournalEntry(
+          meta: Metadata(
+            id: 'pred-entry-id',
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: incomingVc,
+          ),
+          entryText: const EntryText(plainText: 'incoming text'),
+        );
+        final existingEntity = JournalEntry(
+          meta: Metadata(
+            id: 'pred-entry-id',
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: const VectorClock({'a': 5}),
+          ),
+          entryText: const EntryText(plainText: 'existing text'),
+        );
+
+        const message = SyncMessage.journalEntity(
+          id: 'pred-entry-id',
+          jsonPath: '/pred-entry.json',
+          vectorClock: incomingVc,
+          status: SyncEntryStatus.initial,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/pred-entry.json',
+            incomingVectorClock: incomingVc,
+          ),
+        ).thenAnswer((_) async => incomingEntity);
+        when(
+          () => journalDb.journalEntityById('pred-entry-id'),
+        ).thenAnswer((_) async => existingEntity);
+
+        SyncApplyDiagnostics? captured;
+        processor.applyObserver = (diag) => captured = diag;
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        expect(captured, isNotNull);
+        // b_gt_a means incoming was newer than existing.
+        expect(captured!.conflictStatus, contains('b_gt_a'));
+        expect(captured!.applied, isTrue);
+        verify(() => journalDb.updateJournalEntity(incomingEntity)).called(1);
+      },
+    );
+
+    test(
+      'markProcessed uses syncMessage.vectorClock when journalEntity.meta '
+      'vectorClock is null (line 405: vcB ?? syncMessage.vectorClock)',
+      () async {
+        // vcB is null → _dedupCache.markProcessed uses syncMessage.vectorClock.
+        // Verifiable effect: same event processed twice should be deduped the
+        // second time (i.e. the sequence log is NOT called a second time).
+        const syncVc = VectorClock({'host-Z': 1});
+        final entityWithNoVc = JournalEntry(
+          meta: Metadata(
+            id: 'no-vc-entry',
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            // Deliberately null vectorClock so vcB is null.
+          ),
+          entryText: const EntryText(plainText: 'no vc'),
+        );
+
+        const message = SyncMessage.journalEntity(
+          id: 'no-vc-entry',
+          jsonPath: '/no-vc.json',
+          vectorClock: syncVc,
+          status: SyncEntryStatus.initial,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/no-vc.json',
+            incomingVectorClock: syncVc,
+          ),
+        ).thenAnswer((_) async => entityWithNoVc);
+        when(
+          () => journalDb.journalEntityById('no-vc-entry'),
+        ).thenAnswer((_) async => null);
+
+        // First call: entity is applied.
+        await processor.process(event: event, journalDb: journalDb);
+        verify(() => journalDb.updateJournalEntity(entityWithNoVc)).called(1);
+
+        // Second call: deduplicated — markProcessed used syncVc, so the same
+        // (id, syncVc) pair is now in the dedup cache.
+        await processor.process(event: event, journalDb: journalDb);
+        // updateJournalEntity must NOT be called a second time.
+        verifyNever(() => journalDb.updateJournalEntity(entityWithNoVc));
+      },
+    );
+
+    test(
+      'sequence log entryExistsInJournal fallback: checks journalEntityById '
+      'when updateResult.applied is false (line 423)',
+      () async {
+        // When the update is skipped but the entity exists locally, the
+        // sequence log must still be called.
+        final mockSequenceService = MockSyncSequenceLogService();
+        const vc = VectorClock({'host-P': 3});
+        final incomingEntity = JournalEntry(
+          meta: Metadata(
+            id: 'skipped-entry',
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: vc,
+          ),
+          entryText: const EntryText(plainText: 'skipped'),
+        );
+        final existingEntity = JournalEntry(
+          meta: Metadata(
+            id: 'skipped-entry',
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: const VectorClock({'host-P': 5}),
+          ),
+          entryText: const EntryText(plainText: 'newer local'),
+        );
+
+        const message = SyncMessage.journalEntity(
+          id: 'skipped-entry',
+          jsonPath: '/skipped.json',
+          vectorClock: vc,
+          status: SyncEntryStatus.initial,
+          originatingHostId: 'host-P',
+        );
+
+        final processorWithSeq = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSequenceService,
+        );
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/skipped.json',
+            incomingVectorClock: vc,
+          ),
+        ).thenAnswer((_) async => incomingEntity);
+        // updateJournalEntity returns skipped (not applied).
+        when(
+          () => journalDb.updateJournalEntity(incomingEntity),
+        ).thenAnswer(
+          (_) async => JournalUpdateResult.skipped(
+            reason: JournalUpdateSkipReason.olderOrEqual,
+          ),
+        );
+        // journalEntityById returns the existing entity (entity exists locally).
+        when(
+          () => journalDb.journalEntityById('skipped-entry'),
+        ).thenAnswer((_) async => existingEntity);
+        when(
+          () => mockSequenceService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+            jsonPath: any(named: 'jsonPath'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await processorWithSeq.process(event: event, journalDb: journalDb);
+
+        // The fallback journalEntityById check ran and found the entity, so
+        // recordReceivedEntry must have been called.
+        verify(
+          () => mockSequenceService.recordReceivedEntry(
+            entryId: 'skipped-entry',
+            vectorClock: vc,
+            originatingHostId: 'host-P',
+            coveredVectorClocks: null,
+            payloadType: any(named: 'payloadType'),
+            jsonPath: '/skipped.json',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'logs gap detection trace when recordReceivedEntry returns gaps in '
+      '_persistJournalEntity (lines 433-436)',
+      () async {
+        // recordReceivedEntry returns non-empty gaps → gap trace must be logged.
+        final mockSequenceService = MockSyncSequenceLogService();
+        const vc = VectorClock({'host-Q': 7});
+        final incomingEntity = JournalEntry(
+          meta: Metadata(
+            id: 'gap-entry',
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: vc,
+          ),
+          entryText: const EntryText(plainText: 'gap test'),
+        );
+
+        const message = SyncMessage.journalEntity(
+          id: 'gap-entry',
+          jsonPath: '/gap.json',
+          vectorClock: vc,
+          status: SyncEntryStatus.initial,
+          originatingHostId: 'host-Q',
+        );
+
+        final processorWithSeq = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSequenceService,
+        );
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/gap.json',
+            incomingVectorClock: vc,
+          ),
+        ).thenAnswer((_) async => incomingEntity);
+        when(
+          () => journalDb.journalEntityById('gap-entry'),
+        ).thenAnswer((_) async => null);
+        // recordReceivedEntry returns 3 gap entries.
+        when(
+          () => mockSequenceService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+            jsonPath: any(named: 'jsonPath'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            (hostId: 'host-Q', counter: 4),
+            (hostId: 'host-Q', counter: 5),
+            (hostId: 'host-Q', counter: 6),
+          ],
+        );
+
+        await processorWithSeq.process(event: event, journalDb: journalDb);
+
+        // Verify the gap-detection trace was emitted with both the count and
+        // the entity id in a single log call.
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf(
+                contains('apply.gapsDetected count=3'),
+                contains('for entity=gap-entry'),
+              ),
+            ),
+            subDomain: 'processor.gapDetection',
+          ),
+        ).called(1);
+      },
+    );
   });
 }

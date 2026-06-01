@@ -1,19 +1,24 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -1205,6 +1210,421 @@ void main() {
       });
 
       expect(result, {'project-001'});
+    });
+  });
+
+  group('getProjectsOverview — extra categories without cache entry', () {
+    // Lines 162, 164-166: exercises the null-name fallback in the sort
+    // comparator for extra category IDs not present in categoriesById.
+    test(
+      'sorts extra categories by id when category definition is absent',
+      () async {
+        // Two projects with category IDs that are NOT in the sorted list and
+        // NOT in categoriesById, so the sort falls back to the raw ID string.
+        final projectZebra = makeTestProject(
+          id: 'project-z',
+          title: 'Zebra Project',
+          categoryId: 'zzz-unknown',
+        );
+        final projectAlpha = makeTestProject(
+          id: 'project-a',
+          title: 'Alpha Project',
+          categoryId: 'aaa-unknown',
+        );
+
+        // Neither unknown category is in entitiesCache → falls back to id sort.
+        when(
+          () => mockEntitiesCacheService.categoriesById,
+        ).thenReturn({
+          // Intentionally empty: no entry for 'aaa-unknown' or 'zzz-unknown'.
+        });
+        when(
+          () => mockEntitiesCacheService.sortedCategories,
+        ).thenReturn([]);
+
+        when(() => mockDb.getVisibleProjects()).thenAnswer(
+          (_) async => [projectZebra, projectAlpha],
+        );
+        when(
+          () => mockDb.getProjectTaskRollups(any()),
+        ).thenAnswer((_) async => {});
+
+        final result = await repository.getProjectsOverview(
+          query: const ProjectsQuery(),
+        );
+
+        // 'aaa-unknown' sorts before 'zzz-unknown' alphabetically.
+        expect(result.groups, hasLength(2));
+        expect(result.groups[0].categoryId, 'aaa-unknown');
+        expect(result.groups[1].categoryId, 'zzz-unknown');
+      },
+    );
+
+    test(
+      'sorts extra categories by name when one has a definition and one does not',
+      () async {
+        // 'known-cat' has a CategoryDefinition with name "Bravo".
+        // 'orphan-cat' has no definition — falls back to its raw ID "orphan-cat".
+        // Alphabetically "Bravo" < "orphan-cat", so known-cat group comes first.
+        final knownProject = makeTestProject(
+          id: 'project-known',
+          title: 'Known Project',
+          categoryId: 'known-cat',
+        );
+        final orphanProject = makeTestProject(
+          id: 'project-orphan',
+          title: 'Orphan Project',
+          categoryId: 'orphan-cat',
+        );
+
+        final bravoCategory = CategoryTestUtils.createTestCategory(
+          id: 'known-cat',
+          name: 'Bravo',
+        );
+
+        when(
+          () => mockEntitiesCacheService.categoriesById,
+        ).thenReturn({bravoCategory.id: bravoCategory});
+        when(
+          () => mockEntitiesCacheService.sortedCategories,
+        ).thenReturn([]); // neither is in the sorted list → both are extras
+
+        when(() => mockDb.getVisibleProjects()).thenAnswer(
+          (_) async => [orphanProject, knownProject],
+        );
+        when(
+          () => mockDb.getProjectTaskRollups(any()),
+        ).thenAnswer((_) async => {});
+
+        final result = await repository.getProjectsOverview(
+          query: const ProjectsQuery(),
+        );
+
+        expect(result.groups, hasLength(2));
+        // 'Bravo'.toLowerCase() < 'orphan-cat'.toLowerCase()
+        expect(result.groups[0].categoryId, 'known-cat');
+        expect(result.groups[1].categoryId, 'orphan-cat');
+      },
+    );
+  });
+
+  group('watchProjectsOverview — pending re-fetch', () {
+    // Lines 229, 231: a second notification arrives while the first fetch is
+    // still in flight; pendingRefetch is set and triggers a second doFetch().
+    test('coalesces concurrent notifications into a single re-fetch', () async {
+      // Each call to getVisibleProjects completes synchronously in our mock,
+      // but we need to simulate overlap. We use a Completer so the first fetch
+      // pauses until we explicitly let it through.
+      final firstFetchCompleter = Completer<List<ProjectEntry>>();
+      var callCount = 0;
+
+      final projectV1 = makeTestProject(
+        id: 'project-prf',
+        title: 'V1',
+        categoryId: workCategory.id,
+      );
+      final projectV2 = makeTestProject(
+        id: 'project-prf',
+        title: 'V2',
+        categoryId: workCategory.id,
+      );
+
+      when(() => mockDb.getVisibleProjects()).thenAnswer((_) async {
+        callCount++;
+        if (callCount == 1) {
+          return firstFetchCompleter.future;
+        }
+        return [projectV2];
+      });
+      when(
+        () => mockDb.getProjectTaskRollups(any()),
+      ).thenAnswer(
+        (_) async => {
+          'project-prf': (
+            totalTaskCount: 1,
+            completedTaskCount: 0,
+            blockedTaskCount: 0,
+          ),
+        },
+      );
+
+      final stream = repository.watchProjectsOverview(
+        query: const ProjectsQuery(),
+      );
+
+      // Collect emitted titles.
+      final emittedTitles = <String>[];
+      final subscription = stream.listen((snapshot) {
+        for (final group in snapshot.groups) {
+          for (final item in group.projects) {
+            emittedTitles.add(item.project.data.title);
+          }
+        }
+      });
+
+      // Let onListen fire — starts first fetch (which is now paused).
+      await Future<void>.microtask(() {});
+
+      // Two rapid notifications arrive while fetch-1 is still in flight.
+      updateStreamController
+        ..add({taskNotification})
+        ..add({projectNotification});
+      await Future<void>.microtask(() {});
+
+      // Release the first fetch — the pendingRefetch flag causes a second
+      // doFetch() in the finally block.
+      firstFetchCompleter.complete([projectV1]);
+
+      // Allow both doFetch completions to propagate.
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.microtask(() {});
+      await Future<void>.delayed(Duration.zero);
+
+      await subscription.cancel();
+
+      // The stream must have emitted at least two snapshots: one for the
+      // initial V1 fetch and one for the coalesced V2 re-fetch.
+      expect(emittedTitles, containsAllInOrder(['V1', 'V2']));
+      // All rapid notifications were coalesced — only two DB calls total.
+      expect(callCount, 2);
+    });
+  });
+
+  group('outbox-failure error logging', () {
+    // Lines 367, 506, 517, 544, 555: DomainLogger.error is called when
+    // OutboxService.enqueueMessage throws after a committed link write.
+    late MockDomainLogger mockDomainLogger;
+
+    setUp(() {
+      mockDomainLogger = MockDomainLogger();
+      when(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String>(named: 'message'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+    });
+
+    test(
+      'linkTaskToProject logs DomainLogger.error when outbox enqueue throws',
+      () async {
+        // Make outbox throw *after* the link row is written.
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenThrow(StateError('outbox boom'));
+
+        when(
+          () => mockDb.journalEntityById('project-001'),
+        ).thenAnswer((_) async => projectEntry);
+        when(
+          () => mockDb.journalEntityById('task-001'),
+        ).thenAnswer((_) async => taskEntry);
+        when(
+          () => mockDb.getProjectLinkForTask('task-001'),
+        ).thenAnswer((_) async => null);
+        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+        when(() => mockNotifications.notify(any())).thenReturn(null);
+        when(
+          mockVectorClockService.getNextVectorClock,
+        ).thenAnswer((_) async => const VectorClock({'d': 1}));
+
+        // The operation should still return true — commit-on-write invariant.
+        final result = await repository.linkTaskToProject(
+          projectId: 'project-001',
+          taskId: 'task-001',
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(
+              named: 'message',
+              that: contains('outbox enqueue failed after linkTaskToProject'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'linkTaskToProject.enqueue',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      '_relinkTask logs DomainLogger.error when outbox enqueue throws',
+      () async {
+        final oldLink = EntryLink.project(
+          id: 'link-relink',
+          fromId: 'project-old',
+          toId: 'task-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenThrow(StateError('outbox boom during relink'));
+
+        when(
+          () => mockDb.journalEntityById('project-001'),
+        ).thenAnswer((_) async => projectEntry);
+        when(
+          () => mockDb.journalEntityById('task-001'),
+        ).thenAnswer((_) async => taskEntry);
+        when(
+          () => mockDb.getProjectLinkForTask('task-001'),
+        ).thenAnswer((_) async => oldLink);
+        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+        when(() => mockNotifications.notify(any())).thenReturn(null);
+        when(
+          mockVectorClockService.getNextVectorClock,
+        ).thenAnswer((_) async => const VectorClock({'d': 2}));
+
+        // The relink should succeed (link rows persisted) but log the error.
+        final result = await repository.linkTaskToProject(
+          projectId: 'project-001',
+          taskId: 'task-001',
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(
+              named: 'message',
+              that: contains('outbox enqueue failed after _relinkTask'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: '_relinkTask.enqueue',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'unlinkTaskFromProject logs DomainLogger.error when outbox enqueue throws',
+      () async {
+        final existingLink = EntryLink.project(
+          id: 'link-unlink',
+          fromId: 'project-001',
+          toId: 'task-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenThrow(StateError('outbox boom during unlink'));
+
+        when(
+          () => mockDb.getProjectLinkForTask('task-001'),
+        ).thenAnswer((_) async => existingLink);
+        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+        when(() => mockNotifications.notify(any())).thenReturn(null);
+        when(
+          mockVectorClockService.getNextVectorClock,
+        ).thenAnswer((_) async => const VectorClock({'d': 3}));
+
+        // The unlink should succeed — link row already soft-deleted on disk.
+        final result = await repository.unlinkTaskFromProject('task-001');
+
+        expect(result, isTrue);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.sync,
+            any<Object>(),
+            message: any<String>(
+              named: 'message',
+              that: contains('outbox enqueue failed after _softDeleteLink'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: '_softDeleteLink.enqueue',
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  group('inheritProjectFromTask', () {
+    test('returns false when source task has no project', () async {
+      when(
+        () => mockDb.getProjectForTask('source-task'),
+      ).thenAnswer((_) async => null);
+
+      final result = await repository.inheritProjectFromTask(
+        sourceTaskId: 'source-task',
+        newTaskId: 'new-task',
+      );
+
+      expect(result, isFalse);
+      verifyNever(() => mockDb.journalEntityById(any()));
+    });
+
+    test('links new task to the source task project when found', () async {
+      when(
+        () => mockDb.getProjectForTask('source-task'),
+      ).thenAnswer((_) async => projectEntry);
+      // linkTaskToProject internals
+      when(
+        () => mockDb.journalEntityById('project-001'),
+      ).thenAnswer((_) async => projectEntry);
+      final newTaskMeta = taskMeta.copyWith(id: 'new-task');
+      final newTaskEntry = Task(
+        meta: newTaskMeta,
+        data: taskEntry.data,
+      );
+      when(
+        () => mockDb.journalEntityById('new-task'),
+      ).thenAnswer((_) async => newTaskEntry);
+      when(
+        () => mockDb.getProjectLinkForTask('new-task'),
+      ).thenAnswer((_) async => null);
+      when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+      when(() => mockNotifications.notify(any())).thenReturn(null);
+      when(
+        mockVectorClockService.getNextVectorClock,
+      ).thenAnswer((_) async => const VectorClock({'d': 5}));
+
+      final result = await repository.inheritProjectFromTask(
+        sourceTaskId: 'source-task',
+        newTaskId: 'new-task',
+      );
+
+      expect(result, isTrue);
+      // Verify the new task was linked to project-001.
+      final captured =
+          verify(() => mockDb.upsertEntryLink(captureAny())).captured.single
+              as EntryLink;
+      expect(captured.fromId, 'project-001');
+      expect(captured.toId, 'new-task');
+    });
+  });
+
+  group('projectRepositoryProvider', () {
+    // Line 593: exercises the Riverpod provider factory that reads all
+    // five dependencies from getIt.
+    test('creates a ProjectRepository from getIt registrations', () async {
+      // Register all five dependencies the factory reads from getIt.
+      getIt
+        ..registerSingleton<JournalDb>(mockDb)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<PersistenceLogic>(mockPersistence)
+        ..registerSingleton<UpdateNotifications>(mockNotifications)
+        ..registerSingleton<VectorClockService>(mockVectorClockService);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final repo = container.read(projectRepositoryProvider);
+
+      expect(repo, isA<ProjectRepository>());
     });
   });
 }
