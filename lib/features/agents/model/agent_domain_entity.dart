@@ -34,10 +34,16 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   const factory AgentDomainEntity.agentState({
     required String id,
     required String agentId,
-    required int revision,
     required AgentSlots slots,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
+
+    /// **Retired** (PR 4 B4). Was a display-only per-row counter; never read for
+    /// logic — concurrent resolution uses `updatedAt` + the vector clock, not
+    /// this. No longer incremented or shown. Kept as a defaulted (rather than
+    /// removed) field purely so a peer still on an older build can deserialize
+    /// state this build emits; drop it in a later breaking-change window.
+    @Default(0) int revision,
     DateTime? lastWakeAt,
     DateTime? nextWakeAt,
     DateTime? sleepUntil,

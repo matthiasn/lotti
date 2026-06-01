@@ -79,7 +79,6 @@ void main() {
       // Use a populated state so the State section renders, which only
       // appears on the Stats tab.
       final state = makeTestState(
-        revision: 7,
         wakeCounter: 4,
       );
       await tester.pumpWidget(
@@ -87,9 +86,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Stats content includes the agent state heading.
+      // Stats content includes the agent state heading and the wake count.
       expect(find.text('State Info'), findsOneWidget);
-      expect(find.text('7'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
     });
 
     testWidgets(

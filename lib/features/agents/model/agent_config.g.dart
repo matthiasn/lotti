@@ -10,6 +10,8 @@ _AgentConfig _$AgentConfigFromJson(Map<String, dynamic> json) => _AgentConfig(
   maxTurnsPerWake: (json['maxTurnsPerWake'] as num?)?.toInt() ?? 10,
   modelId: json['modelId'] as String? ?? 'models/gemini-3-flash-preview',
   profileId: json['profileId'] as String?,
+  feedbackWindowDays: (json['feedbackWindowDays'] as num?)?.toInt(),
+  recursionDepth: (json['recursionDepth'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
@@ -17,6 +19,8 @@ Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
       'maxTurnsPerWake': instance.maxTurnsPerWake,
       'modelId': instance.modelId,
       'profileId': instance.profileId,
+      'feedbackWindowDays': instance.feedbackWindowDays,
+      'recursionDepth': instance.recursionDepth,
     };
 
 _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(

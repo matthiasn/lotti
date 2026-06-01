@@ -70,12 +70,12 @@ AgentStateEntity _$AgentStateEntityFromJson(Map<String, dynamic> json) =>
     AgentStateEntity(
       id: json['id'] as String,
       agentId: json['agentId'] as String,
-      revision: (json['revision'] as num).toInt(),
       slots: AgentSlots.fromJson(json['slots'] as Map<String, dynamic>),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      revision: (json['revision'] as num?)?.toInt() ?? 0,
       lastWakeAt: json['lastWakeAt'] == null
           ? null
           : DateTime.parse(json['lastWakeAt'] as String),
@@ -118,10 +118,10 @@ Map<String, dynamic> _$AgentStateEntityToJson(AgentStateEntity instance) =>
     <String, dynamic>{
       'id': instance.id,
       'agentId': instance.agentId,
-      'revision': instance.revision,
       'slots': instance.slots,
       'updatedAt': instance.updatedAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
+      'revision': instance.revision,
       'lastWakeAt': instance.lastWakeAt?.toIso8601String(),
       'nextWakeAt': instance.nextWakeAt?.toIso8601String(),
       'sleepUntil': instance.sleepUntil?.toIso8601String(),

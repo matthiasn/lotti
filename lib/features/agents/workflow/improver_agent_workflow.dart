@@ -137,7 +137,13 @@ class ImproverAgentWorkflow {
       }
 
       final contextBuilder = RitualContextBuilder();
-      final isMetaLevel = (state.slots.recursionDepth ?? 0) > 0;
+      // recursionDepth is config (PR 4 B4): read from AgentConfig, falling back
+      // to the legacy slot for agents created before the re-home.
+      final recursionDepth =
+          agentIdentity.config.recursionDepth ??
+          state.slots.recursionDepth ??
+          0;
+      final isMetaLevel = recursionDepth > 0;
 
       final ritualContext = contextBuilder.buildRitualContext(
         template: targetTemplate,

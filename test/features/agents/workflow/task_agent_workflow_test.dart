@@ -1935,7 +1935,6 @@ void main() {
           updatedState.consecutiveFailureCount,
           testAgentState.consecutiveFailureCount + 1,
         );
-        expect(updatedState.revision, testAgentState.revision + 1);
 
         // Conversation should still be cleaned up.
         expect(

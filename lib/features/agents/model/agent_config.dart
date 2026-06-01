@@ -17,6 +17,17 @@ abstract class AgentConfig with _$AgentConfig {
 
     /// Inference profile ID — takes precedence over [modelId] when set.
     String? profileId,
+
+    /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
+    /// it is configuration set once at creation, not mutable derived state.
+    /// Null falls back to the default window. Reads accept the legacy
+    /// `AgentSlots.feedbackWindowDays` for agents created before the re-home.
+    int? feedbackWindowDays,
+
+    /// Improver recursion depth: 0 = task improver, 1 = meta-improver. Re-homed
+    /// from `AgentSlots` (config, not mutable state); legacy slot value is the
+    /// read fallback for pre-existing agents.
+    int? recursionDepth,
   }) = _AgentConfig;
 
   factory AgentConfig.fromJson(Map<String, dynamic> json) =>

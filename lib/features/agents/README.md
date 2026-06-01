@@ -108,8 +108,13 @@ log. It shows only wake records that can still fire later:
 
 - `nextWakeAt`: the per-device deferred subscription wake deadline persisted by
   `WakeOrchestrator`
-- `scheduledWakeAt`: the synced scheduled wake used by project agents and
-  template improvers
+- `scheduledWakeAt`: the scheduled wake used by project agents and template
+  improvers
+
+All three scheduling fields (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`) are
+**device-local** (PR 4 B4): each device schedules its own wakes, so the sync
+apply path preserves the local row's scheduling rather than letting a peer's
+`AgentStateEntity` overwrite it (`_preserveLocalScheduling`).
 
 Each pending-wake card owns its own one-second countdown timer and recomputes
 the remaining time from `clock.now()` on every tick, so the page does not need
@@ -363,7 +368,10 @@ The current persisted agent kinds are:
 | `template_improver` | `activeTemplateId` | `ImproverAgentWorkflow` | scheduled ritual |
 
 There is no separate persisted `meta_improver` kind. A meta-improver is a
-`template_improver` whose `recursionDepth > 0`.
+`template_improver` whose `recursionDepth > 0`. `recursionDepth` and the ritual
+cadence `feedbackWindowDays` live on `AgentConfig` (PR 4 B4 — configuration set
+at creation, not mutable state); reads fall back to the legacy `AgentSlots`
+fields for agents created before the re-home.
 
 The lifecycle enum exposes `created`, `active`, `dormant`, and `destroyed`.
 Current creation services instantiate agents directly in `active` state, so the

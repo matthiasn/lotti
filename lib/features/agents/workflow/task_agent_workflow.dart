@@ -662,7 +662,6 @@ class TaskAgentWorkflow {
         final hostId = await syncService.localHost();
         await syncService.upsertEntity(
           state.copyWith(
-            revision: state.revision + 1,
             lastWakeAt: now,
             updatedAt: now,
             consecutiveFailureCount: 0,
@@ -715,7 +714,6 @@ class TaskAgentWorkflow {
       try {
         await syncService.upsertEntity(
           state.copyWith(
-            revision: state.revision + 1,
             updatedAt: now,
             consecutiveFailureCount: state.consecutiveFailureCount + 1,
           ),

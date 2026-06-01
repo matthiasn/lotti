@@ -299,7 +299,6 @@ class DayAgentWorkflow {
         final hostId = await syncService.localHost();
         await syncService.upsertEntity(
           latestState.copyWith(
-            revision: latestState.revision + 1,
             lastWakeAt: now,
             updatedAt: now,
             consecutiveFailureCount: 0,
@@ -332,7 +331,6 @@ class DayAgentWorkflow {
             await agentRepository.getAgentState(agentId) ?? state;
         await syncService.upsertEntity(
           latestState.copyWith(
-            revision: latestState.revision + 1,
             updatedAt: now,
             consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
             scheduledWakeAt: _remainingScheduledWakeAt(latestState, now),
@@ -461,7 +459,6 @@ class DayAgentWorkflow {
 
         await syncService.upsertEntity(
           state.copyWith(
-            revision: state.revision + 1,
             scheduledWakeAt: scheduledAt,
             updatedAt: now,
             toolCounterByKey: _nextToolCounterByKey(

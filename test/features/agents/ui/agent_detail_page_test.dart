@@ -231,7 +231,6 @@ void main() {
         buildDataSubject(
           identity: makeTestIdentity(),
           state: makeTestState(
-            revision: 5,
             wakeCounter: 12,
             consecutiveFailureCount: 2,
             lastWakeAt: DateTime(2024, 3, 15, 9, 30),
@@ -242,7 +241,6 @@ void main() {
       await tester.pump();
 
       expect(find.text('State Info'), findsOneWidget);
-      expect(find.text('5'), findsOneWidget); // Revision value
       expect(find.text('12'), findsOneWidget); // Wake count value
       expect(find.text('2'), findsOneWidget); // Consecutive failures
       expect(find.text('2024-03-15 09:30'), findsOneWidget); // Last wake
@@ -378,7 +376,6 @@ void main() {
           buildDataSubject(
             identity: makeTestIdentity(),
             state: makeTestState(
-              revision: 7,
               wakeCounter: 3,
               consecutiveFailureCount: 1,
             ),
@@ -387,12 +384,10 @@ void main() {
         await tester.pump();
 
         // Verify labels are present
-        expect(find.textContaining('Revision'), findsOneWidget);
         expect(find.textContaining('Wake count'), findsOneWidget);
         expect(find.textContaining('Consecutive failures'), findsOneWidget);
 
         // Verify values are present
-        expect(find.text('7'), findsOneWidget);
         expect(find.text('3'), findsOneWidget);
         expect(find.text('1'), findsOneWidget);
       },

@@ -107,11 +107,21 @@ class ImproverAgentService {
         );
       }
 
-      // Create the agent identity.
+      final feedbackWindowDays = recursionDepth > 0
+          ? ImproverSlotDefaults.defaultMetaFeedbackWindowDays
+          : ImproverSlotDefaults.defaultFeedbackWindowDays;
+
+      // Create the agent identity. The ritual cadence and recursion depth are
+      // configuration, so they live on AgentConfig (PR 4 B4) — not on the
+      // mutable, projection-derived state slots.
       final identity = await agentService.createAgent(
         kind: AgentKinds.templateImprover,
         displayName: displayName ?? '${targetTemplate.displayName} Improver',
-        config: AgentConfig(modelId: improverTemplate.modelId),
+        config: AgentConfig(
+          modelId: improverTemplate.modelId,
+          feedbackWindowDays: feedbackWindowDays,
+          recursionDepth: recursionDepth,
+        ),
       );
 
       // Update state with improver-specific slots.
@@ -123,16 +133,11 @@ class ImproverAgentService {
       }
 
       final now = clock.now();
-      final feedbackWindowDays = recursionDepth > 0
-          ? ImproverSlotDefaults.defaultMetaFeedbackWindowDays
-          : ImproverSlotDefaults.defaultFeedbackWindowDays;
       final scheduledWakeAt = now.add(Duration(days: feedbackWindowDays));
 
       final updatedState = state.copyWith(
         slots: state.slots.copyWith(
           activeTemplateId: targetTemplateId,
-          feedbackWindowDays: feedbackWindowDays,
-          recursionDepth: recursionDepth,
           totalSessionsCompleted: const GCounter.empty(),
         ),
         scheduledWakeAt: scheduledWakeAt,
@@ -210,15 +215,18 @@ class ImproverAgentService {
 
   /// Schedule the next one-on-one wake for an improver agent.
   ///
-  /// Reads the `feedbackWindowDays` from the agent's slots and sets
-  /// `scheduledWakeAt` accordingly.
+  /// Reads `feedbackWindowDays` from the agent's [AgentConfig] (PR 4 B4),
+  /// falling back to the legacy `AgentSlots.feedbackWindowDays` for agents
+  /// created before the re-home, and sets `scheduledWakeAt` accordingly.
   Future<void> scheduleNextRitual(String agentId) async {
     final state = await repository.getAgentState(agentId);
     if (state == null) {
       throw StateError('Agent state not found for $agentId');
     }
 
-    final configuredWindowDays = state.slots.feedbackWindowDays;
+    final identity = await agentService.getAgent(agentId);
+    final configuredWindowDays =
+        identity?.config.feedbackWindowDays ?? state.slots.feedbackWindowDays;
     final feedbackWindowDays =
         configuredWindowDays != null && configuredWindowDays > 0
         ? configuredWindowDays

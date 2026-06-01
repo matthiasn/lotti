@@ -1586,7 +1586,6 @@ void main() {
       expect(result.error, contains('model failed'));
       final failureState = upsertedEntities.whereType<AgentStateEntity>().last;
       expect(failureState.consecutiveFailureCount, 3);
-      expect(failureState.revision, 2);
       expect(failureState.scheduledWakeAt, isNull);
       expect(conversationRepository.deletedConversationCount, 1);
       verify(

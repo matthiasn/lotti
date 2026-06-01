@@ -77,7 +77,6 @@ class AgentService {
         AgentDomainEntity.agentState(
               id: stateId,
               agentId: agentId,
-              revision: 0,
               slots: const AgentSlots(),
               updatedAt: now,
               vectorClock: null,

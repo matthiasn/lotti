@@ -23,6 +23,7 @@ diagnostic compare — reads do not flip to the projection until PR 4.
 | `projection_diagnostics.dart` | `diagnoseVectorClocks()` + `VcInconsistency` — vector-clock consistency surface, kept out of the fold. |
 | `agent_event_adapter.dart` | `agentEventsFromLog()` — maps persisted `AgentMessageEntity` + `messagePrev` links onto `AgentEvent` (PR 3 bridge). |
 | `shadow_projection.dart` | `compareShadowProjection()` + `ShadowProjectionReport`/`Status` — non-throwing compare of the projection against the live head. |
+| `derived_agent_state.dart` | `deriveAgentState()` + `DerivedAgentState` — the storage-coupled full-state fold (kernel + watermarks + active slots); `compareDerivedAgentState()` + `DerivedStateReport` — full-state shadow compare (PR 4 B5). |
 
 ## The causal model (the load-bearing decision)
 
@@ -119,6 +120,39 @@ pointer names a single tip. The compare is pure and **never throws**: structural
 failures surface as `error`. It drives no production read — only tests and an
 optional debug-mode assert.
 
+## Full derived state (PR 4 B5)
+
+The kernel stays the *minimal causal view* (heads + latest report). The **full**
+agent state is a storage-coupled composite, `deriveAgentState(agentId, messages,
+links)` → `DerivedAgentState`, that calls the kernel for the structural part and
+aggregates the *order-independent* fields directly off the log:
+
+- **watermarks** (`lastWakeAt`, `slots.last{OneOnOne,FeedbackScan,DailyWake,WeeklyReview}At`)
+  = `max(createdAt)` of messages whose `metadata.milestone` matches (the B2
+  markers);
+- **active slots** (`activeTask/Project/Day/TemplateId`) = the `toId` of the
+  agent's primary active association link (`agentTask`/`agentProject`/`agentDay`/
+  `improverTarget`, `fromId == agentId`, same most-recent tiebreak the live
+  services use).
+
+Each is a pure function of the log's *set*, so the whole `DerivedAgentState`
+converges across arrival orders and partitions — the property the LWW cache
+cannot guarantee. The kernel and `AgentEvent` are deliberately **not** enriched
+with this derivation-specific data; it lives in this composite alone.
+
+Deliberately **out** of the fold: per-host G-counter sums (`wakeCounter`,
+`totalSessionsCompleted`, `weeklyReviewCount`) are already convergent (PR 2b) and
+read as `.value` off the synced row; `awaitingContent` has no backing log event
+yet (set by creation mode, cleared by the orchestrator) and stays on the cache;
+runtime-local / best-effort fields stay on the cache by design.
+
+`compareDerivedAgentState(messages, links, liveState)` → `DerivedStateReport`
+extends the shadow check to the full state: the head via
+`compareShadowProjection` (fork-tolerant) plus exact per-field comparison of the
+watermarks and slots, listing any `DerivedFieldMismatch`. `equivalent` is the B6
+cutover precondition (head reconciles + no field diverges). Drives no production
+read.
+
 ## Determinism contract
 
 `project(canonicalOrder(S))` is a pure function of the **set of distinct events**
@@ -148,3 +182,9 @@ Pure logic → Glados property tests (tagged `glados`) plus example/edge tests:
   (`match`), two devices appending off a shared head `fork`, and the fork
   converges order-independently. Properties cover arbitrary chain length and
   fork width.
+- **Full derived state** (`derived_agent_state_test.dart`) — per-field fold of
+  watermarks (max-per-milestone, deleted/untagged ignored) and active slots
+  (most-recent link wins, other-agent/deleted/wrong-type ignored); a property
+  that `deriveAgentState` is invariant under input shuffle (two devices on the
+  same set converge); and `compareDerivedAgentState` equivalence, field-mismatch
+  reporting, and structural-error capture.

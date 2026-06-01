@@ -488,7 +488,6 @@ class ProjectAgentWorkflow {
         final hostId = await syncService.localHost();
         await syncService.upsertEntity(
           latestState.copyWith(
-            revision: latestState.revision + 1,
             slots: nextSlots.copyWith(
               pendingProjectActivityAt: nextPendingActivityAt,
             ),
@@ -536,7 +535,6 @@ class ProjectAgentWorkflow {
       try {
         await syncService.upsertEntity(
           state.copyWith(
-            revision: state.revision + 1,
             updatedAt: now,
             consecutiveFailureCount: state.consecutiveFailureCount + 1,
           ),
@@ -565,7 +563,6 @@ class ProjectAgentWorkflow {
     await syncService.runInTransaction(() async {
       await syncService.upsertEntity(
         state.copyWith(
-          revision: state.revision + 1,
           lastWakeAt: now,
           scheduledWakeAt: nextLocalDayAtTime(
             now,

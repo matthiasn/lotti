@@ -1,6 +1,6 @@
 # State-as-Projection (Move 1) — Implementation Plan (PR 4)
 
-- Status: In progress — **B1 + B2 + B3 landed** (milestone marker model + emission; `agentDay` slot link) plus the end-of-wake head-clobber fix; B4–B6 pending. Refreshed against merged PR 1/2/2b/3 · Date: 2026-06-01
+- Status: In progress — **B1 + B2 + B3 + B4 + B5 landed** (milestone marker model + emission; `agentDay` slot link; field-classification cleanup; `deriveAgentState` fold + full-state shadow compare) plus the end-of-wake head-clobber fix; only **B6 (the read cutover)** pending. Refreshed against merged PR 1/2/2b/3 · Date: 2026-06-01
 - Part of: [`2026-05-30_daily_os_runtime_implementation_roadmap.md`](./2026-05-30_daily_os_runtime_implementation_roadmap.md) (PR 4).
 - Design baseline: [`../daily_os_ai_runtime_architecture.md`](../daily_os_ai_runtime_architecture.md) §2 / §4 (Move 1); [ADR 0016](../adr/0016-agent-state-as-log-projection.md). Companion: [ADR 0020](../adr/0020-agent-input-capture.md) extends the same projection thesis to the agent's *inputs* (per-source content-addressed capture of user content) — this plan covers derived *state*, ADR 0020 covers what the agent reads.
 - Depends on (**all merged → PR 4 is unblocked**):
@@ -176,15 +176,50 @@ derivation-specific data — those aggregates don't need canonical ordering.
    link (`fromId: agentId, toId: dayId`) alongside the `activeDayId` slot — so
    `activeDayId` joins the other three slots as link-derived. Dual-write: the slot stays
    the read source until B6 (the day-agent lookup can later move off the JSON slot).
-4. **B4 — Field-classification cleanup (additive).** Re-home *config* fields
-   (`feedbackWindowDays`, `recursionDepth`) to `AgentConfig`/identity; stop syncing
-   *runtime-local* scheduling (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`); retire
-   `revision` (display-only, never read for logic). In-band-on-read migration (PR 2b/3
-   pattern — no schema change).
-5. **B5 — Grow `AgentProjection` + fold (shadow-only).** Fold the watermarks (B2
-   events), the active slots (links incl. `agentDay`), and the `awaitingContent` gate;
-   read the counter *sums* from the PR 2b G-counters. Extend `compareShadowProjection`
-   to assert the **full** derived state across the forward corpus. Still drives no read.
+4. **B4 — Field-classification cleanup (additive). ✅ done.** Three independent
+   sub-changes, no schema change:
+   - **Config re-home.** `feedbackWindowDays` / `recursionDepth` moved to `AgentConfig`
+     (set once at improver creation). Reads prefer config and fall back to the legacy
+     `AgentSlots` value for pre-existing agents (in-band-on-read migration); the slot
+     fields stay in the model as the read fallback.
+   - **De-sync runtime-local scheduling.** `nextWakeAt` / `sleepUntil` /
+     `scheduledWakeAt` are device-local. The serialized blob is shared by local DB +
+     wire, so rather than change the wire, the **sync apply path** now overlays the
+     local row's scheduling fields onto an incoming `AgentStateEntity`
+     (`_preserveLocalScheduling`) — a peer can never clobber this device's schedule
+     (same shape as the head-clobber fix). A brand-new agent with no local row keeps the
+     incoming values as a bootstrap.
+   - **Retire `revision`.** Confirmed display-only (not used by the resolver, which is
+     `updatedAt` + vector clock). Soft-retired: `@Default(0)`, no longer incremented,
+     dropped from the internals UI. Kept as a defaulted field (not removed) so a peer on
+     an older build can still deserialize state this build emits; physical removal awaits
+     a breaking-change window. (The now-unused `agentStateRevision` l10n key is left in
+     the arb files as trivial follow-up cleanup.)
+5. **B5 — Grow `AgentProjection` + fold (shadow-only). ✅ done.** Added
+   `deriveAgentState({agentId, messages, links})` → `DerivedAgentState` (in
+   `derived_agent_state.dart`, alongside the kernel): it calls
+   `project(canonicalOrder(...))` for the structural part (heads / latest report) and
+   aggregates the order-independent fields directly — the 5 watermarks as
+   `max(createdAt)` per `metadata.milestone` (B2 markers), the 4 active slots
+   (`activeTask/Project/Day/Template`) as the primary active link target (`fromId ==
+   agentId`, same most-recent tiebreak production uses, incl. `agentDay` from B3).
+   `compareDerivedAgentState(messages, links, liveState)` extends the shadow check to
+   assert the **full** derived state vs the live cache (head via `compareShadowProjection`,
+   order-independent fields exactly), returning per-field mismatches. Drives no read.
+   Glados proves the fold is a pure function of the log *set* (converges across arrival
+   orders).
+
+   **Grounded scope refinements (vs the original B5 bullet):**
+   - **Counter sums are a read, not a fold.** `wakeCounter` /
+     `slots.totalSessionsCompleted` / `slots.weeklyReviewCount` are already convergent
+     per-host G-counters (PR 2b); the derived value is `.value` on the synced row, so the
+     fold doesn't re-derive them and the compare doesn't assert them.
+   - **`awaitingContent` is deferred — it has no backing log event.** Its initial value
+     depends on the *creation mode* (auto-created-from-category vs. explicit) and it is
+     cleared by the wake orchestrator detecting task content; neither is a synced log
+     event. Like the watermarks needed B2 first, `awaitingContent` needs its own
+     event-sourcing step before it can be folded — tracked as a new open decision below.
+     It stays on the cache for now and is excluded from the compare.
 6. **B6 — Flip reads (the cutover).** Workflows + `agent_repository` read derived state
    through the reconciled cache (reconcile machinery per the strategy above);
    `AgentStateEntity` demoted to that cache. Convergence sim (partition + heal).
@@ -244,6 +279,15 @@ in shadow. B1–B5 are each shippable green on their own.
   with PR 5 (compaction reuses it).
 - **`revision`** — derive from the frontier, or retire it in favor of the vector clock
   / head-set.
+- **`awaitingContent` needs a backing log event before it can be folded** *(found
+  during B5)*. The gate is set by *creation mode* (auto-created-from-a-category-default
+  vs. explicit) and cleared by the wake orchestrator detecting task content — neither is
+  a synced log event, so B5 left it on the cache (excluded from the fold + compare). To
+  event-source it (so B6 can read it from the projection), emit a marker at the two
+  transitions: an `awaitingContent`-set signal at auto-creation and a clear signal when
+  content first arrives (reuse the `wakeCompleted` marker, or a dedicated milestone). A
+  small B2-style increment; until then B6 must keep `awaitingContent` as a synced cache
+  field rather than a derived one.
 - **End-of-wake state write clobbered `recentHeadMessageId`** *(found during B2;
   ✅ fixed)*. Every workflow captures `state` (task: once up front; project / day: a
   `latestState` re-read at transaction start) **before** appending the wake's messages,

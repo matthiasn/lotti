@@ -197,6 +197,18 @@ extension _AnyGeneratedImproverAgentServiceScenario on glados.Any {
   );
 }
 
+/// Captures the [AgentConfig] passed to the single `createAgent` call — the
+/// cadence/recursion-depth home after the PR 4 B4 re-home off the state slots.
+AgentConfig capturedCreatedConfig(MockAgentService mock) =>
+    verify(
+          () => mock.createAgent(
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: captureAny(named: 'config'),
+          ),
+        ).captured.single
+        as AgentConfig;
+
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -233,6 +245,7 @@ void main() {
   AgentIdentityEntity makeIdentity({
     String agentId = 'improver-agent-1',
     String displayName = 'Laura Improver',
+    AgentConfig config = const AgentConfig(),
   }) {
     return makeTestIdentity(
       id: agentId,
@@ -240,6 +253,7 @@ void main() {
       kind: AgentKinds.templateImprover,
       displayName: displayName,
       currentStateId: 'state-$agentId',
+      config: config,
     );
   }
 
@@ -273,6 +287,9 @@ void main() {
       () => mockSyncService.insertLinkExclusive(any()),
     ).thenAnswer((_) async {});
     stubAppendMilestone(mockSyncService);
+    // Default: no identity, so scheduleNextRitual's config read falls back to
+    // the legacy slot (PR 4 B4). Tests needing config override this.
+    when(() => mockAgentService.getAgent(any())).thenAnswer((_) async => null);
 
     service = ImproverAgentService(
       agentService: mockAgentService,
@@ -531,16 +548,24 @@ void main() {
           generatedTargetTemplateId,
           reason: '$scenario',
         );
+        // Cadence + recursion depth are re-homed to AgentConfig (PR 4 B4),
+        // not the state slots.
         expect(
-          updatedState.slots.feedbackWindowDays,
+          config.feedbackWindowDays,
           scenario.expectedFeedbackWindowDays,
           reason: '$scenario',
         );
         expect(
-          updatedState.slots.recursionDepth,
+          config.recursionDepth,
           scenario.recursionDepth,
           reason: '$scenario',
         );
+        expect(
+          updatedState.slots.feedbackWindowDays,
+          isNull,
+          reason: '$scenario',
+        );
+        expect(updatedState.slots.recursionDepth, isNull, reason: '$scenario');
         expect(updatedState.slots.totalSessionsCompleted.value, 0);
         expect(
           updatedState.scheduledWakeAt,
@@ -604,7 +629,7 @@ void main() {
             () => mockAgentService.createAgent(
               kind: AgentKinds.templateImprover,
               displayName: 'Laura Improver',
-              config: const AgentConfig(),
+              config: any(named: 'config'),
             ),
           ).thenAnswer((_) async => identity);
 
@@ -632,11 +657,15 @@ void main() {
             updatedState.slots.activeTemplateId,
             targetTemplateId,
           );
+          final config = capturedCreatedConfig(mockAgentService);
           expect(
-            updatedState.slots.feedbackWindowDays,
+            config.feedbackWindowDays,
             ImproverSlotDefaults.defaultFeedbackWindowDays,
           );
-          expect(updatedState.slots.recursionDepth, 0);
+          expect(config.recursionDepth, 0);
+          // Re-homed to config (PR 4 B4) — no longer on the state slots.
+          expect(updatedState.slots.feedbackWindowDays, isNull);
+          expect(updatedState.slots.recursionDepth, isNull);
           expect(updatedState.slots.totalSessionsCompleted.value, 0);
           expect(updatedState.scheduledWakeAt, isNotNull);
 
@@ -820,7 +849,7 @@ void main() {
             () => mockAgentService.createAgent(
               kind: AgentKinds.templateImprover,
               displayName: 'Laura Improver',
-              config: const AgentConfig(),
+              config: any(named: 'config'),
             ),
           ).thenAnswer((_) async => identity);
           when(
@@ -974,13 +1003,13 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
+          expect(
+            capturedCreatedConfig(mockAgentService).feedbackWindowDays,
+            ImproverSlotDefaults.defaultMetaFeedbackWindowDays,
+          );
           final updatedState = capturedEntities
               .whereType<AgentStateEntity>()
               .first;
-          expect(
-            updatedState.slots.feedbackWindowDays,
-            ImproverSlotDefaults.defaultMetaFeedbackWindowDays,
-          );
           expect(
             updatedState.scheduledWakeAt,
             testDate.add(
@@ -1024,21 +1053,14 @@ void main() {
             targetTemplateId: targetTemplateId,
           );
 
-          final capturedEntities = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-
-          final updatedState = capturedEntities
-              .whereType<AgentStateEntity>()
-              .first;
           expect(
-            updatedState.slots.feedbackWindowDays,
+            capturedCreatedConfig(mockAgentService).feedbackWindowDays,
             ImproverSlotDefaults.defaultFeedbackWindowDays,
           );
         });
       });
 
-      test('passes recursionDepth to state slots', () async {
+      test('passes recursionDepth to config', () async {
         await withClock(Clock.fixed(testDate), () async {
           final identity = makeIdentity();
           final state = makeState();
@@ -1071,14 +1093,7 @@ void main() {
             recursionDepth: 1,
           );
 
-          final capturedEntities = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-
-          final updatedState = capturedEntities
-              .whereType<AgentStateEntity>()
-              .first;
-          expect(updatedState.slots.recursionDepth, 1);
+          expect(capturedCreatedConfig(mockAgentService).recursionDepth, 1);
         });
       });
     });
@@ -1211,6 +1226,40 @@ void main() {
           expect(capturedMilestones(mockSyncService), [
             AgentMilestone.oneOnOneCompleted,
           ]);
+        });
+      });
+
+      test('prefers config.feedbackWindowDays over the legacy slot', () async {
+        await withClock(Clock.fixed(testDate), () async {
+          const agentId = 'improver-agent-1';
+          // The legacy slot says 7, but the re-homed config (PR 4 B4) says 14;
+          // config wins.
+          final state = makeState(
+            slots: const AgentSlots(
+              activeTemplateId: 'target-template-001',
+              feedbackWindowDays: 7,
+            ),
+          );
+          when(
+            () => mockRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => state);
+          when(() => mockAgentService.getAgent(agentId)).thenAnswer(
+            (_) async => makeIdentity(
+              config: const AgentConfig(feedbackWindowDays: 14),
+            ),
+          );
+
+          await service.scheduleNextRitual(agentId);
+
+          final updatedState =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.first
+                  as AgentStateEntity;
+          expect(
+            updatedState.scheduledWakeAt,
+            testDate.add(const Duration(days: 14)),
+          );
         });
       });
 
