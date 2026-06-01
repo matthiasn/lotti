@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tension-loop shader while listening, and shows reviewed transcripts in a
   calmer fixed-height review panel.
 
+### Fixed
+- Task due-date urgency now uses calendar-day comparisons, so overdue and
+  due-today styling stays correct across daylight-saving transitions.
+- Plain-text journal/comment content with quotes, backslashes, or line breaks
+  now stores valid rich-text editor data instead of interpolated JSON fragments.
+- CSS hex color parsing now rejects malformed strings with embedded valid
+  colors, keeping fallback colors predictable for invalid input.
+- AI chat streaming now preserves split reasoning close markers and final soft
+  line breaks when providers deliver responses one character or token at a time.
+
 ## [0.9.1011]
 ### Added
 - Settings → Advanced → Logging now has an individual on/off switch for every

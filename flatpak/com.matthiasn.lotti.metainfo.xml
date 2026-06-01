@@ -36,6 +36,10 @@
       <description>
           <p>Task detail pages now show running AI activity as subtle shader-based decoder bars integrated into the sticky action bar, replacing the separate Siri-wave strip above it.</p>
           <p>Daily OS Next voice capture now wraps the record button with the dBFS-driven tension-loop shader while listening, and shows reviewed transcripts in a calmer fixed-height review panel.</p>
+          <p>Task due-date urgency now uses calendar-day comparisons, so overdue and due-today styling stays correct across daylight-saving transitions.</p>
+          <p>Plain-text journal and comment content with quotes, backslashes, or line breaks now stores valid rich-text editor data instead of interpolated JSON fragments.</p>
+          <p>CSS hex color parsing now rejects malformed strings with embedded valid colors, keeping fallback colors predictable for invalid input.</p>
+          <p>AI chat streaming now preserves split reasoning close markers and final soft line breaks when providers deliver responses one character or token at a time.</p>
       </description>
     </release><release version="0.9.1011" date="2026-05-30">
       <description>

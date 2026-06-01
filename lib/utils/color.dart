@@ -6,7 +6,7 @@ Color colorFromCssHex(
   String? input, {
   Color substitute = Colors.pink,
 }) {
-  final regex = RegExp('#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?');
+  final regex = RegExp(r'^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$');
 
   if (input == null || !regex.hasMatch(input)) {
     return substitute;

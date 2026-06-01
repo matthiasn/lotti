@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai_chat/ui/controllers/chat_stream_parser.dart';
 
 void main() {
@@ -74,6 +75,19 @@ void main() {
       expect((e2.first as ThinkingFinal).text, 'Y');
     });
 
+    test('carries partial close token across chunks', () {
+      final p = ChatStreamParser();
+      final e1 = p.processChunk('<thinking>reasoning</thin');
+      expect(e1, isEmpty);
+
+      final e2 = p.processChunk('king>answer');
+      expect(e2, hasLength(2));
+      expect(e2.first, isA<ThinkingFinal>());
+      expect((e2.first as ThinkingFinal).text, 'reasoning');
+      expect(e2[1], isA<VisibleAppend>());
+      expect((e2[1] as VisibleAppend).text, 'answer');
+    });
+
     test('unterminated thinking is flushed on finish', () {
       final p = ChatStreamParser();
       final e1 = p.processChunk('<thinking>incomplete');
@@ -129,6 +143,15 @@ void main() {
       expect(flushed, isEmpty);
     });
 
+    test('finish flushes pending visible soft break at end of stream', () {
+      final p = ChatStreamParser();
+      expect(p.processChunk('Intro'), hasLength(1));
+      expect(p.processChunk(' \n'), isEmpty);
+      final flushed = p.finish();
+      expect(flushed.single, isA<VisibleAppend>());
+      expect((flushed.single as VisibleAppend).text, '\n');
+    });
+
     test('fenced thinking block', () {
       final p = ChatStreamParser();
       final e = p.processChunk('before```think\nT\n```after');
@@ -166,5 +189,190 @@ void main() {
         // Parser is not nested-aware; it may not include trailing 'end'.
       },
     );
+
+    glados.Glados(
+      glados.any.generatedChatStreamScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'emits the same semantic events for generated arbitrary chunking',
+      (scenario) {
+        expect(
+          _eventViewsFor(scenario.chunks),
+          _eventViewsFor([scenario.input]),
+          reason: '$scenario',
+        );
+      },
+      tags: 'glados',
+    );
   });
+}
+
+enum _GeneratedThinkingTokenKind {
+  htmlThink,
+  htmlThinking,
+  bracketThink,
+  bracketThinking,
+  fenceThink,
+  fenceThinking,
+}
+
+enum _GeneratedStreamTextToken {
+  word,
+  number,
+  space,
+  newline,
+  punctuation,
+  markdown,
+}
+
+class _GeneratedChatStreamScenario {
+  const _GeneratedChatStreamScenario({
+    required this.before,
+    required this.body,
+    required this.after,
+    required this.kind,
+    required this.chunkSize,
+  });
+
+  final List<_GeneratedStreamTextToken> before;
+  final List<_GeneratedStreamTextToken> body;
+  final List<_GeneratedStreamTextToken> after;
+  final _GeneratedThinkingTokenKind kind;
+  final int chunkSize;
+
+  String get input =>
+      '${before.text}${kind.open}${body.text}${kind.close}${after.text}';
+
+  List<String> get chunks {
+    final result = <String>[];
+    for (var i = 0; i < input.length; i += chunkSize) {
+      final end = i + chunkSize > input.length ? input.length : i + chunkSize;
+      result.add(input.substring(i, end));
+    }
+    return result;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedChatStreamScenario('
+        'input: $input, '
+        'kind: $kind, '
+        'chunkSize: $chunkSize, '
+        'chunks: $chunks)';
+  }
+}
+
+extension on _GeneratedThinkingTokenKind {
+  String get open => switch (this) {
+    _GeneratedThinkingTokenKind.htmlThink => '<think>',
+    _GeneratedThinkingTokenKind.htmlThinking => '<thinking>',
+    _GeneratedThinkingTokenKind.bracketThink => '[think]',
+    _GeneratedThinkingTokenKind.bracketThinking => '[thinking]',
+    _GeneratedThinkingTokenKind.fenceThink => '```think\n',
+    _GeneratedThinkingTokenKind.fenceThinking => '```thinking\n',
+  };
+
+  String get close => switch (this) {
+    _GeneratedThinkingTokenKind.htmlThink => '</think>',
+    _GeneratedThinkingTokenKind.htmlThinking => '</thinking>',
+    _GeneratedThinkingTokenKind.bracketThink => '[/think]',
+    _GeneratedThinkingTokenKind.bracketThinking => '[/thinking]',
+    _GeneratedThinkingTokenKind.fenceThink ||
+    _GeneratedThinkingTokenKind.fenceThinking => '```',
+  };
+}
+
+extension on _GeneratedStreamTextToken {
+  String get text => switch (this) {
+    _GeneratedStreamTextToken.word => 'alpha',
+    _GeneratedStreamTextToken.number => '42',
+    _GeneratedStreamTextToken.space => ' ',
+    _GeneratedStreamTextToken.newline => '\n',
+    _GeneratedStreamTextToken.punctuation => '.,:;!?',
+    _GeneratedStreamTextToken.markdown => '- item',
+  };
+}
+
+extension on List<_GeneratedStreamTextToken> {
+  String get text => map((token) => token.text).join();
+}
+
+List<({String kind, String text})> _eventViewsFor(List<String> chunks) {
+  final parser = ChatStreamParser();
+  final views = <({String kind, String text})>[];
+
+  void addEvent(ChatStreamEvent event) {
+    final view = switch (event) {
+      VisibleAppend(:final text) => (kind: 'visible', text: text),
+      ThinkingFinal(:final text) => (kind: 'thinking', text: text),
+      _ => (kind: 'unknown', text: ''),
+    };
+
+    if (views.isNotEmpty && views.last.kind == view.kind) {
+      final previous = views.removeLast();
+      views.add((kind: previous.kind, text: '${previous.text}${view.text}'));
+    } else {
+      views.add(view);
+    }
+  }
+
+  for (final chunk in chunks) {
+    parser.processChunk(chunk).forEach(addEvent);
+  }
+  parser.finish().forEach(addEvent);
+  return views;
+}
+
+extension _AnyChatStreamParser on glados.Any {
+  glados.Generator<_GeneratedThinkingTokenKind> get _thinkingTokenKind =>
+      glados.AnyUtils(this).choose(_GeneratedThinkingTokenKind.values);
+
+  glados.Generator<_GeneratedStreamTextToken> get _streamTextToken =>
+      glados.AnyUtils(this).choose(const [
+        _GeneratedStreamTextToken.word,
+        _GeneratedStreamTextToken.number,
+        _GeneratedStreamTextToken.space,
+        _GeneratedStreamTextToken.newline,
+        _GeneratedStreamTextToken.punctuation,
+        _GeneratedStreamTextToken.markdown,
+      ]);
+
+  glados.Generator<_GeneratedStreamTextToken> get _visibleStreamTextToken =>
+      glados.AnyUtils(this).choose(const [
+        _GeneratedStreamTextToken.word,
+        _GeneratedStreamTextToken.number,
+        _GeneratedStreamTextToken.space,
+        _GeneratedStreamTextToken.punctuation,
+        _GeneratedStreamTextToken.markdown,
+      ]);
+
+  glados.Generator<List<_GeneratedStreamTextToken>> get _streamText =>
+      glados.ListAnys(this).listWithLengthInRange(0, 8, _streamTextToken);
+
+  glados.Generator<List<_GeneratedStreamTextToken>> get _visibleStreamText =>
+      glados.ListAnys(
+        this,
+      ).listWithLengthInRange(0, 8, _visibleStreamTextToken);
+
+  glados.Generator<_GeneratedChatStreamScenario>
+  get generatedChatStreamScenario => glados.CombinableAny(this).combine5(
+    _visibleStreamText,
+    _streamText,
+    _visibleStreamText,
+    _thinkingTokenKind,
+    glados.IntAnys(this).intInRange(1, 12),
+    (
+      List<_GeneratedStreamTextToken> before,
+      List<_GeneratedStreamTextToken> body,
+      List<_GeneratedStreamTextToken> after,
+      _GeneratedThinkingTokenKind kind,
+      int chunkSize,
+    ) => _GeneratedChatStreamScenario(
+      before: before,
+      body: body,
+      after: after,
+      kind: kind,
+      chunkSize: chunkSize,
+    ),
+  );
 }

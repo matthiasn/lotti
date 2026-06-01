@@ -554,7 +554,10 @@ Notable behavior already implemented:
 
 - `TaskSliverAppBar` switches between compact and expandable variants based on whether the task has `coverArtId`
 - the header is desktop-first and the same component serves mobile — chips wrap onto the next line on narrow widths
-- due dates on the detail page use urgency styling, while relative/absolute date display is a list-level concern owned by the shared page state
+- due dates on the detail page use calendar-day urgency styling (overdue,
+  today, normal) that ignores time-of-day and daylight-saving offsets, while
+  relative/absolute date display is a list-level concern owned by the shared
+  page state
 - labels are category-aware, but still allow out-of-scope assigned labels to be removed
 - project selection integrates with the project health layer without making the task feature own project analysis itself
 - language is not surfaced in the new header itself — it is reachable through the pinned app bar's triple-dot menu, which shows a "Set language" action (`ModernSetTaskLanguageItem`). The action renders the currently selected language's flag inline when one is set, falls back to `Icons.language` otherwise, and opens the same `LanguageSelectionModalContent` modal used by the category editor. Selection is persisted via `journalRepositoryProvider.updateJournalEntity` with `ChangeSource.user` on `TaskData.languageSource`.

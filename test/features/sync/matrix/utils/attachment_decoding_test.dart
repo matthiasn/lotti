@@ -7,6 +7,7 @@ import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -234,6 +235,24 @@ void main() {
       expect(formatCompressionRatio(raw: 0, compressed: 10), '-');
       expect(formatCompressionRatio(raw: -1, compressed: 10), '-');
     });
+
+    glados.Glados(
+      glados.any.generatedCompressionRatio,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'matches generated compression ratio formatting model',
+      (scenario) {
+        expect(
+          formatCompressionRatio(
+            raw: scenario.raw,
+            compressed: scenario.compressed,
+          ),
+          scenario.expected,
+          reason: '$scenario',
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('downloadAttachmentWithTimeout single-flight', () {
@@ -481,4 +500,36 @@ void main() {
       },
     );
   });
+}
+
+class _GeneratedCompressionRatio {
+  const _GeneratedCompressionRatio({
+    required this.raw,
+    required this.compressed,
+  });
+
+  final int raw;
+  final int compressed;
+
+  String get expected => raw <= 0 ? '-' : (compressed / raw).toStringAsFixed(3);
+
+  @override
+  String toString() {
+    return '_GeneratedCompressionRatio('
+        'raw: $raw, '
+        'compressed: $compressed, '
+        'expected: $expected)';
+  }
+}
+
+extension _AnyAttachmentDecoding on glados.Any {
+  glados.Generator<_GeneratedCompressionRatio> get generatedCompressionRatio =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(-10, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (raw, compressed) => _GeneratedCompressionRatio(
+          raw: raw,
+          compressed: compressed,
+        ),
+      );
 }

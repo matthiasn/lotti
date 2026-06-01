@@ -44,7 +44,19 @@ class ChatStreamParser {
           _activeCloseToken,
         ).firstMatch(chunk.substring(index));
         if (closeMatch == null) {
-          _thinkingBuffer.write(chunk.substring(index));
+          final segment = chunk.substring(index);
+          final carry = ChatStreamUtils.computeCloseTagCarry(
+            segment,
+            _activeCloseToken,
+          );
+          if (carry.isNotEmpty) {
+            _thinkingBuffer.write(
+              segment.substring(0, segment.length - carry.length),
+            );
+            _pendingOpenTagTail = carry;
+          } else {
+            _thinkingBuffer.write(segment);
+          }
           index = chunk.length;
           break;
         } else {
@@ -89,6 +101,10 @@ class ChatStreamParser {
           }
         }
         // Enter thinking
+        if (_pendingSoftBreak) {
+          events.add(const VisibleAppend('\n'));
+          _pendingSoftBreak = false;
+        }
         _inThinkingStream = true;
         _activeCloseToken = earliest.closeToken;
         index = earliest.end;
@@ -119,6 +135,11 @@ class ChatStreamParser {
         }
       }
       _pendingOpenTagTail = '';
+    }
+
+    if (_pendingSoftBreak) {
+      events.add(const VisibleAppend('\n'));
+      _pendingSoftBreak = false;
     }
 
     // Flush any remaining thinking as a final block.
