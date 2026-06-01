@@ -1,6 +1,6 @@
 # State-as-Projection (Move 1) — Implementation Plan (PR 4)
 
-- Status: In progress — **B1 + B2 landed** (milestone marker model + emission at every watermark completion); B3–B6 pending. Refreshed against merged PR 1/2/2b/3 · Date: 2026-06-01
+- Status: In progress — **B1 + B2 + B3 landed** (milestone marker model + emission; `agentDay` slot link) plus the end-of-wake head-clobber fix; B4–B6 pending. Refreshed against merged PR 1/2/2b/3 · Date: 2026-06-01
 - Part of: [`2026-05-30_daily_os_runtime_implementation_roadmap.md`](./2026-05-30_daily_os_runtime_implementation_roadmap.md) (PR 4).
 - Design baseline: [`../daily_os_ai_runtime_architecture.md`](../daily_os_ai_runtime_architecture.md) §2 / §4 (Move 1); [ADR 0016](../adr/0016-agent-state-as-log-projection.md). Companion: [ADR 0020](../adr/0020-agent-input-capture.md) extends the same projection thesis to the agent's *inputs* (per-source content-addressed capture of user content) — this plan covers derived *state*, ADR 0020 covers what the agent reads.
 - Depends on (**all merged → PR 4 is unblocked**):
@@ -170,9 +170,12 @@ derivation-specific data — those aggregates don't need canonical ordering.
    The watermarks become `max(createdAt)` of messages carrying the matching milestone;
    B5 folds them. (Marker mechanism settled in B1 — `metadata.milestone`, mapped to no
    distinct `AgentEventKind`.)
-3. **B3 — `agentDay` link.** Add the agent→day link at day-agent creation so
-   `activeDayId` joins the other three slots as link-derived (and the day-agent
-   lookup can later move off the JSON slot).
+3. **B3 — `agentDay` link. ✅ done.** Added the `AgentLink.agentDay` variant
+   (`fromId` = agent, `toId` = day), the `agent_day` type constant, both DB-conversion
+   directions, and the soft-delete case; `DayAgentService.createDayAgent` now emits the
+   link (`fromId: agentId, toId: dayId`) alongside the `activeDayId` slot — so
+   `activeDayId` joins the other three slots as link-derived. Dual-write: the slot stays
+   the read source until B6 (the day-agent lookup can later move off the JSON slot).
 4. **B4 — Field-classification cleanup (additive).** Re-home *config* fields
    (`feedbackWindowDays`, `recursionDepth`) to `AgentConfig`/identity; stop syncing
    *runtime-local* scheduling (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`); retire

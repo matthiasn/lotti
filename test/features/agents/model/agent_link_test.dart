@@ -449,6 +449,39 @@ void main() {
       });
     });
 
+    group('AgentDayLink (agentDay variant)', () {
+      test('roundtrips all fields', () {
+        final original = AgentLink.agentDay(
+          id: 'link-day-001',
+          fromId: 'agent-001',
+          toId: 'day-2026-06-01',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<AgentDayLink>());
+        expectLinkFieldsMatch(roundtripped, original);
+      });
+
+      test('runtimeType discriminator key is "agentDay"', () {
+        final link = AgentLink.agentDay(
+          id: 'link-day-002',
+          fromId: 'agent-001',
+          toId: 'day-2026-06-01',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        );
+
+        final json = link.toJson();
+        expect(json['runtimeType'], equals('agentDay'));
+      });
+    });
+
     group('BasicAgentLink fallback for unknown runtimeType', () {
       test('deserializes unknown runtimeType to BasicAgentLink', () {
         // AgentLink uses fallbackUnion: 'basic', so unknown types map to BasicAgentLink.
@@ -678,6 +711,14 @@ void main() {
         ),
         AgentLink.agentProject(
           id: 'l9',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.agentDay(
+          id: 'l-day',
           fromId: 'a',
           toId: 'b',
           createdAt: createdAt,

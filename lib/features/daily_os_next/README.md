@@ -22,6 +22,7 @@ separate.
 flowchart TD
   Template["Shepherd template"] --> Identity["day_agent identity"]
   Identity --> State["AgentState.activeDayId"]
+  Identity --> DayLink["agent_links: agent_day (agent → day)"]
   State --> Wake["DayAgentWorkflow"]
   Wake --> Strategy["DayAgentStrategy"]
   Strategy --> Observe["record_observations"]
@@ -56,6 +57,10 @@ Runtime behavior:
   row, and the `agentId` discriminator separates the identity from the plan.
 - Day-agent lookup is repository-backed by `activeDayId`; the service does not
   hydrate every active day-agent state just to find one calendar day.
+- Creation also writes an `agent_day` link (agent → day) alongside the
+  `activeDayId` slot, mirroring the `agent_task`/`agent_project` slot links, so
+  the slot can be derived from the synced log (State-as-Projection, PR 4 B3).
+  The slot remains the read source until that cutover.
 - The shared template service seeds the `Shepherd` day-agent template.
 - `DayAgentWorkflow` builds the prompt from template directives, recent private
   observations, and, for `capture_submitted:<captureId>` wakes, the submitted

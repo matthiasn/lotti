@@ -963,6 +963,54 @@ void main() {
     });
   });
 
+  group('AgentDbConversions — agentDay link', () {
+    test('toLinkCompanion handles agentDay link correctly', () {
+      final link = model.AgentLink.agentDay(
+        id: 'link-day-001',
+        fromId: 'agent-001',
+        toId: 'day-2026-06-01',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      expect(companion.id, const Value('link-day-001'));
+      expect(companion.fromId, const Value('agent-001'));
+      expect(companion.toId, const Value('day-2026-06-01'));
+      expect(companion.type, const Value('agent_day'));
+    });
+
+    test('fromLinkRow roundtrips agentDay link', () {
+      final link = model.AgentLink.agentDay(
+        id: 'link-day-002',
+        fromId: 'agent-001',
+        toId: 'day-2026-06-01',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      final row = AgentLink(
+        id: 'link-day-002',
+        fromId: 'agent-001',
+        toId: 'day-2026-06-01',
+        type: 'agent_day',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromLinkRow(row);
+      expect(result, isA<model.AgentDayLink>());
+      expect(result.fromId, 'agent-001');
+      expect(result.toId, 'day-2026-06-01');
+    });
+  });
+
   group('AgentDbConversions — improverTarget link', () {
     test('toLinkCompanion handles improverTarget link correctly', () {
       final link = model.AgentLink.improverTarget(

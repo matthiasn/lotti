@@ -211,6 +211,8 @@ Persisted links include:
 - `agent_state`
 - `agent_task`
 - `agent_project`
+- `agent_day` (day agent → its day; back-links `slots.activeDayId` like the
+  task/project slot links so it can be derived from the synced log)
 - `template_assignment`
 - `improver_target`
 - `soul_assignment`

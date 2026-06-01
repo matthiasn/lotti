@@ -127,6 +127,21 @@ class DayAgentService {
         ),
       );
 
+      // Agent → day link, mirroring the agentTask/agentProject slot links, so
+      // `slots.activeDayId` can be derived from the synced log
+      // (State-as-Projection, PR 4 B3). The cached slot above stays the read
+      // source until the cutover.
+      await syncService.upsertLink(
+        AgentLink.agentDay(
+          id: _uuid.v4(),
+          fromId: identity.agentId,
+          toId: dayId,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
+
       return identity;
     });
 

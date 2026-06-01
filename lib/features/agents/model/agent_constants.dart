@@ -22,6 +22,7 @@ abstract final class AgentLinkTypes {
   static const templateAssignment = 'template_assignment';
   static const improverTarget = 'improver_target';
   static const agentProject = 'agent_project';
+  static const agentDay = 'agent_day';
   static const soulAssignment = 'soul_assignment';
 }
 
