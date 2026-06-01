@@ -61,6 +61,7 @@ class CaptureState {
     required this.phase,
     required this.transcript,
     required this.amplitudes,
+    this.dbfs = defaultDbfs,
     this.partialTranscript = '',
     this.audioId,
     this.error,
@@ -71,8 +72,11 @@ class CaptureState {
       transcript = '',
       partialTranscript = '',
       amplitudes = const <double>[],
+      dbfs = defaultDbfs,
       audioId = null,
       error = null;
+
+  static const defaultDbfs = -80.0;
 
   final CapturePhase phase;
 
@@ -88,6 +92,11 @@ class CaptureState {
   /// live-waveform widget renders these as bar heights.
   final List<double> amplitudes;
 
+  /// Latest recorder amplitude in dBFS. The waveform keeps normalised
+  /// samples; shader-based voice affordances use this raw dBFS value so
+  /// their response matches recorder/VU-meter semantics.
+  final double dbfs;
+
   /// `JournalAudio.meta.id` of the persisted recording, or `null` when
   /// no audio is available yet (e.g. in [CapturePhase.idle]).
   final String? audioId;
@@ -101,6 +110,7 @@ class CaptureState {
     String? transcript,
     String? partialTranscript,
     List<double>? amplitudes,
+    double? dbfs,
     String? audioId,
     CaptureError? error,
   }) {
@@ -109,6 +119,7 @@ class CaptureState {
       transcript: transcript ?? this.transcript,
       partialTranscript: partialTranscript ?? this.partialTranscript,
       amplitudes: amplitudes ?? this.amplitudes,
+      dbfs: dbfs ?? this.dbfs,
       audioId: audioId ?? this.audioId,
       error: error ?? this.error,
     );
@@ -163,6 +174,8 @@ class CaptureController extends Notifier<CaptureState> {
   /// this clamp to 0; -45 keeps speech visible without amplifying room
   /// noise into oscillating full-height bars.
   static const _minDbfs = -45.0;
+
+  static const double _minVisualDbfs = CaptureState.defaultDbfs;
 
   /// Minimum extra characters the full-file batch transcript must have
   /// over the realtime `done` text before we prefer the batch result.
@@ -331,7 +344,10 @@ class CaptureController extends Notifier<CaptureState> {
         final clipped = next.length > _maxAmplitudeSamples
             ? next.sublist(next.length - _maxAmplitudeSamples)
             : next;
-        state = state.copyWith(amplitudes: clipped);
+        state = state.copyWith(
+          amplitudes: clipped,
+          dbfs: _sanitizeVisualDbfs(dbfs),
+        );
       },
       onError: (Object _) {
         // Amplitude stream errors are non-fatal — keep recording.
@@ -431,7 +447,10 @@ class CaptureController extends Notifier<CaptureState> {
     final clipped = next.length > _maxAmplitudeSamples
         ? next.sublist(next.length - _maxAmplitudeSamples)
         : next;
-    state = state.copyWith(amplitudes: clipped);
+    state = state.copyWith(
+      amplitudes: clipped,
+      dbfs: _sanitizeVisualDbfs(amp.current),
+    );
   }
 
   Future<void> _finishListening() async {
@@ -759,6 +778,11 @@ class CaptureController extends Notifier<CaptureState> {
     if (dbfs.isNaN || dbfs.isInfinite) return 0;
     final clamped = dbfs.clamp(_minDbfs, 0.0);
     return (clamped - _minDbfs) / -_minDbfs;
+  }
+
+  static double _sanitizeVisualDbfs(double dbfs) {
+    if (dbfs.isNaN || dbfs.isInfinite) return _minVisualDbfs;
+    return dbfs.clamp(_minVisualDbfs, 0.0);
   }
 }
 

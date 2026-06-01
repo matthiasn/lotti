@@ -1788,6 +1788,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiResponseTypeTaskSummary => 'Resumen de tarea';
 
   @override
+  String get aiRunningActivityOpenProgress => 'Mostrar progreso de la AI';
+
+  @override
   String get aiSettingsAddedLabel => 'Añadido';
 
   @override

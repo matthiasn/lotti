@@ -185,6 +185,7 @@ void main() {
         expect(amplitudes[1], closeTo(0.5, 0.001));
         // Below the -45 floor clamps to 0.
         expect(amplitudes.last, closeTo(0.0, 0.001));
+        expect(container.read(captureControllerProvider).dbfs, -60);
       },
     );
 
@@ -436,6 +437,7 @@ void main() {
         expect(state.partialTranscript, 'hello realtime');
         expect(state.amplitudes, hasLength(1));
         expect(state.amplitudes.single, closeTo(1.0, 0.001));
+        expect(state.dbfs, 0);
       },
     );
 
@@ -580,6 +582,7 @@ void main() {
       expect(state.transcript, '');
       expect(state.partialTranscript, '');
       expect(state.amplitudes, isEmpty);
+      expect(state.dbfs, CaptureState.defaultDbfs);
       expect(state.audioId, isNull);
       expect(state.error, isNull);
     });
@@ -589,6 +592,7 @@ void main() {
         phase: CapturePhase.listening,
         transcript: 'hi',
         amplitudes: <double>[0.1, 0.2],
+        dbfs: -32,
         partialTranscript: 'p',
         audioId: 'a-1',
       );
@@ -598,6 +602,7 @@ void main() {
         transcript: 'final',
         partialTranscript: '',
         amplitudes: const <double>[],
+        dbfs: -12,
         audioId: 'a-2',
         error: CaptureError.transcriptionFailed,
       );
@@ -606,6 +611,7 @@ void main() {
       expect(next.transcript, 'final');
       expect(next.partialTranscript, '');
       expect(next.amplitudes, isEmpty);
+      expect(next.dbfs, -12);
       expect(next.audioId, 'a-2');
       expect(next.error, CaptureError.transcriptionFailed);
 
@@ -613,6 +619,7 @@ void main() {
       expect(partial.transcript, 'updated');
       expect(partial.phase, base.phase);
       expect(partial.amplitudes, base.amplitudes);
+      expect(partial.dbfs, base.dbfs);
       expect(partial.audioId, base.audioId);
     });
   });

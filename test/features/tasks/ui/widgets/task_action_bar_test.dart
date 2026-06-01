@@ -199,12 +199,16 @@ void main() {
   Future<void> pumpBar(
     WidgetTester tester, {
     AudioRecorderState? recorderState,
+    Widget? topSlot,
     List<Override> extraOverrides = const [],
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
         Material(
-          child: TaskActionBar(task: testTask),
+          child: TaskActionBar(
+            task: testTask,
+            topSlot: topSlot,
+          ),
         ),
         overrides: [
           ...extraOverrides,
@@ -255,6 +259,27 @@ void main() {
     expect(find.text('Track time'), findsOneWidget);
     expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
     expect(find.byKey(TaskActionBar.trackTimeStopKey), findsNothing);
+  });
+
+  testWidgets('renders an optional activity slot above the action row', (
+    tester,
+  ) async {
+    await pumpBar(
+      tester,
+      topSlot: const SizedBox(
+        key: ValueKey('test-top-slot-content'),
+        height: 24,
+      ),
+    );
+
+    expect(find.byKey(TaskActionBar.topSlotKey), findsOneWidget);
+    expect(find.byKey(const ValueKey('test-top-slot-content')), findsOneWidget);
+    expect(
+      tester.getRect(find.byKey(TaskActionBar.topSlotKey)).bottom,
+      lessThanOrEqualTo(
+        tester.getRect(find.byKey(TaskActionBar.trackTimeKey)).top,
+      ),
+    );
   });
 
   testWidgets(

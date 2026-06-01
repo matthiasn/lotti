@@ -171,7 +171,6 @@ Checklist content is modeled separately through checklist entities and linked ch
 - `TaskForm` (which begins with the `DesktopTaskHeaderConnector`)
 - linked entries with timer-aware highlighting
 - reverse linked-from entries
-- AI-running animation overlay
 - `TaskActionBar` — a sticky frosted-glass bar hosted in the page's
   `Scaffold.bottomNavigationBar` slot, replacing the floating action
   button. It exposes the most-frequent inline actions directly: a
@@ -185,8 +184,14 @@ Checklist content is modeled separately through checklist entities and linked ch
     an inset stop circle on the leading edge. Tapping the pill body
     navigates to the running timer entry (mirrors the desktop sidebar
     timer card); only the inset stop circle stops the timer. The
-    duration text uses `numericBadgeFontFeatures` (tabular figures,
-    slashed zero, cv02/03/04) so digits don't shift width as they tick.
+  duration text uses `numericBadgeFontFeatures` (tabular figures,
+  slashed zero, cv02/03/04) so digits don't shift width as they tick.
+  When linked AI inference is running for the task, the bar grows an inline
+  top slot above the action row and renders `AiRunningDecoderBars`, a subtle
+  decoder-bars shader driven by the same running-inference provider that used
+  to feed the separate Siri-wave card. The slot animates its reserved height
+  together with shader amplitude and opacity on entry and exit, and removes the
+  shader subtree after collapsing.
 
   The button row is a single `Row` wrapped in a `LayoutBuilder`. When
   the available width can't fit all five children on one line,
@@ -223,6 +228,7 @@ flowchart TD
   Form --> Checklists["ChecklistsWidget"]
   Load --> Focus["HighlightScrollMixin + TaskFocusController"]
   Load --> ActionBar["TaskActionBar (sticky bottom)"]
+  ActionBar --> DecoderBars["AiRunningDecoderBars (when inference runs)"]
   ActionBar --> TimeService["getIt<TimeService>().getStream()"]
   TimeService --> ActionBar
   ActionBar --> NavHide["_AppScreenState route check (hide shell pill on mobile)"]

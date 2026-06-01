@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1012]
+### Changed
+- Task detail pages now show running AI activity as subtle shader-based
+  decoder bars integrated into the sticky action bar, replacing the separate
+  Siri-wave strip above it.
+- Daily OS Next voice capture now wraps the record button with the dBFS-driven
+  tension-loop shader while listening, and shows reviewed transcripts in a
+  calmer fixed-height review panel.
+
 ## [0.9.1011]
 ### Added
 - Settings → Advanced → Logging now has an individual on/off switch for every

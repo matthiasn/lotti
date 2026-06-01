@@ -1017,6 +1017,7 @@
   "aiResponseTypeImagePromptGeneration": "Image Prompt",
   "aiResponseTypePromptGeneration": "Generated Prompt",
   "aiResponseTypeTaskSummary": "Task Summary",
+  "aiRunningActivityOpenProgress": "Show AI progress",
   "aiSettingsAddedLabel": "Added",
   "aiSettingsAddModelButton": "Add model",
   "aiSettingsAddModelTooltip": "Add this model to your provider",

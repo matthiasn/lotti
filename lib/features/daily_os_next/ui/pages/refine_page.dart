@@ -169,6 +169,7 @@ class _RefinementPanel extends ConsumerWidget {
           Center(
             child: VoiceButton(
               phase: _capturePhaseFor(state.phase, captureState.phase),
+              dbfs: captureState.dbfs,
               semanticLabel: _voiceLabel(context, state.phase),
               size: 88,
               onTap: () {

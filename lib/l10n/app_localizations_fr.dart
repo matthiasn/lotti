@@ -1796,6 +1796,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiResponseTypeTaskSummary => 'Résumé de tâche';
 
   @override
+  String get aiRunningActivityOpenProgress =>
+      'Afficher la progression de l\'AI';
+
+  @override
   String get aiSettingsAddedLabel => 'Ajouté';
 
   @override

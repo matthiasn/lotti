@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +16,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Entry surface of the agentic Daily OS — voice-first check-in.
 ///
@@ -50,6 +53,9 @@ class CapturePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final state = ref.watch(captureControllerProvider);
+    final bottomNavHeight = DesignSystemBottomNavigationBar.occupiedHeight(
+      context,
+    );
 
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
@@ -64,41 +70,73 @@ class CapturePage extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step5,
-                  vertical: tokens.spacing.step6,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (actualBlocks.isNotEmpty) ...[
-                      _RecordedTimePreview(blocks: actualBlocks),
-                      SizedBox(height: tokens.spacing.step6),
-                    ],
-                    const _GreetingBlock(),
-                    SizedBox(height: tokens.spacing.step6),
-                    _Headline(forDate: forDate),
-                    _PastTrackingPrompt(forDate: forDate),
-                    SizedBox(height: tokens.spacing.step8),
-                    VoiceButton(
-                      phase: state.phase,
-                      semanticLabel: _voiceButtonLabel(context, state.phase),
-                      onTap: () =>
-                          ref.read(captureControllerProvider.notifier).toggle(),
+        bottom: false,
+        child: Padding(
+          key: const Key('daily_os_capture_bottom_nav_padding'),
+          padding: EdgeInsets.only(bottom: bottomNavHeight),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final layout = _CaptureLayoutMetrics.resolve(
+                tokens,
+                phase: state.phase,
+                viewportHeight: constraints.maxHeight,
+              );
+
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: tokens.spacing.step5,
+                          vertical: tokens.spacing.step6,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (actualBlocks.isNotEmpty) ...[
+                              _RecordedTimePreview(blocks: actualBlocks),
+                              SizedBox(height: tokens.spacing.step6),
+                            ],
+                            const _GreetingBlock(),
+                            SizedBox(height: tokens.spacing.step6),
+                            _Headline(forDate: forDate),
+                            _PastTrackingPrompt(forDate: forDate),
+                            SizedBox(height: tokens.spacing.step8),
+                            VoiceButton(
+                              phase: state.phase,
+                              dbfs: state.dbfs,
+                              semanticLabel: _voiceButtonLabel(
+                                context,
+                                state.phase,
+                              ),
+                              onTap: () => ref
+                                  .read(captureControllerProvider.notifier)
+                                  .toggle(),
+                            ),
+                            SizedBox(height: tokens.spacing.step5),
+                            _StateSlot(
+                              state: state,
+                              height: layout.stateSlotHeight,
+                              liveTranscriptLineCount:
+                                  layout.liveTranscriptLineCount,
+                              reviewTranscriptLineCount:
+                                  layout.reviewTranscriptLineCount,
+                            ),
+                            if (state.phase == CapturePhase.captured) ...[
+                              SizedBox(height: tokens.spacing.step6),
+                              _ReconcileCta(state: state, forDate: forDate),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
-                    SizedBox(height: tokens.spacing.step5),
-                    _StateRow(state: state),
-                    SizedBox(height: tokens.spacing.step6),
-                    _ReconcileCta(state: state, forDate: forDate),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -116,6 +154,135 @@ class CapturePage extends ConsumerWidget {
       case CapturePhase.captured:
         return context.messages.dailyOsNextCaptureVoiceButtonReset;
     }
+  }
+}
+
+class _CaptureLayoutMetrics {
+  const _CaptureLayoutMetrics({
+    required this.stateSlotHeight,
+    required this.liveTranscriptLineCount,
+    required this.reviewTranscriptLineCount,
+  });
+
+  factory _CaptureLayoutMetrics.resolve(
+    DsTokens tokens, {
+    required CapturePhase phase,
+    required double viewportHeight,
+  }) {
+    final minimumReviewTranscriptLineCount = _minimumReviewTranscriptLineCount(
+      viewportHeight,
+    );
+    final minimumSlotHeight = _minimumSlotHeight(
+      tokens,
+      phase,
+      minimumReviewTranscriptLineCount: minimumReviewTranscriptLineCount,
+    );
+    final maximumSlotHeight = tokens.spacing.step13 + tokens.spacing.step11;
+    final availableForState =
+        viewportHeight - _fixedVerticalChrome(tokens, phase);
+    final stateSlotHeight = availableForState.clamp(
+      minimumSlotHeight,
+      maximumSlotHeight,
+    );
+
+    return _CaptureLayoutMetrics(
+      stateSlotHeight: stateSlotHeight,
+      liveTranscriptLineCount: _liveTranscriptLineCount(
+        tokens,
+        stateSlotHeight,
+      ),
+      reviewTranscriptLineCount: _reviewTranscriptLineCount(
+        tokens,
+        stateSlotHeight,
+        minimumLineCount: minimumReviewTranscriptLineCount,
+      ),
+    );
+  }
+
+  final double stateSlotHeight;
+  final int liveTranscriptLineCount;
+  final int reviewTranscriptLineCount;
+
+  static double _fixedVerticalChrome(DsTokens tokens, CapturePhase phase) {
+    final greetingHeight =
+        tokens.typography.lineHeight.subtitle1 +
+        tokens.spacing.step2 +
+        tokens.typography.lineHeight.heading3;
+    final headlineHeight = tokens.typography.lineHeight.heading1 * 2;
+    final capturedActionsHeight = phase == CapturePhase.captured
+        ? tokens.spacing.step6 + tokens.spacing.step9
+        : 0;
+
+    return tokens.spacing.step6 * 2 +
+        greetingHeight +
+        tokens.spacing.step6 +
+        headlineHeight +
+        tokens.spacing.step8 +
+        VoiceButton.fieldSizeFor(132) +
+        tokens.spacing.step5 +
+        capturedActionsHeight;
+  }
+
+  static double _minimumSlotHeight(
+    DsTokens tokens,
+    CapturePhase phase, {
+    required int minimumReviewTranscriptLineCount,
+  }) {
+    return switch (phase) {
+      CapturePhase.listening => math.max(
+        tokens.spacing.step13 + tokens.spacing.step4,
+        _listeningChromeHeight(tokens) +
+            tokens.typography.lineHeight.bodyMedium * 3,
+      ),
+      CapturePhase.captured =>
+        _reviewTranscriptChromeHeight(tokens) +
+            tokens.typography.lineHeight.bodySmall *
+                minimumReviewTranscriptLineCount,
+      CapturePhase.idle ||
+      CapturePhase.transcribing ||
+      CapturePhase.error => tokens.spacing.step13 + tokens.spacing.step4,
+    };
+  }
+
+  static int _liveTranscriptLineCount(DsTokens tokens, double slotHeight) {
+    final textHeight = slotHeight - _listeningChromeHeight(tokens);
+    return math.max(
+      3,
+      math.min(7, textHeight ~/ tokens.typography.lineHeight.bodyMedium),
+    );
+  }
+
+  static int _reviewTranscriptLineCount(
+    DsTokens tokens,
+    double slotHeight, {
+    required int minimumLineCount,
+  }) {
+    final textHeight = slotHeight - _reviewTranscriptChromeHeight(tokens);
+    return math.max(
+      minimumLineCount,
+      math.min(6, textHeight ~/ tokens.typography.lineHeight.bodySmall),
+    );
+  }
+
+  static int _minimumReviewTranscriptLineCount(double viewportHeight) {
+    if (viewportHeight < 560) return 2;
+    if (viewportHeight < 700) return 3;
+    return 4;
+  }
+
+  static double _reviewTranscriptChromeHeight(DsTokens tokens) {
+    return tokens.typography.lineHeight.subtitle2 +
+        tokens.spacing.step5 +
+        tokens.spacing.step4 * 2 +
+        tokens.spacing.step3;
+  }
+
+  static double _listeningChromeHeight(DsTokens tokens) {
+    return tokens.spacing.step3 +
+        tokens.typography.lineHeight.overline +
+        tokens.spacing.step4 +
+        const LiveWaveform(amplitudes: <double>[]).height +
+        tokens.spacing.step4;
   }
 }
 
@@ -361,10 +528,59 @@ class _Headline extends StatelessWidget {
   }
 }
 
-class _StateRow extends ConsumerWidget {
-  const _StateRow({required this.state});
+class _StateSlot extends StatelessWidget {
+  const _StateSlot({
+    required this.state,
+    required this.height,
+    required this.liveTranscriptLineCount,
+    required this.reviewTranscriptLineCount,
+  });
 
   final CaptureState state;
+  final double height;
+  final int liveTranscriptLineCount;
+  final int reviewTranscriptLineCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final row = Align(
+      alignment: Alignment.topCenter,
+      child: _StateRow(
+        state: state,
+        height: height,
+        liveTranscriptLineCount: liveTranscriptLineCount,
+        reviewTranscriptLineCount: reviewTranscriptLineCount,
+      ),
+    );
+
+    if (state.phase == CapturePhase.captured) {
+      return ConstrainedBox(
+        key: const Key('daily_os_capture_state_slot'),
+        constraints: BoxConstraints(minHeight: height),
+        child: row,
+      );
+    }
+
+    return SizedBox(
+      key: const Key('daily_os_capture_state_slot'),
+      height: height,
+      child: row,
+    );
+  }
+}
+
+class _StateRow extends ConsumerWidget {
+  const _StateRow({
+    required this.state,
+    required this.height,
+    required this.liveTranscriptLineCount,
+    required this.reviewTranscriptLineCount,
+  });
+
+  final CaptureState state;
+  final double height;
+  final int liveTranscriptLineCount;
+  final int reviewTranscriptLineCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -378,25 +594,28 @@ class _StateRow extends ConsumerWidget {
               ref.read(captureControllerProvider.notifier).startTyping(),
         );
       case CapturePhase.listening:
-        return Column(
-          children: [
-            Text(
-              messages.dailyOsNextCaptureListening,
-              style: tokens.typography.styles.others.overline.copyWith(
-                color: tokens.colors.interactive.enabled,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            LiveWaveform(amplitudes: state.amplitudes),
-            if (state.partialTranscript.isNotEmpty) ...[
+        return SizedBox(
+          key: const Key('daily_os_capture_listening_status_area'),
+          height: height,
+          child: Column(
+            children: [
               SizedBox(height: tokens.spacing.step3),
-              _TranscriptText(
+              Text(
+                messages.dailyOsNextCaptureListening,
+                style: tokens.typography.styles.others.overline.copyWith(
+                  color: tokens.colors.interactive.enabled,
+                ),
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              LiveWaveform(amplitudes: state.amplitudes),
+              SizedBox(height: tokens.spacing.step4),
+              _LiveTranscriptViewport(
                 text: state.partialTranscript,
-                italic: true,
                 color: tokens.colors.text.lowEmphasis,
+                visibleLineCount: liveTranscriptLineCount,
               ),
             ],
-          ],
+          ),
         );
       case CapturePhase.transcribing:
         return Column(
@@ -430,17 +649,19 @@ class _StateRow extends ConsumerWidget {
         );
       case CapturePhase.captured:
         return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               messages.dailyOsNextCaptureCaptured,
-              style: tokens.typography.styles.others.overline.copyWith(
+              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                 color: tokens.colors.interactive.enabled,
               ),
             ),
-            SizedBox(height: tokens.spacing.step3),
+            SizedBox(height: tokens.spacing.step5),
             TranscriptEditor(
               fieldKey: const Key('daily_os_capture_transcript_editor'),
               transcript: state.transcript,
+              lineCount: reviewTranscriptLineCount,
               onChanged: ref
                   .read(captureControllerProvider.notifier)
                   .updateTranscript,
@@ -554,6 +775,53 @@ class _InlineCaptureAction extends StatelessWidget {
   }
 }
 
+class _LiveTranscriptViewport extends StatelessWidget {
+  const _LiveTranscriptViewport({
+    required this.text,
+    required this.color,
+    required this.visibleLineCount,
+  });
+
+  final String text;
+  final Color color;
+  final int visibleLineCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final textStyle = _TranscriptText.resolveStyle(
+      tokens,
+      color: color,
+      italic: true,
+    );
+    final fontSize = textStyle.fontSize ?? tokens.typography.size.bodyMedium;
+    final lineHeight = textStyle.height == null
+        ? tokens.typography.lineHeight.bodyMedium
+        : fontSize * textStyle.height!;
+    final viewportHeight = lineHeight * visibleLineCount;
+    return SizedBox(
+      key: const Key('daily_os_capture_live_transcript_viewport'),
+      height: viewportHeight,
+      width: double.infinity,
+      child: SingleChildScrollView(
+        reverse: true,
+        physics: const NeverScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: viewportHeight),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: _TranscriptText(
+              text: text,
+              italic: true,
+              color: color,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TranscriptText extends StatelessWidget {
   const _TranscriptText({
     required this.text,
@@ -569,13 +837,26 @@ class _TranscriptText extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     if (text.isEmpty) return const SizedBox.shrink();
+    final style = resolveStyle(tokens, color: color, italic: italic);
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: tokens.typography.styles.body.bodyMedium.copyWith(
-        color: color,
-        fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+      strutStyle: StrutStyle.fromTextStyle(
+        style,
+        forceStrutHeight: true,
       ),
+      style: style,
+    );
+  }
+
+  static TextStyle resolveStyle(
+    DsTokens tokens, {
+    required Color color,
+    required bool italic,
+  }) {
+    return tokens.typography.styles.body.bodyMedium.copyWith(
+      color: color,
+      fontStyle: italic ? FontStyle.italic : FontStyle.normal,
     );
   }
 }

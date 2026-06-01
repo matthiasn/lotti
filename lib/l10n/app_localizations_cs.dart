@@ -1784,6 +1784,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiResponseTypeTaskSummary => 'Shrnutí úkolu';
 
   @override
+  String get aiRunningActivityOpenProgress => 'Zobrazit průběh AI';
+
+  @override
   String get aiSettingsAddedLabel => 'Přidáno';
 
   @override

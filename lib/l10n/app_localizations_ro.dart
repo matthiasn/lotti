@@ -1796,6 +1796,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiResponseTypeTaskSummary => 'Rezumat sarcină';
 
   @override
+  String get aiRunningActivityOpenProgress => 'Afișează progresul AI';
+
+  @override
   String get aiSettingsAddedLabel => 'Adăugat';
 
   @override

@@ -821,6 +821,7 @@
   "aiResponseTypeImagePromptGeneration": "Prompt Imagine",
   "aiResponseTypePromptGeneration": "Prompt generat",
   "aiResponseTypeTaskSummary": "Rezumat sarcină",
+  "aiRunningActivityOpenProgress": "Afișează progresul AI",
   "aiSettingsAddedLabel": "Adăugat",
   "aiSettingsAddModelButton": "Adaugă model",
   "aiSettingsAddModelTooltip": "Adaugă acest model la furnizorul tău",

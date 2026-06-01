@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -223,6 +224,7 @@ void main() {
       // The legacy FAB has been replaced by the sticky TaskActionBar
       // pinned at the bottom of the page.
       expect(find.byType(TaskActionBar), findsOneWidget);
+      expect(find.byType(AiRunningDecoderBars), findsOneWidget);
 
       // Background matches sidebar / Figma background/01.
       final scaffold = tester.widget<Scaffold>(

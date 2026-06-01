@@ -359,10 +359,12 @@ Implementation details that matter:
 
 ## AI Activity Visualization
 
-`ui/animation/ai_state_shader_animation.dart` contains the first shader-based
-AI activity prototypes. They are not wired into the production AI progress
-surface yet; the runtime entry point is Widgetbook via
-`widgetbook/ai_shader_animations_widgetbook.dart`.
+`ui/animation/ai_state_shader_animation.dart` contains the shader-based AI
+activity visualizations. Widgetbook remains the tuning surface via
+`widgetbook/ai_shader_animations_widgetbook.dart`; production task details use
+the decoder-bars thinking shader in the task action bar while inference is
+running, and Daily OS Next uses the voice tension-loop shader around the record
+button while capture or refine listening is active.
 
 Two Flutter runtime-effect shaders are registered in `pubspec.yaml`:
 
@@ -377,7 +379,11 @@ Two Flutter runtime-effect shaders are registered in `pubspec.yaml`:
   alert/red accent.
 - `shaders/ai_thinking_line.frag` renders five horizontal thinking routes:
   quiet thread, packet scan, circuit trace, probability band, and decoder bars,
-  sized for eventual action-bar use.
+  sized for action-bar use. `AiRunningDecoderBars` selects the decoder-bars
+  route and feeds it the same `inferenceRunningControllerProvider` state as the
+  legacy Siri-wave wrapper. It animates both the reserved vertical height and
+  shader amplitude and opacity when activity starts or stops, then removes the
+  shader subtree once the exit animation is fully collapsed.
 
 The Widgetbook use cases expose route pickers plus knobs for speed, intensity,
 geometry, colors, randomness, and dBFS. Matrix use cases render every route at
@@ -387,7 +393,7 @@ Widgetbook-only recorder control that starts a `record.AudioRecorder` metered
 mic session and polls `AudioRecorder.getAmplitude()` every 20ms for
 package-reported dBFS. The shader input runs through a dBFS envelope with
 instant attack and slower release so voice onsets stay responsive while short
-dips do not make the rings collapse abruptly.
+  dips do not make the rings collapse abruptly.
 The default metered path writes only to a temporary file and deletes it when
 recording stops. A PCM stream mode remains available as a diagnostic and
 fallback dBFS source, with input-device selection and raw peak/RMS diagnostics
