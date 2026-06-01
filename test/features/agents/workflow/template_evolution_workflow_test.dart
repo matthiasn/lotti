@@ -90,20 +90,33 @@ class _TestConversationRepository extends ConversationRepository {
 }
 
 /// Test subclass of [EvolutionStrategy] that allows directly setting
-/// [latestRecap] to values not reachable through normal tool-call processing
-/// (e.g. empty TLDR).
+/// [latestRecap] and [latestSoulProposal] to values not reachable through
+/// normal tool-call processing (e.g. empty TLDR or empty rationale).
 class _TestableEvolutionStrategy extends EvolutionStrategy {
   PendingRitualRecap? _overriddenRecap;
   bool _recapOverridden = false;
+
+  PendingSoulProposal? _overriddenSoulProposal;
+  bool _soulProposalOverridden = false;
 
   void overrideRecap(PendingRitualRecap? recap) {
     _overriddenRecap = recap;
     _recapOverridden = true;
   }
 
+  void overrideSoulProposal(PendingSoulProposal? proposal) {
+    _overriddenSoulProposal = proposal;
+    _soulProposalOverridden = true;
+  }
+
   @override
   PendingRitualRecap? get latestRecap =>
       _recapOverridden ? _overriddenRecap : super.latestRecap;
+
+  @override
+  PendingSoulProposal? get latestSoulProposal => _soulProposalOverridden
+      ? _overriddenSoulProposal
+      : super.latestSoulProposal;
 }
 
 void main() {
@@ -4154,4 +4167,1170 @@ void main() {
       expect(response, isNull);
     });
   });
+
+  // ── Additional coverage tests ──────────────────────────────────────────────
+
+  group('getCurrentRecap', () {
+    test('returns recap when one exists on the session', () async {
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-recap')
+        ..initialize();
+      // Publish a ritual recap so latestRecap is non-null.
+      const recapCall = ChatCompletionMessageToolCall(
+        id: 'call-recap',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'publish_ritual_recap',
+          arguments:
+              r'{"tldr":"Good session.","content":"## Recap\n\nWent well."}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [recapCall]);
+      await strategy.processToolCalls(
+        toolCalls: [recapCall],
+        manager: manager,
+      );
+      expect(strategy.latestRecap, isNotNull);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+      );
+      workflow.activeSessions['session-recap'] = ActiveEvolutionSession(
+        sessionId: 'session-recap',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-recap',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      final recap = workflow.getCurrentRecap(sessionId: 'session-recap');
+      expect(recap, isNotNull);
+      expect(recap!.tldr, 'Good session.');
+    });
+
+    test('returns null for unknown session', () {
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+      );
+
+      expect(workflow.getCurrentRecap(sessionId: 'nonexistent'), isNull);
+    });
+
+    test('returns null when session has no recap', () {
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+      );
+      workflow.activeSessions['session-no-recap'] = ActiveEvolutionSession(
+        sessionId: 'session-no-recap',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-1',
+        strategy: EvolutionStrategy(),
+        modelId: 'model',
+      );
+
+      expect(
+        workflow.getCurrentRecap(sessionId: 'session-no-recap'),
+        isNull,
+      );
+    });
+  });
+
+  group('getSession', () {
+    test('returns the active session by session ID', () {
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+      );
+      workflow.activeSessions['sess-abc'] = ActiveEvolutionSession(
+        sessionId: 'sess-abc',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-1',
+        strategy: EvolutionStrategy(),
+        modelId: 'model',
+      );
+
+      final session = workflow.getSession('sess-abc');
+      expect(session, isNotNull);
+      expect(session!.sessionId, 'sess-abc');
+    });
+
+    test('returns null for unknown session ID', () {
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+      );
+
+      expect(workflow.getSession('missing'), isNull);
+    });
+  });
+
+  group('approveSoulProposal error path', () {
+    test('returns null when createVersion throws', () async {
+      final mockSoulService = MockSoulDocumentService();
+      final soulVersion = makeTestSoulDocumentVersion(
+        id: 'sv-active',
+        voiceDirective: 'Current voice.',
+      );
+      when(
+        () => mockSoulService.resolveActiveSoulForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => soulVersion);
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenThrow(Exception('DB failure'));
+
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-err')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-err',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_soul_directives',
+          arguments: '{"voice_directive":"New voice.","rationale":"Reason"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
+      expect(strategy.latestSoulProposal, isNotNull);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        soulDocumentService: mockSoulService,
+      );
+      workflow.activeSessions['session-err'] = ActiveEvolutionSession(
+        sessionId: 'session-err',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-err',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      final result = await workflow.approveSoulProposal(
+        sessionId: 'session-err',
+      );
+
+      expect(result, isNull);
+      // Proposal should still be present so caller can retry.
+      expect(strategy.latestSoulProposal, isNotNull);
+      // Session is still active.
+      expect(workflow.activeSessions.containsKey('session-err'), isTrue);
+    });
+  });
+
+  group('startSoulSession catch path', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockSoulDocumentService mockSoulService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockSoulService = MockSoulDocumentService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    void stubSoulContext() {
+      stubProviderResolution();
+      when(
+        () => mockSoulService.getSoul(any()),
+      ).thenAnswer((_) async => makeTestSoulDocument());
+      when(
+        () => mockSoulService.getActiveSoulVersion(any()),
+      ).thenAnswer((_) async => makeTestSoulDocumentVersion());
+      when(
+        () => mockSoulService.getTemplatesUsingSoul(any()),
+      ).thenAnswer((_) async => [kTestTemplateId]);
+      when(
+        () => mockSoulService.getVersionHistory(any()),
+      ).thenAnswer((_) async => <SoulDocumentVersionEntity>[]);
+      when(
+        () => mockTemplateService.getTemplate(any()),
+      ).thenAnswer((_) async => makeTestTemplate());
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionNoteEntity>[]);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    }
+
+    test(
+      'returns null and calls abandonSession when sendMessage throws',
+      () async {
+        stubSoulContext();
+
+        // Make sendMessage throw so the catch block fires.
+        final convRepo =
+            _TestConversationRepository(
+                assistantResponse: 'response',
+              )
+              ..sendMessageDelegate = () async {
+                throw Exception('LLM error in soul session');
+              };
+
+        // Stub getEntity for the abandon path.
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: convRepo,
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+          soulDocumentService: mockSoulService,
+        );
+
+        final response = await workflow.startSoulSession(soulId: kTestSoulId);
+
+        expect(response, isNull);
+        // Session must have been cleaned up by abandonSession.
+        expect(workflow.activeSessions, isEmpty);
+        expect(convRepo.deletedIds, isNotEmpty);
+      },
+    );
+
+    test(
+      'computes soul session number from existing sessions fold',
+      () async {
+        stubSoulContext();
+        // Return multiple sessions so the fold picks the max.
+        when(
+          () => mockTemplateService.getEvolutionSessions(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            makeTestEvolutionSession(
+              // ignore: avoid_redundant_argument_values
+              id: 'evo-session-001',
+              sessionNumber: 4,
+            ),
+            makeTestEvolutionSession(
+              id: 'evo-session-002',
+              sessionNumber: 2,
+            ),
+          ],
+        );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(
+            assistantResponse: 'Soul reply.',
+          ),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+          soulDocumentService: mockSoulService,
+        );
+
+        await workflow.startSoulSession(soulId: kTestSoulId);
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        // The stale sessions are abandoned first (upserted with status=abandoned).
+        // The NEW session is the one with status=active.
+        final newSessionEntity = captured
+            .whereType<EvolutionSessionEntity>()
+            .firstWhere((s) => s.status == EvolutionSessionStatus.active);
+        // Max session number in existing list is 4, so next = 5.
+        expect(newSessionEntity.sessionNumber, 5);
+      },
+    );
+  });
+
+  group('completeSoulSession — empty proposal field fallbacks', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockSoulDocumentService mockSoulService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockSoulService = MockSoulDocumentService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test(
+      'falls back to current soul version fields when proposal fields are empty',
+      () async {
+        // Active soul version with all fields populated.
+        final currentSoulVersion = makeTestSoulDocumentVersion(
+          id: 'sv-current',
+          // ignore: avoid_redundant_argument_values
+          agentId: kTestSoulId,
+          voiceDirective: 'Current voice.',
+          toneBounds: 'Current bounds.',
+          coachingStyle: 'Current coaching.',
+          antiSycophancyPolicy: 'Current policy.',
+        );
+        when(
+          () => mockSoulService.getActiveSoulVersion(kTestSoulId),
+        ).thenAnswer((_) async => currentSoulVersion);
+
+        final newVersion = makeTestSoulDocumentVersion(
+          id: 'sv-new',
+          version: 2,
+          voiceDirective: 'Current voice.',
+          toneBounds: 'Current bounds.',
+          coachingStyle: 'Current coaching.',
+          antiSycophancyPolicy: 'Current policy.',
+        );
+        when(
+          () => mockSoulService.createVersion(
+            soulId: any(named: 'soulId'),
+            voiceDirective: any(named: 'voiceDirective'),
+            authoredBy: any(named: 'authoredBy'),
+            toneBounds: any(named: 'toneBounds'),
+            coachingStyle: any(named: 'coachingStyle'),
+            antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+            sourceSessionId: any(named: 'sourceSessionId'),
+          ),
+        ).thenAnswer((_) async => newVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+
+        final strategy = EvolutionStrategy();
+        // Propose only voiceDirective; tone, coaching, antiSycophancy all empty
+        // so they fall back to the current soul version values.
+        final manager = ConversationManager(conversationId: 'conv-fallback')
+          ..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-fallback',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_soul_directives',
+            // voice_directive is provided but tone, coaching, and policy are
+            // absent — the workflow must fall back to current version values
+            // for the three empty fields.
+            arguments:
+                '{"voice_directive":"Current voice.", '
+                '"rationale":"Full fallback test."}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+        expect(strategy.latestSoulProposal, isNotNull);
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: MockAiConfigRepository(),
+          cloudInferenceRepository: MockCloudInferenceRepository(),
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+          soulDocumentService: mockSoulService,
+        );
+        workflow.activeSessions['sess-fallback'] = ActiveEvolutionSession(
+          sessionId: 'sess-fallback',
+          templateId: kTestSoulId,
+          conversationId: 'conv-fallback',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        final result = await workflow.completeSoulSession(
+          sessionId: 'sess-fallback',
+        );
+        expect(result, isNotNull);
+
+        // Verify createVersion was called with the fallback values from current.
+        final captured = verify(
+          () => mockSoulService.createVersion(
+            soulId: captureAny(named: 'soulId'),
+            voiceDirective: captureAny(named: 'voiceDirective'),
+            authoredBy: captureAny(named: 'authoredBy'),
+            toneBounds: captureAny(named: 'toneBounds'),
+            coachingStyle: captureAny(named: 'coachingStyle'),
+            antiSycophancyPolicy: captureAny(named: 'antiSycophancyPolicy'),
+            sourceSessionId: captureAny(named: 'sourceSessionId'),
+          ),
+        ).captured;
+
+        // Captured: [soulId, voice, authoredBy, tone, coaching, anti, srcSession]
+        expect(captured[1], 'Current voice.');
+        expect(captured[3], 'Current bounds.');
+        expect(captured[4], 'Current coaching.');
+        expect(captured[5], 'Current policy.');
+      },
+    );
+
+    test(
+      'uses proposal.rationale as feedbackSummary when recap TLDR is empty',
+      () async {
+        final currentSoulVersion = makeTestSoulDocumentVersion(
+          id: 'sv-current',
+          // ignore: avoid_redundant_argument_values
+          agentId: kTestSoulId,
+          voiceDirective: 'Current voice.',
+        );
+        when(
+          () => mockSoulService.getActiveSoulVersion(kTestSoulId),
+        ).thenAnswer((_) async => currentSoulVersion);
+
+        final newVersion = makeTestSoulDocumentVersion(
+          id: 'sv-new',
+          version: 2,
+          voiceDirective: 'Updated voice.',
+        );
+        when(
+          () => mockSoulService.createVersion(
+            soulId: any(named: 'soulId'),
+            voiceDirective: any(named: 'voiceDirective'),
+            authoredBy: any(named: 'authoredBy'),
+            toneBounds: any(named: 'toneBounds'),
+            coachingStyle: any(named: 'coachingStyle'),
+            antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+            sourceSessionId: any(named: 'sourceSessionId'),
+          ),
+        ).thenAnswer((_) async => newVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer(
+          (_) async => makeTestEvolutionSession(
+            agentId: kTestSoulId,
+            templateId: kTestSoulId,
+          ),
+        );
+
+        // Use a testable strategy to inject an empty-TLDR recap.
+        final strategy = _TestableEvolutionStrategy()
+          ..overrideRecap(
+            const PendingRitualRecap(
+              tldr: '',
+              content: '',
+            ),
+          );
+        final manager = ConversationManager(
+          conversationId: 'conv-tldr-fallback',
+        )..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-tldr',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_soul_directives',
+            arguments:
+                '{"voice_directive":"Updated voice.", '
+                '"rationale":"Better engagement"}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: MockAiConfigRepository(),
+          cloudInferenceRepository: MockCloudInferenceRepository(),
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+          soulDocumentService: mockSoulService,
+        );
+        workflow.activeSessions['sess-tldr-fallback'] = ActiveEvolutionSession(
+          sessionId: 'sess-tldr-fallback',
+          templateId: kTestSoulId,
+          conversationId: 'conv-tldr-fallback',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        await workflow.completeSoulSession(sessionId: 'sess-tldr-fallback');
+
+        final capturedEntities = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final completedSessions = capturedEntities
+            .whereType<EvolutionSessionEntity>()
+            .where((s) => s.status == EvolutionSessionStatus.completed)
+            .toList();
+        expect(completedSessions, hasLength(1));
+        // With empty recap TLDR, feedbackSummary falls back to proposal.rationale.
+        expect(completedSessions.first.feedbackSummary, 'Better engagement');
+      },
+    );
+
+    test(
+      'onSessionCompleted callback exception does not prevent return',
+      () async {
+        final currentSoulVersion = makeTestSoulDocumentVersion(
+          id: 'sv-current',
+          // ignore: avoid_redundant_argument_values
+          agentId: kTestSoulId,
+          voiceDirective: 'Current voice.',
+        );
+        when(
+          () => mockSoulService.getActiveSoulVersion(kTestSoulId),
+        ).thenAnswer((_) async => currentSoulVersion);
+
+        final newVersion = makeTestSoulDocumentVersion(
+          id: 'sv-new-cb',
+          version: 2,
+          voiceDirective: 'Updated voice.',
+        );
+        when(
+          () => mockSoulService.createVersion(
+            soulId: any(named: 'soulId'),
+            voiceDirective: any(named: 'voiceDirective'),
+            authoredBy: any(named: 'authoredBy'),
+            toneBounds: any(named: 'toneBounds'),
+            coachingStyle: any(named: 'coachingStyle'),
+            antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+            sourceSessionId: any(named: 'sourceSessionId'),
+          ),
+        ).thenAnswer((_) async => newVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+
+        final strategy = EvolutionStrategy();
+        final manager = ConversationManager(conversationId: 'conv-cb-soul')
+          ..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-cb-soul',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_soul_directives',
+            arguments: '{"voice_directive":"Updated voice.", "rationale":"R"}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: MockAiConfigRepository(),
+          cloudInferenceRepository: MockCloudInferenceRepository(),
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+          soulDocumentService: mockSoulService,
+          onSessionCompleted: (_, _) {
+            throw StateError('Soul callback explosion');
+          },
+        );
+        workflow.activeSessions['sess-cb-soul'] = ActiveEvolutionSession(
+          sessionId: 'sess-cb-soul',
+          templateId: kTestSoulId,
+          conversationId: 'conv-cb-soul',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        // Should succeed despite the callback throwing.
+        final result = await workflow.completeSoulSession(
+          sessionId: 'sess-cb-soul',
+        );
+        expect(result, isNotNull);
+        expect(result!.id, 'sv-new-cb');
+        // Session should be cleaned up.
+        expect(workflow.activeSessions, isEmpty);
+      },
+    );
+  });
+
+  group('_createVersionIdempotent recovery', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
+    });
+
+    test(
+      'recovers when createVersion throws but version was already persisted',
+      () async {
+        // The version that was persisted despite the throw.
+        final persistedVersion = makeTestTemplateVersion(
+          id: 'v-idempotent',
+          version: 2,
+          directives: 'Recovered directives',
+          authoredBy: 'evolution_agent',
+          generalDirective: 'Recovered directives',
+          // ignore: avoid_redundant_argument_values
+          reportDirective: '',
+        );
+
+        // createVersion throws, but getActiveVersion returns the persisted one.
+        when(
+          () => mockTemplateService.createVersion(
+            templateId: any(named: 'templateId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        ).thenThrow(Exception('Post-commit sync failure'));
+        when(
+          () => mockTemplateService.getActiveVersion(any()),
+        ).thenAnswer((_) async => persistedVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => makeTestEvolutionSession());
+
+        final strategy = EvolutionStrategy();
+        final manager = ConversationManager(conversationId: 'conv-idempotent')
+          ..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-idempotent',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_directives',
+            arguments:
+                '{"general_directive":"Recovered directives", '
+                '"report_directive":"", '
+                '"rationale":"R"}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+        workflow.activeSessions['session-idempotent'] = ActiveEvolutionSession(
+          sessionId: 'session-idempotent',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-idempotent',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        // Should succeed using the recovered version.
+        final result = await workflow.approveProposal(
+          sessionId: 'session-idempotent',
+        );
+        expect(result, isNotNull);
+        expect(result!.id, 'v-idempotent');
+      },
+    );
+
+    test(
+      'rethrows when createVersion throws and active version does not match',
+      () async {
+        // Active version has different directives — not the right one.
+        final differentVersion = makeTestTemplateVersion(
+          id: 'v-different',
+          version: 2,
+          directives: 'Different directives',
+          // ignore: avoid_redundant_argument_values
+          authoredBy: 'user',
+          generalDirective: 'Different directives',
+          // ignore: avoid_redundant_argument_values
+          reportDirective: '',
+        );
+
+        when(
+          () => mockTemplateService.createVersion(
+            templateId: any(named: 'templateId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        ).thenThrow(Exception('DB error'));
+        when(
+          () => mockTemplateService.getActiveVersion(any()),
+        ).thenAnswer((_) async => differentVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        final strategy = EvolutionStrategy();
+        final manager = ConversationManager(conversationId: 'conv-rethrow')
+          ..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-rethrow',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_directives',
+            arguments:
+                '{"general_directive":"Proposed directives", '
+                '"report_directive":"", '
+                '"rationale":"R"}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+        workflow.activeSessions['session-rethrow'] = ActiveEvolutionSession(
+          sessionId: 'session-rethrow',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-rethrow',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        // approveProposal catches the rethrow and returns null.
+        final result = await workflow.approveProposal(
+          sessionId: 'session-rethrow',
+        );
+        expect(result, isNull);
+      },
+    );
+  });
+
+  group('_buildSessionRecapEntity null guard', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
+    });
+
+    test(
+      'approveProposal skips recap upsert when all recap fields are empty',
+      () async {
+        final newVersion = makeTestTemplateVersion(
+          id: 'v-no-recap',
+          version: 2,
+          directives: 'Some directive',
+          authoredBy: 'evolution_agent',
+          generalDirective: 'Some directive',
+          // ignore: avoid_redundant_argument_values
+          reportDirective: '',
+        );
+
+        when(
+          () => mockTemplateService.createVersion(
+            templateId: any(named: 'templateId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        ).thenAnswer((_) async => newVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => makeTestEvolutionSession());
+
+        // Proposal with non-empty directive but empty rationale so that
+        // approvedChangeSummary and recapTldr both trim to ''.
+        // Combined with an empty overridden recap and no transcript,
+        // _buildSessionRecapEntity must return null.
+        final strategy = _TestableEvolutionStrategy()
+          ..overrideRecap(
+            const PendingRitualRecap(
+              tldr: '',
+              content: '',
+            ),
+          );
+        final manager = ConversationManager(conversationId: 'conv-no-recap')
+          ..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-no-recap',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_directives',
+            // rationale must be empty; at least one directive non-empty.
+            arguments:
+                '{"general_directive":"Some directive", '
+                '"report_directive":"", '
+                '"rationale":""}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+        // Manually clear the proposal's rationale field via the strategy
+        // override (processToolCalls sets rationale from the JSON, but we want
+        // it empty). Instead, inject the proposal directly via overrideRecap
+        // and set up a PendingProposal with empty rationale.
+        //
+        // Because processToolCalls accepts rationale:'', the proposal IS set
+        // with generalDirective='Some directive' but rationale=''.
+        // recapTldr = '' (overridden) → falls back to proposal.rationale = ''.
+        // approvedChangeSummary = proposal.rationale.trim() = ''.
+        // transcript = [] (no messages in conv repo).
+        // → _buildSessionRecapEntity returns null.
+        expect(strategy.latestProposal, isNotNull);
+
+        // Use a conv repo that returns no messages (empty transcript).
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+        workflow.activeSessions['session-no-recap'] = ActiveEvolutionSession(
+          sessionId: 'session-no-recap',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-no-recap',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        final result = await workflow.approveProposal(
+          sessionId: 'session-no-recap',
+        );
+        expect(result, isNotNull);
+
+        final capturedEntities = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        // No recap entity should be present.
+        final recapEntities = capturedEntities
+            .whereType<EvolutionSessionRecapEntity>()
+            .toList();
+        expect(recapEntities, isEmpty);
+      },
+    );
+  });
+
+  group('_snapshotTranscript user message path', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
+    });
+
+    test(
+      'recap transcript includes user messages alongside assistant messages',
+      () async {
+        final newVersion = makeTestTemplateVersion(
+          id: 'v-transcript',
+          version: 2,
+          directives: 'Better directives',
+          authoredBy: 'evolution_agent',
+        );
+
+        when(
+          () => mockTemplateService.createVersion(
+            templateId: any(named: 'templateId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        ).thenAnswer((_) async => newVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => makeTestEvolutionSession());
+
+        // Set up a ConversationManager with both user and assistant messages.
+        final convManager = ConversationManager(conversationId: 'conv-trans')
+          ..initialize()
+          ..addUserMessage('What should I improve?')
+          ..addAssistantMessage(content: 'Focus on tone.');
+
+        // ConversationRepository that returns our pre-built manager.
+        final convRepo = _ConversationRepositoryWithManager(
+          conversationId: 'conv-trans',
+          manager: convManager,
+        );
+
+        final strategy = EvolutionStrategy();
+        final manager = ConversationManager(conversationId: 'conv-propose')
+          ..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-trans',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_directives',
+            arguments:
+                '{"general_directive":"Better directives", '
+                '"report_directive":"", '
+                '"rationale":"User insights"}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: convRepo,
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+        workflow.activeSessions['session-trans'] = ActiveEvolutionSession(
+          sessionId: 'session-trans',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-trans',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        final result = await workflow.approveProposal(
+          sessionId: 'session-trans',
+        );
+        expect(result, isNotNull);
+
+        final capturedEntities = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final recapEntities = capturedEntities
+            .whereType<EvolutionSessionRecapEntity>()
+            .toList();
+        expect(recapEntities, hasLength(1));
+
+        final transcript = recapEntities.first.transcript;
+        expect(transcript, isNotEmpty);
+
+        // User message should appear in transcript.
+        final userEntries = transcript
+            .where((e) => e['role'] == 'user')
+            .toList();
+        expect(userEntries, hasLength(1));
+        expect(userEntries.first['text'], 'What should I improve?');
+
+        // Assistant message should also appear.
+        final assistantEntries = transcript
+            .where((e) => e['role'] == 'assistant')
+            .toList();
+        expect(assistantEntries, isNotEmpty);
+      },
+    );
+  });
+
+  group('_buildSoulSessionRecapEntity null guard', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockSoulDocumentService mockSoulService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockSoulService = MockSoulDocumentService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test(
+      'completeSoulSession skips recap upsert when all recap fields are empty',
+      () async {
+        final currentSoulVersion = makeTestSoulDocumentVersion(
+          id: 'sv-current',
+          // ignore: avoid_redundant_argument_values
+          agentId: kTestSoulId,
+          voiceDirective: 'Current voice.',
+        );
+        when(
+          () => mockSoulService.getActiveSoulVersion(kTestSoulId),
+        ).thenAnswer((_) async => currentSoulVersion);
+
+        final newVersion = makeTestSoulDocumentVersion(
+          id: 'sv-new',
+          version: 2,
+          voiceDirective: 'Updated voice.',
+        );
+        when(
+          () => mockSoulService.createVersion(
+            soulId: any(named: 'soulId'),
+            voiceDirective: any(named: 'voiceDirective'),
+            authoredBy: any(named: 'authoredBy'),
+            toneBounds: any(named: 'toneBounds'),
+            coachingStyle: any(named: 'coachingStyle'),
+            antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+            sourceSessionId: any(named: 'sourceSessionId'),
+          ),
+        ).thenAnswer((_) async => newVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+
+        // Use a testable strategy to inject a soul proposal with empty rationale
+        // AND an empty recap, so all recap fields are empty and
+        // _buildSoulSessionRecapEntity returns null.
+        // (Bypasses processToolCalls validation which rejects empty rationale.)
+        final strategy = _TestableEvolutionStrategy()
+          ..overrideSoulProposal(
+            const PendingSoulProposal(
+              voiceDirective: 'Updated voice.',
+              toneBounds: '',
+              coachingStyle: '',
+              antiSycophancyPolicy: '',
+              rationale: '',
+            ),
+          )
+          ..overrideRecap(
+            const PendingRitualRecap(
+              tldr: '',
+              content: '',
+            ),
+          );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: MockAiConfigRepository(),
+          cloudInferenceRepository: MockCloudInferenceRepository(),
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+          soulDocumentService: mockSoulService,
+        );
+        workflow.activeSessions['sess-soul-no-recap'] = ActiveEvolutionSession(
+          sessionId: 'sess-soul-no-recap',
+          templateId: kTestSoulId,
+          conversationId: 'conv-soul-no-recap',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        final result = await workflow.completeSoulSession(
+          sessionId: 'sess-soul-no-recap',
+        );
+        expect(result, isNotNull);
+        // No entities should be upserted — recap was null and session entity
+        // was not found in DB.
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+  });
+}
+
+/// A [ConversationRepository] that returns a specific pre-built
+/// [ConversationManager] for a given conversation ID. Used to inject
+/// transcripts (user + assistant messages) in tests that exercise the
+/// `_snapshotTranscript` code path.
+class _ConversationRepositoryWithManager extends ConversationRepository {
+  _ConversationRepositoryWithManager({
+    required String conversationId,
+    required ConversationManager manager,
+  }) : _conversationId = conversationId, // ignore: prefer_initializing_formals
+       _manager = manager; // ignore: prefer_initializing_formals
+
+  final String _conversationId;
+  final ConversationManager _manager;
+
+  @override
+  void build() {}
+
+  @override
+  String createConversation({
+    String? systemMessage,
+    int maxTurns = 20,
+  }) => _conversationId;
+
+  @override
+  ConversationManager? getConversation(String conversationId) => _manager;
+
+  @override
+  void deleteConversation(String conversationId) {}
+
+  @override
+  Future<InferenceUsage?> sendMessage({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    double temperature = 0.7,
+    ConversationStrategy? strategy,
+  }) async => null;
 }

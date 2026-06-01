@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
@@ -15,6 +17,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -53,6 +56,8 @@ class _MockCoordinator extends Mock implements SyncLifecycleCoordinator {}
 class _MockQueueCoordinator extends Mock implements QueuePipelineCoordinator {}
 
 class _FakeMatrixMessageContext extends Fake implements MatrixMessageContext {}
+
+class _MockDeviceKeys extends Mock implements DeviceKeys {}
 
 void main() {
   late _MockGateway gateway;
@@ -840,6 +845,22 @@ void main() {
       ).called(1);
     });
 
+    // Covers lines 776-778: deleteConfig delegates to deleteMatrixConfig.
+    test('deleteConfig delegates through session and secure storage', () async {
+      when(
+        () => secureStorage.delete(key: any(named: 'key')),
+      ).thenAnswer((_) async {});
+      when(() => sessionManager.logout()).thenAnswer((_) async {});
+
+      final service = createService();
+      await service.deleteConfig();
+
+      verify(() => secureStorage.delete(key: any(named: 'key'))).called(
+        greaterThanOrEqualTo(1),
+      );
+      verify(() => sessionManager.logout()).called(1);
+    });
+
     // Covers lines 801-807 (persist catch) and 814-820 (rollback catch) plus
     // the rethrow: changePassword() persist fails, rollback also fails.
     test(
@@ -905,6 +926,561 @@ void main() {
             subDomain: 'changePassword.rollback',
           ),
         ).called(1);
+      },
+    );
+  });
+
+  group('MatrixService getters', () {
+    // Covers line 202: queueCoordinator getter.
+    test('queueCoordinator getter returns the coordinator', () {
+      final service = createService();
+      expect(service.queueCoordinator, same(queueCoordinator));
+    });
+
+    // Covers line 216: matrixConfig getter delegates to session manager.
+    test('matrixConfig getter returns session manager matrixConfig', () {
+      const config = MatrixConfig(
+        homeServer: 'https://hs',
+        user: '@me:server',
+        password: 'pass',
+      );
+      when(() => sessionManager.matrixConfig).thenReturn(config);
+
+      final service = createService();
+      expect(service.matrixConfig, config);
+    });
+
+    // Covers line 220: inviteRequests getter delegates to room manager.
+    test('inviteRequests getter returns room manager stream', () {
+      final controller = StreamController<SyncRoomInvite>.broadcast();
+      when(() => roomManager.inviteRequests).thenAnswer(
+        (_) => controller.stream,
+      );
+
+      final service = createService();
+      expect(service.inviteRequests, isA<Stream<SyncRoomInvite>>());
+      controller.close();
+    });
+
+    // Covers lines 287-288: publishIncomingRunnerState is a no-op when
+    // incomingKeyVerificationRunner is null (default).
+    test(
+      'publishIncomingRunnerState is a no-op when runner is null',
+      () {
+        final service = createService();
+        // No runner set — should not throw.
+        expect(service.publishIncomingRunnerState, returnsNormally);
+        expect(service.incomingKeyVerificationRunner, isNull);
+      },
+    );
+  });
+
+  group('MatrixService constructor paths', () {
+    // Covers lines 77-88: sessionManager provided but no roomManager,
+    // so _roomManager is taken from sessionManager.roomManager.
+    test(
+      'constructor uses roomManager from sessionManager when no roomManager '
+      'is injected',
+      () {
+        final innerRoomManager = _MockRoomManager();
+        when(() => innerRoomManager.currentRoomId).thenReturn('!r:s');
+        when(() => innerRoomManager.currentRoom).thenReturn(null);
+        when(
+          () => innerRoomManager.inviteRequests,
+        ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => sessionManager.roomManager,
+        ).thenReturn(innerRoomManager);
+
+        final service = MatrixService(
+          gateway: gateway,
+          loggingService: loggingService,
+          activityGate: activityGate,
+          messageSender: messageSender,
+          settingsDb: settingsDb,
+          eventProcessor: eventProcessor,
+          secureStorage: secureStorage,
+          queueCoordinator: queueCoordinator,
+          sessionManager: sessionManager,
+          // roomManager intentionally omitted
+          syncEngine: syncEngine,
+          connectivityStream: const Stream.empty(),
+        );
+
+        // _roomManager was resolved from sessionManager.roomManager
+        expect(service.syncRoomId, '!r:s');
+      },
+    );
+
+    // Covers lines 100-106: ArgumentError when syncEngine and coordinator
+    // do not reference the same coordinator instance.
+    test(
+      'constructor throws ArgumentError when syncEngine coordinator does not '
+      'match provided lifecycleCoordinator',
+      () {
+        final differentCoordinator = _MockCoordinator();
+        // syncEngine returns `coordinator`, but we pass `differentCoordinator`.
+        when(() => syncEngine.lifecycleCoordinator).thenReturn(coordinator);
+
+        expect(
+          () => MatrixService(
+            gateway: gateway,
+            loggingService: loggingService,
+            activityGate: activityGate,
+            messageSender: messageSender,
+            settingsDb: settingsDb,
+            eventProcessor: eventProcessor,
+            secureStorage: secureStorage,
+            queueCoordinator: queueCoordinator,
+            sessionManager: sessionManager,
+            roomManager: roomManager,
+            syncEngine: syncEngine,
+            lifecycleCoordinator: differentCoordinator,
+            connectivityStream: const Stream.empty(),
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+  });
+
+  group('MatrixService sendMatrixMsg variants', () {
+    // Helper that wires sendMatrixMessage to invoke onSent and return true.
+    void stubSenderSuccess() {
+      when(
+        () => messageSender.sendMatrixMessage(
+          message: any(named: 'message'),
+          context: any(named: 'context'),
+          onSent: any(named: 'onSent'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onSent =
+            invocation.namedArguments[#onSent]
+                as void Function(String, SyncMessage);
+        onSent(
+          r'$evt',
+          invocation.namedArguments[#message] as SyncMessage,
+        );
+        return true;
+      });
+    }
+
+    // Covers line 375: journalEntity bucket.
+    test('sendMatrixMsg increments journalEntity bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      const msg = SyncMessage.journalEntity(
+        id: 'j1',
+        jsonPath: '/p',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+      );
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['journalEntity'], 1);
+    });
+
+    // Covers line 376: entityDefinition bucket.
+    test('sendMatrixMsg increments entityDefinition bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      final msg = SyncMessage.entityDefinition(
+        entityDefinition: EntityDefinition.categoryDefinition(
+          id: 'c1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          name: 'test',
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+        status: SyncEntryStatus.initial,
+      );
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['entityDefinition'], 1);
+    });
+
+    // Covers line 378: aiConfig bucket.
+    test('sendMatrixMsg increments aiConfig bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      const msg = SyncMessage.aiConfigDelete(id: 'ai1');
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['aiConfigDelete'], 1);
+    });
+
+    // Covers line 380: themingSelection bucket.
+    test('sendMatrixMsg increments themingSelection bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      const msg = SyncMessage.themingSelection(
+        lightThemeName: 'light',
+        darkThemeName: 'dark',
+        themeMode: 'system',
+        updatedAt: 0,
+        status: SyncEntryStatus.initial,
+      );
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['themingSelection'], 1);
+    });
+
+    // Covers line 383: backfillRequest bucket.
+    test('sendMatrixMsg increments backfillRequest bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      const msg = SyncMessage.backfillRequest(
+        entries: [],
+        requesterId: 'host-1',
+      );
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['backfillRequest'], 1);
+    });
+
+    // Covers line 384: backfillResponse bucket.
+    test('sendMatrixMsg increments backfillResponse bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      const msg = SyncMessage.backfillResponse(
+        hostId: 'h1',
+        counter: 1,
+        deleted: false,
+      );
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['backfillResponse'], 1);
+    });
+
+    // Covers line 385: agentEntity bucket.
+    test('sendMatrixMsg increments agentEntity bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      const msg = SyncMessage.agentEntity(status: SyncEntryStatus.initial);
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['agentEntity'], 1);
+    });
+
+    // Covers line 386: agentLink bucket.
+    test('sendMatrixMsg increments agentLink bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      const msg = SyncMessage.agentLink(status: SyncEntryStatus.initial);
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['agentLink'], 1);
+    });
+
+    // Covers line 388: outboxBundle bucket.
+    test('sendMatrixMsg increments outboxBundle bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      const msg = SyncMessage.outboxBundle(children: []);
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['outboxBundle'], 1);
+    });
+
+    // Covers line 389: syncNodeProfile bucket.
+    test('sendMatrixMsg increments syncNodeProfile bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      final msg = SyncMessage.syncNodeProfile(
+        profile: SyncNodeProfile(
+          hostId: 'h1',
+          displayName: 'dev',
+          platform: 'macos',
+          capabilities: const [],
+          updatedAt: DateTime(2024, 3, 15),
+        ),
+      );
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['syncNodeProfile'], 1);
+    });
+  });
+
+  group('MatrixService additional coverage', () {
+    // Covers lines 403-404: login() delegates to syncEngine.
+    test('login delegates to syncEngine connectWithLifecycleOption', () async {
+      when(
+        () => syncEngine.connectWithLifecycleOption(
+          shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+          waitForLifecycle: any(named: 'waitForLifecycle'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final service = createService();
+      final result = await service.login();
+
+      expect(result, isTrue);
+      verify(
+        () => syncEngine.connectWithLifecycleOption(
+          shouldAttemptLogin: true,
+          waitForLifecycle: true,
+        ),
+      ).called(1);
+    });
+
+    // Covers line 413: joinRoom returns room.id when room is non-null.
+    test('joinRoom returns room id when room manager returns a room', () async {
+      final room = MockRoom();
+      when(() => room.id).thenReturn('!joined:server');
+      when(
+        () => roomManager.joinRoom(any()),
+      ).thenAnswer((_) async => room);
+
+      final service = createService();
+      final result = await service.joinRoom('!joined:server');
+
+      expect(result, '!joined:server');
+    });
+
+    // Covers line 521: onVerificationCompleted calls updateUserDeviceKeys()
+    // without additionalUsers when userId is null.
+    test(
+      'onVerificationCompleted calls updateUserDeviceKeys without userId when '
+      'client.userID is null',
+      () async {
+        when(() => sessionManager.isLoggedIn()).thenReturn(true);
+        when(() => client.userID).thenReturn(null);
+        when(
+          () => client.updateUserDeviceKeys(),
+        ).thenAnswer((_) async {});
+        when(
+          () => coordinator.reconcileLifecycleState(),
+        ).thenAnswer((_) async {});
+        when(queueCoordinator.triggerBridge).thenAnswer((_) async {});
+
+        final service = createService();
+        await service.onVerificationCompleted(source: 'test');
+
+        verify(() => client.updateUserDeviceKeys()).called(1);
+        verifyNever(
+          () => client.updateUserDeviceKeys(
+            additionalUsers: any(named: 'additionalUsers'),
+          ),
+        );
+      },
+    );
+
+    // Covers dispose() does not call activityGate.dispose() when
+    // _ownsActivityGate is false (the default).
+    test(
+      'dispose does not dispose activity gate when ownsActivityGate is false',
+      () async {
+        when(() => syncEngine.dispose()).thenAnswer((_) async {});
+        when(() => sessionManager.dispose()).thenAnswer((_) async {});
+        when(() => roomManager.dispose()).thenAnswer((_) async {});
+
+        final service = createService();
+        await service.dispose();
+
+        verifyNever(() => activityGate.dispose());
+      },
+    );
+  });
+
+  group('MatrixService deleteDevice', () {
+    // Covers lines 548-552: throws ArgumentError when deviceId is null.
+    test('deleteDevice throws ArgumentError when deviceId is null', () async {
+      final deviceKeys = _MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn(null);
+      when(() => deviceKeys.deviceDisplayName).thenReturn('My Device');
+
+      final service = createService();
+
+      await expectLater(
+        service.deleteDevice(deviceKeys),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    // Covers lines 556-560: throws StateError when matrixConfig is null.
+    test('deleteDevice throws StateError when matrixConfig is null', () async {
+      final deviceKeys = _MockDeviceKeys();
+      when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
+      when(() => sessionManager.matrixConfig).thenReturn(null);
+
+      final service = createService();
+
+      await expectLater(
+        service.deleteDevice(deviceKeys),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    // Covers lines 563-567: throws StateError when device belongs to a
+    // different user.
+    test(
+      'deleteDevice throws StateError when device belongs to different user',
+      () async {
+        final deviceKeys = _MockDeviceKeys();
+        when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
+        when(() => deviceKeys.userId).thenReturn('@other:server');
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => sessionManager.matrixConfig).thenReturn(
+          const MatrixConfig(
+            homeServer: 'https://hs',
+            user: '@me:server',
+            password: 'pass',
+          ),
+        );
+
+        final service = createService();
+
+        await expectLater(
+          service.deleteDevice(deviceKeys),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    // Covers lines 579-583: throws UnsupportedError when password is empty.
+    test(
+      'deleteDevice throws UnsupportedError when password is empty',
+      () async {
+        final deviceKeys = _MockDeviceKeys();
+        when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
+        when(() => deviceKeys.userId).thenReturn('@me:server');
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => sessionManager.matrixConfig).thenReturn(
+          const MatrixConfig(
+            homeServer: 'https://hs',
+            user: '@me:server',
+            password: '',
+          ),
+        );
+
+        final service = createService();
+
+        await expectLater(
+          service.deleteDevice(deviceKeys),
+          throwsA(isA<UnsupportedError>()),
+        );
+      },
+    );
+
+    // Covers lines 570-577: deleteDevice calls client.deleteDevice when
+    // password is non-empty and user matches.
+    test(
+      'deleteDevice calls client.deleteDevice when credentials are valid',
+      () async {
+        final deviceKeys = _MockDeviceKeys();
+        when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
+        when(() => deviceKeys.userId).thenReturn('@me:server');
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => sessionManager.matrixConfig).thenReturn(
+          const MatrixConfig(
+            homeServer: 'https://hs',
+            user: '@me:server',
+            password: 'secret',
+          ),
+        );
+        when(
+          () => client.deleteDevice(
+            any(),
+            auth: any(named: 'auth'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final service = createService();
+        await service.deleteDevice(deviceKeys);
+
+        verify(
+          () => client.deleteDevice('DEVICE1', auth: any(named: 'auth')),
+        ).called(1);
+      },
+    );
+  });
+
+  group('MatrixService getSyncDiagnosticsText', () {
+    // Covers line 755: returns 'pipeline disabled' when no pipeline.
+    test(
+      'getSyncDiagnosticsText returns pipeline disabled without pipeline',
+      () async {
+        final service = createService();
+        final text = await service.getSyncDiagnosticsText();
+        expect(text, 'pipeline disabled');
+      },
+    );
+
+    // Covers lines 757-766: returns formatted metrics text with diagnostics.
+    test(
+      'getSyncDiagnosticsText returns metric lines joined with newline',
+      () async {
+        when(() => pipeline.metricsSnapshot()).thenReturn({'consumed': 5});
+        when(() => pipeline.diagnosticsStrings()).thenReturn({'lag': '100ms'});
+
+        final service = createServiceWithPipeline();
+        final text = await service.getSyncDiagnosticsText();
+
+        expect(text, contains('consumed=5'));
+        expect(text, contains('lag=100ms'));
+      },
+    );
+
+    // Covers lines 763-764: swallows exception from diagnosticsStrings.
+    test(
+      'getSyncDiagnosticsText still returns metrics when diagnosticsStrings '
+      'throws',
+      () async {
+        when(
+          () => pipeline.metricsSnapshot(),
+        ).thenReturn({'consumed': 2});
+        when(() => pipeline.diagnosticsStrings()).thenThrow(
+          UnimplementedError('no diagnostics'),
+        );
+
+        final service = createServiceWithPipeline();
+        final text = await service.getSyncDiagnosticsText();
+
+        expect(text, 'consumed=2');
+      },
+    );
+  });
+
+  group('MatrixService connectivity signal', () {
+    // Covers line 181: recordConnectivitySignal called on wifi reconnect.
+    test(
+      'connectivity regain triggers pipeline recordConnectivitySignal',
+      () async {
+        final connectivityController =
+            StreamController<List<ConnectivityResult>>();
+        when(
+          () => pipeline.reportDbApplyDiagnostics(any()),
+        ).thenReturn(null);
+        when(pipeline.recordConnectivitySignal).thenReturn(null);
+
+        final service = MatrixService(
+          gateway: gateway,
+          loggingService: loggingService,
+          activityGate: activityGate,
+          messageSender: messageSender,
+          settingsDb: settingsDb,
+          eventProcessor: eventProcessor,
+          secureStorage: secureStorage,
+          queueCoordinator: queueCoordinator,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          pipelineOverride: pipeline,
+          connectivityStream: connectivityController.stream,
+        );
+
+        connectivityController.add([ConnectivityResult.wifi]);
+        await pumpEventQueue();
+
+        verify(pipeline.recordConnectivitySignal).called(1);
+
+        // Cleanup
+        await connectivityController.close();
+        when(() => syncEngine.dispose()).thenAnswer((_) async {});
+        when(() => sessionManager.dispose()).thenAnswer((_) async {});
+        when(() => roomManager.dispose()).thenAnswer((_) async {});
+        await service.dispose();
       },
     );
   });

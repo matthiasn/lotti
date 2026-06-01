@@ -30,6 +30,34 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
   }
 }
 
+/// Test DailyOsController that records highlightCategory calls and starts in
+/// data state immediately (no async needed).
+class _TestDailyOsController extends DailyOsController {
+  String? lastHighlightedCategoryId;
+
+  @override
+  Future<DailyOsState> build() async {
+    return DailyOsState(
+      selectedDate: DateTime(2026, 1, 15),
+      dayPlan: null,
+      budgetProgress: const [],
+      timelineData: DailyTimelineData(
+        date: DateTime(2026, 1, 15),
+        plannedSlots: const [],
+        actualSlots: const [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      ),
+    );
+  }
+
+  @override
+  void highlightCategory(String? categoryId) {
+    lastHighlightedCategoryId = categoryId;
+    super.highlightCategory(categoryId);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -876,6 +904,248 @@ void main() {
         await gesture.moveBy(const Offset(0, 400));
         await tester.pump();
 
+        expect(
+          find.text('Expand timeline to move further'),
+          findsOneWidget,
+        );
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
+  });
+
+  group('DraggablePlannedBlock tap category highlight', () {
+    testWidgets(
+      'tap with valid category calls highlightCategory on the controller',
+      (tester) async {
+        final slot = createTestSlot(
+          startHour: 9,
+          startMinute: 0,
+          endHour: 11,
+          endMinute: 0,
+        );
+
+        // Use a pre-built test controller so it's already in data state
+        // when _handleTap fires (avoiding the async-build race).
+        final testController = _TestDailyOsController();
+
+        await tester.pumpWidget(
+          createTestWidget(
+            slot: slot,
+            sectionStartHour: 8,
+            sectionEndHour: 18,
+            additionalOverrides: [
+              dailyOsControllerProvider.overrideWith(() => testController),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // With both onTap + onDoubleTap registered, Flutter delays the tap
+        // callback by kDoubleTapTimeout (300 ms). Pump past that window.
+        await tester.tap(find.byType(DraggablePlannedBlock));
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+
+        // _handleTap called highlightCategory('cat-1') on the controller.
+        expect(
+          testController.lastHighlightedCategoryId,
+          equals('cat-1'),
+        );
+      },
+    );
+
+    testWidgets(
+      'tap on block without category does not call highlightCategory',
+      (tester) async {
+        // categoryId: 'unknown-cat' → getCategoryById returns null → no id,
+        // so _handleTap early-returns and highlightCategory is never called.
+        final slot = createTestSlot(
+          startHour: 9,
+          startMinute: 0,
+          endHour: 11,
+          endMinute: 0,
+          categoryId: 'unknown-cat',
+        );
+
+        final testController = _TestDailyOsController();
+
+        await tester.pumpWidget(
+          createTestWidget(
+            slot: slot,
+            sectionStartHour: 8,
+            sectionEndHour: 18,
+            additionalOverrides: [
+              dailyOsControllerProvider.overrideWith(() => testController),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.tap(find.byType(DraggablePlannedBlock));
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+
+        // category?.id was null → _handleTap did not call highlightCategory.
+        expect(testController.lastHighlightedCategoryId, isNull);
+      },
+    );
+  });
+
+  group('DraggablePlannedBlock long-press cancel', () {
+    testWidgets(
+      'cancelling a long press clears drag state and notifies parent',
+      (tester) async {
+        var dragActive = false;
+
+        final slot = createTestSlot(
+          startHour: 9,
+          startMinute: 0,
+          endHour: 11,
+          endMinute: 0,
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            slot: slot,
+            sectionStartHour: 8,
+            sectionEndHour: 18,
+            onDragActiveChanged: ({required bool isDragging}) =>
+                dragActive = isDragging,
+          ),
+        );
+        await tester.pump();
+
+        // Start a long press to activate drag state.
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('Work')),
+        );
+        await tester.pump(const Duration(milliseconds: 600));
+
+        // Drag must be active now.
+        expect(dragActive, isTrue);
+        // Time labels are visible during drag.
+        expect(find.text('09:00'), findsOneWidget);
+
+        // Cancel the gesture — triggers _handleLongPressCancel.
+        await gesture.cancel();
+        await tester.pump();
+
+        // Drag state must be cleared: time labels disappear,
+        // and parent is notified with isDragging: false.
+        expect(find.text('09:00'), findsNothing);
+        expect(dragActive, isFalse);
+      },
+    );
+  });
+
+  group('DraggablePlannedBlock resize boundary hints', () {
+    testWidgets(
+      'resizing top edge past section start (with adjacent collapsed region) '
+      'shows boundary-hint toast',
+      (tester) async {
+        // Block at 9:00–12:00 inside a section 8–12.
+        // A compressed region sits at 6–8 (adjacent to section start at 8).
+        // Dragging the top edge above hour 8 hits the bound and must show the
+        // "Expand timeline to move further" hint toast.
+        final slot = createTestSlot(
+          startHour: 9,
+          startMinute: 0,
+          endHour: 12,
+          endMinute: 0,
+        );
+
+        const foldingState = TimelineFoldingState(
+          visibleClusters: [
+            VisibleCluster(startHour: 8, endHour: 12),
+            VisibleCluster(startHour: 14, endHour: 18),
+          ],
+          compressedRegions: [
+            CompressedRegion(startHour: 6, endHour: 8),
+            CompressedRegion(startHour: 12, endHour: 14),
+          ],
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            slot: slot,
+            sectionStartHour: 8,
+            sectionEndHour: 12,
+            foldingState: foldingState,
+          ),
+        );
+        await tester.pump();
+
+        // Long-press near the top edge to start a resizeTop drag.
+        final blockBox = tester.getRect(find.byType(DraggablePlannedBlock));
+        final topEdge = Offset(blockBox.center.dx, blockBox.top + 5);
+        final gesture = await tester.startGesture(topEdge);
+        await tester.pump(const Duration(milliseconds: 600));
+
+        // Drag far upward — clamped at section start (8:00 = 480 min).
+        await gesture.moveBy(const Offset(0, -400));
+        await tester.pump();
+
+        // Boundary hint must appear exactly once.
+        expect(
+          find.text('Expand timeline to move further'),
+          findsOneWidget,
+        );
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'resizing bottom edge past section end (with adjacent collapsed region) '
+      'shows boundary-hint toast',
+      (tester) async {
+        // Block at 9:00–11:00 inside section 8–12.
+        // A compressed region sits at 12–14 (adjacent to section end at 12).
+        // Dragging the bottom edge past 12:00 hits the bound and must show
+        // the "Expand timeline to move further" hint toast.
+        final slot = createTestSlot(
+          startHour: 9,
+          startMinute: 0,
+          endHour: 11,
+          endMinute: 0,
+        );
+
+        const foldingState = TimelineFoldingState(
+          visibleClusters: [
+            VisibleCluster(startHour: 8, endHour: 12),
+            VisibleCluster(startHour: 14, endHour: 18),
+          ],
+          compressedRegions: [
+            CompressedRegion(startHour: 12, endHour: 14),
+          ],
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            slot: slot,
+            sectionStartHour: 8,
+            sectionEndHour: 12,
+            foldingState: foldingState,
+          ),
+        );
+        await tester.pump();
+
+        // Long-press near the bottom edge to start a resizeBottom drag.
+        final blockBox = tester.getRect(find.byType(DraggablePlannedBlock));
+        final bottomEdge = Offset(blockBox.center.dx, blockBox.bottom - 5);
+        final gesture = await tester.startGesture(bottomEdge);
+        await tester.pump(const Duration(milliseconds: 600));
+
+        // Drag far downward — clamped at section end (12:00 = 720 min).
+        await gesture.moveBy(const Offset(0, 400));
+        await tester.pump();
+
+        // Boundary hint must appear exactly once.
         expect(
           find.text('Expand timeline to move further'),
           findsOneWidget,

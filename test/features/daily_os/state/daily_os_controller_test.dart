@@ -1222,6 +1222,459 @@ void main() {
         });
       });
     });
+
+    test('invalidates self when date crosses midnight', () {
+      // Use an advancing fake clock so the poll loop actually observes a new
+      // day. Start just before midnight on day A, then elapse past the
+      // 15-second poll delay so the next iteration lands on day B.
+      final dayA = DateTime(2024, 3, 15);
+      final dayB = DateTime(2024, 3, 16);
+      final justBeforeMidnight = DateTime(2024, 3, 15, 23, 59, 59);
+
+      fakeAsync((async) {
+        withClock(async.getClock(justBeforeMidnight), () {
+          final testContainer = ProviderContainer(
+            overrides: [
+              dailyOsSelectedDateProvider.overrideWithValue(dayA),
+              unifiedDailyOsDataControllerProvider(date: dayA).overrideWith(
+                () => _TestUnifiedController(
+                  DailyOsData(
+                    date: dayA,
+                    dayPlan: createTestPlan(),
+                    timelineData: createTestTimelineData(),
+                    budgetProgress: [],
+                  ),
+                ),
+              ),
+              unifiedDailyOsDataControllerProvider(date: dayB).overrideWith(
+                () => _TestUnifiedController(
+                  DailyOsData(
+                    date: dayB,
+                    dayPlan: createTestPlan(),
+                    timelineData: createTestTimelineData(),
+                    budgetProgress: [],
+                  ),
+                ),
+              ),
+            ],
+          );
+          addTearDown(testContainer.dispose);
+
+          final emissions = <String?>[];
+          testContainer.listen<AsyncValue<String?>>(
+            activeFocusCategoryIdProvider,
+            (previous, next) {
+              if (next.hasValue) emissions.add(next.value);
+            },
+            fireImmediately: true,
+          );
+
+          // First emission for day A (still before midnight).
+          async.flushMicrotasks();
+          final emissionsBeforeMidnight = emissions.length;
+          expect(emissionsBeforeMidnight, greaterThan(0));
+
+          // Cross midnight: advancing past the 15-second poll delay makes the
+          // next loop iteration see today (day B) != currentDate (day A), so it
+          // calls ref.invalidateSelf(). The rebuilt provider re-establishes the
+          // dependency on day B's data and emits again.
+          async
+            ..elapse(const Duration(seconds: 16))
+            ..flushMicrotasks();
+
+          expect(
+            emissions.length,
+            greaterThan(emissionsBeforeMidnight),
+            reason:
+                'crossing midnight should invalidate self and re-emit for '
+                'the new day',
+          );
+        });
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // DailyOsSelectedDate controller tests
+  // -------------------------------------------------------------------------
+  group('DailyOsSelectedDate', () {
+    late ProviderContainer container;
+
+    setUp(() {
+      container = ProviderContainer();
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test('goToToday sets state to today at midnight', () {
+      // Set to a known past date first.
+      container
+          .read(dailyOsSelectedDateProvider.notifier)
+          .selectDate(
+            // ignore: avoid_redundant_argument_values
+            DateTime(2024, 1, 1),
+          );
+      expect(
+        container.read(dailyOsSelectedDateProvider),
+        // ignore: avoid_redundant_argument_values
+        equals(DateTime(2024, 1, 1)),
+      );
+
+      // goToToday should reset to "now" (today).
+      container.read(dailyOsSelectedDateProvider.notifier).goToToday();
+
+      final result = container.read(dailyOsSelectedDateProvider);
+      // The result must be at midnight (time-of-day is zeroed out).
+      expect(result.hour, equals(0));
+      expect(result.minute, equals(0));
+      expect(result.second, equals(0));
+      expect(result.millisecond, equals(0));
+    });
+
+    test('goToPreviousDay decrements state by one day', () {
+      final start = DateTime(2024, 3, 15);
+      container.read(dailyOsSelectedDateProvider.notifier).selectDate(start);
+
+      container.read(dailyOsSelectedDateProvider.notifier).goToPreviousDay();
+
+      expect(
+        container.read(dailyOsSelectedDateProvider),
+        equals(DateTime(2024, 3, 14)),
+      );
+    });
+
+    test('goToNextDay increments state by one day', () {
+      final start = DateTime(2024, 3, 15);
+      container.read(dailyOsSelectedDateProvider.notifier).selectDate(start);
+
+      container.read(dailyOsSelectedDateProvider.notifier).goToNextDay();
+
+      expect(
+        container.read(dailyOsSelectedDateProvider),
+        equals(DateTime(2024, 3, 16)),
+      );
+    });
+
+    test('sequential navigation: prev then next returns to original date', () {
+      // ignore: avoid_redundant_argument_values
+      final start = DateTime(2024, 6, 1);
+      container.read(dailyOsSelectedDateProvider.notifier).selectDate(start);
+
+      container.read(dailyOsSelectedDateProvider.notifier).goToPreviousDay();
+      container.read(dailyOsSelectedDateProvider.notifier).goToNextDay();
+
+      expect(
+        container.read(dailyOsSelectedDateProvider),
+        equals(start),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // DailyOsController – real controller methods via ProviderContainer
+  // -------------------------------------------------------------------------
+  group('DailyOsController (real provider)', () {
+    /// Creates a [ProviderContainer] with the real DailyOsController wired to a
+    /// [_TestUnifiedController] so we can exercise the controller methods.
+    ProviderContainer makeContainer({
+      DateTime? date,
+      List<TimeBudgetProgress> budgetProgress = const [],
+    }) {
+      final d = date ?? testDate;
+      final data = DailyOsData(
+        date: d,
+        dayPlan: createTestPlan(),
+        timelineData: createTestTimelineData(),
+        budgetProgress: budgetProgress,
+      );
+      return ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(d),
+          unifiedDailyOsDataControllerProvider(date: d).overrideWith(
+            () => _TestUnifiedController(data),
+          ),
+        ],
+      );
+    }
+
+    test('toggleSection expands a section', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      await container.read(dailyOsControllerProvider.future);
+      expect(
+        (await container.read(
+          dailyOsControllerProvider.future,
+        )).expandedSection,
+        isNull,
+      );
+
+      container
+          .read(dailyOsControllerProvider.notifier)
+          .toggleSection(DailyOsSection.budgets);
+
+      final state = await container.read(dailyOsControllerProvider.future);
+      expect(state.expandedSection, equals(DailyOsSection.budgets));
+    });
+
+    test('toggleSection collapses an already-expanded section', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      await container.read(dailyOsControllerProvider.future);
+
+      final notifier = container.read(dailyOsControllerProvider.notifier)
+        ..toggleSection(DailyOsSection.timeline);
+      expect(
+        (await container.read(
+          dailyOsControllerProvider.future,
+        )).expandedSection,
+        equals(DailyOsSection.timeline),
+      );
+
+      notifier.toggleSection(DailyOsSection.timeline);
+      expect(
+        (await container.read(
+          dailyOsControllerProvider.future,
+        )).expandedSection,
+        isNull,
+      );
+    });
+
+    test('setEditingPlan enables editing mode', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      await container.read(dailyOsControllerProvider.future);
+
+      container
+          .read(dailyOsControllerProvider.notifier)
+          .setEditingPlan(editing: true);
+
+      final state = await container.read(dailyOsControllerProvider.future);
+      expect(state.isEditingPlan, isTrue);
+    });
+
+    test('setEditingPlan disables editing mode', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      await container.read(dailyOsControllerProvider.future);
+      final notifier = container.read(dailyOsControllerProvider.notifier)
+        ..setEditingPlan(editing: true);
+      expect(
+        (await container.read(dailyOsControllerProvider.future)).isEditingPlan,
+        isTrue,
+      );
+
+      notifier.setEditingPlan(editing: false);
+      expect(
+        (await container.read(dailyOsControllerProvider.future)).isEditingPlan,
+        isFalse,
+      );
+    });
+
+    test('highlightCategory sets highlighted category ID', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      await container.read(dailyOsControllerProvider.future);
+
+      container
+          .read(dailyOsControllerProvider.notifier)
+          .highlightCategory('cat-42');
+
+      final state = await container.read(dailyOsControllerProvider.future);
+      expect(state.highlightedCategoryId, equals('cat-42'));
+    });
+
+    test(
+      'highlightCategory clears highlight when same category tapped again',
+      () async {
+        final container = makeContainer();
+        addTearDown(container.dispose);
+
+        await container.read(dailyOsControllerProvider.future);
+        final notifier = container.read(dailyOsControllerProvider.notifier)
+          ..highlightCategory('cat-42');
+        expect(
+          (await container.read(
+            dailyOsControllerProvider.future,
+          )).highlightedCategoryId,
+          equals('cat-42'),
+        );
+
+        // Tapping same category clears highlight.
+        notifier.highlightCategory('cat-42');
+        expect(
+          (await container.read(
+            dailyOsControllerProvider.future,
+          )).highlightedCategoryId,
+          isNull,
+        );
+      },
+    );
+
+    test('highlightCategory with null clears any existing highlight', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      await container.read(dailyOsControllerProvider.future);
+      final notifier = container.read(dailyOsControllerProvider.notifier)
+        ..highlightCategory('cat-10');
+      expect(
+        (await container.read(
+          dailyOsControllerProvider.future,
+        )).highlightedCategoryId,
+        equals('cat-10'),
+      );
+
+      notifier.highlightCategory(null);
+      expect(
+        (await container.read(
+          dailyOsControllerProvider.future,
+        )).highlightedCategoryId,
+        isNull,
+      );
+    });
+
+    test('clearHighlight removes any set category highlight', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      await container.read(dailyOsControllerProvider.future);
+      final notifier = container.read(dailyOsControllerProvider.notifier)
+        ..highlightCategory('cat-77');
+      expect(
+        (await container.read(
+          dailyOsControllerProvider.future,
+        )).highlightedCategoryId,
+        equals('cat-77'),
+      );
+
+      notifier.clearHighlight();
+      expect(
+        (await container.read(
+          dailyOsControllerProvider.future,
+        )).highlightedCategoryId,
+        isNull,
+      );
+    });
+
+    test(
+      'toggleFoldRegion on real controller adds and removes regions',
+      () async {
+        final container = makeContainer();
+        addTearDown(container.dispose);
+
+        await container.read(dailyOsControllerProvider.future);
+        final notifier = container.read(dailyOsControllerProvider.notifier)
+          ..toggleFoldRegion(6);
+        expect(
+          (await container.read(
+            dailyOsControllerProvider.future,
+          )).expandedFoldRegions,
+          contains(6),
+        );
+
+        notifier.toggleFoldRegion(6);
+        expect(
+          (await container.read(
+            dailyOsControllerProvider.future,
+          )).expandedFoldRegions,
+          isNot(contains(6)),
+        );
+      },
+    );
+
+    test('resetFoldState clears all expanded fold regions', () async {
+      final container = makeContainer();
+      addTearDown(container.dispose);
+
+      await container.read(dailyOsControllerProvider.future);
+      final notifier = container.read(dailyOsControllerProvider.notifier)
+        ..toggleFoldRegion(0)
+        ..toggleFoldRegion(12)
+        ..toggleFoldRegion(22);
+      expect(
+        (await container.read(
+          dailyOsControllerProvider.future,
+        )).expandedFoldRegions,
+        equals({0, 12, 22}),
+      );
+
+      notifier.resetFoldState();
+      expect(
+        (await container.read(
+          dailyOsControllerProvider.future,
+        )).expandedFoldRegions,
+        isEmpty,
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // highlightedCategoryId provider
+  // -------------------------------------------------------------------------
+  group('highlightedCategoryId provider', () {
+    test('returns null when no category is highlighted', () async {
+      final container = ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(testDate),
+          unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+            () => _TestUnifiedController(
+              DailyOsData(
+                date: testDate,
+                dayPlan: createTestPlan(),
+                timelineData: createTestTimelineData(),
+                budgetProgress: [],
+              ),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(dailyOsControllerProvider.future);
+
+      expect(container.read(highlightedCategoryIdProvider), isNull);
+    });
+
+    test(
+      'reflects the highlighted category after highlightCategory call',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            dailyOsSelectedDateProvider.overrideWithValue(testDate),
+            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+              () => _TestUnifiedController(
+                DailyOsData(
+                  date: testDate,
+                  dayPlan: createTestPlan(),
+                  timelineData: createTestTimelineData(),
+                  budgetProgress: [],
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(dailyOsControllerProvider.future);
+
+        container
+            .read(dailyOsControllerProvider.notifier)
+            .highlightCategory('cat-99');
+
+        await container.read(dailyOsControllerProvider.future);
+        expect(
+          container.read(highlightedCategoryIdProvider),
+          equals('cat-99'),
+        );
+      },
+    );
   });
 }
 

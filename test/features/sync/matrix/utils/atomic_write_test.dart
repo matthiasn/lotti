@@ -125,4 +125,118 @@ void main() {
       expect(leftovers, isEmpty);
     },
   );
+
+  test(
+    'atomicWriteBytes rethrows and cleans up when logging is null',
+    () async {
+      final path = p.join(tempDir.path, 'no_log_dest');
+      Directory(path).createSync(recursive: true);
+
+      await expectLater(
+        () => atomicWriteBytes(
+          bytes: [9, 8, 7],
+          filePath: path,
+          // logging omitted — must not throw a null-dereference
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+
+      final leftovers = Directory(tempDir.path)
+          .listSync()
+          .whereType<File>()
+          .map((f) => p.basename(f.path))
+          .where((name) => name.startsWith('no_log_dest.tmp.'))
+          .toList();
+      expect(leftovers, isEmpty);
+    },
+  );
+
+  test(
+    'atomicWriteBytes forwards custom subDomain to logging.error',
+    () async {
+      final path = p.join(tempDir.path, 'sub_dest');
+      Directory(path).createSync(recursive: true);
+
+      await expectLater(
+        () => atomicWriteBytes(
+          bytes: [1],
+          filePath: path,
+          logging: logging,
+          subDomain: 'myFeature',
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+
+      verify(
+        () => logging.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'myFeature',
+        ),
+      ).called(1);
+    },
+  );
+
+  test('atomicWriteBytes round-trips binary data faithfully', () async {
+    final bytes = List<int>.generate(512, (i) => i % 256);
+    final path = p.join(tempDir.path, 'binary.bin');
+
+    await atomicWriteBytes(bytes: bytes, filePath: path);
+
+    expect(await File(path).readAsBytes(), bytes);
+  });
+
+  test('atomicWriteBytes handles empty bytes', () async {
+    final path = p.join(tempDir.path, 'empty.bin');
+    await atomicWriteBytes(bytes: [], filePath: path);
+    expect(await File(path).readAsBytes(), isEmpty);
+  });
+
+  test('atomicWriteString encodes UTF-8 text correctly', () async {
+    const text = 'héllo wörld — emoji: 🙂';
+    final path = p.join(tempDir.path, 'utf8.txt');
+    await atomicWriteString(text: text, filePath: path);
+    expect(await File(path).readAsString(), text);
+  });
+
+  test('atomicWriteString works without a logger', () async {
+    final path = p.join(tempDir.path, 'no_log.txt');
+    await atomicWriteString(text: 'hello', filePath: path);
+    expect(await File(path).readAsString(), 'hello');
+  });
+
+  test(
+    'atomicWriteString rethrows when destination is a directory (no logger)',
+    () async {
+      final path = p.join(tempDir.path, 'str_dest_dir');
+      Directory(path).createSync(recursive: true);
+
+      await expectLater(
+        () => atomicWriteString(text: 'data', filePath: path),
+        throwsA(isA<FileSystemException>()),
+      );
+
+      final leftovers = Directory(tempDir.path)
+          .listSync()
+          .whereType<File>()
+          .map((f) => p.basename(f.path))
+          .where((name) => name.startsWith('str_dest_dir.tmp.'))
+          .toList();
+      expect(leftovers, isEmpty);
+    },
+  );
+
+  test('atomicWriteBytes creates deeply nested parent directories', () async {
+    final path = p.join(tempDir.path, 'a', 'b', 'c', 'd', 'deep.txt');
+    await atomicWriteBytes(bytes: [42], filePath: path);
+    expect(await File(path).readAsBytes(), [42]);
+  });
+
+  test('atomicWriteString overwrites existing file', () async {
+    final path = p.join(tempDir.path, 'overwrite.txt');
+    await atomicWriteString(text: 'first', filePath: path);
+    await atomicWriteString(text: 'second', filePath: path);
+    expect(await File(path).readAsString(), 'second');
+  });
 }

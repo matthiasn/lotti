@@ -1,12 +1,16 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:photo_view/photo_view.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
@@ -153,6 +157,210 @@ void main() {
         final shrink = result as SizedBox;
         expect(shrink.width, 0.0);
         expect(shrink.height, 0.0);
+      },
+    );
+
+    testWidgets(
+      'tapping the image pushes HeroPhotoViewRouteWrapper onto the navigator',
+      (tester) async {
+        final image = buildJournalImage();
+        createInvalidImageFile(image);
+
+        // Wrap in a fixed-size container so the GestureDetector has non-zero
+        // area to receive the tap even though the inner Image collapses on
+        // error.
+        final subject = ProviderScope(
+          overrides: [createEntryControllerOverride(image)],
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 390,
+                height: 400,
+                child: EntryImageWidget(image),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(subject);
+        await tester.pump();
+
+        // Before tap, only EntryImageWidget is in the tree.
+        expect(find.byType(HeroPhotoViewRouteWrapper), findsNothing);
+
+        await tester.ensureVisible(find.byType(GestureDetector).first);
+        await tester.tap(find.byType(GestureDetector).first);
+        // One pump to schedule the route push, one more to build the new route.
+        await tester.pump();
+        await tester.pump();
+
+        // After navigation, HeroPhotoViewRouteWrapper should be rendered.
+        expect(find.byType(HeroPhotoViewRouteWrapper), findsOneWidget);
+        // The close icon from the wrapper should be visible.
+        expect(find.byIcon(Icons.close_rounded), findsWidgets);
+      },
+    );
+  });
+
+  group('HeroPhotoViewRouteWrapper', () {
+    late Directory tempDir;
+    late File imageFile;
+
+    setUp(() async {
+      tempDir = Directory.systemTemp.createTempSync(
+        'hero_photo_view_test_',
+      );
+      imageFile = File('${tempDir.path}/photo.jpg')
+        ..writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0]);
+    });
+
+    tearDown(() async {
+      try {
+        tempDir.deleteSync(recursive: true);
+      } catch (_) {
+        // Ignore cleanup errors.
+      }
+    });
+
+    Widget buildWrapper({BoxDecoration? backgroundDecoration}) {
+      return ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HeroPhotoViewRouteWrapper(
+            file: imageFile,
+            backgroundDecoration: backgroundDecoration,
+          ),
+        ),
+      );
+    }
+
+    testWidgets(
+      'renders Scaffold with PhotoView and close IconButton',
+      (tester) async {
+        await tester.pumpWidget(buildWrapper());
+        await tester.pump();
+
+        // Scaffold body must be present.
+        expect(find.byType(Scaffold), findsOneWidget);
+
+        // PhotoView carries the hero tag for the shared-element transition.
+        expect(find.byType(PhotoView), findsOneWidget);
+        final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
+        expect(photoView.imageProvider, isA<FileImage>());
+        expect(photoView.minScale, PhotoViewComputedScale.contained);
+        expect(
+          photoView.heroAttributes?.tag,
+          'entry_img',
+        );
+
+        // Close button is rendered in the top-right Positioned widget.
+        expect(find.byType(IconButton), findsOneWidget);
+        // Two close icons: one blurred behind, one white on top.
+        expect(find.byIcon(Icons.close_rounded), findsNWidgets(2));
+      },
+    );
+
+    testWidgets(
+      'passes backgroundDecoration to PhotoView when provided',
+      (tester) async {
+        const decoration = BoxDecoration(color: Colors.red);
+        await tester.pumpWidget(buildWrapper(backgroundDecoration: decoration));
+        await tester.pump();
+
+        final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
+        expect(photoView.backgroundDecoration, decoration);
+      },
+    );
+
+    testWidgets(
+      'close button pops the route when tapped',
+      (tester) async {
+        // The close IconButton has padding: EdgeInsets.all(48); use a large
+        // viewport so its hit target falls within bounds.
+        tester.view.physicalSize = const Size(1200, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        // Push HeroPhotoViewRouteWrapper so there is a route beneath it to
+        // pop back to.
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) {
+                  return Scaffold(
+                    body: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context, rootNavigator: true).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => HeroPhotoViewRouteWrapper(
+                              file: imageFile,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Open'),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Push the wrapper route.
+        await tester.tap(find.text('Open'));
+        await tester.pump();
+        await tester.pump();
+
+        // Wrapper is visible.
+        expect(find.byType(HeroPhotoViewRouteWrapper), findsOneWidget);
+
+        // Invoke the close button's onPressed callback directly to avoid
+        // off-screen hit-testing issues caused by the large 48px padding on
+        // the Positioned close button.
+        final iconButton = tester.widget<IconButton>(find.byType(IconButton));
+        iconButton.onPressed?.call();
+        await tester.pump();
+        await tester.pump();
+
+        // The wrapper route has been popped.
+        expect(find.byType(HeroPhotoViewRouteWrapper), findsNothing);
+        // We're back on the home screen.
+        expect(find.text('Open'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'FileImage is constructed from the provided file',
+      (tester) async {
+        await tester.pumpWidget(buildWrapper());
+        await tester.pump();
+
+        final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
+        final fileImage = photoView.imageProvider! as FileImage;
+        expect(fileImage.file.path, imageFile.path);
       },
     );
   });

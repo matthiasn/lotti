@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' as drift;
+import 'package:genui/genui.dart' show CreateSurface;
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:research_package/model.dart';
 
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
@@ -94,6 +96,12 @@ const ConfigFlag fallbackConfigFlag = ConfigFlag(
   status: false,
 );
 
+final SurveyData fallbackSurveyData = SurveyData(
+  taskResult: RPTaskResult(identifier: 'fallback-survey'),
+  scoreDefinitions: const {},
+  calculatedScores: const {},
+);
+
 /// Registers all commonly used fallback values for mocktail in one call.
 ///
 /// Call this in `setUpAll()` or `setUp()` instead of scattering individual
@@ -107,6 +115,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackAiConfig);
   registerFallbackValue(fallbackNotificationEntity);
   registerFallbackValue(fallbackConfigFlag);
+  registerFallbackValue(fallbackSurveyData);
 
   // Logging
   registerFallbackValue(LogDomain.general);
@@ -334,5 +343,11 @@ void registerAllFallbackValues() {
       thoughts: '',
       response: '',
     ),
+  );
+
+  // GenUI A2uiMessage fallback (needed when MockSurfaceController.handleMessage
+  // is stubbed with any()).
+  registerFallbackValue(
+    const CreateSurface(surfaceId: 'fallback-surface', catalogId: 'fallback'),
   );
 }

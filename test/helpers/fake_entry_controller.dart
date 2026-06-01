@@ -31,6 +31,7 @@ class ToggleCallTracker {
   final List<String> updateTaskPriorityCalls = [];
   final List<String?> updateCategoryIdCalls = [];
   final List<Map<String, Object?>> saveCalls = [];
+  final List<Map<String, DateTime>> updateFromToCalls = [];
 }
 
 /// Fake EntryController that returns a fixed entity state.
@@ -120,6 +121,15 @@ class FakeEntryController extends EntryController {
       'clearDueDate': clearDueDate,
       'stopRecording': stopRecording,
     });
+  }
+
+  @override
+  Future<bool> updateFromTo({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    _tracker?.updateFromToCalls.add({'dateFrom': dateFrom, 'dateTo': dateTo});
+    return true;
   }
 }
 

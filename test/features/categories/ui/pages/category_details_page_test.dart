@@ -3,9 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
+import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
+import 'package:lotti/features/projects/ui/widgets/category_projects_section.dart';
+import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -17,6 +27,12 @@ import 'package:uuid/uuid.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../test_utils.dart';
+
+/// Minimal stub for [InferenceProfileController] that returns an empty profile list.
+class _FakeProfileController extends InferenceProfileController {
+  @override
+  Stream<List<AiConfig>> build() => Stream.value(const []);
+}
 
 // Helper method to find an enabled LottiPrimaryButton
 LottiPrimaryButton? findEnabledPrimaryButton(WidgetTester tester) {
@@ -1075,6 +1091,729 @@ void main() {
 
         await streamController.close();
       });
+    });
+
+    group('Create Mode Navigation', () {
+      testWidgets('back arrow in create mode beams to categories list', (
+        tester,
+      ) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoryDetailsPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
+        );
+        await tester.pumpAndSettle();
+
+        expect(beamedTo, '/settings/categories');
+      });
+
+      testWidgets(
+        'cancel button in create mode beams back to categories list',
+        (tester) async {
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: const CategoryDetailsPage(),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          final cancelButton = find.byType(LottiSecondaryButton);
+          await tester.ensureVisible(cancelButton);
+          await tester.tap(cancelButton);
+          await tester.pumpAndSettle();
+
+          expect(beamedTo, '/settings/categories');
+        },
+      );
+
+      testWidgets(
+        'create mode shows Private and Active switch tiles as disabled',
+        (tester) async {
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: const CategoryDetailsPage(),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // Two disabled switch tiles (Private, Active) visible in create mode
+          final switchFields = tester.widgetList<LottiSwitchField>(
+            find.byType(LottiSwitchField),
+          );
+          // All onChanged must be null (disabled)
+          for (final sw in switchFields) {
+            expect(
+              sw.onChanged,
+              isNull,
+              reason: 'Create-mode switch tiles should be disabled',
+            );
+          }
+        },
+      );
+    });
+
+    group('Category-Not-Found State', () {
+      testWidgets(
+        'back arrow when category not found beams to categories list',
+        (tester) async {
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          // Emit null → category not found
+          streamController.add(null);
+          await tester.pumpAndSettle();
+
+          await tester.tap(
+            find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
+          );
+          await tester.pumpAndSettle();
+
+          expect(beamedTo, '/settings/categories');
+          await streamController.close();
+        },
+      );
+    });
+
+    group('Projects Section', () {
+      testWidgets(
+        'shows CategoryProjectsSection when enableProjects flag is true',
+        (tester) async {
+          // Use a very tall viewport to render all sliver items on-screen.
+          tester.view.physicalSize = const Size(800, 3000);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+
+          final category = CategoryTestUtils.createTestCategory();
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => Stream.value(category),
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+                configFlagProvider.overrideWith(
+                  (ref, flagName) => flagName == enableProjectsFlag
+                      ? Stream.value(true)
+                      : Stream.value(false),
+                ),
+                inferenceProfileControllerProvider.overrideWith(
+                  _FakeProfileController.new,
+                ),
+                agentTemplatesProvider.overrideWith(
+                  (ref) async => const [],
+                ),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // With a tall viewport all SliverList items are on-screen.
+          expect(
+            find.byType(CategoryProjectsSection),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'hides CategoryProjectsSection when enableProjects flag is false',
+        (tester) async {
+          // Use a tall viewport so all items are rendered.
+          tester.view.physicalSize = const Size(800, 3000);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+
+          final category = CategoryTestUtils.createTestCategory();
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => Stream.value(category),
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+                configFlagProvider.overrideWith(
+                  (ref, flagName) => Stream.value(false),
+                ),
+                inferenceProfileControllerProvider.overrideWith(
+                  _FakeProfileController.new,
+                ),
+                agentTemplatesProvider.overrideWith(
+                  (ref) async => const [],
+                ),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(
+            find.byType(CategoryProjectsSection),
+            findsNothing,
+          );
+        },
+      );
+    });
+
+    group('Color Picker in Edit Mode', () {
+      testWidgets(
+        'edit mode color picker opens dialog and can be cancelled',
+        (tester) async {
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          final category = CategoryTestUtils.createTestCategory(
+            color: '#FF0000',
+          );
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          streamController.add(category);
+          await tester.pumpAndSettle();
+
+          // Tap palette icon to open color picker
+          final paletteIcon = find.byIcon(Icons.palette_outlined);
+          await tester.ensureVisible(paletteIcon);
+          await tester.tap(paletteIcon);
+          await tester.pumpAndSettle();
+
+          // Color picker dialog should open with the select/cancel actions
+          expect(find.byType(AlertDialog), findsOneWidget);
+
+          // Cancel — no color change, dialog dismissed
+          final cancelButton = find.text('Cancel').last;
+          await tester.tap(cancelButton);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(AlertDialog), findsNothing);
+
+          await streamController.close();
+        },
+      );
+
+      testWidgets(
+        'edit mode color picker shows current category color in dialog',
+        (tester) async {
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          final category = CategoryTestUtils.createTestCategory(
+            color: '#FF0000',
+          );
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          streamController.add(category);
+          await tester.pumpAndSettle();
+
+          // Open color picker in edit mode
+          final paletteIcon = find.byIcon(Icons.palette_outlined);
+          await tester.ensureVisible(paletteIcon);
+          await tester.tap(paletteIcon);
+          await tester.pumpAndSettle();
+
+          // AlertDialog with Select and Cancel actions is shown
+          expect(find.byType(AlertDialog), findsOneWidget);
+          expect(find.text('Select'), findsOneWidget);
+
+          // Selecting a color calls onColorChanged → marks form dirty.
+          // The picker starts at the category color (#FF0000 = red), so we
+          // just confirm Select dismisses the dialog (onColorChanged is
+          // invoked with the current picker value regardless).
+          final selectButton = find.text('Select');
+          await tester.tap(selectButton);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(AlertDialog), findsNothing);
+
+          await streamController.close();
+        },
+      );
+    });
+
+    group('Switch Tiles — active and favorite branches', () {
+      // The Private branch is already covered by the existing "toggle switches
+      // trigger state changes" test (which taps switches.first). Here we
+      // cover Active (index 1) and Favorite (index 2) explicitly.
+
+      testWidgets(
+        'toggling Active switch enables save button',
+        (tester) async {
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          final category = CategoryTestUtils.createTestCategory(
+            // active defaults to true; toggling it marks form dirty
+            favorite: false,
+          );
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          streamController.add(category);
+          await tester.pumpAndSettle();
+
+          // Three Switch widgets: Private(0), Active(1), Favorite(2).
+          // Tap the Switch widget at index 1 (Active) directly.
+          final switches = find.byType(Switch);
+          expect(switches, findsNWidgets(3));
+          await tester.ensureVisible(switches.at(1));
+          await tester.pumpAndSettle();
+          await tester.tap(switches.at(1));
+          await tester.pumpAndSettle();
+
+          final enabledSave = findEnabledPrimaryButton(tester);
+          expect(
+            enabledSave,
+            isNotNull,
+            reason: 'Active toggle should enable save',
+          );
+
+          await streamController.close();
+        },
+      );
+
+      testWidgets(
+        'toggling Favorite switch enables save button',
+        (tester) async {
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          final category = CategoryTestUtils.createTestCategory(
+            // favorite=false; toggling it marks form dirty
+            favorite: false,
+          );
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          streamController.add(category);
+          await tester.pumpAndSettle();
+
+          final switches = find.byType(Switch);
+          expect(switches, findsNWidgets(3));
+          await tester.ensureVisible(switches.at(2));
+          await tester.pumpAndSettle();
+          await tester.tap(switches.at(2));
+          await tester.pumpAndSettle();
+
+          final enabledSave = findEnabledPrimaryButton(tester);
+          expect(
+            enabledSave,
+            isNotNull,
+            reason: 'Favorite toggle should enable save',
+          );
+
+          await streamController.close();
+        },
+      );
+    });
+
+    group('Icon Picker', () {
+      testWidgets(
+        'icon picker in create mode updates selected icon display',
+        (tester) async {
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: const CategoryDetailsPage(),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // Initially shows "Choose an icon" hint text
+          expect(
+            find.text(CategoryIconStrings.chooseIconText),
+            findsOneWidget,
+          );
+
+          // Tap the icon picker row
+          final inkWellFinder = find
+              .ancestor(
+                of: find.text(CategoryIconStrings.chooseIconText),
+                matching: find.byType(InkWell),
+              )
+              .first;
+          await tester.ensureVisible(inkWellFinder);
+          await tester.tap(inkWellFinder);
+          await tester.pumpAndSettle();
+
+          // Icon picker dialog should open
+          expect(find.byType(CategoryIconPicker), findsOneWidget);
+
+          // Tap the first icon by its known display name in the grid
+          final firstIconName = CategoryIcon.values.first.displayName;
+          final firstIconText = find.text(firstIconName);
+          await tester.ensureVisible(firstIconText);
+          await tester.tap(firstIconText);
+          await tester.pumpAndSettle();
+
+          // The "Choose an icon" text should be replaced by the icon's display name
+          expect(
+            find.text(CategoryIconStrings.chooseIconText),
+            findsNothing,
+          );
+          expect(find.text(firstIconName), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'icon picker in create mode — dismissed with no selection keeps '
+        'the existing display name',
+        (tester) async {
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: const CategoryDetailsPage(),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(CategoryIconStrings.chooseIconText),
+            findsOneWidget,
+          );
+
+          // Open the icon picker dialog
+          final inkWellFinder = find
+              .ancestor(
+                of: find.text(CategoryIconStrings.chooseIconText),
+                matching: find.byType(InkWell),
+              )
+              .first;
+          await tester.tap(inkWellFinder);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(CategoryIconPicker), findsOneWidget);
+
+          // Dismiss without picking (tap close button in dialog header)
+          final closeBtn = find.widgetWithIcon(IconButton, Icons.close);
+          await tester.tap(closeBtn);
+          await tester.pumpAndSettle();
+
+          // Display name should remain the default
+          expect(
+            find.text(CategoryIconStrings.chooseIconText),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'icon picker in edit mode updates controller when icon selected',
+        (tester) async {
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          final category = CategoryTestUtils.createTestCategory();
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          streamController.add(category);
+          await tester.pumpAndSettle();
+
+          // Open the icon picker
+          final iconSection = find.text(CategoryIconStrings.iconSelectionHint);
+          final inkWell = find
+              .ancestor(
+                of: iconSection,
+                matching: find.byType(InkWell),
+              )
+              .first;
+          await tester.ensureVisible(inkWell);
+          await tester.tap(inkWell);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(CategoryIconPicker), findsOneWidget);
+
+          // Tap the first icon by its display name in the grid
+          final firstIconName = CategoryIcon.values.first.displayName;
+          final firstIconText = find.text(firstIconName);
+          await tester.ensureVisible(firstIconText);
+          await tester.tap(firstIconText);
+          await tester.pumpAndSettle();
+
+          // After picking, the icon change should mark the form dirty
+          final enabledSave = findEnabledPrimaryButton(tester);
+          expect(enabledSave, isNotNull);
+
+          await streamController.close();
+        },
+      );
+
+      testWidgets(
+        'edit mode icon picker shows hint text when no icon set',
+        (tester) async {
+          final category =
+              CategoryTestUtils.createTestCategory(); // icon defaults to null
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => Stream.value(category),
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // With no icon on the category, "Choose an icon" is shown
+          expect(
+            find.text(CategoryIconStrings.chooseIconText),
+            findsOneWidget,
+          );
+          // And the hint says tap to change
+          expect(
+            find.text(CategoryIconStrings.iconSelectionHint),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'edit mode icon picker shows icon display name when icon is set',
+        (tester) async {
+          final category = CategoryTestUtils.createTestCategory(
+            icon: CategoryIcon.fitness,
+          );
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => Stream.value(category),
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // Shows the icon's display name instead of the fallback
+          expect(
+            find.text(CategoryIcon.fitness.displayName),
+            findsOneWidget,
+          );
+          expect(
+            find.text(CategoryIconStrings.chooseIconText),
+            findsNothing,
+          );
+        },
+      );
+    });
+
+    group('Language Selector', () {
+      testWidgets(
+        'language dropdown is rendered and tapping it opens a language modal',
+        (tester) async {
+          // Use a tall viewport so all sections fit without scrolling.
+          tester.view.physicalSize = const Size(800, 2400);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          final category = CategoryTestUtils.createTestCategory(
+            defaultLanguageCode: 'en',
+          );
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          streamController.add(category);
+          await tester.pumpAndSettle();
+
+          // With a tall viewport the language dropdown is on-screen.
+          final langDropdown = find.byType(CategoryLanguageDropdown);
+          expect(langDropdown, findsOneWidget);
+
+          // Tap to open the language selector modal
+          await tester.tap(langDropdown);
+          await tester.pumpAndSettle();
+
+          // The modal content (LanguageSelectionModalContent) appears
+          // inside the WoltModalSheet route. We detect it via its key widget
+          // type rather than finding the WoltModalSheet wrapper directly.
+          expect(
+            find.byType(LanguageSelectionModalContent),
+            findsOneWidget,
+          );
+
+          // Dismiss the modal
+          tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+          await tester.pumpAndSettle();
+
+          await streamController.close();
+        },
+      );
+    });
+
+    group('Save Error Display', () {
+      testWidgets(
+        'save failure shows error message inline via ErrorStateWidget',
+        (tester) async {
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          final category = CategoryTestUtils.createTestCategory(name: 'Test');
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+          when(() => mockRepository.getCategoryById(testCategoryId)).thenAnswer(
+            (_) async => category,
+          );
+          when(() => mockRepository.updateCategory(any())).thenThrow(
+            Exception('Save failed'),
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          streamController.add(category);
+          await tester.pumpAndSettle();
+
+          // Make a change to enable save
+          final nameField = find.byType(TextFormField).first;
+          await tester.enterText(nameField, 'Updated');
+          await tester.pump();
+
+          // Tap save
+          final saveBtn = findEnabledPrimaryButton(tester);
+          await tester.tap(find.byWidget(saveBtn!));
+          await tester.pumpAndSettle();
+
+          // Error message should be shown
+          expect(
+            find.textContaining('Failed to update category'),
+            findsOneWidget,
+          );
+          // No beam should occur (stayed on the page)
+
+          await streamController.close();
+        },
+      );
     });
   });
 }

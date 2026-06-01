@@ -3878,6 +3878,259 @@ void main() {
         ).called(1);
       },
     );
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Coverage for uncovered lines
+    // ──────────────────────────────────────────────────────────────────────
+
+    test(
+      'sentEventRegistry getter exposes the registry instance (line 50)',
+      () {
+        // The getter is the simplest way the outbox processor reads the
+        // registry; verify it returns the same object passed to the constructor.
+        expect(sender.sentEventRegistry, same(sentEventRegistry));
+      },
+    );
+
+    test(
+      'sends audio attachment when resendAttachments is false but status is '
+      'initial — covers the message.status == SyncEntryStatus.initial branch '
+      '(line 538)',
+      () async {
+        when(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        ).thenAnswer((_) async => r'$text-audio-initial');
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((_) async => r'$file-audio-initial');
+        // resendAttachments is false — only the initial-status branch matters.
+        when(
+          () => journalDb.getConfigFlag(resendAttachments),
+        ).thenAnswer((_) async => false);
+
+        final sampleDate = DateTime.utc(2024, 3, 15);
+        final metadata = Metadata(
+          id: 'audio-initial',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: const VectorClock({'device': 1}),
+        );
+        final audioData = AudioData(
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          audioFile: 'rec.m4a',
+          audioDirectory: '/audio/',
+          duration: const Duration(seconds: 5),
+        );
+        final journalAudio = JournalEntity.journalAudio(
+          meta: metadata,
+          data: audioData,
+        );
+
+        const jsonPath = '/entries/audio-initial.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalAudio.toJson()));
+
+        final audioPath =
+            '${documentsDirectory.path}${audioData.audioDirectory}${audioData.audioFile}';
+        File(audioPath)
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(List<int>.filled(8, 3));
+
+        final result = await sender.sendMatrixMessage(
+          message: SyncMessage.journalEntity(
+            id: 'audio-initial',
+            jsonPath: jsonPath,
+            vectorClock: const VectorClock({'device': 1}),
+            // SyncEntryStatus.initial triggers the audio-upload branch even
+            // when resendAttachments is false.
+            status: SyncEntryStatus.initial,
+          ),
+          context: buildContext(),
+          onSent: (_, _) {},
+        );
+
+        expect(result, isTrue);
+        // Both the JSON and the audio file must be uploaded.
+        final capturedExtras = verify(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: captureAny(named: 'extraContent'),
+          ),
+        ).captured.cast<Map<String, dynamic>>();
+        final uploadedPaths = capturedExtras
+            .map((e) => e['relativePath'] as String?)
+            .whereType<String>()
+            .toSet();
+        expect(uploadedPaths, contains(jsonPath));
+        expect(uploadedPaths.any((p) => p.endsWith('rec.m4a')), isTrue);
+      },
+    );
+
+    test(
+      '_reconcileBundleChildEnvelope adopts entityVc when messageVc is null '
+      'for a bundle SyncJournalEntity child (lines 944-958)',
+      () async {
+        const entityVc = VectorClock({'host-A': 99});
+        final entity = JournalEntry(
+          meta: Metadata(
+            id: 'bundle-null-msgvc',
+            createdAt: DateTime.utc(2026, 3, 15),
+            updatedAt: DateTime.utc(2026, 3, 15),
+            dateFrom: DateTime.utc(2026, 3, 15),
+            dateTo: DateTime.utc(2026, 3, 15),
+            vectorClock: entityVc,
+          ),
+          entryText: const EntryText(plainText: 'no msg vc'),
+        );
+        when(
+          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+        ).thenAnswer(
+          (_) async => {'bundle-null-msgvc': entity},
+        );
+
+        MatrixFile? capturedFile;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedFile = inv.positionalArguments.first as MatrixFile;
+          return r'$bundle-null-msgvc-file-id';
+        });
+
+        // Child has vectorClock: null so messageVc == null but entityVc != null.
+        final bundle = SyncOutboxBundle(
+          children: [
+            SyncMessage.journalEntity(
+              id: 'bundle-null-msgvc',
+              jsonPath: '/journal/2026-03-15/bundle-null-msgvc.entry.json',
+              vectorClock: null, // triggers the else-if branch
+              status: SyncEntryStatus.update,
+            ),
+          ],
+        );
+
+        final stripped = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: bundle,
+        );
+
+        expect(stripped, isNotNull);
+        expect(capturedFile, isNotNull);
+
+        final manifest =
+            json.decode(utf8.decode(gzip.decode(capturedFile!.bytes)))
+                as Map<String, dynamic>;
+        final entries = manifest['entries'] as List;
+        expect(entries, hasLength(1));
+        final record = entries.single as Map<String, dynamic>;
+        final envelope = SyncMessage.fromJson(
+          record['envelope'] as Map<String, dynamic>,
+        );
+        expect(envelope, isA<SyncJournalEntity>());
+        final reconciled = envelope as SyncJournalEntity;
+
+        // The entity's DB VC must have been adopted and folded into covered.
+        expect(reconciled.vectorClock, entityVc);
+        expect(reconciled.coveredVectorClocks, contains(entityVc));
+
+        // logVectorClockAssignment must have been called for reason=message_missing
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf(
+                contains('reason=message_missing'),
+                contains('assigned={host-A: 99}'),
+              ),
+            ),
+            subDomain: 'send.outboxBundle.adoptDb',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      '_reconcileBundleChildEnvelope returns child unchanged when '
+      'entry link already has correct coveredVectorClocks and '
+      'originatingHostId (line 999 early-return)',
+      () async {
+        // To trigger covered == child.coveredVectorClocks (list identity):
+        // both must be null. This happens when entryLink.vectorClock is null
+        // and child.coveredVectorClocks is null — mergeUniqueClocks returns null.
+        // originating == child.originatingHostId when host is null (no vc service)
+        // and child.originatingHostId is null: null == null → true.
+        final linkWithNullVc = EntryLink.basic(
+          id: 'no-vc-link',
+          fromId: 'from-x',
+          toId: 'to-x',
+          createdAt: DateTime.utc(2026, 3, 15),
+          updatedAt: DateTime.utc(2026, 3, 15),
+          vectorClock: null, // ensures covered == null
+        );
+        final child = SyncMessage.entryLink(
+          entryLink: linkWithNullVc,
+          status: SyncEntryStatus.update,
+          // coveredVectorClocks: null (default) — covered will also be null
+        );
+
+        MatrixFile? capturedFile;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedFile = inv.positionalArguments.first as MatrixFile;
+          return r'$no-vc-link-file-id';
+        });
+
+        // Use a sender without vectorClockService so host is null.
+        final senderNoVc = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: SentEventRegistry(),
+          // no vectorClockService → host == null
+        );
+
+        final stripped = await senderNoVc.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: SyncOutboxBundle(children: [child]),
+        );
+
+        expect(stripped, isNotNull);
+        expect(capturedFile, isNotNull);
+
+        final manifest =
+            json.decode(utf8.decode(gzip.decode(capturedFile!.bytes)))
+                as Map<String, dynamic>;
+        final entries = manifest['entries'] as List;
+        expect(entries, hasLength(1));
+        final record = entries.single as Map<String, dynamic>;
+        final envelope = SyncMessage.fromJson(
+          record['envelope'] as Map<String, dynamic>,
+        );
+        expect(envelope, isA<SyncEntryLink>());
+        final link = envelope as SyncEntryLink;
+        // coveredVectorClocks stays null (early return — no mutation applied)
+        expect(link.coveredVectorClocks, isNull);
+        expect(link.originatingHostId, isNull);
+      },
+    );
   });
 }
 

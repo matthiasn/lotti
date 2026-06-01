@@ -7277,4 +7277,490 @@ void main() {
       },
     );
   });
+
+  group('getOutboxItems -', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await database.close();
+    });
+
+    test('returns empty list when outbox is empty', () async {
+      final items = await database.getOutboxItems();
+      expect(items, isEmpty);
+    });
+
+    test('returns all statuses by default', () async {
+      final base = DateTime(2024, 3, 15, 10);
+      for (final status in [
+        OutboxStatus.pending,
+        OutboxStatus.error,
+        OutboxStatus.sent,
+      ]) {
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(status.index),
+            subject: Value('subj-${status.name}'),
+            message: const Value('{}'),
+            createdAt: Value(base),
+            updatedAt: Value(base),
+          ),
+        );
+      }
+
+      final items = await database.getOutboxItems();
+      expect(items, hasLength(3));
+      final statuses = items.map((i) => i.status).toSet();
+      expect(
+        statuses,
+        containsAll([
+          OutboxStatus.pending.index,
+          OutboxStatus.error.index,
+          OutboxStatus.sent.index,
+        ]),
+      );
+    });
+
+    test('filters by requested statuses', () async {
+      final base = DateTime(2024, 3, 15, 10);
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('pending'),
+          message: const Value('{}'),
+          createdAt: Value(base),
+          updatedAt: Value(base),
+        ),
+      );
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('sent'),
+          message: const Value('{}'),
+          createdAt: Value(base),
+          updatedAt: Value(base),
+        ),
+      );
+
+      final pendingOnly = await database.getOutboxItems(
+        statuses: [OutboxStatus.pending],
+      );
+      expect(pendingOnly, hasLength(1));
+      expect(pendingOnly.first.subject, 'pending');
+
+      final sentOnly = await database.getOutboxItems(
+        statuses: [OutboxStatus.sent],
+      );
+      expect(sentOnly, hasLength(1));
+      expect(sentOnly.first.subject, 'sent');
+    });
+
+    test('respects limit parameter', () async {
+      final base = DateTime(2024, 3, 15, 10);
+      for (var i = 0; i < 5; i++) {
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: Value('item-$i'),
+            message: const Value('{}'),
+            createdAt: Value(base.add(Duration(minutes: i))),
+            updatedAt: Value(base.add(Duration(minutes: i))),
+          ),
+        );
+      }
+
+      final limited = await database.getOutboxItems(limit: 3);
+      expect(limited, hasLength(3));
+    });
+
+    test(
+      'returns same rows as watchOutboxItems for the same statuses',
+      () async {
+        final base = DateTime(2024, 3, 15, 10);
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('p'),
+            message: const Value('{}'),
+            createdAt: Value(base),
+            updatedAt: Value(base),
+          ),
+        );
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.error.index),
+            subject: const Value('e'),
+            message: const Value('{}'),
+            createdAt: Value(base.add(const Duration(hours: 1))),
+            updatedAt: Value(base.add(const Duration(hours: 1))),
+          ),
+        );
+
+        final fromGet = await database.getOutboxItems();
+        final fromWatch = await database.watchOutboxItems().first;
+
+        expect(fromGet.map((i) => i.id), equals(fromWatch.map((i) => i.id)));
+      },
+    );
+  });
+
+  group('pruneSentOutboxItems - default now -', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await database.close();
+    });
+
+    // Exercises the `now ?? DateTime.now()` branch at line 918 by omitting
+    // the `now` parameter. We cannot assert the exact cutoff, but we can
+    // verify the method runs and returns 0 when there is nothing to prune.
+    test(
+      'returns 0 when called without explicit now and outbox is empty',
+      () async {
+        final deleted = await database.pruneSentOutboxItems(
+          retention: const Duration(days: 7),
+        );
+        expect(deleted, 0);
+      },
+    );
+
+    test(
+      'prunes sent rows older than retention when now is omitted',
+      () async {
+        // Insert a sent row with a very old updatedAt so it is guaranteed to
+        // be older than any reasonable wall-clock retention.
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.sent.index),
+            subject: const Value('old-sent'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2000, 1, 1)),
+            updatedAt: Value(DateTime(2000, 1, 1)),
+          ),
+        );
+
+        // Insert a pending row that must not be pruned.
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('pending'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2000, 1, 1)),
+            updatedAt: Value(DateTime(2000, 1, 1)),
+          ),
+        );
+
+        // Calling without `now` should use DateTime.now() internally and
+        // prune the ancient sent row.
+        final deleted = await database.pruneSentOutboxItems(
+          retention: const Duration(days: 1),
+        );
+        expect(deleted, 1);
+
+        final remaining = await database.allOutboxItems;
+        expect(remaining, hasLength(1));
+        expect(remaining.first.status, OutboxStatus.pending.index);
+      },
+    );
+  });
+
+  group('recordOwnUnresolvableSequenceCounter - default now -', () {
+    // Exercises the `now ?? DateTime.now()` branch at line 1096.
+    test('records burned row when called without explicit now', () async {
+      final database = SyncDatabase(inMemoryDatabase: true);
+      try {
+        const hostId = 'burn-default-now-host';
+        const counter = 1;
+
+        final recorded = await database.recordOwnUnresolvableSequenceCounter(
+          hostId: hostId,
+          counter: counter,
+          // Deliberately omit `now:` to exercise the default branch.
+        );
+
+        expect(recorded, isTrue);
+        final row = await database.getEntryByHostAndCounter(hostId, counter);
+        expect(row, isNotNull);
+        expect(row!.status, SyncSequenceStatus.burned.index);
+        expect(row.entryId, isNull);
+      } finally {
+        await database.close();
+      }
+    });
+  });
+
+  group('recordSequenceEntry - status fallback in watermark refresh -', () {
+    // Exercises line 1399: the `else` branch of
+    // `entry.status.present ? ... : SyncSequenceStatus.received.index`
+    // inside `_refreshSequenceWatermarkAfterMutation`. When a companion
+    // is inserted without an explicit `status`, the helper must treat it
+    // as `received` for watermark purposes.
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await database.close();
+    });
+
+    test(
+      'entry without explicit status defaults to received for watermark',
+      () async {
+        const hostId = 'status-fallback-host';
+        final now = DateTime(2024, 3, 15, 12);
+
+        // Insert a companion where `status` is absent — relies on the DB
+        // default (received = 0) for the actual row and on the fallback
+        // branch for the watermark refresh.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(1),
+            entryId: const Value('entry-fallback'),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            // status intentionally omitted
+          ),
+        );
+
+        final row = await database.getEntryByHostAndCounter(hostId, 1);
+        expect(row, isNotNull);
+        // The DB default maps to received (index 0).
+        expect(row!.status, SyncSequenceStatus.received.index);
+
+        // Watermark must advance to 1 because counter 1 was received.
+        expect(await database.getLastCounterForHost(hostId), 1);
+      },
+    );
+  });
+
+  group('updateOutboxMessage - priority parameter -', () {
+    // Exercises line 2253: the `priority != null ? Value(priority) : Value.absent()`
+    // branch inside `updateOutboxMessage`.
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await database.close();
+    });
+
+    test('updates priority when non-null priority is supplied', () async {
+      final now = DateTime(2024, 3, 15, 10);
+      final id = await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('subject'),
+          message: const Value('{}'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          priority: Value(OutboxPriority.low.index),
+        ),
+      );
+
+      final rowsAffected = await database.updateOutboxMessage(
+        itemId: id,
+        newMessage: '{"v":2}',
+        newSubject: 'updated',
+        priority: OutboxPriority.high.index,
+      );
+
+      expect(rowsAffected, 1);
+      final item = await database.getOutboxItemById(id);
+      expect(item, isNotNull);
+      expect(item!.message, '{"v":2}');
+      expect(item.priority, OutboxPriority.high.index);
+    });
+
+    test('leaves priority unchanged when null priority is supplied', () async {
+      final now = DateTime(2024, 3, 15, 10);
+      final id = await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('subject'),
+          message: const Value('{}'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          priority: Value(OutboxPriority.normal.index),
+        ),
+      );
+
+      await database.updateOutboxMessage(
+        itemId: id,
+        newMessage: '{"v":2}',
+        newSubject: 'updated',
+        // priority intentionally null
+      );
+
+      final item = await database.getOutboxItemById(id);
+      expect(item, isNotNull);
+      // Priority must remain normal since we passed null.
+      expect(item!.priority, OutboxPriority.normal.index);
+    });
+  });
+
+  group('InboundEventQueue and QueueMarkers table schema -', () {
+    // These tests directly insert into and query from the InboundEventQueue
+    // and QueueMarkers tables (lines 483-596 in sync_db.dart). Because all
+    // business logic that touches these tables lives in separate feature
+    // classes, no existing test exercised the table column declarations;
+    // inserting and reading back rows via the generated Drift API is the
+    // lightest-weight way to reach those declaration lines.
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await database.close();
+    });
+
+    test('can insert and retrieve an InboundEventQueue row', () async {
+      const eventId = 'event-schema-test-1';
+      const roomId = '!room-schema:example.org';
+      const originTs = 1_700_000_000_000;
+      const enqueuedAt = 1_700_000_001_000;
+
+      await database
+          .into(database.inboundEventQueue)
+          .insert(
+            InboundEventQueueCompanion.insert(
+              eventId: eventId,
+              roomId: roomId,
+              originTs: originTs,
+              producer: 'liveStream',
+              rawJson: '{"type":"m.room.message"}',
+              enqueuedAt: enqueuedAt,
+            ),
+          );
+
+      final rows = await database.select(database.inboundEventQueue).get();
+      expect(rows, hasLength(1));
+      final row = rows.first;
+      expect(row.eventId, eventId);
+      expect(row.roomId, roomId);
+      expect(row.originTs, originTs);
+      expect(row.producer, 'liveStream');
+      expect(row.rawJson, '{"type":"m.room.message"}');
+      expect(row.enqueuedAt, enqueuedAt);
+      expect(row.attempts, 0);
+      expect(row.nextDueAt, 0);
+      expect(row.leaseUntil, 0);
+      expect(row.status, 'enqueued');
+      expect(row.committedAt, isNull);
+      expect(row.abandonedAt, isNull);
+      expect(row.lastErrorReason, isNull);
+      expect(row.resurrectionCount, 0);
+      expect(row.jsonPath, isNull);
+    });
+
+    test('enforces UNIQUE constraint on eventId', () async {
+      const eventId = 'event-unique-test';
+      final insert = InboundEventQueueCompanion.insert(
+        eventId: eventId,
+        roomId: '!room:example.org',
+        originTs: 1_700_000_000_000,
+        producer: 'bootstrap',
+        rawJson: '{}',
+        enqueuedAt: 1_700_000_000_000,
+      );
+
+      await database.into(database.inboundEventQueue).insert(insert);
+
+      // A second insert with the same eventId must fail.
+      await expectLater(
+        () => database.into(database.inboundEventQueue).insert(insert),
+        throwsA(anything),
+      );
+
+      final rows = await database.select(database.inboundEventQueue).get();
+      expect(rows, hasLength(1));
+    });
+
+    test(
+      'stores nullable columns (committedAt, abandonedAt, lastErrorReason, '
+      'jsonPath) and reads them back correctly',
+      () async {
+        const enqueuedAt = 1_700_000_000_000;
+        await database
+            .into(database.inboundEventQueue)
+            .insert(
+              InboundEventQueueCompanion.insert(
+                eventId: 'event-nullable-cols',
+                roomId: '!room:example.org',
+                originTs: enqueuedAt,
+                producer: 'limitedSync',
+                rawJson: '{}',
+                enqueuedAt: enqueuedAt,
+                committedAt: const Value(1_700_000_005_000),
+                lastErrorReason: const Value('transient'),
+                jsonPath: const Value('journals/abc.json'),
+              ),
+            );
+
+        final row = await (database.select(
+          database.inboundEventQueue,
+        )..where((t) => t.eventId.equals('event-nullable-cols'))).getSingle();
+
+        expect(row.committedAt, 1_700_000_005_000);
+        expect(row.abandonedAt, isNull);
+        expect(row.lastErrorReason, 'transient');
+        expect(row.jsonPath, 'journals/abc.json');
+      },
+    );
+
+    test('can insert and retrieve a QueueMarkers row', () async {
+      const roomId = '!marker-room:example.org';
+
+      await database
+          .into(database.queueMarkers)
+          .insert(
+            QueueMarkersCompanion.insert(roomId: roomId),
+          );
+
+      final rows = await database.select(database.queueMarkers).get();
+      expect(rows, hasLength(1));
+      final row = rows.first;
+      expect(row.roomId, roomId);
+      expect(row.lastAppliedEventId, isNull);
+      expect(row.lastAppliedTs, 0);
+      expect(row.lastAppliedCommitSeq, 0);
+    });
+
+    test('QueueMarkers upserts advance the marker monotonically', () async {
+      const roomId = '!upsert-room:example.org';
+
+      await database
+          .into(database.queueMarkers)
+          .insert(
+            QueueMarkersCompanion.insert(roomId: roomId),
+          );
+
+      // Advance the marker.
+      await (database.update(
+        database.queueMarkers,
+      )..where((t) => t.roomId.equals(roomId))).write(
+        const QueueMarkersCompanion(
+          lastAppliedEventId: Value(r'$event-42'),
+          lastAppliedTs: Value(1_700_000_042_000),
+          lastAppliedCommitSeq: Value(1),
+        ),
+      );
+
+      final row = await (database.select(
+        database.queueMarkers,
+      )..where((t) => t.roomId.equals(roomId))).getSingle();
+      expect(row.lastAppliedEventId, r'$event-42');
+      expect(row.lastAppliedTs, 1_700_000_042_000);
+      expect(row.lastAppliedCommitSeq, 1);
+    });
+  });
 }

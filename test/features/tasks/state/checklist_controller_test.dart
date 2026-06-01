@@ -869,5 +869,974 @@ void main() {
         );
       });
     });
+
+    group('_listen / update notifications', () {
+      test('refreshes state when a subscribed ID appears in update stream',
+          () async {
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Initial build
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        // Now update the checklist that the db returns
+        final updatedChecklist = testChecklist.copyWith(
+          data: const ChecklistData(
+            title: 'Updated Title',
+            linkedChecklistItems: ['item-1', 'item-2', 'item-3'],
+            linkedTasks: ['task-1'],
+          ),
+        );
+        when(
+          () => mockDb.journalEntityById('checklist-1'),
+        ).thenAnswer((_) async => updatedChecklist);
+
+        // Fire a notification for the checklist ID
+        updateStreamController.add({'checklist-1'});
+
+        // Pump async events
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )),
+        );
+        expect(state.value?.data.title, 'Updated Title');
+        expect(
+          state.value?.data.linkedChecklistItems,
+          ['item-1', 'item-2', 'item-3'],
+        );
+      });
+
+      test('ignores notifications for unrelated IDs', () async {
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        var fetchCount = 0;
+        when(
+          () => mockDb.journalEntityById('checklist-1'),
+        ).thenAnswer((_) async {
+          fetchCount++;
+          return testChecklist;
+        });
+
+        // Notification for a completely unrelated ID
+        updateStreamController.add({'unrelated-id'});
+        await Future<void>.delayed(Duration.zero);
+
+        // No additional fetch should have happened
+        expect(fetchCount, isZero);
+      });
+    });
+
+    group('updateTitle', () {
+      test('updates checklist title via updateChecklist', () async {
+        final mockChecklistRepository = MockChecklistRepository();
+        when(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        await notifier.updateTitle('New Title');
+
+        final captured =
+            verify(
+                  () => mockChecklistRepository.updateChecklist(
+                    checklistId: 'checklist-1',
+                    data: captureAny(named: 'data'),
+                  ),
+                ).captured.single
+                as ChecklistData;
+
+        expect(captured.title, 'New Title');
+
+        final state = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )),
+        );
+        expect(state.value?.data.title, 'New Title');
+      });
+
+      test('uses empty string when title is null', () async {
+        final mockChecklistRepository = MockChecklistRepository();
+        when(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        await notifier.updateTitle(null);
+
+        final captured =
+            verify(
+                  () => mockChecklistRepository.updateChecklist(
+                    checklistId: 'checklist-1',
+                    data: captureAny(named: 'data'),
+                  ),
+                ).captured.single
+                as ChecklistData;
+
+        expect(captured.title, '');
+      });
+    });
+
+    group('delete - error path', () {
+      test('logs error when exception thrown during task update', () async {
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            taskData: any(named: 'taskData'),
+            entryText: any(named: 'entryText'),
+          ),
+        ).thenThrow(Exception('update failed'));
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        // Deletion should still return true even though the task update threw
+        final result = await notifier.delete();
+        expect(result, isTrue);
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.tasks,
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'delete',
+          ),
+        ).called(1);
+      });
+    });
+
+    group('relinkItem', () {
+      test('adds an item that is not yet in the list', () async {
+        final mockChecklistRepository = MockChecklistRepository();
+        when(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        await notifier.relinkItem('item-new');
+
+        final captured =
+            verify(
+                  () => mockChecklistRepository.updateChecklist(
+                    checklistId: 'checklist-1',
+                    data: captureAny(named: 'data'),
+                  ),
+                ).captured.single
+                as ChecklistData;
+
+        expect(captured.linkedChecklistItems, ['item-1', 'item-2', 'item-new']);
+      });
+
+      test('does not duplicate an item that already exists in the list',
+          () async {
+        final mockChecklistRepository = MockChecklistRepository();
+        when(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        // item-1 already present in testChecklist
+        await notifier.relinkItem('item-1');
+
+        // The persisted list must not contain item-1 twice.
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: captureAny(named: 'data'),
+          ),
+        ).captured.last as ChecklistData;
+        expect(
+          captured.linkedChecklistItems.where((id) => id == 'item-1').length,
+          1,
+        );
+
+        final state = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )),
+        );
+        // Items unchanged
+        expect(
+          state.value?.data.linkedChecklistItems,
+          ['item-1', 'item-2'],
+        );
+      });
+    });
+
+    group('createChecklistItem', () {
+      late MockChecklistRepository mockChecklistRepository;
+
+      ChecklistItem makeCreatedItem(String itemId) => ChecklistItem(
+        meta: Metadata(
+          id: itemId,
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
+        ),
+        data: const ChecklistItemData(
+          title: 'New Item',
+          isChecked: false,
+          linkedChecklists: ['checklist-1'],
+        ),
+      );
+
+      setUp(() {
+        mockChecklistRepository = MockChecklistRepository();
+        when(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+      });
+
+      test('creates item, updates state, and returns new item id', () async {
+        when(
+          () => mockChecklistRepository.createChecklistItem(
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            checklistId: any(named: 'checklistId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => makeCreatedItem('new-item-1'));
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        final createdId = await notifier.createChecklistItem(
+          'New Item',
+          isChecked: false,
+          categoryId: null,
+        );
+
+        expect(createdId, 'new-item-1');
+
+        final state = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )),
+        );
+        expect(
+          state.value?.data.linkedChecklistItems,
+          contains('new-item-1'),
+        );
+
+        // updateChecklist must be called with the new item appended
+        final captured =
+            verify(
+                  () => mockChecklistRepository.updateChecklist(
+                    checklistId: 'checklist-1',
+                    data: captureAny(named: 'data'),
+                  ),
+                ).captured.single
+                as ChecklistData;
+        expect(captured.linkedChecklistItems, contains('new-item-1'));
+      });
+
+      test('returns null when repository createChecklistItem returns null',
+          () async {
+        when(
+          () => mockChecklistRepository.createChecklistItem(
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            checklistId: any(named: 'checklistId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        final createdId = await notifier.createChecklistItem(
+          'New Item',
+          isChecked: true,
+          categoryId: 'cat-1',
+        );
+
+        expect(createdId, isNull);
+
+        // updateChecklist must NOT be called when creation fails
+        verifyNever(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        );
+      });
+
+      test('returns null when title is null', () async {
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        final createdId = await notifier.createChecklistItem(
+          null,
+          isChecked: false,
+          categoryId: null,
+        );
+
+        expect(createdId, isNull);
+        verifyNever(
+          () => mockChecklistRepository.createChecklistItem(
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            checklistId: any(named: 'checklistId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      });
+    });
+
+    group('dropChecklistNewItem', () {
+      late MockChecklistRepository mockChecklistRepository;
+
+      ChecklistItem makeCreatedItem(String itemId) => ChecklistItem(
+        meta: Metadata(
+          id: itemId,
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
+        ),
+        data: const ChecklistItemData(
+          title: 'Dropped Item',
+          isChecked: false,
+          linkedChecklists: ['checklist-1'],
+        ),
+      );
+
+      setUp(() {
+        mockChecklistRepository = MockChecklistRepository();
+        when(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+      });
+
+      test('creates new item and adds it to checklist linked items', () async {
+        when(
+          () => mockChecklistRepository.createChecklistItem(
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            checklistId: any(named: 'checklistId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => makeCreatedItem('dropped-item-1'));
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        await notifier.dropChecklistNewItem(
+          {'checklistItemTitle': 'Dropped Item', 'checklistItemStatus': false},
+          categoryId: 'cat-1',
+        );
+
+        final state = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )),
+        );
+        expect(
+          state.value?.data.linkedChecklistItems,
+          contains('dropped-item-1'),
+        );
+      });
+
+      test('does nothing when localData map has no checklistItemTitle',
+          () async {
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        // Map without checklistItemTitle key
+        await notifier.dropChecklistNewItem({'someOtherKey': 'value'});
+
+        verifyNever(
+          () => mockChecklistRepository.createChecklistItem(
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            checklistId: any(named: 'checklistId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      });
+
+      test('does nothing when item creation returns null', () async {
+        when(
+          () => mockChecklistRepository.createChecklistItem(
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            checklistId: any(named: 'checklistId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        await notifier.dropChecklistNewItem(
+          {'checklistItemTitle': 'Dropped Item'},
+        );
+
+        // updateChecklist must not be called when creation fails
+        verifyNever(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        );
+      });
+
+      test('dropChecklistItem delegates to dropChecklistNewItem for new items',
+          () async {
+        when(
+          () => mockChecklistRepository.createChecklistItem(
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            checklistId: any(named: 'checklistId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => makeCreatedItem('new-via-drop'));
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        // dropChecklistItem routes to dropChecklistNewItem when
+        // 'checklistItemTitle' is present in localData
+        await notifier.dropChecklistItem(
+          {'checklistItemTitle': 'Dropped via route', 'checklistItemStatus': true},
+          categoryId: 'cat-1',
+        );
+
+        final state = container.read(
+          checklistControllerProvider((
+            id: 'checklist-1',
+            taskId: 'task-1',
+          )),
+        );
+        expect(
+          state.value?.data.linkedChecklistItems,
+          contains('new-via-drop'),
+        );
+      });
+    });
+
+    group('ChecklistCompletionController', () {
+      late MockChecklistRepository mockChecklistRepository;
+
+      ChecklistItem makeItem({
+        required String id,
+        required bool isChecked,
+        bool isArchived = false,
+        bool isDeleted = false,
+      }) {
+        final meta = Metadata(
+          id: id,
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
+          deletedAt: isDeleted ? DateTime(2025) : null,
+        );
+        return ChecklistItem(
+          meta: meta,
+          data: ChecklistItemData(
+            title: id,
+            isChecked: isChecked,
+            linkedChecklists: const ['checklist-comp'],
+            isArchived: isArchived,
+          ),
+        );
+      }
+
+      setUp(() {
+        mockChecklistRepository = MockChecklistRepository();
+        when(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => true);
+      });
+
+      /// Helper: build a [ProviderContainer] with the checklist and item
+      /// controllers all warmed up so that [_computeState] sees resolved values.
+      Future<ProviderContainer> buildCompletionContainer({
+        required Checklist checklist,
+        required List<String> itemIds,
+      }) async {
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Warm up the checklist controller first so its state is resolved.
+        await container.read(
+          checklistControllerProvider((
+            id: checklist.meta.id,
+            taskId: null,
+          )).future,
+        );
+
+        // Warm up every item controller so _computeState finds resolved values.
+        for (final itemId in itemIds) {
+          await container.read(
+            checklistItemControllerProvider((
+              id: itemId,
+              taskId: null,
+            )).future,
+          );
+        }
+
+        return container;
+      }
+
+      test('computes correct completion counts from checklist items', () async {
+        final checklist = Checklist(
+          meta: Metadata(
+            id: 'checklist-comp',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+          ),
+          data: const ChecklistData(
+            title: 'Completion Test',
+            linkedChecklistItems: ['item-a', 'item-b', 'item-c'],
+            linkedTasks: [],
+          ),
+        );
+
+        when(
+          () => mockDb.journalEntityById('checklist-comp'),
+        ).thenAnswer((_) async => checklist);
+        when(
+          () => mockDb.journalEntityById('item-a'),
+        ).thenAnswer((_) async => makeItem(id: 'item-a', isChecked: true));
+        when(
+          () => mockDb.journalEntityById('item-b'),
+        ).thenAnswer((_) async => makeItem(id: 'item-b', isChecked: false));
+        when(
+          () => mockDb.journalEntityById('item-c'),
+        ).thenAnswer((_) async => makeItem(id: 'item-c', isChecked: true));
+
+        final container = await buildCompletionContainer(
+          checklist: checklist,
+          itemIds: const ['item-a', 'item-b', 'item-c'],
+        );
+
+        final result = await container.read(
+          checklistCompletionControllerProvider((
+            id: 'checklist-comp',
+            taskId: null,
+          )).future,
+        );
+
+        expect(result.totalCount, 3);
+        expect(result.completedCount, 2);
+      });
+
+      test('excludes archived and deleted items from counts', () async {
+        final checklist = Checklist(
+          meta: Metadata(
+            id: 'checklist-comp',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+          ),
+          data: const ChecklistData(
+            title: 'Filter Test',
+            linkedChecklistItems: ['item-a', 'item-b', 'item-c'],
+            linkedTasks: [],
+          ),
+        );
+
+        when(
+          () => mockDb.journalEntityById('checklist-comp'),
+        ).thenAnswer((_) async => checklist);
+        when(
+          () => mockDb.journalEntityById('item-a'),
+        ).thenAnswer((_) async => makeItem(id: 'item-a', isChecked: true));
+        // item-b is archived
+        when(
+          () => mockDb.journalEntityById('item-b'),
+        ).thenAnswer(
+          (_) async =>
+              makeItem(id: 'item-b', isChecked: true, isArchived: true),
+        );
+        // item-c is deleted
+        when(
+          () => mockDb.journalEntityById('item-c'),
+        ).thenAnswer(
+          (_) async =>
+              makeItem(id: 'item-c', isChecked: true, isDeleted: true),
+        );
+
+        final container = await buildCompletionContainer(
+          checklist: checklist,
+          itemIds: const ['item-a', 'item-b', 'item-c'],
+        );
+
+        final result = await container.read(
+          checklistCompletionControllerProvider((
+            id: 'checklist-comp',
+            taskId: null,
+          )).future,
+        );
+
+        // Only item-a is active and counted
+        expect(result.totalCount, 1);
+        expect(result.completedCount, 1);
+      });
+
+      test('returns zeros when checklist has no items', () async {
+        final emptyChecklist = Checklist(
+          meta: Metadata(
+            id: 'checklist-comp',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+          ),
+          data: const ChecklistData(
+            title: 'Empty',
+            linkedChecklistItems: [],
+            linkedTasks: [],
+          ),
+        );
+
+        when(
+          () => mockDb.journalEntityById('checklist-comp'),
+        ).thenAnswer((_) async => emptyChecklist);
+
+        final container = await buildCompletionContainer(
+          checklist: emptyChecklist,
+          itemIds: const [],
+        );
+
+        final result = await container.read(
+          checklistCompletionControllerProvider((
+            id: 'checklist-comp',
+            taskId: null,
+          )).future,
+        );
+
+        expect(result.totalCount, 0);
+        expect(result.completedCount, 0);
+      });
+    });
   });
 }

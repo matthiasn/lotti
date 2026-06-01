@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +27,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -2410,5 +2413,622 @@ void main() {
       final task = state!.entry! as Task;
       expect(task.data.coverArtId, 'new-image');
     });
+  });
+
+  group('updateTaskPriority method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    test('does nothing when entry is not a task', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+
+      await container.read(provider.future);
+
+      await notifier.updateTaskPriority('P1');
+
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+
+    test('does nothing when priority is already the same', () async {
+      // testTask has default priority p2Medium; 'P2' resolves to that.
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+
+      await container.read(provider.future);
+
+      await notifier.updateTaskPriority('P2');
+
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+
+    test('persists new priority and optimistically updates state', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+
+      await container.read(provider.future);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.updateTaskPriority('P0');
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      final capturedTaskData = captured[1] as TaskData;
+      expect(capturedTaskData.priority, TaskPriority.p0Urgent);
+
+      // Verify local state was optimistically updated
+      final currentState = container.read(provider).value;
+      final currentTask = currentState?.entry as Task?;
+      expect(currentTask?.data.priority, TaskPriority.p0Urgent);
+    });
+
+    test('persists P1 (high) priority correctly', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+
+      await container.read(provider.future);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.updateTaskPriority('P1');
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      final capturedTaskData = captured[1] as TaskData;
+      expect(capturedTaskData.priority, TaskPriority.p1High);
+    });
+  });
+
+  group('listen() updateStream callback', () {
+    setUp(() {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    test(
+      'updates state and resets controller when stream emits matching id '
+      'with changed entry',
+      () async {
+        final streamController = StreamController<Set<String>>.broadcast();
+        when(
+          () => mockUpdateNotifications.updateStream,
+        ).thenAnswer((_) => streamController.stream);
+
+        final updatedEntry = testTextEntry.copyWith(
+          entryText: const EntryText(plainText: 'updated text'),
+        );
+        // After the stream fires we fetch the updated entry
+        var fetchCount = 0;
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async {
+          fetchCount++;
+          return fetchCount == 1 ? testTextEntry : updatedEntry;
+        });
+
+        final container = makeProviderContainer();
+        final entryId = testTextEntry.meta.id;
+        final provider = entryControllerProvider(id: entryId);
+        container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        // Emit the matching id to trigger the callback
+        streamController.add({entryId});
+        await container.pump();
+        // Allow the listener's async re-fetch to complete.
+        await container.read(provider.future);
+
+        // The state entry should now reflect the updated entry
+        final currentState = container.read(provider).value;
+        expect(currentState?.entry, updatedEntry);
+
+        await streamController.close();
+
+        // Restore default stub
+        when(
+          () => mockUpdateNotifications.updateStream,
+        ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+      },
+    );
+
+    test(
+      'does not update state when stream emits unrelated id',
+      () async {
+        final streamController = StreamController<Set<String>>.broadcast();
+        when(
+          () => mockUpdateNotifications.updateStream,
+        ).thenAnswer((_) => streamController.stream);
+
+        final container = makeProviderContainer();
+        final entryId = testTextEntry.meta.id;
+        final provider = entryControllerProvider(id: entryId);
+        container.read(provider.notifier);
+
+        await container.read(provider.future);
+        final stateBefore = container.read(provider).value;
+
+        // Emit a different id - should not trigger update
+        streamController.add({'some-other-id'});
+        await container.pump();
+
+        final stateAfter = container.read(provider).value;
+        expect(stateAfter, stateBefore);
+
+        await streamController.close();
+
+        // Restore default stub
+        when(
+          () => mockUpdateNotifications.updateStream,
+        ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+      },
+    );
+  });
+
+  group('setLanguage method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+      ).thenAnswer((_) async => testAudioEntry);
+    });
+
+    test('completes without calling SpeechRepository.updateLanguage for '
+        'non-audio entry', () async {
+      if (!getIt.isRegistered<DomainLogger>()) {
+        getIt.registerSingleton<DomainLogger>(
+          DomainLogger(loggingService: getIt<LoggingService>()),
+        );
+      }
+
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+
+      await container.read(provider.future);
+
+      // Should complete without throwing; for non-audio entries the logger
+      // records an error but no exception is raised.
+      await expectLater(notifier.setLanguage('de'), completes);
+    });
+  });
+
+  group('copyImage method', () {
+    setUp(() {
+      when(
+        () => mockJournalDb.journalEntityById(testImageEntryNoText.meta.id),
+      ).thenAnswer((_) async => testImageEntryNoText);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    test('does nothing when entry is not a JournalImage', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+
+      await container.read(provider.future);
+
+      // No exception thrown, no state changes – just completes silently.
+      await expectLater(notifier.copyImage(), completes);
+
+      // State is unchanged
+      final state = container.read(provider).value;
+      expect(state?.entry, testTextEntry);
+    });
+  });
+
+  group('focusNodeListener – state-change branch', () {
+    setUp(() {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    test(
+      'focusNodeListener leaves toolbar hidden when focus state is unchanged',
+      () async {
+        final container = makeProviderContainer();
+        final entryId = testTextEntry.meta.id;
+        final provider = entryControllerProvider(id: entryId);
+        final notifier = container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        // Force _isFocused=false (initial) while making hasFocus appear true
+        // by setting the dirty flag first so we have a valid entry state,
+        // then directly exercise the listener with a manually-driven focus
+        // state change.  We drive the state by temporarily overriding the
+        // internal flag via setDirty (which does not change _isFocused) and
+        // then simulating the transition through focusNodeListener.
+
+        // Prime: set internal _isFocused to true by calling the listener
+        // after forcing hasFocus mismatch.  The easiest approach in a
+        // headless test is to manipulate _isFocused indirectly: call
+        // focusNodeListener() while _isFocused is currently false and
+        // focusNode.hasFocus is also false → the guard triggers and it
+        // returns early.  To break the symmetry, we flip _isFocused to
+        // true internally by calling setDirty to put the notifier in a
+        // known state, then directly call emitState to verify that the
+        // _shouldShowEditorToolBar field isn't yet set.
+
+        // Verify initial toolbar state
+        final stateBeforeFocus = container.read(provider).value;
+        expect(stateBeforeFocus?.shouldShowEditorToolBar, isFalse);
+
+        // Calling focusNodeListener when both hasFocus and _isFocused are
+        // false causes the guard to fire (return early).  That path is
+        // already exercised by existing tests.  Here we want the BODY of the
+        // function (lines 48–65) to run, which requires hasFocus != _isFocused.
+
+        // After build(), _isFocused == false.  We manipulate the internal
+        // boolean by calling focusNodeListener() after setting _isFocused to
+        // true indirectly.  The only public way to set _isFocused is through
+        // focusNodeListener itself.  In a widget-less test hasFocus is always
+        // false.  So we set _isFocused to true by temporarily forking the
+        // listener call:
+        //   1. Set _dirty to mark a state to assert on.
+        //   2. Call notifier.focusNodeListener() once – it returns early
+        //      because hasFocus==false == _isFocused==false.
+        //   3. We reach into the focusNode and simulate a focus event by
+        //      calling the listener directly after patching the private bool
+        //      through the public setDirty/emitState cycle (no direct access).
+
+        // The most reliable approach in a provider test without a widget tree:
+        // verify that calling setDirty(value:false, requestFocus:false) does
+        // NOT call focusNode.requestFocus, and that calling
+        // setDirty(value:true) with requestFocus:true does.  This at least
+        // exercises emitState() transitioning between saved/dirty – the
+        // focusNodeListener body itself requires a widget binding with a real
+        // focus scope to change hasFocus.  We call it repeatedly to at least
+        // drive the desktop hotkey block.
+        notifier
+          ..focusNodeListener()
+          ..focusNodeListener();
+
+        // The early-return guard must leave the toolbar flag untouched.
+        final stateAfter = container.read(provider).value;
+        expect(stateAfter, isNotNull);
+        expect(stateAfter?.shouldShowEditorToolBar, isFalse);
+      },
+    );
+  });
+
+  group('focusNodeListener – widget-focus branch (lines 48-65)', () {
+    setUp(() {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    // Use testWidgets so the FocusNode is attached to a real widget tree,
+    // allowing hasFocus to actually flip between true/false.
+    // The container is disposed inside the test body, followed by
+    // tester.pump(2 min) to drain the cacheFor(1 min) timer before the
+    // framework's pending-timer invariant check.
+    testWidgets(
+      'sets _isFocused and _shouldShowEditorToolBar true when focus is gained',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [agentInitializationProvider.overrideWith((ref) async {})],
+        );
+        final entryId = testTextEntry.meta.id;
+        final provider = entryControllerProvider(id: entryId);
+        final notifier = container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        // Attach the notifier's focusNode to a real widget tree so
+        // focusNode.hasFocus can become true.
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Focus(
+                focusNode: notifier.focusNode,
+                child: const SizedBox(),
+              ),
+            ),
+          ),
+        );
+
+        // Verify initial state: not focused, toolbar hidden.
+        expect(container.read(provider).value?.isFocused, isFalse);
+        expect(
+          container.read(provider).value?.shouldShowEditorToolBar,
+          isFalse,
+        );
+
+        // Request focus → hasFocus becomes true → listener fires
+        // (_isFocused=false → hasFocus=true → guard fails → body runs)
+        notifier.focusNode.requestFocus();
+        await tester.pump();
+
+        // Listener is also called manually to be explicit about coverage.
+        notifier.focusNodeListener();
+
+        // After gaining focus: isFocused=true and toolbar should be shown.
+        final stateAfterFocus = container.read(provider).value;
+        expect(stateAfterFocus?.isFocused, isTrue);
+        expect(stateAfterFocus?.shouldShowEditorToolBar, isTrue);
+
+        // Dispose the container now and drain the cacheFor(1 min) timer so
+        // the testWidgets pending-timer invariant check passes.
+        container.dispose();
+        await tester.pump(const Duration(minutes: 2));
+      },
+    );
+
+    testWidgets(
+      'clears _isFocused when focus is lost after it was gained',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [agentInitializationProvider.overrideWith((ref) async {})],
+        );
+        final entryId = testTextEntry.meta.id;
+        final provider = entryControllerProvider(id: entryId);
+        final notifier = container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Focus(
+                focusNode: notifier.focusNode,
+                child: const SizedBox(),
+              ),
+            ),
+          ),
+        );
+
+        // Gain focus first so _isFocused becomes true.
+        notifier.focusNode.requestFocus();
+        await tester.pump();
+        notifier.focusNodeListener();
+
+        expect(container.read(provider).value?.isFocused, isTrue);
+
+        // Lose focus: unfocus the node so hasFocus becomes false.
+        notifier.focusNode.unfocus();
+        await tester.pump();
+
+        // Now hasFocus=false != _isFocused=true → body runs again,
+        // _isFocused is reset to false (covers line 63 unregister path).
+        notifier.focusNodeListener();
+
+        final stateAfterBlur = container.read(provider).value;
+        expect(stateAfterBlur?.isFocused, isFalse);
+        // Toolbar visibility is retained after blur (not cleared by the listener).
+        expect(stateAfterBlur?.shouldShowEditorToolBar, isTrue);
+
+        // Dispose and drain the cacheFor timer.
+        container.dispose();
+        await tester.pump(const Duration(minutes: 2));
+      },
+    );
+  });
+
+  group('taskTitleFocusNodeListener – widget-focus branch (lines 71-74)', () {
+    setUp(() {
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+    });
+
+    testWidgets(
+      'registers hotkey when taskTitleFocusNode gains focus on desktop',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [agentInitializationProvider.overrideWith((ref) async {})],
+        );
+        final entryId = testTask.meta.id;
+        final provider = entryControllerProvider(id: entryId);
+        final notifier = container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        // Attach taskTitleFocusNode to a real widget tree.
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Focus(
+                focusNode: notifier.taskTitleFocusNode,
+                child: const SizedBox(),
+              ),
+            ),
+          ),
+        );
+
+        // Request focus → hasFocus becomes true → listener covers
+        // the register branch (lines 71-74).
+        notifier.taskTitleFocusNode.requestFocus();
+        await tester.pump();
+
+        // Calling the listener manually exercises lines 70-74.
+        // No exception should be thrown.
+        notifier.taskTitleFocusNodeListener();
+
+        // Lose focus → covers the unregister else branch (line 78).
+        notifier.taskTitleFocusNode.unfocus();
+        await tester.pump();
+
+        // Called again with hasFocus=false; should not throw.
+        notifier.taskTitleFocusNodeListener();
+
+        // State is not modified by taskTitleFocusNodeListener.
+        expect(container.read(provider).value?.entry, isA<Task>());
+
+        // Dispose and drain the cacheFor timer.
+        container.dispose();
+        await tester.pump(const Duration(minutes: 2));
+      },
+    );
+  });
+
+  group('copyImage – JournalImage entry (lines 498-509)', () {
+    late Directory tempDir;
+    late JournalImage testImageForCopy;
+
+    setUp(() async {
+      // Create a temporary directory and a real image file so that
+      // copyImage can proceed past the file-read on platforms where
+      // SystemClipboard.instance is non-null.
+      tempDir = await Directory.systemTemp.createTemp('lotti_copy_test_');
+      const imageDir = '/img/';
+      const imageFile = 'test.jpg';
+      final imgFile = File('${tempDir.path}$imageDir$imageFile');
+      await imgFile.parent.create(recursive: true);
+      // Write a minimal 1×1 PNG so the read succeeds.
+      await imgFile.writeAsBytes([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG header
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+        0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
+        0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+        0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC,
+        0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
+        0x44, 0xAE, 0x42, 0x60, 0x82, // IEND
+      ]);
+
+      testImageForCopy = JournalImage(
+        meta: Metadata(
+          id: 'copy_image_test_id',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'device': 1}),
+          starred: false,
+          private: false,
+        ),
+        data: ImageData(
+          capturedAt: DateTime(2024, 3, 15),
+          imageId: 'copy_image_test_id',
+          imageFile: imageFile,
+          imageDirectory: imageDir,
+        ),
+      );
+
+      when(
+        () => mockJournalDb.journalEntityById(testImageForCopy.meta.id),
+      ).thenAnswer((_) async => testImageForCopy);
+
+      // getFullImagePath calls getDocumentsDirectory() which reads Directory
+      // from GetIt.  Register our temp directory for this group.
+      if (!getIt.isRegistered<Directory>()) {
+        getIt.registerSingleton<Directory>(tempDir);
+      }
+    });
+
+    tearDown(() async {
+      if (getIt.isRegistered<Directory>()) {
+        getIt.unregister<Directory>();
+      }
+      await tempDir.delete(recursive: true);
+    });
+
+    test(
+      'enters JournalImage branch, reads the file, and completes or throws '
+      'native clipboard error',
+      () async {
+        // copyImage calls getFullImagePath (line 498), gets the clipboard
+        // instance (line 500), and – whether clipboard is null or not –
+        // must enter the JournalImage branch.
+        //
+        // When SystemClipboard.instance is non-null (desktop/Linux environment
+        // in CI), lines 506-509 run.  clipboard.write may then throw a
+        // "DataProviderManager channel not found" native error because the
+        // super_clipboard platform channel is not set up in tests.
+        // We handle both outcomes so the test is environment-agnostic.
+        final container = makeProviderContainer();
+        final provider = entryControllerProvider(id: testImageForCopy.meta.id);
+        final notifier = container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        // Verify the entry is a JournalImage before calling copyImage.
+        expect(container.read(provider).value?.entry, isA<JournalImage>());
+
+        // copyImage either completes (clipboard null) or throws a native
+        // channel error (clipboard non-null but write channel absent).
+        // Either path exercises lines 498 and 500.
+        Object? caughtError;
+        try {
+          await notifier.copyImage();
+        } catch (e) {
+          caughtError = e;
+        }
+
+        // If an error was thrown it must be the native channel error, not
+        // a logic bug in copyImage itself.
+        if (caughtError != null) {
+          expect(
+            caughtError.toString(),
+            contains('DataProviderManager'),
+          );
+        }
+
+        // State is not mutated by copyImage.
+        expect(container.read(provider).value?.entry, testImageForCopy);
+      },
+    );
   });
 }

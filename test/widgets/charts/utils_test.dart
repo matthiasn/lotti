@@ -1,7 +1,78 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart'
+    show
+        Any,
+        CombinableAny,
+        ExploreConfig,
+        Generator,
+        Glados,
+        IntAnys,
+        ListAnys,
+        any;
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 import '../../test_data/test_data.dart';
+
+/// A measurement landing on day `offset` (relative to the range start) with
+/// the given numeric `value`.
+typedef _DaySpec = ({int offset, int value});
+
+class _SumByDayScenario {
+  const _SumByDayScenario({required this.rangeDays, required this.rawSpecs});
+
+  final int rangeDays;
+  final List<_DaySpec> rawSpecs;
+
+  static final DateTime base = DateTime(2024);
+
+  DateTime get rangeStart => base;
+  DateTime get rangeEnd => base.add(Duration(days: rangeDays));
+
+  /// Every measurement clamped into the `[0, rangeDays)` window so the output
+  /// is exactly one observation per range day (no out-of-range extra keys).
+  Iterable<_DaySpec> get specs =>
+      rawSpecs.map((s) => (offset: s.offset % rangeDays, value: s.value));
+
+  List<JournalEntity> get entities => [
+    for (final (index, spec) in specs.indexed)
+      buildMeasurementEntry(
+        id: 'm$index',
+        timestamp: base.add(Duration(days: spec.offset, hours: 12)),
+        value: spec.value,
+      ),
+  ];
+
+  List<Observation> get expected {
+    final sums = <int, int>{for (var d = 0; d < rangeDays; d++) d: 0};
+    for (final spec in specs) {
+      sums[spec.offset] = sums[spec.offset]! + spec.value;
+    }
+    return [
+      for (var d = 0; d < rangeDays; d++)
+        Observation(base.add(Duration(days: d)), sums[d]!),
+    ];
+  }
+
+  @override
+  String toString() =>
+      '_SumByDayScenario(rangeDays: $rangeDays, rawSpecs: $rawSpecs)';
+}
+
+extension _AnySumByDay on Any {
+  Generator<_DaySpec> get daySpec =>
+      combine2(intInRange(0, 7), intInRange(-3, 11), (int offset, int value) => (
+        offset: offset,
+        value: value,
+      ));
+
+  Generator<_SumByDayScenario> get sumByDayScenario => combine2(
+    intInRange(1, 8),
+    listWithLengthInRange(0, 15, daySpec),
+    (int rangeDays, List<_DaySpec> rawSpecs) =>
+        _SumByDayScenario(rangeDays: rangeDays, rawSpecs: rawSpecs),
+  );
+}
 
 void main() {
   group('Chart utils', () {
@@ -230,5 +301,185 @@ void main() {
         );
       },
     );
+  });
+
+  group('Observation', () {
+    test('toString renders dateTime and value', () {
+      expect(
+        Observation(DateTime(2024, 3, 15), 7).toString(),
+        '${DateTime(2024, 3, 15)} 7',
+      );
+    });
+
+    test('equality is value-based on dateTime and value', () {
+      expect(
+        Observation(DateTime(2024, 3, 15), 7),
+        Observation(DateTime(2024, 3, 15), 7),
+      );
+      expect(
+        Observation(DateTime(2024, 3, 15), 7),
+        isNot(Observation(DateTime(2024, 3, 15), 8)),
+      );
+    });
+  });
+
+  group('ymdh', () {
+    test('truncates to the beginning of the hour as ISO 8601', () {
+      expect(
+        ymdh(DateTime(2024, 3, 15, 14, 37, 22)),
+        DateTime(2024, 3, 15, 14).toIso8601String(),
+      );
+    });
+  });
+
+  group('date formatters', () {
+    final millis = DateTime(2024, 3, 15, 9, 5).millisecondsSinceEpoch;
+
+    test('chartDateFormatterYMD formats a full localized date', () {
+      expect(chartDateFormatterYMD(millis), 'Mar 15, 2024');
+    });
+
+    test('chartDateFormatterFull includes the time of day', () {
+      expect(chartDateFormatterFull(millis), 'Mar 15, 09:05');
+    });
+  });
+
+  group('aggregateSumByDay', () {
+    final rangeStart = DateTime(2024, 3, 10);
+    final rangeEnd = DateTime(2024, 3, 13);
+
+    test('sums same-day values and emits zero for empty days', () {
+      final result = aggregateSumByDay(
+        [
+          buildMeasurementEntry(
+            id: 'a',
+            timestamp: DateTime(2024, 3, 10, 9),
+            value: 4,
+          ),
+          buildMeasurementEntry(
+            id: 'b',
+            timestamp: DateTime(2024, 3, 10, 18),
+            value: 6,
+          ),
+          testTextEntry, // non-measurement is ignored
+        ],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      final byDay = {
+        for (final obs in result) obs.dateTime: obs.value,
+      };
+      expect(byDay[DateTime(2024, 3, 10)], 10);
+      expect(byDay[DateTime(2024, 3, 11)], 0);
+      expect(byDay[DateTime(2024, 3, 12)], 0);
+    });
+
+    Glados(any.sumByDayScenario, ExploreConfig(numRuns: 120)).test(
+      "emits one observation per range day summing that day's values",
+      (scenario) {
+        final result = aggregateSumByDay(
+          scenario.entities,
+          rangeStart: scenario.rangeStart,
+          rangeEnd: scenario.rangeEnd,
+        );
+        expect(result, scenario.expected, reason: '$scenario');
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('aggregateSumByHour', () {
+    test('sums same-hour values and emits zero for empty hours', () {
+      final result = aggregateSumByHour(
+        [
+          buildMeasurementEntry(
+            id: 'a',
+            timestamp: DateTime(2024, 3, 10, 9, 15),
+            value: 2,
+          ),
+          buildMeasurementEntry(
+            id: 'b',
+            timestamp: DateTime(2024, 3, 10, 9, 45),
+            value: 3,
+          ),
+          testTextEntry, // ignored
+        ],
+        rangeStart: DateTime(2024, 3, 10, 9),
+        rangeEnd: DateTime(2024, 3, 10, 12),
+      );
+
+      final byHour = {
+        for (final obs in result) obs.dateTime: obs.value,
+      };
+      expect(byHour[DateTime(2024, 3, 10, 9)], 5);
+      expect(byHour[DateTime(2024, 3, 10, 10)], 0);
+      expect(byHour[DateTime(2024, 3, 10, 11)], 0);
+    });
+  });
+
+  group('aggregateMaxByDay', () {
+    test('keeps the per-day maximum and emits zero for empty days', () {
+      final result = aggregateMaxByDay(
+        [
+          buildMeasurementEntry(
+            id: 'a',
+            timestamp: DateTime(2024, 3, 10, 9),
+            value: 4,
+          ),
+          buildMeasurementEntry(
+            id: 'b',
+            timestamp: DateTime(2024, 3, 10, 18),
+            value: 9,
+          ),
+          buildMeasurementEntry(
+            id: 'c',
+            timestamp: DateTime(2024, 3, 10, 20),
+            value: 2,
+          ),
+          testTextEntry, // ignored
+        ],
+        rangeStart: DateTime(2024, 3, 10),
+        rangeEnd: DateTime(2024, 3, 12),
+      );
+
+      final byDay = {
+        for (final obs in result) obs.dateTime: obs.value,
+      };
+      expect(byDay[DateTime(2024, 3, 10)], 9);
+      expect(byDay[DateTime(2024, 3, 11)], 0);
+    });
+  });
+
+  group('aggregateMeasurementNone', () {
+    test('maps each measurement to an observation and drops other entities', () {
+      final result = aggregateMeasurementNone([
+        buildMeasurementEntry(
+          id: 'a',
+          timestamp: DateTime(2024, 3, 10, 9),
+          value: 4,
+        ),
+        testTextEntry, // ignored via orElse
+        buildMeasurementEntry(
+          id: 'b',
+          timestamp: DateTime(2024, 3, 11, 9),
+          value: 8,
+        ),
+      ]);
+
+      expect(result, hasLength(2));
+      expect(result[0].dateTime, DateTime(2024, 3, 10, 9));
+      expect(result[0].value, 4);
+      expect(result[1].value, 8);
+    });
+  });
+
+  group('habitSorter', () {
+    test('returns 0 when priority, schedule, and name all tie', () {
+      // Same name, both unscheduled and unprioritised → every comparator ties,
+      // exercising the firstWhere orElse fallback.
+      final twin = habitFlossing.copyWith(id: 'a-different-id');
+      expect(habitSorter(habitFlossing, twin), 0);
+    });
   });
 }

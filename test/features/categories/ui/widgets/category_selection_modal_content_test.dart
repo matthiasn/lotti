@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/categories/ui/widgets/category_type_card.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
@@ -761,5 +764,265 @@ void main() {
       final size = tester.getSize(columnFinder);
       expect(size.height, lessThanOrEqualTo(640));
     });
+  });
+
+  group('search clear and submit', () {
+    testWidgets('onClear resets search query and restores full list', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySelectionModalContent(
+            onCategorySelected: (_) {},
+          ),
+        ),
+      );
+
+      // Enter a search query that filters the list to one result.
+      await tester.enterText(find.byType(TextField), 'Category 1');
+      await tester.pump();
+      expect(find.byType(CategoryTypeCard), findsOneWidget);
+
+      // Tap the clear button (cancel icon inside DesignSystemSearch).
+      final clearButton = find.byIcon(Icons.cancel_rounded);
+      expect(clearButton, findsOneWidget);
+      await tester.tap(clearButton);
+      await tester.pump();
+
+      // All three categories should be shown again after the clear.
+      expect(find.byType(CategoryTypeCard), findsNWidgets(3));
+    });
+
+    testWidgets(
+      'onSubmitted with no matching categories opens create modal',
+      (tester) async {
+        registerAllFallbackValues();
+        final mockRepository = MockCategoryRepository();
+        final created = CategoryDefinition(
+          id: 'cat-new',
+          name: 'BrandNew',
+          color: '#123456',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        );
+        when(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).thenAnswer((_) async => created);
+
+        await tester.pumpWidget(
+          WidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: CategorySelectionModalContent(
+              onCategorySelected: (_) {},
+            ),
+          ),
+        );
+
+        // Type a query that matches nothing.
+        await tester.enterText(find.byType(TextField), 'BrandNew');
+        await tester.pump();
+        // Confirm empty-add state (SettingsCard with add icon visible).
+        expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+
+        // Focus the field so testTextInput is connected, then submit.
+        await tester.showKeyboard(find.byType(TextField));
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pumpAndSettle();
+
+        // The create modal should now be on screen.
+        expect(find.byType(CategoryCreateModal), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'onSubmitted with non-empty matching results does NOT open create modal',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: CategorySelectionModalContent(
+              onCategorySelected: (_) {},
+            ),
+          ),
+        );
+
+        // Type a query that still matches categories.
+        await tester.enterText(find.byType(TextField), 'Category');
+        await tester.pump();
+        // Multiple results — submit should be a no-op.
+        await tester.showKeyboard(find.byType(TextField));
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pumpAndSettle();
+
+        // No create modal should appear.
+        expect(find.byType(CategoryCreateModal), findsNothing);
+      },
+    );
+  });
+
+  group('initial category selection and create flow', () {
+    testWidgets('tapping initial category card pops the route', (tester) async {
+      var popped = false;
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Material(
+            child: Builder(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) => Material(
+                          child: CategorySelectionModalContent(
+                            onCategorySelected: (_) {},
+                            initialCategoryId: 'cat1',
+                          ),
+                        ),
+                      ),
+                    );
+                    popped = true;
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // The initially-selected category card is shown at the top with
+      // selected: true — tapping it should call Navigator.pop.
+      final cards = tester
+          .widgetList<CategoryTypeCard>(find.byType(CategoryTypeCard))
+          .toList();
+      final initialCard = cards.firstWhere(
+        (c) => c.categoryDefinition.id == 'cat1' && c.selected,
+      );
+      await tester.tap(find.byWidget(initialCard));
+      await tester.pumpAndSettle();
+
+      // Route should have been popped.
+      expect(popped, isTrue);
+      expect(find.text('open'), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping SettingsCard in empty-add state opens create modal',
+      (tester) async {
+        registerAllFallbackValues();
+        final mockRepository = MockCategoryRepository();
+        final created = CategoryDefinition(
+          id: 'cat-new',
+          name: 'Unique',
+          color: '#ABCDEF',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        );
+        when(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).thenAnswer((_) async => created);
+
+        await tester.pumpWidget(
+          WidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: CategorySelectionModalContent(
+              onCategorySelected: (_) {},
+            ),
+          ),
+        );
+
+        // Enter a search query with no matches to reveal the add card.
+        await tester.enterText(find.byType(TextField), 'Unique');
+        await tester.pump();
+        expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+
+        // Tap the add card.
+        await tester.tap(find.byIcon(Icons.add_circle_outline));
+        await tester.pumpAndSettle();
+
+        // The create modal should now be on screen.
+        expect(find.byType(CategoryCreateModal), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'create modal onCategoryCreated invokes onCategorySelected callback',
+      (tester) async {
+        registerAllFallbackValues();
+        final mockRepository = MockCategoryRepository();
+        final created = CategoryDefinition(
+          id: 'cat-created',
+          name: 'Created',
+          color: '#FF00FF',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        );
+        when(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).thenAnswer((_) async => created);
+
+        final selectedCategories = <CategoryDefinition?>[];
+
+        await tester.pumpWidget(
+          WidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: CategorySelectionModalContent(
+              onCategorySelected: selectedCategories.add,
+            ),
+          ),
+        );
+
+        // Trigger the empty-add state.
+        await tester.enterText(find.byType(TextField), 'Created');
+        await tester.pump();
+        expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+
+        // Open the create modal via the add card.
+        await tester.tap(find.byIcon(Icons.add_circle_outline));
+        await tester.pumpAndSettle();
+        expect(find.byType(CategoryCreateModal), findsOneWidget);
+
+        // The modal pre-fills the name from the search query. Tap Save.
+        final saveButton = find.text('Save');
+        await tester.ensureVisible(saveButton);
+        await tester.pumpAndSettle();
+        await tester.tap(saveButton, warnIfMissed: false);
+        await tester.pumpAndSettle();
+
+        // onCategoryCreated fires onCategorySelected with the created category.
+        expect(selectedCategories, hasLength(1));
+        expect(selectedCategories.first?.id, equals('cat-created'));
+      },
+    );
   });
 }

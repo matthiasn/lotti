@@ -700,5 +700,471 @@ void main() {
 
       expect(controller.position.pixels, greaterThan(beforeOffset));
     });
+
+    testWidgets('toolbar toggle button switches comparison mode paged→both', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(430, 900)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draft(),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(430, 900),
+        ),
+      );
+      await tester.pump();
+
+      final messages = tester.element(find.byType(DayTimeline)).messages;
+
+      // Compact screen starts in paged mode → button tooltip says "show both".
+      expect(
+        find.byTooltip(messages.dailyOsNextTimelineShowBoth),
+        findsOneWidget,
+      );
+      expect(find.byType(PageView), findsOneWidget);
+
+      // Tap toggles to "both" side-by-side mode.
+      await tester.tap(
+        find.byTooltip(messages.dailyOsNextTimelineShowBoth),
+      );
+      await tester.pump();
+
+      expect(find.byType(PageView), findsNothing);
+      expect(
+        find.byTooltip(messages.dailyOsNextTimelineShowPaged),
+        findsOneWidget,
+      );
+
+      // Tap again goes back to paged.
+      await tester.tap(
+        find.byTooltip(messages.dailyOsNextTimelineShowPaged),
+      );
+      await tester.pump();
+
+      expect(find.byType(PageView), findsOneWidget);
+    });
+
+    testWidgets(
+      'horizontal pinch gesture on compact layout switches comparison mode',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(430, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draft(),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(430, 900),
+          ),
+        );
+        await tester.pump();
+
+        // Start in paged mode.
+        expect(find.byType(PageView), findsOneWidget);
+
+        final center = tester.getCenter(find.byType(DayTimeline));
+        // Spread fingers horizontally (pinch-out) → should switch to paged
+        // (i.e. the horizontal pinch-in to < 0.82 switches to "both").
+        final firstFinger = await tester.createGesture(pointer: 201);
+        final secondFinger = await tester.createGesture(pointer: 202);
+
+        // Start with fingers close together.
+        await firstFinger.down(center.translate(-20, 0));
+        await secondFinger.down(center.translate(20, 0));
+        await tester.pump();
+
+        // Move far apart horizontally (scale > 1.08 → paged stays or changes).
+        // Move inward so scale < 0.82 → switches to "both".
+        await firstFinger.moveTo(center.translate(-8, 0));
+        await secondFinger.moveTo(center.translate(8, 0));
+        await tester.pump();
+
+        await firstFinger.up();
+        await secondFinger.up();
+        await tester.pump();
+
+        // After inward horizontal pinch (scale < 0.82) → comparison mode = both.
+        expect(find.byType(PageView), findsNothing);
+      },
+    );
+
+    testWidgets('didUpdateWidget propagates new pxPerMinute to state', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1280, 900)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      // Start with default pxPerMinute = 1.0.
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draft(),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      final tenAmBefore = tester.getTopLeft(find.text('10:00').first).dy;
+
+      // Rebuild with a larger pxPerMinute → blocks spread further apart.
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draft(),
+            pxPerMinute: 2,
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      final tenAmAfter = tester.getTopLeft(find.text('10:00').first).dy;
+      expect(tenAmAfter, greaterThan(tenAmBefore));
+    });
+
+    testWidgets(
+      'TimeSpentSummary shows "Xh Ym" for durations spanning hours and minutes',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final day = DateTime(2026, 5, 25);
+        // One completed block: 1h 30m → should display "1h 30m".
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draftWithBlocks(blocks: const []),
+              actualBlocks: [
+                TimeBlock(
+                  id: 'long-block',
+                  title: 'Long session',
+                  start: day.add(const Duration(hours: 9)),
+                  end: day.add(const Duration(hours: 10, minutes: 30)),
+                  type: TimeBlockType.ai,
+                  state: TimeBlockState.completed,
+                  category: _work,
+                ),
+              ],
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        // Summary should show "1h 30m recorded · 1 done".
+        expect(
+          find.text(messages.dailyOsNextTimeSpentSummary('1h 30m', 1)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'TimeSpentSummary shows "Xh" for whole-hour durations with no minutes',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final day = DateTime(2026, 5, 25);
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draftWithBlocks(blocks: const []),
+              actualBlocks: [
+                TimeBlock(
+                  id: 'exact-hour',
+                  title: 'Exact hour',
+                  start: day.add(const Duration(hours: 9)),
+                  end: day.add(const Duration(hours: 11)),
+                  type: TimeBlockType.ai,
+                  state: TimeBlockState.completed,
+                  category: _work,
+                ),
+              ],
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        expect(
+          find.text(messages.dailyOsNextTimeSpentSummary('2h', 1)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'ActualCategoryBars shows "Xh Ym" per category for mixed durations',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final day = DateTime(2026, 5, 25);
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draftWithBlocks(blocks: const []),
+              actualBlocks: [
+                TimeBlock(
+                  id: 'cat-block-1',
+                  title: 'Cat block 1',
+                  start: day.add(const Duration(hours: 8)),
+                  end: day.add(const Duration(hours: 9, minutes: 15)),
+                  type: TimeBlockType.ai,
+                  state: TimeBlockState.completed,
+                  category: _work,
+                ),
+                TimeBlock(
+                  id: 'cat-block-2',
+                  title: 'Cat block 2',
+                  start: day.add(const Duration(hours: 9, minutes: 30)),
+                  end: day.add(const Duration(hours: 11, minutes: 30)),
+                  type: TimeBlockType.ai,
+                  state: TimeBlockState.completed,
+                  category: _work,
+                ),
+              ],
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
+          ),
+        );
+        await tester.pump();
+
+        // Total = 1h15m + 2h = 3h15m for _work category.
+        // ActualCategoryBars also formats per category → "3h 15m".
+        expect(find.text('3h 15m'), findsOneWidget);
+      },
+    );
+
+    testWidgets('ActualCategoryBars shows "Xh" for exact-hour category total', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1280, 900)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final day = DateTime(2026, 5, 25);
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(blocks: const []),
+            actualBlocks: [
+              TimeBlock(
+                id: 'exact-cat',
+                title: 'Exact hour cat',
+                start: day.add(const Duration(hours: 8)),
+                end: day.add(const Duration(hours: 10)),
+                type: TimeBlockType.ai,
+                state: TimeBlockState.completed,
+                category: _work,
+              ),
+            ],
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      // 2-hour block → "2h" in category bar.
+      expect(find.text('2h'), findsOneWidget);
+    });
+
+    testWidgets('EnergyBand low and secondWind levels render', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1280, 900)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final day = DateTime(2026, 5, 25);
+      DateTime at(int h, int m) => day.add(Duration(hours: h, minutes: m));
+
+      final draft = DraftPlan(
+        dayDate: day,
+        blocks: [
+          _timeBlock(
+            id: 'b1',
+            title: 'Anchor block',
+            startHour: 8,
+            endHour: 9,
+          ),
+        ],
+        bands: [
+          EnergyBand(
+            start: at(6, 0),
+            end: at(8, 0),
+            level: EnergyLevel.low,
+            label: 'LOW ENERGY',
+          ),
+          EnergyBand(
+            start: at(14, 0),
+            end: at(16, 0),
+            level: EnergyLevel.secondWind,
+            label: 'SECOND WIND',
+          ),
+        ],
+        capacityMinutes: 480,
+        scheduledMinutes: 60,
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: draft,
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      // Both bands are rendered as Semantics labels (IgnorePointer with Semantics).
+      expect(find.bySemanticsLabel('LOW ENERGY'), findsOneWidget);
+      expect(find.bySemanticsLabel('SECOND WIND'), findsOneWidget);
+    });
+
+    testWidgets(
+      'block subtitle shows session index and location when present',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final day = DateTime(2026, 5, 25);
+        final block = TimeBlock(
+          id: 'session-block',
+          title: 'Session work',
+          start: day.add(const Duration(hours: 9)),
+          end: day.add(const Duration(hours: 10, minutes: 30)),
+          type: TimeBlockType.ai,
+          state: TimeBlockState.drafted,
+          category: _work,
+          sessionIndex: 2,
+          sessionTotal: 3,
+          location: 'Office',
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draftWithBlocks(blocks: [block]),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        final sessionLabel = messages.dailyOsNextTimelineSessionOf(2, 3);
+        // The subtitle combines time range, session label and location.
+        expect(
+          find.textContaining(sessionLabel),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Office'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'TimeSpentSummary shows empty state text when no actual blocks exist',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draftWithBlocks(blocks: const []),
+              actualBlocks: const [],
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        expect(find.text(messages.dailyOsNextTimeSpentEmpty), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'clusters near the start/end of the day are merged into visible regions '
+      'to avoid tiny gaps',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        // A block starting at hour 1 (< gapThreshold=4 from hour 0) means the
+        // leading cluster should be extended back to hour 0.
+        // Similarly a block ending at hour 22 (< 4 from hour 24) merges end.
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draftWithBlocks(
+                blocks: [
+                  _timeBlock(
+                    id: 'early',
+                    title: 'Early block',
+                    startHour: 1,
+                    endHour: 2,
+                  ),
+                  _timeBlock(
+                    id: 'late',
+                    title: 'Late block',
+                    startHour: 22,
+                    endHour: 23,
+                  ),
+                ],
+              ),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
+          ),
+        );
+        await tester.pump();
+
+        // When the gap between start(0) and cluster.startHour(1) is < 4,
+        // the cluster is extended back to 0, so "00:00" should be visible.
+        expect(find.text('00:00'), findsOneWidget);
+        // When the gap between cluster.endHour(23) and end(24) is < 4,
+        // the cluster is extended to 24, so "24:00" should appear.
+        expect(find.text('24:00'), findsOneWidget);
+      },
+    );
   });
 }

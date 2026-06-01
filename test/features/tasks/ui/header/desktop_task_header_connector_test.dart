@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/features/projects/ui/widgets/project_selection_modal_content.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
@@ -919,4 +922,325 @@ void main() {
       },
     );
   });
+
+  group('DesktopTaskHeaderConnector — project picker', () {
+    /// Builds overrides for project-picker tests, using a real
+    /// [MockProjectRepository] stub so [projectsForCategoryProvider]
+    /// can serve the project list and [linkTaskToProject] /
+    /// [unlinkTaskFromProject] calls can be verified.
+    List<Override> projectPickerOverrides({
+      required Task task,
+      required ToggleCallTracker tracker,
+      required MockProjectRepository projectRepo,
+      List<ProjectEntry> projects = const [],
+    }) {
+      return [
+        entryControllerProvider(id: task.id).overrideWith(
+          () => FakeEntryController(task, tracker: tracker),
+        ),
+        labelsStreamProvider.overrideWith(
+          (ref) => Stream<List<LabelDefinition>>.value(const []),
+        ),
+        projectForTaskProvider(task.id).overrideWith((ref) async => null),
+        taskProgressControllerProvider(id: task.id).overrideWith(
+          () => _FakeTaskProgressController(null),
+        ),
+        projectRepositoryProvider.overrideWithValue(projectRepo),
+        if (task.meta.categoryId != null)
+          projectsForCategoryProvider(task.meta.categoryId!).overrideWith(
+            (ref) async => projects,
+          ),
+      ];
+    }
+
+    Widget wrapWithProjectApp({
+      required List<Override> overrides,
+      required Task task,
+    }) {
+      return ProviderScope(
+        overrides: overrides,
+        child: MaterialApp(
+          theme: DesignSystemTheme.dark(),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            FormBuilderLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: DesktopTaskHeaderConnector(taskId: task.id),
+          ),
+        ),
+      );
+    }
+
+    testWidgets(
+      'task with a category exposes a tappable project crumb that opens '
+      'the project picker (covers onProjectTap lambda + _showProjectPicker)',
+      (tester) async {
+        final category = buildCategory(id: 'cat-proj', name: 'Design');
+        when(
+          () => mockCache.getCategoryById('cat-proj'),
+        ).thenReturn(category);
+
+        final task = buildTask(categoryId: 'cat-proj');
+        final tracker = ToggleCallTracker();
+        final projectRepo = MockProjectRepository();
+
+        when(
+          () => projectRepo.updateStream,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+
+        final overrides = projectPickerOverrides(
+          task: task,
+          tracker: tracker,
+          projectRepo: projectRepo,
+        );
+
+        await tester.pumpWidget(
+          wrapWithProjectApp(overrides: overrides, task: task),
+        );
+        await tester.pumpAndSettle();
+
+        // "No project" is the unassigned crumb; when categoryId is non-null
+        // the connector passes a real onProjectTap callback (not null).
+        await tester.tap(find.text('No project'));
+        await tester.pumpAndSettle();
+
+        // The project-selection modal opened.
+        expect(find.byType(ProjectSelectionModalContent), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'selecting "No project" in the picker calls unlinkTaskFromProject',
+      (tester) async {
+        final category = buildCategory(id: 'cat-proj', name: 'Design');
+        when(
+          () => mockCache.getCategoryById('cat-proj'),
+        ).thenReturn(category);
+
+        // Task already linked to a project so we can verify unlink.
+        final existingProject = buildProject(id: 'proj-existing', title: 'Old');
+        final task = buildTask(categoryId: 'cat-proj');
+        final tracker = ToggleCallTracker();
+        final projectRepo = MockProjectRepository();
+
+        when(
+          () => projectRepo.updateStream,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+        when(
+          () => projectRepo.unlinkTaskFromProject(any()),
+        ).thenAnswer((_) async => true);
+
+        final overrides = projectPickerOverrides(
+          task: task,
+          tracker: tracker,
+          projectRepo: projectRepo,
+          projects: [existingProject],
+        );
+
+        await tester.pumpWidget(
+          wrapWithProjectApp(overrides: overrides, task: task),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('No project'));
+        await tester.pumpAndSettle();
+
+        // Tap the "No project" row (null selection).
+        await tester.tap(find.text('No project').last);
+        await tester.pumpAndSettle();
+
+        verify(() => projectRepo.unlinkTaskFromProject(task.id)).called(1);
+      },
+    );
+
+    testWidgets(
+      'selecting an existing project in the picker calls linkTaskToProject',
+      (tester) async {
+        final category = buildCategory(id: 'cat-proj', name: 'Design');
+        when(
+          () => mockCache.getCategoryById('cat-proj'),
+        ).thenReturn(category);
+
+        final project = buildProject(id: 'proj-1', title: 'Alpha Project');
+        final task = buildTask(categoryId: 'cat-proj');
+        final tracker = ToggleCallTracker();
+        final projectRepo = MockProjectRepository();
+
+        when(
+          () => projectRepo.updateStream,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+        when(
+          () => projectRepo.linkTaskToProject(
+            projectId: any(named: 'projectId'),
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final overrides = projectPickerOverrides(
+          task: task,
+          tracker: tracker,
+          projectRepo: projectRepo,
+          projects: [project],
+        );
+
+        await tester.pumpWidget(
+          wrapWithProjectApp(overrides: overrides, task: task),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('No project'));
+        await tester.pumpAndSettle();
+
+        // Tap the "Alpha Project" row in the picker.
+        await tester.tap(find.text('Alpha Project'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => projectRepo.linkTaskToProject(
+            projectId: 'proj-1',
+            taskId: task.id,
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  group('DesktopTaskHeaderConnector — onLabelTap', () {
+    testWidgets(
+      'tapping an existing label chip opens the label selector modal',
+      (tester) async {
+        // Build a task with a label that the cache resolves.
+        final label = buildLabel(id: 'lbl-tap', name: 'Urgent');
+        when(
+          () => mockCache.getLabelById('lbl-tap'),
+        ).thenReturn(label);
+
+        final task = buildTask(labelIds: const ['lbl-tap']);
+        final tracker = ToggleCallTracker();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              entryControllerProvider(id: task.id).overrideWith(
+                () => FakeEntryController(task, tracker: tracker),
+              ),
+              labelsStreamProvider.overrideWith(
+                (ref) => Stream<List<LabelDefinition>>.value(const []),
+              ),
+              projectForTaskProvider(task.id).overrideWith(
+                (ref) async => null,
+              ),
+              taskProgressControllerProvider(id: task.id).overrideWith(
+                () => _FakeTaskProgressController(null),
+              ),
+            ],
+            child: MaterialApp(
+              theme: DesignSystemTheme.dark(),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                FormBuilderLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: DesktopTaskHeaderConnector(taskId: task.id),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The label pill is rendered (label name visible).
+        expect(find.text('Urgent'), findsOneWidget);
+
+        // Tapping the label fires onLabelTap → _openLabelSelector.
+        await tester.tap(find.text('Urgent'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LabelSelectionSliverContent), findsOneWidget);
+      },
+    );
+  });
+
+  group(
+    'DesktopTaskHeaderConnector — estimate chip saves changed duration',
+    () {
+      testWidgets(
+        'changing the estimate value and tapping Done calls '
+        'notifier.save(estimate: newDuration)',
+        (tester) async {
+          // Use a task with no estimate so the "No estimate" chip renders.
+          // The test then opens the picker, simulates a duration change via
+          // the CupertinoTimerPicker callback, and taps Done — this
+          // exercises lines 363-364 (the onEstimateChanged closure body).
+          final task = buildTask();
+          final tracker = ToggleCallTracker();
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(id: task.id).overrideWith(
+                  () => FakeEntryController(task, tracker: tracker),
+                ),
+                labelsStreamProvider.overrideWith(
+                  (ref) => Stream<List<LabelDefinition>>.value(const []),
+                ),
+                projectForTaskProvider(task.id).overrideWith(
+                  (ref) async => null,
+                ),
+                taskProgressControllerProvider(id: task.id).overrideWith(
+                  () => _FakeTaskProgressController(null),
+                ),
+              ],
+              child: MaterialApp(
+                theme: DesignSystemTheme.dark(),
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  FormBuilderLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: DesktopTaskHeaderConnector(taskId: task.id),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Open the estimate picker (initial duration is zero).
+          await tester.tap(find.text('No estimate'));
+          await tester.pumpAndSettle();
+
+          // Directly invoke the picker's duration-changed callback to
+          // simulate the user scrolling to 1 h — this ensures selectedDuration
+          // diverges from initialDuration (zero) so Done will fire the
+          // onEstimateChanged callback.
+          final picker = tester.widget<CupertinoTimerPicker>(
+            find.byType(CupertinoTimerPicker),
+          );
+          picker.onTimerDurationChanged(const Duration(hours: 1));
+
+          await tester.tap(find.text('Done'));
+          await tester.pumpAndSettle();
+
+          // Verify save was called with the new 1-hour estimate.
+          expect(tracker.saveCalls, hasLength(1));
+          expect(
+            tracker.saveCalls.single['estimate'],
+            equals(const Duration(hours: 1)),
+          );
+        },
+      );
+    },
+  );
 }

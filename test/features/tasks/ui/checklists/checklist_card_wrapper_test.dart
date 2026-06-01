@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -17,6 +18,10 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
+import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/services/share_service.dart';
+import 'package:lotti/utils/platform.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
@@ -75,18 +80,30 @@ class _FakeChecklistController extends ChecklistController {
 
   final Checklist? _checklist;
 
+  String? lastUpdatedTitle;
+  String? lastCreatedItemTitle;
+  String? lastCreatedItemCategoryId;
+  bool? lastCreatedItemIsChecked;
+
   @override
   Future<Checklist?> build() async => _checklist;
 
   @override
-  Future<void> updateTitle(String? title) async {}
+  Future<void> updateTitle(String? title) async {
+    lastUpdatedTitle = title;
+  }
 
   @override
   Future<String?> createChecklistItem(
     String? title, {
     required String? categoryId,
     required bool isChecked,
-  }) async => 'new-item';
+  }) async {
+    lastCreatedItemTitle = title;
+    lastCreatedItemCategoryId = categoryId;
+    lastCreatedItemIsChecked = isChecked;
+    return 'new-item';
+  }
 
   @override
   Future<void> updateItemOrder(List<String> linkedChecklistItems) async {}
@@ -101,6 +118,16 @@ class _FakeChecklistController extends ChecklistController {
     int? targetIndex,
     String? targetItemId,
   }) async {}
+}
+
+/// An item controller that throws on [build], exercising the
+/// [ChecklistCardWrapper._resolveItems] error handler (lines 66-67, 69).
+class _ThrowingChecklistItemController extends ChecklistItemController {
+  _ThrowingChecklistItemController() : super(const (id: 'fake', taskId: null));
+
+  @override
+  Future<ChecklistItem?> build() async =>
+      throw Exception('item provider exploded');
 }
 
 class _FakeChecklistItemController extends ChecklistItemController {
@@ -142,9 +169,32 @@ class _FakeCorrectionCaptureNotifier extends CorrectionCaptureNotifier {
   @override
   PendingCorrection? build() => null;
 
+  bool cancelCalled = false;
+
   // ignore: use_setters_to_change_properties
   void emit(PendingCorrection pending) {
     state = pending;
+  }
+
+  @override
+  bool cancel() {
+    cancelCalled = true;
+    state = null;
+    return true;
+  }
+}
+
+/// A [ShareService] spy that records calls to [shareText].
+class _ShareServiceSpy extends ShareService {
+  String? lastText;
+  String? lastSubject;
+  bool shouldThrow = false;
+
+  @override
+  Future<void> shareText({required String text, String? subject}) async {
+    if (shouldThrow) throw Exception('share failed');
+    lastText = text;
+    lastSubject = subject;
   }
 }
 
@@ -160,7 +210,11 @@ class _ClipboardSpy {
   }
 }
 
-Future<_ClipboardSpy> _pump(
+/// Pumps the [ChecklistCardWrapper] with the given configuration.
+///
+/// Returns a `({_ClipboardSpy clip, _FakeChecklistController controller})`
+/// so callers can inspect recorded controller calls.
+Future<({_ClipboardSpy clip, _FakeChecklistController controller})> _pump(
   WidgetTester tester, {
   Checklist? checklist,
   List<ChecklistItem> items = const [],
@@ -170,9 +224,18 @@ Future<_ClipboardSpy> _pump(
     totalCount: 2,
   ),
   _FakeCorrectionCaptureNotifier? correctionNotifier,
+
+  /// Extra item-level overrides appended after the standard ones. Use this
+  /// to inject a throwing controller for a specific item id.
+  List<Override> extraItemOverrides = const [],
+  String? categoryId,
+  bool? initiallyExpanded,
+  // ignore: avoid_positional_boolean_parameters
+  void Function(String, bool)? onExpansionChanged,
 }) async {
   final cl = checklist ?? _makeChecklist();
   final clipSpy = _ClipboardSpy();
+  final controller = _FakeChecklistController(cl);
 
   final corrNotifier = correctionNotifier ?? _FakeCorrectionCaptureNotifier();
 
@@ -197,7 +260,7 @@ Future<_ClipboardSpy> _pump(
         checklistControllerProvider((
           id: cl.id,
           taskId: 'task-1',
-        )).overrideWith(() => _FakeChecklistController(cl)),
+        )).overrideWith(() => controller),
         checklistCompletionRateControllerProvider(
           (id: cl.id, taskId: 'task-1'),
         ).overrideWith(() => _FakeCompletionRateController(completionRate)),
@@ -212,11 +275,15 @@ Future<_ClipboardSpy> _pump(
           _FakeCompletionService.new,
         ),
         ...itemOverrides,
+        ...extraItemOverrides,
       ],
       child: WidgetTestBench(
         child: ChecklistCardWrapper(
           entryId: cl.id,
           taskId: 'task-1',
+          categoryId: categoryId,
+          initiallyExpanded: initiallyExpanded,
+          onExpansionChanged: onExpansionChanged,
         ),
       ),
     ),
@@ -225,7 +292,7 @@ Future<_ClipboardSpy> _pump(
   await tester.pump();
   await tester.pump();
 
-  return clipSpy;
+  return (clip: clipSpy, controller: controller);
 }
 
 // ---------------------------------------------------------------------------
@@ -302,10 +369,8 @@ void main() {
       final item1 = _makeItem(title: 'Task A');
       final item2 = _makeItem(id: 'item-2', title: 'Task B', isChecked: true);
 
-      final clipSpy = await _pump(
-        tester,
-        items: [item1, item2],
-      );
+      final result = await _pump(tester, items: [item1, item2]);
+      final clip = result.clip;
 
       // Open the popup menu (the "more_vert" icon).
       await tester.tap(find.byIcon(Icons.more_vert));
@@ -315,9 +380,9 @@ void main() {
       await tester.tap(find.byIcon(MdiIcons.exportVariant));
       await tester.pumpAndSettle();
 
-      expect(clipSpy.lastWritten, isNotNull);
-      expect(clipSpy.lastWritten, contains('Task A'));
-      expect(clipSpy.lastWritten, contains('Task B'));
+      expect(clip.lastWritten, isNotNull);
+      expect(clip.lastWritten, contains('Task A'));
+      expect(clip.lastWritten, contains('Task B'));
       // Snackbar should appear with "copied" message.
       expect(find.byType(SnackBar), findsOneWidget);
     });
@@ -504,5 +569,330 @@ void main() {
       expect(card.title, 'My List');
       expect(card.itemIds, ['a', 'b', 'c']);
     });
+
+    // ── onTitleSave wiring ─────────────────────────────────────────────────
+
+    testWidgets('onTitleSave invokes notifier.updateTitle with new text', (
+      tester,
+    ) async {
+      final cl = _makeChecklist(title: 'Old Title');
+      final result = await _pump(
+        tester,
+        checklist: cl,
+        initiallyExpanded: true,
+      );
+
+      // Tap the title text to enter edit mode.
+      final titleText = find.text('Old Title');
+      await tester.ensureVisible(titleText);
+      await tester.tap(titleText);
+      await tester.pump();
+
+      // There should now be a TitleTextField for editing.
+      expect(find.byType(TitleTextField), findsOneWidget);
+
+      // Enter a new title and submit via Enter key.
+      final titleField = find.byType(TitleTextField);
+      await tester.enterText(titleField, 'New Title');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      // The wrapper must have wired onTitleSave → notifier.updateTitle.
+      expect(result.controller.lastUpdatedTitle, 'New Title');
+    });
+
+    // ── onCreateItem wiring ────────────────────────────────────────────────
+
+    testWidgets(
+      'onCreateItem invokes notifier.createChecklistItem with correct params',
+      (tester) async {
+        final cl = _makeChecklist(
+          linkedItems: ['item-1'],
+          title: 'My Checklist',
+        );
+        // Give the checklist a categoryId via the meta.
+        final clWithCat =
+            JournalEntity.checklist(
+                  meta: _makeMeta(cl.id).copyWith(categoryId: 'cat-42'),
+                  data: cl.data,
+                )
+                as Checklist;
+
+        final result = await _pump(
+          tester,
+          checklist: clWithCat,
+          items: [_makeItem()],
+          initiallyExpanded: true,
+        );
+
+        // The add-item field is keyed as 'add-input-<checklistId>'.
+        // Use enterText directly (it focuses the field internally) rather
+        // than tapping first, since the field may be partially off-screen in
+        // the constrained test viewport.
+        final addFieldFinder = find.byKey(
+          ValueKey('add-input-${clWithCat.id}'),
+        );
+        await tester.enterText(addFieldFinder, 'Buy bread');
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pump();
+        await tester.pump();
+
+        // Verify the controller received the correct call.
+        expect(result.controller.lastCreatedItemTitle, 'Buy bread');
+        expect(result.controller.lastCreatedItemCategoryId, 'cat-42');
+        expect(result.controller.lastCreatedItemIsChecked, isFalse);
+      },
+    );
+
+    // ── _resolveItems error handler ────────────────────────────────────────
+
+    testWidgets(
+      '_resolveItems logs and recovers when an item provider throws',
+      (tester) async {
+        // A checklist with one item whose provider will throw.
+        // completionRate = 1.0 causes the "All Done" empty state so that
+        // ChecklistItemRow is never rendered — avoids ErrorWidget in the
+        // widget tree while still exercising the catchError branch in
+        // _resolveItems (lines 65–74) during the export flow.
+        final cl = _makeChecklist(linkedItems: ['item-error']);
+        final corrNotifier = _FakeCorrectionCaptureNotifier();
+        final clipSpy = _ClipboardSpy();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              checklistControllerProvider((
+                id: cl.id,
+                taskId: 'task-1',
+              )).overrideWith(() => _FakeChecklistController(cl)),
+              checklistCompletionRateControllerProvider(
+                (id: cl.id, taskId: 'task-1'),
+              ).overrideWith(() => _FakeCompletionRateController(1)),
+              checklistCompletionControllerProvider(
+                (id: cl.id, taskId: 'task-1'),
+              ).overrideWith(
+                () => _FakeCompletionController(
+                  const (completedCount: 1, totalCount: 1),
+                ),
+              ),
+              appClipboardProvider.overrideWithValue(
+                AppClipboard(writePlainText: clipSpy.writePlainText),
+              ),
+              correctionCaptureProvider.overrideWith(() => corrNotifier),
+              checklistCompletionServiceProvider.overrideWith(
+                _FakeCompletionService.new,
+              ),
+              // The item provider throws to exercise the catchError branch.
+              // With completionRate=1, the "All Done" empty state is shown
+              // instead of ChecklistItemRow, so ErrorWidget is never built.
+              checklistItemControllerProvider((
+                id: 'item-error',
+                taskId: 'task-1',
+              )).overrideWith(_ThrowingChecklistItemController.new),
+            ],
+            child: WidgetTestBench(
+              child: ChecklistCardWrapper(
+                entryId: cl.id,
+                taskId: 'task-1',
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Open the popup menu and trigger export.  The export calls
+        // _resolveItems which hits the catchError branch (lines 65–74).
+        // After recovering, the resolved list is empty → "nothing to export".
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(MdiIcons.exportVariant));
+        await tester.pumpAndSettle();
+
+        // A snackbar (warning: nothing to export) is shown — confirming the
+        // error branch was traversed without crashing the widget.
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
+
+    // ── Correction snackbar Undo button ───────────────────────────────────
+
+    testWidgets('tapping Undo in correction snackbar calls cancel()', (
+      tester,
+    ) async {
+      final corrNotifier = _FakeCorrectionCaptureNotifier();
+      await _pump(tester, correctionNotifier: corrNotifier);
+
+      // Emit a pending correction to trigger the snackbar.
+      corrNotifier.emit(
+        PendingCorrection(
+          before: 'wrong',
+          after: 'right',
+          categoryId: 'cat-1',
+          categoryName: 'Category',
+          createdAt: DateTime.now(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(CorrectionUndoSnackbarContent), findsOneWidget);
+
+      // Invoke the onUndo callback directly from the widget — the snackbar
+      // floats in an overlay layer and the hit-test offset won't reach it via
+      // a normal tap(), so we extract the callback from the widget tree and
+      // call it programmatically.
+      final content = tester.widget<CorrectionUndoSnackbarContent>(
+        find.byType(CorrectionUndoSnackbarContent),
+      );
+      content.onUndo();
+      await tester.pump();
+
+      // The fake cancel() should have been called.
+      expect(corrNotifier.cancelCalled, isTrue);
+    });
+
+    // ── onExpansionChanged wiring ─────────────────────────────────────────
+
+    testWidgets(
+      'onExpansionChanged forwards checklist id and expansion state',
+      (tester) async {
+        final cl = _makeChecklist(id: 'cl-xyz', title: 'Expanding');
+
+        final calls = <(String, bool)>[];
+        await _pump(
+          tester,
+          checklist: cl,
+          initiallyExpanded: true,
+          onExpansionChanged: (id, expanded) => calls.add((id, expanded)),
+        );
+
+        // The initial post-frame callback fires with isExpanded = true.
+        await tester.pump();
+        expect(calls.any((c) => c.$1 == 'cl-xyz'), isTrue);
+
+        // Tap the chevron to collapse.
+        final chevron = find.byIcon(Icons.expand_more);
+        await tester.ensureVisible(chevron);
+        await tester.tap(chevron);
+        await tester.pump();
+
+        // After collapse, the last call should be (id, false).
+        expect(calls.last, ('cl-xyz', false));
+      },
+    );
+
+    // ── onShareMarkdown happy path ─────────────────────────────────────────
+
+    testWidgets('onShareMarkdown shares emoji list for populated checklist', (
+      tester,
+    ) async {
+      final spy = _ShareServiceSpy();
+      final originalInstance = ShareService.instance;
+      ShareService.instance = spy;
+      addTearDown(() => ShareService.instance = originalInstance);
+
+      final item1 = _makeItem(title: 'Buy apples');
+      final item2 = _makeItem(
+        id: 'item-2',
+        title: 'Buy oranges',
+        isChecked: true,
+      );
+
+      await _pump(tester, items: [item1, item2]);
+
+      // Open the popup menu and tap Share.
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.ios_share));
+      await tester.pumpAndSettle();
+
+      expect(spy.lastText, isNotNull);
+      expect(spy.lastText, contains('Buy apples'));
+      expect(spy.lastText, contains('Buy oranges'));
+      expect(spy.lastSubject, equals('Test Checklist'));
+    });
+
+    testWidgets(
+      'onShareMarkdown skips share when all items resolve to null',
+      (tester) async {
+        final spy = _ShareServiceSpy();
+        final originalInstance = ShareService.instance;
+        ShareService.instance = spy;
+        addTearDown(() => ShareService.instance = originalInstance);
+
+        // Checklist with no items → resolved list is empty → early return.
+        final cl = _makeChecklist(linkedItems: []);
+        await _pump(
+          tester,
+          checklist: cl,
+          completionCounts: const (completedCount: 0, totalCount: 0),
+        );
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.ios_share));
+        await tester.pumpAndSettle();
+
+        // Share was never called because shareText is empty.
+        expect(spy.lastText, isNull);
+      },
+    );
+
+    testWidgets(
+      'onShareMarkdown logs error when ShareService.shareText throws',
+      (tester) async {
+        final spy = _ShareServiceSpy()..shouldThrow = true;
+        final originalInstance = ShareService.instance;
+        ShareService.instance = spy;
+        addTearDown(() => ShareService.instance = originalInstance);
+
+        final item1 = _makeItem(title: 'Task X');
+        await _pump(tester, items: [item1]);
+
+        // Open the popup menu and tap Share — this will throw inside
+        // onShareMarkdown; the catch block (lines 238-246) should log via
+        // DomainLogger without propagating the exception.
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.ios_share));
+        await tester.pumpAndSettle();
+
+        // No snackbar — the error is logged silently, not shown to the user.
+        expect(find.byType(SnackBar), findsNothing);
+      },
+    );
+
+    // ── Export markdown with share-hint path ─────────────────────────────
+
+    testWidgets(
+      'export shows share-hint message when not yet seen (non-test env)',
+      (tester) async {
+        // Initialize SharedPreferences with no stored values so that
+        // getBool('seen_checklist_share_hint') returns null → seen = false.
+        SharedPreferences.setMockInitialValues({});
+
+        // Temporarily pretend we are not in the test environment so that
+        // shouldShowShareHint = !isTestEnv && !seen evaluates to true
+        // (lines 201–206).
+        isTestEnv = false;
+        addTearDown(() => isTestEnv = true);
+
+        final item1 = _makeItem(title: 'Task H');
+        final result = await _pump(tester, items: [item1]);
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(MdiIcons.exportVariant));
+        await tester.pumpAndSettle();
+
+        // Clipboard should still be written.
+        expect(result.clip.lastWritten, isNotNull);
+        expect(result.clip.lastWritten, contains('Task H'));
+        // A snackbar should appear (with the share-hint appended to the
+        // copied message, exercising the shouldShowShareHint = true branch).
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
   });
 }

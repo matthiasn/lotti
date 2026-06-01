@@ -83,6 +83,7 @@ import 'package:lotti/features/notifications/scheduler/notification_scheduler.da
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -765,3 +766,6 @@ class MockLinkedEntriesController extends LinkedEntriesController {
 }
 
 class MockEntryCreationService extends Mock implements EntryCreationService {}
+
+class MockSpeechDictionaryService extends Mock
+    implements SpeechDictionaryService {}

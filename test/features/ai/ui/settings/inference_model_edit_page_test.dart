@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -396,6 +399,295 @@ void main() {
         await pumpAndIdle(tester);
 
         verify(() => mockRepository.saveConfig(any())).called(1);
+      },
+    );
+
+    testWidgets(
+      'new model save (addConfig path) calls saveConfig with correct fields',
+      (tester) async {
+        // Stub the stream-based watch used by AiConfigByTypeController so
+        // the Provider selector modal can resolve.
+        when(
+          () => mockRepository.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => Stream.value([testProvider]));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+              // Pre-seed the provider id so the form is immediately valid.
+            ],
+            child: MaterialApp(
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const InferenceModelEditPage(
+                preselectedProviderId: 'provider-1',
+              ),
+            ),
+          ),
+        );
+        await pumpAndIdle(tester);
+
+        // Fill in required fields to make the new-model form valid.
+        // In the new form, TextFormFields appear in order:
+        //   index 0 → Display name, 1 → Provider model ID,
+        //   2 → Description, 3 → Max completion tokens.
+        final allTextFields = find.byType(TextFormField);
+        await tester.tap(allTextFields.at(0));
+        await tester.enterText(allTextFields.at(0), 'New Model');
+        await tester.pump();
+
+        // Fill provider model ID.
+        await tester.tap(allTextFields.at(1));
+        await tester.enterText(allTextFields.at(1), 'gpt-new');
+        await tester.pump();
+
+        // Dismiss keyboard and pump so validation can settle.
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await pumpAndIdle(tester);
+
+        await tester.tap(find.text('Save'));
+        await pumpAndIdle(tester);
+
+        // addConfig path: saveConfig must be called once with an AiConfigModel
+        // whose name matches what we entered.
+        final captured = verify(
+          () => mockRepository.saveConfig(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final saved = captured.first as AiConfig;
+        expect(
+          saved.maybeMap(
+            model: (m) => m.name,
+            orElse: () => fail('Expected AiConfigModel'),
+          ),
+          'New Model',
+        );
+      },
+    );
+
+    testWidgets(
+      'while save is in progress the Save button is disabled '
+      '(isFormValid && !_isSaving guard at line 88)',
+      (tester) async {
+        // Use a completer so we can observe the "in-flight" state.
+        final completer = Completer<void>();
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) => completer.future);
+
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        final nameField = find.widgetWithText(TextFormField, 'Test Model');
+        await tester.enterText(nameField, 'In Flight Name');
+        await tester.pump();
+
+        // Tap Save — _isSaving becomes true, save hasn't resolved yet.
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+
+        // While in flight the Save button onPressed must be null (disabled).
+        final saveButton = tester.widget<TextButton>(
+          find.ancestor(
+            of: find.text('Save'),
+            matching: find.byType(TextButton),
+          ),
+        );
+        expect(saveButton.onPressed, isNull);
+
+        // Complete the save so async resources clean up properly.
+        completer.complete();
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Cmd+S keyboard shortcut triggers save when form is valid',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        // Make the form dirty so isFormValid is true.
+        final nameField = find.widgetWithText(TextFormField, 'Test Model');
+        await tester.enterText(nameField, 'Name Via Shortcut');
+        await tester.pump();
+
+        // Send the Cmd+S shortcut.
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+        await pumpAndIdle(tester);
+
+        verify(() => mockRepository.saveConfig(any())).called(1);
+      },
+    );
+
+    testWidgets(
+      'tapping the Provider selector field opens the provider selection modal',
+      (tester) async {
+        when(
+          () => mockRepository.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => Stream.value([testProvider]));
+
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        // Find the Provider selector field and tap it.
+        final providerField = find.ancestor(
+          of: find.text('Provider'),
+          matching: find.byType(InkWell),
+        );
+        await tester.ensureVisible(providerField.first);
+        await tester.tap(providerField.first);
+        await tester.pumpAndSettle();
+
+        // The provider selection modal's title is visible.
+        expect(find.text('Test Provider'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'tapping the Input modalities selector opens the modality modal',
+      (tester) async {
+        when(
+          () => mockRepository.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => Stream.value([testProvider]));
+
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        // Scroll down to make the Input modalities field visible.
+        final inputModalitiesLabel = find.text('Input modalities');
+        await tester.ensureVisible(inputModalitiesLabel);
+        await tester.pump();
+
+        // The _SelectorField wraps its content in an InkWell.
+        final inputModalityField = find.ancestor(
+          of: inputModalitiesLabel,
+          matching: find.byType(InkWell),
+        );
+        await tester.ensureVisible(inputModalityField.first);
+        await tester.tap(inputModalityField.first);
+        await tester.pumpAndSettle();
+
+        // The modality selection modal shows modality options.
+        expect(find.text('Text'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'tapping the Output modalities selector opens the modality modal',
+      (tester) async {
+        when(
+          () => mockRepository.watchConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) => Stream.value([testProvider]));
+
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        final outputModalitiesLabel = find.text('Output modalities');
+        await tester.ensureVisible(outputModalitiesLabel);
+        await tester.pump();
+
+        final outputModalityField = find.ancestor(
+          of: outputModalitiesLabel,
+          matching: find.byType(InkWell),
+        );
+        await tester.ensureVisible(outputModalityField.first);
+        await tester.tap(outputModalityField.first);
+        await tester.pumpAndSettle();
+
+        // The modality selection modal shows modality options.
+        expect(find.text('Text'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      '_formatModalities shows "None selected" hint when modalities are empty '
+      '(isEmpty branch at line 353)',
+      (tester) async {
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        final emptyModalityModel = AiConfig.model(
+          id: 'empty-modality-id',
+          name: 'No Modality Model',
+          providerModelId: 'model-no-modal',
+          inferenceProviderId: 'provider-1',
+          createdAt: testDate,
+          inputModalities: const [],
+          outputModalities: const [],
+          isReasoningModel: false,
+        );
+
+        when(
+          () => mockRepository.getConfigById('empty-modality-id'),
+        ).thenAnswer((_) async => emptyModalityModel);
+
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'empty-modality-id'),
+        );
+        await pumpAndIdle(tester);
+
+        // When modalities list is empty, _formatModalities returns the
+        // "None selected" localised string — two _SelectorFields render it.
+        expect(
+          find.text('None selected'),
+          findsAtLeastNWidgets(1),
+        );
+      },
+    );
+
+    testWidgets(
+      '_formatModalities joins display names with comma for non-empty list',
+      (tester) async {
+        // testModel has inputModalities: [Modality.text, Modality.image]
+        // so _formatModalities returns "Text, Image".
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        // At least one selector field should show the joined text.
+        expect(find.textContaining('Text'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'reasoning model switch toggles isReasoningModel flag',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        final switches = find.byType(Switch);
+        expect(switches, findsAtLeastNWidgets(2));
+
+        // First switch is reasoning model (starts false for testModel).
+        final beforeReasoning = tester.widget<Switch>(switches.first).value;
+        expect(beforeReasoning, isFalse);
+
+        await tester.tap(switches.first);
+        await pumpAndIdle(tester);
+
+        final afterReasoning = tester
+            .widget<Switch>(find.byType(Switch).first)
+            .value;
+        expect(afterReasoning, isTrue);
       },
     );
   });

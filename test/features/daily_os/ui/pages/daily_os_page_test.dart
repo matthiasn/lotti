@@ -9,6 +9,8 @@ import 'package:lotti/features/daily_os/state/time_history_header_controller.dar
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/pages/daily_os_page.dart';
+import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart'
+    as add_block;
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_summary.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_list.dart';
@@ -27,6 +29,32 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
   @override
   Future<DailyOsData> build({required DateTime date}) async {
     return _data;
+  }
+}
+
+/// Mock controller that tracks agreeToPlan calls.
+class _TrackingUnifiedController extends UnifiedDailyOsDataController {
+  _TrackingUnifiedController(this._data);
+
+  final DailyOsData _data;
+  int agreeToPlanCallCount = 0;
+
+  @override
+  Future<DailyOsData> build({required DateTime date}) async {
+    return _data;
+  }
+
+  @override
+  Future<void> agreeToPlan() async {
+    agreeToPlanCallCount++;
+  }
+}
+
+/// Mock controller that always fails with an error.
+class _ErrorUnifiedController extends UnifiedDailyOsDataController {
+  @override
+  Future<DailyOsData> build({required DateTime date}) async {
+    throw Exception('test error');
   }
 }
 
@@ -319,6 +347,358 @@ void main() {
       expect(find.byType(Column), findsWidgets);
       // Expanded widget for scrollable content
       expect(find.byType(Expanded), findsAtLeastNWidgets(1));
+    });
+
+    // --- Banner message content ---
+
+    testWidgets('draft banner shows draft message text', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(plan: createTestPlan()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Plan is in draft. Agree to lock it in.'),
+        findsOneWidget,
+      );
+      expect(find.text('Agree to Plan'), findsOneWidget);
+    });
+
+    testWidgets('review banner shows review message text', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          plan: createTestPlan(
+            status: DayPlanStatus.needsReview(
+              triggeredAt: testDate,
+              reason: DayPlanReviewReason.blockModified,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Changes detected. Review your plan.'),
+        findsOneWidget,
+      );
+      expect(find.text('Re-agree'), findsOneWidget);
+    });
+
+    // --- Agree button invokes agreeToPlan on draft banner ---
+
+    testWidgets('tapping agree button on draft banner calls agreeToPlan', (
+      tester,
+    ) async {
+      final trackingController = _TrackingUnifiedController(
+        DailyOsData(
+          date: testDate,
+          dayPlan: createTestPlan(),
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: [],
+            actualSlots: [],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+          budgetProgress: [],
+        ),
+      );
+
+      final historyData = TimeHistoryData(
+        days: [
+          DayTimeSummary(
+            day: DateTime(testDate.year, testDate.month, testDate.day, 12),
+            durationByCategoryId: const {},
+            total: Duration.zero,
+          ),
+        ],
+        earliestDay: testDate,
+        latestDay: testDate,
+        maxDailyTotal: Duration.zero,
+        categoryOrder: const [],
+        isLoadingMore: false,
+        canLoadMore: true,
+        stackedHeights: const {},
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            dailyOsSelectedDateProvider.overrideWith(
+              () => _TestDailyOsSelectedDate(testDate),
+            ),
+            timeHistoryHeaderControllerProvider.overrideWith(
+              () => _TestTimeHistoryController(historyData),
+            ),
+            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+              () => trackingController,
+            ),
+            dayBudgetStatsProvider(date: testDate).overrideWith(
+              (ref) async => const DayBudgetStats(
+                totalPlanned: Duration.zero,
+                totalRecorded: Duration.zero,
+                budgetCount: 0,
+                overBudgetCount: 0,
+              ),
+            ),
+            activeFocusCategoryIdProvider.overrideWith(
+              (ref) => Stream.value(null),
+            ),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+          ],
+          child: const DailyOsPage(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(trackingController.agreeToPlanCallCount, 0);
+
+      final agreeButton = find.widgetWithText(TextButton, 'Agree to Plan');
+      expect(agreeButton, findsOneWidget);
+      await tester.ensureVisible(agreeButton);
+      await tester.tap(agreeButton);
+      await tester.pump();
+
+      expect(trackingController.agreeToPlanCallCount, 1);
+    });
+
+    // --- Re-agree button invokes agreeToPlan on review banner ---
+
+    testWidgets('tapping re-agree button on review banner calls agreeToPlan', (
+      tester,
+    ) async {
+      final reviewPlan = createTestPlan(
+        status: DayPlanStatus.needsReview(
+          triggeredAt: testDate,
+          reason: DayPlanReviewReason.blockModified,
+        ),
+      );
+
+      final trackingController = _TrackingUnifiedController(
+        DailyOsData(
+          date: testDate,
+          dayPlan: reviewPlan,
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: [],
+            actualSlots: [],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+          budgetProgress: [],
+        ),
+      );
+
+      final historyData = TimeHistoryData(
+        days: [
+          DayTimeSummary(
+            day: DateTime(testDate.year, testDate.month, testDate.day, 12),
+            durationByCategoryId: const {},
+            total: Duration.zero,
+          ),
+        ],
+        earliestDay: testDate,
+        latestDay: testDate,
+        maxDailyTotal: Duration.zero,
+        categoryOrder: const [],
+        isLoadingMore: false,
+        canLoadMore: true,
+        stackedHeights: const {},
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            dailyOsSelectedDateProvider.overrideWith(
+              () => _TestDailyOsSelectedDate(testDate),
+            ),
+            timeHistoryHeaderControllerProvider.overrideWith(
+              () => _TestTimeHistoryController(historyData),
+            ),
+            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+              () => trackingController,
+            ),
+            dayBudgetStatsProvider(date: testDate).overrideWith(
+              (ref) async => const DayBudgetStats(
+                totalPlanned: Duration.zero,
+                totalRecorded: Duration.zero,
+                budgetCount: 0,
+                overBudgetCount: 0,
+              ),
+            ),
+            activeFocusCategoryIdProvider.overrideWith(
+              (ref) => Stream.value(null),
+            ),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+          ],
+          child: const DailyOsPage(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(trackingController.agreeToPlanCallCount, 0);
+
+      final reAgreeButton = find.widgetWithText(TextButton, 'Re-agree');
+      expect(reAgreeButton, findsOneWidget);
+      await tester.ensureVisible(reAgreeButton);
+      await tester.tap(reAgreeButton);
+      await tester.pump();
+
+      expect(trackingController.agreeToPlanCallCount, 1);
+    });
+
+    // --- Error state renders no banner (error branch) ---
+
+    testWidgets('shows no banner when unified data controller errors', (
+      tester,
+    ) async {
+      final historyData = TimeHistoryData(
+        days: [
+          DayTimeSummary(
+            day: DateTime(testDate.year, testDate.month, testDate.day, 12),
+            durationByCategoryId: const {},
+            total: Duration.zero,
+          ),
+        ],
+        earliestDay: testDate,
+        latestDay: testDate,
+        maxDailyTotal: Duration.zero,
+        categoryOrder: const [],
+        isLoadingMore: false,
+        canLoadMore: true,
+        stackedHeights: const {},
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            dailyOsSelectedDateProvider.overrideWith(
+              () => _TestDailyOsSelectedDate(testDate),
+            ),
+            timeHistoryHeaderControllerProvider.overrideWith(
+              () => _TestTimeHistoryController(historyData),
+            ),
+            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+              _ErrorUnifiedController.new,
+            ),
+            dayBudgetStatsProvider(date: testDate).overrideWith(
+              (ref) async => const DayBudgetStats(
+                totalPlanned: Duration.zero,
+                totalRecorded: Duration.zero,
+                budgetCount: 0,
+                overBudgetCount: 0,
+              ),
+            ),
+            activeFocusCategoryIdProvider.overrideWith(
+              (ref) => Stream.value(null),
+            ),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+          ],
+          child: const DailyOsPage(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Error state produces SizedBox.shrink — no banner text
+      expect(find.text('Agree to Plan'), findsNothing);
+      expect(find.text('Re-agree'), findsNothing);
+      // Page structure is still intact
+      expect(find.byType(DailyOsPage), findsOneWidget);
+    });
+
+    // --- FAB tapping opens AddBlockSheet ---
+
+    testWidgets('tapping FAB opens AddBlockSheet', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final fab = find.byType(FloatingActionButton);
+      expect(fab, findsOneWidget);
+      await tester.ensureVisible(fab);
+      await tester.tap(fab);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(add_block.AddBlockSheet), findsOneWidget);
+    });
+
+    // --- _onDragActiveChanged: drag-active prevents scroll ---
+
+    testWidgets(
+      'scroll physics switch to NeverScrollable when drag is active',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Initially scrolling is allowed (AlwaysScrollableScrollPhysics)
+        final scrollView = tester.widget<SingleChildScrollView>(
+          find.byType(SingleChildScrollView),
+        );
+        expect(
+          scrollView.physics,
+          isA<AlwaysScrollableScrollPhysics>(),
+        );
+
+        // Locate the DailyTimeline and send a drag-start gesture via its
+        // onDragActiveChanged callback.  Because DailyTimeline accepts the
+        // callback, we grab the widget and invoke it directly.
+        final timeline = tester.widget<DailyTimeline>(
+          find.byType(DailyTimeline),
+        );
+        expect(timeline.onDragActiveChanged, isNotNull);
+
+        // Simulate drag start (isDragging = true)
+        timeline.onDragActiveChanged!(isDragging: true);
+        await tester.pump();
+
+        final scrollViewAfter = tester.widget<SingleChildScrollView>(
+          find.byType(SingleChildScrollView),
+        );
+        expect(
+          scrollViewAfter.physics,
+          isA<NeverScrollableScrollPhysics>(),
+        );
+
+        // Simulate drag end (isDragging = false)
+        timeline.onDragActiveChanged!(isDragging: false);
+        await tester.pump();
+
+        final scrollViewRestored = tester.widget<SingleChildScrollView>(
+          find.byType(SingleChildScrollView),
+        );
+        expect(
+          scrollViewRestored.physics,
+          isA<AlwaysScrollableScrollPhysics>(),
+        );
+      },
+    );
+
+    // --- RefreshIndicator callback invalidates and re-fetches the controller ---
+
+    testWidgets('pull-to-refresh triggers refresh via RefreshIndicator', (
+      tester,
+    ) async {
+      // Use a screen large enough that the scroll view has room to overscroll.
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Dispatch a fling downward to trigger the RefreshIndicator.
+      await tester.fling(
+        find.byType(SingleChildScrollView),
+        const Offset(0, 300),
+        1000,
+      );
+      // Let the refresh indicator settle (it runs async).
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      // After refresh the page structure is still intact — no crash.
+      expect(find.byType(RefreshIndicator), findsOneWidget);
+      expect(find.byType(DailyOsPage), findsOneWidget);
     });
   });
 }

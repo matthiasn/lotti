@@ -4452,6 +4452,211 @@ void main() {
     });
   });
 
+  group('TemplateInUseException', () {
+    test('toString includes templateId and activeCount', () {
+      const exception = TemplateInUseException(
+        templateId: 'tpl-abc',
+        activeCount: 3,
+      );
+
+      final result = exception.toString();
+
+      expect(result, contains('tpl-abc'));
+      expect(result, contains('3'));
+    });
+  });
+
+  group('getLifetimeWakeCount', () {
+    test('delegates to repository countWakeRunsForTemplate', () async {
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => 17);
+
+      final count = await service.getLifetimeWakeCount(kTestTemplateId);
+
+      expect(count, 17);
+      verify(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).called(1);
+    });
+
+    test('returns 0 when no wake runs recorded', () async {
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => 0);
+
+      final count = await service.getLifetimeWakeCount(kTestTemplateId);
+
+      expect(count, 0);
+    });
+  });
+
+  group('getWakeRunsInWindow', () {
+    test('delegates to repository with since/until range', () async {
+      final since = DateTime(2024, 3, 5);
+      final until = DateTime(2024, 3, 15);
+      final runs = [
+        makeTestWakeRun(runKey: 'run-1', agentId: 'agent-w1'),
+        makeTestWakeRun(runKey: 'run-2', agentId: 'agent-w2'),
+      ];
+      when(
+        () => mockRepo.getWakeRunsForTemplateInWindow(
+          kTestTemplateId,
+          since: since,
+          until: until,
+        ),
+      ).thenAnswer((_) async => runs);
+
+      final result = await service.getWakeRunsInWindow(
+        kTestTemplateId,
+        since: since,
+        until: until,
+      );
+
+      expect(result, hasLength(2));
+      expect(result.first.runKey, 'run-1');
+      verify(
+        () => mockRepo.getWakeRunsForTemplateInWindow(
+          kTestTemplateId,
+          since: since,
+          until: until,
+        ),
+      ).called(1);
+    });
+
+    test('returns empty list when no runs in window', () async {
+      final since = DateTime(2024, 2, 3);
+      final until = DateTime(2024, 2, 28);
+      when(
+        () => mockRepo.getWakeRunsForTemplateInWindow(
+          kTestTemplateId,
+          since: since,
+          until: until,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final result = await service.getWakeRunsInWindow(
+        kTestTemplateId,
+        since: since,
+        until: until,
+      );
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('getTokenUsageSince', () {
+    test('delegates to repository with since parameter', () async {
+      final since = DateTime(2024, 3, 5);
+      final tokenRecords = [
+        makeTestWakeTokenUsage(id: 'tok-1'),
+        makeTestWakeTokenUsage(id: 'tok-2'),
+      ];
+      when(
+        () => mockRepo.getTokenUsageForTemplateSince(
+          kTestTemplateId,
+          since: since,
+        ),
+      ).thenAnswer((_) async => tokenRecords);
+
+      final result = await service.getTokenUsageSince(
+        kTestTemplateId,
+        since: since,
+      );
+
+      expect(result, hasLength(2));
+      expect(result.first.id, 'tok-1');
+      verify(
+        () => mockRepo.getTokenUsageForTemplateSince(
+          kTestTemplateId,
+          since: since,
+        ),
+      ).called(1);
+    });
+
+    test('returns empty list when no token usage found', () async {
+      final since = DateTime(2024, 2, 3);
+      when(
+        () => mockRepo.getTokenUsageForTemplateSince(
+          kTestTemplateId,
+          since: since,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final result = await service.getTokenUsageSince(
+        kTestTemplateId,
+        since: since,
+      );
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('getEvolutionSessionRecaps', () {
+    test('delegates to repository with default limit', () async {
+      final recaps = [
+        makeTestEvolutionSessionRecap(id: 'recap-1'),
+        makeTestEvolutionSessionRecap(id: 'recap-2', sessionId: 'session-2'),
+      ];
+      when(
+        () => mockRepo.getEvolutionSessionRecaps(kTestTemplateId),
+      ).thenAnswer((_) async => recaps);
+
+      final result = await service.getEvolutionSessionRecaps(kTestTemplateId);
+
+      expect(result, hasLength(2));
+      expect(result.first.id, 'recap-1');
+      verify(
+        () => mockRepo.getEvolutionSessionRecaps(kTestTemplateId),
+      ).called(1);
+    });
+
+    test('passes custom limit to repository', () async {
+      when(
+        () => mockRepo.getEvolutionSessionRecaps(kTestTemplateId, limit: 5),
+      ).thenAnswer((_) async => []);
+
+      await service.getEvolutionSessionRecaps(kTestTemplateId, limit: 5);
+
+      verify(
+        () => mockRepo.getEvolutionSessionRecaps(kTestTemplateId, limit: 5),
+      ).called(1);
+    });
+  });
+
+  group('getEvolutionSessionRecap', () {
+    test('delegates to repository with sessionId', () async {
+      const sessionId = 'session-abc';
+      final recap = makeTestEvolutionSessionRecap(
+        id: 'recap-abc',
+        sessionId: sessionId,
+      );
+      when(
+        () => mockRepo.getEvolutionSessionRecap(sessionId),
+      ).thenAnswer((_) async => recap);
+
+      final result = await service.getEvolutionSessionRecap(sessionId);
+
+      expect(result, isNotNull);
+      expect(result!.id, 'recap-abc');
+      expect(result.sessionId, sessionId);
+      verify(
+        () => mockRepo.getEvolutionSessionRecap(sessionId),
+      ).called(1);
+    });
+
+    test('returns null when no recap found for sessionId', () async {
+      const sessionId = 'session-missing';
+      when(
+        () => mockRepo.getEvolutionSessionRecap(sessionId),
+      ).thenAnswer((_) async => null);
+
+      final result = await service.getEvolutionSessionRecap(sessionId);
+
+      expect(result, isNull);
+    });
+  });
+
   group('profileInUse', () {
     const profileId = 'profile-abc';
 

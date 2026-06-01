@@ -1,5 +1,6 @@
 // ignore_for_file: cascade_invocations
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
@@ -2751,6 +2752,327 @@ void main() {
       );
     });
   });
+
+  group('Default constructor', () {
+    test('creates repository using default http.Client when none provided', () {
+      // Verifies the `?? http.Client()` branch in the constructor.
+      // We cannot send real HTTP calls, but we can verify the object is created
+      // and is a GeminiInferenceRepository.
+      final repo = GeminiInferenceRepository();
+      expect(repo, isA<GeminiInferenceRepository>());
+    });
+  });
+
+  group('Max streaming char cap', () {
+    test(
+      'terminates stream early when totalCharsEmitted reaches kMaxStreamingChars',
+      () async {
+        // kMaxStreamingChars is 1,000,000. Emit a chunk of exactly that size to
+        // trigger the early-return path on line 324.
+        final largeText = 'x' * GeminiInferenceRepository.kMaxStreamingChars;
+        final line = jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': largeText},
+                  {'text': 'should never appear'},
+                ],
+              },
+            },
+          ],
+        });
+
+        final client = _FakeStreamClient(200, [line]);
+        final repo = GeminiInferenceRepository(httpClient: client);
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        final events = await repo
+            .generateText(
+              prompt: 'p',
+              model: 'gemini-2.5-pro',
+              temperature: 0.5,
+              thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+              provider: provider,
+            )
+            .toList();
+
+        // Only the large text chunk should be emitted; stream terminates early
+        // before "should never appear".
+        expect(events.length, 1);
+        expect(events.first.choices!.first.delta!.content, largeText);
+      },
+    );
+  });
+
+  group('Non-numeric Retry-After header', () {
+    test(
+      'falls back to exponential backoff when Retry-After is non-numeric',
+      () {
+        fakeAsync((async) {
+          var attemptCount = 0;
+          // Returns a Retry-After header with a non-numeric value like "soon".
+          final client = _RetryWithHeaderClient(
+            statusCodes: [429, 200],
+            responses: [
+              '{"error": "rate limited"}',
+              jsonEncode({
+                'candidates': [
+                  {
+                    'content': {
+                      'role': 'model',
+                      'parts': [
+                        {'text': 'Done after fallback backoff'},
+                      ],
+                    },
+                  },
+                ],
+              }),
+            ],
+            // A non-numeric Retry-After; client will set 'retry-after': 'soon'
+            // ignore: avoid_redundant_argument_values
+            retryAfterSeconds: null,
+            onRequest: () => attemptCount++,
+          );
+
+          // Manually override the retry-after header to a non-numeric value
+          final wrappedClient = _NonNumericRetryAfterClient(inner: client);
+
+          final repo = GeminiInferenceRepository(httpClient: wrappedClient);
+          final provider = AiConfigInferenceProvider(
+            id: 'prov',
+            baseUrl: 'https://generativelanguage.googleapis.com',
+            apiKey: 'k',
+            name: 'Gemini',
+            createdAt: DateTime(2024),
+            inferenceProviderType: InferenceProviderType.gemini,
+          );
+
+          List<CreateChatCompletionStreamResponse>? events;
+          repo
+              .generateText(
+                prompt: 'test',
+                model: 'gemini-2.5-pro',
+                temperature: 0.5,
+                thinkingConfig: GeminiThinkingConfig.disabled,
+                provider: provider,
+              )
+              .toList()
+              .then((e) => events = e);
+
+          // First request: gets 429 with non-numeric Retry-After, falls back to
+          // 500ms base delay (attempt 1, shift 0 = 500ms).
+          async.flushMicrotasks();
+          async.elapse(const Duration(milliseconds: 500));
+          async.flushMicrotasks();
+
+          expect(attemptCount, 2);
+          expect(events, isNotNull);
+          expect(
+            events!.first.choices!.first.delta!.content,
+            'Done after fallback backoff',
+          );
+        });
+      },
+    );
+  });
+
+  group('TimeoutException handling', () {
+    test(
+      'retries after TimeoutException and succeeds on subsequent attempt',
+      () {
+        fakeAsync((async) {
+          var attemptCount = 0;
+          final client = _TimeoutThenSuccessClient(
+            timeoutAttempts: 1,
+            successResponse: jsonEncode({
+              'candidates': [
+                {
+                  'content': {
+                    'role': 'model',
+                    'parts': [
+                      {'text': 'Response after timeout'},
+                    ],
+                  },
+                },
+              ],
+            }),
+            onRequest: () => attemptCount++,
+          );
+
+          final repo = GeminiInferenceRepository(httpClient: client);
+          final provider = AiConfigInferenceProvider(
+            id: 'prov',
+            baseUrl: 'https://generativelanguage.googleapis.com',
+            apiKey: 'k',
+            name: 'Gemini',
+            createdAt: DateTime(2024),
+            inferenceProviderType: InferenceProviderType.gemini,
+          );
+
+          List<CreateChatCompletionStreamResponse>? events;
+          repo
+              .generateText(
+                prompt: 'test',
+                model: 'gemini-2.5-pro',
+                temperature: 0.5,
+                thinkingConfig: GeminiThinkingConfig.disabled,
+                provider: provider,
+              )
+              .toList()
+              .then((e) => events = e);
+
+          // First attempt throws TimeoutException, schedules 500ms backoff.
+          async.flushMicrotasks();
+          async.elapse(const Duration(milliseconds: 500));
+          async.flushMicrotasks();
+
+          expect(attemptCount, 2);
+          expect(events, isNotNull);
+          expect(
+            events!.first.choices!.first.delta!.content,
+            'Response after timeout',
+          );
+        });
+      },
+    );
+
+    test('rethrows TimeoutException after exhausting all retries', () {
+      fakeAsync((async) {
+        var attemptCount = 0;
+        // Always timeout — never succeeds.
+        final client = _AlwaysTimeoutClient(onRequest: () => attemptCount++);
+
+        final repo = GeminiInferenceRepository(httpClient: client);
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        Object? caughtError;
+        repo
+            .generateText(
+              prompt: 'test',
+              model: 'gemini-2.5-pro',
+              temperature: 0.5,
+              thinkingConfig: GeminiThinkingConfig.disabled,
+              provider: provider,
+            )
+            .toList()
+            .catchError((Object e) {
+              caughtError = e;
+              return <CreateChatCompletionStreamResponse>[];
+            });
+
+        // Attempt 1 times out, schedules 500ms delay.
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+        // Attempt 2 times out, schedules 1s delay.
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+        // Attempt 3 times out, schedules 2s delay.
+        async.elapse(const Duration(seconds: 2));
+        async.flushMicrotasks();
+        // Attempt 4 times out, exceeds maxRetries, rethrows.
+
+        expect(caughtError, isA<TimeoutException>());
+        // kMaxRetries = 3, so 4 total attempts.
+        expect(attemptCount, 4);
+      });
+    });
+  });
+
+  group('_extractImageFromResponse error branches', () {
+    test('throws when candidate content is not a map', () async {
+      // Candidate exists but its content field is a plain string, not a Map.
+      final client = _SimpleResponseClient(
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': 'not-a-map',
+            },
+          ],
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      expect(
+        () => repo.generateImage(
+          prompt: 'test',
+          model: 'models/gemini-3-pro-image-preview',
+          provider: provider,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('No content in image generation response'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when candidate parts list is empty', () async {
+      // Candidate has a valid content map but parts is an empty list.
+      final client = _SimpleResponseClient(
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': <dynamic>[],
+              },
+            },
+          ],
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      expect(
+        () => repo.generateImage(
+          prompt: 'test',
+          model: 'models/gemini-3-pro-image-preview',
+          provider: provider,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('No parts in image generation response'),
+          ),
+        ),
+      );
+    });
+  });
 }
 
 /// Simple response client for non-streaming tests
@@ -2889,5 +3211,78 @@ class _RequestCapturingClient extends http.BaseClient {
         'content-type': 'application/json',
       },
     );
+  }
+}
+
+/// Wraps another client and injects a non-numeric "retry-after" header on the
+/// first 429 response. Used to cover the `int.tryParse` fallback path.
+class _NonNumericRetryAfterClient extends http.BaseClient {
+  _NonNumericRetryAfterClient({required this.inner});
+
+  final http.BaseClient inner;
+  var _injected = false;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final resp = await inner.send(request);
+    if (!_injected && resp.statusCode == 429) {
+      _injected = true;
+      // Rebuild the response with a non-numeric Retry-After header.
+      final bytes = await resp.stream.toBytes();
+      final stream = Stream<List<int>>.fromIterable([bytes]);
+      return http.StreamedResponse(
+        stream,
+        resp.statusCode,
+        headers: {
+          ...resp.headers,
+          'retry-after': 'soon', // non-numeric — triggers the fallback branch
+        },
+      );
+    }
+    return resp;
+  }
+}
+
+/// Client that throws [TimeoutException] for the first N attempts, then
+/// returns a successful response.
+class _TimeoutThenSuccessClient extends http.BaseClient {
+  _TimeoutThenSuccessClient({
+    required this.timeoutAttempts,
+    required this.successResponse,
+    this.onRequest,
+  });
+
+  final int timeoutAttempts;
+  final String successResponse;
+  final void Function()? onRequest;
+  int _callCount = 0;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    onRequest?.call();
+    _callCount++;
+    if (_callCount <= timeoutAttempts) {
+      throw TimeoutException('Simulated timeout', const Duration(seconds: 30));
+    }
+    final bytes = utf8.encode(successResponse);
+    final stream = Stream<List<int>>.fromIterable([bytes]);
+    return http.StreamedResponse(
+      stream,
+      200,
+      headers: {'content-type': 'application/json'},
+    );
+  }
+}
+
+/// Client that always throws [TimeoutException]. Used to exhaust max retries.
+class _AlwaysTimeoutClient extends http.BaseClient {
+  _AlwaysTimeoutClient({this.onRequest});
+
+  final void Function()? onRequest;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    onRequest?.call();
+    throw TimeoutException('Simulated timeout', const Duration(seconds: 30));
   }
 }

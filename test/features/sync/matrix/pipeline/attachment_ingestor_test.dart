@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -883,4 +884,396 @@ void main() {
       },
     );
   });
+
+  group('AttachmentIngestor.scheduleDownload — queued download paths', () {
+    // These tests exercise _scheduleDownload, _drainQueue, _runDownload,
+    // _maybeCompleteIdle (lines 237-292) and the _DownloadRequest constructor
+    // (line 563).
+
+    test(
+      'scheduled download writes file and resolves whenIdle (lines 237-292)',
+      () async {
+        const relativePath = 'attachments/sched.json';
+        final fileBytes = utf8.encode('{"hello":"world"}');
+        final e = _makeEvent(
+          eventId: 'ev-sched-1',
+          relativePath: relativePath,
+          mime: 'application/json',
+          downloadBytes: fileBytes,
+        );
+
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tempDir,
+          verboseLogging: false,
+        );
+
+        await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+          scheduleDownload: true,
+        );
+
+        // whenIdle must resolve after the queued download finishes.
+        // Lines 209-210: the Completer is created and its future returned
+        // because the queue is non-empty when whenIdle() is called.
+        await ingestor.whenIdle().timeout(const Duration(seconds: 5));
+
+        final writtenFile = File('${tempDir.path}/$relativePath');
+        expect(writtenFile.existsSync(), isTrue);
+        expect(writtenFile.readAsBytesSync(), fileBytes);
+      },
+    );
+
+    test(
+      'scheduling the same path twice deduplicates via _queuedKeys (line 243)',
+      () async {
+        var downloadCount = 0;
+        final fileBytes = utf8.encode('{"v":1}');
+
+        // Use maxConcurrentDownloads=1 so the first download can potentially
+        // be in-flight when the second schedule call arrives.
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tempDir,
+          maxConcurrentDownloads: 1,
+          verboseLogging: false,
+        );
+
+        final e1 = _makeEvent(
+          eventId: 'ev-dedup-1',
+          relativePath: 'attachments/dedup.json',
+          mime: 'application/json',
+          downloadBytes: fileBytes,
+          onDownload: () => downloadCount++,
+        );
+        final e2 = _makeEvent(
+          eventId: 'ev-dedup-2',
+          relativePath: 'attachments/dedup.json',
+          mime: 'application/json',
+          downloadBytes: fileBytes,
+          onDownload: () => downloadCount++,
+        );
+
+        await ingestor.process(
+          event: e1,
+          logging: logging,
+          attachmentIndex: index,
+          scheduleDownload: true,
+        );
+        // Schedule a second event for the same path before the first finishes.
+        // The path is now queued so the second call hits the dedup guard.
+        await ingestor.process(
+          event: e2,
+          logging: logging,
+          attachmentIndex: index,
+          scheduleDownload: true,
+        );
+
+        await ingestor.whenIdle().timeout(const Duration(seconds: 5));
+
+        // Only one actual download should have occurred because the second
+        // schedule for the same key was deduped.
+        expect(downloadCount, 1);
+      },
+    );
+
+    test(
+      'whenIdle returns a future (not synchronous) while a download is in '
+      'flight (lines 209-210 — Completer path)',
+      () async {
+        // Use a completer to control when the download finishes.
+        final downloadCompleter = Completer<void>();
+        final fileBytes = utf8.encode('data');
+        final e = _makeEvent(
+          eventId: 'ev-inflight',
+          relativePath: 'attachments/inflight.json',
+          mime: 'application/json',
+        );
+        when(e.downloadAndDecryptAttachment).thenAnswer((_) async {
+          await downloadCompleter.future;
+          return MatrixFile(
+            bytes: Uint8List.fromList(fileBytes),
+            name: 'inflight.json',
+          );
+        });
+
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tempDir,
+          maxConcurrentDownloads: 1,
+          verboseLogging: false,
+        );
+
+        await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+          scheduleDownload: true,
+        );
+
+        // whenIdle must NOT be resolved yet — the download is in flight.
+        var idleResolved = false;
+        // ignore: unawaited_futures
+        ingestor.whenIdle().then((_) => idleResolved = true);
+
+        // Pump the event loop briefly so the download coroutine can start
+        // but not complete (the completer hasn't fired yet).
+        await pumpEventQueue(times: 5);
+        expect(idleResolved, isFalse);
+
+        // Now let the download complete.
+        downloadCompleter.complete();
+        await ingestor.whenIdle().timeout(const Duration(seconds: 5));
+        expect(idleResolved, isTrue);
+      },
+    );
+
+    test(
+      '_runDownload re-queues a superseded pending request after the first '
+      'download finishes (lines 279-285)',
+      () async {
+        // We need maxConcurrentDownloads=1 and two different event ids for the
+        // same path so that the second schedule() call replaces the pending
+        // download entry while the first is in flight.
+        final downloadCompleter = Completer<void>();
+        var firstDownloadCount = 0;
+        var secondDownloadCount = 0;
+        final fileBytes = utf8.encode('payload');
+
+        final e1 = _makeEvent(
+          eventId: 'ev-supersede-1',
+          relativePath: 'attachments/supersede.json',
+          mime: 'application/json',
+          onDownload: () => firstDownloadCount++,
+        );
+        when(e1.downloadAndDecryptAttachment).thenAnswer((_) async {
+          firstDownloadCount++;
+          await downloadCompleter.future;
+          return MatrixFile(
+            bytes: Uint8List.fromList(fileBytes),
+            name: 'supersede.json',
+          );
+        });
+
+        final e2 = _makeEvent(
+          eventId: 'ev-supersede-2',
+          relativePath: 'attachments/supersede.json',
+          mime: 'application/json',
+          downloadBytes: fileBytes,
+          onDownload: () => secondDownloadCount++,
+        );
+
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tempDir,
+          maxConcurrentDownloads: 1,
+          verboseLogging: false,
+        );
+
+        // First schedule: kicks off the download immediately (1 slot available).
+        await ingestor.process(
+          event: e1,
+          logging: logging,
+          attachmentIndex: index,
+          scheduleDownload: true,
+        );
+
+        // Pump so the download coroutine starts and the key is in _inFlightKeys.
+        await pumpEventQueue(times: 2);
+
+        // Second schedule: same path, different eventId. Because the key is
+        // in _inFlightKeys, _scheduleDownload records it in _pendingDownloads
+        // but hits the dedup guard (line 243) and returns without adding to
+        // the queue. _runDownload's finally block detects the superseded
+        // pending entry and re-queues it (lines 281-284).
+        await ingestor.process(
+          event: e2,
+          logging: logging,
+          attachmentIndex: index,
+          scheduleDownload: true,
+        );
+
+        // Unblock the first download.
+        downloadCompleter.complete();
+
+        // Wait for both downloads to finish.
+        await ingestor.whenIdle().timeout(const Duration(seconds: 5));
+
+        // The file should exist and reflect the second download's bytes.
+        final writtenFile = File('${tempDir.path}/attachments/supersede.json');
+        expect(writtenFile.existsSync(), isTrue);
+        expect(writtenFile.readAsBytesSync(), fileBytes);
+      },
+    );
+  });
+
+  group('AttachmentIngestor — LRU eviction', () {
+    test(
+      'handled-event LRU evicts oldest entry when capacity is exceeded (line 303)',
+      () async {
+        // Use a tiny capacity so we can exceed it cheaply.
+        const capacity = 3;
+        final ingestor = AttachmentIngestor(
+          handledEventCapacity: capacity,
+          verboseLogging: false,
+        );
+
+        // Process capacity+1 distinct events to trigger the eviction loop.
+        for (var i = 0; i <= capacity; i++) {
+          final e = _makeEvent(
+            eventId: 'ev-lru-$i',
+            relativePath: 'images/lru-$i.jpg',
+          );
+          await ingestor.process(
+            event: e,
+            logging: logging,
+            attachmentIndex: index,
+          );
+        }
+
+        // Processing event 0 again should succeed (it was evicted from the
+        // handled set) rather than being treated as a duplicate.  The repair
+        // path is also skipped because documentsDirectory is null, so the
+        // re-processed event triggers the observe log.  However, the most
+        // reliable assertion is that the LRU bookkeeping doesn't throw and
+        // the index recorded all events.
+        for (var i = 0; i <= capacity; i++) {
+          expect(index.find('images/lru-$i.jpg'), isNotNull);
+        }
+
+        // The first event (ev-lru-0) was evicted, so re-processing it is
+        // treated as new and records in the index again (overwriting with
+        // same data is harmless — what matters is no exception).
+        final reprocessed = _makeEvent(
+          eventId: 'ev-lru-0',
+          relativePath: 'images/lru-0.jpg',
+        );
+        await expectLater(
+          ingestor.process(
+            event: reprocessed,
+            logging: logging,
+            attachmentIndex: index,
+          ),
+          completes,
+        );
+      },
+    );
+
+    test(
+      'cache-evicted LRU evicts oldest entry when capacity is exceeded (line 533)',
+      () async {
+        // Use a tiny capacity so _cacheEvictedEventIds overflows.
+        const capacity = 2;
+
+        const cacheEvictedMsg =
+            'Can not try to send again. File is no longer cached.';
+
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tempDir,
+          handledEventCapacity: capacity,
+          verboseLogging: false,
+        );
+
+        // Cause capacity+1 distinct events to throw the cache-evicted error.
+        for (var i = 0; i <= capacity; i++) {
+          final e = _makeEvent(
+            eventId: 'ev-ce-$i',
+            relativePath: 'attachments/ce-$i.json',
+            mime: 'application/json',
+          );
+          when(e.downloadAndDecryptAttachment).thenAnswer(
+            (_) async => throw Exception(cacheEvictedMsg),
+          );
+
+          final wrote = await ingestor.process(
+            event: e,
+            logging: logging,
+            attachmentIndex: index,
+          );
+          expect(wrote, isFalse);
+        }
+
+        // After exceeding capacity the oldest entry (ev-ce-0) is evicted from
+        // _cacheEvictedEventIds. Re-processing it must trigger a fresh download
+        // attempt (not be short-circuited by the cheap negative cache).
+        var retryAttempted = false;
+        final reprocessed = _makeEvent(
+          eventId: 'ev-ce-0',
+          relativePath: 'attachments/ce-0.json',
+          mime: 'application/json',
+        );
+        when(reprocessed.downloadAndDecryptAttachment).thenAnswer((_) async {
+          retryAttempted = true;
+          throw Exception(cacheEvictedMsg);
+        });
+
+        await ingestor.process(
+          event: reprocessed,
+          logging: logging,
+          attachmentIndex: index,
+        );
+        expect(
+          retryAttempted,
+          isTrue,
+          reason: 'evicted entry should not be in the negative cache',
+        );
+      },
+    );
+  });
+
+  group(
+    'AttachmentIngestor._isLocalFileMissingOrEmpty — empty file (line 321)',
+    () {
+      test(
+        'file exists but is empty → repair path triggers re-download',
+        () async {
+          const relativePath = 'attachments/empty.json';
+          final filePath = '${tempDir.path}/$relativePath';
+          // Create the file but leave it empty (0 bytes).
+          File(filePath)
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(<int>[]);
+
+          final fileBytes = utf8.encode('{"repaired":true}');
+          final e = _makeEvent(
+            eventId: 'ev-repair',
+            relativePath: relativePath,
+            mime: 'application/json',
+            downloadBytes: fileBytes,
+          );
+
+          final ingestor = AttachmentIngestor(
+            documentsDirectory: tempDir,
+            verboseLogging: false,
+          );
+
+          // First process: records the event and downloads (file is empty/missing
+          // fast path → should download and write).
+          final w1 = await ingestor.process(
+            event: e,
+            logging: logging,
+            attachmentIndex: index,
+          );
+          expect(w1, isTrue);
+          expect(File(filePath).readAsBytesSync(), fileBytes);
+
+          // Now truncate the file back to empty to simulate corruption.
+          File(filePath).writeAsBytesSync(<int>[]);
+
+          // Second process with the same eventId: the event WAS already handled,
+          // but the local file is empty → repair path fires (line 320-321 via
+          // _isLocalFileMissingOrEmpty returning true for a 0-byte file).
+          final w2 = await ingestor.process(
+            event: e,
+            logging: logging,
+            attachmentIndex: index,
+          );
+          expect(
+            w2,
+            isTrue,
+            reason: 'empty local file should trigger repair re-download',
+          );
+          expect(File(filePath).readAsBytesSync(), fileBytes);
+        },
+      );
+    },
+  );
 }

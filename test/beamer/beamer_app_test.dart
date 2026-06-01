@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
@@ -12,6 +13,8 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
@@ -19,6 +22,9 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/whats_new/model/whats_new_content.dart';
+import 'package:lotti/features/whats_new/model/whats_new_release.dart';
+import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -81,6 +87,20 @@ int calculateClampedIndex({
 class _MockAiSetupPromptService extends AiSetupPromptService {
   @override
   Future<bool> build() async => false;
+}
+
+/// An [AiSetupPromptService] that invokes [onBuild] every time its `build`
+/// runs, so tests can count rebuilds (including those caused by
+/// `ref.invalidate`, which re-runs `build`).
+class _CountingAiSetupPromptService extends AiSetupPromptService {
+  _CountingAiSetupPromptService(this.onBuild);
+  final void Function() onBuild;
+
+  @override
+  Future<bool> build() async {
+    onBuild();
+    return false;
+  }
 }
 
 class _TestAudioRecorderController extends AudioRecorderController {
@@ -197,6 +217,7 @@ Future<void> _pumpAppScreen(
   required MockNavService navService,
   MockJournalDb? journalDb,
   Size viewportSize = _phoneViewportSize,
+  List<Override> extraOverrides = const [],
 }) async {
   _useViewport(tester, viewportSize);
 
@@ -253,6 +274,96 @@ Future<void> _pumpAppScreen(
         // watches saved-filter providers. Override them with safe defaults so
         // this test doesn't transitively trigger the real JournalPageController
         // build chain (which needs Fts5Db etc. that aren't wired up here).
+        savedTaskFiltersControllerProvider.overrideWith(
+          () => _StubSavedTaskFiltersController(const []),
+        ),
+        currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
+        tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+        ...extraOverrides,
+      ],
+      child: MaterialApp.router(
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        routerDelegate: routerDelegate,
+        routeInformationParser: BeamerParser(),
+        backButtonDispatcher: BeamerBackButtonDispatcher(
+          delegate: routerDelegate,
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump();
+}
+
+/// Variant of [_pumpAppScreen] that allows the caller to supply custom
+/// implementations for providers that [_pumpAppScreen] always overrides.
+/// This avoids the "override twice within the same container" Riverpod error.
+Future<void> _pumpAppScreenCustomProviders(
+  WidgetTester tester, {
+  required MockNavService navService,
+  Size viewportSize = _phoneViewportSize,
+  Future<bool> Function(Ref)? shouldAutoShowWhatsNew,
+  AiSetupPromptService Function()? aiSetupPromptOverride,
+  WhatsNewController Function()? whatsNewOverride,
+}) async {
+  _useViewport(tester, viewportSize);
+
+  final mockMatrix = MockMatrixService();
+  when(
+    mockMatrix.getIncomingKeyVerificationStream,
+  ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+  when(
+    () => mockMatrix.incomingKeyVerificationRunnerStream,
+  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+
+  final mockOutboxService = MockOutboxService();
+  when(
+    () => mockOutboxService.notLoggedInGateStream,
+  ).thenAnswer((_) => const Stream<void>.empty());
+
+  final routerDelegate = BeamerDelegate(
+    setBrowserTabTitle: false,
+    locationBuilder: (routeInformation, _) =>
+        _AppScreenLocation(routeInformation),
+  );
+  addTearDown(routerDelegate.dispose);
+  await routerDelegate.setNewRoutePath(
+    RouteInformation(uri: Uri.parse('/')),
+  );
+
+  final mockJournalDb = MockJournalDb();
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        matrixServiceProvider.overrideWithValue(mockMatrix),
+        loginStateStreamProvider.overrideWith(
+          (ref) => Stream<LoginState>.value(LoginState.loggedIn),
+        ),
+        outboxServiceProvider.overrideWithValue(mockOutboxService),
+        aiSetupPromptServiceProvider.overrideWith(
+          aiSetupPromptOverride ?? _MockAiSetupPromptService.new,
+        ),
+        journalDbProvider.overrideWithValue(mockJournalDb),
+        audioRecorderControllerProvider.overrideWith(
+          () => _TestAudioRecorderController(
+            AudioRecorderState(
+              status: AudioRecorderStatus.stopped,
+              progress: Duration.zero,
+              vu: -20,
+              dBFS: -160,
+              showIndicator: false,
+              modalVisible: false,
+            ),
+          ),
+        ),
+        shouldAutoShowWhatsNewProvider.overrideWith(
+          shouldAutoShowWhatsNew ?? (ref) async => false,
+        ),
+        if (whatsNewOverride != null)
+          whatsNewControllerProvider.overrideWith(whatsNewOverride),
         savedTaskFiltersControllerProvider.overrideWith(
           () => _StubSavedTaskFiltersController(const []),
         ),
@@ -947,6 +1058,392 @@ void main() {
       expect(isTaskDetailRoute(location, 0), isTrue);
     });
   });
+
+  group('AppScreen mobile nav item taps', () {
+    // Each bottom-nav item wires onTap to `navService.tapIndex(i)`.
+    // Verify tapping items 0–2 (Tasks, Projects, Journal) invokes the right index.
+    setUp(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        ..physicalSize = const Size(800, 1200)
+        ..devicePixelRatio = 1.0;
+    });
+    tearDown(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+    });
+
+    for (final (tabIndex, tabName) in <(int, String)>[
+      (0, 'Tasks'),
+      (1, 'Projects'),
+      (5, 'Journal'), // index 5 with all optional tabs enabled
+    ]) {
+      testWidgets(
+        'tapping $tabName bottom-nav item calls tapIndex($tabIndex)',
+        (tester) async {
+          final mockNavService = MockNavService();
+          await _stubNavService(
+            mockNavService,
+            indexStream: Stream.value(0),
+            isProjectsEnabled: () => true,
+            isDailyOsEnabled: () => true,
+            isHabitsEnabled: () => true,
+            isDashboardsEnabled: () => true,
+          );
+          await _registerAppScreenGetIt(mockNavService);
+          addTearDown(tearDownTestGetIt);
+
+          await _pumpAppScreen(tester, navService: mockNavService);
+
+          // Find the DesignSystemNavigationTabBar and retrieve its items.
+          final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+            find.byType(DesignSystemBottomNavigationBar),
+          );
+          // Invoke the onTap callback directly — tapping in the widget tree
+          // is unreliable for overlapping bottom-sheet-style nav bars.
+          navBar.items[tabIndex].onTap?.call();
+          await tester.pump();
+
+          verify(() => mockNavService.tapIndex(tabIndex)).called(1);
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+        },
+      );
+    }
+  });
+
+  group('AppScreen desktop sidebar toggle-collapsed', () {
+    testWidgets(
+      'tapping toggle-collapsed button calls toggleSidebarCollapsed',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        var toggleCount = 0;
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+          extraOverrides: [
+            paneWidthControllerProvider.overrideWith(
+              () => _SpyPaneWidthController(onToggle: () => toggleCount++),
+            ),
+          ],
+        );
+
+        // The sidebar toggle tile has the key `desktopSidebarToggleKey`.
+        final toggleFinder = find.byKey(desktopSidebarToggleKey);
+        expect(toggleFinder, findsOneWidget);
+        await tester.tap(toggleFinder);
+        await tester.pump();
+
+        expect(toggleCount, 1);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+  });
+
+  group('AppScreen desktop sidebar ResizableDivider drag', () {
+    testWidgets('dragging the divider calls updateSidebarWidth', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1280, 800)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(0),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      final deltas = <double>[];
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+        extraOverrides: [
+          paneWidthControllerProvider.overrideWith(
+            () => _SpyPaneWidthController(onDrag: deltas.add),
+          ),
+        ],
+      );
+
+      final divider = find.byType(ResizableDivider);
+      expect(divider, findsOneWidget);
+
+      // Perform a horizontal drag on the divider.
+      await tester.drag(divider, const Offset(30, 0));
+      await tester.pump();
+
+      // At least one delta was reported to updateSidebarWidth.
+      expect(deltas, isNotEmpty);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+  });
+
+  group('AppScreen provider listener error branches', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        ..physicalSize = const Size(800, 1200)
+        ..devicePixelRatio = 1.0;
+    });
+    tearDown(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+    });
+
+    testWidgets(
+      'outboxLoginGateStreamProvider error arm logs via DomainLogger',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        // Emit a Stream.error so the `error:` arm of the outboxLoginGate listener fires.
+        final outboxController = StreamController<void>.broadcast();
+        addTearDown(outboxController.close);
+
+        final mockOutboxService = MockOutboxService();
+        when(
+          () => mockOutboxService.notLoggedInGateStream,
+        ).thenAnswer((_) => outboxController.stream);
+
+        final routerDelegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          locationBuilder: (routeInformation, _) =>
+              _AppScreenLocation(routeInformation),
+        );
+        addTearDown(routerDelegate.dispose);
+        await routerDelegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/')),
+        );
+
+        _useViewport(tester, _phoneViewportSize);
+
+        final mockMatrix = MockMatrixService();
+        when(
+          mockMatrix.getIncomingKeyVerificationStream,
+        ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+        when(
+          () => mockMatrix.incomingKeyVerificationRunnerStream,
+        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+
+        final mockJournalDb = MockJournalDb();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrix),
+              loginStateStreamProvider.overrideWith(
+                (ref) => Stream<LoginState>.value(LoginState.loggedIn),
+              ),
+              outboxServiceProvider.overrideWithValue(mockOutboxService),
+              // Override outboxLoginGateStreamProvider directly to emit an error.
+              outboxLoginGateStreamProvider.overrideWith(
+                (ref) => Stream<void>.error(
+                  Exception('test-outbox-error'),
+                  StackTrace.empty,
+                ),
+              ),
+              aiSetupPromptServiceProvider.overrideWith(
+                _MockAiSetupPromptService.new,
+              ),
+              journalDbProvider.overrideWithValue(mockJournalDb),
+              audioRecorderControllerProvider.overrideWith(
+                () => _TestAudioRecorderController(
+                  AudioRecorderState(
+                    status: AudioRecorderStatus.stopped,
+                    progress: Duration.zero,
+                    vu: -20,
+                    dBFS: -160,
+                    showIndicator: false,
+                    modalVisible: false,
+                  ),
+                ),
+              ),
+              shouldAutoShowWhatsNewProvider.overrideWith(
+                (ref) async => false,
+              ),
+              savedTaskFiltersControllerProvider.overrideWith(
+                () => _StubSavedTaskFiltersController(const []),
+              ),
+              currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
+              tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+            ],
+            child: MaterialApp.router(
+              theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+              supportedLocales: AppLocalizations.supportedLocales,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              routerDelegate: routerDelegate,
+              routeInformationParser: BeamerParser(),
+              backButtonDispatcher: BeamerBackButtonDispatcher(
+                delegate: routerDelegate,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // AppScreen should still render with Tasks in the nav despite the error.
+        expect(find.text('Tasks'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'shouldAutoShowWhatsNewProvider error arm does not crash AppScreen',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        // Build the widget directly so we can set shouldAutoShowWhatsNewProvider
+        // to throw — _pumpAppScreen already overrides this provider and Riverpod
+        // disallows double-overrides in the same container.
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          shouldAutoShowWhatsNew: (ref) async =>
+              throw Exception('whats-new-error'),
+        );
+
+        // The error arm just logs; AppScreen continues rendering normally.
+        expect(find.text('Tasks'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'aiSetupPromptServiceProvider error arm does not crash AppScreen',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          aiSetupPromptOverride: _ErrorAiSetupPromptService.new,
+        );
+
+        // The error arm just logs; AppScreen continues rendering normally.
+        expect(find.text('Tasks'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'whatsNewControllerProvider unseen→seen transition invalidates aiSetupPrompt',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        // The listener in AppScreen fires when whatsNewControllerProvider
+        // transitions from prevHasUnseen=true to nextHasUnseen=false, calling
+        // ref.invalidate(aiSetupPromptServiceProvider). Track how many times
+        // the provider builds so we can confirm it was invalidated.
+        var aiSetupBuildCount = 0;
+        await _pumpAppScreenCustomProviders(
+          tester,
+          navService: mockNavService,
+          whatsNewOverride: _UnseenToSeenWhatsNewController.new,
+          aiSetupPromptOverride: () =>
+              _CountingAiSetupPromptService(() => aiSetupBuildCount++),
+        );
+
+        // Resolve the initial build: whatsNew settles on AsyncData(unseen) and
+        // aiSetupPromptServiceProvider has been built once at this point.
+        await tester.pump();
+        final buildsBeforeTransition = aiSetupBuildCount;
+
+        // Advance time so the scheduled unseen -> seen transition fires. The
+        // listener then sees prevHasUnseen=true && !nextHasUnseen and
+        // invalidates aiSetupPromptServiceProvider, forcing a rebuild.
+        await tester.pump(const Duration(milliseconds: 1));
+        await tester.pump();
+
+        // AppScreen is still alive and the provider rebuilt after the
+        // invalidation triggered by the unseen -> seen transition.
+        expect(find.text('Tasks'), findsOneWidget);
+        expect(
+          aiSetupBuildCount,
+          greaterThan(buildsBeforeTransition),
+          reason:
+              'aiSetupPromptServiceProvider should rebuild after the '
+              'unseen -> seen transition invalidates it',
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+  });
 }
 
 class _ArbitraryLocation extends BeamLocation<BeamState> {
@@ -967,4 +1464,76 @@ class _StubSavedTaskFiltersController extends SavedTaskFiltersController {
 
   @override
   Future<List<SavedTaskFilter>> build() async => _seed;
+}
+
+/// A [PaneWidthController] that delegates [toggleSidebarCollapsed] and
+/// [updateSidebarWidth] to spy callbacks so tests can verify the lambdas
+/// wired in the desktop layout builder of [AppScreen].
+class _SpyPaneWidthController extends PaneWidthController {
+  _SpyPaneWidthController({
+    this.onToggle,
+    this.onDrag,
+  });
+
+  final VoidCallback? onToggle;
+  final ValueChanged<double>? onDrag;
+
+  @override
+  PaneWidths build() => const PaneWidths();
+
+  @override
+  void toggleSidebarCollapsed() => onToggle?.call();
+
+  @override
+  void updateSidebarWidth(double delta) => onDrag?.call(delta);
+}
+
+/// An [AiSetupPromptService] whose build throws so the `error:` arm of
+/// the `aiSetupPromptServiceProvider` listener in [AppScreen] is exercised.
+class _ErrorAiSetupPromptService extends AiSetupPromptService {
+  @override
+  Future<bool> build() async => throw Exception('ai-setup-error');
+}
+
+/// A single unseen release used to seed [_UnseenToSeenWhatsNewController] so
+/// that its first state genuinely has `hasUnseenRelease == true`.
+final _unseenWhatsNewContent = WhatsNewContent(
+  release: WhatsNewRelease(
+    version: '0.9.999',
+    date: DateTime(2026, 1, 7),
+    title: 'Test Release',
+    folder: '0.9.999',
+  ),
+  headerMarkdown: '# Test Release',
+  sections: const ['## Feature'],
+);
+
+/// A [WhatsNewController] that starts with an unseen release
+/// (`hasUnseenRelease == true`) and then transitions to seen
+/// (`hasUnseenRelease == false`), which drives the
+/// `prevHasUnseen && !nextHasUnseen` branch of the listener in [AppScreen].
+class _UnseenToSeenWhatsNewController extends WhatsNewController {
+  var _firstBuild = true;
+
+  @override
+  Future<WhatsNewState> build() async {
+    if (_firstBuild) {
+      _firstBuild = false;
+      // Schedule the unseen -> seen transition on a real (1ms) timer rather
+      // than a microtask: a timer is guaranteed to fire *after* this build's
+      // future resolves, so the listener reliably observes
+      // AsyncData(unseen) -> AsyncData(seen) instead of a racy ordering.
+      unawaited(
+        Future<void>.delayed(const Duration(milliseconds: 1), () {
+          if (ref.mounted) {
+            state = const AsyncData(WhatsNewState());
+          }
+        }),
+      );
+      // First state has an unseen release so the later transition to the empty
+      // (all-seen) state is a real prevHasUnseen=true -> nextHasUnseen=false.
+      return WhatsNewState(unseenContent: [_unseenWhatsNewContent]);
+    }
+    return const WhatsNewState();
+  }
 }

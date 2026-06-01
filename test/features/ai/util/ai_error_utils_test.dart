@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/inference_error.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart'
+    show ModelNotInstalledException;
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 
 // A generic error class that might have a body or message
@@ -1031,6 +1033,80 @@ OpenAIClientException({
       });
     });
   });
+
+  group('categorizeError uncovered branches', () {
+    test('ModelNotInstalledException maps to invalidRequest', () {
+      final result = AiErrorUtils.categorizeError(
+        const ModelNotInstalledException('llama3'),
+      );
+      expect(result.type, InferenceErrorType.invalidRequest);
+      expect(result.message, contains('not installed'));
+    });
+
+    test('OpenAI-style 404 for a missing model maps to invalidRequest', () {
+      // runtimeType contains "RequestException" -> routed to _handleApiError.
+      final result = AiErrorUtils.categorizeError(
+        _RequestException('HTTP 404 Not Found: model gpt-9 not found'),
+      );
+      expect(result.type, InferenceErrorType.invalidRequest);
+      expect(result.message, contains('not found'));
+    });
+
+    test('OpenAI-style 400 maps to invalidRequest', () {
+      final result = AiErrorUtils.categorizeError(
+        _RequestException('HTTP 400 Bad Request: malformed payload'),
+      );
+      expect(result.type, InferenceErrorType.invalidRequest);
+    });
+
+    for (final code in ['500', '502', '503', '504']) {
+      test('OpenAI-style $code maps to serverError', () {
+        final result = AiErrorUtils.categorizeError(
+          _RequestException('HTTP $code Server problem'),
+        );
+        expect(result.type, InferenceErrorType.serverError);
+        expect(result.message, contains('try again later'));
+      });
+    }
+
+    test('an unrecognised API error falls back to unknown', () {
+      final result = AiErrorUtils.categorizeError(
+        _RequestException('something entirely unexpected'),
+      );
+      expect(result.type, InferenceErrorType.unknown);
+    });
+  });
+
+  group('extractDetailedErrorMessage uncovered branches', () {
+    test('reads the "detail" field from a JSON string body', () {
+      final message = AiErrorUtils.extractDetailedErrorMessage(
+        _StringBodyError('{"detail":"the underlying detail"}'),
+      );
+      expect(message, 'the underlying detail');
+    });
+  });
+}
+
+/// Error whose runtime type name contains "RequestException" so
+/// [AiErrorUtils.categorizeError] routes it through the API-error handler.
+class _RequestException implements Exception {
+  _RequestException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// Error exposing a JSON-string `body`, exercising the string-decoding branch
+/// of [AiErrorUtils.extractDetailedErrorMessage].
+class _StringBodyError {
+  _StringBodyError(this.body);
+
+  final String body;
+
+  @override
+  String toString() => 'StringBodyError';
 }
 
 // Helper class that throws when properties are accessed

@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -8,10 +9,14 @@ import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+import '../../categories/test_utils.dart';
 
 void main() {
   late PromptBuilderHelper promptBuilder;
@@ -1330,6 +1335,546 @@ void main() {
         // Should replace with empty string on error
         expect(result, equals('\n\nAnalyze the image.'));
       });
+    });
+
+    group('correction_examples placeholder injection', () {
+      // These tests exercise _buildCorrectionExamplesPromptText which is only
+      // reached when the user message contains {{correction_examples}} AND
+      // promptConfig.aiResponseType == AiResponseType.audioTranscription.
+      // They also require EntitiesCacheService to be registered in GetIt.
+
+      // Helper that builds the standard audioTranscription promptConfig with
+      // the {{correction_examples}} placeholder in the user message.
+      AiConfigPrompt correctionExamplesConfig() => AiConfigPrompt(
+        id: 'transcription-prompt',
+        name: 'Transcription',
+        systemMessage: 'System',
+        userMessage: 'Transcribe: {{correction_examples}}',
+        defaultModelId: 'model-1',
+        modelIds: const ['model-1'],
+        createdAt: DateTime(2024, 3, 15),
+        useReasoning: false,
+        requiredInputData: const [InputDataType.audioFiles],
+        aiResponseType: AiResponseType.audioTranscription,
+      );
+
+      // Helper that builds a Task with the given categoryId set.
+      Task taskWithCategory(String taskId, String categoryId) => Task(
+        data: TaskData(
+          title: 'My Task',
+          checklistIds: const [],
+          status: TaskStatus.open(
+            id: 'status',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 0,
+          ),
+          statusHistory: const [],
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        meta: Metadata(
+          id: taskId,
+          createdAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          categoryId: categoryId,
+        ),
+      );
+
+      test(
+        'injects formatted correction examples when category has examples',
+        () async {
+          const categoryId = 'cat-1';
+          final examples = [
+            const ChecklistCorrectionExample(
+              before: 'wrong',
+              after: 'right',
+              capturedAt: null,
+            ),
+            ChecklistCorrectionExample(
+              before: 'old',
+              after: 'new',
+              capturedAt: DateTime(2024, 2, 1),
+            ),
+            ChecklistCorrectionExample(
+              before: 'earlier',
+              after: 'later',
+              capturedAt: DateTime(2024, 3, 1),
+            ),
+          ];
+          final category = CategoryTestUtils.createTestCategory(
+            id: categoryId,
+            name: 'Work',
+            correctionExamples: examples,
+          );
+
+          final mockCache = MockEntitiesCacheService();
+          when(() => mockCache.getCategoryById(categoryId))
+              .thenReturn(category);
+
+          await setUpTestGetIt(
+            additionalSetup: () {
+              getIt.registerSingleton<EntitiesCacheService>(mockCache);
+            },
+          );
+          addTearDown(tearDownTestGetIt);
+
+          final task = taskWithCategory('task-1', categoryId);
+          final config = correctionExamplesConfig();
+
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: task,
+          );
+
+          // The template header must be present
+          expect(result, contains('USER-PROVIDED CORRECTION EXAMPLES'));
+          // All examples must appear as "before" → "after" lines
+          expect(result, contains('"wrong" → "right"'));
+          expect(result, contains('"old" → "new"'));
+          expect(result, contains('"earlier" → "later"'));
+        },
+      );
+
+      test('sorts examples by capturedAt descending (most recent first)',
+          () async {
+        const categoryId = 'cat-sort';
+        final examples = [
+          ChecklistCorrectionExample(
+            before: 'alpha',
+            after: 'A',
+            capturedAt: DateTime(2024, 1, 1),
+          ),
+          ChecklistCorrectionExample(
+            before: 'gamma',
+            after: 'C',
+            capturedAt: DateTime(2024, 3, 1),
+          ),
+          ChecklistCorrectionExample(
+            before: 'beta',
+            after: 'B',
+            capturedAt: DateTime(2024, 2, 1),
+          ),
+        ];
+        final category = CategoryTestUtils.createTestCategory(
+          id: categoryId,
+          correctionExamples: examples,
+        );
+
+        final mockCache = MockEntitiesCacheService();
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<EntitiesCacheService>(mockCache);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+
+        final task = taskWithCategory('task-sort', categoryId);
+        final config = correctionExamplesConfig();
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: config,
+          entity: task,
+        );
+
+        // gamma (2024-03-01) must appear before beta (2024-02-01) which must
+        // appear before alpha (2024-01-01) in the output.
+        final gammaIdx = result!.indexOf('"gamma"');
+        final betaIdx = result.indexOf('"beta"');
+        final alphaIdx = result.indexOf('"alpha"');
+        expect(gammaIdx, lessThan(betaIdx));
+        expect(betaIdx, lessThan(alphaIdx));
+      });
+
+      test('caps examples at _kMaxCorrectionExamples (500)', () async {
+        const categoryId = 'cat-cap';
+        // Create 505 examples – only the first 500 (after sort) should appear.
+        final examples = List.generate(
+          505,
+          (i) => ChecklistCorrectionExample(
+            before: 'before_$i',
+            after: 'after_$i',
+            capturedAt: DateTime(2024, 1, i + 1 > 28 ? 28 : i + 1),
+          ),
+        );
+        final category = CategoryTestUtils.createTestCategory(
+          id: categoryId,
+          correctionExamples: examples,
+        );
+
+        final mockCache = MockEntitiesCacheService();
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<EntitiesCacheService>(mockCache);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+
+        final task = taskWithCategory('task-cap', categoryId);
+        final config = correctionExamplesConfig();
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: config,
+          entity: task,
+        );
+
+        // Count how many formatted lines are in the output
+        final lineCount =
+            RegExp('- ".*?" → ".*?"').allMatches(result!).length;
+        expect(lineCount, equals(500));
+      });
+
+      test('returns empty string when task has no category', () async {
+        await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
+
+        // Task without a categoryId
+        final task = Task(
+          data: TaskData(
+            title: 'Uncategorised',
+            checklistIds: const [],
+            status: TaskStatus.open(
+              id: 'status',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          meta: Metadata(
+            id: 'task-nocat',
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            // no categoryId
+          ),
+        );
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: correctionExamplesConfig(),
+          entity: task,
+        );
+
+        // Placeholder must be replaced with '' (no header injected)
+        expect(result, equals('Transcribe: '));
+        expect(result, isNot(contains('USER-PROVIDED CORRECTION EXAMPLES')));
+      });
+
+      test('returns empty string when category not found in cache', () async {
+        final mockCache = MockEntitiesCacheService();
+        when(() => mockCache.getCategoryById(any())).thenReturn(null);
+
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<EntitiesCacheService>(mockCache);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+
+        final task = taskWithCategory('task-notfound', 'missing-cat');
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: correctionExamplesConfig(),
+          entity: task,
+        );
+
+        expect(result, equals('Transcribe: '));
+      });
+
+      test('returns empty string when category has no correction examples',
+          () async {
+        const categoryId = 'cat-empty';
+        final category = CategoryTestUtils.createTestCategory(
+          id: categoryId,
+          correctionExamples: const [],
+        );
+
+        final mockCache = MockEntitiesCacheService();
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<EntitiesCacheService>(mockCache);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+
+        final task = taskWithCategory('task-empty', categoryId);
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: correctionExamplesConfig(),
+          entity: task,
+        );
+
+        expect(result, equals('Transcribe: '));
+      });
+
+      test(
+        'returns empty string and does not inject when entity is a '
+        'non-task JournalAudio without a linked task',
+        () async {
+          final mockJournalRepository = MockJournalRepository();
+          final builder = PromptBuilderHelper(
+            aiInputRepository: mockAiInputRepository,
+            journalRepository: mockJournalRepository,
+            taskSummaryResolver: MockTaskSummaryResolver(),
+          );
+
+          final audio = JournalAudio(
+            data: AudioData(
+              audioFile: 'audio.m4a',
+              audioDirectory: '/test',
+              duration: const Duration(minutes: 1),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+            ),
+            meta: Metadata(
+              id: 'audio-no-task',
+              createdAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          // No linked task found in either direction
+          when(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'audio-no-task',
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockJournalRepository.getLinkedToEntities(
+              linkedTo: 'audio-no-task',
+            ),
+          ).thenAnswer((_) async => []);
+
+          await setUpTestGetIt();
+          addTearDown(tearDownTestGetIt);
+
+          final result = await builder.buildPromptWithData(
+            promptConfig: correctionExamplesConfig(),
+            entity: audio,
+          );
+
+          expect(result, equals('Transcribe: '));
+        },
+      );
+
+      test(
+        'replaces placeholder with empty string and logs error when '
+        'cache.getCategoryById throws',
+        () async {
+          final mockCache = MockEntitiesCacheService();
+          when(() => mockCache.getCategoryById(any()))
+              .thenThrow(Exception('cache exploded'));
+
+          await setUpTestGetIt(
+            additionalSetup: () {
+              getIt.registerSingleton<EntitiesCacheService>(mockCache);
+            },
+          );
+          addTearDown(tearDownTestGetIt);
+
+          final task = taskWithCategory('task-throw', 'cat-throw');
+
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: correctionExamplesConfig(),
+            entity: task,
+          );
+
+          // Placeholder must be replaced with '' on error (not left in prompt)
+          expect(result, equals('Transcribe: '));
+          expect(result, isNot(contains('{{correction_examples}}')));
+        },
+      );
+
+      test(
+        'does NOT inject correction_examples when aiResponseType is not '
+        'audioTranscription (placeholder left unchanged)',
+        () async {
+          const categoryId = 'cat-wrong-type';
+          final category = CategoryTestUtils.createTestCategory(
+            id: categoryId,
+            correctionExamples: [
+              const ChecklistCorrectionExample(
+                before: 'x',
+                after: 'y',
+              ),
+            ],
+          );
+
+          final mockCache = MockEntitiesCacheService();
+          when(() => mockCache.getCategoryById(categoryId))
+              .thenReturn(category);
+
+          await setUpTestGetIt(
+            additionalSetup: () {
+              getIt.registerSingleton<EntitiesCacheService>(mockCache);
+            },
+          );
+          addTearDown(tearDownTestGetIt);
+
+          final task = taskWithCategory('task-wrong-type', categoryId);
+
+          // Same prompt but with a non-audioTranscription response type
+          final config = AiConfigPrompt(
+            id: 'other-prompt',
+            name: 'Other',
+            systemMessage: 'System',
+            userMessage: 'Do something: {{correction_examples}}',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2024, 3, 15),
+            useReasoning: false,
+            requiredInputData: const [InputDataType.task],
+            aiResponseType: AiResponseType.imageAnalysis, // <-- wrong type
+          );
+
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: task,
+          );
+
+          // Placeholder must NOT be replaced
+          expect(result, contains('{{correction_examples}}'));
+          expect(result, isNot(contains('"x" → "y"')));
+        },
+      );
+    });
+
+    group('_resolveEntryText audio transcript reduce path', () {
+      // Exercises lines 583-585: when a JournalAudio has multiple transcripts,
+      // the one with the latest `created` date is selected.
+
+      test(
+        'uses the most recent transcript when multiple transcripts exist',
+        () async {
+          // audioTranscript placeholder triggers _resolveAudioTranscript →
+          // _resolveEntryText → reduce path.
+          final audio = JournalAudio(
+            data: AudioData(
+              audioFile: 'multi.m4a',
+              audioDirectory: '/test',
+              duration: const Duration(minutes: 2),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              transcripts: [
+                AudioTranscript(
+                  created: DateTime(2024, 1, 1),
+                  library: 'lib-a',
+                  model: 'model-a',
+                  detectedLanguage: 'en',
+                  transcript: 'older transcript text',
+                ),
+                AudioTranscript(
+                  created: DateTime(2024, 6, 1),
+                  library: 'lib-b',
+                  model: 'model-b',
+                  detectedLanguage: 'en',
+                  transcript: 'newest transcript text',
+                ),
+                AudioTranscript(
+                  created: DateTime(2024, 3, 1),
+                  library: 'lib-c',
+                  model: 'model-c',
+                  detectedLanguage: 'en',
+                  transcript: 'middle transcript text',
+                ),
+              ],
+            ),
+            meta: Metadata(
+              id: 'audio-multi',
+              createdAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+            ),
+            // No entryText so _resolveEntryText falls through to reduce path
+          );
+
+          final config = AiConfigPrompt(
+            id: 'audio-prompt',
+            name: 'Audio Prompt',
+            systemMessage: 'System',
+            userMessage: 'Content: {{audioTranscript}}',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2024, 3, 15),
+            useReasoning: false,
+            requiredInputData: const [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: audio,
+          );
+
+          // Only the newest transcript (created 2024-06-01) should be injected
+          expect(result, equals('Content: newest transcript text'));
+          expect(result, isNot(contains('older transcript text')));
+          expect(result, isNot(contains('middle transcript text')));
+        },
+      );
+
+      test(
+        'returns [No transcription available] when all transcripts are empty',
+        () async {
+          final audio = JournalAudio(
+            data: AudioData(
+              audioFile: 'empty.m4a',
+              audioDirectory: '/test',
+              duration: const Duration(minutes: 1),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              transcripts: [
+                AudioTranscript(
+                  created: DateTime(2024, 1, 1),
+                  library: 'lib',
+                  model: 'model',
+                  detectedLanguage: 'en',
+                  transcript: '   ', // whitespace only
+                ),
+              ],
+            ),
+            meta: Metadata(
+              id: 'audio-empty-transcript',
+              createdAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          final config = AiConfigPrompt(
+            id: 'audio-prompt',
+            name: 'Audio Prompt',
+            systemMessage: 'System',
+            userMessage: 'Content: {{audioTranscript}}',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2024, 3, 15),
+            useReasoning: false,
+            requiredInputData: const [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: audio,
+          );
+
+          expect(result, equals('Content: [No transcription available]'));
+        },
+      );
     });
   });
 }

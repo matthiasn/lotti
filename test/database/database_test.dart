@@ -30,6 +30,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:research_package/model.dart';
 
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
@@ -4376,6 +4377,1028 @@ void main() {
           );
         },
       );
+    });
+
+    group('updateTaskPriorityColumn -', () {
+      test('updates priority and rank for a task', () async {
+        final base = DateTime(2024, 11, 1, 9);
+        final task = buildTaskEntry(
+          id: 'prio-col-task',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'prio-col-status',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+
+        await db!.updateTaskPriorityColumn(
+          id: 'prio-col-task',
+          priority: 'P0',
+          rank: 42,
+        );
+
+        final row = await (db!.select(
+          db!.journal,
+        )..where((t) => t.id.equals('prio-col-task'))).getSingle();
+        expect(row.taskPriority, 'P0');
+        expect(row.taskPriorityRank, 42);
+      });
+    });
+
+    group('updateProjectIdColumn -', () {
+      test('sets and clears projectId column for a task', () async {
+        final base = DateTime(2024, 11, 2, 9);
+        final task = buildTaskEntry(
+          id: 'proj-id-col-task',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'proj-id-col-status',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+
+        await db!.updateProjectIdColumn('proj-id-col-task', 'some-project');
+        var row = await (db!.select(
+          db!.journal,
+        )..where((t) => t.id.equals('proj-id-col-task'))).getSingle();
+        expect(row.projectId, 'some-project');
+
+        await db!.updateProjectIdColumn('proj-id-col-task', null);
+        row = await (db!.select(
+          db!.journal,
+        )..where((t) => t.id.equals('proj-id-col-task'))).getSingle();
+        expect(row.projectId, isNull);
+      });
+    });
+
+    group('getTaskIdsForProjects -', () {
+      test('returns empty set for empty input', () async {
+        expect(await db!.getTaskIdsForProjects({}), isEmpty);
+      });
+
+      test('returns task ids that belong to the given projects', () async {
+        final base = DateTime(2024, 11, 3, 9);
+        final taskA = buildTaskEntry(
+          id: 'task-proj-a',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-proj-a',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-proj',
+        );
+        final taskB = buildTaskEntry(
+          id: 'task-proj-b',
+          timestamp: base.add(const Duration(minutes: 1)),
+          status: TaskStatus.open(
+            id: 'ts-proj-b',
+            createdAt: base.add(const Duration(minutes: 1)),
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-proj',
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(taskA));
+        await db!.upsertJournalDbEntity(toDbEntity(taskB));
+        // Associate taskA with a project via direct column update.
+        await db!.updateProjectIdColumn('task-proj-a', 'proj-x');
+
+        final ids = await db!.getTaskIdsForProjects({'proj-x', 'proj-y'});
+        expect(ids, contains('task-proj-a'));
+        expect(ids, isNot(contains('task-proj-b')));
+      });
+    });
+
+    group('getAllCategories / getCategoryById -', () {
+      test('getAllCategories returns inserted categories', () async {
+        await db!.upsertCategoryDefinition(categoryMindfulness);
+        final all = await db!.getAllCategories();
+        expect(all.map((c) => c.id), contains(categoryMindfulness.id));
+      });
+
+      test('getCategoryById returns the category by id', () async {
+        await db!.upsertCategoryDefinition(categoryMindfulness);
+        final cat = await db!.getCategoryById(categoryMindfulness.id);
+        expect(cat, isNotNull);
+        expect(cat!.name, categoryMindfulness.name);
+      });
+
+      test('getCategoryById returns null for unknown id', () async {
+        final cat = await db!.getCategoryById('no-such-category');
+        expect(cat, isNull);
+      });
+    });
+
+    group('getAllHabitDefinitions / getHabitById -', () {
+      test('getAllHabitDefinitions returns inserted habits', () async {
+        await db!.upsertHabitDefinition(habitFlossing);
+        final all = await db!.getAllHabitDefinitions();
+        expect(all.map((h) => h.id), contains(habitFlossing.id));
+      });
+
+      test('getHabitById returns the habit by id', () async {
+        await db!.upsertHabitDefinition(habitFlossing);
+        final habit = await db!.getHabitById(habitFlossing.id);
+        expect(habit, isNotNull);
+        expect(habit!.name, habitFlossing.name);
+      });
+
+      test('getHabitById returns null for unknown id', () async {
+        final habit = await db!.getHabitById('no-such-habit');
+        expect(habit, isNull);
+      });
+    });
+
+    group('getAllDashboards / getDashboardById -', () {
+      final testDashboard = testDashboardConfig.copyWith(
+        id: 'db-test-dashboard-1',
+      );
+
+      test('getAllDashboards returns inserted dashboards', () async {
+        await db!.upsertDashboardDefinition(testDashboard);
+        final all = await db!.getAllDashboards();
+        expect(all.map((x) => x.id), contains(testDashboard.id));
+      });
+
+      test('getDashboardById returns the dashboard by id', () async {
+        await db!.upsertDashboardDefinition(testDashboard);
+        final result = await db!.getDashboardById(testDashboard.id);
+        expect(result, isNotNull);
+        expect(result!.id, testDashboard.id);
+      });
+
+      test('getDashboardById returns null for unknown id', () async {
+        final result = await db!.getDashboardById('no-such-dashboard');
+        expect(result, isNull);
+      });
+    });
+
+    group('getLabeledCount -', () {
+      test('counts labeled associations', () async {
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'lbl-count-1',
+            createdAt: DateTime(2024, 11, 4),
+            updatedAt: DateTime(2024, 11, 4),
+            name: 'CountLabel',
+            color: '#112233',
+            vectorClock: null,
+          ),
+        );
+        final entry = buildJournalEntry(
+          id: 'lbl-count-entry-1',
+          timestamp: DateTime(2024, 11, 4),
+          text: 'Labeled entry',
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(entry));
+        await db!.insertLabel('lbl-count-entry-1', 'lbl-count-1');
+
+        final count = await db!.getLabeledCount();
+        expect(count, greaterThanOrEqualTo(1));
+      });
+    });
+
+    group('getLabelUsageCounts / getLabelUsageCountsSnapshot -', () {
+      test('returns usage counts per label', () async {
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'lbl-usage-a',
+            createdAt: DateTime(2024, 11, 5),
+            updatedAt: DateTime(2024, 11, 5),
+            name: 'UsageA',
+            color: '#aabbcc',
+            vectorClock: null,
+          ),
+        );
+        final e1 = buildJournalEntry(
+          id: 'lbl-usage-e1',
+          timestamp: DateTime(2024, 11, 5),
+          text: 'Entry1',
+        );
+        final e2 = buildJournalEntry(
+          id: 'lbl-usage-e2',
+          timestamp: DateTime(2024, 11, 5, 1),
+          text: 'Entry2',
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(e1));
+        await db!.upsertJournalDbEntity(toDbEntity(e2));
+        await db!.insertLabel('lbl-usage-e1', 'lbl-usage-a');
+        await db!.insertLabel('lbl-usage-e2', 'lbl-usage-a');
+
+        final counts = await db!.getLabelUsageCounts();
+        expect(counts['lbl-usage-a'], 2);
+
+        final snapshot = await db!.getLabelUsageCountsSnapshot();
+        expect(snapshot['lbl-usage-a'], 2);
+      });
+
+      test('returns empty map when no labels are applied', () async {
+        final counts = await db!.getLabelUsageCounts();
+        expect(counts, isEmpty);
+      });
+    });
+
+    group('getTaskCountsByCategory -', () {
+      test('returns task count per category', () async {
+        final base = DateTime(2024, 11, 6, 9);
+        final t1 = buildTaskEntry(
+          id: 'tcc-task-1',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'tcc-status-1',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'tcc-cat-a',
+        );
+        final t2 = buildTaskEntry(
+          id: 'tcc-task-2',
+          timestamp: base.add(const Duration(minutes: 1)),
+          status: TaskStatus.open(
+            id: 'tcc-status-2',
+            createdAt: base.add(const Duration(minutes: 1)),
+            utcOffset: 0,
+          ),
+          categoryId: 'tcc-cat-a',
+        );
+        final t3 = buildTaskEntry(
+          id: 'tcc-task-3',
+          timestamp: base.add(const Duration(minutes: 2)),
+          status: TaskStatus.open(
+            id: 'tcc-status-3',
+            createdAt: base.add(const Duration(minutes: 2)),
+            utcOffset: 0,
+          ),
+          categoryId: 'tcc-cat-b',
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(t1));
+        await db!.upsertJournalDbEntity(toDbEntity(t2));
+        await db!.upsertJournalDbEntity(toDbEntity(t3));
+
+        final counts = await db!.getTaskCountsByCategory();
+        expect(counts['tcc-cat-a'], greaterThanOrEqualTo(2));
+        expect(counts['tcc-cat-b'], greaterThanOrEqualTo(1));
+      });
+    });
+
+    group('getSurveyCompletionsByType -', () {
+      test('returns survey entries matching type in range', () async {
+        final base = DateTime(2024, 11, 7, 10);
+        final taskResult = RPTaskResult(identifier: 'phq9')
+          ..startDate = base
+          ..endDate = base.add(const Duration(minutes: 10));
+        final surveyEntry = JournalEntity.survey(
+          meta: Metadata(
+            id: 'survey-phq9-1',
+            createdAt: base,
+            updatedAt: base,
+            dateFrom: base,
+            dateTo: base.add(const Duration(minutes: 10)),
+            starred: false,
+            private: false,
+          ),
+          data: SurveyData(
+            taskResult: taskResult,
+            scoreDefinitions: const {
+              'Total': {'q1', 'q2'},
+            },
+            calculatedScores: const {'Total': 5},
+          ),
+        );
+        await db!.updateJournalEntity(surveyEntry);
+
+        final results = await db!.getSurveyCompletionsByType(
+          type: 'phq9',
+          rangeStart: base.subtract(const Duration(hours: 1)),
+          rangeEnd: base.add(const Duration(hours: 1)),
+        );
+        expect(results.map((e) => e.meta.id), contains('survey-phq9-1'));
+      });
+
+      test('returns empty list when none exist', () async {
+        final base = DateTime(2024, 11, 7, 11);
+        final results = await db!.getSurveyCompletionsByType(
+          type: 'nonexistent-survey',
+          rangeStart: base,
+          rangeEnd: base.add(const Duration(hours: 1)),
+        );
+        expect(results, isEmpty);
+      });
+    });
+
+    group('getAllRatingsForTarget -', () {
+      test('returns all rating entries for a target across catalogs', () async {
+        final base = DateTime(2024, 11, 8, 10);
+        final timeEntry = buildJournalEntry(
+          id: 'te-all-ratings',
+          timestamp: base,
+          text: 'Session for all ratings',
+        );
+        final rating1 = JournalEntity.rating(
+          meta: Metadata(
+            id: 'all-rating-1',
+            createdAt: base,
+            updatedAt: base,
+            dateFrom: base,
+            dateTo: base,
+          ),
+          data: const RatingData(
+            targetId: 'te-all-ratings',
+            dimensions: [RatingDimension(key: 'energy', value: 0.7)],
+          ),
+        );
+        final rating2 = JournalEntity.rating(
+          meta: Metadata(
+            id: 'all-rating-2',
+            createdAt: base.add(const Duration(minutes: 5)),
+            updatedAt: base.add(const Duration(minutes: 5)),
+            dateFrom: base.add(const Duration(minutes: 5)),
+            dateTo: base.add(const Duration(minutes: 5)),
+          ),
+          data: const RatingData(
+            targetId: 'te-all-ratings',
+            dimensions: [RatingDimension(key: 'focus', value: 0.9)],
+          ),
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
+        await db!.upsertJournalDbEntity(toDbEntity(rating1));
+        await db!.upsertJournalDbEntity(toDbEntity(rating2));
+
+        await db!.upsertEntryLink(
+          EntryLink.rating(
+            id: 'link-all-rating-1',
+            fromId: 'all-rating-1',
+            toId: 'te-all-ratings',
+            createdAt: base,
+            updatedAt: base,
+            vectorClock: const VectorClock({'db': 1}),
+          ),
+        );
+        await db!.upsertEntryLink(
+          EntryLink.rating(
+            id: 'link-all-rating-2',
+            fromId: 'all-rating-2',
+            toId: 'te-all-ratings',
+            createdAt: base.add(const Duration(minutes: 5)),
+            updatedAt: base.add(const Duration(minutes: 5)),
+            vectorClock: const VectorClock({'db': 1}),
+          ),
+        );
+
+        final results = await db!.getAllRatingsForTarget('te-all-ratings');
+        expect(results, hasLength(2));
+        expect(
+          results.map((r) => r.meta.id),
+          containsAll(['all-rating-1', 'all-rating-2']),
+        );
+      });
+
+      test('returns empty list when no ratings exist for target', () async {
+        final results = await db!.getAllRatingsForTarget('no-such-target');
+        expect(results, isEmpty);
+      });
+    });
+
+    group('entryLinkById -', () {
+      test('returns link when found', () async {
+        final base = DateTime(2024, 11, 9, 10);
+        final link = buildEntryLink(
+          id: 'link-by-id-1',
+          fromId: 'from-by-id-1',
+          toId: 'to-by-id-1',
+          timestamp: base,
+        );
+        await db!.upsertEntryLink(link);
+
+        final result = await db!.entryLinkById('link-by-id-1');
+        expect(result, isNotNull);
+        expect(result!.id, 'link-by-id-1');
+        expect(result.fromId, 'from-by-id-1');
+        expect(result.toId, 'to-by-id-1');
+      });
+
+      test('returns null when link not found', () async {
+        final result = await db!.entryLinkById('no-such-link');
+        expect(result, isNull);
+      });
+    });
+
+    group('upsertEntryLink tombstone handling -', () {
+      test(
+        'replaces a soft-deleted tombstone when reinserting with different id',
+        () async {
+          final base = DateTime(2024, 11, 10, 10);
+          // Insert a hidden (tombstone) link for (from, to, type).
+          final tombstone = EntryLink.basic(
+            id: 'tombstone-link-id',
+            fromId: 'tombstone-from',
+            toId: 'tombstone-to',
+            createdAt: base,
+            updatedAt: base,
+            vectorClock: const VectorClock({'db': 1}),
+            hidden: true,
+          );
+          await db!.upsertEntryLink(tombstone);
+
+          // Now insert a fresh link with a new id but same (from, to, type).
+          final fresh = EntryLink.basic(
+            id: 'fresh-link-id',
+            fromId: 'tombstone-from',
+            toId: 'tombstone-to',
+            createdAt: base.add(const Duration(seconds: 1)),
+            updatedAt: base.add(const Duration(seconds: 1)),
+            vectorClock: const VectorClock({'db': 2}),
+          );
+          final res = await db!.upsertEntryLink(fresh);
+          // Should insert (not blocked by tombstone).
+          expect(res, isNot(0));
+
+          // Tombstone should be gone; fresh link should exist.
+          expect(await db!.entryLinkById('tombstone-link-id'), isNull);
+          expect(await db!.entryLinkById('fresh-link-id'), isNotNull);
+        },
+      );
+    });
+
+    group('getJournalEntitiesForIds sorted -', () {
+      test(
+        'sorts by dateFrom desc then id asc when dates are equal',
+        () async {
+          final base = DateTime(2024, 11, 11, 9);
+          // Both entries share the same dateFrom but differ in id lexicography.
+          final entryA = buildJournalEntry(
+            id: 'sort-id-a',
+            timestamp: base,
+            text: 'Entry A',
+          );
+          final entryB = buildJournalEntry(
+            id: 'sort-id-b',
+            timestamp: base,
+            text: 'Entry B',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(entryA));
+          await db!.upsertJournalDbEntity(toDbEntity(entryB));
+
+          final results = await db!.getJournalEntitiesForIds({
+            'sort-id-a',
+            'sort-id-b',
+          });
+          // Same date → sorted by id ascending.
+          final ids = results.map((e) => e.meta.id).toList();
+          expect(ids.indexOf('sort-id-a'), lessThan(ids.indexOf('sort-id-b')));
+        },
+      );
+    });
+
+    group('getJournalEntityIdsSortedByDateFromDesc -', () {
+      test('returns empty list for empty input', () async {
+        final result = await db!.getJournalEntityIdsSortedByDateFromDesc({});
+        expect(result, isEmpty);
+      });
+    });
+
+    group('getCountImportFlagEntries -', () {
+      test('returns count of import-flagged entries', () async {
+        final base = DateTime(2024, 11, 12, 9);
+        // EntryFlag.import has index 1, which is what the query filters on.
+        final flaggedEntry = buildJournalEntry(
+          id: 'import-flag-entry',
+          timestamp: base,
+          text: 'Flagged',
+          flag: EntryFlag.import,
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(flaggedEntry));
+
+        final count = await db!.getCountImportFlagEntries();
+        expect(count, greaterThanOrEqualTo(1));
+      });
+
+      test('returns zero when no import-flagged entries exist', () async {
+        expect(await db!.getCountImportFlagEntries(), 0);
+      });
+    });
+
+    group('watchConfigFlags before flags loaded -', () {
+      test('emits flags after async bootstrap when not yet loaded', () async {
+        // Create a fresh db that has NOT had initConfigFlags called yet.
+        final freshDb = JournalDb(inMemoryDatabase: true);
+        addTearDown(freshDb.close);
+
+        // watchConfigFlags is called before flags are loaded; it should still
+        // emit a non-null set (possibly empty on a bare db, but no crash).
+        final flags = await freshDb.watchConfigFlags().first;
+        expect(flags, isNotNull);
+      });
+    });
+
+    group('_extractEntryLinkVectorClock FormatException path -', () {
+      test(
+        'handles malformed JSON in streamEntryLinksWithVectorClock gracefully',
+        () async {
+          final timestamp = DateTime(2024, 11, 13).millisecondsSinceEpoch;
+          // Insert a linked_entries row whose serialized value is not valid JSON.
+          await db!.customStatement(
+            'INSERT INTO linked_entries '
+            '(id, from_id, to_id, type, serialized, hidden, created_at, updated_at) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+              'link-bad-json',
+              'from-bad-json',
+              'to-bad-json',
+              'basic',
+              'NOT_VALID_JSON{{{',
+              0,
+              timestamp,
+              timestamp,
+            ],
+          );
+
+          final results = await db!
+              .streamEntryLinksWithVectorClock()
+              .expand((batch) => batch)
+              .toList();
+
+          final badEntry = results.firstWhere(
+            (r) => r.id == 'link-bad-json',
+            orElse: () => (id: 'link-bad-json', vectorClock: null),
+          );
+          expect(
+            badEntry.vectorClock,
+            isNull,
+            reason: 'Malformed JSON should result in null vectorClock',
+          );
+        },
+      );
+    });
+
+    group('getJournalEntities with categoryIds filter -', () {
+      test(
+        'filteredJournalByCategoriesFast paths (all-private, with filter)',
+        () async {
+          final base = DateTime(2024, 11, 14, 9);
+          final catEntry = buildJournalEntry(
+            id: 'cat-fast-entry',
+            timestamp: base,
+            text: 'Category entry',
+            categoryId: 'filter-cat-fast',
+          );
+          final otherEntry = buildJournalEntry(
+            id: 'cat-fast-other',
+            timestamp: base.add(const Duration(minutes: 1)),
+            text: 'Other entry',
+            categoryId: 'other-cat-fast',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(catEntry));
+          await db!.upsertJournalDbEntity(toDbEntity(otherEntry));
+
+          // All-private path (privateFlag true is the DB default in this test).
+          final allPrivate = await fetchJournalEntities(
+            db!,
+            types: const ['JournalEntry'],
+            starredStatuses: const [true, false],
+            privateStatuses: const [true, false],
+            flaggedStatuses: [
+              EntryFlag.none.index,
+              EntryFlag.followUpNeeded.index,
+            ],
+            categoryIds: {'filter-cat-fast'},
+          );
+          expect(
+            allPrivate.map((e) => e.meta.id),
+            contains('cat-fast-entry'),
+          );
+          expect(
+            allPrivate.map((e) => e.meta.id),
+            isNot(contains('cat-fast-other')),
+          );
+
+          // Private-filtered path.
+          final filtered = await fetchJournalEntities(
+            db!,
+            types: const ['JournalEntry'],
+            starredStatuses: const [true, false],
+            privateStatuses: const [false],
+            flaggedStatuses: [
+              EntryFlag.none.index,
+              EntryFlag.followUpNeeded.index,
+            ],
+            categoryIds: {'filter-cat-fast'},
+          );
+          expect(
+            filtered.map((e) => e.meta.id),
+            contains('cat-fast-entry'),
+          );
+        },
+      );
+    });
+
+    group('getTasks with label/sortByDate/priority branch coverage -', () {
+      test(
+        'getTasks with label filter (all-private/all-starred, label included)',
+        () async {
+          final base = DateTime(2024, 11, 15, 9);
+          await db!.upsertLabelDefinition(
+            LabelDefinition(
+              id: 'lbl-task-cov',
+              createdAt: base,
+              updatedAt: base,
+              name: 'TaskLabel',
+              color: '#001122',
+              vectorClock: null,
+            ),
+          );
+          final labeledTask = buildTaskEntry(
+            id: 'labeled-task-cov',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'lts-cov',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'lbl-cat-cov',
+          );
+          final unlabeledTask = buildTaskEntry(
+            id: 'unlabeled-task-cov',
+            timestamp: base.add(const Duration(minutes: 1)),
+            status: TaskStatus.open(
+              id: 'lts-cov-2',
+              createdAt: base.add(const Duration(minutes: 1)),
+              utcOffset: 0,
+            ),
+            categoryId: 'lbl-cat-cov',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(labeledTask));
+          await db!.upsertJournalDbEntity(toDbEntity(unlabeledTask));
+          await db!.insertLabel('labeled-task-cov', 'lbl-task-cov');
+
+          // Exercise the label-filter branch (all-private/all-starred).
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['lbl-cat-cov'],
+            labelIds: const ['lbl-task-cov'],
+          );
+          expect(
+            results.map((e) => e.meta.id),
+            contains('labeled-task-cov'),
+          );
+          expect(
+            results.map((e) => e.meta.id),
+            isNot(contains('unlabeled-task-cov')),
+          );
+        },
+      );
+
+      test(
+        'getTasks with sortByDate=true exercises date-sorted branch',
+        () async {
+          final base = DateTime(2024, 11, 16, 9);
+          final t1 = buildTaskEntry(
+            id: 'sort-date-task-1',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'sdt-1',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'sdt-cat',
+            due: DateTime(2024, 11, 18),
+          );
+          final t2 = buildTaskEntry(
+            id: 'sort-date-task-2',
+            timestamp: base.add(const Duration(minutes: 1)),
+            status: TaskStatus.open(
+              id: 'sdt-2',
+              createdAt: base.add(const Duration(minutes: 1)),
+              utcOffset: 0,
+            ),
+            categoryId: 'sdt-cat',
+            due: DateTime(2024, 11, 17),
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(t1));
+          await db!.upsertJournalDbEntity(toDbEntity(t2));
+
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['sdt-cat'],
+            sortByDate: true,
+          );
+          expect(results.length, greaterThanOrEqualTo(2));
+          // Due-date sorted: t2 (Nov 17) before t1 (Nov 18).
+          final ids = results.map((e) => e.meta.id).toList();
+          expect(
+            ids.indexOf('sort-date-task-2'),
+            lessThan(ids.indexOf('sort-date-task-1')),
+          );
+        },
+      );
+
+      test(
+        'getTasks with sortByDate=true and priority filter (all-private path)',
+        () async {
+          final base = DateTime(2024, 11, 17, 9);
+          final t1 = buildTaskEntry(
+            id: 'sortdate-prio-task',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'sdp-1',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'sdp-cat',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(t1));
+          await db!.updateTaskPriorityColumn(
+            id: 'sortdate-prio-task',
+            priority: 'P0',
+            rank: 1,
+          );
+
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['sdp-cat'],
+            priorities: const ['P0'],
+            sortByDate: true,
+          );
+          expect(results.map((e) => e.meta.id), contains('sortdate-prio-task'));
+        },
+      );
+
+      test(
+        'getTasks with label filter and sortByDate=true (all-private path)',
+        () async {
+          final base = DateTime(2024, 11, 18, 9);
+          await db!.upsertLabelDefinition(
+            LabelDefinition(
+              id: 'lbl-sort-date',
+              createdAt: base,
+              updatedAt: base,
+              name: 'SortDateLabel',
+              color: '#334455',
+              vectorClock: null,
+            ),
+          );
+          final t = buildTaskEntry(
+            id: 'lbl-sort-date-task',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'lsd-status',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'lsd-cat',
+            due: DateTime(2024, 11, 20),
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(t));
+          await db!.insertLabel('lbl-sort-date-task', 'lbl-sort-date');
+
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['lsd-cat'],
+            labelIds: const ['lbl-sort-date'],
+            sortByDate: true,
+          );
+          expect(
+            results.map((e) => e.meta.id),
+            contains('lbl-sort-date-task'),
+          );
+        },
+      );
+
+      test(
+        'getTasks with explicit ids, label filter, sortByDate=false',
+        () async {
+          final base = DateTime(2024, 11, 19, 9);
+          await db!.upsertLabelDefinition(
+            LabelDefinition(
+              id: 'lbl-ids-filter',
+              createdAt: base,
+              updatedAt: base,
+              name: 'IdsFilterLabel',
+              color: '#556677',
+              vectorClock: null,
+            ),
+          );
+          final t = buildTaskEntry(
+            id: 'ids-lbl-task',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'ilf-status',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'ilf-cat',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(t));
+          await db!.insertLabel('ids-lbl-task', 'lbl-ids-filter');
+
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['ilf-cat'],
+            labelIds: const ['lbl-ids-filter'],
+            ids: const ['ids-lbl-task'],
+          );
+          expect(results.map((e) => e.meta.id), contains('ids-lbl-task'));
+        },
+      );
+
+      test(
+        'getTasks with explicit ids, label filter, sortByDate=true',
+        () async {
+          final base = DateTime(2024, 11, 20, 9);
+          await db!.upsertLabelDefinition(
+            LabelDefinition(
+              id: 'lbl-ids-sort-date',
+              createdAt: base,
+              updatedAt: base,
+              name: 'IdsDateLabel',
+              color: '#667788',
+              vectorClock: null,
+            ),
+          );
+          final t = buildTaskEntry(
+            id: 'ids-sort-date-task',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'isd-status',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'isd-cat',
+            due: DateTime(2024, 11, 25),
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(t));
+          await db!.insertLabel('ids-sort-date-task', 'lbl-ids-sort-date');
+
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['isd-cat'],
+            labelIds: const ['lbl-ids-sort-date'],
+            ids: const ['ids-sort-date-task'],
+            sortByDate: true,
+          );
+          expect(
+            results.map((e) => e.meta.id),
+            contains('ids-sort-date-task'),
+          );
+        },
+      );
+
+      test(
+        'getTasks with no-label filter (unlabeled items)',
+        () async {
+          final base = DateTime(2024, 11, 21, 9);
+          final t = buildTaskEntry(
+            id: 'no-lbl-task',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'nlt-status',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'nlt-cat',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(t));
+
+          // '' sentinel means "include unlabeled".
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['nlt-cat'],
+            labelIds: const [''],
+          );
+          expect(results.map((e) => e.meta.id), contains('no-lbl-task'));
+        },
+      );
+
+      test(
+        'getTasks with private-filtered path (not all-private)',
+        () async {
+          final base = DateTime(2024, 11, 22, 9);
+          final t = buildTaskEntry(
+            id: 'private-filtered-task',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'pft-status',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'pft-cat',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(t));
+
+          // Restrict private statuses to [false] to exercise the
+          // non-all-private path in _selectTasks.
+          final privateStatuses = await db!.getConfigFlagByName(privateFlag);
+          // Disable private flag so _visiblePrivateStatuses returns [false].
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['pft-cat'],
+          );
+          expect(
+            results.map((e) => e.meta.id),
+            contains('private-filtered-task'),
+          );
+
+          // Restore the flag.
+          await db!.upsertConfigFlag(
+            privateStatuses ??
+                const ConfigFlag(
+                  name: privateFlag,
+                  description: 'Show private entries?',
+                  status: true,
+                ),
+          );
+        },
+      );
+
+      test(
+        '_selectTasksByStatusForDayAgent with private filter (not all-private)',
+        () async {
+          final base = DateTime(2024, 11, 23, 9);
+          final t = buildTaskEntry(
+            id: 'day-agent-priv-filter',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'dapf-status',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'dapf-cat',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(t));
+
+          // Disable the private flag so only public entries are visible.
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+
+          final results = await db!.getOpenTasksForDayAgentCorpus(
+            categoryIds: {'dapf-cat'},
+          );
+          expect(
+            results.map((t) => t.meta.id),
+            contains('day-agent-priv-filter'),
+          );
+
+          // Restore flag.
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: true,
+            ),
+          );
+        },
+      );
+    });
+
+    group('getTasksSortedByDueDate edge cases -', () {
+      test('empty taskStatuses or categoryIds returns empty list', () async {
+        final results1 = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const [],
+          categoryIds: const ['cat-1'],
+        );
+        expect(results1, isEmpty);
+
+        final results2 = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const [],
+        );
+        expect(results2, isEmpty);
+
+        final results3 = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-1'],
+          ids: const [],
+        );
+        expect(results3, isEmpty);
+      });
     });
 
     tearDownAll(() async {

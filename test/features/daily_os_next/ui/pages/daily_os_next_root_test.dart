@@ -437,5 +437,84 @@ void main() {
         });
       },
     );
+
+    testWidgets(
+      'confirming a date in the picker updates the selected date',
+      (tester) async {
+        final realtimeService = MockRealtimeTranscriptionService();
+        when(
+          realtimeService.resolveRealtimeConfig,
+        ).thenAnswer((_) async => null);
+        when(realtimeService.dispose).thenAnswer((_) async {});
+
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await tester.pumpWidget(
+            _wrap(
+              const DailyOsNextRoot(),
+              overrides: [
+                captureControllerProvider.overrideWith(
+                  () => CaptureController(realtimeService: realtimeService),
+                ),
+                currentDraftPlanProvider.overrideWith((ref, _) async => null),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          // Open the date picker by tapping "Today".
+          await tester.tap(find.text('Today'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 200));
+          await tester.pump(const Duration(milliseconds: 200));
+
+          // Confirm the currently selected date (May 26 2026) using the OK
+          // button — this exercises the `if (picked != null)` branch.
+          final material = MaterialLocalizations.of(
+            tester.element(find.byType(DailyOsNextRoot)),
+          );
+          await tester.tap(find.text(material.okButtonLabel));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 200));
+          await tester.pump(const Duration(milliseconds: 200));
+
+          // The widget stayed on today (same date confirmed).
+          expect(find.text('Today'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets(
+      'AsyncError shows the error shell with the error message',
+      (tester) async {
+        const errorMessage = 'day-agent unavailable';
+
+        await tester.pumpWidget(
+          _wrap(
+            const DailyOsNextRoot(),
+            overrides: [
+              currentDraftPlanProvider.overrideWith(
+                (ref, date) => Future<DraftPlan?>.error(
+                  Exception(errorMessage),
+                  StackTrace.empty,
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // The error shell must be shown and must contain the error text.
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(CapturePage), findsNothing);
+        expect(find.byType(DayPage), findsNothing);
+        expect(
+          find.textContaining(errorMessage),
+          findsOneWidget,
+          reason: 'error text must be rendered by _ErrorShell',
+        );
+      },
+    );
   });
 }

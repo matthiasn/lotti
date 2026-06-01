@@ -24,6 +24,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
@@ -583,6 +584,338 @@ void main() {
       }
     });
   });
+
+  group('_buildContextMenu / contextMenuBuilder', () {
+    late AppLocalizations messages;
+
+    setUpAll(() async {
+      await getIt.reset();
+      registerAllFallbackValues();
+
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
+      final mockTimeService = MockTimeService();
+      when(mockTimeService.getStream).thenAnswer(
+        (_) => Stream<JournalEntity>.fromIterable([]),
+      );
+
+      getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<VectorClockService>(MockVectorClockService())
+        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
+        ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
+        ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<EditorStateService>(EditorStateService());
+
+      messages = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    tearDownAll(() async {
+      if (getIt.isRegistered<JournalDb>()) {
+        await getIt<JournalDb>().close();
+      }
+      if (getIt.isRegistered<EditorDb>()) {
+        await getIt<EditorDb>().close();
+      }
+      await getIt.reset();
+    });
+
+    testWidgets(
+      'contextMenuBuilder returns toolbar without dictionary button '
+      'when no text is selected',
+      (tester) async {
+        const entryId = 'ctx-menu-no-selection';
+
+        await tester.pumpWidget(
+          buildEditorTestWidget(entryId: entryId, showToolbar: false),
+        );
+        await tester.pumpAndSettle();
+
+        final quillEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        final contextMenuBuilder = quillEditor.config.contextMenuBuilder;
+        expect(contextMenuBuilder, isNotNull);
+
+        // Obtain a real QuillRawEditorState from the widget tree.
+        final rawEditorState = tester.state<QuillRawEditorState>(
+          find.byType(QuillRawEditor),
+        );
+
+        // Pump a standalone widget that calls the context-menu builder so the
+        // builder code is exercised and we can assert on its output.
+        late Widget builtMenu;
+        await tester.pumpWidget(
+          buildEditorTestWidget(entryId: entryId, showToolbar: false),
+        );
+        await tester.pumpAndSettle();
+
+        // Re-acquire the state after re-pump.
+        final freshState = tester.state<QuillRawEditorState>(
+          find.byType(QuillRawEditor),
+        );
+        final freshEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        builtMenu = freshEditor.config.contextMenuBuilder!(
+          tester.element(find.byType(QuillEditor)),
+          freshState,
+        );
+
+        // The menu should be an AdaptiveTextSelectionToolbar (no dict button
+        // because nothing is selected).
+        expect(builtMenu, isA<AdaptiveTextSelectionToolbar>());
+        // The controller has no selection — there should be no dictionary
+        // button item in the returned widget.
+        final toolbar = builtMenu as AdaptiveTextSelectionToolbar;
+        final buttonItems = toolbar.buttonItems ?? [];
+        final hasDictButton = buttonItems.any(
+          (item) => item.label == messages.addToDictionary,
+        );
+        expect(hasDictButton, isFalse);
+
+        // Suppress unused variable hint from the first state acquisition.
+        expect(rawEditorState, isNotNull);
+      },
+    );
+
+    testWidgets(
+      'contextMenuBuilder includes "Add to Dictionary" button '
+      'when text is selected',
+      (tester) async {
+        const entryId = 'ctx-menu-with-selection';
+
+        await tester.pumpWidget(
+          buildEditorTestWidget(entryId: entryId, showToolbar: false),
+        );
+        await tester.pumpAndSettle();
+
+        final quillEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        // Select text in the controller so trimmedText is non-empty.
+        quillEditor.controller.document.insert(0, 'Hello World');
+        quillEditor.controller.updateSelection(
+          const TextSelection(baseOffset: 0, extentOffset: 5),
+          ChangeSource.local,
+        );
+        await tester.pump();
+
+        final freshEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        final rawEditorState = tester.state<QuillRawEditorState>(
+          find.byType(QuillRawEditor),
+        );
+
+        final builtMenu = freshEditor.config.contextMenuBuilder!(
+          tester.element(find.byType(QuillEditor)),
+          rawEditorState,
+        );
+
+        expect(builtMenu, isA<AdaptiveTextSelectionToolbar>());
+        final toolbar = builtMenu as AdaptiveTextSelectionToolbar;
+        final buttonItems = toolbar.buttonItems ?? [];
+        final hasDictButton = buttonItems.any(
+          (item) => item.label == messages.addToDictionary,
+        );
+        expect(hasDictButton, isTrue);
+      },
+    );
+
+    testWidgets(
+      '_addToDictionary calls service and shows toast on success',
+      (tester) async {
+        const entryId = 'ctx-menu-add-dict-success';
+        final mockDictionaryService = MockSpeechDictionaryService();
+        when(
+          () => mockDictionaryService.addTermForEntry(
+            entryId: any(named: 'entryId'),
+            term: any(named: 'term'),
+          ),
+        ).thenAnswer((_) async => SpeechDictionaryResult.success);
+
+        await tester.pumpWidget(
+          buildEditorTestWidget(
+            entryId: entryId,
+            showToolbar: false,
+            speechDictionaryServiceOverride: mockDictionaryService,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final quillEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        // Select 'Hello' in the document.
+        quillEditor.controller.document.insert(0, 'Hello World');
+        quillEditor.controller.updateSelection(
+          const TextSelection(baseOffset: 0, extentOffset: 5),
+          ChangeSource.local,
+        );
+        await tester.pump();
+
+        final freshEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        final rawEditorState = tester.state<QuillRawEditorState>(
+          find.byType(QuillRawEditor),
+        );
+
+        // Build the context menu and find the dictionary button item.
+        final toolbar =
+            freshEditor.config.contextMenuBuilder!(
+                  tester.element(find.byType(QuillEditor)),
+                  rawEditorState,
+                )
+                as AdaptiveTextSelectionToolbar;
+
+        final dictionaryButtonItem = (toolbar.buttonItems ?? []).firstWhere(
+          (item) => item.label == messages.addToDictionary,
+        );
+
+        // Press the "Add to Dictionary" button.
+        dictionaryButtonItem.onPressed?.call();
+        await tester.pumpAndSettle();
+
+        // The service should have been called with the selected term.
+        verify(
+          () => mockDictionaryService.addTermForEntry(
+            entryId: entryId,
+            term: 'Hello',
+          ),
+        ).called(1);
+        // A success toast should be visible.
+        expect(find.text(messages.addToDictionarySuccess), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '_addToDictionary shows warning toast for noCategory result',
+      (tester) async {
+        const entryId = 'ctx-menu-add-dict-no-category';
+        final mockDictionaryService = MockSpeechDictionaryService();
+        when(
+          () => mockDictionaryService.addTermForEntry(
+            entryId: any(named: 'entryId'),
+            term: any(named: 'term'),
+          ),
+        ).thenAnswer((_) async => SpeechDictionaryResult.noCategory);
+
+        await tester.pumpWidget(
+          buildEditorTestWidget(
+            entryId: entryId,
+            showToolbar: false,
+            speechDictionaryServiceOverride: mockDictionaryService,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final quillEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        quillEditor.controller.document.insert(0, 'Term');
+        quillEditor.controller.updateSelection(
+          const TextSelection(baseOffset: 0, extentOffset: 4),
+          ChangeSource.local,
+        );
+        await tester.pump();
+
+        final freshEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        final rawEditorState = tester.state<QuillRawEditorState>(
+          find.byType(QuillRawEditor),
+        );
+
+        final toolbar =
+            freshEditor.config.contextMenuBuilder!(
+                  tester.element(find.byType(QuillEditor)),
+                  rawEditorState,
+                )
+                as AdaptiveTextSelectionToolbar;
+
+        final dictionaryButtonItem = (toolbar.buttonItems ?? []).firstWhere(
+          (item) => item.label == messages.addToDictionary,
+        );
+        dictionaryButtonItem.onPressed?.call();
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockDictionaryService.addTermForEntry(
+            entryId: entryId,
+            term: 'Term',
+          ),
+        ).called(1);
+        expect(find.text(messages.addToDictionaryNoCategory), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '_addToDictionary is silent for emptyTerm (no toast shown)',
+      (tester) async {
+        const entryId = 'ctx-menu-add-dict-empty';
+        final mockDictionaryService = MockSpeechDictionaryService();
+        when(
+          () => mockDictionaryService.addTermForEntry(
+            entryId: any(named: 'entryId'),
+            term: any(named: 'term'),
+          ),
+        ).thenAnswer((_) async => SpeechDictionaryResult.emptyTerm);
+
+        await tester.pumpWidget(
+          buildEditorTestWidget(
+            entryId: entryId,
+            showToolbar: false,
+            speechDictionaryServiceOverride: mockDictionaryService,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final quillEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        quillEditor.controller.document.insert(0, 'Word');
+        quillEditor.controller.updateSelection(
+          const TextSelection(baseOffset: 0, extentOffset: 4),
+          ChangeSource.local,
+        );
+        await tester.pump();
+
+        final freshEditor = tester.widget<QuillEditor>(
+          find.byType(QuillEditor),
+        );
+        final rawEditorState = tester.state<QuillRawEditorState>(
+          find.byType(QuillRawEditor),
+        );
+
+        final toolbar =
+            freshEditor.config.contextMenuBuilder!(
+                  tester.element(find.byType(QuillEditor)),
+                  rawEditorState,
+                )
+                as AdaptiveTextSelectionToolbar;
+
+        final dictionaryButtonItem = (toolbar.buttonItems ?? []).firstWhere(
+          (item) => item.label == messages.addToDictionary,
+        );
+        dictionaryButtonItem.onPressed?.call();
+        await tester.pumpAndSettle();
+
+        // Service was called but result is silent — no toast rendered.
+        verify(
+          () => mockDictionaryService.addTermForEntry(
+            entryId: entryId,
+            term: 'Word',
+          ),
+        ).called(1);
+        expect(find.byType(DesignSystemToast), findsNothing);
+      },
+    );
+  });
 }
 
 class _TestEntryController extends EntryController {
@@ -607,12 +940,17 @@ class _TestEntryController extends EntryController {
 Widget buildEditorTestWidget({
   required String entryId,
   required bool showToolbar,
+  SpeechDictionaryService? speechDictionaryServiceOverride,
 }) {
   return ProviderScope(
     overrides: [
       entryControllerProvider(id: entryId).overrideWith(
         () => _TestEntryController(showToolbar: showToolbar),
       ),
+      if (speechDictionaryServiceOverride != null)
+        speechDictionaryServiceProvider.overrideWithValue(
+          speechDictionaryServiceOverride,
+        ),
     ],
     child: MediaQuery(
       data: const MediaQueryData(),

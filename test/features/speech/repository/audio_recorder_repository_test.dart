@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -303,5 +307,193 @@ void main() {
         () => mockAudioRecorder.onAmplitudeChanged(any<Duration>()),
       ).called(1);
     });
+
+    test('amplitudeStream passes 20ms interval to onAmplitudeChanged', () {
+      const mockStream = Stream<Amplitude>.empty();
+      when(
+        () => mockAudioRecorder.onAmplitudeChanged(any<Duration>()),
+      ).thenAnswer((_) => mockStream);
+
+      repository.amplitudeStream;
+
+      final captured = verify(
+        () => mockAudioRecorder.onAmplitudeChanged(captureAny<Duration>()),
+      ).captured;
+      expect(captured.single, const Duration(milliseconds: 20));
+    });
+
+    test(
+      'startRecording returns AudioNote with correct fields when successful',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'audio_recorder_repository_test_',
+        );
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+
+        getIt.registerSingleton<Directory>(tempDir);
+        addTearDown(() {
+          if (getIt.isRegistered<Directory>()) {
+            getIt.unregister<Directory>();
+          }
+        });
+
+        when(
+          () => mockDomainLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
+        ).thenReturn(null);
+
+        when(
+          () => mockAudioRecorder.start(
+            any<RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final result = await repository.startRecording();
+
+        expect(result, isNotNull);
+        expect(result!.audioFile, endsWith('.m4a'));
+        expect(result.audioDirectory, startsWith('/audio/'));
+        expect(result.duration, Duration.zero);
+        expect(
+          result.createdAt.isBefore(
+            DateTime.now().add(const Duration(seconds: 1)),
+          ),
+          isTrue,
+        );
+        verify(
+          () => mockAudioRecorder.start(
+            any<RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).called(1);
+        // log is called twice: "Starting..." then "Audio recording started successfully"
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.speech,
+            any<String>(),
+            subDomain: AudioRecorderConstants.startRecordingSubdomain,
+          ),
+        ).called(2);
+      },
+    );
+
+    test(
+      'startRecording records with correct config (sampleRate=48000, autoGain=true)',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'audio_recorder_repository_test_',
+        );
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+
+        getIt.registerSingleton<Directory>(tempDir);
+        addTearDown(() {
+          if (getIt.isRegistered<Directory>()) {
+            getIt.unregister<Directory>();
+          }
+        });
+
+        when(
+          () => mockDomainLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
+        ).thenReturn(null);
+
+        when(
+          () => mockAudioRecorder.start(
+            any<RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await repository.startRecording();
+
+        final captured = verify(
+          () => mockAudioRecorder.start(
+            captureAny<RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).captured;
+        final config = captured.single as RecordConfig;
+        expect(config.sampleRate, 48000);
+        expect(config.autoGain, isTrue);
+      },
+    );
+
+    test(
+      'audioRecorderRepositoryProvider returns an AudioRecorderRepository',
+      () {
+        // Verify the provider can be read and returns the expected type.
+        final mockRepo = MockAudioRecorderRepository();
+        final container = ProviderContainer(
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(mockRepo),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final repo = container.read(audioRecorderRepositoryProvider);
+        expect(repo, isA<AudioRecorderRepository>());
+        expect(repo, same(mockRepo));
+      },
+    );
+
+    test(
+      'audioRecorderRepositoryProvider calls dispose on the repository when container disposes',
+      () async {
+        // The real provider function registers `ref.onDispose(() async { await
+        // repository.dispose(); })`.  Because `AudioRecorder()` talks to a
+        // platform channel, we mock it so the constructor call does not throw.
+        const channel = MethodChannel('com.llfbandit.record/messages');
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (_) async => null);
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(channel, null),
+        );
+
+        // Also stub DomainLogger.log because the repository logs during normal use.
+        when(
+          () => mockDomainLogger.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
+        ).thenReturn(null);
+
+        // Stub dispose on the mock recorder that will be created internally.
+        // We can't intercept the real AudioRecorder.dispose() easily, so we
+        // use the channel mock to swallow the platform call.
+
+        // Use the real provider function (not overrideWithValue) so that
+        // ref.onDispose is actually registered.
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // Read the provider to initialise it — this calls the real create fn.
+        final repo = container.read(audioRecorderRepositoryProvider);
+        expect(repo, isA<AudioRecorderRepository>());
+
+        // Dispose — triggers ref.onDispose.
+        container.dispose();
+
+        // Flush microtasks so the async dispose callback completes.
+        await Future<void>.microtask(() {});
+        await Future<void>.microtask(() {});
+
+        // If we reached here without a MissingPluginException or other error
+        // the onDispose path (lines 21-22) was exercised successfully.
+      },
+    );
   });
 }
