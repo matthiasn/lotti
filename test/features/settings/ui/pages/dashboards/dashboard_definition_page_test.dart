@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
@@ -553,6 +554,430 @@ void main() {
         reason: 'setCategory should log to DevLogger',
       );
     });
+
+    testWidgets(
+      'adding a habit chart via modal sets dirty and shows save button',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        // Use an empty dashboard so we can clearly detect the addition.
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: emptyTestDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Save button must be hidden before any interaction.
+        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+
+        // Scroll to the "Habit Charts" button.
+        final habitButtonFinder = find.text('Habit Charts');
+        await tester.dragUntilVisible(
+          habitButtonFinder.first,
+          find.byType(SingleChildScrollView),
+          const Offset(0, 200),
+        );
+        await tester.pumpAndSettle();
+
+        // Open the habit-selection modal.
+        await tester.tap(habitButtonFinder.first);
+        await tester.pumpAndSettle();
+
+        // Select habitFlossing in the modal list.
+        final habitItemFinder = find.widgetWithText(
+          CheckboxListTile,
+          habitFlossing.name,
+        );
+        expect(habitItemFinder, findsOneWidget);
+        await tester.tap(habitItemFinder);
+        await tester.pumpAndSettle();
+
+        // Confirm the selection.
+        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        expect(addButtonFinder, findsOneWidget);
+        await tester.tap(addButtonFinder);
+        await tester.pumpAndSettle();
+
+        // Dirty flag should now be set → save button visible.
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'adding a measurable chart via modal sets dirty and shows save button',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: emptyTestDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+
+        // Scroll to "Measurement Charts" button and open modal.
+        final measButtonFinder = find.text('Measurement Charts');
+        await tester.dragUntilVisible(
+          measButtonFinder.first,
+          find.byType(SingleChildScrollView),
+          const Offset(0, 200),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(measButtonFinder.first);
+        await tester.pumpAndSettle();
+
+        // Select the first measurable (Water).
+        final measItemFinder = find.widgetWithText(
+          CheckboxListTile,
+          measurableWater.displayName,
+        );
+        expect(measItemFinder, findsOneWidget);
+        await tester.tap(measItemFinder);
+        await tester.pumpAndSettle();
+
+        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        expect(addButtonFinder, findsOneWidget);
+        await tester.tap(addButtonFinder);
+        await tester.pumpAndSettle();
+
+        // Item was added → dirty → save button visible.
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'adding a health chart via modal sets dirty and shows save button',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: emptyTestDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+
+        // Scroll to "Health Charts" button.
+        final healthButtonFinder = find.text('Health Charts');
+        await tester.dragUntilVisible(
+          healthButtonFinder.first,
+          find.byType(SingleChildScrollView),
+          const Offset(0, 200),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(healthButtonFinder.first);
+        await tester.pumpAndSettle();
+
+        // The modal lists all health types; pick the first visible one.
+        final firstHealthItem = find.byType(CheckboxListTile).first;
+        await tester.tap(firstHealthItem);
+        await tester.pumpAndSettle();
+
+        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        expect(addButtonFinder, findsOneWidget);
+        await tester.tap(addButtonFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'adding a survey chart via modal sets dirty and shows save button',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: emptyTestDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+
+        final surveyButtonFinder = find.text('Survey Charts');
+        await tester.dragUntilVisible(
+          surveyButtonFinder.first,
+          find.byType(SingleChildScrollView),
+          const Offset(0, 200),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(surveyButtonFinder.first);
+        await tester.pumpAndSettle();
+
+        // Pick the first survey item in the modal.
+        final firstSurveyItem = find.byType(CheckboxListTile).first;
+        await tester.tap(firstSurveyItem);
+        await tester.pumpAndSettle();
+
+        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        expect(addButtonFinder, findsOneWidget);
+        await tester.tap(addButtonFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'adding a workout chart via modal sets dirty and shows save button',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: emptyTestDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+
+        final workoutButtonFinder = find.text('Workout Charts');
+        await tester.dragUntilVisible(
+          workoutButtonFinder.first,
+          find.byType(SingleChildScrollView),
+          const Offset(0, 200),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(workoutButtonFinder.first);
+        await tester.pumpAndSettle();
+
+        // Pick the first workout item in the modal.
+        final firstWorkoutItem = find.byType(CheckboxListTile).first;
+        await tester.tap(firstWorkoutItem);
+        await tester.pumpAndSettle();
+
+        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        expect(addButtonFinder, findsOneWidget);
+        await tester.tap(addButtonFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'dismissing a dashboard item removes it and sets dirty',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        // Use a dashboard with exactly one item so we can detect its removal.
+        final singleItemDashboard = emptyTestDashboardConfig.copyWith(
+          items: [
+            const DashboardItem.measurement(
+              id: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+              aggregationType: AggregationType.dailySum,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: singleItemDashboard,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Find the Dismissible for the single item.
+        final dismissibleFinder = find.byType(Dismissible);
+        expect(dismissibleFinder, findsOneWidget);
+
+        // Drag to dismiss.
+        await tester.drag(dismissibleFinder, const Offset(-500, 0));
+        await tester.pumpAndSettle();
+
+        // After dismiss the item is gone.
+        expect(find.byType(Dismissible), findsNothing);
+
+        // dirty → save button visible.
+        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'delete confirmation modal calls deleteDashboardDefinition and navigates',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        when(
+          () => mockPersistenceLogic.deleteDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: testDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Scroll to the delete icon button.
+        final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
+        await tester.dragUntilVisible(
+          deleteButtonFinder.first,
+          find.byType(SingleChildScrollView),
+          const Offset(0, 500),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(deleteButtonFinder.first);
+        await tester.pumpAndSettle();
+
+        // The confirmation modal must be visible.
+        expect(
+          find.text('Do you want to delete this dashboard?'),
+          findsOneWidget,
+        );
+
+        // Tap the destructive confirm button.
+        final confirmFinder = find.text('YES, DELETE THIS DASHBOARD');
+        expect(confirmFinder, findsOneWidget);
+        await tester.tap(confirmFinder);
+        await tester.pumpAndSettle();
+
+        // Persistence mock must have been called.
+        verify(
+          () => mockPersistenceLogic.deleteDashboardDefinition(any()),
+        ).called(1);
+
+        // Navigation back to the dashboard list.
+        expect(beamedTo, '/settings/dashboards');
+      },
+    );
+
+    testWidgets(
+      'save with invalid form (empty name) does not call upsert',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        when(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        // Start with a dashboard that has a valid name.
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: testDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Clear the name field to make the form invalid.
+        final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
+        await tester.enterText(nameFieldFinder, '');
+        await tester.pump();
+
+        // The save button is visible because dirty = true.
+        final saveButtonFinder = find.byKey(const Key('dashboard_save'));
+        expect(saveButtonFinder, findsOneWidget);
+
+        await tester.tap(saveButtonFinder);
+        await tester.pumpAndSettle();
+
+        // Form is invalid → upsert must NOT be called.
+        verifyNever(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        );
+      },
+    );
+
+    testWidgets(
+      'EditDashboardPage shows EmptyScaffold when dashboard is not found',
+      (tester) async {
+        when(
+          () => mockJournalDb.getDashboardById(any()),
+        ).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            EditDashboardPage(dashboardId: 'nonexistent-id'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Stream fetches null → "Dashboard not found" scaffold.
+        expect(find.text('Dashboard not found'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'EditDashboardPage renders DashboardDefinitionPage when dashboard found',
+      (tester) async {
+        when(
+          () => mockJournalDb.getDashboardById(testDashboardConfig.id),
+        ).thenAnswer((_) async => testDashboardConfig);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            EditDashboardPage(dashboardId: testDashboardConfig.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The DashboardDefinitionPage title text is rendered.
+        expect(find.text(testDashboardName), findsOneWidget);
+      },
+    );
   });
 }
 

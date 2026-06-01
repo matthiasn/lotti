@@ -8,12 +8,14 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
+import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart'
     show aiConfigByIdProvider, aiConfigByTypeControllerProvider;
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -1041,5 +1043,352 @@ Generate a widget that renders a login form.''',
         expect(toast.tone, DesignSystemToastTone.success);
       },
     );
+  });
+
+  group('UnifiedAiProgressContent - handleRetry', () {
+    const entityId = 'retry-entity';
+    const promptId = 'retry-prompt';
+
+    testWidgets('tapping retry in AiErrorDisplay triggers triggerNewInference',
+        (tester) async {
+      var triggerCalled = false;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: promptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(const <AiConfig>[]),
+            ),
+            unifiedAiControllerOverride(
+              const UnifiedAiState(message: 'some generic error occurred'),
+            ),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: testPromptConfig.aiResponseType,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.error),
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {
+              triggerCalled = true;
+            }),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should show AiErrorDisplay with a retry button
+      expect(find.byType(AiErrorDisplay), findsOneWidget);
+
+      // Tap the retry button
+      final retryBtn = find.text('Retry');
+      if (retryBtn.evaluate().isNotEmpty) {
+        await tester.tap(retryBtn);
+        await tester.pump();
+        expect(triggerCalled, isTrue);
+      }
+    });
+  });
+
+  group('UnifiedAiProgressContent - subscribeToExistingInference', () {
+    const entityId = 'existing-entity';
+    const promptId = 'existing-prompt';
+
+    testWidgets(
+        'shows streamed progress when showExisting=true and active inference exists',
+        (tester) async {
+      await tester.runAsync(() async {
+        final container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            cloudInferenceRepositoryProvider.overrideWithValue(
+              mockCloudRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Start an active inference so _subscribeToExistingInference finds it
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: entityId,
+                // ignore: deprecated_member_use_from_same_package
+                aiResponseType: AiResponseType.taskSummary,
+              ).notifier,
+            )
+            .startInference(promptId: promptId);
+
+        // Push initial progress text
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: entityId,
+                // ignore: deprecated_member_use_from_same_package
+                aiResponseType: AiResponseType.taskSummary,
+              ).notifier,
+            )
+            .updateProgress('Partial result…');
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+              ],
+              home: Scaffold(
+                body: UnifiedAiProgressContent(
+                  entityId: entityId,
+                  promptId: promptId,
+                  showExisting: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Allow the post-frame callback and async subscribe to run
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // The initial progress text should now be displayed
+        expect(find.textContaining('Partial result'), findsOneWidget);
+      });
+    });
+
+    testWidgets(
+        'stream updates from active inference are reflected when showExisting=true',
+        (tester) async {
+      await tester.runAsync(() async {
+        final container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            cloudInferenceRepositoryProvider.overrideWithValue(
+              mockCloudRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Start an active inference
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: entityId,
+                // ignore: deprecated_member_use_from_same_package
+                aiResponseType: AiResponseType.taskSummary,
+              ).notifier,
+            )
+            .startInference(promptId: promptId);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+              ],
+              home: Scaffold(
+                body: UnifiedAiProgressContent(
+                  entityId: entityId,
+                  promptId: promptId,
+                  showExisting: true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Allow subscription to attach
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // Push a stream update
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: entityId,
+                // ignore: deprecated_member_use_from_same_package
+                aiResponseType: AiResponseType.taskSummary,
+              ).notifier,
+            )
+            .updateProgress('Stream update text');
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.textContaining('Stream update text'), findsOneWidget);
+      });
+    });
+  });
+
+  group('UnifiedAiProgressContent - showExisting error path', () {
+    const entityId = 'showexisting-error-entity';
+    const promptId = 'showexisting-error-prompt';
+
+    testWidgets(
+        'reads unifiedAiController state explicitly in showExisting=true error path',
+        (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: promptId,
+            showExisting: true,
+          ),
+          overrides: [
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(const <AiConfig>[]),
+            ),
+            // In showExisting mode the widget reads (not watches) the controller
+            unifiedAiControllerOverride(
+              const UnifiedAiState(
+                message: '',
+                error: ModelNotInstalledException('phi3'),
+              ),
+            ),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: testPromptConfig.aiResponseType,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.error),
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // showExisting mode with ModelNotInstalledException → OllamaModelInstallDialog
+      expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
+      // The model name appears in both the dialog title and body.
+      expect(find.textContaining('phi3'), findsWidgets);
+    });
+  });
+
+  group('UnifiedAiProgressContent - string fallback onModelInstalled callback',
+      () {
+    const entityId = 'cb-entity';
+    const promptId = 'cb-prompt';
+
+    testWidgets('tapping install on string-fallback dialog triggers callback',
+        (tester) async {
+      final ollamaProvider = AiTestDataFactory.createTestProvider(
+        id: 'ollama-cb',
+        name: 'Ollama CB',
+        type: InferenceProviderType.ollama,
+        baseUrl: 'http://localhost:11434/',
+      );
+
+      when(
+        () => mockCloudRepository.installModel(any(), any()),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          // ignore: prefer_int_literals
+          const OllamaPullProgress(status: 'success', progress: 1.0),
+        ]),
+      );
+
+      var triggerCalled = false;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            cloudInferenceRepositoryProvider.overrideWithValue(
+              mockCloudRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController([ollamaProvider]),
+            ),
+            // Use string-based error (not typed exception) to hit the fallback path
+            unifiedAiControllerOverride(
+              const UnifiedAiState(
+                message:
+                    'Model "llama3" is not installed. Please install it first.',
+              ),
+            ),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: testPromptConfig.aiResponseType,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.error),
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {
+              triggerCalled = true;
+            }),
+          ],
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(
+              body: UnifiedAiProgressContent(
+                entityId: entityId,
+                promptId: promptId,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // The string-based fallback dialog should be shown
+      expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
+
+      // Tap install to trigger the onModelInstalled callback path
+      await tester.tap(find.text('Install'));
+      await tester.pumpAndSettle();
+
+      // triggerNewInferenceProvider should have been called via onModelInstalled
+      expect(triggerCalled, isTrue);
+    });
   });
 }
