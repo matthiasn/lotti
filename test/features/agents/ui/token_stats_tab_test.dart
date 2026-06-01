@@ -744,5 +744,203 @@ void main() {
       );
       expect(find.text('4K'), findsWidgets);
     });
+
+    testWidgets(
+      'tapping a daily-chart bar directly selects it and shows detail',
+      (tester) async {
+        // Give the screen room so the chart bars are fully laid out and
+        // hit-testable when tapped directly (exercises _DayBar.onTap, line 466).
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        // 7 days, each with distinct totals so each bar has a measurable
+        // height. Today (index 6) is pre-selected by the section.
+        final days = [
+          for (var i = 6; i >= 0; i--)
+            DailyTokenUsage(
+              date: DateTime(2024, 3, 15 - i),
+              totalTokens: 4000 + i * 1000,
+              tokensByTimeOfDay: 2000 + i * 500,
+              isToday: i == 0,
+              inputTokens: 3000,
+              outputTokens: 1000,
+              wakeCount: 2,
+            ),
+        ];
+
+        await tester.pumpWidget(
+          _buildSubject(
+            dailyUsage: days,
+            comparison: const TokenUsageComparison(
+              averageTokensByTimeOfDay: 2500,
+              todayTokens: 4000,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The pre-selected day is today (March 15). Its detail panel is shown.
+        expect(find.textContaining('Mar 15'), findsOneWidget);
+
+        // Tap the today bar itself (not the label) to toggle the selection off.
+        // The tallest, right-most bar corresponds to today (index 6, total
+        // 4000 vs the others which are larger for past days). We instead pick
+        // the first day's bar (index 0, total 10000 → tallest) to switch
+        // the selection to that day, exercising the bar's onTap closure.
+        final bars = _dayBarFinder();
+        expect(bars, findsWidgets);
+        await tester.tap(bars.first);
+        await tester.pumpAndSettle();
+
+        // Selecting the first day (March 9) replaces the detail panel; its
+        // date label appears and today's (March 15) is gone.
+        expect(find.textContaining('Mar 9'), findsOneWidget);
+        expect(find.textContaining('Mar 15'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'non-today bar with full by-time portion renders rounded top',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        // Non-today days where tokensByTimeOfDay == totalTokens force
+        // byTimeIsFullBar == true (line 625). Index 6 (today) is small so a
+        // past day owns the max height.
+        final days = [
+          for (var i = 6; i >= 0; i--)
+            DailyTokenUsage(
+              date: DateTime(2024, 3, 15 - i),
+              totalTokens: i == 0 ? 1000 : 10000,
+              // Past days: by-time equals the full day total.
+              tokensByTimeOfDay: i == 0 ? 1000 : 10000,
+              isToday: i == 0,
+              inputTokens: i == 0 ? 800 : 8000,
+              outputTokens: i == 0 ? 200 : 2000,
+              wakeCount: 2,
+            ),
+        ];
+
+        await tester.pumpWidget(
+          _buildSubject(
+            dailyUsage: days,
+            comparison: const TokenUsageComparison(
+              averageTokensByTimeOfDay: 10000,
+              todayTokens: 1000,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // A non-today, full-by-time bar uses BorderRadius.vertical(top: ...)
+        // on its by-time container (line 625). The observable proof that this
+        // branch rendered: tapping that bar selects the past day and its detail
+        // panel shows the correct full-day total formatted as "10K".
+        final bars = _dayBarFinder();
+        expect(bars, findsWidgets);
+        // bars.first is the left-most (oldest past day, total 10000).
+        await tester.tap(bars.first);
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(TokenStatsTab));
+        // Detail panel for the selected past day shows its input breakdown
+        // and the full-day total ("10K").
+        expect(
+          find.text(context.messages.agentStatsInputLabel),
+          findsWidgets,
+        );
+        expect(find.text('10K'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'per-model chart bar tap selects day and toggles detail panel',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final modelDays = [
+          for (var i = 6; i >= 0; i--)
+            DailyTokenUsage(
+              date: DateTime(2024, 3, 15 - i),
+              totalTokens: 5000 + i * 1000,
+              tokensByTimeOfDay: 2500 + i * 500,
+              isToday: i == 0,
+              inputTokens: 4000,
+              outputTokens: 1000,
+              wakeCount: 2,
+            ),
+        ];
+
+        // Empty main daily usage → the top section shows the "no usage" chart
+        // with NO bars, so the only _DayBar widgets on screen belong to the
+        // per-model cards. Two models → per-model section renders.
+        await tester.pumpWidget(
+          _buildSubject(
+            byModel: {
+              'models/gemma4:test': modelDays,
+              'models/gemma4:other': modelDays,
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('gemma4:test'), findsOneWidget);
+        expect(find.text('gemma4:other'), findsOneWidget);
+
+        // No day-detail panel is shown initially: _ModelChartCard starts with
+        // _selectedIndex == null, so no Input row anywhere.
+        final context = tester.element(find.byType(TokenStatsTab));
+        expect(
+          find.text(context.messages.agentStatsInputLabel),
+          findsNothing,
+        );
+
+        // Tap the first per-model bar → onBarTap closure (lines 988-989) runs,
+        // _selectedIndex becomes that bar's index, and _SelectedDayDetail
+        // (lines 993-996) renders.
+        final bars = _dayBarFinder();
+        expect(bars, findsWidgets);
+        await tester.tap(bars.first);
+        await tester.pumpAndSettle();
+
+        // The detail panel for the selected per-model day now shows.
+        expect(
+          find.text(context.messages.agentStatsInputLabel),
+          findsWidgets,
+        );
+        expect(
+          find.text(context.messages.agentStatsOutputLabel),
+          findsWidgets,
+        );
+
+        // Tapping the same bar again toggles _selectedIndex back to null and
+        // the detail panel disappears.
+        await tester.tap(bars.first);
+        await tester.pumpAndSettle();
+        expect(
+          find.text(context.messages.agentStatsInputLabel),
+          findsNothing,
+        );
+      },
+    );
   });
+}
+
+/// Finds the tappable [GestureDetector]s that wrap chart bars (`_DayBar`).
+///
+/// A bar's `GestureDetector` has a `SizedBox` as its direct child, whereas the
+/// day-label `GestureDetector`s wrap a `Center`. This lets us tap a bar rather
+/// than a label, exercising the bar's own `onTap` closure.
+Finder _dayBarFinder() {
+  return find.byWidgetPredicate(
+    (widget) =>
+        widget is GestureDetector &&
+        widget.behavior == HitTestBehavior.opaque &&
+        widget.child is SizedBox,
+  );
 }

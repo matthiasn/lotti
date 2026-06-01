@@ -81,7 +81,9 @@ void main() {
       expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
     });
 
-    testWidgets('shows nothing when error', (tester) async {
+    testWidgets('renders an empty shell when the project agent errors', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           overrides: [
@@ -93,9 +95,22 @@ void main() {
           ],
         ),
       );
-      await tester.pump();
+      // Let the future settle into its error state so the error branch
+      // (SizedBox.shrink) is rendered rather than the loading state.
+      await tester.pumpAndSettle();
 
-      expect(find.text('Agent'), findsNothing);
+      final context = tester.element(find.byType(ProjectAgentReportCard));
+
+      // The error branch renders SizedBox.shrink(), i.e. nothing meaningful:
+      // no section header, no agent content, no provisioning affordance.
+      // Assert the absence of the card's real content rather than counting
+      // raw SizedBoxes (Material scaffolding adds unrelated ones).
+      expect(
+        find.text(context.messages.projectAgentSectionTitle),
+        findsNothing,
+      );
+      expect(find.text('My Project Agent'), findsNothing);
+      expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
     });
 
     testWidgets('shows explicit empty state when no project agent exists', (
@@ -212,8 +227,25 @@ void main() {
           ],
         ),
       );
+      // Flush the project-agent future, the report future and the
+      // isRunning stream so the running-indicator branch is rendered. We use
+      // discrete pumps rather than pumpAndSettle because the running
+      // CircularProgressIndicator animates indefinitely and never settles.
+      await tester.pump();
       await tester.pump();
 
+      final context = tester.element(find.byType(ProjectAgentReportCard));
+
+      // The running branch renders a Tooltip with the running message and a
+      // small CircularProgressIndicator, and hides the refresh action.
+      expect(
+        find.byTooltip(context.messages.agentRunningIndicator),
+        findsOneWidget,
+      );
+      expect(
+        find.byTooltip(context.messages.taskAgentRunNowTooltip),
+        findsNothing,
+      );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 

@@ -3872,6 +3872,58 @@ void main() {
 
         expect(orchestrator.isAwaitingContent('agent-1'), isFalse);
       });
+
+      test(
+        'setAwaitingContent(awaiting: false) clears the cache entry, '
+        'restoring the normal throttle countdown',
+        () {
+          fakeAsync((async) {
+            // A persisted state is required for the throttle coordinator to
+            // write nextWakeAt; default stub returns null.
+            when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+              (_) async => makeTestState(agentId: 'agent-1'),
+            );
+
+            // Arm the awaiting-content flag, then explicitly clear it via the
+            // setter's else-branch (not via removeSubscriptions).
+            orchestrator
+              ..addSubscription(makeSub())
+              ..setAwaitingContent('agent-1', awaiting: true);
+            expect(orchestrator.isAwaitingContent('agent-1'), isTrue);
+
+            orchestrator.setAwaitingContent('agent-1', awaiting: false);
+            expect(orchestrator.isAwaitingContent('agent-1'), isFalse);
+
+            // Clearing an already-absent agent is a harmless no-op.
+            orchestrator.setAwaitingContent('agent-other', awaiting: false);
+            expect(orchestrator.isAwaitingContent('agent-other'), isFalse);
+
+            // With the flag cleared, a subscription wake now arms the normal
+            // throttle deadline (persists nextWakeAt) instead of suppressing
+            // the countdown.
+            final controller = StreamController<Set<String>>.broadcast();
+            orchestrator.start(controller.stream);
+            emitTokens(async, controller, {'entity-1'});
+            async.flushMicrotasks();
+
+            final persisted =
+                verify(
+                  () => mockRepository.upsertEntity(captureAny()),
+                ).captured.whereType<AgentStateEntity>().where(
+                  (s) => s.agentId == 'agent-1' && s.nextWakeAt != null,
+                );
+            expect(
+              persisted,
+              isNotEmpty,
+              reason:
+                  'clearing awaitingContent must restore the throttle '
+                  'countdown so the next subscription wake persists nextWakeAt',
+            );
+
+            controller.close();
+          });
+        },
+      );
     });
 
     group('_scheduleDeferredDrain edge cases', () {
@@ -4352,6 +4404,157 @@ void main() {
 
         controller.close();
       });
+    });
+
+    group('processNext stale-lock force-reset', () {
+      // These tests drive the force-reset branch that the existing
+      // "stale drain recovery" tests never reach: with a normally-completing
+      // abort path the stuck drain finishes at the 2-minute hard cap, so
+      // _isDraining is already false by the time a later processNext runs.
+      // To keep _isDraining stuck past the 5-minute _drainTimeout we hang the
+      // *aborted* status write, freezing _executeJob (and thus the drain)
+      // inside _safeUpdateStatus.
+      test(
+        'force-resets the stuck drain lock and the superseded drain bails out',
+        () {
+          fakeAsync((async) {
+            final logger = MockDomainLogger();
+            when(
+              () => logger.log(
+                any(),
+                any(),
+                subDomain: any(named: 'subDomain'),
+                level: any(named: 'level'),
+              ),
+            ).thenReturn(null);
+            when(
+              () => logger.error(
+                any(),
+                any(),
+                message: any(named: 'message'),
+                subDomain: any(named: 'subDomain'),
+                stackTrace: any(named: 'stackTrace'),
+              ),
+            ).thenReturn(null);
+
+            final repo = MockAgentRepository();
+            final stuckQueue = WakeQueue();
+            final stuckRunner = WakeRunner();
+            // Completer that gates the hung aborted-status write.
+            final abortedStatusGate = Completer<void>();
+            final executedAgentIds = <String>[];
+
+            when(
+              () => repo.insertWakeRun(entry: any(named: 'entry')),
+            ).thenAnswer((_) async {});
+            when(
+              () => repo.getAgentState(any()),
+            ).thenAnswer((_) async => null);
+            when(() => repo.upsertEntity(any())).thenAnswer((_) async {});
+            when(
+              () => repo.updateWakeRunStatus(
+                any(),
+                any(),
+                completedAt: any(named: 'completedAt'),
+                errorMessage: any(named: 'errorMessage'),
+              ),
+            ).thenAnswer((invocation) async {
+              final status = invocation.positionalArguments[1] as String;
+              if (status == WakeRunStatus.aborted.name) {
+                // Hang the aborted write so _executeJob never returns and the
+                // drain holds the _isDraining lock past _drainTimeout.
+                await abortedStatusGate.future;
+              }
+            });
+
+            final stuck =
+                WakeOrchestrator(
+                  repository: repo,
+                  queue: stuckQueue,
+                  runner: stuckRunner,
+                  domainLogger: logger,
+                  wakeExecutor: (agentId, runKey, triggers, threadId) {
+                    executedAgentIds.add(agentId);
+                    if (agentId == 'stuck-agent') {
+                      return Completer<Map<String, VectorClock>?>().future;
+                    }
+                    return Future.value();
+                  },
+                )..addSubscription(
+                  makeSub(
+                    id: 'sub-stuck',
+                    agentId: 'stuck-agent',
+                    matchEntityIds: {'entity-stuck'},
+                  ),
+                );
+
+            final controller = StreamController<Set<String>>.broadcast();
+            stuck.start(controller.stream);
+
+            // Start the stuck drain: throttle window elapses, drain begins,
+            // executor blocks forever.
+            controller.add({'entity-stuck'});
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+            expect(executedAgentIds, equals(['stuck-agent']));
+
+            // The 2-minute hard cap fires, aborts the run, and the aborted
+            // status write hangs — the drain stays locked.
+            async
+              ..elapse(WakeOrchestrator.wakeRunMaxDuration)
+              ..flushMicrotasks();
+            verify(
+              () => repo.updateWakeRunStatus(
+                any(),
+                WakeRunStatus.aborted.name,
+                completedAt: any(named: 'completedAt'),
+                errorMessage: any(named: 'errorMessage'),
+              ),
+            ).called(1);
+
+            // Advance well past the 5-minute stale-drain timeout (total since
+            // drain start is now > 7 minutes).
+            async
+              ..elapse(const Duration(minutes: 6))
+              ..flushMicrotasks();
+
+            // A new wake for a different agent triggers processNext, which now
+            // detects the stale lock and force-resets it (lines 854-862).
+            stuck.enqueueManualWake(agentId: 'new-agent', reason: 'manual');
+            async.flushMicrotasks();
+
+            // Observable: the force-reset log fired and the new drain actually
+            // executed the new agent's job (proving _isDraining was cleared).
+            verify(
+              () => logger.log(
+                LogDomain.agentRuntime,
+                any(that: contains('force-resetting stale drain lock')),
+                subDomain: 'drain',
+                level: any(named: 'level'),
+              ),
+            ).called(1);
+            expect(executedAgentIds, contains('new-agent'));
+
+            // Now release the hung aborted write so the old (superseded) drain
+            // resumes, observes the bumped generation, and bails out (line 883).
+            abortedStatusGate.complete();
+            async.flushMicrotasks();
+
+            verify(
+              () => logger.log(
+                LogDomain.agentRuntime,
+                'drain superseded, bailing out',
+                subDomain: 'drain',
+                level: any(named: 'level'),
+              ),
+            ).called(1);
+
+            stuck.stop();
+            controller.close();
+          });
+        },
+      );
     });
   });
 

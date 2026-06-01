@@ -416,6 +416,105 @@ void main() {
       );
       expect(skipButton.onPressed, isNotNull);
     });
+
+    testWidgets('submit passes trimmed non-empty note to repository', (
+      tester,
+    ) async {
+      final existingRating = RatingEntry(
+        meta: Metadata(
+          id: 'rating-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: const RatingData(
+          targetId: testTimeEntryId,
+          dimensions: [
+            RatingDimension(key: 'productivity', value: 0.7),
+            RatingDimension(key: 'energy', value: 0.5),
+            RatingDimension(key: 'focus', value: 0.9),
+            RatingDimension(key: 'challenge_skill', value: 0.5),
+          ],
+        ),
+      );
+
+      when(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).thenAnswer((_) async => existingRating);
+
+      when(
+        () => mockRepository.createOrUpdateRating(
+          targetId: any(named: 'targetId'),
+          dimensions: any(named: 'dimensions'),
+          catalogId: any(named: 'catalogId'),
+          note: any(named: 'note'),
+        ),
+      ).thenAnswer((_) async => existingRating);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      // Enter a note surrounded by whitespace; the modal must trim it.
+      await tester.enterText(find.byType(TextField), '  great session  ');
+      await tester.pump();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      final capturedNote =
+          verify(
+                () => mockRepository.createOrUpdateRating(
+                  targetId: testTimeEntryId,
+                  dimensions: any(named: 'dimensions'),
+                  note: captureAny(named: 'note'),
+                ),
+              ).captured.single
+              as String?;
+
+      expect(capturedNote, equals('great session'));
+    });
+
+    testWidgets('tapping Skip dismisses the modal', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const Scaffold(
+                      body: SingleChildScrollView(
+                        child: RatingModal(targetId: testTimeEntryId),
+                      ),
+                    ),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+          overrides: [
+            ratingRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      // Open the modal as a pushed route so a pop is observable.
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(find.byType(RatingModal), findsOneWidget);
+      expect(find.text('open'), findsNothing);
+
+      // Tapping Skip runs _close() -> Navigator.pop().
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Skip'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RatingModal), findsNothing);
+      expect(find.text('open'), findsOneWidget);
+    });
   });
 
   group('RatingModal unknown catalog', () {
@@ -533,6 +632,106 @@ void main() {
 
       // Shows progress bar (LinearProgressIndicator) for the dimension
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('read-only view renders the stored note when non-empty', (
+      tester,
+    ) async {
+      final existingRating = RatingEntry(
+        meta: Metadata(
+          id: 'rating-3',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: const RatingData(
+          targetId: testTimeEntryId,
+          catalogId: 'future_catalog',
+          dimensions: [
+            RatingDimension(key: 'some_dimension', value: 0.6),
+          ],
+          note: 'A stored read-only note',
+        ),
+      );
+
+      when(
+        () => mockRepository.getRatingForTargetEntry(
+          testTimeEntryId,
+          catalogId: 'future_catalog',
+        ),
+      ).thenAnswer((_) async => existingRating);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RatingModal(
+            targetId: testTimeEntryId,
+            catalogId: 'future_catalog',
+          ),
+          overrides: [
+            ratingRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      // The stored note is rendered (read-only branch, lines 325-330).
+      expect(find.text('A stored read-only note'), findsOneWidget);
+      // No editable note field in read-only mode.
+      expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('read-only view omits note section when note is empty', (
+      tester,
+    ) async {
+      final existingRating = RatingEntry(
+        meta: Metadata(
+          id: 'rating-4',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: const RatingData(
+          targetId: testTimeEntryId,
+          catalogId: 'future_catalog',
+          dimensions: [
+            RatingDimension(key: 'some_dimension', value: 0.6),
+          ],
+          note: '',
+        ),
+      );
+
+      when(
+        () => mockRepository.getRatingForTargetEntry(
+          testTimeEntryId,
+          catalogId: 'future_catalog',
+        ),
+      ).thenAnswer((_) async => existingRating);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RatingModal(
+            targetId: testTimeEntryId,
+            catalogId: 'future_catalog',
+          ),
+          overrides: [
+            ratingRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      // Empty note -> note section is not rendered, only the dimension + Skip.
+      expect(find.text('some_dimension'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Skip'), findsOneWidget);
+
+      // The read-only note section (a Padding wrapping a Text, lines 322-332)
+      // is conditional on a non-empty note, so it must be absent entirely.
+      // Prove it disappeared: the note text from the populated sibling test is
+      // gone, and no note Text widget renders the empty string.
+      expect(find.text('A stored read-only note'), findsNothing);
+      expect(find.text(''), findsNothing);
     });
   });
 }

@@ -852,6 +852,78 @@ void main() {
     });
   });
 
+  group('_runOperation progress callbacks', () {
+    AgentDomainEntity makeEntity(String id) => AgentDomainEntity.agent(
+      id: id,
+      agentId: id,
+      kind: 'task_agent',
+      displayName: 'Agent $id',
+      lifecycle: AgentLifecycle.active,
+      mode: AgentInteractionMode.autonomous,
+      allowedCategoryIds: const {},
+      currentStateId: 'state-$id',
+      config: const AgentConfig(),
+      createdAt: DateTime(2024, 3, 15),
+      updatedAt: DateTime(2024, 3, 15),
+      vectorClock: null,
+    );
+
+    test(
+      'reports per-entity progress for non-empty operation (lines 449, '
+      '458-459)',
+      () async {
+        when(
+          () => mockAgentRepository.getAllEntities(),
+        ).thenAnswer((_) async => [makeEntity('a'), makeEntity('b')]);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        final progressUpdates = <double>[];
+        final detailedProgress = <List<int>>[];
+
+        await syncMaintenanceRepository.syncAgentEntities(
+          onProgress: progressUpdates.add,
+          onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
+        );
+
+        // Initial 0/total emission (line 449) followed by per-entity
+        // emissions (lines 458-459) with normalized fraction.
+        expect(detailedProgress, [
+          [0, 2],
+          [1, 2],
+          [2, 2],
+        ]);
+        expect(progressUpdates, [0.5, 1.0]);
+      },
+    );
+
+    test(
+      'reports immediate completion for empty operation (lines 444-445)',
+      () async {
+        when(
+          () => mockAgentRepository.getAllEntities(),
+        ).thenAnswer((_) async => []);
+
+        final progressUpdates = <double>[];
+        final detailedProgress = <List<int>>[];
+
+        await syncMaintenanceRepository.syncAgentEntities(
+          onProgress: progressUpdates.add,
+          onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
+        );
+
+        // Empty path: a single 0/0 detailed emission and a 1.0 progress
+        // emission, with no enqueue calls.
+        expect(detailedProgress, [
+          [0, 0],
+        ]);
+        expect(progressUpdates, [1.0]);
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
+  });
+
   group('syncAgentLinks', () {
     test('enqueues all agent links for sync', () async {
       final link = AgentLink.agentTask(

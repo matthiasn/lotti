@@ -5,7 +5,9 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -21,6 +23,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
@@ -1206,6 +1209,77 @@ void main() {
       await service.sendMatrixMsg(msg);
       expect(service.messageCounts['syncNodeProfile'], 1);
     });
+
+    // Covers lines 377-378 and 381-382: the entryLink / aiConfig /
+    // notification / notificationStateUpdate `map` arms. Each variant must
+    // route through its own arm and increment the matching bucket. Driven by
+    // a parameterized loop to avoid copy-paste permutations.
+    const vectorClock = VectorClock({'host-1': 1});
+    final entryLink = SyncMessage.entryLink(
+      entryLink: EntryLink.basic(
+        id: 'link-1',
+        fromId: 'from-1',
+        toId: 'to-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      ),
+      status: SyncEntryStatus.initial,
+    );
+    final aiConfig = SyncMessage.aiConfig(
+      aiConfig: AiConfig.inferenceProvider(
+        id: 'prov-1',
+        baseUrl: 'https://api',
+        apiKey: 'secret',
+        name: 'Anthropic',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.anthropic,
+      ),
+      status: SyncEntryStatus.initial,
+    );
+    const notification = SyncMessage.notification(
+      id: 'note-1',
+      jsonPath: '/notes/note-1.json',
+      vectorClock: vectorClock,
+      originatingHostId: 'host-1',
+    );
+    const notificationStateUpdate = SyncMessage.notificationStateUpdate(
+      id: 'note-1',
+      vectorClock: vectorClock,
+      originatingHostId: 'host-1',
+    );
+
+    final variantsByBucket = <String, SyncMessage>{
+      'entryLink': entryLink,
+      'aiConfig': aiConfig,
+      'notification': notification,
+      'notificationStateUpdate': notificationStateUpdate,
+    };
+
+    for (final entry in variantsByBucket.entries) {
+      final bucket = entry.key;
+      test('sendMatrixMsg increments $bucket bucket and forwards the '
+          'message', () async {
+        stubSenderSuccess();
+        when(() => client.getRoomById(any())).thenReturn(null);
+
+        final service = createService();
+        final result = await service.sendMatrixMsg(entry.value);
+
+        expect(result, isTrue);
+        // Only the targeted bucket is incremented for this variant.
+        expect(service.messageCounts[bucket], 1);
+        expect(service.messageCounts.keys, [bucket]);
+        // The exact message instance is forwarded to the sender unchanged.
+        verify(
+          () => messageSender.sendMatrixMessage(
+            message: entry.value,
+            context: any(named: 'context'),
+            onSent: any(named: 'onSent'),
+          ),
+        ).called(1);
+      });
+    }
   });
 
   group('MatrixService additional coverage', () {
@@ -1285,6 +1359,38 @@ void main() {
         await service.dispose();
 
         verifyNever(() => activityGate.dispose());
+      },
+    );
+
+    // Covers line 635: dispose() disposes the activity gate when the service
+    // owns it (ownsActivityGate == true). Pairs with the false-branch test
+    // above.
+    test(
+      'dispose disposes activity gate when ownsActivityGate is true',
+      () async {
+        when(() => syncEngine.dispose()).thenAnswer((_) async {});
+        when(() => sessionManager.dispose()).thenAnswer((_) async {});
+        when(() => roomManager.dispose()).thenAnswer((_) async {});
+        when(() => activityGate.dispose()).thenAnswer((_) async {});
+
+        final service = MatrixService(
+          gateway: gateway,
+          loggingService: loggingService,
+          activityGate: activityGate,
+          messageSender: messageSender,
+          settingsDb: settingsDb,
+          eventProcessor: eventProcessor,
+          secureStorage: secureStorage,
+          queueCoordinator: queueCoordinator,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          syncEngine: syncEngine,
+          ownsActivityGate: true,
+          connectivityStream: const Stream.empty(),
+        );
+        await service.dispose();
+
+        verify(() => activityGate.dispose()).called(1);
       },
     );
   });

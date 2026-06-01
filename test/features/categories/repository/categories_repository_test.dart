@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -315,6 +317,52 @@ void main() {
       });
     });
 
+    group('getAllCategories', () {
+      test(
+        'maps db entities from allCategoryDefinitions into '
+        'CategoryDefinitions',
+        () async {
+          final category1 = CategoryTestUtils.createTestCategory(
+            id: 'cat-1',
+            name: 'First',
+            color: '#111111',
+          );
+          final category2 = CategoryTestUtils.createTestCategory(
+            id: 'cat-2',
+            name: 'Second',
+            color: '#222222',
+          );
+
+          when(() => mockJournalDb.allCategoryDefinitions()).thenReturn(
+            MockSelectable<CategoryDefinitionDbEntity>([
+              _toDbEntity(category1),
+              _toDbEntity(category2),
+            ]),
+          );
+
+          final result = await repository.getAllCategories();
+
+          expect(result, hasLength(2));
+          expect(result[0].id, equals('cat-1'));
+          expect(result[0].name, equals('First'));
+          expect(result[0].color, equals('#111111'));
+          expect(result[1].id, equals('cat-2'));
+          expect(result[1].name, equals('Second'));
+          verify(() => mockJournalDb.allCategoryDefinitions()).called(1);
+        },
+      );
+
+      test('returns an empty list when there are no db entities', () async {
+        when(() => mockJournalDb.allCategoryDefinitions()).thenReturn(
+          MockSelectable<CategoryDefinitionDbEntity>([]),
+        );
+
+        final result = await repository.getAllCategories();
+
+        expect(result, isEmpty);
+      });
+    });
+
     group('updateCategory', () {
       test('updates category via persistence logic', () async {
         final category = CategoryTestUtils.createTestCategory(
@@ -560,5 +608,56 @@ void main() {
         );
       });
     });
+
+    group('categoryRepositoryProvider', () {
+      test('wires CategoryRepository from getIt dependencies', () async {
+        // setUp already registers PersistenceLogic, JournalDb and
+        // EntitiesCacheService; the provider additionally needs
+        // UpdateNotifications.
+        getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+        addTearDown(() {
+          if (getIt.isRegistered<UpdateNotifications>()) {
+            getIt.unregister<UpdateNotifications>();
+          }
+        });
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final repo = container.read(categoryRepositoryProvider);
+
+        // Prove the provider produced a working repository wired to the
+        // registered JournalDb mock, not just a non-null instance.
+        final category = CategoryTestUtils.createTestCategory(
+          id: 'provided-cat',
+          name: 'Provided',
+        );
+        when(() => mockJournalDb.allCategoryDefinitions()).thenReturn(
+          MockSelectable<CategoryDefinitionDbEntity>([_toDbEntity(category)]),
+        );
+
+        final categories = await repo.getAllCategories();
+
+        expect(categories, hasLength(1));
+        expect(categories.single.id, equals('provided-cat'));
+        verify(() => mockJournalDb.allCategoryDefinitions()).called(1);
+      });
+    });
   });
+}
+
+/// Wraps a [CategoryDefinition] in the drift row entity that
+/// `allCategoryDefinitions()` returns, encoding it the same way the database
+/// stores it so the repository's mapper can deserialize it back.
+CategoryDefinitionDbEntity _toDbEntity(CategoryDefinition category) {
+  return CategoryDefinitionDbEntity(
+    id: category.id,
+    name: category.name,
+    createdAt: category.createdAt,
+    updatedAt: category.updatedAt,
+    deleted: category.deletedAt != null,
+    private: category.private,
+    serialized: json.encode(category.toJson()),
+    active: category.active,
+  );
 }

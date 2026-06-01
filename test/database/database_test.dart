@@ -457,6 +457,40 @@ void main() {
         },
       );
 
+      test(
+        'journalEntityById propagates a failure in the coalesced bulk fetch',
+        () async {
+          final throwingDb = _EntitiesByIdsFetchThrowsJournalDb();
+          addTearDown(throwingDb.close);
+          await initConfigFlags(throwingDb, inMemoryDatabase: true);
+
+          // Issue two callers concurrently (without awaiting between them) so
+          // they join the SAME coalescing wave; when the underlying bulk fetch
+          // throws, the wave completes with the error and every joined caller
+          // surfaces it.
+          final a = throwingDb.journalEntityById('any-id');
+          final b = throwingDb.journalEntityById('other-id');
+          await expectLater(
+            a,
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('bulk fetch failed'),
+              ),
+            ),
+          );
+          await expectLater(b, throwsA(isA<StateError>()));
+
+          // A third caller in a fresh wave still fails the same way, proving
+          // the error path is reached per wave rather than a one-off.
+          await expectLater(
+            throwingDb.journalEntityById('third-id'),
+            throwsA(isA<StateError>()),
+          );
+        },
+      );
+
       test('handles null vector clock on incoming entity', () async {
         const existingClock = VectorClock(<String, int>{'device1': 1});
         final existing = createJournalEntryWithVclock(existingClock);
@@ -8435,6 +8469,17 @@ class _PrecheckThrowingJournalDb extends JournalDb {
       throw StateError('precheck failure');
     }
     return super.select(table, distinct: distinct);
+  }
+}
+
+/// Forces the bulk fetch inside the `journalEntityById` coalescer to fail so
+/// the wave's error path (`completer.completeError`) is exercised.
+class _EntitiesByIdsFetchThrowsJournalDb extends JournalDb {
+  _EntitiesByIdsFetchThrowsJournalDb() : super(inMemoryDatabase: true);
+
+  @override
+  Future<List<JournalDbEntity>> runEntitiesByIdsFetch(Set<String> ids) async {
+    throw StateError('bulk fetch failed for $ids');
   }
 }
 

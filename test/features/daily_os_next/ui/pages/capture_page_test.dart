@@ -11,8 +11,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -1003,7 +1006,190 @@ void main() {
 
       await harness.dispose();
     });
+
+    testWidgets(
+      'recorded time summary formats hours and minutes together',
+      (tester) async {
+        final harness = _AudioHarness()..arm();
+        await _pumpCapture(
+          tester,
+          harness: harness,
+          // 90 minutes total exercises the "Xh Ym" branch of
+          // _formatMinutes (both hours and remaining minutes non-zero).
+          page: CapturePage(
+            actualBlocks: [
+              TimeBlock(
+                id: 'actual:entry-90',
+                title: 'Deep work',
+                start: DateTime(2026, 5, 26, 9),
+                end: DateTime(2026, 5, 26, 10, 30),
+                type: TimeBlockType.manual,
+                state: TimeBlockState.completed,
+                category: _category,
+                taskId: 'task-90',
+              ),
+            ],
+          ),
+        );
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextTimeSpentSummary('1h 30m', 1)),
+          findsOneWidget,
+        );
+
+        await harness.dispose();
+      },
+    );
+
+    testWidgets(
+      'greeting addresses the user by name when a userName is set',
+      (tester) async {
+        final harness = _AudioHarness()..arm();
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                harness.controllerFactory,
+              ),
+              dailyOsPreferencesControllerProvider.overrideWith(
+                () => _StubPreferencesController(
+                  DailyOsPreferences(userName: 'Alex'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.text(messages.dailyOsNextGreetingHiName('Alex')),
+          findsOneWidget,
+        );
+        // The anonymous greeting is replaced by the personalised one.
+        expect(find.text(messages.dailyOsNextGreetingHi), findsNothing);
+
+        await harness.dispose();
+      },
+    );
+
+    testWidgets(
+      'submitting resets capture and dismisses spinner after Reconcile returns',
+      (tester) async {
+        final agent = _RecordingAgent();
+        final harness = _AudioHarness(transcript: 'hello world')..arm();
+        await tester.pumpWidget(
+          _wrap(
+            const CapturePage(),
+            overrides: [
+              dayAgentProvider.overrideWithValue(agent),
+              captureControllerProvider.overrideWith(
+                harness.controllerFactory,
+              ),
+              // Keep the pushed ReconcilePage on its loading shell so it
+              // does not reach into GetIt-backed services.
+              reconcileControllerProvider.overrideWith(
+                _PendingReconcileController.new,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // Drive idle -> listening -> captured through the real controller.
+        await tester.tap(find.byType(VoiceButton));
+        await tester.runAsync(() async {});
+        await tester.pump();
+        await tester.tap(find.byType(VoiceButton));
+        await tester.runAsync(() async {});
+        await tester.pump();
+
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        final ctaFinder = find.text(messages.dailyOsNextCaptureReconcileCta);
+        await tester.ensureVisible(ctaFinder);
+        await tester.pump();
+
+        // Pre-condition: captured surface shows the editable transcript
+        // and the Reconcile CTA, and the idle hint is absent.
+        expect(
+          find.byKey(const Key('daily_os_capture_transcript_editor')),
+          findsOneWidget,
+        );
+        expect(find.text(messages.dailyOsNextCaptureIdleTalk), findsNothing);
+
+        // Tapping enters _onSubmit: submitCapture runs, then
+        // Navigator.push lands us on the ReconcilePage. The pushed page
+        // keeps an infinite spinner, so we drive the route transition
+        // with explicit frames instead of pumpAndSettle.
+        await tester.tap(ctaFinder, warnIfMissed: false);
+        await tester.runAsync(() async {});
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // We navigated onto ReconcilePage (its loading spinner is on top).
+        expect(agent.submitCount, 1);
+        expect(find.byType(ReconcilePage), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Popping ReconcilePage completes the awaited push, so _onSubmit
+        // resumes: reset() returns capture to idle (lines 938-939) and the
+        // finally block clears _submitting (line 942).
+        tester.state<NavigatorState>(find.byType(Navigator)).pop();
+        await tester.runAsync(() async {});
+        await tester.pump();
+        // Drive the reverse route transition to completion (its duration
+        // plus a margin) so ReconcilePage fully leaves the tree.
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // ReconcilePage is gone and reset() returned the capture surface to
+        // idle: the transcript editor + CTA are replaced by the talk hint.
+        expect(find.byType(ReconcilePage), findsNothing);
+        final idleMessages = tester.element(find.byType(CapturePage)).messages;
+        expect(
+          find.text(idleMessages.dailyOsNextCaptureIdleTalk),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('daily_os_capture_transcript_editor')),
+          findsNothing,
+        );
+        expect(
+          find.text(idleMessages.dailyOsNextCaptureReconcileCta),
+          findsNothing,
+        );
+
+        await harness.dispose();
+      },
+    );
   });
+}
+
+/// Pins a fixed [DailyOsPreferences] so the greeting can be tested with
+/// a known userName without touching the SettingsDb-backed loader.
+class _StubPreferencesController extends DailyOsPreferencesController {
+  _StubPreferencesController(this._initial);
+
+  final DailyOsPreferences _initial;
+
+  @override
+  DailyOsPreferences build() => _initial;
+}
+
+/// Holds the Reconcile screen on its loading shell so the pushed page in
+/// the submit flow renders a spinner instead of reaching GetIt services.
+class _PendingReconcileController extends ReconcileController {
+  _PendingReconcileController() : super(_unusedParams);
+
+  static final ReconcileParams _unusedParams = ReconcileParams(
+    captureId: const CaptureId('cap_recorded'),
+    dayDate: DateTime(2026, 5, 26),
+  );
+
+  @override
+  Future<ReconcileData> build() => Completer<ReconcileData>().future;
 }
 
 /// Surfaces a fixed error state so the page can be tested independently

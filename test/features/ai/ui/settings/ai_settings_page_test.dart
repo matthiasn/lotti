@@ -1621,6 +1621,183 @@ void main() {
       },
     );
   });
+
+  /// Covers `_handleTabChange`'s `_tabController.animateTo(tab.index)`
+  /// line. A plain TabBar tap can't reach it: Flutter's `_handleTap`
+  /// runs `_controller.animateTo(index)` BEFORE invoking `onTap`, so
+  /// by the time `_handleTabChange` checks `_tabController.index`, the
+  /// controller already sits on the target index and the guarded
+  /// `animateTo` call is skipped. Invoking the tab bar's `onTabChanged`
+  /// callback directly — while the controller is still parked on the
+  /// current tab — is the only path that drives the page-owned
+  /// `animateTo`.
+  ///
+  /// NOTE: the body of `_handleTabControllerChange` (its
+  /// `_updateFilterState(_filterState.copyWith(activeTab: newTab))`
+  /// line) is unreachable. That listener only runs its body when the
+  /// controller has SETTLED on an index whose tab differs from
+  /// `_filterState.activeTab`. Every code path that moves the
+  /// controller — `_handleTabChange` (updates filter state before
+  /// `animateTo`), `didUpdateWidget` (updates filter state before
+  /// `index =`), and a TabBar tap (whose `onTap` → `_handleTabChange`
+  /// updates filter state while the animation is still running) —
+  /// updates `_filterState.activeTab` to the destination tab BEFORE
+  /// the animation settles. So when the listener finally fires with
+  /// `indexIsChanging == false`, `newTab == _filterState.activeTab`
+  /// always holds and the guarded update never executes. There is no
+  /// `TabBarView` / swipe surface on this page that could move the
+  /// controller without first updating the filter state.
+  group('AiSettingsPage — onTabChanged drives the TabController', () {
+    testWidgets(
+      'invoking AiSettingsTabBar.onTabChanged with a non-current tab '
+      'animates the TabController to that index AND swaps the rendered '
+      'body — proves the page-owned animateTo branch runs',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: [
+            buildModel(
+              id: 'm1',
+              providerId: 'p1',
+              name: 'Gemini Flash',
+              providerModelId: 'gemini-flash-id',
+            ),
+          ],
+          profiles: const <AiConfig>[],
+        );
+
+        // Sanity: page starts on Providers (index 0).
+        final tabBar = tester.widget<AiSettingsTabBar>(
+          find.byType(AiSettingsTabBar),
+        );
+        expect(tabBar.tabController.index, 0);
+        expect(find.byType(AiProviderCard), findsOneWidget);
+
+        // Drive the callback directly with the Models tab while the
+        // controller still parks on Providers — this is the only way
+        // `_handleTabChange` sees `index != tab.index` and runs the
+        // page-owned `animateTo`.
+        tabBar.onTabChanged(AiSettingsTab.models);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The controller animated to the Models index and the body
+        // swapped from provider cards to model cards.
+        expect(tabBar.tabController.index, AiSettingsTab.models.index);
+        expect(find.byType(AiModelCard), findsOneWidget);
+        expect(find.byType(AiProviderCard), findsNothing);
+        await settleTimers(tester);
+      },
+    );
+  });
+
+  /// Covers the `dontShowAgain` arm of `_handleAddProvider` — the case
+  /// where the FTUE picker is shown (dismiss flag NOT yet set) and the
+  /// user taps "Don't show again". The page must persist the
+  /// suppression flag and must NOT also push the create form (the
+  /// comment in the source is explicit: it is a hide-this-prompt
+  /// action, not an add-a-provider one).
+  group('AiSettingsPage — Add provider, "Don\'t show again" branch', () {
+    testWidgets(
+      'tapping "Don\'t show again" in the FTUE picker saves the dismiss '
+      'flag and does NOT push the create-provider form',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Default MockSettingsDb stub returns null for itemByKey, so the
+        // dismiss flag is unset → the FAB routes through the FTUE
+        // `AiPickProviderModal.show` path that exposes the
+        // "Don't show again" button.
+        final mockSettingsDb = getIt<SettingsDb>() as MockSettingsDb;
+
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          navigatorObservers: [spy],
+        );
+        // Flush the InkWell ticker timers so the FAB tap below doesn't
+        // race the shared header's pending Timer.
+        await settleTimers(tester);
+
+        final fab = tester.widget<AiSettingsFloatingActionButton>(
+          find.byType(AiSettingsFloatingActionButton),
+        );
+        expect(fab.activeTab, AiSettingsTab.providers);
+        fab.onPressed();
+        // Drain the SettingsDb read + Wolt modal mount/animation.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(AiPickProviderModal), findsOneWidget);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(AiPickProviderModal)),
+        )!;
+        // FTUE chrome is present, so the opt-out button is reachable.
+        expect(
+          find.text(messages.aiPickProviderDontShowAgainButton),
+          findsOneWidget,
+        );
+
+        // Baseline route count before tapping the opt-out action.
+        final pushBaseline = spy.pushed.length;
+
+        await tester.tap(
+          find.text(messages.aiPickProviderDontShowAgainButton),
+        );
+        // Drain the modal pop + the page's post-pop branch.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The suppression flag was persisted with the exact key/value.
+        verify(
+          () => mockSettingsDb.saveSettingsItem(
+            kAiPickProviderDismissedKey,
+            'true',
+          ),
+        ).called(1);
+
+        // And the create-provider form was NOT pushed — opting out is a
+        // hide-this-prompt action, not an add-a-provider one. The modal
+        // pop nets back to the baseline, so no NEW route remains.
+        expect(find.byType(InferenceProviderEditPage), findsNothing);
+        expect(spy.pushed.length, lessThanOrEqualTo(pushBaseline));
+        await settleTimers(tester);
+      },
+    );
+  });
+
+  // NOTE: The providers-stream error branch in `_buildBodySlivers`
+  // (`if (providersAsync.hasError && providers == null)` → renders
+  // `ConfigErrorState` with the RETRY `ref.invalidate(...)` callback)
+  // is unreachable from a test driving the real
+  // `aiConfigByTypeControllerProvider`. That branch is gated behind the
+  // loading branch above it (`if (providersAsync.isLoading && providers
+  // == null)`), and for this stream-backed Riverpod notifier the error
+  // AsyncValue always reports `isLoading == true` AND `hasError == true`
+  // simultaneously — whether the error is raised via a synchronous
+  // `throw` in `build`, a `Stream.error`, or an `async*` generator that
+  // throws (verified empirically). Because `isLoading` never clears to
+  // `false` on a first-load error here, the loading branch always
+  // intercepts first and the error/RETRY branch never executes. Driving
+  // it would require injecting a raw `AsyncError(value: null,
+  // isLoading: false)` state, which Riverpod 3 does not expose for a
+  // generated notifier via `overrideWith`. The branch ships as
+  // defensive code; the standalone `ConfigErrorState` widget (icon /
+  // title / message / RETRY callback) is covered in
+  // `config_error_state_test.dart`.
 }
 
 /// NavigatorObserver that captures every `push` so a test can assert

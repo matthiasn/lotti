@@ -226,6 +226,74 @@ void main() {
     });
   });
 
+  group('segmentedButtonTheme resolved properties', () {
+    test('textStyle resolves to small, semi-bold style for any state', () {
+      final baseTheme = ThemeData.light();
+      final themedData = withOverrides(baseTheme);
+
+      final style = themedData.segmentedButtonTheme.style!;
+      final textStyle = style.textStyle!.resolve(<WidgetState>{});
+
+      expect(textStyle?.fontSize, equals(fontSizeSmall));
+      expect(textStyle?.fontWeight, equals(FontWeight.w500));
+    });
+
+    test('side resolves to a tertiary-colored 1.5px border', () {
+      final baseTheme = ThemeData.light();
+      final themedData = withOverrides(baseTheme);
+
+      final style = themedData.segmentedButtonTheme.style!;
+      final side = style.side!.resolve(<WidgetState>{});
+
+      expect(side?.color, equals(baseTheme.colorScheme.tertiary));
+      expect(side?.width, equals(1.5));
+    });
+
+    test('shape resolves to a rounded rectangle with input border radius', () {
+      final baseTheme = ThemeData.light();
+      final themedData = withOverrides(baseTheme);
+
+      final style = themedData.segmentedButtonTheme.style!;
+      final shape = style.shape!.resolve(<WidgetState>{});
+
+      expect(shape, isA<RoundedRectangleBorder>());
+      final radius =
+          (shape! as RoundedRectangleBorder).borderRadius as BorderRadius;
+      expect(radius.topLeft.x, equals(inputBorderRadius));
+    });
+  });
+
+  group('elevatedButtonTheme resolved properties', () {
+    test('elevation depends on whether the button is pressed', () {
+      final baseTheme = ThemeData.light();
+      final themedData = withOverrides(baseTheme);
+      final elevation = themedData.elevatedButtonTheme.style!.elevation!;
+
+      // pressed -> 2, otherwise -> 4 (covers both branches)
+      const cases = <Set<WidgetState>, double>{
+        {WidgetState.pressed}: 2,
+        <WidgetState>{}: 4,
+      };
+      for (final entry in cases.entries) {
+        expect(elevation.resolve(entry.key), equals(entry.value));
+      }
+    });
+
+    test('shape resolves to a rounded rectangle with 12px radius', () {
+      final baseTheme = ThemeData.light();
+      final themedData = withOverrides(baseTheme);
+
+      final shape = themedData.elevatedButtonTheme.style!.shape!.resolve(
+        <WidgetState>{},
+      );
+
+      expect(shape, isA<RoundedRectangleBorder>());
+      final radius =
+          (shape! as RoundedRectangleBorder).borderRadius as BorderRadius;
+      expect(radius.topLeft.x, equals(12));
+    });
+  });
+
   group('inputDecoration helper', () {
     test('creates decoration with correct border radius', () {
       final themeData = ThemeData.light();

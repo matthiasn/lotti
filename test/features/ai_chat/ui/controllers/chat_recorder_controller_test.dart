@@ -19,9 +19,11 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.d
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path_provider/path_provider.dart';
 // ignore_for_file: unnecessary_lambdas
 import 'package:record/record.dart' as record;
 
+import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 
 class _MockAudioRecorder extends Mock implements record.AudioRecorder {}
@@ -2780,5 +2782,559 @@ void main() {
       final result = await container.read(realtimeAvailableProvider.future);
       expect(result, isFalse);
     });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Default tempDirectoryProvider lambda BODY actually invoked (line 91)
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // The other "line 91" test denies permission, so the default lambda is
+  // created but never *invoked*. Here we mock the path_provider channel so the
+  // default `() async => getTemporaryDirectory()` lambda runs to completion and
+  // the recording proceeds past the temp-dir lookup.
+  group('default tempDirectoryProvider lambda body', () {
+    test('invokes getTemporaryDirectory() and records (line 91)', () async {
+      setFakeDocumentsPath();
+      // The fake handler returns a /tmp/<uuid> path that doesn't yet exist;
+      // the controller creates `${that}/lotti_chat_rec` under it.
+      final tempBase = await getTemporaryDirectory();
+      addTearDown(() async {
+        final dir = Directory('${tempBase.path}/lotti_chat_rec');
+        if (await dir.exists()) await dir.delete(recursive: true);
+      });
+
+      final mockRecorder = _MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      when(
+        () => mockRecorder.onAmplitudeChanged(any()),
+      ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+      String? capturedPath;
+      when(
+        () => mockRecorder.start(
+          any<record.RecordConfig>(),
+          path: any(named: 'path'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPath = invocation.namedArguments[#path] as String;
+      });
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+      final container = ProviderContainer(
+        overrides: [
+          // No tempDirectoryProvider → default lambda body (line 91) runs.
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              nowMillisProvider: () => 7777,
+              config: const ChatRecorderConfig(maxSeconds: 60),
+            ),
+          ),
+          audioTranscriptionServiceProvider.overrideWithValue(
+            _MockTranscriptionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+
+      // Recording started: the default lambda produced a temp dir under
+      // the faked path_provider location, and the file path is rooted there.
+      expect(
+        container.read(chatRecorderControllerProvider).status,
+        ChatRecorderStatus.recording,
+      );
+      expect(capturedPath, isNotNull);
+      expect(capturedPath, startsWith(tempBase.path));
+      expect(capturedPath, endsWith('chat_7777.m4a'));
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // start() disposal between awaits (lines 194, 209, 216, 230-231)
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // Each of these branches fires when the provider is disposed mid-`await`,
+  // making `ref.mounted` false at the next guard. We dispose the container from
+  // inside the relevant faked async step so the guard executes deterministically
+  // (recorder.dispose / stop are called, then start() returns early).
+  group('start() disposal between awaits', () {
+    test(
+      'disposes recorder after hasPermission when unmounted (line 194)',
+      () async {
+        final mockRecorder = _MockAudioRecorder();
+        late ProviderContainer container;
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async {
+          // Become unmounted before the post-hasPermission guard.
+          container.dispose();
+          return true;
+        });
+        var disposeCalls = 0;
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {
+          disposeCalls++;
+        });
+
+        container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                tempDirectoryProvider: () async => Directory.systemTemp,
+              ),
+            ),
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        await controller.start();
+
+        // Guard at line 193 was true → recorder.dispose() ran (line 194) and
+        // start() returned without ever calling recorder.start().
+        expect(disposeCalls, 1);
+        verifyNever(
+          () => mockRecorder.start(
+            any<record.RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        );
+        sub.close();
+      },
+    );
+
+    test(
+      'disposes recorder after tempDirectoryProvider when unmounted (line 209)',
+      () async {
+        final mockRecorder = _MockAudioRecorder();
+        late ProviderContainer container;
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        var disposeCalls = 0;
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {
+          disposeCalls++;
+        });
+
+        container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                // Dispose during the temp-dir lookup so the line 208 guard
+                // sees an unmounted ref → line 209.
+                tempDirectoryProvider: () async {
+                  container.dispose();
+                  return Directory.systemTemp;
+                },
+              ),
+            ),
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        await controller.start();
+
+        // hasPermission guard passed (mounted), then tempDirectoryProvider
+        // disposed → line 208 guard true → recorder.dispose() (line 209),
+        // start() never started recording.
+        expect(disposeCalls, 1);
+        verifyNever(
+          () => mockRecorder.start(
+            any<record.RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        );
+        sub.close();
+      },
+    );
+
+    test(
+      'disposes recorder after temp dir create when unmounted (line 216)',
+      () async {
+        final baseTemp = await Directory.systemTemp.createTemp('rec_216_');
+        addTearDown(() async {
+          if (await baseTemp.exists()) await baseTemp.delete(recursive: true);
+        });
+        final mockRecorder = _MockAudioRecorder();
+        late ProviderContainer container;
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        var disposeCalls = 0;
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {
+          disposeCalls++;
+        });
+
+        container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                // Defer disposal by two microtask hops. The first hop lets the
+                // post-tempDirectoryProvider guard (line 208) run while still
+                // mounted; the second queues the actual disposal, which then
+                // runs *before* the real Directory.create() I/O completes
+                // (I/O completion is an event-loop task that runs after all
+                // pending microtasks). So the post-create guard (line 215) sees
+                // an unmounted ref → line 216.
+                tempDirectoryProvider: () async {
+                  scheduleMicrotask(
+                    () => scheduleMicrotask(container.dispose),
+                  );
+                  return baseTemp;
+                },
+              ),
+            ),
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        await controller.start();
+
+        // The post-tempDir guard (line 208) passed while mounted, so the
+        // controller created `${baseTemp}/lotti_chat_rec` (line 212) — proving
+        // we reached the post-create guard at line 215 rather than line 208.
+        expect(
+          await Directory('${baseTemp.path}/lotti_chat_rec').exists(),
+          isTrue,
+        );
+        // The post-create guard then saw an unmounted ref → recorder.dispose()
+        // (line 216) and start() never recorded.
+        expect(disposeCalls, 1);
+        verifyNever(
+          () => mockRecorder.start(
+            any<record.RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        );
+        sub.close();
+      },
+    );
+
+    test(
+      'stops and disposes recorder when unmounted after start (lines 230-231)',
+      () async {
+        final mockRecorder = _MockAudioRecorder();
+        late ProviderContainer container;
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        var stopCalls = 0;
+        var disposeCalls = 0;
+        when(() => mockRecorder.stop()).thenAnswer((_) async {
+          stopCalls++;
+          return null;
+        });
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {
+          disposeCalls++;
+        });
+        when(
+          () => mockRecorder.start(
+            any<record.RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).thenAnswer((_) async {
+          // Dispose during recorder.start() so the post-start guard (line 229)
+          // sees an unmounted ref → lines 230-231 (stop + dispose).
+          container.dispose();
+        });
+
+        container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                tempDirectoryProvider: () async => Directory.systemTemp,
+              ),
+            ),
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        await controller.start();
+
+        // Recorder was started, then the unmounted guard ran stop() (line 230)
+        // and dispose() (line 231).
+        expect(stopCalls, 1);
+        expect(disposeCalls, 1);
+        sub.close();
+      },
+    );
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // stopAndTranscribe() with a non-null recorder but null file path
+  // (lines 318, 320-321)
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // startRealtime() sets `_recorder` but never `_filePath`. Calling
+  // stopAndTranscribe() afterwards passes the `_recorder == null` guard yet hits
+  // the `filePath == null` branch → cleanup + noAudioFile error.
+  group('stopAndTranscribe with null file path', () {
+    test('sets noAudioFile error when recorder set without file path', () async {
+      final mockRecorder = _MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+      when(
+        () => mockRecorder.startStream(any<record.RecordConfig>()),
+      ).thenAnswer((_) async => Stream<Uint8List>.empty());
+
+      final mockRealtime = _MockRealtimeService();
+      when(
+        () => mockRealtime.amplitudeStream,
+      ).thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.startRealtimeTranscription(
+          pcmStream: any(named: 'pcmStream'),
+          onDelta: any(named: 'onDelta'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => Directory.systemTemp,
+              realtimeTranscriptionService: mockRealtime,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+
+      // Realtime start sets _recorder but leaves _filePath null.
+      await controller.startRealtime();
+      expect(
+        container.read(chatRecorderControllerProvider).status,
+        ChatRecorderStatus.realtimeRecording,
+      );
+
+      // stopAndTranscribe passes `_recorder == null` guard, then the file-path
+      // guard fires → cleanup (line 318) + noAudioFile state (lines 320-321).
+      await controller.stopAndTranscribe();
+
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.status, ChatRecorderStatus.idle);
+      expect(state.errorType, ChatRecorderErrorType.noAudioFile);
+      expect(state.error, 'No audio file available');
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // startRealtime() disposal between awaits (lines 438, 460-461)
+  // ─────────────────────────────────────────────────────────────────────────
+  group('startRealtime() disposal between awaits', () {
+    test(
+      'disposes recorder after hasPermission when unmounted (line 438)',
+      () async {
+        final mockRecorder = _MockAudioRecorder();
+        late ProviderContainer container;
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async {
+          container.dispose();
+          return true;
+        });
+        var disposeCalls = 0;
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {
+          disposeCalls++;
+        });
+
+        final mockRealtime = _MockRealtimeService();
+
+        container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                realtimeTranscriptionService: mockRealtime,
+              ),
+            ),
+          ],
+        );
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        await controller.startRealtime();
+
+        // Post-hasPermission guard (line 437) true → recorder.dispose()
+        // (line 438) and startStream was never reached.
+        expect(disposeCalls, 1);
+        verifyNever(() => mockRecorder.startStream(any()));
+        sub.close();
+      },
+    );
+
+    test(
+      'stops and disposes recorder after startStream when unmounted '
+      '(lines 460-461)',
+      () async {
+        final mockRecorder = _MockAudioRecorder();
+        late ProviderContainer container;
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        var stopCalls = 0;
+        var disposeCalls = 0;
+        when(() => mockRecorder.stop()).thenAnswer((_) async {
+          stopCalls++;
+          return null;
+        });
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {
+          disposeCalls++;
+        });
+        when(
+          () => mockRecorder.startStream(any<record.RecordConfig>()),
+        ).thenAnswer((_) async {
+          // Dispose during startStream so the post-startStream guard (line 459)
+          // sees an unmounted ref → lines 460-461 (stop + dispose).
+          container.dispose();
+          return Stream<Uint8List>.empty();
+        });
+
+        final mockRealtime = _MockRealtimeService();
+        when(
+          () => mockRealtime.amplitudeStream,
+        ).thenAnswer((_) => Stream<double>.empty());
+
+        container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                realtimeTranscriptionService: mockRealtime,
+              ),
+            ),
+          ],
+        );
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        await controller.startRealtime();
+
+        // startStream ran, then the unmounted guard ran stop() (line 460)
+        // and dispose() (line 461); the realtime session never started.
+        expect(stopCalls, 1);
+        expect(disposeCalls, 1);
+        verifyNever(
+          () => mockRealtime.startRealtimeTranscription(
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+          ),
+        );
+        sub.close();
+      },
+    );
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // stopRealtime() invokes the stopRecorder callback (lines 576-577)
+  // ─────────────────────────────────────────────────────────────────────────
+  group('stopRealtime stopRecorder callback', () {
+    test(
+      'invokes stopRecorder which stops the recorder (lines 576-577)',
+      () async {
+        final mockRecorder = _MockAudioRecorder();
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+        var recorderStopCalls = 0;
+        when(() => mockRecorder.stop()).thenAnswer((_) async {
+          recorderStopCalls++;
+          return null;
+        });
+        when(
+          () => mockRecorder.startStream(any<record.RecordConfig>()),
+        ).thenAnswer((_) async => Stream<Uint8List>.empty());
+
+        final mockRealtime = _MockRealtimeService();
+        when(
+          () => mockRealtime.amplitudeStream,
+        ).thenAnswer((_) => Stream<double>.empty());
+        when(
+          () => mockRealtime.startRealtimeTranscription(
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+          ),
+        ).thenAnswer((_) async {});
+        // The service actually invokes the stopRecorder callback it was given,
+        // exercising the controller's callback body (lines 576-577).
+        when(
+          () => mockRealtime.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenAnswer((invocation) async {
+          final stopRecorder =
+              invocation.namedArguments[#stopRecorder]
+                  as Future<void> Function();
+          await stopRecorder();
+          return const RealtimeStopResult(
+            transcript: 'callback transcript',
+            audioFilePath: '/tmp/audio.m4a',
+          );
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                tempDirectoryProvider: () async => Directory.systemTemp,
+                realtimeTranscriptionService: mockRealtime,
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+        await controller.startRealtime();
+        await controller.stopRealtime();
+
+        // The callback body ran `recorder?.stop()` exactly once.
+        expect(recorderStopCalls, 1);
+        final state = container.read(chatRecorderControllerProvider);
+        expect(state.status, ChatRecorderStatus.idle);
+        expect(state.transcript, 'callback transcript');
+      },
+    );
   });
 }

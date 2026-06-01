@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/checkboxes/design_system
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
@@ -540,6 +541,53 @@ void main() {
         expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'dragging the ResizableDivider grows the list pane via '
+      'updateListPaneWidth',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+
+        // The list pane starts at the default width.
+        expect(
+          container.read(paneWidthControllerProvider).listPaneWidth,
+          defaultListPaneWidth,
+        );
+
+        // Drag the divider to the right; onDrag forwards the +dx delta to
+        // PaneWidthController.updateListPaneWidth, widening the list pane.
+        await tester.drag(
+          find.byType(ResizableDivider),
+          const Offset(40, 0),
+        );
+        await tester.pump();
+
+        expect(
+          container.read(paneWidthControllerProvider).listPaneWidth,
+          defaultListPaneWidth + 40,
+        );
+
+        // The list-pane SizedBox reflects the new width.
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is SizedBox && widget.width == defaultListPaneWidth + 40,
+          ),
+          findsOneWidget,
+        );
+
+        // Let the persist debounce timer fire so it does not leak.
+        await tester.pump(persistDebounce);
+      },
+    );
   });
 
   group('header search wiring', () {
@@ -593,6 +641,73 @@ void main() {
           container.read(projectsFilterControllerProvider).textQuery,
           isEmpty,
         );
+      },
+    );
+
+    testWidgets(
+      'tapping the search clear button invokes onSearchCleared, resetting '
+      'the query and disabling local-text search mode',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+
+        // Seed a non-empty query so the clear (✕) button is rendered and
+        // local-text search mode is active.
+        await tester.enterText(find.byType(TextField), 'device');
+        await tester.pump();
+        expect(
+          container.read(projectsFilterControllerProvider).searchMode,
+          ProjectsSearchMode.localText,
+        );
+
+        // Tap the dedicated clear button — this drives onSearchCleared (not
+        // the TextField onChanged path).
+        await tester.tap(find.byIcon(Icons.cancel_rounded));
+        await tester.pump();
+
+        final state = container.read(projectsFilterControllerProvider);
+        expect(state.textQuery, isEmpty);
+        expect(state.searchMode, ProjectsSearchMode.disabled);
+      },
+    );
+
+    testWidgets(
+      'tapping the search action button invokes onSearchPressed with the '
+      'current text, updating the controller query',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+
+        // Type text without committing it through onSearchPressed yet, then
+        // reset the controller so we can prove the search-button path writes
+        // the query itself.
+        await tester.enterText(find.byType(TextField), 'migration');
+        await tester.pump();
+        container.read(projectsFilterControllerProvider.notifier).clear();
+        expect(
+          container.read(projectsFilterControllerProvider).textQuery,
+          isEmpty,
+        );
+
+        // Tap the magnifier action button -> onSearchPressed(currentText).
+        await tester.tap(find.byIcon(Icons.search_rounded));
+        await tester.pump();
+
+        final state = container.read(projectsFilterControllerProvider);
+        expect(state.textQuery, 'migration');
+        expect(state.searchMode, ProjectsSearchMode.localText);
       },
     );
   });

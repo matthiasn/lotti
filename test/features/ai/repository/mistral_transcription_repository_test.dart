@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 
 void main() {
   group('MistralTranscriptionRepository', () {
@@ -866,6 +869,182 @@ void main() {
           ),
         );
       });
+
+      test(
+        'wraps TimeoutException thrown by the client in a 408 '
+        'TranscriptionException',
+        () async {
+          // A raw TimeoutException bubbling out of the client (not the
+          // .timeout() wrapper) is mapped to a 408 TranscriptionException
+          // with the original error preserved.
+          final original = TimeoutException('upstream stalled');
+          final mockClient = MockClient((request) async {
+            throw original;
+          });
+
+          final repo = MistralTranscriptionRepository(httpClient: mockClient);
+
+          await expectLater(
+            repo
+                .transcribeAudio(
+                  model: testModel,
+                  audioBase64: testAudioBase64,
+                  baseUrl: testBaseUrl,
+                  apiKey: testApiKey,
+                )
+                .toList(),
+            throwsA(
+              isA<TranscriptionException>()
+                  .having(
+                    (e) => e.statusCode,
+                    'statusCode',
+                    httpStatusRequestTimeout,
+                  )
+                  .having((e) => e.message, 'message', contains('timed out'))
+                  .having(
+                    (e) => e.originalError,
+                    'originalError',
+                    same(original),
+                  ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'wraps FormatException from malformed 200 body in TranscriptionException',
+        () async {
+          // A 200 response whose body is not valid JSON makes jsonDecode throw
+          // a FormatException, which is mapped to a format-error message.
+          final mockClient = MockClient((request) async {
+            return http.Response('not json {{{', 200);
+          });
+
+          final repo = MistralTranscriptionRepository(httpClient: mockClient);
+
+          await expectLater(
+            repo
+                .transcribeAudio(
+                  model: testModel,
+                  audioBase64: testAudioBase64,
+                  baseUrl: testBaseUrl,
+                  apiKey: testApiKey,
+                )
+                .toList(),
+            throwsA(
+              isA<TranscriptionException>()
+                  .having(
+                    (e) => e.message,
+                    'message',
+                    'Invalid response format from transcription service',
+                  )
+                  .having(
+                    (e) => e.originalError,
+                    'originalError',
+                    isA<FormatException>(),
+                  )
+                  .having((e) => e.statusCode, 'statusCode', isNull),
+            ),
+          );
+        },
+      );
+
+      test(
+        'onTimeout fires a 408 TranscriptionException with a seconds-formatted '
+        'message when the request exceeds the timeout',
+        () {
+          fakeAsync((async) {
+            // Client send() never completes, so the .timeout() wrapper invokes
+            // onTimeout once the (sub-minute) timeout elapses.
+            const customTimeout = Duration(seconds: 30);
+            final mockClient = MockClient.streaming((request, bodyStream) {
+              return Completer<http.StreamedResponse>().future;
+            });
+
+            final repo = MistralTranscriptionRepository(httpClient: mockClient);
+
+            Object? error;
+            var completed = false;
+            repo
+                .transcribeAudio(
+                  model: testModel,
+                  audioBase64: testAudioBase64,
+                  baseUrl: testBaseUrl,
+                  apiKey: testApiKey,
+                  timeout: customTimeout,
+                )
+                .listen(
+                  (_) {},
+                  onError: (Object e) {
+                    error = e;
+                    completed = true;
+                  },
+                  onDone: () => completed = true,
+                );
+
+            // Advance past the timeout to trigger onTimeout deterministically.
+            async
+              ..elapse(customTimeout + const Duration(milliseconds: 1))
+              ..flushMicrotasks();
+
+            expect(completed, isTrue);
+            expect(
+              error,
+              isA<TranscriptionException>()
+                  .having(
+                    (e) => e.statusCode,
+                    'statusCode',
+                    httpStatusRequestTimeout,
+                  )
+                  // _formatTimeout seconds branch: 30 -> "30 seconds".
+                  .having(
+                    (e) => e.message,
+                    'message',
+                    contains('30 seconds'),
+                  ),
+            );
+          });
+        },
+      );
+
+      test(
+        'onTimeout message uses singular "second" for a one-second timeout',
+        () {
+          fakeAsync((async) {
+            const customTimeout = Duration(seconds: 1);
+            final mockClient = MockClient.streaming((request, bodyStream) {
+              return Completer<http.StreamedResponse>().future;
+            });
+
+            final repo = MistralTranscriptionRepository(httpClient: mockClient);
+
+            Object? error;
+            repo
+                .transcribeAudio(
+                  model: testModel,
+                  audioBase64: testAudioBase64,
+                  baseUrl: testBaseUrl,
+                  apiKey: testApiKey,
+                  timeout: customTimeout,
+                )
+                .listen((_) {}, onError: (Object e) => error = e);
+
+            async
+              ..elapse(customTimeout + const Duration(milliseconds: 1))
+              ..flushMicrotasks();
+
+            expect(
+              error,
+              isA<TranscriptionException>().having(
+                (e) => e.message,
+                'message',
+                // _formatTimeout singular seconds branch: 1 -> "1 second".
+                contains('1 second.'),
+              ),
+            );
+          });
+        },
+      );
     });
 
     group('TranscriptionException', () {

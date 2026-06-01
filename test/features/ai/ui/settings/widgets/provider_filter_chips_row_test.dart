@@ -100,6 +100,42 @@ void main() {
       );
     }
 
+    // Helper for styled chips: requires overriding aiConfigByIdProvider so the
+    // inner ProviderFilterChip resolves to a real provider and renders a
+    // tappable FilterChip instead of SizedBox.shrink().
+    Widget createStyledTestWidget({
+      required Set<String> selectedProviderIds,
+      required ValueChanged<Set<String>> onChanged,
+      required List<AiConfigInferenceProvider> mockProviders,
+      bool allowMultiSelect = true,
+      bool showAllChip = false,
+    }) {
+      return ProviderScope(
+        overrides: [
+          aiConfigByTypeControllerProvider(
+            configType: AiConfigType.inferenceProvider,
+          ).overrideWith(() => TestAiConfigByTypeController(mockProviders)),
+          for (final provider in mockProviders)
+            aiConfigByIdProvider(
+              provider.id,
+            ).overrideWith((ref) async => provider),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: ProviderFilterChipsRow(
+              selectedProviderIds: selectedProviderIds,
+              onChanged: onChanged,
+              allowMultiSelect: allowMultiSelect,
+              showAllChip: showAllChip,
+              useStyledChips: true,
+            ),
+          ),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      );
+    }
+
     group('Basic Rendering', () {
       testWidgets('renders provider chips for all available providers', (
         tester,
@@ -762,6 +798,86 @@ void main() {
         expect(callbackCount, equals(1));
         expect(callbackValue, equals({'provider2'}));
       });
+    });
+
+    // Exercises the onTap handler inside the styled ProviderFilterChip branch
+    // (useStyledChips: true). Covers all four mode/selection combinations of
+    // the selection-mutation logic and the onChanged callback.
+    group('Styled Chip Selection (onTap)', () {
+      // Each case: starting selection + flags -> expected Set passed to
+      // onChanged after tapping the 'Anthropic' (provider1) styled chip.
+      final cases =
+          <
+            ({
+              String name,
+              bool allowMultiSelect,
+              Set<String> initial,
+              Set<String> expected,
+            })
+          >[
+            // Multi-select, provider not selected -> add it (keeps others).
+            (
+              name: 'multi-select adds an unselected provider',
+              allowMultiSelect: true,
+              initial: {'provider2'},
+              expected: {'provider2', 'provider1'},
+            ),
+            // Multi-select, provider already selected -> remove it (keeps others).
+            (
+              name: 'multi-select removes an already-selected provider',
+              allowMultiSelect: true,
+              initial: {'provider1', 'provider2'},
+              expected: {'provider2'},
+            ),
+            // Single-select, provider not selected -> replace selection with it.
+            (
+              name: 'single-select replaces selection with tapped provider',
+              allowMultiSelect: false,
+              initial: {'provider2'},
+              expected: {'provider1'},
+            ),
+            // Single-select, provider already selected -> clear selection.
+            (
+              name: 'single-select clears when tapping the selected provider',
+              allowMultiSelect: false,
+              initial: {'provider1'},
+              expected: <String>{},
+            ),
+          ];
+
+      for (final c in cases) {
+        testWidgets(c.name, (tester) async {
+          final mockProviders = createMockProviders();
+          Set<String>? callbackValue;
+          var callbackCount = 0;
+
+          await tester.pumpWidget(
+            createStyledTestWidget(
+              selectedProviderIds: c.initial,
+              onChanged: (newSelection) {
+                callbackValue = newSelection;
+                callbackCount++;
+              },
+              mockProviders: mockProviders,
+              allowMultiSelect: c.allowMultiSelect,
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // Sanity: styled chips actually rendered (not SizedBox.shrink).
+          expect(find.byType(ProviderFilterChip), findsNWidgets(3));
+
+          // Tap the styled chip for provider1 (Anthropic).
+          await tester.tap(find.text('Anthropic'));
+          await tester.pump();
+
+          expect(callbackCount, equals(1));
+          expect(callbackValue, equals(c.expected));
+          // onChanged must receive a fresh copy, not mutate the input Set.
+          expect(callbackValue, isNot(same(c.initial)));
+        });
+      }
     });
   });
 }

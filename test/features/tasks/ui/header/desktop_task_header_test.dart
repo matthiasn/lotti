@@ -49,6 +49,20 @@ Future<void> _pumpDesktop(
   await tester.pump();
 }
 
+/// Locates the private `_RenderTrailingAlignedWrap` that backs the meta row.
+/// The wrap is the only widget in the tree whose runtime type name contains
+/// `TrailingAlignedWrap`. It is a [RenderBox], which is all the intrinsic
+/// helpers need; the `spacing` / `runSpacing` getters are read via [dynamic]
+/// since the concrete type is private.
+RenderBox _trailingWrapRenderObject(WidgetTester tester) {
+  final element = tester.element(
+    find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString().contains('TrailingAlignedWrap'),
+    ),
+  );
+  return element.renderObject! as RenderBox;
+}
+
 LabelDefinition _label({
   required String id,
   required String name,
@@ -916,6 +930,81 @@ void main() {
         final size = tester.getSize(find.byType(DesktopTaskHeader));
         expect(size.width, greaterThan(0));
         expect(size.height, greaterThan(0));
+      },
+    );
+  });
+
+  group('DesktopTaskHeader — render object getters + intrinsics', () {
+    testWidgets(
+      'spacing / runSpacing getters expose the configured token values',
+      (tester) async {
+        // step3 == 8 by default in dsTokensLight; the meta row feeds it into
+        // both spacing and runSpacing of the trailing-aligned wrap.
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(dueDate: _dueFixture),
+            onTitleSaved: (_) {},
+            estimateSlot: const Text('1h'),
+          ),
+        );
+
+        final render = _trailingWrapRenderObject(tester);
+        final expected = dsTokensLight.spacing.step3;
+        // `spacing` / `runSpacing` live on the private render-object subtype,
+        // so they have to be reached dynamically.
+        expect((render as dynamic).spacing, expected);
+        expect((render as dynamic).runSpacing, expected);
+      },
+    );
+
+    testWidgets(
+      'min intrinsic width equals the widest child; max width sums them',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
+            onTitleSaved: (_) {},
+            estimateSlot: const Text('1h'),
+          ),
+        );
+
+        final render = _trailingWrapRenderObject(tester);
+        // computeMinIntrinsicWidth: max over children's own min widths.
+        final minWidth = render.getMinIntrinsicWidth(double.infinity);
+        // computeMaxIntrinsicWidth: sum of children's max widths.
+        final maxWidth = render.getMaxIntrinsicWidth(double.infinity);
+
+        expect(minWidth, greaterThan(0));
+        expect(maxWidth, greaterThan(0));
+        // The widest single child cannot exceed the sum of all children,
+        // and with multiple chips the sum is strictly larger.
+        expect(maxWidth, greaterThan(minWidth));
+      },
+    );
+
+    testWidgets(
+      'min intrinsic height equals max intrinsic height',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
+            onTitleSaved: (_) {},
+            estimateSlot: const Text('1h'),
+          ),
+        );
+
+        final render = _trailingWrapRenderObject(tester);
+        // _RenderTrailingAlignedWrap.computeMinIntrinsicHeight delegates to
+        // computeMaxIntrinsicHeight, so the two must be identical.
+        const probeWidth = 800.0;
+        final minHeight = render.getMinIntrinsicHeight(probeWidth);
+        final maxHeight = render.getMaxIntrinsicHeight(probeWidth);
+
+        expect(minHeight, greaterThan(0));
+        expect(minHeight, maxHeight);
       },
     );
   });

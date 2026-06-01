@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -24,6 +25,7 @@ void main() {
     required void Function(CategoryDefinition) onCategoryCreated,
     String initialName = 'Test Category',
     String? initialColor,
+    CategoryIcon? initialIcon,
   }) {
     return ProviderScope(
       overrides: [
@@ -34,9 +36,38 @@ void main() {
           onCategoryCreated: onCategoryCreated,
           initialName: initialName,
           initialColor: initialColor,
+          initialIcon: initialIcon,
         ),
       ),
     );
+  }
+
+  // Stubs createCategory to echo back its name/color/icon arguments so a
+  // test can assert exactly what the modal forwarded to the repository.
+  void stubCreateCategory({void Function(CategoryIcon?)? onIcon}) {
+    when(
+      () => mockRepository.createCategory(
+        name: any(named: 'name'),
+        color: any(named: 'color'),
+        icon: any(named: 'icon'),
+      ),
+    ).thenAnswer((invocation) async {
+      final icon =
+          invocation.namedArguments[const Symbol('icon')] as CategoryIcon?;
+      onIcon?.call(icon);
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      return CategoryDefinition(
+        id: 'test-id',
+        name: invocation.namedArguments[const Symbol('name')] as String,
+        color: invocation.namedArguments[const Symbol('color')] as String,
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+        icon: icon,
+      );
+    });
   }
 
   testWidgets('displays initial category name', (tester) async {
@@ -389,6 +420,176 @@ void main() {
       );
       // Modal stays mounted so the user can fix and retry.
       expect(find.byType(CategoryCreateModal), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'seeds the picker colour from initialColor and forwards it on save',
+    (tester) async {
+      // initialColor is non-null, so initState parses it via
+      // colorFromCssHex instead of falling back to Colors.red. Tapping
+      // Save without touching the picker should hand that exact colour
+      // to the repository.
+      const initialHex = '#00FF00';
+      String? capturedColor;
+      when(
+        () => mockRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          icon: any(named: 'icon'),
+        ),
+      ).thenAnswer((invocation) async {
+        final color =
+            invocation.namedArguments[const Symbol('color')] as String;
+        capturedColor = color;
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        return CategoryDefinition(
+          id: 'test-id',
+          name: invocation.namedArguments[const Symbol('name')] as String,
+          color: color,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+          private: false,
+          active: true,
+        );
+      });
+
+      await tester.pumpWidget(
+        createTestWidget(
+          initialName: 'Seeded',
+          initialColor: initialHex,
+          onCategoryCreated: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      // The save closure round-trips _pickerColor through colorToCssHex,
+      // so the captured value must equal the canonical encoding of the
+      // colour we seeded — proving initState used colorFromCssHex.
+      expect(
+        capturedColor,
+        equals(colorToCssHex(colorFromCssHex(initialHex))),
+      );
+    },
+  );
+
+  testWidgets(
+    'renders the initial icon using the picker colour',
+    (tester) async {
+      // With both initialColor and initialIcon set, the icon preview in
+      // _buildIconPicker tints the chosen icon with _pickerColor (the
+      // `_selectedIcon != null` branch) rather than the muted
+      // onSurfaceVariant used for the placeholder.
+      const initialHex = '#123456';
+
+      await tester.pumpWidget(
+        createTestWidget(
+          initialName: 'Has Icon',
+          initialColor: initialHex,
+          initialIcon: CategoryIcon.fitness,
+          onCategoryCreated: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The display name of the seeded icon is shown.
+      expect(find.text(CategoryIcon.fitness.displayName), findsOneWidget);
+
+      // The preview Icon uses the seeded colour, not a fallback.
+      final iconWidget = tester.widget<Icon>(
+        find.byIcon(CategoryIcon.fitness.iconData),
+      );
+      expect(iconWidget.color, equals(colorFromCssHex(initialHex)));
+    },
+  );
+
+  testWidgets(
+    'opens the icon picker, applies the chosen icon, and saves it',
+    (tester) async {
+      CategoryIcon? savedIcon;
+      stubCreateCategory(onIcon: (icon) => savedIcon = icon);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          initialName: 'Pick Icon',
+          onCategoryCreated: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No icon selected yet: the placeholder text is shown.
+      final placeholder = find.text(CategoryIconStrings.chooseIconText);
+      expect(placeholder, findsOneWidget);
+
+      // Tap the icon picker tile to open the CategoryIconPicker dialog.
+      // The tile sits below the colour picker inside a scroll view, so
+      // bring it on-screen before tapping.
+      await tester.ensureVisible(placeholder);
+      await tester.pumpAndSettle();
+      await tester.tap(placeholder);
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoryIconPicker), findsOneWidget);
+
+      // Select an icon from the grid; the picker pops with that value
+      // and the modal's _showIconPicker applies it via setState. The
+      // first enum value renders in the initial viewport of the lazily
+      // built GridView, so no scrolling inside the dialog is needed.
+      const chosen = CategoryIcon.fitness;
+      final chosenTile = find.text(chosen.displayName);
+      expect(chosenTile, findsOneWidget);
+      await tester.tap(chosenTile);
+      await tester.pumpAndSettle();
+
+      // Dialog closed and the modal now shows the chosen icon's name.
+      expect(find.byType(CategoryIconPicker), findsNothing);
+      expect(find.text(chosen.displayName), findsOneWidget);
+
+      // Saving forwards the newly selected icon to the repository.
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockRepository.createCategory(
+          name: 'Pick Icon',
+          color: any(named: 'color'),
+          icon: chosen,
+        ),
+      ).called(1);
+      expect(savedIcon, equals(chosen));
+    },
+  );
+
+  testWidgets(
+    'dismissing the icon picker without a selection keeps the placeholder',
+    (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          initialName: 'No Pick',
+          onCategoryCreated: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final placeholder = find.text(CategoryIconStrings.chooseIconText);
+      await tester.ensureVisible(placeholder);
+      await tester.pumpAndSettle();
+      await tester.tap(placeholder);
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoryIconPicker), findsOneWidget);
+
+      // Close the dialog via its close button -> showDialog resolves to
+      // null, so _showIconPicker takes the `result == null` path and
+      // leaves _selectedIcon untouched (no setState).
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategoryIconPicker), findsNothing);
+      // Still the placeholder; no icon was applied.
+      expect(find.text(CategoryIconStrings.chooseIconText), findsOneWidget);
     },
   );
 }

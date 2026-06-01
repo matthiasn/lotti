@@ -39,9 +39,7 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  testWidgets('opens the Wolt multi-select picker with user categories', (
-    tester,
-  ) async {
+  Future<void> pumpButton(WidgetTester tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const Scaffold(
@@ -49,10 +47,19 @@ void main() {
         ),
       ),
     );
+  }
 
+  Future<void> openPicker(WidgetTester tester) async {
     await tester.tap(find.byIcon(Icons.filter_alt_outlined));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
+  }
+
+  testWidgets('opens the Wolt multi-select picker with user categories', (
+    tester,
+  ) async {
+    await pumpButton(tester);
+    await openPicker(tester);
 
     expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(2));
     expect(find.text('Actual Personal'), findsOneWidget);
@@ -64,17 +71,8 @@ void main() {
   testWidgets('persists omitted user categories when confirmed', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const Scaffold(
-          body: Center(child: ProcessingCategoryFilterButton()),
-        ),
-      ),
-    );
-
-    await tester.tap(find.byIcon(Icons.filter_alt_outlined));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await pumpButton(tester);
+    await openPicker(tester);
     await tester.tap(find.text('Actual Personal'));
     await tester.pump();
     await tester.tap(find.text('Done'));
@@ -85,6 +83,95 @@ void main() {
       () => mocks.settingsDb.saveSettingsItem(
         dailyOsExcludedCategoryIdsSettingsKey,
         '["cat_personal"]',
+      ),
+    ).called(1);
+  });
+
+  testWidgets('toggling a category off then on re-selects it', (
+    tester,
+  ) async {
+    await pumpButton(tester);
+    await openPicker(tester);
+
+    // Both categories selected initially.
+    expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(2));
+
+    // Toggle off: the remove branch leaves one selected, one unchecked.
+    await tester.tap(find.text('Actual Personal'));
+    await tester.pump();
+    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsOneWidget);
+
+    // Toggle on again: the add branch re-selects it.
+    await tester.tap(find.text('Actual Personal'));
+    await tester.pump();
+    expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(2));
+    expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsNothing);
+
+    // Confirm: no exclusions persisted because everything is selected again.
+    await tester.tap(find.text('Done'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    verify(
+      () => mocks.settingsDb.saveSettingsItem(
+        dailyOsExcludedCategoryIdsSettingsKey,
+        '[]',
+      ),
+    ).called(1);
+  });
+
+  testWidgets('Include all re-selects every category after a deselection', (
+    tester,
+  ) async {
+    await pumpButton(tester);
+    await openPicker(tester);
+
+    // Deselect one category so "Include all" has an observable effect.
+    await tester.tap(find.text('Actual Personal'));
+    await tester.pump();
+    expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsOneWidget);
+
+    await tester.tap(find.text('Include all'));
+    await tester.pump();
+
+    // Every category is selected again.
+    expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(2));
+    expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsNothing);
+
+    await tester.tap(find.text('Done'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    verify(
+      () => mocks.settingsDb.saveSettingsItem(
+        dailyOsExcludedCategoryIdsSettingsKey,
+        '[]',
+      ),
+    ).called(1);
+  });
+
+  testWidgets('shows the empty message when no categories exist', (
+    tester,
+  ) async {
+    _stubCategories(cache, const []);
+
+    await pumpButton(tester);
+    await openPicker(tester);
+
+    expect(find.text('No categories available yet.'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
+    expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsNothing);
+
+    // Confirming with no categories persists an empty exclusion set.
+    await tester.tap(find.text('Done'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    verify(
+      () => mocks.settingsDb.saveSettingsItem(
+        dailyOsExcludedCategoryIdsSettingsKey,
+        '[]',
       ),
     ).called(1);
   });

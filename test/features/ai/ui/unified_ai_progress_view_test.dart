@@ -175,6 +175,84 @@ void main() {
     );
   }
 
+  /// Pumps an [OllamaModelInstallDialog] with a real DS theme (so the success
+  /// toast can resolve design tokens), an immediate provider-type controller
+  /// supplying [providers], and the shared repository overrides. Used by the
+  /// `_installModel` end-to-end tests below which need `context.showToast` to
+  /// work.
+  Future<void> pumpInstallDialog(
+    WidgetTester tester, {
+    required String modelName,
+    required List<AiConfig> providers,
+    VoidCallback? onModelInstalled,
+  }) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
+          cloudInferenceRepositoryProvider.overrideWithValue(
+            mockCloudRepository,
+          ),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+          aiConfigByTypeControllerProvider(
+            configType: AiConfigType.inferenceProvider,
+          ).overrideWith(() => _ImmediateAiConfigByTypeController(providers)),
+        ],
+        child: MaterialApp(
+          theme: resolveTestTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          // Push the dialog onto a base Scaffold route so _installModel's
+          // Navigator.of(context).pop() returns to the base (which hosts the
+          // ScaffoldMessenger the success toast attaches to) instead of
+          // emptying the navigator and tearing down the messenger.
+          home: Consumer(
+            builder: (context, ref, child) {
+              // Watch aiConfigByTypeControllerProvider here so it stays alive
+              // (it is autoDispose). Otherwise it can be torn down mid-load
+              // when _installModel reads its .future, surfacing a Riverpod
+              // "disposed during loading state" error instead of the real
+              // provider-lookup result.
+              ref.watch(
+                aiConfigByTypeControllerProvider(
+                  configType: AiConfigType.inferenceProvider,
+                ),
+              );
+              return child!;
+            },
+            child: Navigator(
+              onGenerateRoute: (_) => MaterialPageRoute<void>(
+                builder: (_) => Scaffold(
+                  body: Builder(
+                    builder: (context) {
+                      // Push the dialog as a second route after first frame.
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => Scaffold(
+                              body: OllamaModelInstallDialog(
+                                modelName: modelName,
+                                onModelInstalled: onModelInstalled,
+                              ),
+                            ),
+                          ),
+                        );
+                      });
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
   group('UnifiedAiProgressContent - Basic UI States', () {
     const testEntityId = 'test-entity-1';
     const testPromptId = 'test-prompt-1';
@@ -1863,5 +1941,268 @@ Generate a widget that renders a login form.''',
         expect(find.text('Installing model...'), findsNothing);
       },
     );
+  });
+
+  // ── OllamaModelInstallDialog._installModel — end-to-end with finite streams ──
+  // These drive the real success/error branches of _installModel. The install
+  // stream is ALWAYS finite (Stream.fromIterable / Stream.error) so the
+  // `await for` loop completes and teardown never hits an open StreamController.
+  group('OllamaModelInstallDialog - _installModel finite-stream branches', () {
+    AiConfigInferenceProvider makeOllama() =>
+        AiTestDataFactory.createTestProvider(
+          id: 'ollama-e2e',
+          name: 'Ollama',
+          type: InferenceProviderType.ollama,
+          baseUrl: 'http://localhost:11434/',
+        );
+
+    testWidgets(
+      'success stream pops dialog, fires callback and shows success toast '
+      '(lines 510-515, 523-547, 607)',
+      (tester) async {
+        // Finite success stream: a mid-progress event (0.5 → renders the "%"
+        // text at line 607 during the rebuild) then a terminal success event.
+        when(() => mockCloudRepository.installModel(any(), any())).thenAnswer(
+          (_) => Stream.fromIterable(const [
+            OllamaPullProgress(status: 'downloading', progress: 0.5),
+            OllamaPullProgress(status: 'success', progress: 1),
+          ]),
+        );
+
+        var installedCallbackFired = false;
+
+        await pumpInstallDialog(
+          tester,
+          modelName: 'llama3',
+          providers: [makeOllama()],
+          onModelInstalled: () => installedCallbackFired = true,
+        );
+
+        await tester.tap(find.text('Install'));
+        // Drive the async chain in finite, bounded pumps (no pumpAndSettle so
+        // the success SnackBar is asserted while it is still on screen rather
+        // than after it has timed out and dismissed at 4s). Pump in small
+        // bounded steps until the dialog pops (stream completed → toast/pop),
+        // capped so a regression that never pops fails instead of hanging.
+        for (var i = 0; i < 20; i++) {
+          if (find.byType(OllamaModelInstallDialog).evaluate().isEmpty) break;
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        // Let the SnackBar entrance animation render its DesignSystemToast,
+        // staying well under the 4s auto-dismiss timeout.
+        await tester.pump(const Duration(milliseconds: 350));
+
+        // Dialog popped (line 545) once the stream completed.
+        expect(find.byType(OllamaModelInstallDialog), findsNothing);
+        // onModelInstalled callback ran (line 546).
+        expect(installedCallbackFired, isTrue);
+        // Success toast surfaced on the parent scaffold (lines 536-544).
+        final toast = tester.widget<DesignSystemToast>(
+          find.byType(DesignSystemToast),
+        );
+        expect(toast.tone, DesignSystemToastTone.success);
+      },
+    );
+
+    testWidgets(
+      'no Ollama provider throws and renders the not-found error '
+      '(lines 517-521, 548-567)',
+      (tester) async {
+        // installModel must never be reached: firstOrNull is null because the
+        // supplied providers contain no Ollama provider.
+        await pumpInstallDialog(
+          tester,
+          modelName: 'phi3',
+          providers: const <AiConfig>[],
+        );
+
+        await tester.tap(find.text('Install'));
+        await tester.pumpAndSettle();
+
+        // The thrown Exception message (Exception: prefix stripped at line 560).
+        expect(
+          find.textContaining('Ollama provider not found'),
+          findsOneWidget,
+        );
+        // _isInstalling reset to false → Install button visible again.
+        expect(find.text('Install'), findsOneWidget);
+        expect(find.text('Installing model...'), findsNothing);
+        // installModel was never invoked because the provider lookup failed.
+        verifyNever(() => mockCloudRepository.installModel(any(), any()));
+      },
+    );
+
+    testWidgets(
+      'stream error is caught and rendered with stripped prefix '
+      '(lines 559-561)',
+      (tester) async {
+        // Finite error stream: the `await for` rethrows inside _installModel,
+        // hitting the catch block which strips the "Exception: " prefix.
+        when(() => mockCloudRepository.installModel(any(), any())).thenAnswer(
+          (_) => Stream<OllamaPullProgress>.error(Exception('boom')),
+        );
+
+        await pumpInstallDialog(
+          tester,
+          modelName: 'mistral',
+          providers: [makeOllama()],
+        );
+
+        await tester.tap(find.text('Install'));
+        await tester.pumpAndSettle();
+
+        // "Exception: " prefix stripped (line 560) → only "Error: boom" remains.
+        expect(find.text('Error: boom'), findsOneWidget);
+        // Install button is back (catch sets _isInstalling = false).
+        expect(find.text('Install'), findsOneWidget);
+      },
+    );
+  });
+
+  // ── onModelInstalled callbacks fire after a successful install ──────────────
+  // When a model-not-installed error renders the install dialog inline inside a
+  // UnifiedAiProgressContent and the install succeeds, the dialog's
+  // onModelInstalled callback runs. For the typed-exception error that callback
+  // is _handleModelInstalled('Ollama') (lines 137-148+) and for the
+  // string-fallback error it is the inline closure (lines 302-313+); both first
+  // call triggerNewInferenceProvider. We assert that trigger fires, which proves
+  // the callback was invoked end-to-end.
+  //
+  // NOTE: the subsequent "re-show progress modal" branches
+  // (_handleModelInstalled lines 159-170 and the inline callback lines 324-335)
+  // are unreachable here: _installModel calls Navigator.of(context).pop(), which
+  // tears down the route hosting the content that owns the callback, so the
+  // `if (!mounted || !context.mounted) return` guards (lines 157 / 322)
+  // short-circuit before showSingleSliverPageModal is reached. They are only
+  // reachable when the dialog is hosted as a nested route the pop can close
+  // without unmounting the owner, which the inline rendering never produces.
+  group('UnifiedAiProgressContent - onModelInstalled callback fires', () {
+    const entityId = 'reshow-entity';
+    // Must equal testPromptConfig.id so the re-read aiConfigByIdProvider inside
+    // the callback resolves to an AiConfigPrompt via the same override.
+    const promptId = 'test-prompt-1';
+
+    AiConfigInferenceProvider makeOllama() =>
+        AiTestDataFactory.createTestProvider(
+          id: 'ollama-reshow',
+          name: 'Ollama',
+          type: InferenceProviderType.ollama,
+          baseUrl: 'http://localhost:11434/',
+        );
+
+    Future<void> pumpErrorView(
+      WidgetTester tester, {
+      required UnifiedAiState controllerState,
+      required void Function() onTrigger,
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            cloudInferenceRepositoryProvider.overrideWithValue(
+              mockCloudRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController([makeOllama()]),
+            ),
+            unifiedAiControllerOverride(controllerState),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: testPromptConfig.aiResponseType,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.error),
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {
+              onTrigger();
+            }),
+          ],
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              // Keep aiConfigByTypeControllerProvider alive (autoDispose) so the
+              // install dialog's _installModel can read its .future without the
+              // provider being torn down mid-load.
+              body: Consumer(
+                builder: (context, ref, child) {
+                  ref.watch(
+                    aiConfigByTypeControllerProvider(
+                      configType: AiConfigType.inferenceProvider,
+                    ),
+                  );
+                  return child!;
+                },
+                child: const UnifiedAiProgressContent(
+                  entityId: entityId,
+                  promptId: promptId,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    // Each error shape routes install completion through a different callback;
+    // both call triggerNewInferenceProvider first. triggerCallCount starts at 1
+    // because shouldTriggerOnInit defaults to true and fires once on init.
+    final cases = <String, UnifiedAiState>{
+      'typed ModelNotInstalledException (_handleModelInstalled 137-148)':
+          const UnifiedAiState(
+            message: '',
+            error: ModelNotInstalledException('llama3'),
+          ),
+      'string fallback message (inline callback 302-313)': const UnifiedAiState(
+        message: 'Model "llama3" is not installed. Please install it first.',
+      ),
+    };
+
+    for (final entry in cases.entries) {
+      final description = entry.key;
+      final state = entry.value;
+      testWidgets('$description re-triggers inference after install', (
+        tester,
+      ) async {
+        var triggerCount = 0;
+
+        // Finite success stream so _installModel completes, pops the dialog and
+        // invokes the onModelInstalled callback.
+        when(() => mockCloudRepository.installModel(any(), any())).thenAnswer(
+          (_) => Stream.fromIterable(const [
+            OllamaPullProgress(status: 'success', progress: 1),
+          ]),
+        );
+
+        await pumpErrorView(
+          tester,
+          controllerState: state,
+          onTrigger: () => triggerCount++,
+        );
+
+        // The install dialog is rendered inline for the model-not-installed
+        // error and the initial inference trigger has already fired once.
+        expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
+        expect(triggerCount, 1);
+
+        await tester.tap(find.text('Install'));
+        await tester.pumpAndSettle();
+
+        // The successful install invoked onModelInstalled, which called
+        // triggerNewInferenceProvider a second time.
+        expect(triggerCount, 2);
+      });
+    }
   });
 }

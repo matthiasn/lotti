@@ -384,6 +384,149 @@ void main() {
       },
     );
 
+    test('updateHooks installs onLogin hook invoked on activation', () async {
+      when(() => sessionManager.isLoggedIn()).thenReturn(false);
+      final coord = makeCoordinator();
+      await coord.initialize();
+
+      var onLoginCalls = 0;
+      var onLogoutCalls = 0;
+      coord.updateHooks(
+        onLogin: () async => onLoginCalls++,
+        onLogout: () async => onLogoutCalls++,
+      );
+
+      loginStates.add(LoginState.loggedIn);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(coord.isActive, isTrue);
+      expect(onLoginCalls, 1);
+      expect(onLogoutCalls, 0);
+
+      loginStates.add(LoginState.loggedOut);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(coord.isActive, isFalse);
+      expect(onLogoutCalls, 1);
+    });
+
+    test('updateHooks ignores null hooks and keeps prior callbacks', () async {
+      when(() => sessionManager.isLoggedIn()).thenReturn(false);
+      final coord = makeCoordinator();
+      await coord.initialize();
+
+      var onLoginCalls = 0;
+      coord
+        ..updateHooks(onLogin: () async => onLoginCalls++)
+        // Passing nulls must not clear the previously installed onLogin hook.
+        ..updateHooks();
+
+      loginStates.add(LoginState.loggedIn);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(onLoginCalls, 1);
+    });
+
+    test('initialization failure logs error and rethrows', () async {
+      when(() => sessionManager.isLoggedIn()).thenReturn(false);
+      final failure = StateError('init boom');
+      when(() => pipeline.initialize()).thenThrow(failure);
+      final coord = makeCoordinator();
+
+      await expectLater(coord.initialize(), throwsA(same(failure)));
+
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          failure,
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'initialize',
+        ),
+      ).called(1);
+      expect(coord.isActive, isFalse);
+    });
+
+    test('activation failure logs error and rethrows', () async {
+      when(() => sessionManager.isLoggedIn()).thenReturn(true);
+      final failure = StateError('start boom');
+      when(() => pipeline.start()).thenThrow(failure);
+      final coord = makeCoordinator();
+
+      await expectLater(coord.initialize(), throwsA(same(failure)));
+
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          failure,
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'activate',
+        ),
+      ).called(1);
+      expect(coord.isActive, isFalse);
+    });
+
+    test(
+      'deactivation failure logs error, rethrows, and clears active',
+      () async {
+        when(() => sessionManager.isLoggedIn()).thenReturn(true);
+        final failure = StateError('dispose boom');
+        when(() => pipeline.dispose()).thenThrow(failure);
+        final coord = makeCoordinator();
+        await coord.initialize();
+        expect(coord.isActive, isTrue);
+
+        // Flip to logged-out so reconcile drives the deactivation path.
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        await expectLater(
+          coord.reconcileLifecycleState(),
+          throwsA(same(failure)),
+        );
+
+        verify(
+          () => logging.error(
+            LogDomain.sync,
+            failure,
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'deactivate',
+          ),
+        ).called(1);
+        // finally block clears _isActive even though dispose threw.
+        expect(coord.isActive, isFalse);
+      },
+    );
+
+    test('logout awaits an in-flight activation before deactivating', () async {
+      fakeAsync((async) {
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        final startCompleter = Completer<void>();
+        when(() => pipeline.start()).thenAnswer((_) => startCompleter.future);
+
+        final coord = makeCoordinator();
+        unawaited(coord.initialize());
+        async.flushMicrotasks();
+
+        // Begin activation; it parks on the pending pipeline.start().
+        loginStates.add(LoginState.loggedIn);
+        async.flushMicrotasks();
+        expect(coord.isActive, isFalse);
+
+        // Reconcile to logged-out while activation is still pending. This drives
+        // the `_pendingTransition != null` await branch in _handleLoggedOut.
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        unawaited(coord.reconcileLifecycleState());
+        async.flushMicrotasks();
+
+        // Activation now completes, becomes active, and the queued logout then
+        // deactivates.
+        startCompleter.complete();
+        async.elapse(const Duration(milliseconds: 50));
+
+        verify(() => pipeline.start()).called(1);
+        verify(() => pipeline.dispose()).called(1);
+        expect(coord.isActive, isFalse);
+      });
+    });
+
     glados.Glados(
       glados.any.lifecycleScenario,
       glados.ExploreConfig(numRuns: 160),

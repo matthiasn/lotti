@@ -559,6 +559,176 @@ void main() {
         expect(toolMsg['tool_call_id'], equals('call_123'));
         expect(toolMsg['content'], equals('4'));
       });
+
+      test(
+        'should convert user message with text/image/audio content parts',
+        () async {
+          // Arrange
+          final events = [
+            createSseChunkEvent(content: 'Response'),
+            createSseFinalEvent(),
+          ];
+
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createSseStreamedResponse(events: events),
+          );
+
+          final messages = [
+            const ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.parts([
+                ChatCompletionMessageContentPart.text(text: 'Describe this'),
+                ChatCompletionMessageContentPart.image(
+                  imageUrl: ChatCompletionMessageImageUrl(
+                    url: 'https://example.com/cat.png',
+                  ),
+                ),
+                ChatCompletionMessageContentPart.audio(
+                  inputAudio: ChatCompletionMessageInputAudio(
+                    data: 'AAAA',
+                    format: ChatCompletionMessageInputAudioFormat.wav,
+                  ),
+                ),
+              ]),
+            ),
+          ];
+
+          // Act
+          final stream = repository.generateTextWithMessages(
+            messages: messages,
+            model: model,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+          );
+
+          await stream.toList();
+
+          // Assert - each content part is serialized to the expected map shape
+          final captured = verify(
+            () => mockHttpClient.send(captureAny()),
+          ).captured;
+          final request = captured.first as http.Request;
+          final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+
+          final reqMessages = requestBody['messages'] as List<dynamic>;
+          expect(reqMessages.length, equals(1));
+
+          final userMsg = reqMessages[0] as Map<String, dynamic>;
+          expect(userMsg['role'], equals('user'));
+
+          final content = userMsg['content'] as List<dynamic>;
+          expect(content.length, equals(3));
+
+          final textPart = content[0] as Map<String, dynamic>;
+          expect(textPart['type'], equals('text'));
+          expect(textPart['text'], equals('Describe this'));
+
+          final imagePart = content[1] as Map<String, dynamic>;
+          expect(imagePart['type'], equals('image_url'));
+          expect(
+            (imagePart['image_url'] as Map<String, dynamic>)['url'],
+            equals('https://example.com/cat.png'),
+          );
+
+          final audioPart = content[2] as Map<String, dynamic>;
+          expect(audioPart['type'], equals('input_audio'));
+          final inputAudio = audioPart['input_audio'] as Map<String, dynamic>;
+          expect(inputAudio['data'], equals('AAAA'));
+          expect(inputAudio['format'], equals('wav'));
+        },
+      );
+
+      test('should convert function messages correctly', () async {
+        // Arrange
+        final events = [
+          createSseChunkEvent(content: 'Response'),
+          createSseFinalEvent(),
+        ];
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
+
+        final messages = [
+          const ChatCompletionMessage.function(
+            name: 'get_weather',
+            content: '{"temp": 21}',
+          ),
+        ];
+
+        // Act
+        final stream = repository.generateTextWithMessages(
+          messages: messages,
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        await stream.toList();
+
+        // Assert
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+
+        final reqMessages = requestBody['messages'] as List<dynamic>;
+        expect(reqMessages.length, equals(1));
+
+        final functionMsg = reqMessages[0] as Map<String, dynamic>;
+        expect(functionMsg['role'], equals('function'));
+        expect(functionMsg['name'], equals('get_weather'));
+        expect(functionMsg['content'], equals('{"temp": 21}'));
+      });
+
+      test('should convert developer messages correctly', () async {
+        // Arrange
+        final events = [
+          createSseChunkEvent(content: 'Response'),
+          createSseFinalEvent(),
+        ];
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
+
+        final messages = [
+          const ChatCompletionMessage.developer(
+            content: ChatCompletionDeveloperMessageContent.text(
+              'Follow these rules',
+            ),
+          ),
+        ];
+
+        // Act
+        final stream = repository.generateTextWithMessages(
+          messages: messages,
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        await stream.toList();
+
+        // Assert - developer role and content are carried through
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+
+        final reqMessages = requestBody['messages'] as List<dynamic>;
+        expect(reqMessages.length, equals(1));
+
+        final developerMsg = reqMessages[0] as Map<String, dynamic>;
+        expect(developerMsg['role'], equals('developer'));
+        // The developer content is carried through as the freezed union map,
+        // which serializes to a value/runtimeType pair.
+        final developerContent =
+            developerMsg['content'] as Map<String, dynamic>;
+        expect(developerContent['value'], equals('Follow these rules'));
+        expect(developerContent['runtimeType'], equals('text'));
+      });
     });
 
     group('content extraction', () {
@@ -741,6 +911,43 @@ void main() {
         // Assert
         expect(results[0].choices?.first.delta?.content, isNull);
       });
+
+      test('should stringify non-string, non-list content', () async {
+        // Arrange - content arrives as a JSON number, hitting the
+        // toString() fallback branch in _extractContent.
+        final event = {
+          'id': 'chatcmpl-test',
+          'object': 'chat.completion.chunk',
+          'created': 1234567890,
+          'model': model,
+          'choices': [
+            {
+              'index': 0,
+              'delta': {
+                'content': 42,
+              },
+              'finish_reason': null,
+            },
+          ],
+        };
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: [event]),
+        );
+
+        // Act
+        final stream = repository.generateText(
+          prompt: 'Hi',
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        final results = await stream.toList();
+
+        // Assert - the numeric content is rendered via toString()
+        expect(results[0].choices?.first.delta?.content, equals('42'));
+      });
     });
 
     group('SSE stream buffering', () {
@@ -879,6 +1086,78 @@ data: [DONE]
 
         // Assert
         expect(results, isEmpty);
+      });
+
+      test('should throw after exceeding the parse error threshold', () async {
+        // Arrange - register a logger so the threshold branch also logs.
+        final mockDomainLogger = MockDomainLogger();
+        if (GetIt.instance.isRegistered<DomainLogger>()) {
+          GetIt.instance.unregister<DomainLogger>();
+        }
+        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
+        addTearDown(() {
+          if (GetIt.instance.isRegistered<DomainLogger>()) {
+            GetIt.instance.unregister<DomainLogger>();
+          }
+        });
+        when(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String?>(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        // Five malformed data lines push parseErrorCount to the
+        // maxParseErrors (5) threshold and trigger the throw.
+        const sseData = '''
+data: not valid json 1
+
+data: not valid json 2
+
+data: not valid json 3
+
+data: not valid json 4
+
+data: not valid json 5
+
+''';
+        final stream = Stream.fromIterable([utf8.encode(sseData)]);
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => http.StreamedResponse(stream, 200),
+        );
+
+        // Act & Assert
+        final responseStream = repository.generateText(
+          prompt: 'Hi',
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        await expectLater(
+          responseStream.toList(),
+          throwsA(
+            isA<MistralInferenceException>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('Too many parse errors'),
+                )
+                .having((e) => e.originalError, 'originalError', isNotNull),
+          ),
+        );
+
+        // The threshold branch logs with the dedicated subDomain.
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any<Object>(that: isA<FormatException>()),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'parse_threshold_exceeded',
+          ),
+        ).called(1);
       });
     });
 
@@ -1210,6 +1489,51 @@ data: [DONE]
           results[0].choices?.first.finishReason,
           equals(ChatCompletionFinishReason.stop),
         );
+      });
+    });
+
+    group('role parsing', () {
+      const model = 'magistral-medium-2509';
+      const baseUrl = 'https://api.mistral.ai/v1';
+      const apiKey = 'test-api-key';
+
+      test('should fallback to assistant for unknown role', () async {
+        // Arrange - an unrecognized role string should resolve to assistant
+        // via the orElse branch.
+        final event = {
+          'id': 'chatcmpl-test',
+          'object': 'chat.completion.chunk',
+          'created': 1234567890,
+          'model': model,
+          'choices': [
+            {
+              'index': 0,
+              'delta': {'role': 'totally_unknown_role', 'content': 'hi'},
+              'finish_reason': null,
+            },
+          ],
+        };
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: [event]),
+        );
+
+        // Act
+        final stream = repository.generateText(
+          prompt: 'Hi',
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        final results = await stream.toList();
+
+        // Assert
+        expect(
+          results[0].choices?.first.delta?.role,
+          equals(ChatCompletionMessageRole.assistant),
+        );
+        expect(results[0].choices?.first.delta?.content, equals('hi'));
       });
     });
 

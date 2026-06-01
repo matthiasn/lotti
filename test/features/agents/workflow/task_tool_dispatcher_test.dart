@@ -866,6 +866,58 @@ void main() {
       );
 
       test(
+        'add_multiple_checklist_items surfaces handler parse error for '
+        'array-of-strings items',
+        () async {
+          // The dispatcher's own guard accepts a non-empty list, so the
+          // call reaches LottiBatchChecklistHandler.processFunctionCall,
+          // which rejects string entries (it expects objects with a title).
+          // This exercises the dispatcher's parse-failure branch where the
+          // non-null handler error is surfaced verbatim in both output and
+          // errorMessage, and no entity is mutated.
+          final result = await dispatcher.dispatch(
+            'add_multiple_checklist_items',
+            {
+              'items': ['just a string'],
+            },
+            taskId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('must be an object with a title'));
+          expect(result.errorMessage, result.output);
+          expect(result.mutatedEntityId, isNull);
+        },
+      );
+
+      test(
+        'update_checklist_items surfaces handler parse error for '
+        'non-object items',
+        () async {
+          // The dispatcher guard accepts a non-empty list, so the call
+          // reaches LottiChecklistUpdateHandler.processFunctionCall, which
+          // rejects a non-object entry. This exercises the dispatcher's
+          // parse-failure branch, surfacing the non-null handler error
+          // verbatim in both output and errorMessage with no mutation.
+          final result = await dispatcher.dispatch(
+            'update_checklist_items',
+            {
+              'items': ['not-an-object'],
+            },
+            taskId,
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            result.output,
+            contains('Item at index 0 is not an object'),
+          );
+          expect(result.errorMessage, result.output);
+          expect(result.mutatedEntityId, isNull);
+        },
+      );
+
+      test(
         'add_checklist_item wraps as single-element batch',
         () async {
           when(

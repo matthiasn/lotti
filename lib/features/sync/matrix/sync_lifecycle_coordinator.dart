@@ -46,6 +46,14 @@ class SyncLifecycleCoordinator {
   /// active (i.e. logged in and timeline listeners attached).
   bool get isActive => _isActive;
 
+  /// Returns the sync pipeline this coordinator drives.
+  ///
+  /// Exposed so that owners (e.g. `MatrixService`) can share the exact same
+  /// pipeline instance for diagnostics/metrics rather than constructing a
+  /// separate one, avoiding a split-brain where the coordinator drives one
+  /// pipeline while the service observes another.
+  SyncPipeline get pipeline => _pipeline;
+
   /// Updates the lifecycle hooks that are invoked when the login state changes.
   ///
   /// Hooks can safely be updated at runtime; subsequent transitions will use

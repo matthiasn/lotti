@@ -12,14 +12,17 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -241,6 +244,82 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(() => mockDb.journalEntityById(taskId)).called(1);
+    });
+
+    group('generate maps every task status to its AI input string', () {
+      // (TaskStatus factory, expected AiInputTaskObject.status string).
+      final statusCases = <(TaskStatus, String)>[
+        (
+          TaskStatus.open(id: 's', createdAt: creationDate, utcOffset: 0),
+          'OPEN',
+        ),
+        (
+          TaskStatus.groomed(id: 's', createdAt: creationDate, utcOffset: 0),
+          'GROOMED',
+        ),
+        (
+          TaskStatus.inProgress(id: 's', createdAt: creationDate, utcOffset: 0),
+          'IN PROGRESS',
+        ),
+        (
+          TaskStatus.blocked(
+            id: 's',
+            createdAt: creationDate,
+            utcOffset: 0,
+            reason: 'waiting',
+          ),
+          'BLOCKED',
+        ),
+        (
+          TaskStatus.onHold(
+            id: 's',
+            createdAt: creationDate,
+            utcOffset: 0,
+            reason: 'paused',
+          ),
+          'ON HOLD',
+        ),
+        (
+          TaskStatus.done(id: 's', createdAt: creationDate, utcOffset: 0),
+          'DONE',
+        ),
+        (
+          TaskStatus.rejected(id: 's', createdAt: creationDate, utcOffset: 0),
+          'REJECTED',
+        ),
+      ];
+
+      for (final (status, expected) in statusCases) {
+        test(expected, () async {
+          final task = JournalEntity.task(
+            meta: Metadata(
+              id: taskId,
+              dateFrom: creationDate,
+              dateTo: creationDate,
+              createdAt: creationDate,
+              updatedAt: creationDate,
+            ),
+            data: TaskData(
+              title: 'Status task',
+              status: status,
+              dateFrom: creationDate,
+              dateTo: creationDate,
+              statusHistory: const [],
+            ),
+          );
+          when(
+            () => mockDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => task);
+          when(
+            () => mockDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => <JournalEntity>[]);
+
+          final result = await repository.generate(taskId);
+
+          expect(result, isNotNull);
+          expect(result!.status, equals(expected));
+        });
+      }
     });
 
     group('buildProjectContextJsonForTask', () {
@@ -1951,5 +2030,151 @@ void main() {
         expect(data['dueDate'], isNull);
       });
     });
+  });
+
+  group('aiInputRepositoryProvider wiring', () {
+    late MockJournalDb mockDb;
+    late MockProjectRepository mockProjectRepository;
+    final projectDate = DateTime(2024, 3, 15, 10, 30);
+
+    final project =
+        JournalEntity.project(
+              meta: Metadata(
+                id: 'project-123',
+                createdAt: projectDate,
+                updatedAt: projectDate,
+                dateFrom: projectDate,
+                dateTo: projectDate,
+                categoryId: 'cat-123',
+              ),
+              data: ProjectData(
+                title: 'Wiring Project',
+                status: ProjectStatus.active(
+                  id: 'project-status-1',
+                  createdAt: projectDate,
+                  utcOffset: 60,
+                ),
+                dateFrom: projectDate,
+                dateTo: projectDate,
+              ),
+            )
+            as ProjectEntry;
+
+    setUp(() {
+      mockDb = MockJournalDb();
+      mockProjectRepository = MockProjectRepository();
+      getIt.registerSingleton<JournalDb>(mockDb);
+      when(
+        () => mockProjectRepository.getProjectForTask(any()),
+      ).thenAnswer((_) async => project);
+    });
+
+    tearDown(() {
+      getIt.unregister<JournalDb>();
+      if (getIt.isRegistered<AgentDatabase>()) {
+        getIt.unregister<AgentDatabase>();
+      }
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
+      }
+    });
+
+    ProviderContainer buildContainer() {
+      final container = ProviderContainer(
+        overrides: [
+          projectRepositoryProvider.overrideWithValue(mockProjectRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test(
+      'wires an AgentRepository backed by the registered AgentDatabase '
+      'when AgentDatabase is registered',
+      () async {
+        // AgentDatabase IS registered -> provider must construct a real
+        // AgentRepository (line 612 branch). We observe this by checking that
+        // a project-context lookup reaches the underlying AgentDatabase query.
+        final mockAgentDb = MockAgentDatabase();
+        getIt.registerSingleton<AgentDatabase>(mockAgentDb);
+        when(
+          () => mockAgentDb.getAgentLinksByToIdAndType(any(), any()),
+        ).thenReturn(MockSelectable<AgentLink>([]));
+
+        final repository = buildContainer().read(aiInputRepositoryProvider);
+        final result = await repository.buildProjectContextJsonForTask('t-1');
+
+        // No links -> no current report -> compact empty context.
+        expect(result, equals('{}'));
+        // The wired AgentRepository delegated down to the registered DB.
+        verify(
+          () => mockAgentDb.getAgentLinksByToIdAndType('project-123', any()),
+        ).called(1);
+      },
+    );
+
+    test(
+      'leaves the agent repository unset when no AgentDatabase is registered',
+      () async {
+        // AgentDatabase NOT registered -> agentRepository is null (line 611
+        // false branch). The project lookup never touches an agent DB; the
+        // method short-circuits to an empty context.
+        expect(getIt.isRegistered<AgentDatabase>(), isFalse);
+
+        final repository = buildContainer().read(aiInputRepositoryProvider);
+        final result = await repository.buildProjectContextJsonForTask('t-1');
+
+        expect(result, equals('{}'));
+        verify(() => mockProjectRepository.getProjectForTask('t-1')).called(1);
+      },
+    );
+
+    test(
+      'wires the registered DomainLogger so errors are forwarded to it',
+      () async {
+        // DomainLogger IS registered -> provider must pass it through (line
+        // 620 branch). Forcing the project lookup to throw drives the catch
+        // block, which calls _domainLogger?.error.
+        final mockLogger = MockDomainLogger();
+        getIt.registerSingleton<DomainLogger>(mockLogger);
+        final failure = Exception('boom');
+        when(
+          () => mockProjectRepository.getProjectForTask(any()),
+        ).thenThrow(failure);
+
+        final repository = buildContainer().read(aiInputRepositoryProvider);
+        final result = await repository.buildProjectContextJsonForTask('t-1');
+
+        expect(result, equals('{}'));
+        verify(
+          () => mockLogger.error(
+            LogDomain.ai,
+            failure,
+            message: 'buildProjectContextJsonForTask failed',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'AiInputRepository',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'does not log when no DomainLogger is registered and the lookup fails',
+      () async {
+        // DomainLogger NOT registered -> _domainLogger is null (line 619 false
+        // branch). The catch block must still swallow the error and return an
+        // empty context without throwing.
+        expect(getIt.isRegistered<DomainLogger>(), isFalse);
+        when(
+          () => mockProjectRepository.getProjectForTask(any()),
+        ).thenThrow(Exception('boom'));
+
+        final repository = buildContainer().read(aiInputRepositoryProvider);
+        final result = await repository.buildProjectContextJsonForTask('t-1');
+
+        expect(result, equals('{}'));
+      },
+    );
   });
 }

@@ -809,7 +809,7 @@ class RealDayAgent implements DayAgentInterface {
       title: title,
       category: category,
       reason: reason,
-      affectedBlockId: blockId ?? existing?.id ?? '',
+      affectedBlockId: blockId ?? '',
       fromStart: existing?.start,
       fromEnd: existing?.end,
       toStart: toStart,
@@ -836,10 +836,13 @@ class DayAgentInteractionException implements Exception {
 /// Tiny helper so the adapter can override one field on the fallback
 /// category constant without exposing a public copyWith on the model.
 extension on DayAgentCategory {
-  DayAgentCategory copyWith({String? id, String? name, String? colorHex}) =>
-      DayAgentCategory(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        colorHex: colorHex ?? this.colorHex,
-      );
+  DayAgentCategory copyWith({
+    required String id,
+    String? name,
+    String? colorHex,
+  }) => DayAgentCategory(
+    id: id,
+    name: name ?? this.name,
+    colorHex: colorHex ?? this.colorHex,
+  );
 }

@@ -26,6 +26,19 @@ class _TestSettingsDb extends SettingsDb {
   }
 }
 
+/// Forces the batch loader to throw so the `_flushPendingReads` error branch
+/// can be exercised.
+class _ThrowingSettingsDb extends SettingsDb {
+  _ThrowingSettingsDb({required this.error}) : super(inMemoryDatabase: true);
+
+  final Object error;
+
+  @override
+  Future<List<SettingsItem>> loadSettingsItems(Iterable<String> configKeys) {
+    return Future<List<SettingsItem>>.error(error);
+  }
+}
+
 void main() {
   final timestamp = DateTime(2024, 3, 15, 12);
   late SettingsDb db;
@@ -243,6 +256,46 @@ void main() {
 
       expect(await readFuture, isNull);
       expect(await db.itemByKey('removed_key'), isNull);
+    },
+  );
+
+  test('loadSettingsItems returns empty list for empty key set', () async {
+    final items = await db.loadSettingsItems(const <String>[]);
+    expect(items, isEmpty);
+  });
+
+  test(
+    'loadSettingsItems short-circuits before touching the database',
+    () async {
+      // Close the underlying database first; the empty-key fast path must not
+      // attempt any query, so this still resolves to an empty list.
+      await db.close();
+      final closedDb = SettingsDb(inMemoryDatabase: true);
+      await closedDb.close();
+
+      expect(await closedDb.loadSettingsItems(const <String>[]), isEmpty);
+
+      db = SettingsDb(inMemoryDatabase: true);
+    },
+  );
+
+  test('itemsByKeys returns empty map for empty key set', () async {
+    final values = await db.itemsByKeys(const <String>{});
+    expect(values, isEmpty);
+  });
+
+  test(
+    'flush propagates loader failures to every queued completer',
+    () async {
+      final failure = Exception('settings load failed');
+      await db.close();
+      db = _ThrowingSettingsDb(error: failure);
+
+      final firstRead = db.itemByKey('error_key_a');
+      final secondRead = db.itemByKey('error_key_b');
+
+      await expectLater(firstRead, throwsA(same(failure)));
+      await expectLater(secondRead, throwsA(same(failure)));
     },
   );
 }

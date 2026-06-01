@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -317,6 +319,77 @@ void main() {
       final path = entityPath(testEntity, Directory(''));
       expect(path, '/audio/2021-11-29/2021-11-29_20-35-12-957.aac.json');
     });
+
+    test(
+      'JSON file name for checklist item entry should be correct',
+      () async {
+        final testEntity = JournalEntity.checklistItem(
+          meta: testMeta,
+          data: const ChecklistItemData(
+            title: 'item',
+            isChecked: false,
+            linkedChecklists: [],
+          ),
+        );
+
+        // Goes through relativeEntityPath's orElse branch, exercising both
+        // folderForJournalEntity ('checklist_item') and typeSuffix
+        // ('checklist_item') for the checklistItem case.
+        final path = entityPath(testEntity, Directory(''));
+        expect(
+          path,
+          '/checklist_item/2021-11-30/test-id.checklist_item.json',
+        );
+      },
+    );
+
+    test('JSON file name for day plan entry should be correct', () async {
+      final testEntity = JournalEntity.dayPlan(
+        meta: testMeta,
+        data: DayPlanData(
+          planDate: dt,
+          status: const DayPlanStatus.draft(),
+        ),
+      );
+
+      // Exercises folderForJournalEntity ('day_plans') and typeSuffix
+      // ('day_plan') for the dayPlan case via the orElse branch.
+      final path = entityPath(testEntity, Directory(''));
+      expect(path, '/day_plans/2021-11-30/test-id.day_plan.json');
+    });
+
+    // folderForJournalEntity / typeSuffix are bypassed by entityPath for
+    // audio and image entities (those take dedicated maybeMap branches), so
+    // their audio/image cases are covered by calling the helpers directly.
+    final audioEntity = JournalEntity.journalAudio(
+      meta: testMeta,
+      data: AudioData(
+        audioDirectory: '/audio/2021-11-29/',
+        dateFrom: dt,
+        dateTo: dt,
+        duration: const Duration(seconds: 1),
+        audioFile: '2021-11-29_20-35-12-957.aac',
+      ),
+    );
+    final imageEntity = JournalEntity.journalImage(
+      meta: testMeta,
+      data: ImageData(
+        imageFile: 'some-image-id.IMG_9999.JPG',
+        imageId: '',
+        capturedAt: dt,
+        imageDirectory: '/images/2021-11-29/',
+      ),
+    );
+
+    for (final (entity, folder, suffix) in <(JournalEntity, String, String)>[
+      (audioEntity, 'audio', 'audio'),
+      (imageEntity, 'images', 'image'),
+    ]) {
+      test('folderForJournalEntity/typeSuffix for $folder entity', () {
+        expect(folderForJournalEntity(entity), folder);
+        expect(typeSuffix(entity), suffix);
+      });
+    }
 
     test('getDocumentsDirectory returns directory from GetIt', () {
       // We're already using the mock directory from our setup

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/slow_query_logging.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
@@ -926,6 +927,35 @@ void main() {
       }
     });
 
+    test('removes the per-path pending-writes entry after a write completes '
+        'when no newer write supersedes it', () async {
+      final reporter = SlowQueryInterceptor.fileReporter(
+        documentsDirectoryPath: tempDir.path,
+      );
+
+      reporter(
+        const SlowQueryLogEntry(
+          databaseName: 'db',
+          operation: 'select',
+          statement: 'SELECT 1',
+          arguments: <Object?>[],
+          elapsed: Duration(milliseconds: 1),
+        ),
+      );
+
+      // While the write is in flight the path is tracked.
+      expect(SlowQueryInterceptor.pendingWriteCountForTest, 1);
+
+      await SlowQueryInterceptor.flushFileSinkForTest();
+      // flushAll awaits the inner write; the whenComplete cleanup attached to
+      // the tracked future runs in a microtask that may still be queued when
+      // flushAll returns. Drain the microtask queue so the cleanup runs.
+      await Future<void>.value();
+
+      // The completed, un-superseded entry is removed, not leaked.
+      expect(SlowQueryInterceptor.pendingWriteCountForTest, 0);
+    });
+
     test('super-slow entry is duplicated to super_slow_queries log with '
         'indented PLAN rows', () async {
       final reporter = SlowQueryInterceptor.fileReporter(
@@ -1129,6 +1159,108 @@ void main() {
         content,
         matches(RegExp(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')),
       );
+    });
+
+    test(
+      'append failure is swallowed and logged via DevLogger.error instead of '
+      'propagating to the caller',
+      () async {
+        DevLogger.clear();
+        addTearDown(DevLogger.clear);
+
+        // Place a regular FILE where the reporter expects a `logs/`
+        // directory. `file.parent.create(recursive: true)` then fails because
+        // a file cannot host a child directory, driving the append() catch
+        // block instead of crashing the (fire-and-forget) reporter.
+        File('${tempDir.path}/logs').writeAsStringSync('not a directory');
+
+        final reporter = SlowQueryInterceptor.fileReporter(
+          documentsDirectoryPath: tempDir.path,
+        );
+
+        const entry = SlowQueryLogEntry(
+          databaseName: 'db',
+          operation: 'select',
+          statement: 'SELECT 1',
+          arguments: <Object?>[],
+          elapsed: Duration(milliseconds: 5),
+        );
+
+        // Must not throw even though the underlying write is impossible.
+        reporter(entry);
+        await SlowQueryInterceptor.flushFileSinkForTest();
+
+        // The failure surfaces only through DevLogger, not as an exception.
+        expect(
+          DevLogger.capturedLogs,
+          contains(
+            allOf(
+              contains('[DB_SLOW_QUERY]'),
+              contains('Failed to append slow query log line'),
+              contains('FileSystemException'),
+            ),
+          ),
+        );
+
+        // The `logs` path is still the file we created; no log file written.
+        expect(
+          FileSystemEntity.isDirectorySync('${tempDir.path}/logs'),
+          isFalse,
+        );
+      },
+    );
+  });
+
+  group('devLoggerReporter', () {
+    setUp(DevLogger.clear);
+    tearDown(DevLogger.clear);
+
+    test('logs a single warning line with database, operation, elapsed ms, '
+        'arg count and the formatted statement', () {
+      final reporter = SlowQueryInterceptor.devLoggerReporter();
+
+      const entry = SlowQueryLogEntry(
+        databaseName: 'journal_db',
+        operation: 'select',
+        statement: 'SELECT  *\n  FROM   journal\n  WHERE id = ?',
+        arguments: <Object?>[1, 'x'],
+        elapsed: Duration(milliseconds: 250),
+      );
+
+      reporter(entry);
+
+      // elapsed renders as inMicroseconds / 1000 == 250000 / 1000 == 250.0.
+      expect(DevLogger.capturedLogs, hasLength(1));
+      expect(
+        DevLogger.capturedLogs.single,
+        allOf(
+          contains('[DB_SLOW_QUERY]'),
+          contains('WARNING:'),
+          contains('[journal_db]'),
+          contains('select'),
+          contains('250.0ms'),
+          contains('args=2'),
+          contains('SELECT * FROM journal WHERE id = ?'),
+        ),
+      );
+    });
+
+    test('renders sub-millisecond elapsed durations from microseconds', () {
+      final reporter = SlowQueryInterceptor.devLoggerReporter();
+
+      const entry = SlowQueryLogEntry(
+        databaseName: 'db',
+        operation: 'insert',
+        statement: 'INSERT INTO t VALUES (?)',
+        arguments: <Object?>['a'],
+        // 1500 microseconds -> 1.5ms.
+        elapsed: Duration(microseconds: 1500),
+      );
+
+      reporter(entry);
+
+      expect(DevLogger.capturedLogs.single, contains('1.5ms'));
+      expect(DevLogger.capturedLogs.single, contains('args=1'));
     });
   });
 

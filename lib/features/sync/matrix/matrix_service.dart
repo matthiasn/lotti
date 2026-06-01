@@ -107,53 +107,49 @@ class MatrixService {
       }
       _syncEngine = syncEngine;
     } else {
-      final pipeline =
-          pipelineOverride ??
-          MatrixStreamConsumer(
-            sessionManager: _sessionManager,
-            roomManager: _roomManager,
-            loggingService: _loggingService,
-            settingsDb: _settingsDb,
-            eventProcessor: _eventProcessor,
-            collectMetrics: collectSyncMetrics,
-          );
-      _pipeline = pipeline;
-
-      _eventProcessor.applyObserver = pipeline.reportDbApplyDiagnostics;
-
-      if (syncEngine != null) {
-        if (pipelineOverride == null) {
-          throw ArgumentError(
-            'Providing a SyncEngine requires supplying pipelineOverride so '
-            'MatrixService and the engine share the same pipeline instance.',
-          );
-        }
-        final coordinatorFromEngine = syncEngine.lifecycleCoordinator;
-        if (lifecycleCoordinator != null &&
-            !identical(coordinatorFromEngine, lifecycleCoordinator)) {
-          throw ArgumentError(
-            'Provided SyncEngine and SyncLifecycleCoordinator must reference '
-            'the same instance.',
-          );
-        }
-        _syncEngine = syncEngine;
+      // Share a single pipeline instance between the coordinator (which drives
+      // its lifecycle) and this service (which observes its metrics and
+      // diagnostics). Constructing a separate local pipeline while the injected
+      // coordinator drives its own would split-brain the two.
+      final SyncLifecycleCoordinator coordinator;
+      final MatrixStreamConsumer? pipeline;
+      if (lifecycleCoordinator != null) {
+        coordinator = lifecycleCoordinator;
+        // The coordinator already owns a pipeline; adopt it as the effective
+        // pipeline so saveRoom/metrics/diagnostics observe the same instance
+        // the coordinator drives.
+        pipeline = lifecycleCoordinator.pipeline as MatrixStreamConsumer?;
       } else {
-        final coordinator =
-            lifecycleCoordinator ??
-            SyncLifecycleCoordinator(
-              gateway: _gateway,
+        pipeline =
+            pipelineOverride ??
+            MatrixStreamConsumer(
               sessionManager: _sessionManager,
               roomManager: _roomManager,
               loggingService: _loggingService,
-              pipeline: pipeline,
+              settingsDb: _settingsDb,
+              eventProcessor: _eventProcessor,
+              collectMetrics: collectSyncMetrics,
             );
-        _syncEngine = SyncEngine(
+        coordinator = SyncLifecycleCoordinator(
+          gateway: _gateway,
           sessionManager: _sessionManager,
           roomManager: _roomManager,
-          lifecycleCoordinator: coordinator,
           loggingService: _loggingService,
+          pipeline: pipeline,
         );
       }
+      _pipeline = pipeline;
+
+      if (pipeline != null) {
+        _eventProcessor.applyObserver = pipeline.reportDbApplyDiagnostics;
+      }
+
+      _syncEngine = SyncEngine(
+        sessionManager: _sessionManager,
+        roomManager: _roomManager,
+        lifecycleCoordinator: coordinator,
+        loggingService: _loggingService,
+      );
     }
 
     incomingKeyVerificationRunnerController =

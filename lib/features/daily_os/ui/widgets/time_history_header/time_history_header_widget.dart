@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
-import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/date_label_row.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/day_segment.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_stream_chart.dart';
@@ -50,9 +48,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   // Track visible month(s) for the sticky header
   String _visibleMonthLabel = '';
 
-  // Track prefetched dates (date-based instead of index-based to handle list changes)
-  final Set<DateTime> _prefetchedDates = {};
-
   // Track visible indices for throttling month label updates
   int _lastVisibleStart = -1;
   int _lastVisibleEnd = -1;
@@ -60,23 +55,8 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   // Whether we've set the initial scroll position to center on today
   bool _hasSetInitialScroll = false;
 
-  // Off-screen prefetch is currently disabled to keep the SQLite read pool
-  // out of the multi-second-hang regime under heavy fan-out. Flip this to
-  // `true` (and tune `_prefetchBuffer` / `_invalidateMargin`) once the
-  // DailyOS query path is cheap enough to warm warm neighbours without
-  // starving the selected day.
-  static const bool _prefetchEnabled = false;
-
-  // Number of days to prefetch in each direction beyond visible.
-  // Only takes effect when `_prefetchEnabled` is true.
-  static const int _prefetchBuffer = 5;
-
   // Number of days to render beyond visible range for smoother transitions
   static const int _chartBuffer = 2;
-
-  // Margin for invalidation (2x buffer to avoid thrashing).
-  // Only takes effect when `_prefetchEnabled` is true.
-  static const int _invalidateMargin = _prefetchBuffer * 2;
 
   @override
   void didChangeDependencies() {
@@ -110,9 +90,8 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
       ref.read(timeHistoryHeaderControllerProvider.notifier).loadMoreDays();
     }
 
-    // Update visible month label and prefetch window
+    // Update visible month label
     _updateVisibleMonth();
-    _updatePrefetchWindow();
   }
 
   /// Calculate visible day indices from scroll metrics.
@@ -211,70 +190,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     }
   }
 
-  /// Update the prefetch window based on visible indices.
-  ///
-  /// No-op while `_prefetchEnabled` is false: the visible-only mode relies
-  /// on `dailyOsSelectedDateProvider` to drive a single
-  /// `unifiedDailyOsDataControllerProvider` build per navigation.
-  void _updatePrefetchWindow() {
-    if (!_prefetchEnabled) return;
-
-    final historyData = ref.read(timeHistoryHeaderControllerProvider).value;
-    if (historyData == null || historyData.days.isEmpty) return;
-
-    final (visibleStart, visibleEnd) = _getVisibleIndices(historyData);
-
-    // Calculate prefetch window: visible + buffer in each direction
-    final prefetchStart = (visibleStart - _prefetchBuffer).clamp(
-      0,
-      historyData.days.length - 1,
-    );
-    final prefetchEnd = (visibleEnd + _prefetchBuffer).clamp(
-      0,
-      historyData.days.length - 1,
-    );
-
-    // Collect dates in the current prefetch window
-    final currentWindowDates = <DateTime>{};
-    for (var i = prefetchStart; i <= prefetchEnd; i++) {
-      currentWindowDates.add(historyData.days[i].day.dayAtMidnight);
-    }
-
-    // Collect dates in the extended window (for invalidation check)
-    final extendedStart = (visibleStart - _invalidateMargin).clamp(
-      0,
-      historyData.days.length - 1,
-    );
-    final extendedEnd = (visibleEnd + _invalidateMargin).clamp(
-      0,
-      historyData.days.length - 1,
-    );
-    final extendedWindowDates = <DateTime>{};
-    for (var i = extendedStart; i <= extendedEnd; i++) {
-      extendedWindowDates.add(historyData.days[i].day.dayAtMidnight);
-    }
-
-    // Invalidate providers for dates that are no longer in the extended window
-    final datesToInvalidate = _prefetchedDates
-        .difference(extendedWindowDates)
-        .toList();
-    for (final date in datesToInvalidate) {
-      ref
-        ..invalidate(unifiedDailyOsDataControllerProvider(date: date))
-        ..invalidate(dayBudgetStatsProvider(date: date));
-      _prefetchedDates.remove(date);
-    }
-
-    // Prefetch new days in the window that haven't been prefetched yet
-    for (final date in currentWindowDates) {
-      if (!_prefetchedDates.contains(date)) {
-        _prefetchedDates.add(date);
-        // Fire-and-forget: just trigger the provider, don't await
-        ref.read(unifiedDailyOsDataControllerProvider(date: date));
-      }
-    }
-  }
-
   /// Select a date immediately (no waiting for prefetch).
   void _selectDate(DateTime date) {
     ref.read(dailyOsSelectedDateProvider.notifier).selectDate(date);
@@ -312,15 +227,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
         }
       }
     }
-
-    // Prefetch today's data in background (fire-and-forget).
-    // Gated on the same flag as the scroll-window prefetch so disabling
-    // off-screen warming also disables this redundant warm-up — the
-    // selected-date provider drives the actual load when `goToToday`
-    // moves the selection.
-    if (_prefetchEnabled) {
-      ref.read(unifiedDailyOsDataControllerProvider(date: today));
-    }
   }
 
   /// Center the scroll view on today when data first loads.
@@ -352,12 +258,11 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Update prefetch window and month label after data loads
+    // Center on today and update the month label after data loads
     historyDataAsync.whenData((data) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _centerOnTodayIfNeeded(data);
-          _updatePrefetchWindow();
           _updateVisibleMonth();
         }
       });

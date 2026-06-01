@@ -12,6 +12,7 @@ import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -104,6 +105,9 @@ class FakeChecklistItemController extends ChecklistItemController {
 class ChecklistControllerCallTracker {
   String? unlinkedItemId;
   String? relinkedItemId;
+  Object? droppedLocalData;
+  int? droppedTargetIndex;
+  String? droppedTargetItemId;
 }
 
 class FakeChecklistController extends ChecklistController {
@@ -124,7 +128,53 @@ class FakeChecklistController extends ChecklistController {
   Future<void> relinkItem(String checklistItemId) async {
     _tracker?.relinkedItemId = checklistItemId;
   }
+
+  @override
+  Future<void> dropChecklistItem(
+    Object? localData, {
+    String? categoryId,
+    int? targetIndex,
+    String? targetItemId,
+  }) async {
+    _tracker
+      ?..droppedLocalData = localData
+      ..droppedTargetIndex = targetIndex
+      ..droppedTargetItemId = targetItemId;
+  }
 }
+
+/// Minimal [DropSession] fake holding a fixed item list (avoids Mock +
+/// Diagnosticable inheritance issues).
+class _FakeDropSession extends Fake implements DropSession {
+  _FakeDropSession(this.itemList);
+
+  final List<DropItem> itemList;
+
+  @override
+  List<DropItem> get items => itemList;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
+      '_FakeDropSession(items: $itemList)';
+}
+
+/// Minimal [DropItem] fake carrying local data only.
+class _FakeDropItem extends Fake implements DropItem {
+  _FakeDropItem(this.testLocalData);
+
+  final Object? testLocalData;
+
+  @override
+  Object? get localData => testLocalData;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
+      '_FakeDropItem(localData: $testLocalData)';
+}
+
+/// Minimal [DragSession] fake. The production `dragItemProvider` ignores the
+/// request entirely, so an empty stand-in suffices.
+class _FakeDragSession extends Fake implements DragSession {}
 
 class FakeChecklistCompletionService extends ChecklistCompletionService {
   FakeChecklistCompletionService([this._suggestions = const []]);
@@ -1300,5 +1350,107 @@ void main() {
         container.dispose();
       },
     );
+
+    // ── super_drag_and_drop wiring ──────────────────────────────────────────
+    //
+    // The DropRegion / DragItemWidget callbacks only fire on a real native
+    // drag/drop, which the test environment can't dispatch. We extract those
+    // public widgets from the tree and invoke their closures directly,
+    // asserting on the values they forward (operation, drag item contents,
+    // and the target index/itemId passed through to the controller).
+    group('drag-and-drop wiring', () {
+      testWidgets(
+        'onDropOver returns DropOperation.move',
+        (tester) async {
+          await _pumpWithControllers(tester);
+          await tester.pump();
+
+          final dropRegion = tester.widget<DropRegion>(
+            find.byType(DropRegion),
+          );
+          final operation = await dropRegion.onDropOver(
+            DropOverEvent(
+              session: _FakeDropSession(const []),
+              position: DropPosition(local: Offset.zero, global: Offset.zero),
+            ),
+          );
+
+          expect(operation, DropOperation.move);
+        },
+      );
+
+      testWidgets(
+        'onPerformDrop forwards target index/itemId to dropChecklistItem',
+        (tester) async {
+          final ctrls = await _pumpWithControllers(tester);
+          await tester.pump();
+
+          // Local data that routes through to dropChecklistItem (non-empty
+          // map without a checklistItemTitle key).
+          final localData = <String, String>{
+            'checklistItemId': 'dragged-item',
+            'checklistId': 'other-checklist',
+          };
+          final session = _FakeDropSession([_FakeDropItem(localData)]);
+
+          final dropRegion = tester.widget<DropRegion>(
+            find.byType(DropRegion),
+          );
+          await dropRegion.onPerformDrop(
+            PerformDropEvent(
+              session: session,
+              position: DropPosition(local: Offset.zero, global: Offset.zero),
+              acceptedOperation: DropOperation.move,
+            ),
+          );
+
+          // The closure passes widget.index (0) and widget.itemId ('item-1')
+          // straight through to handleChecklistItemDrop -> dropChecklistItem.
+          expect(ctrls.checklistTracker.droppedLocalData, localData);
+          expect(ctrls.checklistTracker.droppedTargetIndex, 0);
+          expect(ctrls.checklistTracker.droppedTargetItemId, 'item-1');
+        },
+      );
+
+      testWidgets(
+        'dragItemProvider builds a DragItem carrying the item id and '
+        'checklist id as local data',
+        (tester) async {
+          await _pumpWithControllers(
+            tester,
+            item: _makeItem(title: 'Drag me'),
+          );
+          await tester.pump();
+
+          final dragItemWidget = tester.widget<DragItemWidget>(
+            find.byType(DragItemWidget),
+          );
+          final dragItem = await dragItemWidget.dragItemProvider(
+            DragItemRequest(
+              location: Offset.zero,
+              session: _FakeDragSession(),
+            ),
+          );
+
+          final data = dragItem!.localData! as Map<String, String>;
+          expect(data['checklistItemId'], 'item-1');
+          expect(data['checklistId'], 'checklist-1');
+        },
+      );
+
+      testWidgets(
+        'allowedOperations returns [DropOperation.move]',
+        (tester) async {
+          await _pumpWithControllers(tester);
+          await tester.pump();
+
+          final dragItemWidget = tester.widget<DragItemWidget>(
+            find.byType(DragItemWidget),
+          );
+
+          expect(dragItemWidget.allowedOperations(), [DropOperation.move]);
+        },
+      );
+    });
   });
 }

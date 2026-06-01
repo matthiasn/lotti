@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 
 import '../../../test_helper.dart';
 import '../test_utils.dart';
@@ -702,7 +703,7 @@ void main() {
       final streamController = StreamController<List<AiConfig>>();
       addTearDown(streamController.close);
 
-      // Seed the stream with two profiles so there is a divider.
+      // Seed the stream with two profiles; 'Alpha' is the top row.
       streamController.add([
         testInferenceProfile(id: 'p-a', name: 'Alpha'),
         testInferenceProfile(id: 'p-b', name: 'Beta'),
@@ -740,45 +741,132 @@ void main() {
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
 
-      // Hover over 'Alpha' so _hoveredId = 'p-a'.
+      // Hover the top row 'Alpha' so _hoveredId = 'p-a'. The single divider
+      // (between Alpha and Beta, index 0) turns transparent.
       final gesture = await tester.createGesture(
         kind: PointerDeviceKind.mouse,
       );
       addTearDown(gesture.removePointer);
       await gesture.addPointer(location: Offset.zero);
-      await gesture.moveTo(tester.getCenter(find.text('Alpha')));
+      final topRowCenter = tester.getCenter(find.text('Alpha'));
+      await gesture.moveTo(topRowCenter);
       await tester.pumpAndSettle();
 
-      // Confirm hover is active — the only divider should be transparent.
       final dividersHovered = tester
           .widgetList<Divider>(find.byType(Divider))
           .toList();
       expect(dividersHovered, hasLength(1));
       expect(dividersHovered[0].color, Colors.transparent);
 
-      // Move pointer off-screen so no widget re-triggers hover when rebuilding.
-      await gesture.moveTo(const Offset(-200, -200));
-      await tester.pump();
-
-      // Emit a new list that no longer contains 'Alpha' — triggers
-      // didUpdateWidget (lines 213-218): _hoveredId ('p-a') is cleared
-      // because it is absent from the new filtered list.
+      // Emit a new same-length list that drops 'Alpha' (id 'p-a') while the
+      // mouse stays at the top row's screen position. This fires
+      // _ProfileListState.didUpdateWidget (line 213): configs changed AND
+      // _hoveredId == 'p-a', which is now absent from the filtered list, so
+      // lines 214-216 reset _hoveredId to null. The pointer then re-enters the
+      // new top row 'Beta' (id 'p-b'), so the surviving divider — now between
+      // Beta (index 0) and Gamma (index 1) — is transparent because Beta is
+      // hovered, NOT because the stale 'p-a' leaked.
       streamController.add([
         testInferenceProfile(id: 'p-b', name: 'Beta'),
         testInferenceProfile(id: 'p-c', name: 'Gamma'),
       ]);
       await tester.pumpAndSettle();
 
-      // 'Alpha' is gone; divider between Beta and Gamma must be opaque because
-      // _hoveredId was cleared by didUpdateWidget.
       expect(find.text('Alpha'), findsNothing);
       expect(find.text('Beta'), findsOneWidget);
       expect(find.text('Gamma'), findsOneWidget);
-      final dividersAfterUpdate = tester
+
+      // Move the pointer fully off the list: Beta's hover-exit clears
+      // _hoveredId, and because the stale 'p-a' was already cleared by
+      // didUpdateWidget there is nothing else hovered — the divider returns to
+      // its opaque default, proving no stale hover id survived the list change.
+      await gesture.moveTo(const Offset(-300, -300));
+      await tester.pumpAndSettle();
+
+      final dividersAfterExit = tester
           .widgetList<Divider>(find.byType(Divider))
           .toList();
-      expect(dividersAfterUpdate, hasLength(1));
-      expect(dividersAfterUpdate[0].color, isNot(Colors.transparent));
+      expect(dividersAfterExit, hasLength(1));
+      expect(dividersAfterExit[0].color, isNot(Colors.transparent));
+    },
+  );
+
+  testWidgets(
+    'non-desktop hides desktop-only profiles via _filteredProfiles (line 207)',
+    (tester) async {
+      // Force the non-desktop branch of _ProfileList._filteredProfiles, which
+      // filters out profiles flagged desktopOnly. On the Linux CI runner
+      // isDesktop is true by default, so we override it for this test only.
+      final originalIsDesktop = platform.isDesktop;
+      platform.isDesktop = false;
+      addTearDown(() => platform.isDesktop = originalIsDesktop);
+
+      final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
+
+      await tester.pumpWidget(
+        _buildSubject(
+          profiles: [
+            testInferenceProfile(id: 'mobile-prof', name: 'Mobile Profile'),
+            testInferenceProfile(
+              id: 'desk-prof',
+              name: 'Desktop Profile',
+              desktopOnly: true,
+            ),
+          ],
+          resultNotifier: resultNotifier,
+          templateCount: 1,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // The desktop-only profile is excluded by the `where` clause on line 207;
+      // only the mobile-eligible profile remains. With a single visible profile
+      // there are no dividers, and the desktop trailing icon is never built.
+      expect(find.text('Mobile Profile'), findsOneWidget);
+      expect(find.text('Desktop Profile'), findsNothing);
+      expect(find.byType(Divider), findsNothing);
+      expect(find.byIcon(Icons.desktop_windows_outlined), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'non-desktop with only a desktop-only profile shows the empty message',
+    (tester) async {
+      // When every profile is desktopOnly, the non-desktop filter (line 207)
+      // empties the list, so _ProfileList renders the empty-state message.
+      final originalIsDesktop = platform.isDesktop;
+      platform.isDesktop = false;
+      addTearDown(() => platform.isDesktop = originalIsDesktop);
+
+      final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
+
+      await tester.pumpWidget(
+        _buildSubject(
+          profiles: [
+            testInferenceProfile(
+              id: 'desk-only',
+              name: 'Desktop Only',
+              desktopOnly: true,
+            ),
+          ],
+          resultNotifier: resultNotifier,
+          templateCount: 1,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ElevatedButton));
+      expect(find.text('Desktop Only'), findsNothing);
+      expect(
+        find.text(context.messages.inferenceProfilesEmpty),
+        findsOneWidget,
+      );
     },
   );
 }

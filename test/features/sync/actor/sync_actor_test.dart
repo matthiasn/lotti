@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/actor/outbound_queue.dart';
 import 'package:lotti/features/sync/actor/sync_actor.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
@@ -14,6 +15,8 @@ import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/cross_signing.dart';
 import 'package:matrix/encryption/key_verification_manager.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart'
+    as matrix_cached;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -45,6 +48,49 @@ class MockKeyVerificationManager extends Mock
 class MockLoginStateController extends Mock
     implements CachedStreamController<LoginState> {}
 
+/// Fake outbound queue that returns a scripted sequence of [drain] delays.
+///
+/// Each call to [drain] consumes the next entry from [_delays]; once the list
+/// is exhausted it returns `null` so the actor's drain loop terminates.
+class _ScriptedOutboundQueue extends OutboundQueue {
+  _ScriptedOutboundQueue({
+    required super.syncDatabase,
+    required super.gateway,
+    required super.emitEvent,
+    required List<Duration?> delays,
+  })
+    // ignore: prefer_initializing_formals
+    : _delays = delays;
+
+  final List<Duration?> _delays;
+  int drainCalls = 0;
+
+  /// Completes once the scripted delay list has been fully consumed, letting
+  /// tests await the drain loop deterministically without arbitrary delays.
+  final Completer<void> exhausted = Completer<void>();
+
+  void _completeExhausted() {
+    if (!exhausted.isCompleted) {
+      exhausted.complete();
+    }
+  }
+
+  @override
+  Future<Duration?> drain() async {
+    drainCalls++;
+    if (_delays.isEmpty) {
+      _completeExhausted();
+      return null;
+    }
+    // Complete the signal before removing the final entry so tests awaiting
+    // [exhausted] observe completion exactly when the last delay is returned.
+    if (_delays.length == 1) {
+      _completeExhausted();
+    }
+    return _delays.removeAt(0);
+  }
+}
+
 /// Creates a [SyncActorCommandHandler] with a mock gateway factory.
 ///
 /// The [onGatewayCreated] callback receives the mock gateway after creation,
@@ -64,6 +110,10 @@ SyncActorCommandHandler createTestHandler({
   Stream<SyncUpdate>? syncUpdateStream,
   Stream<ToDeviceEvent>? toDeviceEventStream,
   Stream<Event>? timelineEventStream,
+  bool useDefaultToDeviceStreamFactory = false,
+  bool useDefaultTimelineStreamFactory = false,
+  bool useDefaultSyncDatabaseFactory = false,
+  OutboundQueueFactory? outboundQueueFactory,
 }) {
   late MockMatrixSdkGateway mockGateway;
   final mockClient = MockClient();
@@ -158,17 +208,25 @@ SyncActorCommandHandler createTestHandler({
         },
     syncUpdateStreamFactory: (Client _) =>
         syncUpdateStream ?? defaultSyncUpdateStreamController.stream,
-    toDeviceEventStreamFactory: (Client _) =>
-        toDeviceEventStream ?? defaultToDeviceStreamController.stream,
-    timelineEventStreamFactory: (Client _) =>
-        timelineEventStream ?? defaultTimelineEventStreamController.stream,
-    syncDatabaseFactory: (String dbRootPath) {
-      final db =
-          syncDatabaseFactory?.call(dbRootPath) ??
-          SyncDatabase(inMemoryDatabase: true);
-      onSyncDatabaseCreated?.call(db);
-      return db;
-    },
+    toDeviceEventStreamFactory: useDefaultToDeviceStreamFactory
+        ? null
+        : (Client _) =>
+              toDeviceEventStream ?? defaultToDeviceStreamController.stream,
+    timelineEventStreamFactory: useDefaultTimelineStreamFactory
+        ? null
+        : (Client _) =>
+              timelineEventStream ??
+              defaultTimelineEventStreamController.stream,
+    syncDatabaseFactory: useDefaultSyncDatabaseFactory
+        ? null
+        : (String dbRootPath) {
+            final db =
+                syncDatabaseFactory?.call(dbRootPath) ??
+                SyncDatabase(inMemoryDatabase: true);
+            onSyncDatabaseCreated?.call(db);
+            return db;
+          },
+    outboundQueueFactory: outboundQueueFactory,
     verificationPeerDiscoveryAttempts: verificationPeerDiscoveryAttempts,
     verificationPeerDiscoveryInterval: verificationPeerDiscoveryInterval,
     vodInitializer: () async {},
@@ -2299,5 +2357,277 @@ void main() {
       expect(response['ok'], isTrue);
       expect(response['state'], 'disposed');
     });
+  });
+
+  group('default stream factories', () {
+    test(
+      'falls back to client.onToDeviceEvent when no factory is injected',
+      () async {
+        final onToDevice =
+            matrix_cached.CachedStreamController<ToDeviceEvent>();
+        final toDeviceSeen = Completer<void>();
+        final eventPort = ReceivePort()
+          ..listen((dynamic raw) {
+            if (raw is Map &&
+                raw['event'] == 'toDevice' &&
+                !toDeviceSeen.isCompleted) {
+              toDeviceSeen.complete();
+            }
+          });
+
+        handler = createTestHandler(
+          useDefaultToDeviceStreamFactory: true,
+          onGatewayCreated: (g, c) {
+            when(() => c.onToDeviceEvent).thenReturn(onToDevice);
+          },
+        );
+
+        await handler.handleCommand(
+          _initPayload(eventPort: eventPort.sendPort),
+        );
+
+        onToDevice.add(
+          ToDeviceEvent(
+            sender: '@peer:localhost',
+            type: 'mock.to.device',
+            content: const <String, dynamic>{},
+          ),
+        );
+        await toDeviceSeen.future;
+
+        final health = await handler.handleCommand(_cmd('getHealth'));
+        expect(health['toDeviceEventCount'], 1);
+
+        await handler.handleCommand(_cmd('stop'));
+        await onToDevice.close();
+        eventPort.close();
+      },
+    );
+
+    test(
+      'falls back to client.onTimelineEvent when no factory is injected',
+      () async {
+        final onTimeline = matrix_cached.CachedStreamController<Event>();
+        final room = MockRoom();
+        final event = MockEvent();
+        final incomingSeen = Completer<Map<String, Object?>>();
+
+        when(() => room.id).thenReturn('!room:localhost');
+        when(() => event.type).thenReturn('m.room.message');
+        when(() => event.room).thenReturn(room);
+        when(() => event.eventId).thenReturn(r'$timeline:fallback');
+        when(() => event.senderId).thenReturn('@peer:localhost');
+        when(() => event.text).thenReturn('fallback message');
+        when(() => event.messageType).thenReturn('m.text');
+
+        final eventPort = ReceivePort()
+          ..listen((dynamic raw) {
+            if (raw is Map &&
+                raw['event'] == 'incomingMessage' &&
+                !incomingSeen.isCompleted) {
+              incomingSeen.complete(raw.cast<String, Object?>());
+            }
+          });
+
+        handler = createTestHandler(
+          useDefaultTimelineStreamFactory: true,
+          onGatewayCreated: (g, c) {
+            when(() => c.onTimelineEvent).thenReturn(onTimeline);
+          },
+        );
+
+        await handler.handleCommand(
+          _initPayload(eventPort: eventPort.sendPort),
+        );
+
+        onTimeline.add(event);
+        final incoming = await incomingSeen.future;
+
+        expect(incoming['text'], 'fallback message');
+        expect(incoming['roomId'], '!room:localhost');
+        expect(incoming['sender'], '@peer:localhost');
+
+        await handler.handleCommand(_cmd('stop'));
+        await onTimeline.close();
+        eventPort.close();
+      },
+    );
+  });
+
+  group('default sync database factory', () {
+    test('opens and closes a real on-disk SyncDatabase via init/stop', () async {
+      final dbRoot = Directory.systemTemp.createTempSync(
+        'sync_actor_default_db',
+      );
+
+      handler = createTestHandler(useDefaultSyncDatabaseFactory: true);
+
+      try {
+        final initResponse = await handler.handleCommand(
+          _initPayload(dbRootPath: dbRoot.path),
+        );
+        // Success proves the default SyncDatabase factory ran: it built a real
+        // on-disk SyncDatabase rooted at dbRootPath and wired it into the
+        // outbound queue during init.
+        expect(initResponse['ok'], isTrue, reason: '$initResponse');
+        expect(handler.state, SyncActorState.syncing);
+
+        // kickOutbox drives a drain pass against the real database, exercising a
+        // query (claimNextOutboxItem) through the live connection.
+        final kick = await handler.handleCommand(_cmd('kickOutbox'));
+        expect(kick['ok'], isTrue);
+
+        // stop() closes the real database connection; a clean disposal confirms
+        // the connection was valid.
+        final stopResponse = await handler.handleCommand(_cmd('stop'));
+        expect(stopResponse['ok'], isTrue);
+        expect(handler.state, SyncActorState.disposed);
+      } finally {
+        if (dbRoot.existsSync()) {
+          dbRoot.deleteSync(recursive: true);
+        }
+      }
+    });
+  });
+
+  group('room verification success', () {
+    test(
+      'completes room verification request and tracks outgoing flow',
+      () async {
+        final keysList = MockDeviceKeysList();
+        final remoteDevice = MockDeviceKeys();
+        final encryption = MockEncryption();
+        final crossSigning = MockCrossSigning();
+        final keyVerificationManager = MockKeyVerificationManager();
+        final room = MockRoom();
+        final addRequestCalls = <KeyVerification>[];
+
+        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+        when(() => remoteDevice.verified).thenReturn(false);
+        when(() => remoteDevice.userId).thenReturn('@peer:localhost');
+        when(() => crossSigning.enabled).thenReturn(false);
+        when(() => room.id).thenReturn('!room:localhost');
+        when(() => keyVerificationManager.addRequest(any())).thenAnswer((
+          invocation,
+        ) {
+          addRequestCalls.add(
+            invocation.positionalArguments.first as KeyVerification,
+          );
+        });
+
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            when(() => c.userID).thenReturn('@test:localhost');
+            when(() => c.deviceID).thenReturn('DEV');
+            when(() => c.verificationMethods).thenReturn(
+              <KeyVerificationMethod>{KeyVerificationMethod.emoji},
+            );
+            when(() => c.userDeviceKeys).thenReturn({
+              '@test:localhost': keysList,
+            });
+            when(() => keysList.deviceKeys).thenReturn(
+              <String, DeviceKeys>{'REMOTE': remoteDevice},
+            );
+            when(() => c.encryption).thenReturn(encryption);
+            when(() => c.getRoomById(any())).thenReturn(room);
+            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+              return false;
+            });
+            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            when(() => encryption.client).thenReturn(c);
+            when(() => encryption.crossSigning).thenReturn(crossSigning);
+            when(
+              () => encryption.keyVerificationManager,
+            ).thenReturn(keyVerificationManager);
+            when(
+              () => room.sendEvent(any(), type: any(named: 'type')),
+            ).thenAnswer((_) async => r'$evtRoom');
+            when(() => g.unverifiedDevices()).thenReturn(
+              <DeviceKeys>[remoteDevice],
+            );
+          },
+        );
+
+        await handler.handleCommand(_initPayload());
+        final response = await handler.handleCommand(
+          _cmd('startVerification', {'roomId': '!room:localhost'}),
+        );
+        final state = await handler.handleCommand(
+          _cmd('getVerificationState'),
+        );
+
+        expect(response['ok'], isTrue, reason: '$response');
+        expect(response['started'], isTrue);
+        // The room-based path sends the verification request event through the
+        // room and registers it with the key-verification manager.
+        verify(
+          () => room.sendEvent(any(), type: any(named: 'type')),
+        ).called(1);
+        expect(addRequestCalls, hasLength(1));
+        expect(state['hasOutgoing'], isTrue);
+        expect(state['hasIncoming'], isFalse);
+
+        await handler.handleCommand(_cmd('stop'));
+      },
+    );
+  });
+
+  group('outbox drain rescheduling', () {
+    test(
+      'continues draining on zero delay then reschedules on non-zero delay',
+      () async {
+        late _ScriptedOutboundQueue scriptedQueue;
+
+        handler = createTestHandler(
+          outboundQueueFactory:
+              ({
+                required syncDatabase,
+                required gateway,
+                required emitEvent,
+                leaseDuration = const Duration(minutes: 1),
+                retryDelay = const Duration(seconds: 1),
+                errorDelay = const Duration(seconds: 1),
+                maxRetries = 5,
+                sendTimeout = const Duration(seconds: 30),
+                connected = true,
+                syncRoomId,
+              }) {
+                final queue = _ScriptedOutboundQueue(
+                  syncDatabase: syncDatabase,
+                  gateway: gateway,
+                  emitEvent: emitEvent,
+                  // First drain returns zero (loop continues), second returns a
+                  // non-zero delay which triggers the reschedule branch.
+                  delays: <Duration?>[
+                    Duration.zero,
+                    const Duration(seconds: 5),
+                  ],
+                );
+                scriptedQueue = queue;
+                return queue;
+              },
+        );
+
+        // init kicks the outbox queue, scheduling the first drain pass.
+        await handler.handleCommand(_initPayload());
+
+        // Wait until the scripted delays are fully consumed; this guarantees the
+        // loop ran the zero-delay continuation and the non-zero reschedule.
+        await scriptedQueue.exhausted.future;
+
+        // `exhausted` completes inside the final `drain()` call, before the
+        // non-zero delay is returned and the reschedule timer is scheduled.
+        // Drain the microtask queue so the returned delay propagates back up
+        // the drain loop and the reschedule branch runs deterministically
+        // before we assert (and before stop() cancels the pending timer).
+        await pumpEventQueue();
+
+        expect(scriptedQueue.drainCalls, 2);
+
+        // stop() cancels the pending reschedule timer, preventing timer leaks.
+        await handler.handleCommand(_cmd('stop'));
+        expect(handler.state, SyncActorState.disposed);
+      },
+    );
   });
 }

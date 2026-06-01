@@ -1,3 +1,4 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -213,6 +214,71 @@ void main() {
         find.text(context.messages.backfillSettingsSubtitle),
         findsOneWidget,
       );
+    });
+
+    group('row navigation', () {
+      // Each row's tap fires `context.beamToNamed(<route>)`. We wrap the page
+      // in a real BeamerProvider whose delegate exposes the destination routes,
+      // tap each row by its localized title, then assert the delegate actually
+      // navigated to the expected path. The title is resolved per-row instead
+      // of hard-coded so the test stays in sync with the source ordering.
+      String titleFor(BuildContext context, int index) {
+        final m = context.messages;
+        return [
+          m.settingsMatrixMaintenanceTitle,
+          m.settingsSyncOutboxTitle,
+          m.settingsConflictsTitle,
+          m.settingsMatrixStatsTitle,
+          m.backfillSettingsTitle,
+          m.settingsSyncNodeProfileTitle,
+        ][index];
+      }
+
+      // (rowIndex, expected destination path) for every reachable onTap.
+      const cases = <(int, String)>[
+        (0, '/settings/sync/matrix/maintenance'),
+        (1, '/settings/sync/outbox'),
+        (2, '/settings/advanced/conflicts'),
+        (3, '/settings/sync/stats'),
+        (4, '/settings/sync/backfill'),
+        (5, '/settings/sync/node-profile'),
+      ];
+
+      for (final (rowIndex, expectedPath) in cases) {
+        testWidgets('row $rowIndex taps beam to $expectedPath', (tester) async {
+          final delegate = BeamerDelegate(
+            locationBuilder: RoutesLocationBuilder(
+              routes: {
+                for (final (_, path) in cases)
+                  path: (_, _, _) => const SizedBox.shrink(),
+                '/': (_, _, _) => const SyncSettingsPage(),
+              },
+            ).call,
+          );
+
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              BeamerProvider(
+                routerDelegate: delegate,
+                child: const SyncSettingsPage(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final context = tester.element(find.byType(SyncSettingsPage));
+          final title = find.text(titleFor(context, rowIndex));
+          expect(title, findsOneWidget);
+          await tester.ensureVisible(title);
+          await tester.tap(title);
+          await tester.pumpAndSettle();
+
+          expect(
+            delegate.currentBeamLocation.state.routeInformation.uri.path,
+            expectedPath,
+          );
+        });
+      }
     });
   });
 }
