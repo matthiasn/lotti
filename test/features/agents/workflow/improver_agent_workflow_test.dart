@@ -160,7 +160,8 @@ void main() {
       expect(stateUpdates, isNotEmpty);
       final lastUpdate = stateUpdates.last;
       expect(lastUpdate.slots.lastFeedbackScanAt, isNotNull);
-      expect(lastUpdate.wakeCounter.value, 1);
+      // Host-attributed under the mocked local host, not just summed to 1.
+      expect(lastUpdate.wakeCounter.byHost, {'test-host': 1});
     });
 
     test('threshold gate: insufficient feedback skips ritual', () async {

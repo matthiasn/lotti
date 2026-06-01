@@ -1199,7 +1199,10 @@ void main() {
             testDate.add(const Duration(days: 7)),
           );
           expect(updatedState.slots.lastOneOnOneAt, testDate);
-          expect(updatedState.slots.totalSessionsCompleted.value, 3);
+          // Host-attributed: the increment lands under the local host bucket.
+          expect(updatedState.slots.totalSessionsCompleted.byHost, {
+            'test-host': 3,
+          });
           expect(updatedState.updatedAt, testDate);
           expect(notifiedAgentIds, [agentId]);
         });
@@ -1343,7 +1346,9 @@ void main() {
             ).captured;
 
             final updatedState = captured.first as AgentStateEntity;
-            expect(updatedState.slots.totalSessionsCompleted.value, 1);
+            expect(updatedState.slots.totalSessionsCompleted.byHost, {
+              'test-host': 1,
+            });
             expect(
               updatedState.scheduledWakeAt,
               testDate.add(const Duration(days: 14)),

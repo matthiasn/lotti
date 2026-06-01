@@ -21,8 +21,11 @@ class GCounter extends Equatable {
   /// The zero counter — usable as a `const` default (e.g. freezed `@Default`).
   const GCounter.empty() : byHost = const {};
 
+  /// Decodes the per-host map. Values are coerced via `(v as num).toInt()`
+  /// rather than `Map<String,int>.from`, since some JSON parsers surface integer
+  /// counts as `double` (e.g. on web) and a raw `int` cast would throw.
   factory GCounter.fromJson(Map<String, dynamic> json) =>
-      GCounter(Map<String, int>.from(json));
+      GCounter(json.map((k, v) => MapEntry(k, (v as num).toInt())));
 
   /// Per-host counts. Each entry is grow-only; the total is [value].
   final Map<String, int> byHost;
@@ -30,9 +33,14 @@ class GCounter extends Equatable {
   /// The counter's observable value: the sum of all per-host counts.
   int get value => byHost.values.fold(0, (sum, count) => sum + count);
 
-  /// A new counter with [host]'s entry increased by [by] (default 1).
-  GCounter increment(String host, [int by = 1]) =>
-      GCounter({...byHost, host: (byHost[host] ?? 0) + by});
+  /// A new counter with [host]'s entry increased by [by] (default 1). The
+  /// increment must be **positive** — a grow-only counter never decreases, and a
+  /// zero bump would create a non-canonical empty entry; both break the
+  /// element-wise-max convergence, so they are a programming error.
+  GCounter increment(String host, [int by = 1]) {
+    assert(by > 0, 'G-counter increments must be positive (grow-only)');
+    return GCounter({...byHost, host: (byHost[host] ?? 0) + by});
+  }
 
   /// Element-wise max with [other] — the CRDT join: idempotent, commutative,
   /// associative, and lossless (no increment is ever dropped). Delegates to
@@ -41,7 +49,10 @@ class GCounter extends Equatable {
     VectorClock.merge(VectorClock(byHost), VectorClock(other.byHost)).vclock,
   );
 
-  Map<String, dynamic> toJson() => byHost;
+  /// A fresh map each call, so a caller can't mutate this value object's state
+  /// through the returned JSON (mirrors the value-object contract `Equatable`
+  /// relies on).
+  Map<String, dynamic> toJson() => Map<String, dynamic>.from(byHost);
 
   @override
   List<Object?> get props => [byHost];

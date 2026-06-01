@@ -158,18 +158,47 @@ on each old-client write (no data lost — the sum is preserved and re-seeded), 
 full per-host convergence resumes once every device is updated. **The release
 after this one drops the legacy mirror keys.**
 
+**Scope — DB conversion layer only; sync wire deferred (known limitation).** The
+migration + dual-write above live in `AgentDbConversions`
+(`fromEntityRow`/`toEntityCompanion`), so a device reading/writing its **own**
+persisted rows is fully covered. The cross-device **sync wire is not** yet:
+`SyncMessage.fromJson` deserializes the entity via the generated
+`AgentDomainEntity.fromJson` before any migration runs, and the send path emits no
+mirror — and that serialization is scattered across ~8 sites (outbox storage +
+merge/coalesce paths + `matrix_message_sender`'s inline body and jsonPath payload
+files; plus two receive points), with **no chokepoint and no codegen hook** (a key
+rename forces dual-emit at every site; keeping the legacy key with a map value
+would crash old peers on `(map as num)`). This is **bounded and transient**, not a
+correctness hole:
+
+- **No crash** — the key rename means an old peer treats `wakeCounterByHost` as an
+  unknown key and reads `wakeCounter` as absent → `?? 0`; it never casts a map to
+  `int` and never drops the message.
+- **No permanent loss** — each device's own counts persist (and migrate) in its
+  own DB and reconverge once every device upgrades.
+- **No user-visible effect today** — nothing consumes these counters yet
+  (prospective; the first intended consumer is e.g. "deeper compaction every Nth
+  wake").
+
+Deferred deliberately (see the open item below): close the wire-level dual-write
+when the sync entity serialization is centralized, or alongside the first counter
+consumer — by which point devices will have upgraded anyway.
+
 ## Risks & migration
 
 - **R1 — Overcount on naive seeding** (the trap above). Mitigated by the shared
   sentinel host. A Glados test asserts: N devices each migrating the same legacy
   `n`, then merging, yields value `n` (not `N·n`).
-- **R2 — Mixed-version sync during rollout — RESOLVED: dual-write.** A
-  new-format map reaching an old client would break its `int` `fromJson`
-  (`(json['wakeCounter'] as num?)` throws on a map). Chosen mitigation: dual-write
-  the legacy scalar mirror for one release (design §4), so old clients keep
-  reading the int and never throw; the per-host breakdown is suspended (not lost)
-  on old-client writes and resumes once all devices update. The mirror keys are
-  dropped the release after.
+- **R2 — Mixed-version sync during rollout — PARTIAL: DB path resolved, sync
+  wire deferred.** Dual-write + migration cover the DB conversion layer (a
+  device's own rows), so single-device upgrade loses nothing. The cross-device
+  **sync wire** is a known transient limitation (see the §4 scope note): the key
+  rename already prevents the only hard failure (old peers never crash on a
+  new-format message), and there is no permanent loss (own-DB migrate + reconverge
+  on upgrade). Closing it would mean threading the dual-write/migration through
+  ~8 scattered sync-serialization sites with no chokepoint — disproportionate for
+  a transient gap on counters nothing reads yet, so it is **deferred** (open item
+  below) rather than done now.
 - **R3 — `processedCounterByHost` is already a map but stays LWW.** Don't fold it
   into this work; PR 4 moves it to the sequence layer. Leaving it avoids a
   pointless migration of a field that's about to relocate.
@@ -212,10 +241,23 @@ after this one drops the legacy mirror keys.**
 
 ## Decisions (resolved)
 
-- **R2 mixed-version rollout — DECIDED: dual-write for one release** (see §4 + R2).
-  Old clients keep reading the legacy scalar mirror; mirror keys are dropped the
-  release after.
+- **R2 mixed-version rollout — DECIDED: dual-write for one release at the DB
+  layer; sync wire deferred** (see §4 + R2). The DB conversion path carries the
+  legacy mirror + read migration. The cross-device sync wire is a known transient
+  limitation (no crash, no permanent loss) — **deferred**, see open item.
 - **`GCounter` location — DECIDED: `lib/features/sync/`** (beside `VectorClock`;
   the shared element-wise-max helper lives there).
 - **`weeklyReviewCount` — DECIDED: convert now**, alongside the others, so it is a
   G-counter the moment it's wired up — no second shape migration later.
+
+## Open items (follow-up)
+
+- **Wire-level dual-write for the sync path.** The DB conversion layer carries the
+  legacy mirror + migration; the cross-device sync wire does not (scattered
+  serialization, no chokepoint, no codegen hook — see §4 scope note + R2). It is a
+  bounded, transient gap (no crash, no permanent loss, counters unconsumed today).
+  Close it when the agent-entity sync serialization is centralized, or alongside
+  the first counter consumer (e.g. "deeper compaction every Nth wake"), by which
+  point devices will have upgraded. The cleanest landing is a single
+  entity↔wire-JSON codec that both the DB and sync paths share, so the dual-write/
+  migration lives in one place instead of ~8 call sites.

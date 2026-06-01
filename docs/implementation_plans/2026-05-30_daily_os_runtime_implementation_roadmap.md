@@ -63,9 +63,12 @@ Grouped into the six phases of §10. Each PR: **Goal · Depends on · Touches ·
 
 **PR 4 — State-as-projection migration (Move 1)** — detailed plan: [`2026-05-30_state_as_projection_plan.md`](./2026-05-30_state_as_projection_plan.md).
 - **Goal:** flip reads to the projection; demote authoritative mutable `AgentStateEntity` to a **regenerable cache that is still synced** (kept for cold-start-from-artifacts + cheap reads), with the log authoritative and the cache reconciled against the projection. User-authored docs keep the `Version`/`Head` snapshot pattern.
-- **Depends on:** PR 3 (shadow equivalence proven first).
-- **Touches:** `agent_repository` reads, state resolution in workflows; grow `project()`/`AgentProjection` to the full derived state; classification of `AgentStateEntity`/`AgentSlots` fields (derived ← log/links · counters → **count-from-log** · runtime-local scheduling → don't sync · config → re-home · `processedCounterByHost` → sequence layer). Reconcile = lazy-on-read gated by a head-set/`frontierDigest` check, coalesced background refold, **strict reconcile at wake start** (aligns with the PR 7 lease).
-- **Defers:** removing the cache rows entirely (optional later); compaction's `frontierDigest`/bounded working set (PR 5). **No counter-CRDT needed** — count-from-log supersedes it.
+- **Depends on:** PR 3 (shadow equivalence proven first) and **PR 2b** — the
+  monotonic agent-state counters (`wakeCounter`, the `slots` session counters)
+  are already per-host G-counters, which is what keeps them exact across
+  partition+heal; PR 4 reads them as-is and does not re-home them.
+- **Touches:** `agent_repository` reads, state resolution in workflows; grow `project()`/`AgentProjection` to the full derived state; classification of `AgentStateEntity`/`AgentSlots` fields (derived ← log/links · **monotonic counters → PR 2b per-host G-counters** · event-sourced counters such as `toolCounterByKey` → count-from-log over synced links · runtime-local scheduling → don't sync · config → re-home · `processedCounterByHost` → sequence layer). Reconcile = lazy-on-read gated by a head-set/`frontierDigest` check, coalesced background refold, **strict reconcile at wake start** (aligns with the PR 7 lease).
+- **Defers:** removing the cache rows entirely (optional later); compaction's `frontierDigest`/bounded working set (PR 5). The monotonic counters need **no count-from-log** — PR 2b's per-host G-counters already converge them; count-from-log is reserved for counters with a synced event source.
 - **Done when:** derived state is read from the projection; the read-modify-write `wakeCounter + 1` pattern is gone; concurrent multi-device edits **self-heal** on agent-derived state and counters stay exact across partition+heal (sim test) — resolving PR 2's convergent-but-lossy counter limitation. Once the cache is a pure fold of a convergent log, LWW on it is self-healing, so PR 2's resolver drops to a transient-cache role.
 - **Realizes:** §2/§4 Move 1; ADR 0016.
 
