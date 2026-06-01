@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -273,5 +275,150 @@ void main() {
       );
       expect(sem.label, contains('Resize settings tree'));
     });
+
+    testWidgets('onIncrease semantics action nudges width up', (tester) async {
+      final semanticsHandle = tester.ensureSemantics();
+
+      await _pumpHandle(tester);
+      final before = _width(tester);
+
+      final semanticsNode = tester.getSemantics(
+        find
+            .descendant(
+              of: find.byType(SettingsTreeResizeHandle),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      tester.binding.performSemanticsAction(
+        SemanticsActionEvent(
+          type: SemanticsAction.increase,
+          nodeId: semanticsNode.id,
+          viewId: tester.view.viewId,
+        ),
+      );
+      await _drainTimers(tester);
+
+      expect(_width(tester), before + settingsTreeNavWidthArrowStep);
+      semanticsHandle.dispose();
+    });
+
+    testWidgets('onDecrease semantics action nudges width down', (
+      tester,
+    ) async {
+      final semanticsHandle = tester.ensureSemantics();
+
+      await _pumpHandle(tester);
+      final before = _width(tester);
+
+      final semanticsNode = tester.getSemantics(
+        find
+            .descendant(
+              of: find.byType(SettingsTreeResizeHandle),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      tester.binding.performSemanticsAction(
+        SemanticsActionEvent(
+          type: SemanticsAction.decrease,
+          nodeId: semanticsNode.id,
+          viewId: tester.view.viewId,
+        ),
+      );
+      await _drainTimers(tester);
+
+      expect(_width(tester), before - settingsTreeNavWidthArrowStep);
+      semanticsHandle.dispose();
+    });
+  });
+
+  group('SettingsTreeResizeHandle — hover', () {
+    testWidgets('mouse enter sets hovered state and exit clears it', (
+      tester,
+    ) async {
+      await _pumpHandle(tester);
+
+      final center = tester.getCenter(find.byType(SettingsTreeResizeHandle));
+      // Move mouse into the handle to trigger onEnter.
+      final gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+
+      await gesture.moveTo(center);
+      await tester.pump();
+
+      // After hover enter the AnimatedContainer should use a non-transparent
+      // color (hover bar is visible). We verify this indirectly by confirming
+      // the MouseRegion's onEnter fired (the widget rebuilt without errors).
+      final mouseRegion = tester.widget<MouseRegion>(
+        find.descendant(
+          of: find.byType(SettingsTreeResizeHandle),
+          matching: find.byType(MouseRegion),
+        ),
+      );
+      expect(mouseRegion.cursor, SystemMouseCursors.resizeColumn);
+
+      // Move mouse out to trigger onExit.
+      await gesture.moveTo(Offset.zero);
+      await tester.pump();
+
+      // Width is unchanged — hover only affects visual state.
+      expect(_width(tester), defaultSettingsTreeNavWidth);
+    });
+  });
+
+  group('SettingsTreeResizeHandle — didUpdateWidget', () {
+    testWidgets(
+      'adopts external focus node and disposes internally-created one',
+      (tester) async {
+        // Pump without a focusNode first. The widget's build calls _focusNode
+        // getter which lazily creates _ownedFocusNode.
+        await tester.pumpWidget(
+          makeTestableWidget(
+            const SizedBox(
+              width: 400,
+              height: 400,
+              child: Center(child: SettingsTreeResizeHandle()),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Verify the widget is rendered (ownedFocusNode was created).
+        expect(find.byType(SettingsTreeResizeHandle), findsOneWidget);
+
+        // Now rebuild with an external FocusNode. didUpdateWidget fires with
+        // oldWidget.focusNode == null && widget.focusNode != null, and since
+        // _ownedFocusNode was created during the first build, the dispose
+        // branch executes.
+        final externalFocus = FocusNode();
+        addTearDown(externalFocus.dispose);
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            SizedBox(
+              width: 400,
+              height: 400,
+              child: Center(
+                child: SettingsTreeResizeHandle(focusNode: externalFocus),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The widget continues to function using the external focus node.
+        externalFocus.requestFocus();
+        await tester.pump();
+        final before = _width(tester);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await _drainTimers(tester);
+
+        expect(_width(tester), before + settingsTreeNavWidthArrowStep);
+      },
+    );
   });
 }

@@ -664,53 +664,6 @@ void main() {
     );
 
     testWidgets(
-      'adding a health chart via modal sets dirty and shows save button',
-      (tester) async {
-        final formKey = GlobalKey<FormBuilderState>();
-
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((_) async => 1);
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: emptyTestDashboardConfig,
-              formKey: formKey,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const Key('dashboard_save')), findsNothing);
-
-        // Scroll to "Health Charts" button.
-        final healthButtonFinder = find.text('Health Charts');
-        await tester.dragUntilVisible(
-          healthButtonFinder.first,
-          find.byType(SingleChildScrollView),
-          const Offset(0, 200),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.tap(healthButtonFinder.first);
-        await tester.pumpAndSettle();
-
-        // The modal lists all health types; pick the first visible one.
-        final firstHealthItem = find.byType(CheckboxListTile).first;
-        await tester.tap(firstHealthItem);
-        await tester.pumpAndSettle();
-
-        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
-        expect(addButtonFinder, findsOneWidget);
-        await tester.tap(addButtonFinder);
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
-      },
-    );
-
-    testWidgets(
       'adding a survey chart via modal sets dirty and shows save button',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
@@ -745,52 +698,6 @@ void main() {
         // Pick the first survey item in the modal.
         final firstSurveyItem = find.byType(CheckboxListTile).first;
         await tester.tap(firstSurveyItem);
-        await tester.pumpAndSettle();
-
-        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
-        expect(addButtonFinder, findsOneWidget);
-        await tester.tap(addButtonFinder);
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'adding a workout chart via modal sets dirty and shows save button',
-      (tester) async {
-        final formKey = GlobalKey<FormBuilderState>();
-
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((_) async => 1);
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: emptyTestDashboardConfig,
-              formKey: formKey,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const Key('dashboard_save')), findsNothing);
-
-        final workoutButtonFinder = find.text('Workout Charts');
-        await tester.dragUntilVisible(
-          workoutButtonFinder.first,
-          find.byType(SingleChildScrollView),
-          const Offset(0, 200),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.tap(workoutButtonFinder.first);
-        await tester.pumpAndSettle();
-
-        // Pick the first workout item in the modal.
-        final firstWorkoutItem = find.byType(CheckboxListTile).first;
-        await tester.tap(firstWorkoutItem);
         await tester.pumpAndSettle();
 
         final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');

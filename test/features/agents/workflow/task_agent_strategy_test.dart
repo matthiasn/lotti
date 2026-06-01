@@ -660,6 +660,132 @@ void main() {
         ).called(greaterThanOrEqualTo(2));
       });
 
+      test(
+        'recovers arguments from markdown code-fenced JSON (local model quirk)',
+        () async {
+          // Some local models wrap the JSON in a markdown code fence such as:
+          // ```json\n{...}\n```
+          // The strategy must extract and use the inner JSON object.
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'fence-recovery-ok',
+            ),
+          );
+
+          final toolCalls = [
+            const ChatCompletionMessageToolCall(
+              id: 'call-fenced',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_task_priority',
+                arguments: '```json\n{"priority": "P0"}\n```',
+              ),
+            ),
+          ];
+
+          final action = await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(action, ConversationAction.continueConversation);
+
+          // Executor must be called with the extracted map, not the raw fenced
+          // string — confirming the fence-recovery path parsed correctly.
+          verify(
+            () => mockExecutor.execute(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P0'},
+              targetEntityId: taskId,
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).called(1);
+
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-fenced',
+              response: 'fence-recovery-ok',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'recovers arguments from JSON object embedded in trailing text',
+        () async {
+          // Some local models emit the JSON object followed by explanation text,
+          // e.g. '{"priority": "P1"} (setting to high priority)'.
+          // The balanced-brace extractor must isolate the JSON object.
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'brace-recovery-ok',
+            ),
+          );
+
+          const trailingText =
+              '{"status": "IN_PROGRESS"} (setting task to in progress)';
+
+          final toolCalls = [
+            const ChatCompletionMessageToolCall(
+              id: 'call-trailing',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'set_task_status',
+                arguments: trailingText,
+              ),
+            ),
+          ];
+
+          final action = await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(action, ConversationAction.continueConversation);
+
+          // Executor must receive the clean map extracted from the raw text.
+          verify(
+            () => mockExecutor.execute(
+              toolName: 'set_task_status',
+              args: {'status': 'IN_PROGRESS'},
+              targetEntityId: taskId,
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).called(1);
+
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-trailing',
+              response: 'brace-recovery-ok',
+            ),
+          ).called(1);
+        },
+      );
+
       test('persists assistant message before processing tool calls', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
@@ -1973,6 +2099,125 @@ void main() {
             csBuilder.items.first.humanSummary,
             'Revise time entry text: "Added rollout discussion"',
           );
+        },
+      );
+
+      test(
+        'generates time-range-only summary for update_time_entry with no summary',
+        () async {
+          // When the LLM omits (or blanks out) the summary field, the human
+          // summary should describe only the time range rather than crashing or
+          // producing an empty string.
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-te-nosummary',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_time_entry',
+                arguments: jsonEncode({
+                  'entryId': 'entry-456',
+                  'startTime': '2026-03-17T09:00:00',
+                  'endTime': '2026-03-17T10:30:00',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, hasLength(1));
+          expect(
+            csBuilder.items.first.humanSummary,
+            'Update time entry 09:00–10:30',
+          );
+        },
+      );
+
+      test(
+        'generates bare label for update_time_entry with no summary and no times',
+        () async {
+          // Neither summary nor time fields: falls through to the empty-range
+          // empty-summary branch and returns the bare label.
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-te-empty',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_time_entry',
+                arguments: jsonEncode({
+                  'entryId': 'entry-789',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, hasLength(1));
+          expect(csBuilder.items.first.humanSummary, 'Update time entry');
+        },
+      );
+
+      test(
+        'returns Skipped response when addItem reports a within-wake duplicate',
+        () async {
+          // Pre-seed the ChangeSetBuilder with the identical item so the first
+          // call to processToolCalls triggers the within-wake fingerprint dedup
+          // inside ChangeSetBuilder.addItem (not the _usedDeferredTools check
+          // which runs at a higher level and blocks repeat *single-use* tools).
+          // The strategy must surface the "Already queued" message prefixed with
+          // "Skipped:" to the LLM.
+          //
+          // We use update_task_priority because it is:
+          //  - a non-batch deferred tool (routes through _addToChangeSet → addItem)
+          //  - single-use (isSingleUse == true)
+          // Pre-seeding bypasses the single-use guard and lets addItem's own
+          // fingerprint dedup fire on the first processToolCalls call.
+          await csBuilder.addItem(
+            toolName: 'update_task_priority',
+            args: {'priority': 'P2'},
+            humanSummary: 'pre-seeded',
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-dedup',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_task_priority',
+                arguments: jsonEncode({'priority': 'P2'}),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          // Builder still has only the pre-seeded item; the duplicate was not
+          // added.
+          expect(csBuilder.items, hasLength(1));
+          expect(csBuilder.items.first.humanSummary, 'pre-seeded');
+
+          // The strategy forwards the "Already queued" message to the LLM
+          // with a "Skipped:" prefix.
+          final capturedResponse =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-dedup',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(capturedResponse, startsWith('Skipped:'));
+          expect(capturedResponse, contains('Already queued'));
         },
       );
 

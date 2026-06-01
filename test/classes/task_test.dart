@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' show AnyUtils, ExploreConfig, Glados, any;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/themes/colors.dart';
@@ -199,6 +200,61 @@ void main() {
       expect(updatedTask.data.languageCode, equals('ko'));
       expect(updatedTask.data.title, equals('Updated Title'));
     });
+  });
+
+  group('taskStatusFromString', () {
+    // Each branch maps a string to the correct TaskStatus subtype and the
+    // toDbString round-trip returns the canonical DB string.
+    final cases = <(String, Type, String)>[
+      ('DONE', TaskDone, 'DONE'),
+      ('GROOMED', TaskGroomed, 'GROOMED'),
+      ('IN PROGRESS', TaskInProgress, 'IN PROGRESS'),
+      ('BLOCKED', TaskBlocked, 'BLOCKED'),
+      ('ON HOLD', TaskOnHold, 'ON HOLD'),
+      ('REJECTED', TaskRejected, 'REJECTED'),
+      ('OPEN', TaskOpen, 'OPEN'),
+      ('anything else', TaskOpen, 'OPEN'),
+    ];
+
+    for (final (input, expectedType, expectedDb) in cases) {
+      test('parses "$input" → $expectedType, toDbString == "$expectedDb"', () {
+        final status = taskStatusFromString(input);
+        expect(status.runtimeType, equals(expectedType));
+        expect(status.toDbString, equals(expectedDb));
+      });
+    }
+
+    test('BLOCKED result carries default reason', () {
+      final status = taskStatusFromString('BLOCKED') as TaskBlocked;
+      expect(status.reason, equals('needs a reason'));
+    });
+
+    test('ON HOLD result carries default reason', () {
+      final status = taskStatusFromString('ON HOLD') as TaskOnHold;
+      expect(status.reason, equals('needs a reason'));
+    });
+  });
+
+  group('taskStatusFromString / toDbString round-trip (glados)', () {
+    final knownInputs = [
+      'DONE',
+      'GROOMED',
+      'IN PROGRESS',
+      'BLOCKED',
+      'ON HOLD',
+      'REJECTED',
+      'OPEN',
+    ];
+
+    Glados(any.choose(knownInputs), ExploreConfig(numRuns: 50)).test(
+      'toDbString is the canonical form for known statuses',
+      (input) {
+        final status = taskStatusFromString(input);
+        // The DB string must equal the input for the canonical set.
+        expect(status.toDbString, equals(input));
+      },
+      tags: 'glados',
+    );
   });
 
   group('TaskStatusExtension - colorForBrightness', () {

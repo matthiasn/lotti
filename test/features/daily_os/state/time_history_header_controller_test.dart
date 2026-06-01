@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -1376,5 +1377,423 @@ void main() {
       }
       expect(dayCount, equals(manualCount));
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Notification-driven refresh tests (lines 106-107, 112-113, 117, 121-131,
+  // 136): covers the _listenToUpdates → _refresh path.
+  // ---------------------------------------------------------------------------
+  group('notification-driven refresh', () {
+    // Each test creates its own ProviderContainer INSIDE fakeAsync so that
+    // Riverpod's scheduler Timers and RxDart's throttle Timer are all
+    // registered in the fake-async zone.  flushMicrotasks() settles async
+    // Futures; elapse(6s) fires the 5-second throttleTime window timer.
+
+    test(
+      '_refresh updates state when relevant notification arrives after throttle',
+      () {
+        fakeAsync((fa) {
+          withClock(fa.getClock(testDate), () {
+            // Create container INSIDE fakeAsync so the Riverpod scheduler
+            // Timer and the RxDart throttle Timer are both in this zone.
+            final c = ProviderContainer();
+            var fetchCount = 0;
+            when(
+              () => mockDb.sortedCalendarEntries(
+                rangeStart: any(named: 'rangeStart'),
+                rangeEnd: any(named: 'rangeEnd'),
+              ),
+            ).thenAnswer((_) async {
+              fetchCount++;
+              return <JournalEntity>[];
+            });
+            when(
+              () => mockDb.linksForEntryIds(any()),
+            ).thenAnswer((_) async => []);
+
+            // Use listen() to keep a continuous subscription so that Riverpod
+            // does NOT auto-dispose the provider (which would cancel the update
+            // subscription and invalidate the throttle timer).
+            c.listen(
+              timeHistoryHeaderControllerProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
+            fa.flushMicrotasks();
+            expect(fetchCount, equals(1));
+
+            // Push a notification with a subscribed ID.  Flush microtasks
+            // first to deliver the broadcast event to the throttle transformer
+            // (which creates the 5s Timer in this fakeAsync zone), then
+            // elapse 6s to fire it.
+            updateStreamController.add({textEntryNotification});
+            fa
+              ..flushMicrotasks() // deliver event → Timer(5s) created
+              ..elapse(const Duration(seconds: 6)); // fire the throttle timer
+            // Drain the nested async chain from _fetchDataForRange.
+            for (var i = 0; i < 30; i++) {
+              fa.flushMicrotasks();
+            }
+
+            // A second DB fetch should have been triggered by _refresh.
+            expect(fetchCount, greaterThanOrEqualTo(2));
+            c.dispose();
+          });
+        });
+      },
+    );
+
+    test(
+      '_refresh is skipped when notification IDs do not intersect subscribed set',
+      () {
+        fakeAsync((fa) {
+          withClock(fa.getClock(testDate), () {
+            final c = ProviderContainer();
+            var fetchCount = 0;
+            when(
+              () => mockDb.sortedCalendarEntries(
+                rangeStart: any(named: 'rangeStart'),
+                rangeEnd: any(named: 'rangeEnd'),
+              ),
+            ).thenAnswer((_) async {
+              fetchCount++;
+              return <JournalEntity>[];
+            });
+            when(
+              () => mockDb.linksForEntryIds(any()),
+            ).thenAnswer((_) async => []);
+
+            // Keep a listener so the provider is not auto-disposed.
+            c.listen(
+              timeHistoryHeaderControllerProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
+            fa.flushMicrotasks();
+            expect(fetchCount, equals(1));
+
+            // Notification ID is NOT in {textEntry, audio, task}.
+            updateStreamController.add({'SOME_OTHER_NOTIFICATION'});
+            fa
+              ..flushMicrotasks()
+              ..elapse(const Duration(seconds: 6))
+              ..flushMicrotasks();
+
+            // No additional fetch — _refresh was never invoked.
+            expect(fetchCount, equals(1));
+            c.dispose();
+          });
+        });
+      },
+    );
+
+    test('_refresh is skipped when state has no value (null state)', () {
+      fakeAsync((fa) {
+        withClock(fa.getClock(testDate), () {
+          final c = ProviderContainer();
+          // Use a completer so the build future never resolves, leaving the
+          // provider in AsyncLoading (state.value == null).
+          final buildCompleter = Completer<List<JournalEntity>>();
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) => buildCompleter.future);
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => []);
+
+          // Keep a listener so the provider is not auto-disposed while loading.
+          c.listen(
+            timeHistoryHeaderControllerProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+          fa.flushMicrotasks();
+
+          final before = c.read(timeHistoryHeaderControllerProvider);
+          expect(before.isLoading, isTrue);
+
+          // Emit a notification while state.value == null.
+          // _refresh must return early without throwing.
+          updateStreamController.add({taskNotification});
+          fa
+            ..flushMicrotasks()
+            ..elapse(const Duration(seconds: 6))
+            ..flushMicrotasks();
+
+          // Provider must still be in loading state — no crash.
+          final after = c.read(timeHistoryHeaderControllerProvider);
+          expect(after.isLoading, isTrue);
+
+          // Resolve the build so the container disposes cleanly.
+          buildCompleter.complete([]);
+          fa.flushMicrotasks();
+          c.dispose();
+        });
+      });
+    });
+
+    test(
+      '_refresh is skipped while isLoadingMore is true (line 117)',
+      () {
+        fakeAsync((fa) {
+          withClock(fa.getClock(testDate), () {
+            final c = ProviderContainer();
+            var fetchCount = 0;
+            // Second call blocks via a completer to keep isLoadingMore = true.
+            final slowCompleter = Completer<List<JournalEntity>>();
+            when(
+              () => mockDb.sortedCalendarEntries(
+                rangeStart: any(named: 'rangeStart'),
+                rangeEnd: any(named: 'rangeEnd'),
+              ),
+            ).thenAnswer((_) async {
+              fetchCount++;
+              if (fetchCount == 1) return <JournalEntity>[];
+              return slowCompleter.future;
+            });
+            when(
+              () => mockDb.linksForEntryIds(any()),
+            ).thenAnswer((_) async => []);
+
+            // Keep a listener so the provider is not auto-disposed.
+            c.listen(
+              timeHistoryHeaderControllerProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
+            fa.flushMicrotasks();
+            expect(fetchCount, equals(1));
+
+            // Kick off loadMoreDays — fetch #2 blocks, isLoadingMore becomes
+            // true immediately via copyWith before the await.
+            c.read(timeHistoryHeaderControllerProvider.notifier).loadMoreDays();
+            fa.flushMicrotasks();
+
+            final duringLoad = c
+                .read(timeHistoryHeaderControllerProvider)
+                .value!;
+            expect(duringLoad.isLoadingMore, isTrue);
+
+            final countSnapshot = fetchCount;
+
+            // Emit a notification — _refresh detects isLoadingMore and bails.
+            updateStreamController.add({textEntryNotification});
+            fa
+              ..flushMicrotasks()
+              ..elapse(const Duration(seconds: 6));
+            for (var i = 0; i < 10; i++) {
+              fa.flushMicrotasks();
+            }
+
+            // fetchCount must not have grown from the notification.
+            expect(fetchCount, equals(countSnapshot));
+
+            // Resolve the slow future for clean teardown.
+            slowCompleter.complete([]);
+            fa.flushMicrotasks();
+            c.dispose();
+          });
+        });
+      },
+    );
+
+    test(
+      '_refresh logs error and keeps current state on exception (line 136)',
+      () {
+        fakeAsync((fa) {
+          withClock(fa.getClock(testDate), () {
+            final c = ProviderContainer();
+            var fetchCount = 0;
+            when(
+              () => mockDb.sortedCalendarEntries(
+                rangeStart: any(named: 'rangeStart'),
+                rangeEnd: any(named: 'rangeEnd'),
+              ),
+            ).thenAnswer((_) async {
+              fetchCount++;
+              if (fetchCount == 1) return <JournalEntity>[];
+              throw Exception('refresh DB error');
+            });
+            when(
+              () => mockDb.linksForEntryIds(any()),
+            ).thenAnswer((_) async => []);
+
+            // Keep a listener so the provider is not auto-disposed.
+            c.listen(
+              timeHistoryHeaderControllerProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
+            fa.flushMicrotasks();
+            expect(fetchCount, equals(1));
+
+            final before = c.read(timeHistoryHeaderControllerProvider).value!;
+            expect(before.days.length, equals(60));
+
+            // Trigger refresh that throws.
+            updateStreamController.add({audioNotification});
+            fa
+              ..flushMicrotasks()
+              ..elapse(const Duration(seconds: 6));
+            // Drain the nested async chain.
+            for (var i = 0; i < 20; i++) {
+              fa.flushMicrotasks();
+            }
+
+            // State preserved — data not disrupted by error in refresh.
+            final afterError = c
+                .read(timeHistoryHeaderControllerProvider)
+                .value;
+            expect(afterError, isNotNull);
+            expect(afterError!.days.length, equals(60));
+
+            // DomainLogger.error must have been called for _refresh.
+            verify(
+              () => mockDomainLogger.error(
+                LogDomain.calendar,
+                any<Object>(),
+                stackTrace: any<StackTrace>(named: 'stackTrace'),
+                subDomain: 'TimeHistoryHeaderController._refresh',
+              ),
+            ).called(1);
+            c.dispose();
+          });
+        });
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // loadMoreDays edge cases: lines 195, 200, 221
+  // ---------------------------------------------------------------------------
+  group('loadMoreDays — max and empty-list branches', () {
+    test(
+      'keeps current maxDailyTotal when additional data has a lower max '
+      '(line 200 — current max >= additional max branch)',
+      () async {
+        await withClock(fixedClock, () async {
+          // Initial load with a 3-hour entry so maxDailyTotal == 3h.
+          final jan15 = DateTime(2026, 1, 15, 10);
+          final entry = createJournalEntry(
+            id: 'entry-big',
+            categoryId: null,
+            dateFrom: jan15,
+            dateTo: jan15.add(const Duration(hours: 3)),
+          );
+
+          var callIndex = 0;
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async {
+            callIndex++;
+            // First call: initial load — return the big entry.
+            // Second call (loadMoreDays): return empty list.
+            return callIndex == 1 ? [entry] : <JournalEntity>[];
+          });
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => []);
+
+          await container.read(timeHistoryHeaderControllerProvider.future);
+
+          final initialState = container
+              .read(timeHistoryHeaderControllerProvider)
+              .value!;
+          expect(
+            initialState.maxDailyTotal,
+            equals(const Duration(hours: 3)),
+          );
+
+          final notifier = container.read(
+            timeHistoryHeaderControllerProvider.notifier,
+          );
+          await notifier.loadMoreDays();
+
+          final afterLoad = container
+              .read(timeHistoryHeaderControllerProvider)
+              .value!;
+
+          // Additional data has no entries (max = 0), so the current max (3h)
+          // must be preserved.
+          expect(
+            afterLoad.maxDailyTotal,
+            equals(const Duration(hours: 3)),
+          );
+          // Heights for older days (zero entries) should be merged via the
+          // spread path, not via a full recompute.
+          expect(afterLoad.days.length, equals(74));
+        });
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // resetToToday error path without prior value — line 264 (AsyncError branch)
+  // ---------------------------------------------------------------------------
+  group('resetToToday — AsyncError fallback when no prior value', () {
+    test(
+      'sets AsyncError when _fetchInitialData throws and previousState has no '
+      'value (line 264)',
+      () async {
+        await withClock(fixedClock, () async {
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => throw Exception('forced failure'));
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => []);
+
+          // Collect state emissions so we can observe AsyncError without using
+          // .future (which throws a StateError when Riverpod disposes during load).
+          final states = <AsyncValue<TimeHistoryData>>[];
+          container.listen<AsyncValue<TimeHistoryData>>(
+            timeHistoryHeaderControllerProvider,
+            (previous, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          // Wait for the initial build to settle into AsyncError.
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          final stateAfterBuild = container.read(
+            timeHistoryHeaderControllerProvider,
+          );
+          expect(stateAfterBuild.hasError, isTrue);
+          expect(stateAfterBuild.hasValue, isFalse);
+
+          // Call resetToToday — previousState has no value, so the catch block
+          // must emit AsyncError(e, stackTrace) — line 264.
+          final notifier = container.read(
+            timeHistoryHeaderControllerProvider.notifier,
+          );
+          await notifier.resetToToday();
+
+          final afterReset = container.read(
+            timeHistoryHeaderControllerProvider,
+          );
+          expect(afterReset.hasError, isTrue);
+
+          // DomainLogger must have been called for resetToToday.
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.calendar,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'TimeHistoryHeaderController.resetToToday',
+            ),
+          ).called(greaterThanOrEqualTo(1));
+        });
+      },
+    );
   });
 }

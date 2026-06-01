@@ -1,12 +1,25 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // animation library is not required for these assertions
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
+import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -15,6 +28,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:mocktail/mocktail.dart';
@@ -25,6 +39,41 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
+// ---------------------------------------------------------------------------
+// Fake entry controllers used by the coverage tests below.
+// ---------------------------------------------------------------------------
+
+/// Builds an [EntryController] state synchronously for any [JournalEntity].
+class _FakeEntryController extends EntryController {
+  _FakeEntryController(this._entry);
+
+  final JournalEntity _entry;
+
+  @override
+  Future<EntryState?> build({required String id}) {
+    final value = EntryState.saved(
+      entryId: id,
+      entry: _entry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+      formKey: GlobalKey<FormBuilderState>(),
+    );
+    state = AsyncData(value);
+    return SynchronousFuture(value);
+  }
+}
+
+/// Returns a null entry (entity not yet loaded / missing).
+class _NullEntryController extends EntryController {
+  @override
+  Future<EntryState?> build({required String id}) {
+    state = const AsyncData(null);
+    return SynchronousFuture(null);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Simplified test widget that mimics EntryDetailsWidget behavior
 class TestEntryDetailsWidget extends StatelessWidget {
   const TestEntryDetailsWidget({
@@ -769,5 +818,1147 @@ void main() {
       // The "Labels" header text should NOT be present
       expect(find.text('Labels'), findsNothing);
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Coverage tests: branches reachable only with specific entry types/flags.
+  // ---------------------------------------------------------------------------
+
+  group('EntryDetailsWidget coverage – task & deleted branches', () {
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockEditorStateService mockEditorStateService;
+    late MockTimeService mockTimeService;
+
+    setUpAll(setFakeDocumentsPath);
+
+    setUp(() async {
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+      mockEditorStateService = MockEditorStateService();
+      mockTimeService = MockTimeService();
+
+      final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+      final mockPersistenceLogic = MockPersistenceLogic();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<NavService>(MockNavService());
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
+      when(
+        () => mockEntitiesCacheService.getLabelById(any()),
+      ).thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
+
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+
+      when(
+        // ignore: unnecessary_lambdas
+        () => mockJournalDb.watchConfigFlags(),
+      ).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(any(), any()),
+      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
+
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    // Line 79: hideTaskEntries=true for a Task → SizedBox.shrink()
+    testWidgets(
+      'returns SizedBox.shrink when isTask and hideTaskEntries=true',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(id: testTask.meta.id).overrideWith(
+                  () => _FakeEntryController(testTask),
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testTask.meta.id,
+                showAiEntry: false,
+                hideTaskEntries: true,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // Widget renders but the EntryDetailsContent is hidden (SizedBox.shrink)
+        // so neither EntryDetailsContent nor ModernJournalCard should appear.
+        expect(find.byType(EntryDetailsContent), findsNothing);
+      },
+    );
+
+    // Lines 84-85, 91: isTask=true, showTaskDetails=false → ModernJournalCard
+    testWidgets(
+      'renders ModernJournalCard for task when showTaskDetails=false',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(id: testTask.meta.id).overrideWith(
+                  () => _FakeEntryController(testTask),
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testTask.meta.id,
+                showAiEntry: false,
+                // ignore: avoid_redundant_argument_values
+                showTaskDetails: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // The Padding wrapper with XSmall spacing should be present (lines 85-90).
+        // ModernJournalCard renders inside it — we can verify the Padding values
+        // match what EntryDetailsWidget hardcodes for this branch.
+        final paddingFinder = find.byType(Padding).first;
+        expect(paddingFinder, findsOneWidget);
+        // EntryDetailsContent is NOT rendered in this branch.
+        expect(find.byType(EntryDetailsContent), findsNothing);
+      },
+    );
+
+    // AiResponseEntry with showAiEntry=false → SizedBox.shrink (line 71-72)
+    testWidgets(
+      'returns SizedBox.shrink for AiResponseEntry when showAiEntry=false',
+      (tester) async {
+        final aiEntry = JournalEntity.aiResponse(
+          meta: Metadata(
+            id: 'ai-entry-id',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: '',
+            prompt: 'test prompt',
+            thoughts: '',
+            response: 'test response',
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(id: 'ai-entry-id').overrideWith(
+                  () => _FakeEntryController(aiEntry),
+                ),
+              ],
+              child: const EntryDetailsWidget(
+                itemId: 'ai-entry-id',
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // AiResponseEntry with showAiEntry=false collapses to SizedBox.shrink
+        expect(find.byType(EntryDetailsContent), findsNothing);
+      },
+    );
+
+    // Null entry → SizedBox.shrink (null item check)
+    testWidgets('returns SizedBox.shrink when entry state is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            overrides: [
+              entryControllerProvider(
+                id: 'missing-id',
+              ).overrideWith(_NullEntryController.new),
+            ],
+            child: const EntryDetailsWidget(
+              itemId: 'missing-id',
+              showAiEntry: false,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(EntryDetailsContent), findsNothing);
+    });
+
+    // Deleted entry (deletedAt set) → SizedBox.shrink in EntryDetailsWidget
+    testWidgets('returns SizedBox.shrink when entry has deletedAt set', (
+      tester,
+    ) async {
+      final deletedEntry = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(deletedAt: DateTime(2024, 3, 15)),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            overrides: [
+              entryControllerProvider(
+                id: deletedEntry.meta.id,
+              ).overrideWith(() => _FakeEntryController(deletedEntry)),
+            ],
+            child: EntryDetailsWidget(
+              itemId: deletedEntry.meta.id,
+              showAiEntry: false,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(EntryDetailsContent), findsNothing);
+    });
+  });
+
+  group('EntryDetailsWidget coverage – isHighlighted with category color', () {
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockEditorStateService mockEditorStateService;
+    late MockTimeService mockTimeService;
+
+    setUpAll(setFakeDocumentsPath);
+
+    setUp(() async {
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+      mockEditorStateService = MockEditorStateService();
+      mockTimeService = MockTimeService();
+
+      final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+      final mockPersistenceLogic = MockPersistenceLogic();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<NavService>(MockNavService());
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
+      when(
+        () => mockEntitiesCacheService.getLabelById(any()),
+      ).thenReturn(null);
+
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+
+      when(
+        // ignore: unnecessary_lambdas
+        () => mockJournalDb.watchConfigFlags(),
+      ).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(any(), any()),
+      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
+
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    // Line 158: isHighlighted=true AND category != null → colorFromCssHex path
+    testWidgets(
+      'uses category color for pulsing border when category is found',
+      (tester) async {
+        // Stub getCategoryById to return a real category with a CSS hex color
+        when(
+          () => mockEntitiesCacheService.getCategoryById(any()),
+        ).thenReturn(categoryMindfulness);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+                isHighlighted: true,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // The Stack + _PulsingBorder CustomPaint should be present.
+        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      },
+    );
+
+    // Line 158 fallback: isHighlighted=true AND category == null → Colors.pink
+    testWidgets(
+      'falls back to pink when no category found for highlighted entry',
+      (tester) async {
+        when(
+          () => mockEntitiesCacheService.getCategoryById(any()),
+        ).thenReturn(null);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+                isHighlighted: true,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      },
+    );
+
+    // Lines 232-237: _GlowBorderPainter.shouldRepaint – triggered by pumping
+    // the same widget with a different category color, forcing a repaint.
+    testWidgets(
+      '_GlowBorderPainter.shouldRepaint is exercised when category color changes',
+      (tester) async {
+        // First render with blue category
+        when(
+          () => mockEntitiesCacheService.getCategoryById(any()),
+        ).thenReturn(categoryMindfulness); // color: '#0000FFFF'
+
+        Future<void> buildWidget() async {
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              ProviderScope(
+                overrides: [
+                  entryControllerProvider(
+                    id: testTextEntry.meta.id,
+                  ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                ],
+                child: EntryDetailsWidget(
+                  itemId: testTextEntry.meta.id,
+                  showAiEntry: false,
+                  isHighlighted: true,
+                ),
+              ),
+            ),
+          );
+        }
+
+        await buildWidget();
+        await tester.pump();
+        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+
+        // Change to a different category color to trigger shouldRepaint
+        when(
+          () => mockEntitiesCacheService.getCategoryById(any()),
+        ).thenReturn(
+          CategoryDefinition(
+            id: 'cat-red',
+            name: 'Red',
+            color: '#FF0000FF',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            active: true,
+            private: false,
+          ),
+        );
+
+        await buildWidget();
+        // pumpAndSettle to let the animation controller tick through at least
+        // one frame so the _PulsingBorder repaint path is exercised.
+        await tester.pumpAndSettle();
+        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      },
+    );
+  });
+
+  group('EntryDetailsContent coverage – entry type detail sections', () {
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockEditorStateService mockEditorStateService;
+    late MockTimeService mockTimeService;
+    late JournalDb mockJournalDb;
+
+    setUpAll(setFakeDocumentsPath);
+
+    setUp(() async {
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+      mockEditorStateService = MockEditorStateService();
+      mockTimeService = MockTimeService();
+      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+
+      final mockPersistenceLogic = MockPersistenceLogic();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<NavService>(MockNavService());
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
+      when(
+        () => mockEntitiesCacheService.getLabelById(any()),
+      ).thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
+
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+
+      when(
+        () => mockJournalDb.watchConfigFlags(),
+      ).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(any(), any()),
+      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
+
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    // Lines 483 (AiResponseEntry path – showAiEntry=true so it renders)
+    testWidgets(
+      'EntryDetailsContent renders AiResponseSummary for AiResponseEntry',
+      (tester) async {
+        final aiEntry = JournalEntity.aiResponse(
+          meta: Metadata(
+            id: 'ai-detail-id',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: '',
+            prompt: 'prompt text',
+            thoughts: '',
+            response: 'AI response text',
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(id: 'ai-detail-id').overrideWith(
+                  () => _FakeEntryController(aiEntry),
+                ),
+              ],
+              child: const EntryDetailsWidget(
+                itemId: 'ai-detail-id',
+                showAiEntry: true,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // EntryDetailsContent must be present (not SizedBox.shrink)
+        expect(find.byType(EntryDetailsContent), findsOneWidget);
+      },
+    );
+
+    // Lines 487-488: Checklist entry → ChecklistCardWrapper rendered
+    // (requires linkedTasks to have at least one entry for the card wrapper)
+    testWidgets(
+      'EntryDetailsContent renders for Checklist entry',
+      (tester) async {
+        final checklist = JournalEntity.checklist(
+          meta: Metadata(
+            id: 'checklist-id',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: const ChecklistData(
+            title: 'Test Checklist',
+            linkedChecklistItems: <String>[],
+            linkedTasks: ['task-id-1'],
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(id: 'checklist-id').overrideWith(
+                  () => _FakeEntryController(checklist),
+                ),
+              ],
+              child: const EntryDetailsWidget(
+                itemId: 'checklist-id',
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // EntryDetailsContent must be present (not hidden)
+        expect(find.byType(EntryDetailsContent), findsOneWidget);
+      },
+    );
+
+    // Lines 494-498: ChecklistItem entry → ChecklistItemRow rendered
+    testWidgets(
+      'EntryDetailsContent renders for ChecklistItem entry',
+      (tester) async {
+        final checklistItem = JournalEntity.checklistItem(
+          meta: Metadata(
+            id: 'checklist-item-id',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: const ChecklistItemData(
+            title: 'Test item',
+            isChecked: false,
+            linkedChecklists: ['checklist-parent-id'],
+          ),
+        );
+
+        // Use makeTestableWidget (SingleChildScrollView) to avoid overflow
+        // errors from ChecklistItemRow in a constrained Scaffold body.
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(id: 'checklist-item-id').overrideWith(
+                  () => _FakeEntryController(checklistItem),
+                ),
+              ],
+              child: const EntryDetailsWidget(
+                itemId: 'checklist-item-id',
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        expect(find.byType(EntryDetailsContent), findsOneWidget);
+      },
+    );
+
+    // Lines 575-576: NestedAiResponsesWidget is rendered for non-collapsible
+    // audio entries (the non-collapsible column path, line 574-578).
+    testWidgets(
+      'EntryDetailsContent renders NestedAiResponsesWidget for JournalAudio '
+      'in non-collapsible layout',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testAudioEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testAudioEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testAudioEntry.meta.id,
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // NestedAiResponsesWidget is always included in the widget tree for
+        // audio entries (even if it renders as SizedBox.shrink internally).
+        expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
+        // AudioPlayerWidget is the detail section for audio entries.
+        expect(find.byType(AudioPlayerWidget), findsOneWidget);
+      },
+    );
+
+    // MeasurementSummary rendered for MeasurementEntry (not a task, not an
+    // audio — verifies the generic detailSection branch).
+    testWidgets(
+      'EntryDetailsContent renders MeasurementSummary for MeasurementEntry',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testMeasurementChocolateEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeEntryController(testMeasurementChocolateEntry),
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testMeasurementChocolateEntry.meta.id,
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        expect(find.byType(MeasurementSummary), findsOneWidget);
+      },
+    );
+
+    // HabitSummary rendered for HabitCompletionEntry.
+    testWidgets(
+      'EntryDetailsContent renders HabitSummary for HabitCompletionEntry',
+      (tester) async {
+        when(
+          () => mockJournalDb.getHabitById(any()),
+        ).thenAnswer((_) async => habitFlossing);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testHabitCompletionEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeEntryController(testHabitCompletionEntry),
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testHabitCompletionEntry.meta.id,
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        expect(find.byType(HabitSummary), findsOneWidget);
+      },
+    );
+
+    // Deleted entry in EntryDetailsContent (line 447) → SizedBox.shrink
+    testWidgets(
+      'EntryDetailsContent returns SizedBox.shrink when entry is deleted',
+      (tester) async {
+        final deletedEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(deletedAt: DateTime(2024, 3, 15)),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                // Use the SAME itemId so both EntryDetailsWidget and
+                // EntryDetailsContent watch the same provider.
+                entryControllerProvider(
+                  id: deletedEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(deletedEntry)),
+              ],
+              child: EntryDetailsWidget(
+                // EntryDetailsWidget sees deletedAt → collapses before
+                // EntryDetailsContent is even built (line 70-72 guard).
+                itemId: deletedEntry.meta.id,
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // Neither the outer nor inner widget should render visible content.
+        expect(find.byType(EntryDetailsContent), findsNothing);
+      },
+    );
+  });
+
+  group('_CollapsibleBody coverage – didUpdateWidget collapse/expand', () {
+    // _CollapsibleBody is a private widget; we drive it indirectly through
+    // EntryDetailsContent when linkedFrom != null and the item is collapsible.
+
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockEditorStateService mockEditorStateService;
+    late MockTimeService mockTimeService;
+    late JournalDb mockJournalDb;
+
+    setUpAll(setFakeDocumentsPath);
+
+    setUp(() async {
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+      mockEditorStateService = MockEditorStateService();
+      mockTimeService = MockTimeService();
+      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+
+      final mockPersistenceLogic = MockPersistenceLogic();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<NavService>(MockNavService());
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
+      when(
+        () => mockEntitiesCacheService.getLabelById(any()),
+      ).thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
+
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+
+      when(
+        () => mockJournalDb.watchConfigFlags(),
+      ).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(any(), any()),
+      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
+
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    // Lines 667-674: _CollapsibleBodyState.didUpdateWidget called when
+    // isCollapsed changes – expand path (forward) and collapse path (reverse).
+    testWidgets(
+      '_CollapsibleBody animates from expanded to collapsed (didUpdateWidget reverse)',
+      (tester) async {
+        // A text entry with linkedFrom set is collapsible.
+        var isCollapsed = false;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            StatefulBuilder(
+              builder: (context, setState) {
+                return ProviderScope(
+                  overrides: [
+                    entryControllerProvider(
+                      id: testTextEntry.meta.id,
+                    ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                  ],
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: EntryDetailsContent(
+                          testTextEntry.meta.id,
+                          linkedFrom:
+                              testTextEntry, // non-null → isCollapsible=true for JournalEntry
+                          link: EntryLink.basic(
+                            id: 'link-id',
+                            fromId: 'from',
+                            toId: testTextEntry.meta.id,
+                            createdAt: DateTime(2024, 3, 15),
+                            updatedAt: DateTime(2024, 3, 15),
+                            vectorClock: null,
+                            collapsed: isCollapsed,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() => isCollapsed = true),
+                        child: const Text('Collapse'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // Initially expanded – content visible.
+        expect(find.byType(EntryDetailsContent), findsOneWidget);
+
+        // Trigger collapse → didUpdateWidget with isCollapsed=true (line 671-672).
+        await tester.ensureVisible(find.text('Collapse'));
+        await tester.tap(find.text('Collapse'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Widget tree still present after collapse animation starts.
+        expect(find.byType(EntryDetailsContent), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '_CollapsibleBody animates from collapsed to expanded (didUpdateWidget forward)',
+      (tester) async {
+        var isCollapsed = true;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            StatefulBuilder(
+              builder: (context, setState) {
+                return ProviderScope(
+                  overrides: [
+                    entryControllerProvider(
+                      id: testTextEntry.meta.id,
+                    ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                  ],
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: EntryDetailsContent(
+                          testTextEntry.meta.id,
+                          linkedFrom: testTextEntry,
+                          link: EntryLink.basic(
+                            id: 'link-id',
+                            fromId: 'from',
+                            toId: testTextEntry.meta.id,
+                            createdAt: DateTime(2024, 3, 15),
+                            updatedAt: DateTime(2024, 3, 15),
+                            vectorClock: null,
+                            collapsed: isCollapsed,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() => isCollapsed = false),
+                        child: const Text('Expand'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // Trigger expand → didUpdateWidget with isCollapsed=false (line 673-674).
+        await tester.ensureVisible(find.text('Expand'));
+        await tester.tap(find.text('Expand'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(EntryDetailsContent), findsOneWidget);
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Coverage tests: _PulsingBorder timer callback and _GlowBorderPainter
+  // shouldRepaint radius/strokeWidth/glowSigma branches.
+  // ---------------------------------------------------------------------------
+
+  group('_PulsingBorder timer and _GlowBorderPainter.shouldRepaint branches', () {
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockEditorStateService mockEditorStateService;
+    late MockTimeService mockTimeService;
+
+    setUpAll(setFakeDocumentsPath);
+
+    setUp(() async {
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+      mockEditorStateService = MockEditorStateService();
+      mockTimeService = MockTimeService();
+
+      final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+      final mockPersistenceLogic = MockPersistenceLogic();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<NavService>(MockNavService());
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
+      when(
+        () => mockEntitiesCacheService.getLabelById(any()),
+      ).thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
+
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+
+      when(
+        // ignore: unnecessary_lambdas
+        () => mockJournalDb.watchConfigFlags(),
+      ).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(any(), any()),
+      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
+
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    // Lines 328-329: _PulsingBorder._startDelayTimer callback.
+    // The startDelay is 1000 ms.  Pumping past that threshold causes the Timer
+    // to fire while the widget is still mounted, which exercises line 328
+    // (`if (!mounted) return;` evaluating to false) and line 329
+    // (`_controller.forward()`).
+    testWidgets(
+      '_PulsingBorder timer fires while mounted and starts animation',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+                isHighlighted: true,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // Advance time past the 1000 ms startDelay in two steps (each < 1 s)
+        // so the Timer callback fires while _PulsingBorderState is still mounted.
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump(const Duration(milliseconds: 600));
+
+        // The animation has started: the widget is still in the tree and the
+        // AnimationController is running (transient callbacks registered).
+        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+
+        // Settle the animation so tickers are cleaned up before the next test.
+        await tester.pump(const Duration(milliseconds: 5000));
+      },
+    );
+
+    // Lines 235-237: _GlowBorderPainter.shouldRepaint — radius, strokeWidth,
+    // and glowSigma checks.
+    //
+    // `shouldRepaint` is only called by Flutter when a CustomPaint is rebuilt
+    // with a new painter.  The `color` comparison (line 234) short-circuits
+    // to `true` whenever the pulsing animation has ticked (color shifts via
+    // lerp), so lines 235-237 are never reached in the existing tests.
+    //
+    // Strategy: keep the animation frozen at t=0 so that `tinted` equals
+    // `widget.color` on every build (p=0 → no lerp shift).  Then force a
+    // second build of `_PulsingBorderState` (via a StatefulBuilder setState)
+    // without advancing time.  Flutter calls `shouldRepaint` comparing two
+    // painters whose `color`, `radius`, `strokeWidth`, and `glowSigma` are all
+    // identical — so the check falls through lines 234→235→236→237 and returns
+    // false.  All four lines are now exercised.
+    testWidgets(
+      '_GlowBorderPainter.shouldRepaint exercises radius/strokeWidth/glowSigma '
+      'checks when color is unchanged between builds',
+      (tester) async {
+        var counter = 0;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            StatefulBuilder(
+              builder: (context, setState) {
+                return ProviderScope(
+                  overrides: [
+                    entryControllerProvider(
+                      id: testTextEntry.meta.id,
+                    ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                  ],
+                  child: Column(
+                    children: [
+                      EntryDetailsWidget(
+                        itemId: testTextEntry.meta.id,
+                        showAiEntry: false,
+                        isHighlighted: true,
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() => counter++),
+                        child: Text('rebuild-$counter'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        // First frame — widget tree is fully built; animation still at t=0
+        // (Timer hasn't fired yet so _controller hasn't started).
+        await tester.pump();
+
+        // Trigger a rebuild WITHOUT advancing fake time so the animation value
+        // stays at its initial position (tinted == widget.color on both builds).
+        await tester.ensureVisible(
+          find.widgetWithText(TextButton, 'rebuild-0'),
+        );
+        await tester.tap(find.widgetWithText(TextButton, 'rebuild-0'));
+        await tester.pump();
+
+        // shouldRepaint was called; CustomPaint is still in the tree.
+        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      },
+    );
   });
 }

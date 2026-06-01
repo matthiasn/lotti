@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
+import 'package:lotti/utils/platform.dart' as platform_utils;
 import 'package:path/path.dart' as p;
 
 void main() {
@@ -274,6 +275,172 @@ void main() {
         isTrue,
       );
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Non-test-env code paths (lines 36–57 of file_watcher_mixin.dart)
+  // These tests temporarily set isTestEnv = false so that setupFileWatcher
+  // exercises the real watcher logic instead of the synchronous test shortcut.
+  // ---------------------------------------------------------------------------
+  group('FileWatcherMixin – non-test-env paths', () {
+    late Directory tempDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('file_watcher_nontest_');
+    });
+
+    tearDown(() {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    testWidgets(
+      'same-path guard: second call with same path is a no-op (line 36)',
+      (tester) async {
+        final path = '${tempDir.path}/guard_test.txt';
+
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = true);
+
+        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        expect(state.fileExists, isFalse);
+
+        // A second call with the same path must hit the early-return guard and
+        // leave fileExists unchanged.
+        state.setupFileWatcher(path);
+        expect(state.fileExists, isFalse);
+      },
+    );
+
+    testWidgets(
+      'file already exists: sets fileExists=true and returns (lines 42-44)',
+      (tester) async {
+        final file = File('${tempDir.path}/exists_nontest.txt')
+          ..writeAsStringSync('data');
+
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = true);
+
+        await tester.pumpWidget(
+          MaterialApp(home: _TestWidget(path: file.path)),
+        );
+
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        expect(state.fileExists, isTrue);
+        expect(find.text('exists'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'non-existent file in existing dir: sets fileExists=false (line 48)',
+      (tester) async {
+        final path = '${tempDir.path}/not_yet.txt';
+
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = true);
+
+        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        expect(state.fileExists, isFalse);
+        expect(find.text('not exists'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'non-existent parent directory: returns early without watcher (lines 51-52)',
+      (tester) async {
+        final path = '${tempDir.path}/missing_dir/file.txt';
+
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = true);
+
+        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        // Parent dir does not exist → early return, no crash, fileExists = false.
+        expect(state.fileExists, isFalse);
+      },
+    );
+
+    testWidgets(
+      'switching to a new path disposes old watcher and rechecks (lines 39-40)',
+      (tester) async {
+        final file1 = File('${tempDir.path}/first.txt')
+          ..writeAsStringSync('first');
+        final path2 = '${tempDir.path}/second.txt';
+
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = true);
+
+        await tester.pumpWidget(
+          MaterialApp(home: _TestWidget(path: file1.path)),
+        );
+
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        expect(state.fileExists, isTrue);
+
+        // Switch to a new (non-existent) path – exercises _disposeWatcher +
+        // _watchedPath assignment (lines 39-40) and then lines 42-48.
+        state.setupFileWatcher(path2);
+        expect(state.fileExists, isFalse);
+      },
+    );
+
+    testWidgets(
+      'forceReset re-executes setup for the same path (bypasses line 36 guard)',
+      (tester) async {
+        final path = '${tempDir.path}/force.txt';
+
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = true);
+
+        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        expect(state.fileExists, isFalse);
+
+        // Create the file, then force-reset so the watcher re-reads existence.
+        File(path).writeAsStringSync('hello');
+        state.setupFileWatcher(path, forceReset: true);
+        expect(state.fileExists, isTrue);
+      },
+    );
+
+    testWidgets(
+      'file-creation event fires watcher callback and sets fileExists=true '
+      '(lines 54-57)',
+      (tester) async {
+        final path = '${tempDir.path}/watched.txt';
+
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = true);
+
+        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+
+        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+        expect(state.fileExists, isFalse);
+
+        // runAsync allows real OS-level async I/O events (inotify) to be
+        // delivered. We create the file inside runAsync so that the resulting
+        // FileSystemEvent from dir.watch() can reach the stream listener.
+        await tester.runAsync(() async {
+          File(path).writeAsStringSync('hello');
+          // Give the OS a moment to emit the inotify event and let the Dart
+          // event loop process it.
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        });
+
+        // Pump Flutter frames so setState(() => _fileExists = true) is applied.
+        await tester.pump();
+
+        expect(state.fileExists, isTrue);
+        expect(find.text('exists'), findsOneWidget);
+      },
+    );
   });
 }
 

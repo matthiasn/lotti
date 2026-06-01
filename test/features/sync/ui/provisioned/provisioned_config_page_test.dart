@@ -6,14 +6,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -953,6 +957,351 @@ void main() {
       },
     );
   });
+
+  // Tests for the actual _ConfigActionBar widget rendered via provisionedConfigPage.
+  // This covers lines 44-77 of the source (the private _ConfigActionBar.build method).
+  group('provisionedConfigPage function — _ConfigActionBar', () {
+    /// Pumps a full WoltModalSheet containing provisionedConfigPage.
+    ///
+    /// The modal is opened by tapping a trigger button.  After this helper
+    /// returns the sheet is visible and fully settled.
+    ///
+    /// A fresh [ValueNotifier] starting at 0 is required so the single-page
+    /// WoltModalSheet does not receive an out-of-range index from the shared
+    /// [pageIndexNotifier] (which starts at 1 in setUp).
+    Future<ValueNotifier<int>> pumpConfigPage(
+      WidgetTester tester, {
+      required ProvisioningState state,
+    }) async {
+      final localNotifier = ValueNotifier<int>(0);
+      addTearDown(localNotifier.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => _FakeProvisioningController(state),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: resolveTestTheme(),
+            home: Scaffold(
+              body: Builder(
+                builder: (ctx) => ElevatedButton(
+                  onPressed: () => ModalUtils.showMultiPageModal<void>(
+                    context: ctx,
+                    pageIndexNotifier: localNotifier,
+                    pageListBuilder: (modalCtx) => [
+                      provisionedConfigPage(
+                        context: modalCtx,
+                        pageIndexNotifier: localNotifier,
+                      ),
+                    ],
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      // Use pump+duration rather than pumpAndSettle to avoid timeout from
+      // ongoing CircularProgressIndicator animations.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      return localNotifier;
+    }
+
+    testWidgets(
+      'previous button (LottiSecondaryButton) is present and navigates to page 0',
+      (tester) async {
+        final localNotifier = await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.loggingIn(),
+        );
+
+        // The previous button (LottiSecondaryButton) must be in the action bar.
+        final prevFinder = find.byType(LottiSecondaryButton);
+        expect(prevFinder, findsOneWidget);
+
+        // Set to a non-zero value so the navigation back to 0 is observable.
+        localNotifier.value = 1;
+
+        // Invoke the callback directly to avoid WoltModalSheet trying to
+        // render page 1 (which doesn't exist in our single-page test setup).
+        final prevBtn = tester.widget<LottiSecondaryButton>(prevFinder);
+        prevBtn.onPressed!();
+
+        expect(localNotifier.value, 0);
+      },
+    );
+
+    // Individual tests for each incomplete state to keep isolation clear and
+    // avoid modal-bleed between iterations in a single test body.
+    for (final (label, state) in [
+      ('initial', const ProvisioningState.initial()),
+      ('loggingIn', const ProvisioningState.loggingIn()),
+      ('joiningRoom', const ProvisioningState.joiningRoom()),
+      ('rotatingPassword', const ProvisioningState.rotatingPassword()),
+      ('error', const ProvisioningState.error(ProvisioningError.loginFailed)),
+      ('bundleDecoded', const ProvisioningState.bundleDecoded(testBundle)),
+    ]) {
+      testWidgets(
+        'next button is disabled in $label state',
+        (tester) async {
+          await pumpConfigPage(tester, state: state);
+
+          final nextBtn = tester.widget<LottiPrimaryButton>(
+            find.byType(LottiPrimaryButton),
+          );
+          expect(
+            nextBtn.onPressed,
+            isNull,
+            reason: 'Expected null for state $label',
+          );
+        },
+      );
+    }
+
+    testWidgets(
+      'next button is enabled and navigates to page 2 when state is ready',
+      (tester) async {
+        final localNotifier = await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.ready('handover'),
+        );
+
+        final nextFinder = find.byType(LottiPrimaryButton);
+        final nextBtn = tester.widget<LottiPrimaryButton>(nextFinder);
+        expect(nextBtn.onPressed, isNotNull);
+
+        // Invoke the callback directly to avoid the WoltModalSheet trying to
+        // render page index 2 (which doesn't exist in our single-page modal).
+        nextBtn.onPressed!();
+
+        expect(localNotifier.value, 2);
+      },
+    );
+
+    testWidgets(
+      'next button is enabled when state is done',
+      (tester) async {
+        await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.done(),
+        );
+
+        final nextBtn = tester.widget<LottiPrimaryButton>(
+          find.byType(LottiPrimaryButton),
+        );
+        expect(nextBtn.onPressed, isNotNull);
+      },
+    );
+
+    testWidgets(
+      'title and body from provisionedConfigPage are displayed in the modal',
+      (tester) async {
+        await pumpConfigPage(
+          tester,
+          state: const ProvisioningState.loggingIn(),
+        );
+
+        // The title "Provisioned Sync" should appear in the modal's top bar.
+        expect(find.text('Provisioned Sync'), findsOneWidget);
+        // The progress bar must also be visible (proves the body rendered).
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      },
+    );
+  });
+
+  group('_ReadyViewState — maybeAdvance via keyVerification.isDone', () {
+    // Covers line 231: the OR branch where lastStep is not the done string
+    // but runner.keyVerification.isDone is true.
+    testWidgets(
+      'auto-advances when keyVerification.isDone is true and lastStep differs',
+      (tester) async {
+        final keyVerification = MockKeyVerification();
+        final runner = MockKeyVerificationRunner();
+        final device = MockDeviceKeys();
+        final outgoingController =
+            StreamController<KeyVerificationRunner>.broadcast();
+        addTearDown(outgoingController.close);
+
+        var checks = 0;
+        // lastStep is NOT the done string — the second OR operand drives isDone.
+        when(() => runner.lastStep).thenReturn('m.key.verification.mac');
+        when(() => keyVerification.isDone).thenReturn(true);
+        when(() => runner.keyVerification).thenReturn(keyVerification);
+        when(
+          () => mockMatrixService.keyVerificationStream,
+        ).thenAnswer((_) => outgoingController.stream);
+        when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
+          checks += 1;
+          return checks < 3 ? [device] : [];
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              provisioningControllerProvider.overrideWith(
+                () => _FakeProvisioningController(
+                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        outgoingController.add(runner);
+        // Drive the delayed polling (20 × 350 ms max; we get early-exit at
+        // checks == 3, so 2 × 350 ms = 700 ms is enough).
+        await tester.pump(const Duration(milliseconds: 800));
+
+        expect(pageIndexNotifier.value, 2);
+      },
+    );
+  });
+
+  group(
+    '_ReadyViewState — waitUntilNoUnverifiedDevices post-loop fallback',
+    () {
+      // Covers lines 223-225: the code after the for-loop that runs when all
+      // 20 polling attempts still see unverified devices.
+      testWidgets(
+        'returns false and does not advance when devices remain unverified '
+        'after all polling attempts',
+        (tester) async {
+          final keyVerification = MockKeyVerification();
+          final runner = MockKeyVerificationRunner();
+          final device = MockDeviceKeys();
+          final outgoingController =
+              StreamController<KeyVerificationRunner>.broadcast();
+          addTearDown(outgoingController.close);
+
+          when(() => runner.lastStep).thenReturn('m.key.verification.done');
+          when(() => keyVerification.isDone).thenReturn(true);
+          when(() => runner.keyVerification).thenReturn(keyVerification);
+          when(
+            () => mockMatrixService.keyVerificationStream,
+          ).thenAnswer((_) => outgoingController.stream);
+          // Always return a non-empty list so the loop exhausts all 20 attempts
+          // and falls through to the post-loop check which also returns non-empty.
+          when(
+            () => mockMatrixService.getUnverifiedDevices(),
+          ).thenReturn([device]);
+
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+              overrides: [
+                matrixServiceProvider.overrideWithValue(mockMatrixService),
+                provisioningControllerProvider.overrideWith(
+                  () => _FakeProvisioningController(
+                    const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
+                  ),
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          outgoingController.add(runner);
+          // Drive past 20 × 350 ms = 7 000 ms of polling time; use 8 s to
+          // cover the final post-loop check as well.
+          await tester.pump(const Duration(seconds: 8));
+
+          // Since devices never became verified, the page index must NOT change.
+          expect(pageIndexNotifier.value, 1);
+        },
+      );
+    },
+  );
+
+  group(
+    '_DoneViewState._triggerVerification finally block',
+    () {
+      // Covers lines 375-376, 378: the finally block that invalidates the
+      // unverified provider and releases the modal lock after the sheet closes.
+      testWidgets(
+        'releases lock and invalidates unverified provider after modal closes',
+        (tester) async {
+          final mockDevice = MockDeviceKeys();
+          when(() => mockDevice.deviceDisplayName).thenReturn('Other Device');
+          when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
+          when(() => mockDevice.userId).thenReturn('@alice:example.com');
+          when(
+            () => mockMatrixService.getUnverifiedDevices(),
+          ).thenReturn([mockDevice]);
+          when(
+            () => mockMatrixService.verifyDevice(mockDevice),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockMatrixService.keyVerificationStream,
+          ).thenAnswer((_) => const Stream.empty());
+
+          late ProviderContainer container;
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                matrixServiceProvider.overrideWithValue(mockMatrixService),
+                provisioningControllerProvider.overrideWith(
+                  () => _FakeProvisioningController(
+                    const ProvisioningState.done(),
+                  ),
+                ),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: resolveTestTheme(),
+                home: Consumer(
+                  builder: (ctx, ref, _) {
+                    // Capture the container so we can read the lock state.
+                    container = ProviderScope.containerOf(ctx);
+                    return Scaffold(
+                      body: ProvisionedConfigWidget(
+                        pageIndexNotifier: pageIndexNotifier,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Advance past the 3 s delay to trigger the verification flow.
+          await tester.pump(const Duration(seconds: 3));
+          await tester.pumpAndSettle();
+
+          // The verification modal must be open.
+          expect(find.byType(VerificationModal), findsOneWidget);
+
+          // The lock should be acquired (true).
+          expect(container.read(matrixVerificationModalLockProvider), isTrue);
+
+          // Close the modal by tapping the close (X) button in the top bar.
+          final closeButton = find.byIcon(Icons.close_rounded);
+          await tester.ensureVisible(closeButton);
+          await tester.tap(closeButton);
+          await tester.pumpAndSettle();
+
+          // Modal is gone and the lock has been released (false).
+          expect(find.byType(VerificationModal), findsNothing);
+          expect(container.read(matrixVerificationModalLockProvider), isFalse);
+        },
+      );
+    },
+  );
 }
 
 /// Test wrapper that replicates the _ConfigActionBar logic since it's private.

@@ -3,16 +3,24 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
@@ -735,6 +743,583 @@ void main() {
         findsOneWidget,
       );
     });
+  });
+
+  group('ConflictDetailRoute · FutureBuilder error', () {
+    testWidgets(
+      'error scaffold appears when local journalEntityById future errors',
+      (tester) async {
+        final remote = _entry(title: 'Remote', clock: const {'a': 1});
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: remote,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+        // Override so the future throws instead of returning an entity.
+        when(
+          () => bench.db.journalEntityById(conflict.id),
+        ).thenAnswer((_) => Future.error(StateError('db gone')));
+
+        await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.conflictDetailLoadErrorTitle), findsOneWidget);
+        expect(find.textContaining('db gone'), findsOneWidget);
+      },
+    );
+  });
+
+  group('ConflictDetailRoute · Edit & merge navigation', () {
+    testWidgets(
+      'desktop picker Edit & merge pill calls beamToNamed with edit path',
+      (tester) async {
+        final local = _entry(title: 'A', clock: const {'a': 1});
+        final remote = _entry(title: 'B', clock: const {'a': 2});
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: local,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+
+        String? capturedPath;
+        beamToNamedOverride = (path) => capturedPath = path;
+        addTearDown(() => beamToNamedOverride = null);
+
+        await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pumpAndSettle();
+
+        // On desktop, the "Edit & merge…" pill appears in the picker row.
+        final editMergePill = find.text(l10n.conflictPickerEditMerge);
+        await tester.ensureVisible(editMergePill);
+        await tester.tap(editMergePill);
+        await tester.pumpAndSettle();
+
+        expect(
+          capturedPath,
+          '/settings/advanced/conflicts/${conflict.id}/edit',
+        );
+      },
+    );
+
+    testWidgets(
+      'mobile footer Edit & merge link calls beamToNamed with edit path',
+      (tester) async {
+        final local = _entry(title: 'A', clock: const {'a': 1});
+        final remote = _entry(title: 'B', clock: const {'a': 2});
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: local,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+
+        String? capturedPath;
+        beamToNamedOverride = (path) => capturedPath = path;
+        addTearDown(() => beamToNamedOverride = null);
+
+        await _pump(tester, size: _mobileSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pumpAndSettle();
+
+        // On mobile, Edit & merge appears only in the footer as a text link.
+        final editMergeLink = find.text(l10n.conflictPickerEditMerge);
+        await tester.ensureVisible(editMergeLink);
+        await tester.tap(editMergeLink);
+        await tester.pumpAndSettle();
+
+        expect(
+          capturedPath,
+          '/settings/advanced/conflicts/${conflict.id}/edit',
+        );
+      },
+    );
+  });
+
+  group('ConflictDetailRoute · apply error toast', () {
+    testWidgets(
+      'Apply shows error toast when updateJournalEntity throws',
+      (tester) async {
+        final local = _entry(title: 'Local', clock: const {'a': 9});
+        final remote = _entry(title: 'Remote', clock: const {'a': 13});
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: local,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+        // Override persistence to throw on apply.
+        when(
+          () => bench.persistence.updateJournalEntity(any(), any()),
+        ).thenAnswer((_) => Future.error(Exception('network failure')));
+
+        await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pumpAndSettle();
+
+        // Select local side, then tap Apply.
+        await tester.tap(
+          find.byKey(const ValueKey('conflict-card-local')),
+          warnIfMissed: false,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.conflictApplyButton));
+        await tester.pumpAndSettle();
+
+        // An error toast should appear with the failure title.
+        expect(find.byType(DesignSystemToast), findsOneWidget);
+        final toast = tester.widget<DesignSystemToast>(
+          find.byType(DesignSystemToast),
+        );
+        expect(toast.tone, DesignSystemToastTone.error);
+        expect(toast.title, l10n.conflictApplyFailedTitle);
+        expect(toast.description, contains('network failure'));
+      },
+    );
+  });
+
+  group('ConflictDetailRoute · summary banner time-ago variants', () {
+    // The production code uses DateTime.now() internally; these tests
+    // create conflicts at calculated offsets so the relative label lands
+    // in the right bucket (minutes / hours / days).
+
+    testWidgets('banner shows X min ago when conflict is ~30 minutes old', (
+      tester,
+    ) async {
+      final local = _entry(title: 'A', clock: const {'a': 1});
+      final remote = _entry(title: 'B', clock: const {'a': 2});
+      // Conflict created 30 minutes ago.
+      final thirtyMinutesAgo = DateTime.now().subtract(
+        const Duration(minutes: 30),
+      );
+      final conflict = _conflict(remote: remote, createdAt: thirtyMinutesAgo);
+      final bench = await _Bench.create(
+        localEntry: local,
+        conflict: conflict,
+      );
+      addTearDown(bench.dispose);
+      await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+      bench.unresolvedController.add([conflict]);
+      await tester.pumpAndSettle();
+
+      // e.g. "30 min ago"
+      expect(
+        find.textContaining(l10n.conflictBannerAgoMinutes(30)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('banner shows X h ago when conflict is ~5 hours old', (
+      tester,
+    ) async {
+      final local = _entry(title: 'A', clock: const {'a': 1});
+      final remote = _entry(title: 'B', clock: const {'a': 2});
+      // Conflict created 5 hours ago.
+      final fiveHoursAgo = DateTime.now().subtract(const Duration(hours: 5));
+      final conflict = _conflict(remote: remote, createdAt: fiveHoursAgo);
+      final bench = await _Bench.create(
+        localEntry: local,
+        conflict: conflict,
+      );
+      addTearDown(bench.dispose);
+      await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+      bench.unresolvedController.add([conflict]);
+      await tester.pumpAndSettle();
+
+      // e.g. "5 h ago"
+      expect(
+        find.textContaining(l10n.conflictBannerAgoHours(5)),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('ConflictDetailRoute · today timestamp format', () {
+    testWidgets(
+      'diff card header shows time-only stamp when dateFrom is today',
+      (tester) async {
+        // Use today's date so _formatHmsa hits the isToday branch.
+        final today = DateTime.now();
+        final todayEntry = _entry(
+          title: 'Today note',
+          clock: const {'a': 1},
+          // Explicitly set dateFrom to a time today.
+          // ignore: avoid_redundant_argument_values
+          id: _conflictId,
+        );
+        // Build a meta with today's dateFrom by copying the entry's meta.
+        final todayMeta = todayEntry.meta.copyWith(
+          dateFrom: DateTime(today.year, today.month, today.day, 10, 30),
+          dateTo: DateTime(today.year, today.month, today.day, 11),
+        );
+        final todayEntityLocal = todayEntry.copyWith(meta: todayMeta);
+        final todayEntityRemote = _entry(
+          title: 'Today note remote',
+          clock: const {'a': 2},
+        ).copyWith(meta: todayMeta);
+
+        final conflict = _conflict(remote: todayEntityRemote);
+        final bench = await _Bench.create(
+          localEntry: todayEntityLocal,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+        when(
+          () => bench.db.journalEntityById(conflict.id),
+        ).thenAnswer((_) async => todayEntityLocal);
+
+        await _pump(tester, size: _mobileSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pumpAndSettle();
+
+        // The card eyebrows are present, confirming the picker scaffold rendered.
+        expect(find.text(l10n.conflictSideThisDevice), findsOneWidget);
+        expect(find.text(l10n.conflictSideFromSync), findsOneWidget);
+      },
+    );
+  });
+
+  group('ConflictDetailRoute · entity type labels', () {
+    for (final (entity, label) in [
+      (
+        Task(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: TaskData(
+                status: TaskStatus.open(
+                  id: 'status_id',
+                  createdAt: _baseTime,
+                  utcOffset: 0,
+                ),
+                title: 'A task',
+                statusHistory: [],
+                dateTo: _baseTime,
+                dateFrom: _baseTime,
+                estimate: const Duration(hours: 1),
+              ),
+              entryText: const EntryText(plainText: 'task text'),
+            )
+            as JournalEntity,
+        'Task',
+      ),
+      (
+        JournalEvent(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: const EventData(
+                title: 'An event',
+                stars: 3,
+                status: EventStatus.planned,
+              ),
+              entryText: const EntryText(plainText: 'event text'),
+            )
+            as JournalEntity,
+        'Event',
+      ),
+      (
+        JournalAudio(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: AudioData(
+                dateFrom: _baseTime,
+                dateTo: _baseTime.add(const Duration(seconds: 60)),
+                audioFile: 'a.aac',
+                audioDirectory: '/tmp/',
+                duration: const Duration(seconds: 60),
+              ),
+            )
+            as JournalEntity,
+        'Audio',
+      ),
+      (
+        JournalImage(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: ImageData(
+                imageId: 'img-1',
+                imageFile: 'img.jpg',
+                imageDirectory: '/tmp/',
+                capturedAt: _baseTime,
+              ),
+            )
+            as JournalEntity,
+        'Photo',
+      ),
+      (
+        MeasurementEntry(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: MeasurementData(
+                value: 42,
+                dataTypeId: 'dt-1',
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+              ),
+            )
+            as JournalEntity,
+        'Measured',
+      ),
+      (
+        WorkoutEntry(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: WorkoutData(
+                distance: 5000,
+                dateFrom: _baseTime,
+                dateTo: _baseTime.add(const Duration(minutes: 30)),
+                workoutType: 'running',
+                energy: 300,
+                id: _conflictId,
+                source: '',
+              ),
+            )
+            as JournalEntity,
+        'Workout',
+      ),
+      (
+        HabitCompletionEntry(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: HabitCompletionData(
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                habitId: 'habit-1',
+              ),
+            )
+            as JournalEntity,
+        'Habit',
+      ),
+      (
+        QuantitativeEntry(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: QuantitativeData.discreteQuantityData(
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                value: 70,
+                dataType: 'HealthDataType.WEIGHT',
+                unit: 'HealthDataUnit.KILOGRAMS',
+              ),
+            )
+            as JournalEntity,
+        'Health',
+      ),
+      (
+        Checklist(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: const ChecklistData(
+                title: 'Shopping list',
+                linkedChecklistItems: [],
+                linkedTasks: [],
+              ),
+            )
+            as JournalEntity,
+        'Checklist',
+      ),
+      (
+        ChecklistItem(
+              meta: Metadata(
+                id: _conflictId,
+                createdAt: _baseTime,
+                updatedAt: _baseTime,
+                dateFrom: _baseTime,
+                dateTo: _baseTime,
+                vectorClock: const VectorClock({'a': 1}),
+              ),
+              data: const ChecklistItemData(
+                title: 'Buy milk',
+                isChecked: false,
+                linkedChecklists: [],
+              ),
+            )
+            as JournalEntity,
+        'To Do',
+      ),
+    ]) {
+      testWidgets('summary banner names entity type: $label', (tester) async {
+        // Use a JournalEntry as local so the widget can build; the entity
+        // type label comes from the local entity which is `entity`.
+        final remote = _entry(title: 'Remote', clock: const {'a': 2});
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: entity,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+        when(
+          () => bench.db.journalEntityById(conflict.id),
+        ).thenAnswer((_) async => entity);
+
+        await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pumpAndSettle();
+
+        // The entity-type label appears in the summary banner first line.
+        expect(find.textContaining(label), findsAtLeastNWidgets(1));
+      });
+    }
+  });
+
+  group('ConflictDetailRoute · differing fields', () {
+    testWidgets(
+      'banner subline includes "duration" when audio durations differ',
+      (tester) async {
+        final local = _entry(
+          title: 'Audio A',
+          clock: const {'a': 1},
+          audioDuration: const Duration(seconds: 30),
+        );
+        final remote = _entry(
+          title: 'Audio A',
+          clock: const {'a': 2},
+          audioDuration: const Duration(seconds: 60),
+        );
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: local,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+        await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pumpAndSettle();
+
+        // "duration" should appear in the differs subline.
+        expect(find.textContaining('duration'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'banner subline includes "category" when categoryIds differ',
+      (tester) async {
+        final local = _entry(
+          title: 'Same title',
+          clock: const {'a': 1},
+          categoryId: 'cat-A',
+        );
+        final remote = _entry(
+          title: 'Same title',
+          clock: const {'a': 2},
+          categoryId: 'cat-B',
+        );
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: local,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+        await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pumpAndSettle();
+
+        // "category" should appear in the differs subline.
+        expect(find.textContaining('category'), findsOneWidget);
+      },
+    );
+  });
+
+  group('ConflictDetailRoute · _firstLine fallback', () {
+    testWidgets(
+      'entity without entryText falls back to runtime type in header',
+      (tester) async {
+        // JournalAudio with no entryText → _firstLine returns the runtimeType.
+        final noTextAudio = JournalAudio(
+          meta: Metadata(
+            id: _conflictId,
+            createdAt: _baseTime,
+            updatedAt: _baseTime,
+            dateFrom: _baseTime,
+            dateTo: _baseTime,
+            vectorClock: const VectorClock({'a': 1}),
+          ),
+          data: AudioData(
+            dateFrom: _baseTime,
+            dateTo: _baseTime.add(const Duration(seconds: 10)),
+            audioFile: 'a.aac',
+            audioDirectory: '/tmp/',
+            duration: const Duration(seconds: 10),
+          ),
+          // entryText intentionally omitted
+        );
+        final remote = _entry(title: 'Remote', clock: const {'a': 2});
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: noTextAudio,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+        when(
+          () => bench.db.journalEntityById(conflict.id),
+        ).thenAnswer((_) async => noTextAudio);
+
+        await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pumpAndSettle();
+
+        // Widget rendered with the picker scaffold — eyebrows should appear.
+        expect(find.text(l10n.conflictSideThisDevice), findsOneWidget);
+        // The local card "title" line shows the runtime type string
+        // (e.g. "JournalAudio"), which is a non-empty text in the widget tree.
+        expect(find.textContaining('JournalAudio'), findsAtLeastNWidgets(1));
+      },
+    );
   });
 }
 

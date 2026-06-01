@@ -54,11 +54,16 @@ void main() {
       await getIt.reset();
     });
 
-    /// Creates the container, triggers the provider build, and flushes
-    /// microtasks so that [_loadStats] completes synchronously under
-    /// [fakeAsync].
+    /// Creates the container, subscribes to the provider (keeping it alive for
+    /// the duration of the test), and flushes microtasks so [_loadStats]
+    /// completes synchronously under [fakeAsync].
+    ///
+    /// Using [ProviderContainer.listen] instead of [read] prevents Riverpod's
+    /// auto-dispose scheduler from cancelling the provider's internal timer
+    /// before the test can exercise it.
     void createAndLoad(FakeAsync async) {
-      container = ProviderContainer()..read(backfillStatsControllerProvider);
+      container = ProviderContainer()
+        ..listen(backfillStatsControllerProvider, (_, _) {});
       async.flushMicrotasks();
     }
 
@@ -651,6 +656,319 @@ void main() {
 
             async.elapse(const Duration(seconds: 30));
             verifyNever(() => mockSequenceService.getBackfillStats());
+          });
+        },
+      );
+    });
+
+    group('auto-refresh timer silent refresh', () {
+      test(
+        'timer tick calls _loadStatsSilent which updates stats without '
+        'touching isLoading or error — the silent background path',
+        () {
+          fakeAsync((async) {
+            final updatedStats = BackfillStats.fromHostStats([
+              const BackfillHostStats(
+                receivedCount: 200,
+                missingCount: 3,
+                requestedCount: 1,
+                backfilledCount: 20,
+                deletedCount: 2,
+                unresolvableCount: 0,
+                burnedCount: 0,
+              ),
+            ]);
+
+            // Track total calls so we can assert the timer fired without
+            // relying on clearInteractions.
+            var callCount = 0;
+            when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+              _,
+            ) async {
+              callCount++;
+              // First call is from build/_loadStats; subsequent calls are from
+              // the timer-driven _loadStatsSilent.
+              return callCount == 1 ? testStats : updatedStats;
+            });
+
+            createAndLoad(async);
+            expect(callCount, 1); // sanity: build loaded stats once
+
+            // Advance one auto-refresh interval; elapse() already flushes
+            // microtasks internally after each timer fire.
+            async.elapse(const Duration(seconds: 30));
+
+            // callCount == 2 means the timer fired and called getBackfillStats.
+            expect(callCount, 2);
+
+            final state = container.read(backfillStatsControllerProvider);
+            // Silent refresh must update stats to the newer value.
+            expect(state.stats?.totalReceived, 200);
+            // isLoading must not have been toggled during silent refresh.
+            expect(state.isLoading, isFalse);
+            // No error should have been set by silent refresh.
+            expect(state.error, isNull);
+          });
+        },
+      );
+
+      test(
+        'timer tick skips _loadStatsSilent when isProcessing is true — '
+        'manual operations own the refresh cycle while they run',
+        () {
+          fakeAsync((async) {
+            when(
+              () => mockSequenceService.getBackfillStats(),
+            ).thenAnswer((_) async => testStats);
+            final backfill = Completer<int>();
+            when(() => mockBackfillService.processFullBackfill()).thenAnswer(
+              (_) => backfill.future,
+            );
+
+            createAndLoad(async);
+            clearInteractions(mockSequenceService);
+
+            // Start a manual action so isProcessing = true.
+            act(async, (c) => c.triggerFullBackfill());
+
+            // Timer fires while the manual action is still in-flight.
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+
+            // Silent refresh must NOT have fired.
+            verifyNever(() => mockSequenceService.getBackfillStats());
+
+            // Complete the manual action to stop the Completer leak.
+            backfill.complete(0);
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'timer tick skips _loadStatsSilent when isReRequesting is true',
+        () {
+          fakeAsync((async) {
+            when(
+              () => mockSequenceService.getBackfillStats(),
+            ).thenAnswer((_) async => testStats);
+            final reRequest = Completer<int>();
+            when(() => mockBackfillService.processReRequest()).thenAnswer(
+              (_) => reRequest.future,
+            );
+
+            createAndLoad(async);
+            clearInteractions(mockSequenceService);
+
+            act(async, (c) => c.triggerReRequest());
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+
+            verifyNever(() => mockSequenceService.getBackfillStats());
+
+            reRequest.complete(0);
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'timer tick skips _loadStatsSilent when isResetting is true',
+        () {
+          fakeAsync((async) {
+            when(
+              () => mockSequenceService.getBackfillStats(),
+            ).thenAnswer((_) async => testStats);
+            final reset = Completer<int>();
+            when(
+              () => mockSequenceService.resetUnresolvableEntries(),
+            ).thenAnswer(
+              (_) => reset.future,
+            );
+
+            createAndLoad(async);
+            clearInteractions(mockSequenceService);
+
+            act(async, (c) => c.resetUnresolvable());
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+
+            verifyNever(() => mockSequenceService.getBackfillStats());
+
+            reset.complete(0);
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'timer tick skips _loadStatsSilent when isRetiringStuck is true',
+        () {
+          fakeAsync((async) {
+            when(
+              () => mockSequenceService.getBackfillStats(),
+            ).thenAnswer((_) async => testStats);
+            final retire = Completer<int>();
+            when(
+              () => mockSequenceService.retireAgedOutRequestedEntries(
+                amnestyWindow: any(named: 'amnestyWindow'),
+              ),
+            ).thenAnswer((_) => retire.future);
+
+            createAndLoad(async);
+            clearInteractions(mockSequenceService);
+
+            act(async, (c) => c.retireStuckNow());
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+
+            verifyNever(() => mockSequenceService.getBackfillStats());
+
+            retire.complete(0);
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'timer tick skips _loadStatsSilent when isResettingAllUnresolvable is true',
+        () {
+          fakeAsync((async) {
+            when(
+              () => mockSequenceService.getBackfillStats(),
+            ).thenAnswer((_) async => testStats);
+            final resetAll = Completer<int>();
+            when(
+              () => mockSequenceService.resetAllUnresolvableEntries(),
+            ).thenAnswer(
+              (_) => resetAll.future,
+            );
+
+            createAndLoad(async);
+            clearInteractions(mockSequenceService);
+
+            act(async, (c) => c.resetAllUnresolvable());
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+
+            verifyNever(() => mockSequenceService.getBackfillStats());
+
+            resetAll.complete(0);
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        '_loadStatsSilent swallows DB errors silently — an existing error '
+        'banner from a previous manual action is preserved rather than '
+        'overwritten with a transient background failure',
+        () {
+          fakeAsync((async) {
+            var callCount = 0;
+            when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+              _,
+            ) async {
+              callCount++;
+              if (callCount == 1) return testStats;
+              throw Exception('transient DB error');
+            });
+
+            createAndLoad(async);
+
+            // Initial load succeeds; no error set.
+            expect(
+              container.read(backfillStatsControllerProvider).error,
+              isNull,
+            );
+
+            // Timer fires and _loadStatsSilent throws; elapse flushes
+            // microtasks internally.
+            async.elapse(const Duration(seconds: 30));
+
+            // The timer called getBackfillStats (callCount 2 = thrown).
+            expect(callCount, 2);
+
+            final state = container.read(backfillStatsControllerProvider);
+            // Silent errors must not surface in state.error.
+            expect(state.error, isNull);
+            // stats remain as they were before the failed silent refresh.
+            expect(state.stats, testStats);
+          });
+        },
+      );
+
+      test(
+        '_silentRefreshInFlight guard prevents overlapping timer ticks — '
+        'a second tick while the first query is still running is a no-op',
+        () {
+          fakeAsync((async) {
+            // Stall the second getBackfillStats call so the slow aggregation
+            // never completes before the second timer tick.
+            final slowQuery = Completer<BackfillStats>();
+            var callCount = 0;
+            when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+              _,
+            ) async {
+              callCount++;
+              if (callCount == 1) return testStats;
+              // Second call returns a stalled future, leaving
+              // _silentRefreshInFlight = true when the next tick fires.
+              return slowQuery.future;
+            });
+
+            createAndLoad(async);
+            expect(callCount, 1); // sanity
+
+            // First tick starts a slow silent refresh.
+            async.elapse(const Duration(seconds: 30));
+            expect(callCount, 2); // first silent call started
+
+            // Second tick fires while the first query is still in-flight;
+            // _silentRefreshInFlight must gate it out.
+            async.elapse(const Duration(seconds: 30));
+            expect(callCount, 2); // no additional call
+
+            // Clean up the stalled future.
+            slowQuery.complete(testStats);
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        '_silentRefreshInFlight is reset to false in finally block even when '
+        'the query throws — subsequent timer ticks can fire again',
+        () {
+          fakeAsync((async) {
+            var callCount = 0;
+            when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+              _,
+            ) async {
+              callCount++;
+              if (callCount == 1) return testStats;
+              throw Exception('db error');
+            });
+
+            createAndLoad(async);
+            expect(callCount, 1); // sanity
+
+            // First tick: _loadStatsSilent throws, finally block resets flag.
+            async.elapse(const Duration(seconds: 30));
+            expect(callCount, 2);
+
+            // Second tick: flag was reset, so the second call fires.
+            async.elapse(const Duration(seconds: 30));
+            expect(callCount, 3);
           });
         },
       );

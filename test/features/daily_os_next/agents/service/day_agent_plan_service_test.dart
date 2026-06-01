@@ -3603,6 +3603,401 @@ void main() {
       );
     });
 
+    group('draftPlanForDay', () {
+      const planEntityId = 'day_agent_plan:$_dayId';
+
+      test('returns null when no entity exists for the day', () async {
+        final result = await createService().draftPlanForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(result, isNull);
+      });
+
+      test('returns null when the plan belongs to a different agent', () async {
+        agentEntities[planEntityId] =
+            AgentDomainEntity.dayPlan(
+                  id: planEntityId,
+                  agentId: 'other-agent',
+                  dayId: _dayId,
+                  planDate: DateTime(2026, 5, 25),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 25),
+                    status: const DayPlanStatus.draft(),
+                  ),
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+
+        final result = await createService().draftPlanForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(result, isNull);
+      });
+
+      test('returns null when the plan is soft-deleted', () async {
+        agentEntities[planEntityId] =
+            AgentDomainEntity.dayPlan(
+                  id: planEntityId,
+                  agentId: _agentId,
+                  dayId: _dayId,
+                  planDate: DateTime(2026, 5, 25),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 25),
+                    status: const DayPlanStatus.draft(),
+                  ),
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                  deletedAt: _now,
+                )
+                as DayPlanEntity;
+
+        final result = await createService().draftPlanForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(result, isNull);
+      });
+
+      test(
+        'returns the plan when it is active and owned by the agent',
+        () async {
+          agentEntities[planEntityId] =
+              AgentDomainEntity.dayPlan(
+                    id: planEntityId,
+                    agentId: _agentId,
+                    dayId: _dayId,
+                    planDate: DateTime(2026, 5, 25),
+                    data: DayPlanData(
+                      planDate: DateTime(2026, 5, 25),
+                      status: const DayPlanStatus.draft(),
+                      plannedBlocks: [
+                        PlannedBlock(
+                          id: 'block-1',
+                          categoryId: 'work',
+                          startTime: DateTime(2026, 5, 25, 9),
+                          endTime: DateTime(2026, 5, 25, 10),
+                          title: 'Morning focus',
+                          reason: 'High energy.',
+                        ),
+                      ],
+                    ),
+                    createdAt: _now,
+                    updatedAt: _now,
+                    vectorClock: null,
+                  )
+                  as DayPlanEntity;
+
+          final result = await createService().draftPlanForDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.id, planEntityId);
+          expect(result.agentId, _agentId);
+          expect(result.data.plannedBlocks, hasLength(1));
+          expect(result.data.plannedBlocks.first.title, 'Morning focus');
+        },
+      );
+    });
+
+    group('pendingPlanDiffsForDay', () {
+      const planEntityId = 'day_agent_plan:$_dayId';
+
+      ChangeSetEntity makeChangeSet({
+        required String id,
+        required String taskId,
+        required ChangeSetStatus status,
+        required List<ChangeItem> items,
+        DateTime? deletedAt,
+        DateTime? createdAt,
+      }) {
+        return AgentDomainEntity.changeSet(
+              id: id,
+              agentId: _agentId,
+              taskId: taskId,
+              threadId: _threadId,
+              runKey: _runKey,
+              status: status,
+              items: items,
+              createdAt: createdAt ?? _now,
+              vectorClock: null,
+              deletedAt: deletedAt,
+            )
+            as ChangeSetEntity;
+      }
+
+      ChangeItem pendingMoveItem() {
+        return ChangeItem(
+          toolName: 'move_block',
+          humanSummary: 'Move "Morning"',
+          args: <String, dynamic>{
+            'action': 'moved',
+            'reason': 'Resched.',
+            'blockId': 'block-1',
+            'toStart': DateTime(2026, 5, 25, 11).toIso8601String(),
+            'toEnd': DateTime(2026, 5, 25, 12).toIso8601String(),
+          },
+        );
+      }
+
+      void stubEntitiesWithChangeSets(List<AgentDomainEntity> entities) {
+        when(
+          () => agentRepository.getEntitiesByAgentId(
+            any(),
+            type: any(named: 'type'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => entities);
+      }
+
+      test('returns empty list when no change sets exist', () async {
+        stubEntitiesWithChangeSets([]);
+
+        final result = await createService().pendingPlanDiffsForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test(
+        'returns pending change sets with only their pending items',
+        () async {
+          final cs = makeChangeSet(
+            id: 'plan_diff:cs-1',
+            taskId: planEntityId,
+            status: ChangeSetStatus.pending,
+            items: [pendingMoveItem()],
+            createdAt: DateTime(2026, 5, 25, 10),
+          );
+          stubEntitiesWithChangeSets([cs]);
+
+          final result = await createService().pendingPlanDiffsForDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          expect(result, hasLength(1));
+          expect(result.single.id, 'plan_diff:cs-1');
+          expect(result.single.status, ChangeSetStatus.pending);
+          expect(result.single.items, hasLength(1));
+          expect(result.single.items.single.toolName, 'move_block');
+        },
+      );
+
+      test('filters out change sets whose status is not pending', () async {
+        final resolved = makeChangeSet(
+          id: 'plan_diff:resolved',
+          taskId: planEntityId,
+          status: ChangeSetStatus.resolved,
+          items: [pendingMoveItem()],
+        );
+        stubEntitiesWithChangeSets([resolved]);
+
+        final result = await createService().pendingPlanDiffsForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test('filters out soft-deleted change sets', () async {
+        final deleted = makeChangeSet(
+          id: 'plan_diff:deleted',
+          taskId: planEntityId,
+          status: ChangeSetStatus.pending,
+          items: [pendingMoveItem()],
+          deletedAt: _now,
+        );
+        stubEntitiesWithChangeSets([deleted]);
+
+        final result = await createService().pendingPlanDiffsForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test(
+        'filters out change sets for a different plan (taskId mismatch)',
+        () async {
+          final wrongPlan = makeChangeSet(
+            id: 'plan_diff:wrong-plan',
+            taskId: 'day_agent_plan:other-day',
+            status: ChangeSetStatus.pending,
+            items: [pendingMoveItem()],
+          );
+          stubEntitiesWithChangeSets([wrongPlan]);
+
+          final result = await createService().pendingPlanDiffsForDay(
+            agentId: _agentId,
+            dayId: _dayId,
+          );
+
+          expect(result, isEmpty);
+        },
+      );
+
+      test('projects each change set down to its still-pending items and '
+          'drops sets where no pending items remain', () async {
+        // One item confirmed, one still pending → set should survive
+        // with only the pending item.
+        const confirmedItem = ChangeItem(
+          toolName: 'move_block',
+          humanSummary: 'Move "Early"',
+          args: <String, dynamic>{'blockId': 'b1', 'reason': 'done'},
+          status: ChangeItemStatus.confirmed,
+        );
+        final mixedCs = makeChangeSet(
+          id: 'plan_diff:mixed',
+          taskId: planEntityId,
+          status: ChangeSetStatus.pending,
+          items: [confirmedItem, pendingMoveItem()],
+          createdAt: DateTime(2026, 5, 25, 9),
+        );
+        // All items non-pending → set should be dropped entirely.
+        final allDoneCs = makeChangeSet(
+          id: 'plan_diff:all-done',
+          taskId: planEntityId,
+          status: ChangeSetStatus.pending,
+          items: [confirmedItem],
+          createdAt: DateTime(2026, 5, 25, 8),
+        );
+        stubEntitiesWithChangeSets([allDoneCs, mixedCs]);
+
+        final result = await createService().pendingPlanDiffsForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(result, hasLength(1));
+        expect(result.single.id, 'plan_diff:mixed');
+        // Only the pending item survives the projection.
+        expect(result.single.items, hasLength(1));
+        expect(result.single.items.single.status, ChangeItemStatus.pending);
+      });
+
+      test('returns results sorted newest-first by createdAt', () async {
+        final older = makeChangeSet(
+          id: 'plan_diff:older',
+          taskId: planEntityId,
+          status: ChangeSetStatus.pending,
+          items: [pendingMoveItem()],
+          createdAt: DateTime(2026, 5, 25, 8),
+        );
+        final newer = makeChangeSet(
+          id: 'plan_diff:newer',
+          taskId: planEntityId,
+          status: ChangeSetStatus.pending,
+          items: [pendingMoveItem()],
+          createdAt: DateTime(2026, 5, 25, 10),
+        );
+        stubEntitiesWithChangeSets([older, newer]);
+
+        final result = await createService().pendingPlanDiffsForDay(
+          agentId: _agentId,
+          dayId: _dayId,
+        );
+
+        expect(result, hasLength(2));
+        expect(result.first.id, 'plan_diff:newer');
+        expect(result.last.id, 'plan_diff:older');
+      });
+    });
+
+    group('acceptPlanDiff on agreed-status plan', () {
+      const planEntityId = 'day_agent_plan:$_dayId';
+
+      DayPlanEntity seedPlanWithStatus(DayPlanStatus status) {
+        final plan =
+            AgentDomainEntity.dayPlan(
+                  id: planEntityId,
+                  agentId: _agentId,
+                  dayId: _dayId,
+                  planDate: DateTime(2026, 5, 25),
+                  data: DayPlanData(
+                    planDate: DateTime(2026, 5, 25),
+                    status: status,
+                  ),
+                  capacityMinutes: 360,
+                  createdAt: _now,
+                  updatedAt: _now,
+                  vectorClock: null,
+                )
+                as DayPlanEntity;
+        agentEntities[plan.id] = plan;
+        return plan;
+      }
+
+      test('add_block on an agreed plan yields a committed added block '
+          '(agreed branch of _stateForAcceptedAddedBlock)', () async {
+        seedPlanWithStatus(
+          DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25, 8)),
+        );
+        final changeSet =
+            AgentDomainEntity.changeSet(
+                  id: 'plan_diff:agreed-test',
+                  agentId: _agentId,
+                  taskId: planEntityId,
+                  threadId: _threadId,
+                  runKey: _runKey,
+                  status: ChangeSetStatus.pending,
+                  items: [
+                    ChangeItem(
+                      toolName: 'add_block',
+                      humanSummary: 'Add "Walk"',
+                      args: <String, dynamic>{
+                        'action': 'added',
+                        'reason': 'Recovery break.',
+                        'toStart': DateTime(2026, 5, 25, 13).toIso8601String(),
+                        'toEnd': DateTime(
+                          2026,
+                          5,
+                          25,
+                          13,
+                          30,
+                        ).toIso8601String(),
+                        'title': 'Walk',
+                        'categoryId': 'life',
+                        'type': 'manual',
+                      },
+                    ),
+                  ],
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as ChangeSetEntity;
+        agentEntities[changeSet.id] = changeSet;
+
+        final updated = await withClock(Clock.fixed(_now), () {
+          return createService().acceptPlanDiff(
+            agentId: _agentId,
+            changeSetId: changeSet.id,
+          );
+        });
+
+        expect(updated.status, ChangeSetStatus.resolved);
+        final updatedPlan = upsertedEntities.whereType<DayPlanEntity>().single;
+        final addedBlock = updatedPlan.data.plannedBlocks.singleWhere(
+          (b) => b.title == 'Walk',
+        );
+        // The agreed branch maps to PlannedBlockState.committed.
+        expect(addedBlock.state, PlannedBlockState.committed);
+      });
+    });
+
     group('deletePlanForDay', () {
       const planEntityId = 'day_agent_plan:$_dayId';
 

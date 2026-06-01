@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -1503,6 +1504,622 @@ void main() {
         expect(items[0].estimateMinutes, isNull);
         expect(items[1].estimateMinutes, 20);
         expect(items[2].estimateMinutes, 30);
+      },
+    );
+
+    // ── id-based tiebreaker when createdAt is equal (line 196) ───────────────
+
+    test(
+      'parsedItemsForCapture breaks createdAt ties by id (alphabetical)',
+      () async {
+        final sharedTime = DateTime(2026, 5, 25, 9);
+        final itemB =
+            AgentDomainEntity.parsedItem(
+                  id: 'parsed-b',
+                  agentId: _agentId,
+                  captureId: 'capture-tiebreak',
+                  kind: ParsedItemKind.newTask,
+                  title: 'Item B',
+                  categoryId: 'work',
+                  confidence: ParsedItemConfidence.low,
+                  confidenceScore: 0.1,
+                  createdAt: sharedTime,
+                  vectorClock: null,
+                )
+                as ParsedItemEntity;
+        final itemA = itemB.copyWith(id: 'parsed-a', title: 'Item A');
+        agentEntities
+          ..[itemB.id] = itemB
+          ..[itemA.id] = itemA;
+        linksByFromAndType['capture-tiebreak:${AgentLinkTypes.captureToParsedItem}'] =
+            [
+              AgentLink.captureToParsedItem(
+                id: 'link-b',
+                fromId: 'capture-tiebreak',
+                toId: itemB.id,
+                createdAt: sharedTime,
+                updatedAt: sharedTime,
+                vectorClock: null,
+              ),
+              AgentLink.captureToParsedItem(
+                id: 'link-a',
+                fromId: 'capture-tiebreak',
+                toId: itemA.id,
+                createdAt: sharedTime,
+                updatedAt: sharedTime,
+                vectorClock: null,
+              ),
+            ];
+
+        final items = await createService().parsedItemsForCapture(
+          'capture-tiebreak',
+        );
+
+        // 'parsed-a' < 'parsed-b' alphabetically → itemA comes first
+        expect(items.map((i) => i.id), ['parsed-a', 'parsed-b']);
+      },
+    );
+
+    // ── surfacePendingDecisions: missedRecurring + dueToday (lines 334-335, 338)
+
+    test(
+      'surfacePendingDecisions includes missed recurring and due-today tasks',
+      () async {
+        final missed = _task(
+          id: 'task-missed',
+          title: 'Missed recurring',
+          status: _openStatus(),
+        );
+        final dueToday = _task(
+          id: 'task-due-today',
+          title: 'Due today',
+          status: _openStatus(),
+          due: DateTime(2026, 5, 25),
+        );
+        when(() => journalDb.getTasksDueOn(any())).thenAnswer(
+          (_) async => [dueToday],
+        );
+        when(
+          () => journalDb.getMissedRecurringTasks(
+            asOf: any(named: 'asOf'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenAnswer((_) async => [missed]);
+
+        final items = await createService().surfacePendingDecisions(
+          agentId: _agentId,
+          dayId: 'dayplan-2026-05-25',
+        );
+
+        final kinds = {
+          for (final item in items) item.taskId: item.kind,
+        };
+        expect(kinds['task-missed'], DayAgentPendingKind.missedRecurring);
+        expect(kinds['task-due-today'], DayAgentPendingKind.dueToday);
+      },
+    );
+
+    // ── linkCapturePhraseToTask preserves non-newTask kind (line 415) ─────────
+
+    test(
+      'linkCapturePhraseToTask preserves kind when item is already matched',
+      () async {
+        final parsedItem =
+            AgentDomainEntity.parsedItem(
+                  id: 'parsed-matched',
+                  agentId: _agentId,
+                  captureId: 'capture-1',
+                  kind: ParsedItemKind.matched,
+                  title: 'Prep demo',
+                  categoryId: 'work',
+                  confidence: ParsedItemConfidence.medium,
+                  confidenceScore: 0.6,
+                  createdAt: _now,
+                  vectorClock: null,
+                  matchedTaskId: 'task-old',
+                )
+                as ParsedItemEntity;
+        agentEntities[parsedItem.id] = parsedItem;
+        journalEntities['task-new'] = _task(
+          id: 'task-new',
+          title: 'New task',
+          status: _openStatus(),
+        );
+
+        final updated = await createService().linkCapturePhraseToTask(
+          captureItemId: 'parsed-matched',
+          taskId: 'task-new',
+        );
+
+        // kind was already 'matched', should remain 'matched' (not re-promoted)
+        expect(updated.kind, ParsedItemKind.matched);
+        expect(updated.matchedTaskId, 'task-new');
+        expect(updated.confidence, ParsedItemConfidence.high);
+      },
+    );
+
+    // ── _submitCaptureTool: no capturedAt (line 519/522-523/525) ─────────────
+
+    test(
+      'executeTool submit_capture uses clock.now() when capturedAt is absent',
+      () async {
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.submitCapture,
+            args: const {'transcript': 'hello world'},
+          );
+        });
+
+        expect(result.success, isTrue);
+        final decoded = jsonDecode(result.output) as Map<String, dynamic>;
+        expect(decoded['captureId'], isA<String>());
+        // The persisted capture should have capturedAt == _now
+        final capture = upsertedEntities.whereType<CaptureEntity>().single;
+        expect(capture.capturedAt, _now);
+        expect(capture.transcript, 'hello world');
+      },
+    );
+
+    test(
+      'executeTool submit_capture stores non-empty audioRef',
+      () async {
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.submitCapture,
+            args: const {
+              'transcript': 'audio capture',
+              'audioRef': 'audio-ref-123',
+            },
+          );
+        });
+
+        expect(result.success, isTrue);
+        final capture = upsertedEntities.whereType<CaptureEntity>().single;
+        expect(capture.audioRef, 'audio-ref-123');
+      },
+    );
+
+    // ── createTaskFromPhrase: disallowed category (line 612) ─────────────────
+
+    test(
+      'createTaskFromPhrase rejects a category not in allowedCategoryIds',
+      () async {
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {'phrase': 'Fix leak', 'category': 'home'},
+          );
+        });
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('home'));
+        expect(createdTaskRequests, isEmpty);
+      },
+    );
+
+    // ── createTaskFromPhrase: dueAnchor 'tomorrow' (lines 622, 907-908) ──────
+
+    test(
+      'createTaskFromPhrase with dueAnchor tomorrow sets due to end of tomorrow',
+      () async {
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {
+              'phrase': 'Buy groceries',
+              'category': 'work',
+              'dueAnchor': 'tomorrow',
+            },
+          );
+        });
+
+        expect(result.success, isTrue);
+        final decoded = jsonDecode(result.output) as Map<String, dynamic>;
+        final due = DateTime.parse(decoded['due'] as String);
+        // tomorrow = 2026-05-26 23:59:59.999
+        expect(due, DateTime(2026, 5, 26, 23, 59, 59, 999));
+        expect(createdTaskRequests.single.title, 'Buy groceries');
+      },
+    );
+
+    // ── createTaskFromPhrase: invalid dueAnchor throws (line 914) ────────────
+
+    test(
+      'createTaskFromPhrase with malformed dueAnchor returns a tool error',
+      () async {
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {
+              'phrase': 'Buy groceries',
+              'category': 'work',
+              'dueAnchor': 'next-week',
+            },
+          );
+        });
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('dueAnchor'));
+        expect(result.output, contains('next-week'));
+        expect(createdTaskRequests, isEmpty);
+      },
+    );
+
+    // ── createTaskFromPhrase: profileId from category (line 622) ─────────────
+
+    test(
+      'createTaskFromPhrase passes defaultProfileId from category to factory',
+      () async {
+        final category =
+            EntityDefinition.categoryDefinition(
+                  id: 'work',
+                  createdAt: _now,
+                  updatedAt: _now,
+                  name: 'Work',
+                  vectorClock: null,
+                  private: false,
+                  active: true,
+                  defaultProfileId: 'profile-work',
+                )
+                as CategoryDefinition;
+        when(() => journalDb.getCategoryById('work')).thenAnswer(
+          (_) async => category,
+        );
+
+        await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {'phrase': 'Run tests', 'category': 'work'},
+          );
+        });
+
+        expect(createdTaskRequests.single.profileId, 'profile-work');
+      },
+    );
+
+    // ── _categoryFilterForHint returns {hint} when hint is allowed (line 939) ─
+
+    test(
+      'matchToCorpus restricts to allowed category hint',
+      () async {
+        // Agent has allowedCategoryIds: {'work'}; hint is also 'work'
+        // → _categoryFilterForHint returns {'work'}, FTS runs.
+        journalEntities['task-1'] = _task(
+          id: 'task-1',
+          title: 'Write report',
+          status: _openStatus(),
+        );
+        when(() => fts5Db.watchFullTextMatches('report')).thenAnswer(
+          (_) => Stream.value(['task-1']),
+        );
+
+        final matches = await createService().matchToCorpus(
+          agentId: _agentId,
+          phrase: 'report',
+          categoryHint: 'work',
+        );
+
+        expect(matches.map((m) => m.taskId), ['task-1']);
+        verify(() => fts5Db.watchFullTextMatches('report')).called(1);
+      },
+    );
+
+    // ── _categoryFilterForHint: empty allowedCategoryIds → null (line 933) ───
+
+    test(
+      'matchToCorpus with no allowed categories and no hint allows all tasks',
+      () async {
+        // Agent with empty allowedCategoryIds
+        agentEntities[_agentId] = makeTestIdentity(
+          id: _agentId,
+          agentId: _agentId,
+          kind: AgentKinds.dayAgent,
+          // ignore: avoid_redundant_argument_values
+          allowedCategoryIds: const {},
+        );
+        journalEntities['task-any'] = _task(
+          id: 'task-any',
+          title: 'Anything',
+          status: _openStatus(),
+          categoryId: 'other',
+        );
+        when(() => fts5Db.watchFullTextMatches('any')).thenAnswer(
+          (_) => Stream.value(['task-any']),
+        );
+
+        final matches = await createService().matchToCorpus(
+          agentId: _agentId,
+          phrase: 'any',
+        );
+
+        expect(matches.map((m) => m.taskId), ['task-any']);
+      },
+    );
+
+    // ── _endOfDay UTC branch (line 957) ──────────────────────────────────────
+
+    test(
+      'applyTriage defer with a UTC deferTo date produces a UTC end-of-day',
+      () async {
+        journalEntities['task-1'] = _task(
+          id: 'task-1',
+          title: 'Prep demo',
+          status: _openStatus(),
+        );
+
+        final task = await withClock(Clock.fixed(_now), () {
+          return createService().applyTriage(
+            taskId: 'task-1',
+            action: 'defer',
+            deferTo: DateTime.utc(2026, 6, 10, 8),
+          );
+        });
+
+        final due = task.data.due!;
+        expect(due.isUtc, isTrue);
+        expect(due.year, 2026);
+        expect(due.month, 6);
+        expect(due.day, 10);
+        expect(due.hour, 23);
+        expect(due.minute, 59);
+        expect(due.second, 59);
+      },
+    );
+
+    // ── createTaskFromPhrase: factory returns null (line 624-626) ────────────
+
+    test(
+      'createTaskFromPhrase returns a tool error when factory returns null',
+      () async {
+        final service = DayAgentCaptureService(
+          agentRepository: agentRepository,
+          syncService: syncService,
+          journalDb: journalDb,
+          journalRepository: journalRepository,
+          fts5Db: fts5Db,
+          orchestrator: orchestrator,
+          domainLogger: domainLogger,
+          taskFactory:
+              ({
+                required String title,
+                required String categoryId,
+                required DateTime now,
+                int? estimateMinutes,
+                DateTime? due,
+                String? profileId,
+              }) async => null,
+          onPersistedStateChanged: notifications.add,
+        );
+
+        final result = await withClock(Clock.fixed(_now), () {
+          return service.executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {'phrase': 'Will fail', 'category': 'work'},
+          );
+        });
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('failed to create task'));
+      },
+    );
+
+    // ── _parseCaptureTool: empty/non-list items (line 534-536) ───────────────
+
+    test(
+      'executeTool parse_capture_to_items rejects a non-list items value',
+      () async {
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: _agentId,
+                  transcript: 'test',
+                  capturedAt: _now,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+
+        final result = await createService().executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.parseCaptureToItems,
+          args: const {'captureId': 'capture-1', 'items': 'not-a-list'},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('items must be a non-empty array'));
+      },
+    );
+
+    test(
+      'executeTool parse_capture_to_items rejects an empty items list',
+      () async {
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: _agentId,
+                  transcript: 'test',
+                  capturedAt: _now,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+
+        final result = await createService().executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.parseCaptureToItems,
+          args: const {'captureId': 'capture-1', 'items': <dynamic>[]},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('items must be a non-empty array'));
+      },
+    );
+
+    // ── createTaskFromPhrase without captureItemId (no entity update) ─────────
+
+    test(
+      'createTaskFromPhrase without captureItemId skips entity upsert',
+      () async {
+        final result = await withClock(Clock.fixed(_now), () {
+          return createService().executeTool(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            toolName: DayAgentToolNames.createTaskFromPhrase,
+            args: const {'phrase': 'Solo task', 'category': 'work'},
+          );
+        });
+
+        expect(result.success, isTrue);
+        final decoded = jsonDecode(result.output) as Map<String, dynamic>;
+        expect(decoded['title'], 'Solo task');
+        // no parsed item should have been upserted
+        expect(upsertedEntities.whereType<ParsedItemEntity>(), isEmpty);
+        // notifications: agentId and taskId, but no captureItemId
+        expect(notifications, containsAll([_agentId, 'created-task-1']));
+        expect(notifications, hasLength(2));
+      },
+    );
+
+    // ── buildTaskCorpusSnapshot: limit enforcement ────────────────────────────
+
+    test(
+      'buildTaskCorpusSnapshot respects the limit parameter',
+      () async {
+        final tasks = List.generate(
+          5,
+          (i) => _task(
+            id: 'task-$i',
+            title: 'Task $i',
+            status: _openStatus(),
+          ),
+        );
+        when(
+          () => journalDb.getOpenTasksForDayAgentCorpus(
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => tasks);
+
+        final snapshot = await createService().buildTaskCorpusSnapshot(
+          allowedCategoryIds: {'work'},
+          day: DateTime(2026, 5, 25),
+          limit: 3,
+        );
+
+        expect(snapshot, hasLength(3));
+      },
+    );
+
+    // ── persistParsedItems: closed matched task is demoted (line 718-724) ────
+
+    test(
+      'persistParsedItems demotes a matched-but-closed task to newTask',
+      () async {
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: _agentId,
+                  transcript: 'prep',
+                  capturedAt: _now,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+        journalEntities['task-done'] = _task(
+          id: 'task-done',
+          title: 'Already done',
+          status: _doneStatus(),
+        );
+
+        final items = await createService().persistParsedItems(
+          agentId: _agentId,
+          captureId: capture.id,
+          rawItems: const [
+            {
+              'kind': 'matched',
+              'title': 'Done task',
+              'categoryId': 'work',
+              'confidenceScore': 0.9,
+              'matchedTaskId': 'task-done',
+            },
+          ],
+        );
+
+        expect(items.single.kind, ParsedItemKind.newTask);
+        expect(items.single.matchedTaskId, isNull);
+        expect(items.single.lowConfidence, isTrue);
+      },
+    );
+
+    // ── persistParsedItems: matched task promotes newTask kind (line 725-727)
+
+    test(
+      'persistParsedItems promotes kind to matched when auto-link succeeds '
+      'and model omits kind',
+      () async {
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'capture-1',
+                  agentId: _agentId,
+                  transcript: 'prep',
+                  capturedAt: _now,
+                  createdAt: _now,
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        agentEntities[capture.id] = capture;
+        journalEntities['task-1'] = _task(
+          id: 'task-1',
+          title: 'Prep demo',
+          status: _openStatus(),
+        );
+
+        final items = await createService().persistParsedItems(
+          agentId: _agentId,
+          captureId: capture.id,
+          rawItems: const [
+            {
+              // No 'kind' field — defaults to newTask, but auto-link has high
+              // score → should be promoted to matched.
+              'title': 'Prep demo',
+              'categoryId': 'work',
+              'confidenceScore': 0.9,
+              'matchedTaskId': 'task-1',
+            },
+          ],
+        );
+
+        expect(items.single.kind, ParsedItemKind.matched);
+        expect(items.single.matchedTaskId, 'task-1');
       },
     );
   });

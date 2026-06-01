@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -10,10 +11,61 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:mobile_scanner/src/method_channel/mobile_scanner_method_channel.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+
+// ---------------------------------------------------------------------------
+// Fake MobileScannerPlatform used to prevent platform channel crashes when
+// the MobileScanner widget is mounted in tests.
+// ---------------------------------------------------------------------------
+class _FakeMethodChannelMobileScanner extends MethodChannelMobileScanner {
+  final _barcodesController = StreamController<BarcodeCapture?>.broadcast();
+  final _torchController = StreamController<TorchState>.broadcast();
+  final _zoomController = StreamController<double>.broadcast();
+
+  Stream<BarcodeCapture?> get testBarcodesStream => _barcodesController.stream;
+
+  @override
+  Stream<BarcodeCapture?> get barcodesStream => _barcodesController.stream;
+
+  @override
+  Stream<TorchState> get torchStateStream => _torchController.stream;
+
+  @override
+  Stream<double> get zoomScaleStateStream => _zoomController.stream;
+
+  @override
+  Future<MobileScannerViewAttributes> start(StartOptions startOptions) async {
+    return const MobileScannerViewAttributes(
+      cameraDirection: CameraFacing.back,
+      currentTorchMode: TorchState.off,
+      size: Size(640, 480),
+      numberOfCameras: 1,
+    );
+  }
+
+  @override
+  Future<void> stop({bool force = false}) async {}
+
+  @override
+  Widget buildCameraView() {
+    return const Placeholder(
+      fallbackHeight: 100,
+      fallbackWidth: 100,
+      color: Color(0xFF00AA00),
+    );
+  }
+
+  Future<void> disposeControllers() async {
+    await _barcodesController.close();
+    await _torchController.close();
+    await _zoomController.close();
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -475,6 +527,324 @@ void main() {
         find.text(context.messages.provisionedSyncImportButton),
         findsNothing,
       );
+    });
+
+    testWidgets(
+      'shows scan button and scanner on mobile, hides on second tap',
+      (tester) async {
+        final wasDesktop = isDesktop;
+        final wasMobile = isMobile;
+        isDesktop = false;
+        isMobile = true;
+        addTearDown(() {
+          isDesktop = wasDesktop;
+          isMobile = wasMobile;
+        });
+
+        final fakePlatform = _FakeMethodChannelMobileScanner();
+        MobileScannerPlatform.instance = fakePlatform;
+        addTearDown(fakePlatform.disposeControllers);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: defaultOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(BundleImportWidget));
+
+        // Tap scan button — scanner should appear
+        final scanButtonFinder = find.text(
+          context.messages.provisionedSyncScanButton,
+        );
+        await tester.ensureVisible(scanButtonFinder);
+        await tester.tap(scanButtonFinder);
+        await tester.pump();
+
+        expect(find.byType(MobileScanner), findsOneWidget);
+
+        // Tap scan button again — scanner should disappear
+        await tester.ensureVisible(scanButtonFinder);
+        await tester.tap(scanButtonFinder);
+        await tester.pump();
+
+        expect(find.byType(MobileScanner), findsNothing);
+      },
+    );
+  });
+
+  group('mobile scanner barcode handling', () {
+    testWidgets(
+      'handles barcode detection: valid bundle shows summary and hides scanner',
+      (tester) async {
+        final wasDesktop = isDesktop;
+        final wasMobile = isMobile;
+        isDesktop = false;
+        isMobile = true;
+        addTearDown(() {
+          isDesktop = wasDesktop;
+          isMobile = wasMobile;
+        });
+
+        final fakePlatform = _FakeMethodChannelMobileScanner();
+        MobileScannerPlatform.instance = fakePlatform;
+        addTearDown(fakePlatform.disposeControllers);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: defaultOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(BundleImportWidget));
+
+        // Show the scanner
+        final scanButtonFinder = find.text(
+          context.messages.provisionedSyncScanButton,
+        );
+        await tester.ensureVisible(scanButtonFinder);
+        await tester.tap(scanButtonFinder);
+        await tester.pump();
+
+        expect(find.byType(MobileScanner), findsOneWidget);
+
+        // Simulate a barcode being scanned by calling onDetect directly
+        final scanner = tester.widget<MobileScanner>(
+          find.byType(MobileScanner),
+        );
+        scanner.onDetect!(
+          BarcodeCapture(
+            barcodes: [Barcode(rawValue: validBase64)],
+          ),
+        );
+        // Process the setState rebuild, then advance past the 220 ms
+        // AnimatedSwitcher transition so the old child is fully removed.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        // Scanner should be hidden and summary card should appear
+        expect(find.byType(MobileScanner), findsNothing);
+        expect(find.text('https://matrix.example.com'), findsOneWidget);
+        expect(find.text('@alice:example.com'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'ignores duplicate barcode scan — second identical code does not re-decode',
+      (tester) async {
+        final wasDesktop = isDesktop;
+        final wasMobile = isMobile;
+        isDesktop = false;
+        isMobile = true;
+        addTearDown(() {
+          isDesktop = wasDesktop;
+          isMobile = wasMobile;
+        });
+
+        final fakePlatform = _FakeMethodChannelMobileScanner();
+        MobileScannerPlatform.instance = fakePlatform;
+        addTearDown(fakePlatform.disposeControllers);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: defaultOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(BundleImportWidget));
+
+        // Show the scanner
+        final scanButtonFinder = find.text(
+          context.messages.provisionedSyncScanButton,
+        );
+        await tester.ensureVisible(scanButtonFinder);
+        await tester.tap(scanButtonFinder);
+        await tester.pump();
+
+        expect(find.byType(MobileScanner), findsOneWidget);
+
+        final scanner = tester.widget<MobileScanner>(
+          find.byType(MobileScanner),
+        );
+
+        // First scan — invalid bundle triggers error
+        const invalidCode = 'not-a-valid-bundle';
+        scanner.onDetect!(
+          const BarcodeCapture(barcodes: [Barcode(rawValue: invalidCode)]),
+        );
+        await tester.pump();
+
+        // Error is shown; scanner still visible because bundle was invalid
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.decoration?.errorText, isNotNull);
+
+        // Second scan with same code — deduplication prevents re-decode
+        // We verify the error text did NOT change (no second setState call)
+        final errorTextBefore = textField.decoration?.errorText;
+        scanner.onDetect!(
+          const BarcodeCapture(barcodes: [Barcode(rawValue: invalidCode)]),
+        );
+        await tester.pump();
+
+        final textFieldAfter = tester.widget<TextField>(find.byType(TextField));
+        expect(textFieldAfter.decoration?.errorText, errorTextBefore);
+      },
+    );
+
+    testWidgets('ignores barcode capture with null or empty rawValue', (
+      tester,
+    ) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = false;
+      isMobile = true;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+
+      final fakePlatform = _FakeMethodChannelMobileScanner();
+      MobileScannerPlatform.instance = fakePlatform;
+      addTearDown(fakePlatform.disposeControllers);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(BundleImportWidget));
+
+      // Show scanner
+      final scanButtonFinder = find.text(
+        context.messages.provisionedSyncScanButton,
+      );
+      await tester.ensureVisible(scanButtonFinder);
+      await tester.tap(scanButtonFinder);
+      await tester.pump();
+
+      final scanner = tester.widget<MobileScanner>(find.byType(MobileScanner));
+
+      // Null rawValue — should be ignored
+      scanner.onDetect!(const BarcodeCapture(barcodes: [Barcode()]));
+      await tester.pump();
+
+      // Empty rawValue — should also be ignored
+      scanner.onDetect!(
+        const BarcodeCapture(barcodes: [Barcode(rawValue: '')]),
+      );
+      await tester.pump();
+
+      // Neither triggered a decode, so the input form is still shown
+      expect(find.byType(TextField), findsOneWidget);
+    });
+  });
+
+  group('desktop paste clipboard error handling', () {
+    testWidgets(
+      'paste button handles PlatformException from clipboard gracefully',
+      (tester) async {
+        final wasDesktop = isDesktop;
+        final wasMobile = isMobile;
+        isDesktop = true;
+        isMobile = false;
+        addTearDown(() {
+          isDesktop = wasDesktop;
+          isMobile = wasMobile;
+        });
+
+        // Make clipboard throw a PlatformException
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.getData') {
+              throw PlatformException(code: 'clipboard_error');
+            }
+            return null;
+          },
+        );
+        addTearDown(() {
+          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          );
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: defaultOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(BundleImportWidget));
+
+        // Should not throw — PlatformException is silently swallowed
+        await tester.tap(
+          find.text(context.messages.provisionedSyncPasteClipboard),
+        );
+        await tester.pump();
+
+        // No summary card shown; input form still present
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.text('@alice:example.com'), findsNothing);
+      },
+    );
+
+    testWidgets('paste button does nothing when clipboard text is empty', (
+      tester,
+    ) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = true;
+      isMobile = false;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.getData') {
+            return <String, dynamic>{'text': ''};
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncPasteClipboard),
+      );
+      await tester.pump();
+
+      // Empty text — no import triggered, form still shown
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('@alice:example.com'), findsNothing);
     });
   });
 }

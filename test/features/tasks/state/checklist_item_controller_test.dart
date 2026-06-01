@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -612,6 +613,233 @@ void main() {
         expect(updatedState.value?.data.isArchived, isTrue);
         expect(updatedState.value?.data.isChecked, isTrue);
       });
+    });
+
+    group('_listen — update stream notification', () {
+      test(
+        'refreshes state when update stream emits the matching id',
+        () async {
+          final updatedItem = ChecklistItem(
+            meta: Metadata(
+              id: 'item-1',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025, 1, 2),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+              categoryId: 'category-1',
+            ),
+            data: const ChecklistItemData(
+              title: 'Refreshed Title',
+              isChecked: true,
+              linkedChecklists: ['checklist-1'],
+            ),
+          );
+
+          // First call returns original; second call (after notification) returns updatedItem
+          var fetchCount = 0;
+          when(() => mockDb.journalEntityById('item-1')).thenAnswer((_) async {
+            fetchCount++;
+            return fetchCount == 1 ? testChecklistItem : updatedItem;
+          });
+
+          final container = ProviderContainer(
+            overrides: [
+              checklistRepositoryProvider.overrideWithValue(
+                mockChecklistRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          // Build the provider and let the initial fetch complete.
+          await container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).future,
+          );
+
+          // Verify the initial state is the original item.
+          final initialState = container.read(
+            checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
+          );
+          expect(initialState.value?.data.title, 'Original Title');
+          expect(initialState.value?.data.isChecked, isFalse);
+
+          // Emit an update notification that includes the item's id.
+          updateStreamController.add({'item-1', 'other-id'});
+
+          // Let the async callback run.
+          await pumpEventQueue();
+
+          // State should now reflect the updated item fetched after notification.
+          final refreshedState = container.read(
+            checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
+          );
+          expect(refreshedState.value?.data.title, 'Refreshed Title');
+          expect(refreshedState.value?.data.isChecked, isTrue);
+        },
+      );
+
+      test(
+        'ignores update stream emission when id is not in the affected set',
+        () async {
+          // Track extra fetch calls triggered by the stream.
+          var extraFetches = 0;
+          when(() => mockDb.journalEntityById('item-1')).thenAnswer((_) async {
+            extraFetches++;
+            return testChecklistItem;
+          });
+
+          final container = ProviderContainer(
+            overrides: [
+              checklistRepositoryProvider.overrideWithValue(
+                mockChecklistRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).future,
+          );
+
+          // Reset the counter after initial build fetch(es).
+          extraFetches = 0;
+
+          // Emit a notification for a *different* id — should be ignored.
+          updateStreamController.add({'other-id', 'yet-another-id'});
+          await pumpEventQueue();
+
+          // The controller must not have re-fetched after an irrelevant notification.
+          expect(extraFetches, 0);
+
+          // State must remain the original item (no spurious refresh).
+          final stateAfterIrrelevant = container.read(
+            checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
+          );
+          expect(stateAfterIrrelevant.value?.data.title, 'Original Title');
+        },
+      );
+    });
+
+    group('delete', () {
+      late MockJournalRepository mockJournalRepository;
+
+      setUp(() {
+        mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.deleteJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+      });
+
+      test(
+        'calls deleteJournalEntity and sets state to AsyncData(null) on success',
+        () async {
+          final container = ProviderContainer(
+            overrides: [
+              checklistRepositoryProvider.overrideWithValue(
+                mockChecklistRepository,
+              ),
+              journalRepositoryProvider.overrideWithValue(
+                mockJournalRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).future,
+          );
+
+          // State starts with the fetched item.
+          expect(
+            container
+                .read(
+                  checklistItemControllerProvider((
+                    id: 'item-1',
+                    taskId: 'task-1',
+                  )),
+                )
+                .value,
+            isNotNull,
+          );
+
+          final notifier = container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).notifier,
+          );
+
+          final result = await notifier.delete();
+
+          // delete() must return the repository's return value.
+          expect(result, isTrue);
+
+          // State must be cleared to null after deletion.
+          final stateAfterDelete = container.read(
+            checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
+          );
+          expect(stateAfterDelete.value, isNull);
+
+          verify(
+            () => mockJournalRepository.deleteJournalEntity('item-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'returns false and clears state when repository returns false',
+        () async {
+          when(
+            () => mockJournalRepository.deleteJournalEntity('item-1'),
+          ).thenAnswer((_) async => false);
+
+          final container = ProviderContainer(
+            overrides: [
+              checklistRepositoryProvider.overrideWithValue(
+                mockChecklistRepository,
+              ),
+              journalRepositoryProvider.overrideWithValue(
+                mockJournalRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).future,
+          );
+
+          final notifier = container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).notifier,
+          );
+
+          final result = await notifier.delete();
+
+          // Repository returned false, so delete() should propagate that.
+          expect(result, isFalse);
+
+          // State is still cleared to null even when the repo returns false.
+          final stateAfterDelete = container.read(
+            checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
+          );
+          expect(stateAfterDelete.value, isNull);
+        },
+      );
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_picker.dart';
@@ -83,6 +84,37 @@ void main() {
         dsTokensLight.typography.styles.subtitle.subtitle2,
         dsTokensLight.colors.interactive.enabled,
       );
+    });
+
+    // Uncovered: lines 104–107
+    // onEnter/onExit callbacks fire when the card is enabled and not selected,
+    // toggling the hover background.
+    testWidgets('onEnter triggers hover background, onExit restores idle', (
+      tester,
+    ) async {
+      const cardKey = Key('hoverable-date-card');
+
+      await _pumpDesignSystem(
+        tester,
+        const DesignSystemCalendarDateCard(
+          key: cardKey,
+          weekdayLabel: 'Mon',
+          dayLabel: '7',
+          selected: false,
+          onPressed: _noop,
+        ),
+      );
+
+      expect(_firstDecoration(tester, cardKey).color, isNull);
+
+      final gesture = await _simulateHoverEnter(tester, find.byKey(cardKey));
+      expect(
+        _firstDecoration(tester, cardKey).color,
+        dsTokensLight.colors.background.level02,
+      );
+
+      await _simulateHoverExit(gesture, tester);
+      expect(_firstDecoration(tester, cardKey).color, isNull);
     });
   });
 
@@ -254,6 +286,391 @@ void main() {
         contains(dsTokensLight.colors.text.lowEmphasis.a),
       );
     });
+
+    // Uncovered: lines 463–466
+    // _CalendarMonthRailButton onEnter/onExit hover callbacks change background.
+    testWidgets(
+      'hovering an unselected month button shows surface.enabled bg',
+      (tester) async {
+        const febKey = Key('feb-button');
+
+        await _pumpDesignSystem(
+          tester,
+          DesignSystemCalendarPicker(
+            monthSections: const [
+              DesignSystemCalendarMonthRailSection(
+                yearLabel: '2026',
+                items: [
+                  DesignSystemCalendarMonthRailItem(
+                    key: febKey,
+                    label: 'Feb',
+                    selected: false,
+                    onPressed: _noop,
+                  ),
+                ],
+              ),
+            ],
+            visibleMonthLabel: 'February 2026',
+            weekdayLabels: const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+            weeks: const [
+              [
+                DesignSystemCalendarDayCellData(
+                  label: '1',
+                  type: DesignSystemCalendarDayCellType.activeMonth,
+                  onPressed: _noop,
+                ),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+              ],
+            ],
+            todayLabel: 'Today',
+          ),
+        );
+
+        expect(_firstDecoration(tester, febKey).color, isNull);
+
+        final gesture = await _simulateHoverEnter(tester, find.byKey(febKey));
+        expect(
+          _firstDecoration(tester, febKey).color,
+          dsTokensLight.colors.surface.enabled,
+        );
+
+        await _simulateHoverExit(gesture, tester);
+        expect(_firstDecoration(tester, febKey).color, isNull);
+      },
+    );
+
+    // Uncovered: lines 625–626, 643
+    // _CalendarTodayButton onEnter/onExit updates text color to interactive.hover.
+    testWidgets(
+      'hovering Today button changes text color to interactive.hover and bg',
+      (tester) async {
+        const pickerKey = Key('picker-today-hover');
+
+        await _pumpDesignSystem(
+          tester,
+          DesignSystemCalendarPicker(
+            key: pickerKey,
+            monthSections: _monthSections(),
+            visibleMonthLabel: 'January 2026',
+            weekdayLabels: const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+            weeks: const [
+              [
+                DesignSystemCalendarDayCellData(
+                  label: '1',
+                  type: DesignSystemCalendarDayCellType.activeMonth,
+                  onPressed: _noop,
+                ),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+              ],
+            ],
+            todayLabel: 'Today',
+            onTodayPressed: _noop,
+          ),
+        );
+
+        final todayTextBefore = _findTextNode(tester, pickerKey, 'Today');
+        expect(
+          todayTextBefore.style!.color,
+          dsTokensLight.colors.interactive.enabled,
+        );
+
+        final gesture = await _simulateHoverEnter(
+          tester,
+          find.text('Today').first,
+        );
+
+        final todayTextHovered = _findTextNode(tester, pickerKey, 'Today');
+        expect(
+          todayTextHovered.style!.color,
+          dsTokensLight.colors.interactive.hover,
+        );
+
+        await _simulateHoverExit(gesture, tester);
+        final todayTextAfter = _findTextNode(tester, pickerKey, 'Today');
+        expect(
+          todayTextAfter.style!.color,
+          dsTokensLight.colors.interactive.enabled,
+        );
+      },
+    );
+
+    // Uncovered: line 836
+    // forcedState on a DayCell: _resolveVisualState returns forcedState.
+    // Line 920: active-month hover background = surface.hover.
+    testWidgets(
+      'forcedState hover applies surface.hover background to activeMonth cell',
+      (tester) async {
+        const cellKey = Key('forced-hover-cell');
+
+        await _pumpDesignSystem(
+          tester,
+          DesignSystemCalendarPicker(
+            monthSections: _monthSections(),
+            visibleMonthLabel: 'January 2026',
+            weekdayLabels: const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+            weeks: const [
+              [
+                DesignSystemCalendarDayCellData(
+                  key: cellKey,
+                  label: '5',
+                  type: DesignSystemCalendarDayCellType.activeMonth,
+                  onPressed: _noop,
+                  forcedState: DesignSystemCalendarDayCellVisualState.hover,
+                ),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+              ],
+            ],
+            todayLabel: 'Today',
+          ),
+        );
+
+        final decoration = _findCircularDecoration(tester, cellKey);
+        expect(decoration.color, dsTokensLight.colors.surface.hover);
+      },
+    );
+
+    // Uncovered: lines 767–770
+    // Mouse hover on a day cell without forcedState: onEnter/onExit.
+    testWidgets('onEnter hover gives active-month cell surface.hover bg', (
+      tester,
+    ) async {
+      const cellKey = Key('hover-active-cell');
+
+      await _pumpDesignSystem(
+        tester,
+        DesignSystemCalendarPicker(
+          monthSections: _monthSections(),
+          visibleMonthLabel: 'January 2026',
+          weekdayLabels: const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+          weeks: const [
+            [
+              DesignSystemCalendarDayCellData(
+                key: cellKey,
+                label: '5',
+                type: DesignSystemCalendarDayCellType.activeMonth,
+                onPressed: _noop,
+              ),
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+          ],
+          todayLabel: 'Today',
+        ),
+      );
+
+      final gesture = await _simulateHoverEnter(tester, find.byKey(cellKey));
+      expect(
+        _findCircularDecoration(tester, cellKey).color,
+        dsTokensLight.colors.surface.hover,
+      );
+
+      await _simulateHoverExit(gesture, tester);
+      // After exit, activeMonth cell has no background → no circular DecoratedBox.
+      expect(
+        find.descendant(
+          of: find.byKey(cellKey),
+          matching: find.byType(DecoratedBox),
+        ),
+        findsNothing,
+      );
+    });
+
+    // Uncovered: lines 865–868
+    // Disabled middle-selected cell: connectionColor = background.level02, no bg.
+    testWidgets('disabled middle-selected cell has level02 connection color', (
+      tester,
+    ) async {
+      const disabledMiddleKey = Key('disabled-middle-key');
+
+      await _pumpDesignSystem(
+        tester,
+        DesignSystemCalendarPicker(
+          monthSections: _monthSections(),
+          visibleMonthLabel: 'January 2026',
+          weekdayLabels: const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+          weeks: const [
+            [
+              DesignSystemCalendarDayCellData(
+                key: disabledMiddleKey,
+                label: '2',
+                type: DesignSystemCalendarDayCellType.selected,
+                selectionPosition:
+                    DesignSystemCalendarDayCellSelectionPosition.middle,
+                // onPressed == null → disabled
+              ),
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+          ],
+          todayLabel: 'Today',
+        ),
+      );
+
+      final connectionBox = tester.widget<ColoredBox>(
+        find
+            .descendant(
+              of: find.byKey(disabledMiddleKey),
+              matching: find.byType(ColoredBox),
+            )
+            .first,
+      );
+      expect(connectionBox.color, dsTokensLight.colors.background.level02);
+    });
+
+    // Uncovered: line 877
+    // Enabled middle-selected cell with forcedState hover → backgroundColor = level02.
+    testWidgets(
+      'forcedState hover on enabled middle-selected shows level02 bg',
+      (
+        tester,
+      ) async {
+        const cellKey = Key('middle-hover-cell');
+
+        await _pumpDesignSystem(
+          tester,
+          DesignSystemCalendarPicker(
+            monthSections: _monthSections(),
+            visibleMonthLabel: 'January 2026',
+            weekdayLabels: const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+            weeks: const [
+              [
+                DesignSystemCalendarDayCellData(
+                  key: cellKey,
+                  label: '3',
+                  type: DesignSystemCalendarDayCellType.selected,
+                  selectionPosition:
+                      DesignSystemCalendarDayCellSelectionPosition.middle,
+                  onPressed: _noop,
+                  forcedState: DesignSystemCalendarDayCellVisualState.hover,
+                ),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+              ],
+            ],
+            todayLabel: 'Today',
+          ),
+        );
+
+        final decoration = _findCircularDecoration(tester, cellKey);
+        expect(decoration.color, dsTokensLight.colors.background.level02);
+      },
+    );
+
+    // Uncovered: line 892
+    // Non-middle selected cells (start/end/standalone) with forcedState hover →
+    // backgroundColor = interactive.hover.
+    for (final position in [
+      DesignSystemCalendarDayCellSelectionPosition.start,
+      DesignSystemCalendarDayCellSelectionPosition.end,
+      DesignSystemCalendarDayCellSelectionPosition.standalone,
+    ]) {
+      testWidgets(
+        'forcedState hover on $position selected cell shows interactive.hover bg',
+        (tester) async {
+          const cellKey = Key('selected-hover-cell');
+
+          await _pumpDesignSystem(
+            tester,
+            DesignSystemCalendarPicker(
+              monthSections: _monthSections(),
+              visibleMonthLabel: 'January 2026',
+              weekdayLabels: const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+              weeks: [
+                [
+                  DesignSystemCalendarDayCellData(
+                    key: cellKey,
+                    label: '1',
+                    type: DesignSystemCalendarDayCellType.selected,
+                    selectionPosition: position,
+                    onPressed: _noop,
+                    forcedState: DesignSystemCalendarDayCellVisualState.hover,
+                  ),
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                ],
+              ],
+              todayLabel: 'Today',
+            ),
+          );
+
+          final decoration = _findCircularDecoration(tester, cellKey);
+          expect(decoration.color, dsTokensLight.colors.interactive.hover);
+        },
+      );
+    }
+
+    // Uncovered: lines 906, 910
+    // Today cell with forcedState hover → labelColor = interactive.hover,
+    // backgroundColor = background.level03.
+    testWidgets('forcedState hover on today cell applies hover colors', (
+      tester,
+    ) async {
+      const todayKey = Key('today-hover-cell');
+
+      await _pumpDesignSystem(
+        tester,
+        DesignSystemCalendarPicker(
+          monthSections: _monthSections(),
+          visibleMonthLabel: 'January 2026',
+          weekdayLabels: const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+          weeks: const [
+            [
+              DesignSystemCalendarDayCellData(
+                key: todayKey,
+                label: '1',
+                type: DesignSystemCalendarDayCellType.today,
+                onPressed: _noop,
+                forcedState: DesignSystemCalendarDayCellVisualState.hover,
+              ),
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+          ],
+          todayLabel: 'Today',
+        ),
+      );
+
+      final decoration = _findCircularDecoration(tester, todayKey);
+      expect(decoration.color, dsTokensLight.colors.background.level03);
+
+      final label = _findTextNode(tester, todayKey, '1');
+      expect(label.style!.color, dsTokensLight.colors.interactive.hover);
+    });
   });
 }
 
@@ -267,6 +684,30 @@ Future<void> _pumpDesignSystem(
       theme: DesignSystemTheme.light(),
     ),
   );
+}
+
+// Simulates a mouse hover enter by moving a mouse gesture into the target.
+// Returns the gesture so the caller can move it away (exit) when needed.
+Future<TestGesture> _simulateHoverEnter(
+  WidgetTester tester,
+  Finder target,
+) async {
+  final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+  await gesture.addPointer(location: Offset.zero);
+  addTearDown(gesture.removePointer);
+  await tester.pump();
+  await gesture.moveTo(tester.getCenter(target));
+  await tester.pump();
+  return gesture;
+}
+
+// Moves the pointer off-screen to trigger MouseRegion.onExit.
+Future<void> _simulateHoverExit(
+  TestGesture gesture,
+  WidgetTester tester,
+) async {
+  await gesture.moveTo(const Offset(-200, -200));
+  await tester.pump();
 }
 
 List<DesignSystemCalendarMonthRailSection> _monthSections({
@@ -407,6 +848,31 @@ BoxDecoration _firstDecoration(WidgetTester tester, Key key) {
   );
 
   return decoratedBox.decoration as BoxDecoration;
+}
+
+// Finds the circular (rounded) DecoratedBox inside a _CalendarDayCell.
+// Day cells use BorderRadius.circular for their background — this distinguishes
+// the background layer from the outer SizedBox wrapper.
+BoxDecoration _findCircularDecoration(WidgetTester tester, Key cellKey) {
+  final decoratedBoxes = tester.widgetList<DecoratedBox>(
+    find.descendant(
+      of: find.byKey(cellKey),
+      matching: find.byType(DecoratedBox),
+    ),
+  );
+
+  final circular = decoratedBoxes.where((db) {
+    final decoration = db.decoration;
+    if (decoration is! BoxDecoration) return false;
+    return decoration.borderRadius is BorderRadius;
+  }).toList();
+
+  expect(
+    circular,
+    isNotEmpty,
+    reason: 'No circular DecoratedBox found for $cellKey',
+  );
+  return circular.first.decoration as BoxDecoration;
 }
 
 Text _findTextNode(WidgetTester tester, Key key, String text) {

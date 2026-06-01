@@ -229,5 +229,264 @@ void main() {
         expect(find.text('Pick a date'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'AppBar back-arrow button pops the route',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 1100)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final agent = _fastAgent();
+        var popped = false;
+        await tester.pumpWidget(
+          _wrap(
+            Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () async {
+                    await Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ShutdownPage(
+                          forDate: DateTime(2026, 5, 25),
+                        ),
+                      ),
+                    );
+                    popped = true;
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // Tap the leading back icon (not the footer TextButton).
+        final backIcon = find.widgetWithIcon(
+          IconButton,
+          Icons.arrow_back_rounded,
+        );
+        expect(backIcon, findsOneWidget);
+        await tester.tap(backIcon);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(popped, isTrue);
+        expect(find.byType(ShutdownPage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping Pick-a-date shows Scheduled decision pill; '
+      'tapping Drop shows Dropped decision pill',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 1100)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final agent = _fastAgent();
+        await tester.pumpWidget(
+          _wrap(
+            ShutdownPage(forDate: DateTime(2026, 5, 25)),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final messages = tester.element(find.byType(ShutdownPage)).messages;
+
+        // Both carryover rows show "Pick a date" and "Drop".
+        final pickDate = find.text(
+          messages.dailyOsNextShutdownCarryoverPickDate,
+        );
+        expect(pickDate, findsNWidgets(2));
+
+        // Tap "Pick a date" on the first carryover row.
+        await tester.ensureVisible(pickDate.first);
+        await tester.tap(pickDate.first);
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // The first row now shows the "Scheduled" pill.
+        expect(
+          find.text(messages.dailyOsNextShutdownCarryoverScheduled),
+          findsOneWidget,
+        );
+        // The second row still offers "Drop".
+        final dropButton = find.text(messages.dailyOsNextShutdownCarryoverDrop);
+        expect(dropButton, findsOneWidget);
+
+        // Tap "Drop" on the remaining carryover row.
+        await tester.ensureVisible(dropButton);
+        await tester.tap(dropButton);
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // The second row now shows the "Dropped" pill.
+        expect(
+          find.text(messages.dailyOsNextShutdownCarryoverDropped),
+          findsOneWidget,
+        );
+        // No more undecided action buttons visible.
+        expect(
+          find.text(messages.dailyOsNextShutdownCarryoverPickDate),
+          findsNothing,
+        );
+        expect(
+          find.text(messages.dailyOsNextShutdownCarryoverDrop),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'submitting an empty reflection does not call the controller '
+      'and leaves the form visible',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 1100)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final agent = _fastAgent();
+        await tester.pumpWidget(
+          _wrap(
+            ShutdownPage(forDate: DateTime(2026, 5, 25)),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final messages = tester.element(find.byType(ShutdownPage)).messages;
+
+        // Leave the text field empty and tap the submit/skip button.
+        final skipBtn = find.text(messages.dailyOsNextShutdownReflectionSubmit);
+        await tester.ensureVisible(skipBtn);
+        await tester.tap(skipBtn);
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // The form should still be visible — no thanks text shown.
+        expect(skipBtn, findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextShutdownReflectionThanks),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping Speak with text calls submitReflection and shows thanks',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 1100)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final agent = _fastAgent();
+        await tester.pumpWidget(
+          _wrap(
+            ShutdownPage(forDate: DateTime(2026, 5, 25)),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final messages = tester.element(find.byType(ShutdownPage)).messages;
+
+        // Type text into the reflection field.
+        final textField = find.byType(TextField);
+        await tester.ensureVisible(textField);
+        await tester.enterText(textField, 'Great focus today');
+
+        // Tap the Speak button (voice source).
+        final speakBtn = find.text(messages.dailyOsNextShutdownReflectionSpeak);
+        await tester.ensureVisible(speakBtn);
+        await tester.tap(speakBtn);
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // After a successful submit, the thanks confirmation appears.
+        expect(
+          find.text(messages.dailyOsNextShutdownReflectionThanks),
+          findsOneWidget,
+        );
+        // The form (text field + buttons) is gone.
+        expect(textField, findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping Submit/Skip with text calls submitReflection and shows thanks',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 1100)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final agent = _fastAgent();
+        await tester.pumpWidget(
+          _wrap(
+            ShutdownPage(forDate: DateTime(2026, 5, 25)),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        final messages = tester.element(find.byType(ShutdownPage)).messages;
+
+        // Type text into the reflection field.
+        final textField = find.byType(TextField);
+        await tester.ensureVisible(textField);
+        await tester.enterText(textField, 'Today was productive');
+
+        // Tap the text Submit/Skip button (typed source).
+        final submitBtn = find.text(
+          messages.dailyOsNextShutdownReflectionSubmit,
+        );
+        await tester.ensureVisible(submitBtn);
+        await tester.tap(submitBtn);
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // The thanks text now appears.
+        expect(
+          find.text(messages.dailyOsNextShutdownReflectionThanks),
+          findsOneWidget,
+        );
+        // The form is replaced.
+        expect(find.byType(TextField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'narrow layout renders sections stacked vertically',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(600, 1200)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final agent = _fastAgent();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+            child: makeTestableWidget2(
+              ShutdownPage(forDate: DateTime(2026, 5, 25)),
+              mediaQueryData: const MediaQueryData(size: Size(600, 1200)),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // Both the completed item and metrics should still render in narrow mode.
+        expect(
+          find.text('Deck review — Q2 leadership update'),
+          findsOneWidget,
+        );
+        expect(find.text('Finish the Onboarding doc'), findsOneWidget);
+      },
+    );
   });
 }

@@ -1,12 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,9 +23,17 @@ import '../test_utils.dart';
 
 void main() {
   late MockSoulDocumentService mockSoulService;
+  late MockNavService mockNavService;
 
   setUp(() async {
-    await setUpTestGetIt();
+    mockNavService = MockNavService();
+    when(() => mockNavService.currentPath).thenReturn('/settings/agents');
+    when(() => mockNavService.beamBack()).thenReturn(null);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<NavService>(mockNavService);
+      },
+    );
     mockSoulService = MockSoulDocumentService();
   });
 
@@ -960,6 +974,628 @@ void main() {
           find.text(context.messages.agentTemplateNoneAssigned),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'cancel button in create mode calls navigateBackFromAgent (beamBack)',
+      (tester) async {
+        await tester.pumpWidget(buildCreateSubject());
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+        final cancelFinder = find.text(context.messages.cancelButton);
+        expect(cancelFinder, findsOneWidget);
+
+        await tester.ensureVisible(cancelFinder);
+        await tester.tap(cancelFinder);
+        await tester.pumpAndSettle();
+
+        // navigateBackFromAgent sees /settings/agents path and calls beamBack.
+        verify(() => mockNavService.beamBack()).called(1);
+      },
+    );
+
+    testWidgets(
+      'cancel button in edit mode (dirty state) calls navigateBackFromAgent',
+      (tester) async {
+        await tester.pumpWidget(buildEditSubject(soulId: 'soul-cancel-dirty'));
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+
+        // Make the form dirty by typing in the voice directive field.
+        await tester.enterText(
+          find.byWidgetPredicate(
+            (w) =>
+                w is TextField &&
+                w.decoration?.labelText ==
+                    context.messages.agentSoulVoiceDirectiveLabel,
+          ),
+          'Modified voice',
+        );
+        await tester.pump();
+
+        // Cancel and save buttons should now both be visible.
+        expect(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+          findsOneWidget,
+        );
+
+        final cancelFinder = find.text(context.messages.cancelButton);
+        expect(cancelFinder, findsOneWidget);
+        await tester.ensureVisible(cancelFinder);
+        await tester.tap(cancelFinder);
+        await tester.pumpAndSettle();
+
+        // navigateBackFromAgent sees /settings/agents path and calls beamBack.
+        verify(() => mockNavService.beamBack()).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    testWidgets(
+      'tone bounds onChange triggers dirty-state detection',
+      (tester) async {
+        await tester.pumpWidget(buildEditSubject(soulId: 'soul-tone'));
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+
+        // No save button before change.
+        expect(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+          findsNothing,
+        );
+
+        await tester.enterText(
+          find.byWidgetPredicate(
+            (w) =>
+                w is TextField &&
+                w.decoration?.labelText ==
+                    context.messages.agentSoulToneBoundsLabel,
+          ),
+          'Warmer tone',
+        );
+        await tester.pump();
+
+        // Save button must now appear, proving the onChanged fired setState.
+        expect(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'coaching style onChange triggers dirty-state detection',
+      (tester) async {
+        await tester.pumpWidget(buildEditSubject(soulId: 'soul-coaching'));
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+
+        expect(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+          findsNothing,
+        );
+
+        await tester.enterText(
+          find.byWidgetPredicate(
+            (w) =>
+                w is TextField &&
+                w.decoration?.labelText ==
+                    context.messages.agentSoulCoachingStyleLabel,
+          ),
+          'Socratic method',
+        );
+        await tester.pump();
+
+        expect(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'anti-sycophancy onChange triggers dirty-state detection',
+      (tester) async {
+        await tester.pumpWidget(buildEditSubject(soulId: 'soul-anti-syco'));
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+
+        expect(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+          findsNothing,
+        );
+
+        await tester.enterText(
+          find.byWidgetPredicate(
+            (w) =>
+                w is TextField &&
+                w.decoration?.labelText ==
+                    context.messages.agentSoulAntiSycophancyLabel,
+          ),
+          'No empty praise',
+        );
+        await tester.pump();
+
+        expect(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'cancel in delete dialog dismisses dialog without calling deleteSoul',
+      (tester) async {
+        await tester.pumpWidget(buildEditSubject(soulId: 'soul-del-cancel'));
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+
+        // Open Info tab and trigger delete dialog.
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.delete_outline));
+        await tester.pumpAndSettle();
+
+        // Confirm the dialog is shown.
+        expect(
+          find.text(context.messages.agentSoulDeleteConfirmTitle),
+          findsOneWidget,
+        );
+
+        // Tap the cancel button inside the dialog.
+        await tester.tap(find.text(context.messages.cancelButton));
+        await tester.pumpAndSettle();
+
+        // Dialog must be dismissed and deleteSoul must NOT have been called.
+        expect(
+          find.text(context.messages.agentSoulDeleteConfirmTitle),
+          findsNothing,
+        );
+        verifyNever(() => mockSoulService.deleteSoul(any()));
+      },
+    );
+
+    testWidgets(
+      'cancel in rollback dialog dismisses without calling rollbackToVersion',
+      (tester) async {
+        final activeVersion = makeTestSoulDocumentVersion(
+          id: 'v2',
+          agentId: 'soul-rb-cancel',
+          version: 2,
+          // ignore: avoid_redundant_argument_values
+          status: SoulDocumentVersionStatus.active,
+        );
+        final archivedVersion = makeTestSoulDocumentVersion(
+          id: 'v1',
+          agentId: 'soul-rb-cancel',
+          // ignore: avoid_redundant_argument_values
+          version: 1,
+          status: SoulDocumentVersionStatus.archived,
+        );
+
+        await tester.pumpWidget(
+          buildEditSubject(
+            soulId: 'soul-rb-cancel',
+            activeVersion: activeVersion,
+            versionHistory: [activeVersion, archivedVersion],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+
+        // Navigate to Info tab and open rollback dialog.
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.restore));
+        await tester.pumpAndSettle();
+
+        // Dialog title should be visible.
+        expect(
+          find.text(context.messages.agentSoulRollbackAction),
+          findsWidgets,
+        );
+
+        // Tap cancel — first occurrence is in the dialog.
+        await tester.tap(find.text(context.messages.cancelButton));
+        await tester.pumpAndSettle();
+
+        // Dialog dismissed; rollback service must not have been called.
+        verifyNever(
+          () => mockSoulService.rollbackToVersion(
+            soulId: any(named: 'soulId'),
+            versionId: any(named: 'versionId'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'version history section shows loading indicator while fetching',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AgentSoulDetailPage(soulId: 'soul-hist-loading'),
+            theme: DesignSystemTheme.light(),
+            overrides: [
+              soulDocumentServiceProvider.overrideWithValue(mockSoulService),
+              soulDocumentProvider.overrideWith(
+                (ref, id) async =>
+                    makeTestSoulDocument(id: id, displayName: 'Loading Soul'),
+              ),
+              activeSoulVersionProvider.overrideWith(
+                (ref, id) async => makeTestSoulDocumentVersion(agentId: id),
+              ),
+              // Keep the version history future pending (loading state).
+              soulVersionHistoryProvider.overrideWith(
+                (ref, id) => Completer<List<AgentDomainEntity>>().future,
+              ),
+              templatesUsingSoulProvider.overrideWith(
+                (ref, id) async => <String>[],
+              ),
+              allSoulDocumentsProvider.overrideWith(
+                (ref) async => <AgentDomainEntity>[],
+              ),
+              soulEvolutionSessionHistoryProvider.overrideWith(
+                (ref, id) async => <RitualSessionHistoryEntry>[],
+              ),
+            ],
+          ),
+        );
+        // Pump to let the outer soul/version providers resolve.
+        await tester.pump();
+        await tester.pump();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        // Drive animation to completion (but Completer stays pending).
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The version history provider is still pending, so the loading
+        // spinner must be present in the Info tab section.
+        expect(
+          find.descendant(
+            of: find.byType(AgentSoulDetailPage),
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsWidgets,
+        );
+      },
+    );
+
+    testWidgets(
+      'version history section shows error text when fetch fails',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AgentSoulDetailPage(soulId: 'soul-hist-error'),
+            theme: DesignSystemTheme.light(),
+            overrides: [
+              soulDocumentServiceProvider.overrideWithValue(mockSoulService),
+              soulDocumentProvider.overrideWith(
+                (ref, id) async =>
+                    makeTestSoulDocument(id: id, displayName: 'Error Soul'),
+              ),
+              activeSoulVersionProvider.overrideWith(
+                (ref, id) async => makeTestSoulDocumentVersion(agentId: id),
+              ),
+              soulVersionHistoryProvider.overrideWith(
+                (ref, id) => Future<List<AgentDomainEntity>>.error(
+                  Exception('history failed'),
+                  StackTrace.empty,
+                ),
+              ),
+              templatesUsingSoulProvider.overrideWith(
+                (ref, id) async => <String>[],
+              ),
+              allSoulDocumentsProvider.overrideWith(
+                (ref) async => <AgentDomainEntity>[],
+              ),
+              soulEvolutionSessionHistoryProvider.overrideWith(
+                (ref, id) async => <RitualSessionHistoryEntry>[],
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        await tester.pumpAndSettle();
+
+        // commonError must appear in the version history section.
+        expect(find.text(context.messages.commonError), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'evolution history section shows error text when fetch fails',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AgentSoulDetailPage(soulId: 'soul-evo-error'),
+            theme: DesignSystemTheme.light(),
+            overrides: [
+              soulDocumentServiceProvider.overrideWithValue(mockSoulService),
+              soulDocumentProvider.overrideWith(
+                (ref, id) async =>
+                    makeTestSoulDocument(id: id, displayName: 'Evo Error Soul'),
+              ),
+              activeSoulVersionProvider.overrideWith(
+                (ref, id) async => makeTestSoulDocumentVersion(agentId: id),
+              ),
+              soulVersionHistoryProvider.overrideWith(
+                (ref, id) async => <AgentDomainEntity>[],
+              ),
+              templatesUsingSoulProvider.overrideWith(
+                (ref, id) async => <String>[],
+              ),
+              allSoulDocumentsProvider.overrideWith(
+                (ref) async => <AgentDomainEntity>[],
+              ),
+              soulEvolutionSessionHistoryProvider.overrideWith(
+                (ref, id) => Future<List<RitualSessionHistoryEntry>>.error(
+                  Exception('evo failed'),
+                  StackTrace.empty,
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        await tester.pumpAndSettle();
+
+        expect(find.text(context.messages.commonError), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'evolution history section shows loading indicator while fetching',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AgentSoulDetailPage(soulId: 'soul-evo-loading'),
+            theme: DesignSystemTheme.light(),
+            overrides: [
+              soulDocumentServiceProvider.overrideWithValue(mockSoulService),
+              soulDocumentProvider.overrideWith(
+                (ref, id) async => makeTestSoulDocument(
+                  id: id,
+                  displayName: 'Evo Loading Soul',
+                ),
+              ),
+              activeSoulVersionProvider.overrideWith(
+                (ref, id) async => makeTestSoulDocumentVersion(agentId: id),
+              ),
+              soulVersionHistoryProvider.overrideWith(
+                (ref, id) async => <AgentDomainEntity>[],
+              ),
+              templatesUsingSoulProvider.overrideWith(
+                (ref, id) async => <String>[],
+              ),
+              allSoulDocumentsProvider.overrideWith(
+                (ref) async => <AgentDomainEntity>[],
+              ),
+              // Keep evo history pending.
+              soulEvolutionSessionHistoryProvider.overrideWith(
+                (ref, id) =>
+                    Completer<List<RitualSessionHistoryEntry>>().future,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        // Drive animation to completion (but Completer stays pending).
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The evolution history provider is still pending, so the loading
+        // spinner must be present in the Info tab section.
+        expect(
+          find.descendant(
+            of: find.byType(AgentSoulDetailPage),
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsWidgets,
+        );
+      },
+    );
+
+    testWidgets(
+      'evolution history section renders RitualSessionHistoryCard entries',
+      (tester) async {
+        final session = makeTestEvolutionSession(
+          id: 'evo-sess-1',
+          agentId: 'soul-evo-cards',
+          sessionNumber: 3,
+          status: EvolutionSessionStatus.completed,
+        );
+        final historyEntry = RitualSessionHistoryEntry(session: session);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AgentSoulDetailPage(soulId: 'soul-evo-cards'),
+            theme: DesignSystemTheme.light(),
+            overrides: [
+              soulDocumentServiceProvider.overrideWithValue(mockSoulService),
+              soulDocumentProvider.overrideWith(
+                (ref, id) async =>
+                    makeTestSoulDocument(id: id, displayName: 'Evo Card Soul'),
+              ),
+              activeSoulVersionProvider.overrideWith(
+                (ref, id) async => makeTestSoulDocumentVersion(agentId: id),
+              ),
+              soulVersionHistoryProvider.overrideWith(
+                (ref, id) async => <AgentDomainEntity>[],
+              ),
+              templatesUsingSoulProvider.overrideWith(
+                (ref, id) async => <String>[],
+              ),
+              allSoulDocumentsProvider.overrideWith(
+                (ref) async => <AgentDomainEntity>[],
+              ),
+              soulEvolutionSessionHistoryProvider.overrideWith(
+                (ref, id) async => [historyEntry],
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        await tester.pumpAndSettle();
+
+        // The card shows the session title — must find it in the tree.
+        expect(
+          find.text(
+            context.messages.agentEvolutionSessionTitle(
+              session.sessionNumber,
+            ),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'assigned templates section shows error text when fetch fails',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const AgentSoulDetailPage(soulId: 'soul-tmpl-error'),
+            theme: DesignSystemTheme.light(),
+            overrides: [
+              soulDocumentServiceProvider.overrideWithValue(mockSoulService),
+              soulDocumentProvider.overrideWith(
+                (ref, id) async =>
+                    makeTestSoulDocument(id: id, displayName: 'Tmpl Error'),
+              ),
+              activeSoulVersionProvider.overrideWith(
+                (ref, id) async => makeTestSoulDocumentVersion(agentId: id),
+              ),
+              soulVersionHistoryProvider.overrideWith(
+                (ref, id) async => <AgentDomainEntity>[],
+              ),
+              templatesUsingSoulProvider.overrideWith(
+                (ref, id) => Future<List<String>>.error(
+                  Exception('templates failed'),
+                  StackTrace.empty,
+                ),
+              ),
+              allSoulDocumentsProvider.overrideWith(
+                (ref) async => <AgentDomainEntity>[],
+              ),
+              soulEvolutionSessionHistoryProvider.overrideWith(
+                (ref, id) async => <RitualSessionHistoryEntry>[],
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        await tester.pumpAndSettle();
+
+        expect(find.text(context.messages.commonError), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'controllers are re-seeded when active version changes',
+      (tester) async {
+        // Two versions with different voice directives.
+        final v1 = makeTestSoulDocumentVersion(
+          id: 'v1',
+          agentId: 'soul-reseed',
+          // ignore: avoid_redundant_argument_values
+          version: 1,
+          voiceDirective: 'Original voice',
+        );
+        final v2 = makeTestSoulDocumentVersion(
+          id: 'v2',
+          agentId: 'soul-reseed',
+          version: 2,
+          voiceDirective: 'Updated voice after rollback',
+        );
+
+        // Use a variable captured by the override closure.  Calling
+        // container.invalidate() forces a re-fetch so the new value is used.
+        var activeVersion = v1;
+
+        final container = ProviderContainer(
+          overrides: [
+            soulDocumentServiceProvider.overrideWithValue(mockSoulService),
+            soulDocumentProvider.overrideWith(
+              (ref, id) async =>
+                  makeTestSoulDocument(id: id, displayName: 'Reseed Soul'),
+            ),
+            activeSoulVersionProvider.overrideWith(
+              (ref, id) async => activeVersion,
+            ),
+            soulVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            templatesUsingSoulProvider.overrideWith(
+              (ref, id) async => <String>[],
+            ),
+            allSoulDocumentsProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            soulEvolutionSessionHistoryProvider.overrideWith(
+              (ref, id) async => <RitualSessionHistoryEntry>[],
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MediaQuery(
+              data: const MediaQueryData(size: Size(390, 844)),
+              child: MaterialApp(
+                theme: DesignSystemTheme.light(),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: const AgentSoulDetailPage(soulId: 'soul-reseed'),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Confirm original voice directive is seeded.
+        expect(find.text('Original voice'), findsOneWidget);
+
+        // Simulate active version changing (e.g. after rollback).
+        activeVersion = v2;
+        container.invalidate(activeSoulVersionProvider('soul-reseed'));
+        await tester.pumpAndSettle();
+
+        // The voice directive field must now show the new version's value.
+        expect(find.text('Updated voice after rollback'), findsOneWidget);
       },
     );
   });

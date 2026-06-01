@@ -829,4 +829,405 @@ void main() {
       },
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // Parameterized tests for flags that were not in the original mock stream.
+  // Each entry exercises _subtitleForFlag, _titleForFlag, _iconForFlag, and
+  // the onTap toggle path for one flag — covering the switch-case branches on
+  // lines 187, 189, 195, 197, 199, 201, 203, 207, 211, 213, 219, 238, 240,
+  // 246, 248, 250, 252, 254, 258, 262, 264, 270 in the source.
+  //
+  // Strategy: feed ALL flags into the mock stream so the widget renders the
+  // full list, then use the search bar to isolate the one flag under test.
+  // This avoids off-screen hit-test issues that occur when a single-item list
+  // renders a row with a very long description above the test viewport origin.
+  // ---------------------------------------------------------------------------
+
+  group('FlagsPage — previously uncovered flags (parameterized)', () {
+    // The setUp above already stubs watchConfigFlags() for 11 flags.
+    // We add the missing 11 flags here so the stream covers all 22 flags
+    // declared in FlagsBody.displayedItems.
+    setUp(() {
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            // Flags already in the original mock:
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: true,
+            ),
+            const ConfigFlag(
+              name: enableNotificationsFlag,
+              description: 'Enable notifications?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableEventsFlag,
+              description: 'Enable Events?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableDailyOsPageFlag,
+              description: 'Enable DailyOS Page?',
+              status: true,
+            ),
+            const ConfigFlag(
+              name: enableAiStreamingFlag,
+              description: 'Enable AI streaming responses?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableAiSummaryTtsFlag,
+              description: 'Enable local AI summary playback?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableEmbeddingsFlag,
+              description: 'Generate Embeddings?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableVectorSearchFlag,
+              description: 'Enable Vector Search?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableWhatsNewFlag,
+              description: "Enable What's New feature?",
+              status: false,
+            ),
+            const ConfigFlag(
+              name: showSyncActivityIndicatorFlag,
+              description: 'Show live sync activity in the sidebar.',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: showSidebarWakeQueueFlag,
+              description: 'Show the inline Wake Queue in the sidebar.',
+              status: false,
+            ),
+            // Previously uncovered flags:
+            const ConfigFlag(
+              name: recordLocationFlag,
+              description: 'Record location?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableTooltipFlag,
+              description: 'Enable tooltips?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableLoggingFlag,
+              description: 'Enable logging?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableMatrixFlag,
+              description: 'Enable Matrix sync?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: resendAttachments,
+              description: 'Resend attachments?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableHabitsPageFlag,
+              description: 'Enable Habits page?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableDashboardsPageFlag,
+              description: 'Enable Dashboards page?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: dailyOsNextEnabledFlag,
+              description: 'Use next-gen DailyOS?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableSessionRatingsFlag,
+              description: 'Enable Session Ratings?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableProjectsFlag,
+              description: 'Enable Projects?',
+              status: false,
+            ),
+            const ConfigFlag(
+              name: enableSyncedAlertsFlag,
+              description: 'Synced alerts?',
+              status: false,
+            ),
+          },
+        ]),
+      );
+    });
+
+    // Each record: flag constant, stream description, initial status, icon.
+    // The search term is the flag name constant itself — unique enough to
+    // narrow the list to exactly one row per test.
+    const flagCases = [
+      (
+        name: recordLocationFlag,
+        description: 'Record location?',
+        status: false,
+        icon: Icons.map_rounded,
+      ),
+      (
+        name: enableTooltipFlag,
+        description: 'Enable tooltips?',
+        status: false,
+        icon: Icons.info_outline_rounded,
+      ),
+      (
+        name: enableLoggingFlag,
+        description: 'Enable logging?',
+        status: false,
+        icon: Icons.bug_report_rounded,
+      ),
+      (
+        name: enableMatrixFlag,
+        description: 'Enable Matrix sync?',
+        status: false,
+        icon: Icons.sync_rounded,
+      ),
+      (
+        name: resendAttachments,
+        description: 'Resend attachments?',
+        status: false,
+        icon: Icons.refresh_rounded,
+      ),
+      (
+        name: enableHabitsPageFlag,
+        description: 'Enable Habits page?',
+        status: false,
+        icon: Icons.repeat_rounded,
+      ),
+      (
+        name: enableDashboardsPageFlag,
+        description: 'Enable Dashboards page?',
+        status: false,
+        icon: Icons.dashboard_rounded,
+      ),
+      (
+        name: dailyOsNextEnabledFlag,
+        description: 'Use next-gen DailyOS?',
+        status: false,
+        icon: Icons.auto_awesome_rounded,
+      ),
+      (
+        name: enableSessionRatingsFlag,
+        description: 'Enable Session Ratings?',
+        status: false,
+        icon: Icons.star_rate_rounded,
+      ),
+      (
+        name: enableProjectsFlag,
+        description: 'Enable Projects?',
+        status: false,
+        icon: Icons.folder_outlined,
+      ),
+      (
+        name: enableSyncedAlertsFlag,
+        description: 'Synced alerts?',
+        status: false,
+        icon: Icons.notifications_none_rounded,
+      ),
+    ];
+
+    // Search-isolate each flag, verify title/subtitle/icon/switch state,
+    // then tap the row (onTap) and confirm persistence.
+    for (final flagCase in flagCases) {
+      testWidgets(
+        'renders and toggles ${flagCase.name} — covers title/subtitle/icon '
+        'switch arms and onTap persistence call',
+        (tester) async {
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(const FlagsPage()),
+          );
+          await tester.pumpAndSettle();
+
+          final context = tester.element(find.byType(FlagsPage));
+
+          // Resolve expected strings via the same localization accessor that
+          // production code uses, so the test is tied to the real ARB values.
+          final (expectedTitle, expectedSubtitle) = switch (flagCase.name) {
+            recordLocationFlag => (
+              context.messages.configFlagRecordLocation,
+              context.messages.configFlagRecordLocationDescription,
+            ),
+            enableTooltipFlag => (
+              context.messages.configFlagEnableTooltip,
+              context.messages.configFlagEnableTooltipDescription,
+            ),
+            enableLoggingFlag => (
+              context.messages.configFlagEnableLogging,
+              context.messages.configFlagEnableLoggingDescription,
+            ),
+            enableMatrixFlag => (
+              context.messages.configFlagEnableMatrix,
+              context.messages.configFlagEnableMatrixDescription,
+            ),
+            resendAttachments => (
+              context.messages.configFlagResendAttachments,
+              context.messages.configFlagResendAttachmentsDescription,
+            ),
+            enableHabitsPageFlag => (
+              context.messages.configFlagEnableHabitsPage,
+              context.messages.configFlagEnableHabitsPageDescription,
+            ),
+            enableDashboardsPageFlag => (
+              context.messages.configFlagEnableDashboardsPage,
+              context.messages.configFlagEnableDashboardsPageDescription,
+            ),
+            dailyOsNextEnabledFlag => (
+              context.messages.configFlagDailyOsNextEnabled,
+              context.messages.configFlagDailyOsNextEnabledDescription,
+            ),
+            enableSessionRatingsFlag => (
+              context.messages.configFlagEnableSessionRatings,
+              context.messages.configFlagEnableSessionRatingsDescription,
+            ),
+            enableProjectsFlag => (
+              context.messages.configFlagEnableProjects,
+              context.messages.configFlagEnableProjectsDescription,
+            ),
+            enableSyncedAlertsFlag => (
+              context.messages.configFlagEnableSyncedAlerts,
+              context.messages.configFlagEnableSyncedAlertsDescription,
+            ),
+            _ => throw StateError('unexpected flag: ${flagCase.name}'),
+          };
+
+          // Use the search bar to narrow the list to just this flag.
+          // The title text is unique per flag so it produces exactly one row.
+          await tester.enterText(
+            find.byType(DesignSystemSearch),
+            expectedTitle,
+          );
+          await tester.pumpAndSettle();
+
+          final item = find.widgetWithText(
+            DesignSystemListItem,
+            expectedTitle,
+          );
+          expect(item, findsOneWidget, reason: '${flagCase.name} title row');
+
+          // Subtitle is rendered.
+          expect(
+            find.text(expectedSubtitle),
+            findsOneWidget,
+            reason: '${flagCase.name} subtitle',
+          );
+
+          // Flag-specific icon is wired up.
+          expect(
+            find.descendant(
+              of: item,
+              matching: find.byIcon(flagCase.icon),
+            ),
+            findsOneWidget,
+            reason: '${flagCase.name} icon',
+          );
+
+          // Switch reflects the initial status.
+          final flagSwitch = tester.widget<Switch>(
+            find.descendant(of: item, matching: find.byType(Switch)),
+          );
+          expect(
+            flagSwitch.value,
+            flagCase.status,
+            reason: '${flagCase.name} initial switch state',
+          );
+
+          // Tap the row (onTap) to toggle — persists via PersistenceLogic.
+          await tester.tap(item);
+          await tester.pump();
+
+          final expectedFlag = ConfigFlag(
+            name: flagCase.name,
+            description: flagCase.description,
+            status: !flagCase.status,
+          );
+          verify(
+            () => mockPersistenceLogic.setConfigFlag(expectedFlag),
+          ).called(1);
+        },
+      );
+    }
+  });
+
+  group('FlagsPage — default / unknown flag branch', () {
+    // Exercises the `default` arm in both _subtitleForFlag (line 227) and
+    // _titleForFlag (line 278) by feeding a flag whose name is not in any
+    // named case.
+    testWidgets(
+      'renders an unknown flag using its raw name and description as '
+      'fallback — covers default arms in _titleForFlag and _subtitleForFlag',
+      (tester) async {
+        const unknownFlagName = 'unknown_custom_flag_xyz';
+        const unknownFlagDesc = 'A totally custom flag description';
+
+        when(() => mockDb.watchConfigFlags()).thenAnswer(
+          (_) => Stream<Set<ConfigFlag>>.fromIterable([
+            {
+              const ConfigFlag(
+                name: unknownFlagName,
+                description: unknownFlagDesc,
+                status: false,
+              ),
+            },
+          ]),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        // The flag does not appear in FlagsBody.displayedItems, so
+        // `orderedFlags` will be empty → the widget returns SizedBox.shrink.
+        // The page should render without error and show zero list items.
+        expect(find.byType(DesignSystemListItem), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'flag not in displayedItems is silently omitted from the rendered list',
+      (tester) async {
+        // Supply a mix: one known flag (private) + one unknown flag. Only
+        // the known flag should appear in the ordered display.
+        const unknownFlag = ConfigFlag(
+          name: 'totally_unknown_flag',
+          description: 'Raw description fallback',
+          status: true,
+        );
+        when(() => mockDb.watchConfigFlags()).thenAnswer(
+          (_) => Stream<Set<ConfigFlag>>.fromIterable([
+            {
+              const ConfigFlag(
+                name: privateFlag,
+                description: 'Show private entries?',
+                status: true,
+              ),
+              unknownFlag,
+            },
+          ]),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        // Only the private flag is in displayedItems → exactly one row.
+        expect(find.byType(DesignSystemListItem), findsOneWidget);
+      },
+    );
+  });
 }

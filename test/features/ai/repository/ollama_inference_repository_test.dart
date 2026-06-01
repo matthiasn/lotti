@@ -2644,6 +2644,420 @@ void main() {
       expect(allContent, contains('done'));
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // New targeted tests for previously uncovered branches
+  // ---------------------------------------------------------------------------
+
+  group('default http.Client constructor path', () {
+    test(
+      'constructs without explicit httpClient and exposes functional instance',
+      () {
+        // Line 23: exercises the `?? http.Client()` default branch.
+        // We cannot call a real server, but the object should be created.
+        final repo = OllamaInferenceRepository();
+        expect(repo, isA<OllamaInferenceRepository>());
+      },
+    );
+  });
+
+  group('generateTextWithMessages – content encoding branches', () {
+    late OllamaInferenceRepository repo;
+    late MockHttpClient mockClient;
+
+    AiConfigInferenceProvider makeProvider() => AiConfigInferenceProvider(
+      id: 'test-provider',
+      name: 'Test',
+      baseUrl: 'http://localhost:11434',
+      apiKey: '',
+      createdAt: DateTime(2024, 3, 15),
+      inferenceProviderType: InferenceProviderType.ollama,
+    );
+
+    MockStreamedResponse okStreamResponse(String line) {
+      final resp = MockStreamedResponse();
+      when(() => resp.statusCode).thenReturn(200);
+      when(
+        () => resp.stream,
+      ).thenAnswer(
+        (_) => http.ByteStream(Stream.value(utf8.encode(line))),
+      );
+      return resp;
+    }
+
+    setUp(() {
+      mockClient = MockHttpClient();
+      repo = OllamaInferenceRepository(httpClient: mockClient);
+    });
+
+    test(
+      'developer message with parts content falls into jsonEncode branch '
+      '(line 139)',
+      () async {
+        // ChatCompletionDeveloperMessageContent is NOT a String and NOT a
+        // ChatCompletionUserMessageContent, so it hits the `else if` branch
+        // at line 136–142 and jsonEncode is called.
+        final messages = [
+          const ChatCompletionMessage.developer(
+            content: ChatCompletionDeveloperMessageContent.parts([
+              ChatCompletionMessageContentPart.text(
+                text: 'You are helpful',
+              ),
+            ]),
+          ),
+        ];
+
+        when(
+          () => mockClient.send(any()),
+        ).thenAnswer(
+          (_) async => okStreamResponse(
+            '{"message":{"content":"ok"},"done":true}\n',
+          ),
+        );
+
+        await repo
+            .generateTextWithMessages(
+              messages: messages,
+              model: 'test-model',
+              temperature: 0.7,
+              provider: makeProvider(),
+            )
+            .toList();
+
+        final captured = verify(() => mockClient.send(captureAny())).captured;
+        final request = captured.first as http.Request;
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        final jsonMessages = body['messages'] as List<dynamic>;
+        final firstMsg = jsonMessages[0] as Map<String, dynamic>;
+        // The content should have been JSON-encoded (not null or empty).
+        expect(firstMsg['content'], isNotEmpty);
+      },
+    );
+  });
+
+  group('generateWithImages – maxCompletionTokens and warmUpModel call', () {
+    late OllamaInferenceRepository repo;
+    late MockHttpClient mockClient;
+
+    AiConfigInferenceProvider makeImgProvider() => AiConfigInferenceProvider(
+      id: 'img-provider',
+      name: 'Test',
+      baseUrl: 'http://localhost:11434',
+      apiKey: '',
+      createdAt: DateTime(2024, 3, 15),
+      inferenceProviderType: InferenceProviderType.ollama,
+    );
+
+    setUp(() {
+      mockClient = MockHttpClient();
+      repo = OllamaInferenceRepository(httpClient: mockClient);
+    });
+
+    test(
+      'includes systemMessage in messages when provided (line 249 warmUp + '
+      'line 266 num_predict)',
+      () async {
+        // warmUpModel (line 249) + request body with num_predict (line 266).
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response('{"response":"ok"}', 200));
+
+        final streamResp = MockStreamedResponse();
+        when(() => streamResp.statusCode).thenReturn(200);
+        when(
+          () => streamResp.stream,
+        ).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode(
+                '{"message":{"content":"described"},"done":true}\n',
+              ),
+            ),
+          ),
+        );
+        when(
+          () => mockClient.send(any()),
+        ).thenAnswer((_) async => streamResp);
+
+        final results = await repo
+            .generateWithImages(
+              prompt: 'describe',
+              model: 'llava',
+              temperature: 0.5,
+              images: ['base64img'],
+              provider: makeImgProvider(),
+              maxCompletionTokens: 256,
+              systemMessage: 'You are a vision model.',
+            )
+            .toList();
+
+        expect(results, isNotEmpty);
+        expect(results.first.choices?.first.delta?.content, 'described');
+
+        // Verify warmUpModel was called (line 249).
+        verify(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).called(1);
+
+        // Verify request body contains system message and num_predict.
+        final captured = verify(() => mockClient.send(captureAny())).captured;
+        final request = captured.first as http.Request;
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        final msgs = body['messages'] as List<dynamic>;
+        // systemMessage is the first message.
+        expect(
+          (msgs[0] as Map<String, dynamic>)['role'],
+          'system',
+        );
+        expect(
+          (msgs[0] as Map<String, dynamic>)['content'],
+          'You are a vision model.',
+        );
+        // num_predict should be present (line 266).
+        final options = body['options'] as Map<String, dynamic>;
+        expect(options['num_predict'], 256);
+      },
+    );
+  });
+
+  group('_streamChatRequest – model-not-found rethrow via error message '
+      '(lines 629-631)', () {
+    late OllamaInferenceRepository repo;
+    late MockHttpClient mockClient;
+
+    setUp(() {
+      mockClient = MockHttpClient();
+      repo = OllamaInferenceRepository(httpClient: mockClient);
+    });
+
+    test(
+      'wraps "model not found" error message into ModelNotInstalledException',
+      () async {
+        // The outer catch block (line 625-634) detects 'not found' and
+        // 'model' in the exception message and throws
+        // ModelNotInstalledException. Trigger this by having the HTTP client
+        // throw an exception whose message contains both keywords.
+        when(
+          () => mockClient.send(any()),
+        ).thenThrow(Exception("model 'missing-llm' not found"));
+
+        final provider = AiConfigInferenceProvider(
+          id: 'p',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        await expectLater(
+          repo
+              .generateText(
+                prompt: 'Hello',
+                model: 'missing-llm',
+                temperature: 0.7,
+                systemMessage: null,
+                provider: provider,
+              )
+              .toList(),
+          throwsA(
+            isA<ModelNotInstalledException>().having(
+              (e) => e.modelName,
+              'modelName',
+              'missing-llm',
+            ),
+          ),
+        );
+      },
+    );
+  });
+
+  group('_validateOllamaRequest – maxCompletionTokens <= 0 (line 702)', () {
+    late OllamaInferenceRepository repo;
+    late MockHttpClient mockClient;
+
+    setUp(() {
+      mockClient = MockHttpClient();
+      repo = OllamaInferenceRepository(httpClient: mockClient);
+    });
+
+    final provider = AiConfigInferenceProvider(
+      id: 'p',
+      name: 'Test',
+      baseUrl: 'http://localhost:11434',
+      apiKey: '',
+      createdAt: DateTime(2024, 3, 15),
+      inferenceProviderType: InferenceProviderType.ollama,
+    );
+
+    test('throws when maxCompletionTokens is zero', () {
+      expect(
+        () => repo.generateText(
+          prompt: 'Test',
+          model: 'llama2',
+          temperature: 0.7,
+          systemMessage: null,
+          provider: provider,
+          maxCompletionTokens: 0,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('maxCompletionTokens must be positive'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when maxCompletionTokens is negative', () {
+      expect(
+        () => repo.generateText(
+          prompt: 'Test',
+          model: 'llama2',
+          temperature: 0.7,
+          systemMessage: null,
+          provider: provider,
+          maxCompletionTokens: -5,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('maxCompletionTokens must be positive'),
+          ),
+        ),
+      );
+    });
+  });
+
+  group('installModel – specific error message branches (lines 765-774)', () {
+    late OllamaInferenceRepository repo;
+    late MockHttpClient mockClient;
+
+    const baseUrl = 'http://localhost:11434';
+
+    setUp(() {
+      mockClient = MockHttpClient();
+      repo = OllamaInferenceRepository(httpClient: mockClient);
+    });
+
+    void stubInstallStream(String responseBody) {
+      final resp = MockStreamedResponse();
+      when(() => resp.statusCode).thenReturn(200);
+      when(
+        () => resp.stream,
+      ).thenAnswer(
+        (_) => http.ByteStream(Stream.value(utf8.encode(responseBody))),
+      );
+      when(
+        () => mockClient.send(any()),
+      ).thenAnswer((_) async => resp);
+    }
+
+    test(
+      'throws "Disk is full" when error contains "disk full" (line 765-768)',
+      () async {
+        stubInstallStream('{"error":"disk full – cannot write more"}\n');
+
+        await expectLater(
+          repo.installModel('big-model', baseUrl).toList(),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Disk is full'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'throws "Connection refused" when error contains "connection refused" '
+      '(line 769-772)',
+      () async {
+        stubInstallStream(
+          '{"error":"connection refused to server"}\n',
+        );
+
+        await expectLater(
+          repo.installModel('some-model', baseUrl).toList(),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Connection refused'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'throws generic installation error for unknown error message (line 774)',
+      () async {
+        stubInstallStream('{"error":"unexpected failure XYZ"}\n');
+
+        await expectLater(
+          repo.installModel('some-model', baseUrl).toList(),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Model installation failed'),
+            ),
+          ),
+        );
+      },
+    );
+  });
+
+  group('warmUpModel – non-200 response path (lines 818-823)', () {
+    late OllamaInferenceRepository repo;
+    late MockHttpClient mockClient;
+
+    setUp(() {
+      mockClient = MockHttpClient();
+      repo = OllamaInferenceRepository(httpClient: mockClient);
+    });
+
+    test(
+      'logs warning and does not throw on non-200 warm-up response',
+      () async {
+        // Lines 818-823: response.statusCode != httpStatusOk → log + return.
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response('Service Unavailable', 503));
+
+        // Must complete without throwing.
+        await expectLater(
+          repo.warmUpModel('llava', 'http://localhost:11434'),
+          completes,
+        );
+
+        verify(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).called(1);
+      },
+    );
+  });
 }
 
 // Test helper classes

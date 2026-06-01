@@ -9,15 +9,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
+import 'package:lotti/features/ratings/state/rating_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/utils/media_file_actions.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../helpers/fake_entry_controller.dart';
 import '../../../../../../mocks/mocks.dart';
@@ -1172,6 +1176,436 @@ void main() {
       },
     );
   });
+
+  group('ModernDeleteItem — modal interaction', () {
+    testWidgets(
+      'confirming delete calls notifier.delete and dismisses route',
+      (tester) async {
+        final entry = buildTextEntry();
+        final controller = _DeletingFakeEntryController(entry);
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [
+              entryControllerProvider(
+                id: 'entry-1',
+              ).overrideWith(() => controller),
+            ],
+            child: const ModernDeleteItem(entryId: 'entry-1', beamBack: false),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        // The confirmation modal is visible.
+        expect(find.text('YES, DELETE THIS ENTRY'), findsOneWidget);
+        await tester.tap(find.text('YES, DELETE THIS ENTRY'));
+        await tester.pumpAndSettle();
+
+        expect(controller.deleteCalls, equals(1));
+      },
+    );
+
+    testWidgets(
+      'dismissing the modal without confirming does not call delete',
+      (tester) async {
+        final entry = buildTextEntry();
+        final controller = _DeletingFakeEntryController(entry);
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [
+              entryControllerProvider(
+                id: 'entry-1',
+              ).overrideWith(() => controller),
+            ],
+            child: const ModernDeleteItem(entryId: 'entry-1', beamBack: false),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        // Dismiss modal by tapping the barrier.
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pumpAndSettle();
+
+        expect(controller.deleteCalls, equals(0));
+      },
+    );
+  });
+
+  group('ModernUnlinkItem — modal interaction', () {
+    testWidgets(
+      'confirming unlink calls removeLink with the correct entry id',
+      (tester) async {
+        final controller = _RemoveLinkTrackingController();
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [
+              linkedEntriesControllerProvider(
+                id: 'parent-1',
+              ).overrideWith(() => controller),
+            ],
+            child: const ModernUnlinkItem(
+              entryId: 'entry-1',
+              linkedFromId: 'parent-1',
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        // Confirmation modal is shown.
+        expect(find.text('YES, UNLINK ENTRY'), findsOneWidget);
+        await tester.tap(find.text('YES, UNLINK ENTRY'));
+        await tester.pumpAndSettle();
+
+        expect(controller.removeLinkCalls, contains('entry-1'));
+        // After confirming, the route is dismissed.
+        expect(find.byType(ActionMenuListItem), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'dismissing unlink modal without confirming skips removeLink',
+      (tester) async {
+        final controller = _RemoveLinkTrackingController();
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [
+              linkedEntriesControllerProvider(
+                id: 'parent-1',
+              ).overrideWith(() => controller),
+            ],
+            child: const ModernUnlinkItem(
+              entryId: 'entry-1',
+              linkedFromId: 'parent-1',
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        // Dismiss without confirming.
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pumpAndSettle();
+
+        expect(controller.removeLinkCalls, isEmpty);
+      },
+    );
+  });
+
+  group('ModernCopyImageItem — tap behavior', () {
+    testWidgets(
+      'tapping calls copyImage on the notifier and pops the route',
+      (tester) async {
+        final entry = buildImageEntry();
+        final controller = _CopyImageFakeEntryController(entry);
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [
+              entryControllerProvider(
+                id: 'image-1',
+              ).overrideWith(() => controller),
+            ],
+            child: const ModernCopyImageItem(entryId: 'image-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        expect(controller.copyImageCalls, equals(1));
+        // Navigator.pop should have dismissed the route.
+        expect(find.byType(ActionMenuListItem), findsNothing);
+      },
+    );
+  });
+
+  group('ModernLinkFromItem — tap behavior', () {
+    testWidgets('tapping calls linkFrom and pops the route', (tester) async {
+      final mockLinkService = getIt<LinkService>() as MockLinkService;
+      when(
+        () => mockLinkService.linkFrom(any()),
+      ).thenReturn(null);
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [],
+          child: const ModernLinkFromItem(entryId: 'entry-42'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pumpAndSettle();
+
+      verify(() => mockLinkService.linkFrom('entry-42')).called(1);
+      // Route is dismissed after tap.
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+  });
+
+  group('ModernLinkToItem — tap behavior', () {
+    testWidgets('tapping calls linkTo and pops the route', (tester) async {
+      final mockLinkService = getIt<LinkService>() as MockLinkService;
+      when(
+        () => mockLinkService.linkTo(any()),
+      ).thenReturn(null);
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [],
+          child: const ModernLinkToItem(entryId: 'entry-99'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pumpAndSettle();
+
+      verify(() => mockLinkService.linkTo('entry-99')).called(1);
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+  });
+
+  group('ModernRateSessionItem — tap behavior', () {
+    testWidgets(
+      'tapping opens the rating bottom sheet when enabled and no rating exists',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(true),
+              ),
+              ratingControllerProvider(
+                targetId: 'entry-1',
+              ).overrideWith(_FakeNoRatingController.new),
+            ],
+            child: const ModernRateSessionItem(entryId: 'entry-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        // The rating modal shows up — route is dismissed and modal appears.
+        expect(find.byType(ActionMenuListItem), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping with existing rating also opens the rating modal',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(true),
+              ),
+              ratingControllerProvider(
+                targetId: 'entry-1',
+              ).overrideWith(_FakeHasRatingController.new),
+            ],
+            child: const ModernRateSessionItem(entryId: 'entry-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        // After tap, the action item route is dismissed.
+        expect(find.byType(ActionMenuListItem), findsNothing);
+      },
+    );
+  });
+
+  group('ModernShareItem — onTap navigator pop', () {
+    testWidgets(
+      'tapping share item for image pops the route',
+      (tester) async {
+        final entry = buildImageEntry();
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [createEntryControllerOverride(entry)],
+            child: const ModernShareItem(entryId: 'image-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        // Navigator.pop was called, route is dismissed.
+        expect(find.byType(ActionMenuListItem), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping share item for audio pops the route',
+      (tester) async {
+        final entry = buildAudioEntry();
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [createEntryControllerOverride(entry)],
+            child: const ModernShareItem(entryId: 'audio-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsNothing);
+      },
+    );
+  });
+
+  group('ModernGenerateCoverArtItem — tap behavior', () {
+    testWidgets(
+      'tapping pops the current route when audio is linked to a task',
+      (tester) async {
+        final audio = buildAudioEntry();
+        final task = buildTaskEntry();
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [
+              createEntryControllerOverride(audio),
+              createEntryControllerOverride(task),
+            ],
+            child: const ModernGenerateCoverArtItem(
+              entryId: 'audio-1',
+              linkedFromId: 'task-1',
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        await tester.tap(find.byType(ActionMenuListItem));
+        // Allow the pop animation to complete; stop before the
+        // CoverArtSkillModal needs a full AI-config setup.
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // The original route is gone (Navigator.pop() ran).
+        expect(find.byType(ActionMenuListItem), findsNothing);
+      },
+    );
+  });
+}
+
+/// Fake EntryController that tracks [delete] calls.
+class _DeletingFakeEntryController extends FakeEntryController {
+  // ignore: use_super_parameters
+  _DeletingFakeEntryController(JournalEntity entity) : super(entity);
+
+  int deleteCalls = 0;
+
+  @override
+  Future<bool> delete({required bool beamBack}) async {
+    deleteCalls++;
+    return true;
+  }
+}
+
+/// Fake EntryController that tracks [copyImage] calls.
+class _CopyImageFakeEntryController extends FakeEntryController {
+  // ignore: use_super_parameters
+  _CopyImageFakeEntryController(JournalEntity entity) : super(entity);
+
+  int copyImageCalls = 0;
+
+  @override
+  Future<void> copyImage() async {
+    copyImageCalls++;
+  }
+}
+
+/// LinkedEntriesController that tracks [removeLink] calls.
+class _RemoveLinkTrackingController extends LinkedEntriesController {
+  final List<String> removeLinkCalls = [];
+
+  @override
+  Future<List<EntryLink>> build({required String id}) async => [];
+
+  @override
+  Future<void> updateLink(EntryLink link) async {}
+
+  @override
+  Future<void> removeLink({required String toId}) async {
+    removeLinkCalls.add(toId);
+  }
+}
+
+/// Fake RatingController that returns null (no existing rating).
+class _FakeNoRatingController extends RatingController {
+  @override
+  Future<JournalEntity?> build({
+    required String targetId,
+    String catalogId = 'session',
+  }) async {
+    state = const AsyncData(null);
+    return null;
+  }
+}
+
+/// Fake RatingController that returns an existing rating.
+class _FakeHasRatingController extends RatingController {
+  @override
+  Future<JournalEntity?> build({
+    required String targetId,
+    String catalogId = 'session',
+  }) async {
+    final testDate = DateTime(2025, 12, 31, 12);
+    final entity = RatingEntry(
+      meta: Metadata(
+        id: 'rating-1',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+      ),
+      data: RatingData(
+        targetId: targetId,
+        dimensions: const [
+          RatingDimension(key: 'productivity', value: 0.8),
+          RatingDimension(key: 'energy', value: 0.6),
+          RatingDimension(key: 'focus', value: 0.9),
+          RatingDimension(key: 'challenge_skill', value: 0.5),
+        ],
+      ),
+    );
+    state = AsyncData(entity);
+    return entity;
+  }
 }
 
 class _RecordingProcessRunner {

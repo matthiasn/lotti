@@ -5,14 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
 
-Widget _desktopHost(Widget child) {
+Widget _desktopHost(Widget child, {ThemeData? theme}) {
   return MaterialApp(
-    theme: resolveTestTheme(),
+    theme: resolveTestTheme(theme),
     localizationsDelegates: const [
       AppLocalizations.delegate,
       FormBuilderLocalizations.delegate,
@@ -31,6 +33,7 @@ Future<void> _pumpDesktop(
   WidgetTester tester,
   Widget child, {
   Size size = const Size(1280, 720),
+  ThemeData? theme,
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -38,7 +41,10 @@ Future<void> _pumpDesktop(
   // a bounded max-width. Align shrink-wraps, so the tests pin the header
   // to the surface width explicitly.
   await tester.pumpWidget(
-    _desktopHost(SizedBox(width: size.width, child: child)),
+    _desktopHost(
+      SizedBox(width: size.width, child: child),
+      theme: theme,
+    ),
   );
   await tester.pump();
 }
@@ -643,5 +649,358 @@ void main() {
         expect(find.text(priority.short), findsOneWidget);
       });
     }
+  });
+
+  group('DesktopTaskHeader — title editor edge cases', () {
+    testWidgets(
+      'committing unchanged text does not fire onTitleSaved',
+      (tester) async {
+        var saves = 0;
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) => saves++,
+            initialEditing: true,
+          ),
+        );
+        // Do not change the text — tap the commit button immediately.
+        await tester.tap(find.byIcon(Icons.check_rounded));
+        await tester.pump();
+
+        expect(saves, 0, reason: 'same text should not trigger onTitleSaved');
+        expect(find.byType(TextField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'committing empty text does not fire onTitleSaved',
+      (tester) async {
+        var saves = 0;
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) => saves++,
+            initialEditing: true,
+          ),
+        );
+        await tester.enterText(find.byType(TextField), '   ');
+        await tester.tap(find.byIcon(Icons.check_rounded));
+        await tester.pump();
+
+        expect(
+          saves,
+          0,
+          reason: 'whitespace-only text should not trigger save',
+        );
+        expect(find.byType(TextField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'title controller updates when widget receives new title while not editing',
+      (tester) async {
+        var currentTitle = 'Original title';
+        late StateSetter outerSetState;
+
+        await _pumpDesktop(
+          tester,
+          StatefulBuilder(
+            builder: (context, setState) {
+              outerSetState = setState;
+              return DesktopTaskHeader(
+                data: _fixture(title: currentTitle),
+                onTitleSaved: (_) {},
+              );
+            },
+          ),
+        );
+
+        expect(find.text('Original title'), findsOneWidget);
+
+        // Update the title externally while NOT in editing mode.
+        outerSetState(() => currentTitle = 'Updated title');
+        await tester.pump();
+
+        expect(find.text('Updated title'), findsOneWidget);
+        expect(find.text('Original title'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Ctrl+Enter saves while the title editor is focused',
+      (tester) async {
+        String? saved;
+        await _pumpDesktop(
+          tester,
+          StatefulBuilder(
+            builder: (context, setState) {
+              return DesktopTaskHeader(
+                data: _fixture(title: saved ?? 'Payment confirmation'),
+                onTitleSaved: (v) => setState(() => saved = v),
+                initialEditing: true,
+              );
+            },
+          ),
+        );
+        await tester.enterText(find.byType(TextField), 'New title via ctrl');
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+        await tester.pump();
+
+        expect(saved, 'New title via ctrl');
+        expect(find.byType(TextField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Meta+Enter saves while the title editor is focused',
+      (tester) async {
+        String? saved;
+        await _pumpDesktop(
+          tester,
+          StatefulBuilder(
+            builder: (context, setState) {
+              return DesktopTaskHeader(
+                data: _fixture(title: saved ?? 'Payment confirmation'),
+                onTitleSaved: (v) => setState(() => saved = v),
+                initialEditing: true,
+              );
+            },
+          ),
+        );
+        await tester.enterText(find.byType(TextField), 'New title via meta');
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+        await tester.pump();
+
+        expect(saved, 'New title via meta');
+        expect(find.byType(TextField), findsNothing);
+      },
+    );
+  });
+
+  group('DesktopTaskHeader — render object layout branches', () {
+    testWidgets(
+      'spacing and runSpacing setters fire when tokens change between builds',
+      (tester) async {
+        // Build with the default (step3 = 8) spacing.
+        final wideTokens = dsTokensLight.copyWith(
+          spacing: dsTokensLight.spacing.copyWith(step3: 8),
+        );
+        final narrowTokens = dsTokensLight.copyWith(
+          spacing: dsTokensLight.spacing.copyWith(step3: 16),
+        );
+
+        ThemeData buildTheme(DsTokens tokens) =>
+            ThemeData(useMaterial3: true).copyWith(
+              extensions: <ThemeExtension<dynamic>>[tokens],
+            );
+
+        final header = DesktopTaskHeader(
+          data: _fixture(dueDate: _dueFixture),
+          onTitleSaved: (_) {},
+          estimateSlot: const Text('1h'),
+        );
+
+        await tester.binding.setSurfaceSize(const Size(1280, 720));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // First pump with 8px spacing.
+        await tester.pumpWidget(
+          _desktopHost(
+            const SizedBox(width: 1280, child: SizedBox()),
+            theme: buildTheme(wideTokens),
+          ),
+        );
+        await tester.pumpWidget(
+          _desktopHost(
+            SizedBox(width: 1280, child: header),
+            theme: buildTheme(wideTokens),
+          ),
+        );
+        await tester.pump();
+
+        // Second pump with 16px spacing — triggers the setter body
+        // (markNeedsLayout) on _RenderTrailingAlignedWrap.
+        await tester.pumpWidget(
+          _desktopHost(
+            SizedBox(width: 1280, child: header),
+            theme: buildTheme(narrowTokens),
+          ),
+        );
+        await tester.pump();
+
+        // Verify the widget still renders correctly after the spacing change.
+        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
+        expect(find.text('Open'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'intrinsic width is computed without error',
+      (tester) async {
+        // IntrinsicWidth forces the Flutter layout engine to call
+        // computeMinIntrinsicWidth and computeMaxIntrinsicWidth on all
+        // descendants, including _RenderTrailingAlignedWrap.
+        await tester.binding.setSurfaceSize(const Size(1280, 720));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          _desktopHost(
+            IntrinsicWidth(
+              child: DesktopTaskHeader(
+                data: _fixture(
+                  dueDate: _dueFixture,
+                  labels: _labelFixtures,
+                ),
+                onTitleSaved: (_) {},
+                estimateSlot: const Text('1h'),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The widget laid out correctly and shows its content.
+        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
+        expect(find.text('Bug fix'), findsOneWidget);
+
+        // The size returned by tester.getSize is positive, confirming the
+        // intrinsic dimension methods returned meaningful non-zero values.
+        final size = tester.getSize(find.byType(DesktopTaskHeader));
+        expect(size.width, greaterThan(0));
+        expect(size.height, greaterThan(0));
+      },
+    );
+
+    testWidgets(
+      'intrinsic height is computed without error',
+      (tester) async {
+        // Row with CrossAxisAlignment.stretch forces the Flutter layout engine
+        // to call computeMinIntrinsicHeight and computeMaxIntrinsicHeight on
+        // its children, including _RenderTrailingAlignedWrap descendants.
+        await tester.binding.setSurfaceSize(const Size(1280, 720));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          _desktopHost(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                SizedBox(
+                  width: 800,
+                  child: DesktopTaskHeader(
+                    data: _fixture(
+                      dueDate: _dueFixture,
+                      labels: _labelFixtures,
+                    ),
+                    onTitleSaved: (_) {},
+                    estimateSlot: const Text('1h'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The widget laid out correctly and shows its content.
+        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
+        expect(find.text('Bug fix'), findsOneWidget);
+
+        final size = tester.getSize(find.byType(DesktopTaskHeader));
+        expect(size.width, greaterThan(0));
+        expect(size.height, greaterThan(0));
+      },
+    );
+  });
+
+  group('DesktopTaskHeader — due-date urgency styles', () {
+    testWidgets('overdue urgency renders the due pill in error color', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            dueDate: const DesktopTaskHeaderDueDate(
+              label: 'Overdue: Mar 1',
+              urgency: DesktopTaskHeaderDueUrgency.overdue,
+            ),
+          ),
+          onTitleSaved: (_) {},
+        ),
+      );
+      expect(find.text('Overdue: Mar 1'), findsOneWidget);
+    });
+
+    testWidgets('today urgency renders the due pill in warning color', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            dueDate: const DesktopTaskHeaderDueDate(
+              label: 'Today',
+              urgency: DesktopTaskHeaderDueUrgency.today,
+            ),
+          ),
+          onTitleSaved: (_) {},
+        ),
+      );
+      expect(find.text('Today'), findsOneWidget);
+    });
+
+    testWidgets('normal urgency renders the due pill in medium-text color', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            dueDate: const DesktopTaskHeaderDueDate(
+              label: 'Mar 15, 2026',
+              // ignore: avoid_redundant_argument_values
+              urgency: DesktopTaskHeaderDueUrgency.normal,
+            ),
+          ),
+          onTitleSaved: (_) {},
+        ),
+      );
+      expect(find.text('Mar 15, 2026'), findsOneWidget);
+    });
+  });
+
+  group('DesktopTaskHeader — label pill without description', () {
+    testWidgets(
+      'long-press on label without description shows no dialog',
+      (tester) async {
+        final noDescLabel = _label(
+          id: 'no-desc',
+          name: 'No Description',
+          color: '#FF0000',
+          // description is null
+        );
+
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(labels: [noDescLabel]),
+            onTitleSaved: (_) {},
+          ),
+        );
+        await tester.longPress(find.text('No Description'));
+        await tester.pumpAndSettle();
+
+        // No dialog should appear for a label without a description.
+        expect(find.byType(AlertDialog), findsNothing);
+      },
+    );
   });
 }

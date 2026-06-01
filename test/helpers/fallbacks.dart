@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' as drift;
+import 'package:genui/genui.dart' show CreateSurface;
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -342,5 +343,11 @@ void registerAllFallbackValues() {
       thoughts: '',
       response: '',
     ),
+  );
+
+  // GenUI A2uiMessage fallback (needed when MockSurfaceController.handleMessage
+  // is stubbed with any()).
+  registerFallbackValue(
+    const CreateSurface(surfaceId: 'fallback-surface', catalogId: 'fallback'),
   );
 }

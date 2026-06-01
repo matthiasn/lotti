@@ -6801,6 +6801,519 @@ void main() {
     });
   });
 
+  // ── getDueScheduledAgentStates ────────────────────────────────────────────
+
+  group('getDueScheduledAgentStates', () {
+    test(
+      'returns states whose scheduledWakeAt is before or equal to now',
+      () async {
+        final now = DateTime(2026, 4, 1, 12);
+
+        await repo.upsertEntity(
+          makeTestState(
+            id: 'state-due-1',
+            agentId: 'agent-due-1',
+            scheduledWakeAt: DateTime(2026, 4, 1, 11),
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestState(
+            id: 'state-due-2',
+            agentId: 'agent-due-2',
+            scheduledWakeAt: now,
+          ),
+        );
+        // Future — must not be returned.
+        await repo.upsertEntity(
+          makeTestState(
+            id: 'state-future',
+            agentId: 'agent-future',
+            scheduledWakeAt: DateTime(2026, 4, 1, 13),
+          ),
+        );
+
+        final result = await repo.getDueScheduledAgentStates(now);
+
+        expect(
+          result.map((s) => s.id),
+          containsAll(['state-due-1', 'state-due-2']),
+        );
+        expect(result.map((s) => s.id), isNot(contains('state-future')));
+      },
+    );
+
+    test('returns empty list when no due states exist', () async {
+      await repo.upsertEntity(
+        makeTestState(
+          id: 'state-future-only',
+          agentId: 'agent-future-only',
+          scheduledWakeAt: DateTime(2026, 5),
+        ),
+      );
+
+      final result = await repo.getDueScheduledAgentStates(DateTime(2026, 4));
+
+      expect(result, isEmpty);
+    });
+
+    test('ignores states with no scheduledWakeAt', () async {
+      // State without scheduledWakeAt — must not appear.
+      await repo.upsertEntity(
+        makeTestState(id: 'state-no-schedule', agentId: 'agent-no-sched'),
+      );
+
+      final result = await repo.getDueScheduledAgentStates(
+        DateTime(2026, 12, 31),
+      );
+
+      expect(result, isEmpty);
+    });
+  });
+
+  // ── getEntitiesWithNullVectorClock / countEntitiesWithNullVectorClock ──────
+
+  group('getEntitiesWithNullVectorClock', () {
+    test('returns entities whose vectorClock is null', () async {
+      // Null-clock entity.
+      await repo.upsertEntity(
+        makeTestIdentity(
+          id: 'agent-null-vc',
+          agentId: 'agent-null-vc',
+          // ignore: avoid_redundant_argument_values
+          vectorClock: null,
+        ),
+      );
+      // Non-null-clock entity — must not appear.
+      await repo.upsertEntity(
+        makeTestIdentity(
+          id: 'agent-has-vc',
+          agentId: 'agent-has-vc',
+          vectorClock: const VectorClock({'node-1': 1}),
+        ),
+      );
+
+      final result = await repo.getEntitiesWithNullVectorClock();
+
+      expect(result.map((e) => e.id), contains('agent-null-vc'));
+      expect(result.map((e) => e.id), isNot(contains('agent-has-vc')));
+    });
+
+    test('returns empty list when all entities have clocks', () async {
+      await repo.upsertEntity(
+        makeTestIdentity(
+          id: 'agent-clocked',
+          agentId: 'agent-clocked',
+          vectorClock: const VectorClock({'node-1': 5}),
+        ),
+      );
+
+      final result = await repo.getEntitiesWithNullVectorClock();
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('countEntitiesWithNullVectorClock', () {
+    test('counts only entities with null vectorClock', () async {
+      await repo.upsertEntity(
+        makeTestIdentity(
+          id: 'agent-nvc-1',
+          agentId: 'agent-nvc-1',
+          // ignore: avoid_redundant_argument_values
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestIdentity(
+          id: 'agent-nvc-2',
+          agentId: 'agent-nvc-2',
+          // ignore: avoid_redundant_argument_values
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestIdentity(
+          id: 'agent-vc',
+          agentId: 'agent-vc',
+          vectorClock: const VectorClock({'node-1': 1}),
+        ),
+      );
+
+      final count = await repo.countEntitiesWithNullVectorClock();
+
+      expect(count, 2);
+    });
+
+    test('returns zero when all entities have clocks', () async {
+      await repo.upsertEntity(
+        makeTestIdentity(
+          id: 'agent-has-vc',
+          agentId: 'agent-has-vc',
+          vectorClock: const VectorClock({'h': 3}),
+        ),
+      );
+
+      final count = await repo.countEntitiesWithNullVectorClock();
+
+      expect(count, 0);
+    });
+  });
+
+  // ── getEvolutionSessionRecaps / getEvolutionSessionRecap ──────────────────
+
+  group('getEvolutionSessionRecaps', () {
+    const templateId = 'tpl-recap-001';
+
+    test('returns recaps for the given templateId', () async {
+      await repo.upsertEntity(
+        makeTestEvolutionSessionRecap(
+          id: evolutionSessionRecapId('session-A'),
+          agentId: templateId,
+          sessionId: 'session-A',
+          tldr: 'Recap A',
+          createdAt: DateTime(2026, 3),
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestEvolutionSessionRecap(
+          id: evolutionSessionRecapId('session-B'),
+          agentId: templateId,
+          sessionId: 'session-B',
+          tldr: 'Recap B',
+          createdAt: DateTime(2026, 3, 2),
+        ),
+      );
+      // Different template — must not appear.
+      await repo.upsertEntity(
+        makeTestEvolutionSessionRecap(
+          id: evolutionSessionRecapId('session-other'),
+          agentId: 'tpl-other',
+          sessionId: 'session-other',
+          tldr: 'Other',
+          createdAt: DateTime(2026, 3, 3),
+        ),
+      );
+
+      final recaps = await repo.getEvolutionSessionRecaps(templateId);
+
+      expect(
+        recaps.map((r) => r.sessionId),
+        containsAll(['session-A', 'session-B']),
+      );
+      expect(recaps.map((r) => r.sessionId), isNot(contains('session-other')));
+    });
+
+    test('returns empty list when no recaps exist for template', () async {
+      final recaps = await repo.getEvolutionSessionRecaps('tpl-empty');
+
+      expect(recaps, isEmpty);
+    });
+
+    test('respects the limit parameter', () async {
+      for (var i = 0; i < 5; i++) {
+        await repo.upsertEntity(
+          makeTestEvolutionSessionRecap(
+            id: evolutionSessionRecapId('session-lim-$i'),
+            agentId: templateId,
+            sessionId: 'session-lim-$i',
+            tldr: 'Recap $i',
+            createdAt: DateTime(2026, 3, i + 1),
+          ),
+        );
+      }
+
+      final recaps = await repo.getEvolutionSessionRecaps(templateId, limit: 3);
+
+      expect(recaps.length, 3);
+    });
+  });
+
+  group('getEvolutionSessionRecap', () {
+    test('returns the recap entity for the given sessionId', () async {
+      const sessionId = 'session-recap-fetch';
+      await repo.upsertEntity(
+        makeTestEvolutionSessionRecap(
+          id: evolutionSessionRecapId(sessionId),
+          agentId: 'tpl-recap-fetch',
+          sessionId: sessionId,
+          tldr: 'Found it',
+        ),
+      );
+
+      final recap = await repo.getEvolutionSessionRecap(sessionId);
+
+      expect(recap, isNotNull);
+      expect(recap!.sessionId, sessionId);
+      expect(recap.tldr, 'Found it');
+    });
+
+    test('returns null when no recap exists for sessionId', () async {
+      final recap = await repo.getEvolutionSessionRecap('session-missing');
+
+      expect(recap, isNull);
+    });
+  });
+
+  // ── getLinksWithNullVectorClock / countLinksWithNullVectorClock ───────────
+
+  group('getLinksWithNullVectorClock', () {
+    test('returns links whose vectorClock is null', () async {
+      await repo.upsertLink(
+        makeTestBasicLink(
+          id: 'link-null-vc',
+          fromId: 'agent-A',
+          toId: 'agent-B',
+          // ignore: avoid_redundant_argument_values
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertLink(
+        makeTestBasicLink(
+          id: 'link-has-vc',
+          fromId: 'agent-C',
+          toId: 'agent-D',
+          vectorClock: const VectorClock({'node-1': 2}),
+        ),
+      );
+
+      final result = await repo.getLinksWithNullVectorClock();
+
+      expect(result.map((l) => l.id), contains('link-null-vc'));
+      expect(result.map((l) => l.id), isNot(contains('link-has-vc')));
+    });
+
+    test('returns empty list when all links have clocks', () async {
+      await repo.upsertLink(
+        makeTestBasicLink(
+          id: 'link-clocked',
+          fromId: 'ag-X',
+          toId: 'ag-Y',
+          vectorClock: const VectorClock({'h': 1}),
+        ),
+      );
+
+      final result = await repo.getLinksWithNullVectorClock();
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('countLinksWithNullVectorClock', () {
+    test('counts links with null vectorClock', () async {
+      await repo.upsertLink(
+        makeTestBasicLink(
+          id: 'link-nvc-1',
+          fromId: 'from-1',
+          toId: 'to-1',
+          // ignore: avoid_redundant_argument_values
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertLink(
+        makeTestBasicLink(
+          id: 'link-nvc-2',
+          fromId: 'from-2',
+          toId: 'to-2',
+          // ignore: avoid_redundant_argument_values
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertLink(
+        makeTestBasicLink(
+          id: 'link-vc',
+          fromId: 'from-3',
+          toId: 'to-3',
+          vectorClock: const VectorClock({'n': 7}),
+        ),
+      );
+
+      final count = await repo.countLinksWithNullVectorClock();
+
+      expect(count, 2);
+    });
+
+    test('returns zero when all links have clocks', () async {
+      await repo.upsertLink(
+        makeTestBasicLink(
+          id: 'link-only-clocked',
+          fromId: 'f',
+          toId: 't',
+          vectorClock: const VectorClock({'h': 1}),
+        ),
+      );
+
+      final count = await repo.countLinksWithNullVectorClock();
+
+      expect(count, 0);
+    });
+  });
+
+  // ── getTokenUsageForAgent ─────────────────────────────────────────────────
+
+  group('getTokenUsageForAgent', () {
+    const agentId = 'agent-token-001';
+    const otherAgent = 'agent-token-002';
+
+    test('returns token usage entities for the given agentId', () async {
+      await repo.upsertEntity(
+        makeTestWakeTokenUsage(
+          id: 'tu-1',
+          agentId: agentId,
+          runKey: 'run-tu-1',
+          createdAt: DateTime(2026, 4),
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestWakeTokenUsage(
+          id: 'tu-2',
+          agentId: agentId,
+          runKey: 'run-tu-2',
+          inputTokens: 200,
+          outputTokens: 120,
+          createdAt: DateTime(2026, 4, 2),
+        ),
+      );
+      // Different agent — must not appear.
+      await repo.upsertEntity(
+        makeTestWakeTokenUsage(
+          id: 'tu-other',
+          agentId: otherAgent,
+          runKey: 'run-tu-other',
+          inputTokens: 999,
+          createdAt: DateTime(2026, 4, 3),
+        ),
+      );
+
+      final result = await repo.getTokenUsageForAgent(agentId);
+
+      expect(result.map((r) => r.id), containsAll(['tu-1', 'tu-2']));
+      expect(result.map((r) => r.id), isNot(contains('tu-other')));
+      expect(result.every((r) => r.agentId == agentId), isTrue);
+    });
+
+    test('returns empty list when no token usage exists for agent', () async {
+      final result = await repo.getTokenUsageForAgent('agent-no-usage');
+
+      expect(result, isEmpty);
+    });
+
+    test('respects the limit parameter', () async {
+      for (var i = 0; i < 5; i++) {
+        await repo.upsertEntity(
+          makeTestWakeTokenUsage(
+            id: 'tu-lim-$i',
+            agentId: agentId,
+            runKey: 'run-lim-$i',
+            createdAt: DateTime(2026, 4, i + 1),
+          ),
+        );
+      }
+
+      final result = await repo.getTokenUsageForAgent(agentId, limit: 2);
+
+      expect(result.length, 2);
+    });
+  });
+
+  // ── getGlobalTokenUsageSince ──────────────────────────────────────────────
+
+  group('getGlobalTokenUsageSince', () {
+    test(
+      'returns token usage records on or after since across all agents',
+      () async {
+        final cutoff = DateTime(2026, 4, 10);
+
+        await repo.upsertEntity(
+          makeTestWakeTokenUsage(
+            id: 'gtu-before',
+            agentId: 'agent-global-A',
+            runKey: 'run-gb',
+            inputTokens: 500,
+            createdAt: DateTime(2026, 4, 9),
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestWakeTokenUsage(
+            id: 'gtu-on',
+            agentId: 'agent-global-B',
+            runKey: 'run-go',
+            createdAt: cutoff,
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestWakeTokenUsage(
+            id: 'gtu-after',
+            agentId: 'agent-global-C',
+            runKey: 'run-ga',
+            inputTokens: 200,
+            createdAt: DateTime(2026, 4, 11),
+          ),
+        );
+
+        final result = await repo.getGlobalTokenUsageSince(since: cutoff);
+
+        expect(result.map((r) => r.id), containsAll(['gtu-on', 'gtu-after']));
+        expect(result.map((r) => r.id), isNot(contains('gtu-before')));
+      },
+    );
+
+    test('returns empty list when no records are on or after since', () async {
+      await repo.upsertEntity(
+        makeTestWakeTokenUsage(
+          id: 'gtu-old',
+          agentId: 'agent-old',
+          runKey: 'run-old',
+          createdAt: DateTime(2026),
+        ),
+      );
+
+      final result = await repo.getGlobalTokenUsageSince(
+        since: DateTime(2026, 6),
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('aggregates across agents without template filter', () async {
+      final since = DateTime(2026, 5);
+      for (var i = 0; i < 3; i++) {
+        await repo.upsertEntity(
+          makeTestWakeTokenUsage(
+            id: 'gtu-multi-$i',
+            agentId: 'agent-multi-$i',
+            runKey: 'run-multi-$i',
+            createdAt: since.add(Duration(hours: i)),
+          ),
+        );
+      }
+
+      final result = await repo.getGlobalTokenUsageSince(since: since);
+
+      expect(result.length, 3);
+    });
+  });
+
+  // ── getActiveSoulDocumentVersionsBySoulIds empty branch ───────────────────
+
+  group('getActiveSoulDocumentVersionsBySoulIds', () {
+    test('returns empty map when soulIds list is empty', () async {
+      final result = await repo.getActiveSoulDocumentVersionsBySoulIds([]);
+
+      expect(result, isEmpty);
+    });
+
+    test(
+      'returns empty map when no soul document heads exist for given soulIds',
+      () async {
+        final result = await repo.getActiveSoulDocumentVersionsBySoulIds([
+          'soul-missing',
+        ]);
+
+        expect(result, isEmpty);
+      },
+    );
+  });
+
   // ── DomainLogger wiring on duplicate inserts ───────────────────────────────
 
   group('DuplicateInsertException logging', () {

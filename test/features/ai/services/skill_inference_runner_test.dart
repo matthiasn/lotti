@@ -8,16 +8,20 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -3789,6 +3793,216 @@ void main() {
               referenceImages: refImages,
             ),
           ).called(1);
+        },
+      );
+    });
+
+    group('runTranscription entity-disappeared guard', () {
+      test(
+        'throws StateError (caught and logged) when audio entity disappears '
+        'between transcription and save — second getEntity returns null',
+        () async {
+          final audioEntity = makeAudioEntity();
+
+          final audioDir = Directory('${tempDir.path}/audio');
+          await audioDir.create(recursive: true);
+          await File(
+            '${audioDir.path}/test.aac',
+          ).writeAsBytes([0x48, 0x65, 0x6c, 0x6c, 0x6f]);
+
+          // First call (entity fetch) returns the audio entity;
+          // second call (EntityStateHelper re-fetch) returns null
+          // to simulate the entity vanishing mid-run.
+          var callCount = 0;
+          when(
+            () => mockAiInputRepo.getEntity('audio-1'),
+          ).thenAnswer((_) async {
+            callCount++;
+            return callCount == 1 ? audioEntity : null;
+          });
+
+          when(
+            () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+
+          // Return a non-empty response so we reach the re-fetch step.
+          when(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([makeStreamChunk('Hello World')]),
+          );
+
+          stubLoggingException();
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+          );
+
+          // The StateError is caught by _withStatusTracking and forwarded to
+          // the logging service — no entity update must have been attempted.
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verify(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              any<Object>(
+                that: isA<StateError>().having(
+                  (e) => e.message,
+                  'message',
+                  contains('disappeared mid-run'),
+                ),
+              ),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runTranscription',
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    group('runImageAnalysis entity-disappeared guard', () {
+      test(
+        'throws StateError (caught and logged) when image entity disappears '
+        'between analysis and save — second getEntity returns null',
+        () async {
+          final imageEntity = makeImageEntity();
+
+          final imageDir = Directory('${tempDir.path}/images');
+          await imageDir.create(recursive: true);
+          await File(
+            '${imageDir.path}/test.jpg',
+          ).writeAsBytes([0xFF, 0xD8, 0xFF, 0xE0]);
+
+          // First call returns the image entity; second call (re-fetch for
+          // EntityStateHelper) returns null to simulate disappearance.
+          var callCount = 0;
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async {
+            callCount++;
+            return callCount == 1 ? imageEntity : null;
+          });
+
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+
+          // Return a non-empty response so we reach the re-fetch step.
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([makeStreamChunk('A photo of a cat')]),
+          );
+
+          stubLoggingException();
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: makeImageAnalysisResult(),
+          );
+
+          // The StateError is caught by _withStatusTracking and forwarded to
+          // the logging service — no journal update must have been attempted.
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verify(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              any<Object>(
+                that: isA<StateError>().having(
+                  (e) => e.message,
+                  'message',
+                  contains('disappeared mid-run'),
+                ),
+              ),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runImageAnalysis',
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    group('skillInferenceRunnerProvider factory', () {
+      test(
+        'creates a SkillInferenceRunner with a null AgentRepository when '
+        'AgentDatabase is not registered in getIt — the TaskSummaryResolver '
+        'receives null and falls back to empty context',
+        () {
+          // Ensure DomainLogger is available (provider reads getIt for it).
+          if (!getIt.isRegistered<DomainLogger>()) {
+            getIt.registerSingleton<DomainLogger>(mockLoggingService);
+          }
+
+          final testContainer = ProviderContainer(
+            overrides: [
+              cloudInferenceRepositoryProvider.overrideWithValue(
+                mockCloudRepo,
+              ),
+              aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
+              journalRepositoryProvider.overrideWithValue(mockJournalRepo),
+            ],
+          );
+          addTearDown(testContainer.dispose);
+
+          // Reading the provider exercises the factory function including the
+          // getIt.isRegistered<AgentDatabase>() branch where no DB is present.
+          final result = testContainer.read(skillInferenceRunnerProvider);
+
+          expect(result, isA<SkillInferenceRunner>());
+        },
+      );
+
+      test(
+        'creates a SkillInferenceRunner with an AgentRepository when '
+        'AgentDatabase IS registered in getIt — the TaskSummaryResolver '
+        'receives a real repository so task-context is available at run time',
+        () {
+          // Register a mock AgentDatabase so the factory takes the non-null
+          // branch.
+          if (!getIt.isRegistered<AgentDatabase>()) {
+            getIt.registerSingleton<AgentDatabase>(MockAgentDatabase());
+          }
+          if (!getIt.isRegistered<DomainLogger>()) {
+            getIt.registerSingleton<DomainLogger>(mockLoggingService);
+          }
+
+          final testContainer = ProviderContainer(
+            overrides: [
+              cloudInferenceRepositoryProvider.overrideWithValue(
+                mockCloudRepo,
+              ),
+              aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
+              journalRepositoryProvider.overrideWithValue(mockJournalRepo),
+            ],
+          );
+          addTearDown(testContainer.dispose);
+
+          // Reading the provider exercises the factory function including the
+          // getIt.isRegistered<AgentDatabase>() == true branch.
+          final result = testContainer.read(skillInferenceRunnerProvider);
+
+          expect(result, isA<SkillInferenceRunner>());
         },
       );
     });

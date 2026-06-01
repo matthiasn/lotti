@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -2740,6 +2742,290 @@ void main() {
         // Verify no state explosion.
         final stateAfter = container.read(provider).value;
         expect(stateAfter, isNotNull);
+      },
+    );
+  });
+
+  group('focusNodeListener – widget-focus branch (lines 48-65)', () {
+    setUp(() {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    // Use testWidgets so the FocusNode is attached to a real widget tree,
+    // allowing hasFocus to actually flip between true/false.
+    // The container is disposed inside the test body, followed by
+    // tester.pump(2 min) to drain the cacheFor(1 min) timer before the
+    // framework's pending-timer invariant check.
+    testWidgets(
+      'sets _isFocused and _shouldShowEditorToolBar true when focus is gained',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [agentInitializationProvider.overrideWith((ref) async {})],
+        );
+        final entryId = testTextEntry.meta.id;
+        final provider = entryControllerProvider(id: entryId);
+        final notifier = container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        // Attach the notifier's focusNode to a real widget tree so
+        // focusNode.hasFocus can become true.
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Focus(
+                focusNode: notifier.focusNode,
+                child: const SizedBox(),
+              ),
+            ),
+          ),
+        );
+
+        // Verify initial state: not focused, toolbar hidden.
+        expect(container.read(provider).value?.isFocused, isFalse);
+        expect(
+          container.read(provider).value?.shouldShowEditorToolBar,
+          isFalse,
+        );
+
+        // Request focus → hasFocus becomes true → listener fires
+        // (_isFocused=false → hasFocus=true → guard fails → body runs)
+        notifier.focusNode.requestFocus();
+        await tester.pump();
+
+        // Listener is also called manually to be explicit about coverage.
+        notifier.focusNodeListener();
+
+        // After gaining focus: isFocused=true and toolbar should be shown.
+        final stateAfterFocus = container.read(provider).value;
+        expect(stateAfterFocus?.isFocused, isTrue);
+        expect(stateAfterFocus?.shouldShowEditorToolBar, isTrue);
+
+        // Dispose the container now and drain the cacheFor(1 min) timer so
+        // the testWidgets pending-timer invariant check passes.
+        container.dispose();
+        await tester.pump(const Duration(minutes: 2));
+      },
+    );
+
+    testWidgets(
+      'clears _isFocused when focus is lost after it was gained',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [agentInitializationProvider.overrideWith((ref) async {})],
+        );
+        final entryId = testTextEntry.meta.id;
+        final provider = entryControllerProvider(id: entryId);
+        final notifier = container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Focus(
+                focusNode: notifier.focusNode,
+                child: const SizedBox(),
+              ),
+            ),
+          ),
+        );
+
+        // Gain focus first so _isFocused becomes true.
+        notifier.focusNode.requestFocus();
+        await tester.pump();
+        notifier.focusNodeListener();
+
+        expect(container.read(provider).value?.isFocused, isTrue);
+
+        // Lose focus: unfocus the node so hasFocus becomes false.
+        notifier.focusNode.unfocus();
+        await tester.pump();
+
+        // Now hasFocus=false != _isFocused=true → body runs again,
+        // _isFocused is reset to false (covers line 63 unregister path).
+        notifier.focusNodeListener();
+
+        final stateAfterBlur = container.read(provider).value;
+        expect(stateAfterBlur?.isFocused, isFalse);
+        // Toolbar visibility is retained after blur (not cleared by the listener).
+        expect(stateAfterBlur?.shouldShowEditorToolBar, isTrue);
+
+        // Dispose and drain the cacheFor timer.
+        container.dispose();
+        await tester.pump(const Duration(minutes: 2));
+      },
+    );
+  });
+
+  group('taskTitleFocusNodeListener – widget-focus branch (lines 71-74)', () {
+    setUp(() {
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+    });
+
+    testWidgets(
+      'registers hotkey when taskTitleFocusNode gains focus on desktop',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [agentInitializationProvider.overrideWith((ref) async {})],
+        );
+        final entryId = testTask.meta.id;
+        final provider = entryControllerProvider(id: entryId);
+        final notifier = container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        // Attach taskTitleFocusNode to a real widget tree.
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Focus(
+                focusNode: notifier.taskTitleFocusNode,
+                child: const SizedBox(),
+              ),
+            ),
+          ),
+        );
+
+        // Request focus → hasFocus becomes true → listener covers
+        // the register branch (lines 71-74).
+        notifier.taskTitleFocusNode.requestFocus();
+        await tester.pump();
+
+        // Calling the listener manually exercises lines 70-74.
+        // No exception should be thrown.
+        notifier.taskTitleFocusNodeListener();
+
+        // Lose focus → covers the unregister else branch (line 78).
+        notifier.taskTitleFocusNode.unfocus();
+        await tester.pump();
+
+        // Called again with hasFocus=false; should not throw.
+        notifier.taskTitleFocusNodeListener();
+
+        // State is not modified by taskTitleFocusNodeListener.
+        expect(container.read(provider).value?.entry, isA<Task>());
+
+        // Dispose and drain the cacheFor timer.
+        container.dispose();
+        await tester.pump(const Duration(minutes: 2));
+      },
+    );
+  });
+
+  group('copyImage – JournalImage entry (lines 498-509)', () {
+    late Directory tempDir;
+    late JournalImage testImageForCopy;
+
+    setUp(() async {
+      // Create a temporary directory and a real image file so that
+      // copyImage can proceed past the file-read on platforms where
+      // SystemClipboard.instance is non-null.
+      tempDir = await Directory.systemTemp.createTemp('lotti_copy_test_');
+      const imageDir = '/img/';
+      const imageFile = 'test.jpg';
+      final imgFile = File('${tempDir.path}$imageDir$imageFile');
+      await imgFile.parent.create(recursive: true);
+      // Write a minimal 1×1 PNG so the read succeeds.
+      await imgFile.writeAsBytes([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG header
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+        0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
+        0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+        0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC,
+        0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
+        0x44, 0xAE, 0x42, 0x60, 0x82, // IEND
+      ]);
+
+      testImageForCopy = JournalImage(
+        meta: Metadata(
+          id: 'copy_image_test_id',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'device': 1}),
+          starred: false,
+          private: false,
+        ),
+        data: ImageData(
+          capturedAt: DateTime(2024, 3, 15),
+          imageId: 'copy_image_test_id',
+          imageFile: imageFile,
+          imageDirectory: imageDir,
+        ),
+      );
+
+      when(
+        () => mockJournalDb.journalEntityById(testImageForCopy.meta.id),
+      ).thenAnswer((_) async => testImageForCopy);
+
+      // getFullImagePath calls getDocumentsDirectory() which reads Directory
+      // from GetIt.  Register our temp directory for this group.
+      if (!getIt.isRegistered<Directory>()) {
+        getIt.registerSingleton<Directory>(tempDir);
+      }
+    });
+
+    tearDown(() async {
+      if (getIt.isRegistered<Directory>()) {
+        getIt.unregister<Directory>();
+      }
+      await tempDir.delete(recursive: true);
+    });
+
+    test(
+      'enters JournalImage branch, reads the file, and completes or throws '
+      'native clipboard error',
+      () async {
+        // copyImage calls getFullImagePath (line 498), gets the clipboard
+        // instance (line 500), and – whether clipboard is null or not –
+        // must enter the JournalImage branch.
+        //
+        // When SystemClipboard.instance is non-null (desktop/Linux environment
+        // in CI), lines 506-509 run.  clipboard.write may then throw a
+        // "DataProviderManager channel not found" native error because the
+        // super_clipboard platform channel is not set up in tests.
+        // We handle both outcomes so the test is environment-agnostic.
+        final container = makeProviderContainer();
+        final provider = entryControllerProvider(id: testImageForCopy.meta.id);
+        final notifier = container.read(provider.notifier);
+
+        await container.read(provider.future);
+
+        // Verify the entry is a JournalImage before calling copyImage.
+        expect(container.read(provider).value?.entry, isA<JournalImage>());
+
+        // copyImage either completes (clipboard null) or throws a native
+        // channel error (clipboard non-null but write channel absent).
+        // Either path exercises lines 498 and 500.
+        Object? caughtError;
+        try {
+          await notifier.copyImage();
+        } catch (e) {
+          caughtError = e;
+        }
+
+        // If an error was thrown it must be the native channel error, not
+        // a logic bug in copyImage itself.
+        if (caughtError != null) {
+          expect(
+            caughtError.toString(),
+            contains('DataProviderManager'),
+          );
+        }
+
+        // State is not mutated by copyImage.
+        expect(container.read(provider).value?.entry, testImageForCopy);
       },
     );
   });

@@ -1267,4 +1267,267 @@ void main() {
       expect(cache.getDataTypeById(measurableWater.id), isNull);
     });
   });
+
+  test('categories fetch coalesces rapid notifications', () {
+    fakeAsync((async) {
+      var categoryFetchCount = 0;
+      final completer = Completer<List<CategoryDefinition>>();
+
+      when(() => journalDb.getAllCategories()).thenAnswer((_) async {
+        categoryFetchCount++;
+        if (categoryFetchCount == 1) {
+          return const [];
+        }
+        if (categoryFetchCount == 2) {
+          return completer.future;
+        }
+        return [categoryMindfulness];
+      });
+      when(
+        () => journalDb.getAllMeasurableDataTypes(),
+      ).thenAnswer((_) async => <MeasurableDataType>[]);
+      when(
+        () => journalDb.getAllHabitDefinitions(),
+      ).thenAnswer((_) async => <HabitDefinition>[]);
+      when(
+        () => journalDb.getAllDashboards(),
+      ).thenAnswer((_) async => <DashboardDefinition>[]);
+      when(
+        () => journalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => <LabelDefinition>[]);
+      when(
+        () => journalDb.getConfigFlag('private'),
+      ).thenAnswer((_) async => false);
+
+      final cache = EntitiesCacheService(
+        journalDb: journalDb,
+        updateNotifications: notifications,
+      )..init();
+      async.flushMicrotasks();
+      expect(categoryFetchCount, 1);
+
+      // First notification triggers a blocked fetch
+      notifications.emit({categoriesNotification});
+      async.flushMicrotasks();
+      expect(categoryFetchCount, 2);
+
+      // Rapid notifications while the fetch is in progress — should coalesce
+      notifications
+        ..emit({categoriesNotification})
+        ..emit({categoriesNotification});
+      async.flushMicrotasks();
+
+      // Complete the blocking fetch
+      completer.complete([]);
+      async.flushMicrotasks();
+
+      // Exactly 3 fetches: init + blocked + one coalesced retry
+      expect(categoryFetchCount, 3);
+      expect(
+        cache.getCategoryById(categoryMindfulness.id),
+        categoryMindfulness,
+      );
+    });
+  });
+
+  test('habits fetch coalesces rapid notifications', () {
+    fakeAsync((async) {
+      var habitFetchCount = 0;
+      final completer = Completer<List<HabitDefinition>>();
+
+      when(() => journalDb.getAllHabitDefinitions()).thenAnswer((_) async {
+        habitFetchCount++;
+        if (habitFetchCount == 1) {
+          return const [];
+        }
+        if (habitFetchCount == 2) {
+          return completer.future;
+        }
+        return [habitFlossing];
+      });
+      when(
+        () => journalDb.getAllMeasurableDataTypes(),
+      ).thenAnswer((_) async => <MeasurableDataType>[]);
+      when(
+        () => journalDb.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => journalDb.getAllDashboards(),
+      ).thenAnswer((_) async => <DashboardDefinition>[]);
+      when(
+        () => journalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => <LabelDefinition>[]);
+      when(
+        () => journalDb.getConfigFlag('private'),
+      ).thenAnswer((_) async => false);
+
+      final cache = EntitiesCacheService(
+        journalDb: journalDb,
+        updateNotifications: notifications,
+      )..init();
+      async.flushMicrotasks();
+      expect(habitFetchCount, 1);
+
+      notifications.emit({habitsNotification});
+      async.flushMicrotasks();
+      expect(habitFetchCount, 2);
+
+      notifications
+        ..emit({habitsNotification})
+        ..emit({habitsNotification});
+      async.flushMicrotasks();
+
+      completer.complete([]);
+      async.flushMicrotasks();
+
+      expect(habitFetchCount, 3);
+      expect(cache.getHabitById(habitFlossing.id), habitFlossing);
+    });
+  });
+
+  test('dashboards fetch coalesces rapid notifications', () {
+    fakeAsync((async) {
+      var dashboardFetchCount = 0;
+      final completer = Completer<List<DashboardDefinition>>();
+
+      when(() => journalDb.getAllDashboards()).thenAnswer((_) async {
+        dashboardFetchCount++;
+        if (dashboardFetchCount == 1) {
+          return const [];
+        }
+        if (dashboardFetchCount == 2) {
+          return completer.future;
+        }
+        return [testDashboardConfig];
+      });
+      when(
+        () => journalDb.getAllMeasurableDataTypes(),
+      ).thenAnswer((_) async => <MeasurableDataType>[]);
+      when(
+        () => journalDb.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => journalDb.getAllHabitDefinitions(),
+      ).thenAnswer((_) async => <HabitDefinition>[]);
+      when(
+        () => journalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => <LabelDefinition>[]);
+      when(
+        () => journalDb.getConfigFlag('private'),
+      ).thenAnswer((_) async => false);
+
+      final cache = EntitiesCacheService(
+        journalDb: journalDb,
+        updateNotifications: notifications,
+      )..init();
+      async.flushMicrotasks();
+      expect(dashboardFetchCount, 1);
+
+      notifications.emit({dashboardsNotification});
+      async.flushMicrotasks();
+      expect(dashboardFetchCount, 2);
+
+      notifications
+        ..emit({dashboardsNotification})
+        ..emit({dashboardsNotification});
+      async.flushMicrotasks();
+
+      completer.complete([]);
+      async.flushMicrotasks();
+
+      expect(dashboardFetchCount, 3);
+      expect(
+        cache.getDashboardById(testDashboardConfig.id),
+        testDashboardConfig,
+      );
+    });
+  });
+
+  test(
+    'loadDashboards logs error and continues when getAllDashboards throws',
+    () async {
+      when(
+        () => journalDb.getAllMeasurableDataTypes(),
+      ).thenAnswer((_) async => <MeasurableDataType>[]);
+      when(
+        () => journalDb.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => journalDb.getAllHabitDefinitions(),
+      ).thenAnswer((_) async => <HabitDefinition>[]);
+      when(
+        () => journalDb.getAllDashboards(),
+      ).thenThrow(Exception('db error'));
+      when(
+        () => journalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => <LabelDefinition>[]);
+      when(
+        () => journalDb.getConfigFlag('private'),
+      ).thenAnswer((_) async => false);
+
+      final cache = EntitiesCacheService(
+        journalDb: journalDb,
+        updateNotifications: notifications,
+      );
+      // Should not throw even though getAllDashboards throws
+      await expectLater(cache.init(), completes);
+      // dashboardsById stays empty — no crash
+      expect(cache.getDashboardById('any'), isNull);
+    },
+  );
+
+  test('labels fetch coalesces rapid notifications', () {
+    fakeAsync((async) {
+      var labelFetchCount = 0;
+      final completer = Completer<List<LabelDefinition>>();
+
+      when(() => journalDb.getAllLabelDefinitions()).thenAnswer((_) async {
+        labelFetchCount++;
+        if (labelFetchCount == 1) {
+          return const [];
+        }
+        if (labelFetchCount == 2) {
+          return completer.future;
+        }
+        return [testLabelDefinition1];
+      });
+      when(
+        () => journalDb.getAllMeasurableDataTypes(),
+      ).thenAnswer((_) async => <MeasurableDataType>[]);
+      when(
+        () => journalDb.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => journalDb.getAllHabitDefinitions(),
+      ).thenAnswer((_) async => <HabitDefinition>[]);
+      when(
+        () => journalDb.getAllDashboards(),
+      ).thenAnswer((_) async => <DashboardDefinition>[]);
+      when(
+        () => journalDb.getConfigFlag('private'),
+      ).thenAnswer((_) async => false);
+
+      final cache = EntitiesCacheService(
+        journalDb: journalDb,
+        updateNotifications: notifications,
+      )..init();
+      async.flushMicrotasks();
+      expect(labelFetchCount, 1);
+
+      notifications.emit({labelsNotification});
+      async.flushMicrotasks();
+      expect(labelFetchCount, 2);
+
+      notifications
+        ..emit({labelsNotification})
+        ..emit({labelsNotification});
+      async.flushMicrotasks();
+
+      completer.complete([]);
+      async.flushMicrotasks();
+
+      expect(labelFetchCount, 3);
+      expect(cache.getLabelById(testLabelDefinition1.id), testLabelDefinition1);
+    });
+  });
 }

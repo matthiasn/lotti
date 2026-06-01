@@ -650,12 +650,487 @@ void main() {
     });
   });
 
-  // Note: Timer-based integration tests are skipped because Timer callbacks
-  // don't fire reliably in the Dart test framework. The timer logic is covered
-  // by unit tests that verify state transitions without waiting for real timers.
-  //
-  // The _saveCorrection path is exercised through:
-  // - Unit tests verifying setPending/cancel state machine
-  // - Unit tests verifying captureCorrection returns 'pending'
-  // - The actual timer callback is trivial (just calls onSave and clears state)
+  group('CorrectionCaptureNotifier – timer fires and clears state', () {
+    test(
+      'timer fires after delay: onSave is called and state is cleared',
+      () {
+        fakeAsync((async) {
+          final container = ProviderContainer();
+          addTearDown(container.dispose);
+
+          // Subscribe so the provider stays active; without a live listener,
+          // Riverpod may not execute the timer callback reliably.
+          container.listen<PendingCorrection?>(
+            correctionCaptureProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          var saveCalled = false;
+
+          final pending = PendingCorrection(
+            before: 'before',
+            after: 'after',
+            categoryId: 'cat-1',
+            categoryName: 'Test',
+            createdAt: DateTime(2024, 3, 15),
+          );
+
+          container
+              .read(correctionCaptureProvider.notifier)
+              .setPending(
+                pending: pending,
+                onSave: () async {
+                  saveCalled = true;
+                },
+              );
+
+          expect(container.read(correctionCaptureProvider), equals(pending));
+
+          // Advance time past the save delay, then flush microtasks to
+          // complete the async continuation after onSave().
+          async
+            ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+            ..flushMicrotasks();
+
+          expect(saveCalled, isTrue);
+          expect(container.read(correctionCaptureProvider), isNull);
+        });
+      },
+    );
+
+    test(
+      'timer callback handles onSave exception without crashing; state is cleared',
+      () {
+        fakeAsync((async) {
+          final container = ProviderContainer();
+          addTearDown(container.dispose);
+
+          container.listen<PendingCorrection?>(
+            correctionCaptureProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          final pending = PendingCorrection(
+            before: 'before',
+            after: 'after',
+            categoryId: 'cat-1',
+            categoryName: 'Test',
+            createdAt: DateTime(2024, 3, 15),
+          );
+
+          container
+              .read(correctionCaptureProvider.notifier)
+              .setPending(
+                pending: pending,
+                onSave: () async {
+                  throw Exception('save failed');
+                },
+              );
+
+          expect(container.read(correctionCaptureProvider), equals(pending));
+
+          // Should not throw even though onSave throws.
+          expect(
+            () => async
+              ..elapse(
+                kCorrectionSaveDelay + const Duration(milliseconds: 100),
+              )
+              ..flushMicrotasks(),
+            returnsNormally,
+          );
+
+          // State is cleared even when onSave throws
+          expect(container.read(correctionCaptureProvider), isNull);
+        });
+      },
+    );
+
+    test(
+      'timer does not call onSave when state was changed before it fires',
+      () {
+        fakeAsync((async) {
+          final container = ProviderContainer();
+          addTearDown(container.dispose);
+
+          // Subscribe so the provider stays active.
+          container.listen<PendingCorrection?>(
+            correctionCaptureProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          var firstSaveCalled = false;
+          var secondSaveCalled = false;
+
+          final pending1 = PendingCorrection(
+            before: 'first',
+            after: 'after1',
+            categoryId: 'cat-1',
+            categoryName: 'Test',
+            createdAt: DateTime(2024, 3, 15, 10),
+          );
+
+          container
+              .read(correctionCaptureProvider.notifier)
+              .setPending(
+                pending: pending1,
+                onSave: () async {
+                  firstSaveCalled = true;
+                },
+              );
+
+          final pending2 = PendingCorrection(
+            before: 'second',
+            after: 'after2',
+            categoryId: 'cat-1',
+            categoryName: 'Test',
+            createdAt: DateTime(2024, 3, 15, 11),
+          );
+
+          // Replace with a second pending before timer fires.
+          // The first timer is cancelled; only the second timer fires.
+          container
+              .read(correctionCaptureProvider.notifier)
+              .setPending(
+                pending: pending2,
+                onSave: () async {
+                  secondSaveCalled = true;
+                },
+              );
+
+          async
+            ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+            ..flushMicrotasks();
+
+          expect(firstSaveCalled, isFalse);
+          expect(secondSaveCalled, isTrue);
+          expect(container.read(correctionCaptureProvider), isNull);
+        });
+      },
+    );
+  });
+
+  group('PendingCorrection – equality and hashCode', () {
+    test('two distinct PendingCorrection instances are not equal', () {
+      final a = PendingCorrection(
+        before: 'before',
+        after: 'after',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: DateTime(2024, 3, 15),
+      );
+      final b = PendingCorrection(
+        before: 'before',
+        after: 'after',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: DateTime(2024, 3, 15),
+      );
+
+      // Each constructor call gets a new auto-incremented id, so they differ
+      expect(a, isNot(equals(b)));
+      expect(a.hashCode, isNot(equals(b.hashCode)));
+    });
+
+    test('same instance is equal to itself', () {
+      final a = PendingCorrection(
+        before: 'before',
+        after: 'after',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: DateTime(2024, 3, 15),
+      );
+
+      expect(a == a, isTrue);
+      expect(a.hashCode, equals(a.hashCode));
+    });
+
+    test('equality returns false for non-PendingCorrection object', () {
+      final a = PendingCorrection(
+        before: 'before',
+        after: 'after',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: DateTime(2024, 3, 15),
+      );
+
+      // ignore: unrelated_type_equality_checks
+      expect(a == 'not a PendingCorrection', isFalse);
+    });
+  });
+
+  group('_saveCorrection – full persistence path via timer', () {
+    test(
+      'saves correction to repository after timer fires',
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockCategoryRepository.getCategoryById('category-1'),
+          ).thenAnswer((_) async => testCategory);
+          when(
+            () => mockCategoryRepository.updateCategory(any()),
+          ).thenAnswer((_) async => testCategory);
+
+          final container = ProviderContainer(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          // Keep the correctionCaptureProvider active so the timer fires.
+          container.listen<PendingCorrection?>(
+            correctionCaptureProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          // Kick off async captureCorrection inside fakeAsync. Flush once to
+          // drain the initial getCategoryById + setPending calls, then advance
+          // past save delay. Multiple additional flushes drain the async chain
+          // inside _saveCorrection (getCategoryById → updateCategory).
+          container
+              .read(correctionCaptureServiceProvider)
+              .captureCorrection(
+                categoryId: 'category-1',
+                beforeText: 'test flight',
+                afterText: 'TestFlight',
+              );
+          async
+            ..flushMicrotasks()
+            ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+            ..flushMicrotasks()
+            ..flushMicrotasks()
+            ..flushMicrotasks();
+
+          // updateCategory must have been called once with the new example
+          final captured = verify(
+            () => mockCategoryRepository.updateCategory(captureAny()),
+          ).captured;
+          expect(captured, hasLength(1));
+          final saved = captured.first as CategoryDefinition;
+          expect(saved.correctionExamples, hasLength(1));
+          expect(saved.correctionExamples!.first.before, equals('test flight'));
+          expect(saved.correctionExamples!.first.after, equals('TestFlight'));
+        });
+      },
+    );
+
+    test(
+      'aborts save when category disappears between pending and timer firing',
+      () {
+        fakeAsync((async) {
+          // First call (during captureCorrection) returns the category
+          // Second call (during _saveCorrection after delay) returns null
+          var callCount = 0;
+          when(
+            () => mockCategoryRepository.getCategoryById('category-1'),
+          ).thenAnswer((_) async {
+            callCount++;
+            return callCount == 1 ? testCategory : null;
+          });
+
+          final container = ProviderContainer(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          container.listen<PendingCorrection?>(
+            correctionCaptureProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          container
+              .read(correctionCaptureServiceProvider)
+              .captureCorrection(
+                categoryId: 'category-1',
+                beforeText: 'test flight',
+                afterText: 'TestFlight',
+              );
+          async
+            ..flushMicrotasks()
+            ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+            ..flushMicrotasks()
+            ..flushMicrotasks()
+            ..flushMicrotasks();
+
+          // Category was gone at save time — updateCategory must NOT be called
+          verifyNever(() => mockCategoryRepository.updateCategory(any()));
+        });
+      },
+    );
+
+    test(
+      'aborts save when duplicate appears between pending and timer firing',
+      () {
+        fakeAsync((async) {
+          // First call: no existing examples (passes duplicate check in captureCorrection)
+          // Second call: example already added by something else
+          var callCount = 0;
+          when(
+            () => mockCategoryRepository.getCategoryById('category-1'),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) return testCategory;
+            // On second call (inside _saveCorrection), duplicate is present
+            return testCategory.copyWith(
+              correctionExamples: [
+                ChecklistCorrectionExample(
+                  before: 'test flight',
+                  after: 'TestFlight',
+                  capturedAt: DateTime(2024, 3, 15),
+                ),
+              ],
+            );
+          });
+
+          final container = ProviderContainer(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          container.listen<PendingCorrection?>(
+            correctionCaptureProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          container
+              .read(correctionCaptureServiceProvider)
+              .captureCorrection(
+                categoryId: 'category-1',
+                beforeText: 'test flight',
+                afterText: 'TestFlight',
+              );
+          async
+            ..flushMicrotasks()
+            ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+            ..flushMicrotasks()
+            ..flushMicrotasks()
+            ..flushMicrotasks();
+
+          // Duplicate found at save time — updateCategory must NOT be called
+          verifyNever(() => mockCategoryRepository.updateCategory(any()));
+        });
+      },
+    );
+
+    test(
+      'logs error and does not rethrow when updateCategory throws',
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockCategoryRepository.getCategoryById('category-1'),
+          ).thenAnswer((_) async => testCategory);
+          when(
+            () => mockCategoryRepository.updateCategory(any()),
+          ).thenThrow(Exception('DB write failed'));
+
+          final container = ProviderContainer(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          container.listen<PendingCorrection?>(
+            correctionCaptureProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          container
+              .read(correctionCaptureServiceProvider)
+              .captureCorrection(
+                categoryId: 'category-1',
+                beforeText: 'test flight',
+                afterText: 'TestFlight',
+              );
+          async.flushMicrotasks();
+
+          // Should not throw even though updateCategory throws.
+          expect(
+            () => async
+              ..elapse(
+                kCorrectionSaveDelay + const Duration(milliseconds: 100),
+              )
+              ..flushMicrotasks()
+              ..flushMicrotasks()
+              ..flushMicrotasks(),
+            returnsNormally,
+          );
+
+          // updateCategory was attempted
+          verify(() => mockCategoryRepository.updateCategory(any())).called(1);
+        });
+      },
+    );
+
+    test(
+      'appends new correction to existing examples list',
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockCategoryRepository.getCategoryById('category-2'),
+          ).thenAnswer((_) async => categoryWithExamples);
+          when(
+            () => mockCategoryRepository.updateCategory(any()),
+          ).thenAnswer((_) async => categoryWithExamples);
+
+          final container = ProviderContainer(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          container.listen<PendingCorrection?>(
+            correctionCaptureProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          container
+              .read(correctionCaptureServiceProvider)
+              .captureCorrection(
+                categoryId: 'category-2',
+                beforeText: 'new before',
+                afterText: 'new after',
+              );
+          async
+            ..flushMicrotasks()
+            ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+            ..flushMicrotasks()
+            ..flushMicrotasks()
+            ..flushMicrotasks();
+
+          final captured = verify(
+            () => mockCategoryRepository.updateCategory(captureAny()),
+          ).captured;
+          final saved = captured.first as CategoryDefinition;
+          // Original example plus the new one
+          expect(saved.correctionExamples, hasLength(2));
+          expect(saved.correctionExamples!.last.before, equals('new before'));
+          expect(saved.correctionExamples!.last.after, equals('new after'));
+        });
+      },
+    );
+  });
 }

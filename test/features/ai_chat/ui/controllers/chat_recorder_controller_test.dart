@@ -2491,6 +2491,237 @@ void main() {
     );
   });
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Constructor default tempDirectoryProvider (line 91)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  group('constructor default tempDirectoryProvider', () {
+    test(
+      'creates default tempDirectoryProvider lambda when none is supplied '
+      '(line 91)',
+      () async {
+        // When no tempDirectoryProvider is passed, the constructor assigns
+        //   `() async => getTemporaryDirectory()`
+        // That lambda expression on line 91 is only hit when the constructor
+        // runs without an explicit override. We exercise that branch by
+        // constructing the controller without the override, then verifying
+        // the controller initialises correctly (idle state, no error).
+        final mockRecorder = _MockAudioRecorder();
+        when(
+          () => mockRecorder.hasPermission(),
+        ).thenAnswer((_) async => false);
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+
+        final container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              // Deliberately omit tempDirectoryProvider so the default
+              // `() async => getTemporaryDirectory()` lambda is created.
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                // no tempDirectoryProvider override → line 91 is executed
+              ),
+            ),
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        // The controller should initialise in the idle state.
+        final initialState = container.read(chatRecorderControllerProvider);
+        expect(initialState.status, ChatRecorderStatus.idle);
+        expect(initialState.error, isNull);
+
+        // Call start() so the default tempDirectoryProvider lambda is actually
+        // invoked. Permission is denied so it never reaches tempDir lookup,
+        // but the lambda was created (covering the constructor branch on line
+        // 91). The permission denial sets errorType without crashing.
+        await container.read(chatRecorderControllerProvider.notifier).start();
+        final afterState = container.read(chatRecorderControllerProvider);
+        expect(afterState.errorType, ChatRecorderErrorType.permissionDenied);
+      },
+    );
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // stopAndTranscribe() before any start (covers the _recorder == null guard)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  group('stopAndTranscribe preconditions', () {
+    test(
+      'is a no-op when called before any recording session (recorder is null)',
+      () async {
+        // _recorder is null before start() is called. stopAndTranscribe()
+        // returns early at the guard `if (_recorder == null) return` without
+        // touching any state.
+        final container = ProviderContainer(
+          overrides: [
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        await controller.stopAndTranscribe();
+
+        final state = container.read(chatRecorderControllerProvider);
+        expect(state.status, ChatRecorderStatus.idle);
+        expect(state.error, isNull);
+        expect(state.transcript, isNull);
+      },
+    );
+
+    test(
+      'transitions from recording to idle with transcript when file exists',
+      () async {
+        final mockRecorder = _MockAudioRecorder();
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+        when(
+          () => mockRecorder.onAmplitudeChanged(any()),
+        ).thenAnswer((_) => Stream<record.Amplitude>.empty());
+        when(
+          () => mockRecorder.start(
+            any<record.RecordConfig>(),
+            path: any(named: 'path'),
+          ),
+        ).thenAnswer((_) async {}); // no real file; transcription is mocked
+        when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+        final mockSvc = _MockTranscriptionService();
+        when(
+          () => mockSvc.transcribeStream(any()),
+        ).thenAnswer((_) => Stream.value('hello'));
+
+        final container = ProviderContainer(
+          overrides: [
+            audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                tempDirectoryProvider: () async => Directory.systemTemp,
+                config: const ChatRecorderConfig(maxSeconds: 60),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        await controller.start();
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.recording,
+        );
+
+        await controller.stopAndTranscribe();
+
+        final state = container.read(chatRecorderControllerProvider);
+        expect(state.status, ChatRecorderStatus.idle);
+        expect(state.transcript, 'hello');
+        expect(state.partialTranscript, isNull);
+      },
+    );
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // toggleRealtimeMode
+  // ─────────────────────────────────────────────────────────────────────────
+
+  group('toggleRealtimeMode', () {
+    test('flips useRealtimeMode on successive calls', () async {
+      final container = ProviderContainer(
+        overrides: [
+          audioTranscriptionServiceProvider.overrideWithValue(
+            _MockTranscriptionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+
+      // Initial state: useRealtimeMode == false.
+      expect(
+        container.read(chatRecorderControllerProvider).useRealtimeMode,
+        isFalse,
+      );
+
+      controller.toggleRealtimeMode();
+      expect(
+        container.read(chatRecorderControllerProvider).useRealtimeMode,
+        isTrue,
+      );
+
+      controller.toggleRealtimeMode();
+      expect(
+        container.read(chatRecorderControllerProvider).useRealtimeMode,
+        isFalse,
+      );
+    });
+
+    test(
+      'useRealtimeMode persists across clearResult and other state changes',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            audioTranscriptionServiceProvider.overrideWithValue(
+              _MockTranscriptionService(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+
+        controller.toggleRealtimeMode();
+        expect(
+          container.read(chatRecorderControllerProvider).useRealtimeMode,
+          isTrue,
+        );
+
+        // clearResult must not reset useRealtimeMode.
+        controller
+          ..state = controller.state.copyWith(transcript: 'x', error: 'y')
+          ..clearResult();
+
+        final afterClear = container.read(chatRecorderControllerProvider);
+        expect(afterClear.useRealtimeMode, isTrue);
+        expect(afterClear.transcript, isNull);
+        expect(afterClear.error, isNull);
+      },
+    );
+  });
+
   group('realtimeAvailableProvider', () {
     test('returns false while realtime UI is disabled', () async {
       final mockRealtime = _MockRealtimeService();

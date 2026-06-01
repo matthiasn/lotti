@@ -1,13 +1,18 @@
 // ignore_for_file: avoid_redundant_argument_values
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   DayPlanEntry makePlan(DateTime date) {
     return DayPlanEntry(
       meta: Metadata(
@@ -180,6 +185,167 @@ void main() {
 
         expect(second, plan);
         expect(calls, 2);
+      },
+    );
+  });
+
+  group('save', () {
+    test(
+      'creates a new plan when getDayPlanById returns null',
+      () async {
+        final date = DateTime(2024, 3, 15);
+        final plan = makePlan(date);
+
+        when(
+          () => journalDb.getDayPlanById(plan.meta.id),
+        ).thenAnswer((_) async => null);
+        when(
+          () => persistenceLogic.createDbEntity(plan),
+        ).thenAnswer((_) async => true);
+
+        final result = await repository.save(plan);
+
+        expect(result, plan);
+        verify(() => journalDb.getDayPlanById(plan.meta.id)).called(1);
+        verify(() => persistenceLogic.createDbEntity(plan)).called(1);
+        verifyNever(() => persistenceLogic.updateMetadata(plan.meta));
+        verifyNever(() => persistenceLogic.updateDbEntity(plan));
+      },
+    );
+
+    test(
+      'updates existing plan with refreshed metadata when getDayPlanById returns a plan',
+      () async {
+        final date = DateTime(2024, 3, 16);
+        final original = makePlan(date);
+        final updatedMeta = original.meta.copyWith(
+          updatedAt: DateTime(2024, 3, 16, 12),
+        );
+        final expectedResult = original.copyWith(meta: updatedMeta);
+
+        when(
+          () => journalDb.getDayPlanById(original.meta.id),
+        ).thenAnswer((_) async => original);
+        when(
+          () => persistenceLogic.updateMetadata(original.meta),
+        ).thenAnswer((_) async => updatedMeta);
+        when(
+          () => persistenceLogic.updateDbEntity(expectedResult),
+        ).thenAnswer((_) async => true);
+
+        final result = await repository.save(original);
+
+        expect(result.meta, updatedMeta);
+        expect(result.data, original.data);
+        verify(() => journalDb.getDayPlanById(original.meta.id)).called(1);
+        verify(() => persistenceLogic.updateMetadata(original.meta)).called(1);
+        verify(() => persistenceLogic.updateDbEntity(expectedResult)).called(1);
+        verifyNever(() => persistenceLogic.createDbEntity(original));
+      },
+    );
+
+    test(
+      'update path: returned plan reflects the updated metadata, not the original',
+      () async {
+        final date = DateTime(2024, 3, 17);
+        final original = makePlan(date);
+        final updatedMeta = original.meta.copyWith(
+          updatedAt: DateTime(2024, 3, 17, 9),
+        );
+
+        when(
+          () => journalDb.getDayPlanById(original.meta.id),
+        ).thenAnswer((_) async => original);
+        when(
+          () => persistenceLogic.updateMetadata(original.meta),
+        ).thenAnswer((_) async => updatedMeta);
+        when(
+          () => persistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await repository.save(original);
+
+        // The original and the result differ only in updatedAt.
+        expect(result.meta.id, original.meta.id);
+        expect(result.meta.updatedAt, isNot(equals(original.meta.updatedAt)));
+        expect(result.meta.updatedAt, updatedMeta.updatedAt);
+      },
+    );
+  });
+
+  group('getDayPlansInRange', () {
+    test(
+      'delegates to JournalDb.getDayPlansInRange and returns the result',
+      () async {
+        final start = DateTime(2024, 3, 1);
+        final end = DateTime(2024, 3, 31);
+        final p1 = makePlan(DateTime(2024, 3, 10));
+        final p2 = makePlan(DateTime(2024, 3, 20));
+
+        when(
+          () => journalDb.getDayPlansInRange(
+            rangeStart: start,
+            rangeEnd: end,
+          ),
+        ).thenAnswer((_) async => [p1, p2]);
+
+        final results = await repository.getDayPlansInRange(
+          rangeStart: start,
+          rangeEnd: end,
+        );
+
+        expect(results, [p1, p2]);
+        verify(
+          () => journalDb.getDayPlansInRange(
+            rangeStart: start,
+            rangeEnd: end,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'returns empty list when no plans exist in the range',
+      () async {
+        final start = DateTime(2024, 6, 1);
+        final end = DateTime(2024, 6, 30);
+
+        when(
+          () => journalDb.getDayPlansInRange(
+            rangeStart: start,
+            rangeEnd: end,
+          ),
+        ).thenAnswer((_) async => []);
+
+        final results = await repository.getDayPlansInRange(
+          rangeStart: start,
+          rangeEnd: end,
+        );
+
+        expect(results, isEmpty);
+      },
+    );
+  });
+
+  group('updateStream', () {
+    test(
+      'exposes the updateStream from UpdateNotifications',
+      () async {
+        final ids = <String>{'dayplan-2024-03-15', 'dayplan-2024-03-16'};
+        final controller = StreamController<Set<String>>();
+        when(
+          () => updateNotifications.updateStream,
+        ).thenAnswer((_) => controller.stream);
+
+        final emitted = <Set<String>>[];
+        final sub = repository.updateStream.listen(emitted.add);
+        controller.add(ids);
+        // Drain microtasks and event-loop turns so the stream listener fires.
+        await Future<void>.delayed(Duration.zero);
+
+        expect(emitted, [ids]);
+        await sub.cancel();
+        await controller.close();
       },
     );
   });

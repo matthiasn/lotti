@@ -139,6 +139,11 @@ class FakeChecklistCompletionService extends ChecklistCompletionService {
   void clearSuggestion(String itemId) {
     clearedItemId = itemId;
   }
+
+  /// Expose the Notifier's [state] setter so tests can push new data.
+  void setSuggestions(List<ChecklistCompletionSuggestion> suggestions) {
+    state = AsyncData(suggestions);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -981,6 +986,319 @@ void main() {
           expect(ctrls.completionService.clearedItemId, 'item-1');
         },
       );
+
+      testWidgets(
+        'low-confidence suggestion shows tertiary color in dialog',
+        (tester) async {
+          const lowSuggestion = ChecklistCompletionSuggestion(
+            checklistItemId: 'item-1',
+            confidence: ChecklistCompletionConfidence.low,
+            reason: 'Low confidence reason',
+          );
+          await _pumpWithControllers(tester, suggestions: [lowSuggestion]);
+          await tester.pump();
+
+          // Open suggestion dialog.
+          final barFinder = find.descendant(
+            of: find.byType(GestureDetector),
+            matching: find.byWidgetPredicate(
+              (w) =>
+                  w is Container &&
+                  w.decoration is BoxDecoration &&
+                  w.constraints?.maxWidth == 8,
+            ),
+          );
+          await tester.tap(barFinder);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // Verify the dialog shows the 'low' confidence label.
+          expect(find.text('Confidence: low'), findsOneWidget);
+          // Verify the reason text is shown.
+          expect(find.text('Low confidence reason'), findsOneWidget);
+        },
+      );
     });
+
+    // ── Edit mode cancel ────────────────────────────────────────────────────
+
+    testWidgets('cancel icon in edit mode exits editing without saving', (
+      tester,
+    ) async {
+      final controller = FakeChecklistItemController(
+        _makeItem(title: 'Original title'),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).overrideWith(() => controller),
+            checklistControllerProvider((
+              id: 'checklist-1',
+              taskId: 'task-1',
+            )).overrideWith(FakeChecklistController.new),
+            checklistCompletionServiceProvider.overrideWith(
+              FakeChecklistCompletionService.new,
+            ),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const ChecklistItemRow(
+              itemId: 'item-1',
+              checklistId: 'checklist-1',
+              taskId: 'task-1',
+              index: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Enter edit mode.
+      await tester.tap(find.byIcon(Icons.mode_edit_outlined));
+      await tester.pump();
+      expect(find.byType(TitleTextField), findsOneWidget);
+
+      // Type some text so the field is dirty and the cancel button is visible.
+      await tester.enterText(find.byType(TitleTextField), 'Changed text');
+      await tester.pump();
+
+      // Tap the cancel icon (cancel_outlined) to discard changes.
+      final cancelIcon = find.byIcon(Icons.cancel_outlined);
+      await tester.ensureVisible(cancelIcon);
+      await tester.tap(cancelIcon);
+      await tester.pump();
+
+      // Edit mode should be exited and no title update should have been called.
+      expect(find.byType(TitleTextField), findsNothing);
+      expect(find.byIcon(Icons.mode_edit_outlined), findsOneWidget);
+      expect(controller.updatedTitle, isNull);
+    });
+
+    // ── Oncancel via TitleTextField resetToInitialValue ──────────────────────
+
+    testWidgets('edit mode cancel with pristine field exits editing', (
+      tester,
+    ) async {
+      final controller = FakeChecklistItemController(
+        _makeItem(title: 'Pristine title'),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).overrideWith(() => controller),
+            checklistControllerProvider((
+              id: 'checklist-1',
+              taskId: 'task-1',
+            )).overrideWith(FakeChecklistController.new),
+            checklistCompletionServiceProvider.overrideWith(
+              FakeChecklistCompletionService.new,
+            ),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const ChecklistItemRow(
+              itemId: 'item-1',
+              checklistId: 'checklist-1',
+              taskId: 'task-1',
+              index: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Enter edit mode.
+      await tester.tap(find.byIcon(Icons.mode_edit_outlined));
+      await tester.pump();
+      expect(find.byType(TitleTextField), findsOneWidget);
+
+      // The cancel icon is present since initialValue is non-null and
+      // resetToInitialValue=true → _showClearButton starts true.
+      final cancelIcon = find.byIcon(Icons.cancel_outlined);
+      await tester.ensureVisible(cancelIcon);
+      await tester.tap(cancelIcon);
+      await tester.pump();
+
+      // Edit mode should be exited.
+      expect(find.byType(TitleTextField), findsNothing);
+      expect(controller.updatedTitle, isNull);
+    });
+
+    // ── Archive undo action ─────────────────────────────────────────────────
+
+    testWidgets(
+      'tapping Undo in archive snackbar calls unarchive',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        await tester.pump();
+
+        // Swipe right to archive.
+        await tester.drag(find.byType(Dismissible), const Offset(300, 0));
+        await tester.pumpAndSettle();
+
+        expect(ctrls.itemController.archiveCalled, isTrue);
+        expect(find.text('Item archived'), findsOneWidget);
+
+        // Tap the "Undo" action in the snackbar.
+        final undoFinder = find.text('Undo');
+        await tester.ensureVisible(undoFinder);
+        await tester.tap(undoFinder);
+        await tester.pump();
+
+        // unarchive should have been called by the undo action.
+        expect(ctrls.itemController.unarchiveCalled, isTrue);
+      },
+    );
+
+    // ── Delete undo action ──────────────────────────────────────────────────
+
+    testWidgets(
+      'tapping Undo in delete snackbar relinks item and cancels delete timer',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        await tester.pump();
+
+        // Swipe left to delete.
+        await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
+        await tester.pumpAndSettle();
+
+        expect(ctrls.checklistTracker.unlinkedItemId, 'item-1');
+        expect(find.text('Item deleted'), findsOneWidget);
+
+        // Tap the "Undo" action in the snackbar.
+        final undoFinder = find.text('Undo');
+        await tester.ensureVisible(undoFinder);
+        await tester.tap(undoFinder);
+        await tester.pump();
+
+        // relinkItem should have been called by the undo action.
+        expect(ctrls.checklistTracker.relinkedItemId, 'item-1');
+      },
+    );
+
+    // ── Suggestion animation stops when suggestion removed ──────────────────
+
+    testWidgets(
+      'suggestion animation stops when suggestion is removed',
+      (tester) async {
+        const suggestion = ChecklistCompletionSuggestion(
+          checklistItemId: 'item-1',
+          confidence: ChecklistCompletionConfidence.medium,
+          reason: 'Looks done',
+        );
+
+        final completionSvc = FakeChecklistCompletionService([suggestion]);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              checklistItemControllerProvider((
+                id: 'item-1',
+                taskId: 'task-1',
+              )).overrideWith(() => FakeChecklistItemController(_makeItem())),
+              checklistControllerProvider.overrideWith(
+                FakeChecklistController.new,
+              ),
+              checklistCompletionServiceProvider.overrideWith(
+                () => completionSvc,
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const ChecklistItemRow(
+                itemId: 'item-1',
+                checklistId: 'checklist-1',
+                taskId: 'task-1',
+                index: 0,
+              ),
+            ),
+          ),
+        );
+        // Two pumps: resolve async providers, then rebuild with suggestion.
+        await tester.pump();
+        await tester.pump();
+
+        // Verify the suggestion bar is visible (animation is running).
+        final barFinder = find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              w.decoration is BoxDecoration &&
+              w.constraints?.maxWidth == 8,
+        );
+        expect(barFinder, findsOneWidget);
+
+        // Remove the suggestion — this triggers lines 250-252 where the
+        // animation controller is stopped and reset.
+        completionSvc.setSuggestions([]);
+        await tester.pump();
+        await tester.pump();
+
+        // The suggestion bar should no longer be visible.
+        expect(barFinder, findsNothing);
+      },
+    );
+
+    // ── Sync first-frame hide for hideIfUnchecked ───────────────────────────
+
+    testWidgets(
+      'synchronous first-frame hides unchecked item when hideIfUnchecked=true',
+      (tester) async {
+        // Exercises line 225: _showRow = false when hideIfUnchecked && !isCompleted
+        // on the synchronous first-frame path in build().
+        final itemCtrl = FakeChecklistItemController(_makeItem());
+
+        // Pre-resolve the provider so the synchronous build() path is taken.
+        final container = ProviderContainer(
+          overrides: [
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).overrideWith(() => itemCtrl),
+            checklistControllerProvider.overrideWith(
+              FakeChecklistController.new,
+            ),
+            checklistCompletionServiceProvider.overrideWith(
+              FakeChecklistCompletionService.new,
+            ),
+          ],
+        );
+        await container.read(
+          checklistItemControllerProvider((
+            id: 'item-1',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidgetWithScaffold(
+              const ChecklistItemRow(
+                itemId: 'item-1',
+                checklistId: 'checklist-1',
+                taskId: 'task-1',
+                index: 0,
+                hideIfUnchecked: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // The unchecked item should be hidden (showSecond = SizedBox.shrink).
+        final crossFade = tester.widget<AnimatedCrossFade>(
+          find.byType(AnimatedCrossFade),
+        );
+        expect(crossFade.crossFadeState, CrossFadeState.showSecond);
+
+        container.dispose();
+      },
+    );
   });
 }
