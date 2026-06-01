@@ -187,6 +187,7 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     stubAppendMilestone(mockSyncService);
+    stubReconciledAgentState(mockSyncService, mockAgentRepository);
 
     // `_collectObservationPayloads` now batches via `getEntitiesByIds`.
     // Route the default stub through the per-id `getEntity` stubs so

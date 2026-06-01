@@ -43,6 +43,7 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     stubAppendMilestone(mockSyncService);
+    stubReconciledAgentState(mockSyncService, mockRepository);
     when(() => mockTemplateService.repository).thenReturn(mockRepository);
   });
 

@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/projection/derived_agent_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -224,6 +225,43 @@ class AgentSyncService {
         metadata: AgentMessageMetadata(runKey: runKey, milestone: milestone),
       ),
     );
+  }
+
+  /// Returns the agent's state **reconciled against the log** — the read
+  /// cutover (PR 4 B6). This is the read a wake must act on: it folds the log's
+  /// watermarks + active slots over the cached row ([reconcileAgentState]) so a
+  /// value the cache lost to last-writer-wins under a partition self-heals
+  /// before the agent decides anything. Returns null when the agent has no
+  /// state row yet.
+  ///
+  /// The reconcile reads only the watermarks (carried on `system` milestone
+  /// markers) and active slots (the agent's outbound links) — it never touches
+  /// the append-maintained head — so it loads just the markers, **not** the
+  /// agent's full message log, which for a long-lived agent can be large. The
+  /// marker load + the link load are independent, so they run concurrently.
+  /// When the reconcile corrects a divergence the healed row is persisted (which
+  /// also propagates the correction to peers); when nothing diverged it is a
+  /// pure read with no write — no outbox churn on the common path (e.g. an
+  /// existing agent with no markers yet reconciles to itself).
+  ///
+  /// Strictly for the wake critical path; UI/service reads stay on the raw
+  /// cache via [AgentRepository.getAgentState] (eventual, self-healing).
+  Future<AgentStateEntity?> reconciledAgentState(String agentId) async {
+    final cache = await _repository.getAgentState(agentId);
+    if (cache == null) return null;
+    final (markers, links) = await (
+      _repository.getMessagesByKind(agentId, AgentMessageKind.system),
+      _repository.getLinksFrom(agentId),
+    ).wait;
+    final reconciled = reconcileAgentState(
+      cache: cache,
+      messages: markers,
+      links: links,
+    );
+    if (reconciled != cache) {
+      await upsertEntity(reconciled);
+    }
+    return reconciled;
   }
 
   /// Raw upsert: VC-stamp, persist, and enqueue (or defer inside a

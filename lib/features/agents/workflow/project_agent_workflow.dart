@@ -107,8 +107,8 @@ class ProjectAgentWorkflow {
       subDomain: 'execute',
     );
 
-    // 1. Load current state.
-    final loadedState = await agentRepository.getAgentState(agentId);
+    // 1. Load current state, reconciled against the log (PR 4 B6).
+    final loadedState = await syncService.reconciledAgentState(agentId);
     if (loadedState == null) {
       _log('no agent state found — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No agent state found');

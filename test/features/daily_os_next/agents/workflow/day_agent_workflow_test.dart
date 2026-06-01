@@ -274,6 +274,7 @@ void main() {
       }
     });
     stubAppendMilestone(syncService);
+    stubReconciledAgentState(syncService, repository);
   });
 
   group('DayAgentWorkflow', () {

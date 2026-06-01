@@ -1,6 +1,6 @@
 # State-as-Projection (Move 1) — Implementation Plan (PR 4)
 
-- Status: In progress — **B1 + B2 + B3 + B4 + B5 landed** (milestone marker model + emission; `agentDay` slot link; field-classification cleanup; `deriveAgentState` fold + full-state shadow compare) plus the end-of-wake head-clobber fix; only **B6 (the read cutover)** pending. Refreshed against merged PR 1/2/2b/3 · Date: 2026-06-01
+- Status: **Complete — B1–B6 landed** (milestone marker model + emission; `agentDay` slot link; field-classification cleanup; `deriveAgentState` fold + full-state shadow compare; the wake-start read cutover) plus the end-of-wake head-clobber fix. Refreshed against merged PR 1/2/2b/3 · Date: 2026-06-01
 - Part of: [`2026-05-30_daily_os_runtime_implementation_roadmap.md`](./2026-05-30_daily_os_runtime_implementation_roadmap.md) (PR 4).
 - Design baseline: [`../daily_os_ai_runtime_architecture.md`](../daily_os_ai_runtime_architecture.md) §2 / §4 (Move 1); [ADR 0016](../adr/0016-agent-state-as-log-projection.md). Companion: [ADR 0020](../adr/0020-agent-input-capture.md) extends the same projection thesis to the agent's *inputs* (per-source content-addressed capture of user content) — this plan covers derived *state*, ADR 0020 covers what the agent reads.
 - Depends on (**all merged → PR 4 is unblocked**):
@@ -220,9 +220,24 @@ derivation-specific data — those aggregates don't need canonical ordering.
      event. Like the watermarks needed B2 first, `awaitingContent` needs its own
      event-sourcing step before it can be folded — tracked as a new open decision below.
      It stays on the cache for now and is excluded from the compare.
-6. **B6 — Flip reads (the cutover).** Workflows + `agent_repository` read derived state
-   through the reconciled cache (reconcile machinery per the strategy above);
-   `AgentStateEntity` demoted to that cache. Convergence sim (partition + heal).
+6. **B6 — Flip reads (the cutover). ✅ done.** Added `reconcileAgentState(cache,
+   messages, links)` (in `derived_agent_state.dart`): it folds the log's watermarks +
+   active slots over the cached row and leaves the log-independent fields alone. The
+   merge is migration-safe, **not** blind "log wins" — watermarks reconcile to
+   `max(derived, cache)` (monotonic: never regress a value the cache holds but the log
+   lacks yet — an agent predating the B2 markers — and self-heal a value lost to LWW
+   under a partition), and slots to `derived ?? cache` (link-derived wins, cache is the
+   fallback for agents predating their slot link). `AgentSyncService.reconciledAgentState`
+   orchestrates it: load cache + messages + the agent's links, reconcile, and persist
+   **only when something diverged** (no outbox churn on the common path; the persist
+   propagates the heal to peers). The four wake workflows now read this at wake start;
+   UI/service reads stay on the raw cache (eventual, self-healing). The
+   frontier-digest + coalesced background refold remain deferred (open decisions /
+   shared with PR 5). `recentHeadMessageId` is not reconciled — it is append-maintained
+   (and the end-of-wake clobber that would have broken this is fixed; see open
+   decisions). Convergence sim: two devices, divergent caches after a partition, heal →
+   both reconcile to the same watermark (no missed/double ritual) and the same
+   most-recent slot.
 
 **Left as-is (not derived):** `toolCounterByKey` (date-scoped runtime-local
 rate-limit; the `toolEffect` link type exists but is unused — event-sourcing it is out
@@ -247,15 +262,28 @@ in shadow. B1–B5 are each shippable green on their own.
 - **Field-classification regression:** each derived field equals its log-derived value
   for a representative task / project / improver agent fixture.
 
-## Done when
+## Done when — ✅ met
 
-- Derived agent state is read from the projection; the read-modify-write
-  `wakeCounter + 1` pattern is gone (monotonic counters are per-host G-counters per
-  PR 2b; `toolCounterByKey` is count-from-log).
-- Concurrent multi-device edits **self-heal** on agent-derived state (sim test), and
-  counters are exact across a partition+heal.
-- `AgentStateEntity` is demoted to a reconciled cache; PR 2's resolver is demonstrably
-  reduced to a transient-cache role.
+- **Derived agent state is read from the projection at wake start** (the four wake
+  workflows call `reconciledAgentState`). The read-modify-write `wakeCounter + 1`
+  pattern was already gone (PR 2b made the monotonic counters per-host G-counters
+  incremented in place). *Correction vs. the original wording:* `toolCounterByKey`
+  stays a date-scoped runtime-local cache field, **not** count-from-log — the
+  `toolEffect` link is unused and event-sourcing it is out of scope (see "Left as-is").
+- **Concurrent multi-device edits self-heal on agent-derived state** (convergence sim:
+  divergent caches after a partition reconcile to the same watermark/slot post-heal).
+  Counters are exact across a partition+heal via the PR 2b G-counter merge (the resolver
+  path), unchanged by PR 4.
+- **`AgentStateEntity` is demoted to a reconciled cache** — the wake reads the
+  log-reconciled view, so PR 2's deterministic resolver is reduced to picking a sane
+  *transient* value: any LWW outcome it produces is recomputed by the next wake-start
+  reconcile, so divergence can no longer persist.
+
+**Carried forward (not done here, by design):** `awaitingContent` is still a synced
+cache field (needs its own event before it can be folded — see open decisions); the
+`frontierDigest` + coalesced background refold are deferred (the wake-start reconcile is
+unconditional, and UI reads are eventual, so neither is needed yet); physically removing
+the retired `revision` and the demoted cache row await a later breaking-change window.
 
 ## Defers
 

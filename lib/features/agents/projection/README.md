@@ -23,7 +23,7 @@ diagnostic compare — reads do not flip to the projection until PR 4.
 | `projection_diagnostics.dart` | `diagnoseVectorClocks()` + `VcInconsistency` — vector-clock consistency surface, kept out of the fold. |
 | `agent_event_adapter.dart` | `agentEventsFromLog()` — maps persisted `AgentMessageEntity` + `messagePrev` links onto `AgentEvent` (PR 3 bridge). |
 | `shadow_projection.dart` | `compareShadowProjection()` + `ShadowProjectionReport`/`Status` — non-throwing compare of the projection against the live head. |
-| `derived_agent_state.dart` | `deriveAgentState()` + `DerivedAgentState` — the storage-coupled full-state fold (kernel + watermarks + active slots); `compareDerivedAgentState()` + `DerivedStateReport` — full-state shadow compare (PR 4 B5). |
+| `derived_agent_state.dart` | `deriveAgentState()` + `DerivedAgentState` — the storage-coupled full-state fold (kernel + watermarks + active slots); `compareDerivedAgentState()` + `DerivedStateReport` — full-state shadow compare (PR 4 B5); `reconcileAgentState()` — folds the log over the cached row for the wake-start read cutover (PR 4 B6). |
 
 ## The causal model (the load-bearing decision)
 
@@ -153,6 +153,27 @@ watermarks and slots, listing any `DerivedFieldMismatch`. `equivalent` is the B6
 cutover precondition (head reconciles + no field diverges). Drives no production
 read.
 
+## The read cutover (PR 4 B6)
+
+`reconcileAgentState(cache, messages, links)` folds the log over the cached
+`AgentStateEntity` and returns the corrected row — the read a wake acts on. It is
+**not** a blind "log wins": watermarks reconcile to `max(derived, cache)`
+(monotonic — never regress a value the cache holds but the log lacks yet, e.g. an
+agent predating the B2 markers; self-heal a value lost to LWW under a partition),
+and slots to `derived ?? cache` (link-derived wins, cache is the fallback for
+agents predating their slot link). The append-maintained `recentHeadMessageId`,
+the convergent G-counters, device-local scheduling, and `awaitingContent` are left
+on the cache by construction. It returns the cache value-unchanged when nothing
+diverged, so callers skip a redundant persist.
+
+`AgentSyncService.reconciledAgentState(agentId)` orchestrates it (load → reconcile
+→ persist only if changed) and is the wake-start read in all four wake workflows;
+the persist propagates a heal to peers. UI/service reads stay on the raw cache
+(eventual). This is what demotes `AgentStateEntity` to a regenerable cache: the
+PR 2 resolver still picks a transient LWW value on sync, but the next wake-start
+reconcile recomputes the same value on every device, so divergence can no longer
+persist.
+
 ## Determinism contract
 
 `project(canonicalOrder(S))` is a pure function of the **set of distinct events**
@@ -188,3 +209,11 @@ Pure logic → Glados property tests (tagged `glados`) plus example/edge tests:
   that `deriveAgentState` is invariant under input shuffle (two devices on the
   same set converge); and `compareDerivedAgentState` equivalence, field-mismatch
   reporting, and structural-error capture.
+- **Reconcile + cutover** (`derived_agent_state_test.dart`) — `reconcileAgentState`
+  migration-safety (never nulls a cached watermark/slot the log lacks yet),
+  self-heal of a clobbered watermark, slot link-vs-cache fallback,
+  non-derived fields untouched; a property that it never regresses a watermark and
+  is idempotent; and a partition+heal convergence sim (two divergent caches
+  reconcile to the same watermark and most-recent slot). The orchestration
+  (`reconciledAgentState`: load → reconcile → persist-only-on-divergence) is
+  covered in `agent_sync_service_test.dart`.

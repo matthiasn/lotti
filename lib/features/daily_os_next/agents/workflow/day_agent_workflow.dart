@@ -114,7 +114,8 @@ class DayAgentWorkflow {
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
-    final state = await agentRepository.getAgentState(agentId);
+    // The wake acts on the log-reconciled state (PR 4 B6).
+    final state = await syncService.reconciledAgentState(agentId);
     if (state == null) {
       return const WakeResult(success: false, error: 'No agent state found');
     }

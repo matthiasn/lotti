@@ -50,8 +50,9 @@ class ImproverAgentWorkflow {
   }) async {
     final agentId = agentIdentity.agentId;
 
-    // 1. Load agent state.
-    final state = await repository.getAgentState(agentId);
+    // 1. Load agent state, reconciled against the log (PR 4 B6) so the
+    // feedback-scan watermarks the ritual reads are log-correct.
+    final state = await syncService.reconciledAgentState(agentId);
     if (state == null) {
       return const WakeResult(
         success: false,

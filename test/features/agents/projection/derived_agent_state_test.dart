@@ -398,4 +398,190 @@ void main() {
       expect(report.equivalent, isFalse);
     });
   });
+
+  group('reconcileAgentState', () {
+    test('keeps a cached watermark the log does not yet have '
+        '(migration-safe)', () {
+      // A pre-marker agent: the cache holds lastWakeAt but the log has no
+      // wakeCompleted marker. Reconcile must not null it out.
+      final cache = makeTestState(lastWakeAt: _day(5));
+
+      final reconciled = reconcileAgentState(
+        cache: cache,
+        messages: const [],
+        links: const [],
+      );
+
+      expect(reconciled.lastWakeAt, _day(5));
+      // Nothing diverged → returns a value-equal row so the caller skips a
+      // redundant persist.
+      expect(reconciled, cache);
+    });
+
+    test('heals a watermark the cache lost to LWW (log has a newer '
+        'marker)', () {
+      final cache = makeTestState(lastWakeAt: _day(1)); // clobbered/stale
+
+      final reconciled = reconcileAgentState(
+        cache: cache,
+        messages: [_marker('w', AgentMilestone.wakeCompleted, _day(9))],
+        links: const [],
+      );
+
+      expect(reconciled.lastWakeAt, _day(9));
+      expect(reconciled, isNot(cache));
+    });
+
+    test('keeps the cache watermark when it is newer than the log (max)', () {
+      final cache = makeTestState(lastWakeAt: _day(9));
+
+      final reconciled = reconcileAgentState(
+        cache: cache,
+        messages: [_marker('w', AgentMilestone.wakeCompleted, _day(1))],
+        links: const [],
+      );
+
+      expect(reconciled.lastWakeAt, _day(9));
+    });
+
+    test('resolves active slots from links, falling back to the cache', () {
+      final cache = makeTestState(
+        slots: const AgentSlots(activeProjectId: 'cached-project'),
+      );
+
+      final reconciled = reconcileAgentState(
+        cache: cache,
+        messages: const [],
+        // A task link is present; no project link.
+        links: [makeTestAgentTaskLink(toId: 'task-9')],
+      );
+
+      expect(reconciled.slots.activeTaskId, 'task-9'); // link-derived
+      expect(reconciled.slots.activeProjectId, 'cached-project'); // fallback
+    });
+
+    test('leaves non-derived fields untouched while correcting derived '
+        'ones', () {
+      final cache = makeTestState(
+        wakeCounter: 5,
+        awaitingContent: true,
+        scheduledWakeAt: _day(3),
+      ).copyWith(recentHeadMessageId: 'head-1');
+
+      final reconciled = reconcileAgentState(
+        cache: cache,
+        messages: [_marker('w', AgentMilestone.wakeCompleted, _day(9))],
+        links: const [],
+      );
+
+      // Derived field corrected…
+      expect(reconciled.lastWakeAt, _day(9));
+      // …everything the log does not own is preserved.
+      expect(reconciled.wakeCounter.value, 5);
+      expect(reconciled.awaitingContent, isTrue);
+      expect(reconciled.scheduledWakeAt, _day(3));
+      expect(reconciled.recentHeadMessageId, 'head-1');
+    });
+
+    glados.Glados(
+      glados.any.foldScenario,
+      glados.ExploreConfig(numRuns: 200),
+    ).test('never regresses a watermark and is idempotent', (scenario) {
+      final cache = makeTestState(lastWakeAt: _day(4));
+
+      final reconciled = reconcileAgentState(
+        cache: cache,
+        messages: scenario.markers,
+        links: scenario.links,
+      );
+
+      // Exactly the later of (cache, log-derived) — never regresses either
+      // side, never invents a third value. This is the convergence law: two
+      // devices holding the same marker set (same `derivedWake`) and caches
+      // bounded by it both land on `derivedWake`, so they agree.
+      final derivedWake = deriveAgentState(
+        agentId: kTestAgentId,
+        messages: scenario.markers,
+        links: scenario.links,
+      ).lastWakeAt;
+      final expectedWake =
+          (derivedWake != null && derivedWake.isAfter(cache.lastWakeAt!))
+          ? derivedWake
+          : cache.lastWakeAt;
+      expect(reconciled.lastWakeAt, expectedWake, reason: '$scenario');
+
+      // Idempotent: reconciling the already-reconciled row changes nothing.
+      final again = reconcileAgentState(
+        cache: reconciled,
+        messages: scenario.markers,
+        links: scenario.links,
+      );
+      expect(again, reconciled, reason: '$scenario');
+    }, tags: 'glados');
+  });
+
+  group('reconcile convergence (partition + heal)', () {
+    test('two devices converge a watermark to the later ritual — no missed '
+        'or double review', () {
+      // Each device ran the ritual on its own side of a partition: device A at
+      // day 3, device B at day 7. Under LWW the synced cache could keep either
+      // device's value — model each cache holding only its own ritual time.
+      final cacheA = makeTestState(slots: AgentSlots(lastOneOnOneAt: _day(3)));
+      final cacheB = makeTestState(slots: AgentSlots(lastOneOnOneAt: _day(7)));
+      // After heal both devices hold both ritual markers (log set-union).
+      final healedLog = [
+        _marker('mA', AgentMilestone.oneOnOneCompleted, _day(3)),
+        _marker('mB', AgentMilestone.oneOnOneCompleted, _day(7)),
+      ];
+
+      final reconciledA = reconcileAgentState(
+        cache: cacheA,
+        messages: healedLog,
+        links: const [],
+      );
+      final reconciledB = reconcileAgentState(
+        cache: cacheB,
+        messages: healedLog,
+        links: const [],
+      );
+
+      // Both self-heal to the later ritual and agree — the partition can no
+      // longer hide a ritual (a "missed review") or keep a stale one.
+      expect(reconciledA.slots.lastOneOnOneAt, _day(7));
+      expect(reconciledB.slots.lastOneOnOneAt, _day(7));
+      expect(
+        reconciledA.slots.lastOneOnOneAt,
+        reconciledB.slots.lastOneOnOneAt,
+      );
+    });
+
+    test('two devices converge an active slot to the most-recent link', () {
+      // A pointed the agent at task-X (day 1); B re-pointed it at task-Y
+      // (day 5). After heal both hold both links.
+      final healedLinks = [
+        makeTestAgentTaskLink(id: 'lA', toId: 'task-X', createdAt: _day(1)),
+        makeTestAgentTaskLink(id: 'lB', toId: 'task-Y', createdAt: _day(5)),
+      ];
+      final cacheA = makeTestState(
+        slots: const AgentSlots(activeTaskId: 'task-X'),
+      );
+      final cacheB = makeTestState(
+        slots: const AgentSlots(activeTaskId: 'task-Y'),
+      );
+
+      final reconciledA = reconcileAgentState(
+        cache: cacheA,
+        messages: const [],
+        links: healedLinks,
+      );
+      final reconciledB = reconcileAgentState(
+        cache: cacheB,
+        messages: const [],
+        links: healedLinks,
+      );
+
+      expect(reconciledA.slots.activeTaskId, 'task-Y');
+      expect(reconciledB.slots.activeTaskId, 'task-Y');
+    });
+  });
 }

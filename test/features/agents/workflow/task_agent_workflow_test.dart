@@ -145,6 +145,7 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     stubAppendMilestone(mockSyncService);
+    stubReconciledAgentState(mockSyncService, mockAgentRepository);
 
     // The workflow's `_collectObservationPayloads` switched from a per-id
     // `Future.wait(getEntity)` fan-out to the bulk

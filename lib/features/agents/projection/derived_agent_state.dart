@@ -337,3 +337,65 @@ DerivedStateReport compareDerivedAgentState({
     );
   }
 }
+
+/// Reconciles the cached [cache] row against the log: the **read cutover**
+/// (PR 4 B6). Returns a row whose log-backed fields reflect the projection,
+/// leaving every other field on the cache untouched. Returns [cache] *itself*
+/// (value-equal) when nothing diverged, so callers can skip a redundant persist.
+///
+/// The merge is deliberately **not** a blind "log wins":
+/// - **Watermarks** reconcile to `max(derived, cache)`. They are monotonic, so
+///   the max never regresses a value the cache holds but the log lacks yet
+///   (an agent whose log predates the B2 milestone markers, or a marker that
+///   hasn't synced) and self-heals a value the cache lost to LWW under a
+///   partition (the "missed/double weekly review" case). Two devices converge
+///   on the same max once they hold the same marker set.
+/// - **Active slots** reconcile to `derived ?? cache`: the primary association
+///   link wins (convergent), falling back to the cached value for agents
+///   created before their slot link existed (e.g. `agentDay`, added in B3).
+///
+/// Fields the log does not own are left on the cache by construction:
+/// `recentHeadMessageId` (append-path-maintained), the G-counters (already
+/// convergent), device-local scheduling, and `awaitingContent` (no backing log
+/// event yet — see `deriveAgentState`).
+AgentStateEntity reconcileAgentState({
+  required AgentStateEntity cache,
+  required Iterable<AgentMessageEntity> messages,
+  required Iterable<AgentLink> links,
+  String Function(AgentMessageEntity message)? hostIdOf,
+}) {
+  final derived = deriveAgentState(
+    agentId: cache.agentId,
+    messages: messages,
+    links: links,
+    hostIdOf: hostIdOf,
+  );
+  final slots = cache.slots;
+  return cache.copyWith(
+    lastWakeAt: _laterOf(derived.lastWakeAt, cache.lastWakeAt),
+    slots: slots.copyWith(
+      activeTaskId: derived.activeTaskId ?? slots.activeTaskId,
+      activeProjectId: derived.activeProjectId ?? slots.activeProjectId,
+      activeDayId: derived.activeDayId ?? slots.activeDayId,
+      activeTemplateId: derived.activeTemplateId ?? slots.activeTemplateId,
+      lastOneOnOneAt: _laterOf(derived.lastOneOnOneAt, slots.lastOneOnOneAt),
+      lastFeedbackScanAt: _laterOf(
+        derived.lastFeedbackScanAt,
+        slots.lastFeedbackScanAt,
+      ),
+      lastDailyWakeAt: _laterOf(derived.lastDailyWakeAt, slots.lastDailyWakeAt),
+      lastWeeklyReviewAt: _laterOf(
+        derived.lastWeeklyReviewAt,
+        slots.lastWeeklyReviewAt,
+      ),
+    ),
+  );
+}
+
+/// The later of two nullable timestamps (null is "no value"). Used to reconcile
+/// monotonic watermarks without regressing either side.
+DateTime? _laterOf(DateTime? a, DateTime? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return a.isAfter(b) ? a : b;
+}

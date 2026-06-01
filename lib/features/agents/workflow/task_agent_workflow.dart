@@ -180,8 +180,10 @@ class TaskAgentWorkflow {
       subDomain: 'execute',
     );
 
-    // 1. Load current state + both memory types.
-    final state = await agentRepository.getAgentState(agentId);
+    // 1. Load current state + both memory types. The wake acts on the
+    // log-reconciled state (PR 4 B6), so a watermark/slot the cache lost to LWW
+    // self-heals before the agent decides anything.
+    final state = await syncService.reconciledAgentState(agentId);
     if (state == null) {
       _log('no agent state found — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No agent state found');

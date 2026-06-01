@@ -333,16 +333,18 @@ Current state:
 - the UI can render summary messages if they ever exist, but the production
   wake path still relies on the raw persisted message and report records
 
-### Wake milestone markers: emitted, not yet read
+### State-as-projection: the log is the source of truth (PR 4)
 
-State-as-projection (PR 4) moves agent-state **reads** onto a projection of the
-append-only log. Move 2 (B2) event-sources the convergence-critical timestamp
-watermarks: every place a wake advances a watermark also emits a `system` message
-tagged with `AgentMessageMetadata.milestone` (an `AgentMilestone`), via
-`AgentSyncService.appendMilestone(...)`. The watermark is then derivable as the
-`max(createdAt)` of messages carrying that milestone — a convergent fold of the
-synced log instead of a last-writer-wins row, so two devices can't miss or
-double-count a ritual under a partition.
+`AgentStateEntity` is a **reconciled cache**, not the authority — the append-only
+log (messages + links) is. The convergence-critical, log-backed fields are
+event-sourced and folded back over the cache:
+
+- **Watermarks** — every place a wake advances a timestamp watermark also emits a
+  `system` message tagged with `AgentMessageMetadata.milestone` (an `AgentMilestone`)
+  via `AgentSyncService.appendMilestone(...)`. The watermark derives as the
+  `max(createdAt)` of messages carrying that milestone.
+- **Active slots** — `activeTask/Project/Day/TemplateId` derive from the agent's
+  association links (`agent_task`/`agent_project`/`agent_day`/`improver_target`).
 
 | Watermark | Milestone | Emitted by |
 | --- | --- | --- |
@@ -352,10 +354,19 @@ double-count a ritual under a partition.
 | `slots.lastOneOnOneAt` | `oneOnOneCompleted` | `ImproverAgentService.scheduleNextRitual` |
 | `slots.lastWeeklyReviewAt` | `weeklyReviewCompleted` | *no emit site yet — the weekly-review feature is unimplemented* |
 
-Current state: markers are written **alongside** the still-authoritative cached
-`AgentStateEntity` row (a dual-write). Nothing reads them yet — the fold
-(`deriveAgentState`) lands in B5 and reads flip to it in B6. The markers do show up
-as `System` rows in the `AgentInternalsBody` activity log.
+**Reads are flipped (B6).** Each wake starts by reading
+`AgentSyncService.reconciledAgentState(agentId)`, which folds the log's watermarks +
+slots over the cached row (`reconcileAgentState`) and self-heals any value the cache
+lost to last-writer-wins under a partition — so two devices can't miss or
+double-count a ritual. The reconcile is migration-safe: watermarks take
+`max(derived, cache)` and slots take `derived ?? cache`, so a value the cache holds
+but the log lacks yet (an agent predating the markers/links) is never nulled. It
+persists only when something diverged (no churn on the common path). UI/service reads
+stay on the raw cache (`AgentRepository.getAgentState`) — eventual and self-healing.
+The dual-written counters are convergent G-counters (PR 2b); `awaitingContent` and the
+device-local scheduling fields are still cache-only (no backing log event yet). The
+milestone markers also show up as `System` rows in the `AgentInternalsBody`
+activity log.
 
 ## Agent Kinds and Lifecycle
 

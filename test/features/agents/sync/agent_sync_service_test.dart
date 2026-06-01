@@ -337,7 +337,6 @@ void main() {
   final testStateEntity = AgentDomainEntity.agentState(
     id: 'state-1',
     agentId: 'agent-1',
-    revision: 0,
     slots: const AgentSlots(),
     updatedAt: testDate,
     vectorClock: null,
@@ -456,6 +455,12 @@ void main() {
     when(
       () => mockRepository.getAgentMessages(any()),
     ).thenAnswer((_) async => <AgentMessageEntity>[]);
+    when(
+      () => mockRepository.getMessagesByKind(any(), any()),
+    ).thenAnswer((_) async => <AgentMessageEntity>[]);
+    when(
+      () => mockRepository.getLinksFrom(any()),
+    ).thenAnswer((_) async => <AgentLink>[]);
     // The append path's idempotency guard looks the message up first; default
     // to "not yet persisted" so a plain append proceeds to chaining.
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
@@ -1832,5 +1837,67 @@ void main() {
         verifyNever(() => mockRepository.getAgentState(any()));
       },
     );
+  });
+
+  group('AgentSyncService.reconciledAgentState', () {
+    test('returns null when the agent has no state row', () async {
+      when(
+        () => mockRepository.getAgentState('agent-x'),
+      ).thenAnswer((_) async => null);
+
+      expect(await syncService.reconciledAgentState('agent-x'), isNull);
+    });
+
+    test('returns the cache and does not persist when nothing diverged '
+        '(empty log preserves the cached watermark)', () async {
+      final cache = makeTestState(
+        agentId: 'agent-1',
+        lastWakeAt: DateTime(2024, 3, 5),
+      );
+      when(
+        () => mockRepository.getAgentState('agent-1'),
+      ).thenAnswer((_) async => cache);
+
+      final result = await syncService.reconciledAgentState('agent-1');
+
+      expect(result, cache);
+      // Migration-safe no-op: an empty log must not null the cached watermark,
+      // and an unchanged row must not be re-persisted (no outbox churn).
+      verifyNever(() => mockRepository.upsertEntity(any()));
+    });
+
+    test('heals and persists when the log has a newer watermark', () async {
+      final cache = makeTestState(
+        agentId: 'agent-1',
+        lastWakeAt: DateTime(2024, 3),
+      );
+      final marker = makeTestMessage(
+        id: 'w',
+        agentId: 'agent-1',
+        kind: AgentMessageKind.system,
+        createdAt: DateTime(2024, 3, 9),
+        metadata: const AgentMessageMetadata(
+          milestone: AgentMilestone.wakeCompleted,
+        ),
+      );
+      when(
+        () => mockRepository.getAgentState('agent-1'),
+      ).thenAnswer((_) async => cache);
+      when(
+        () => mockRepository.getMessagesByKind(
+          'agent-1',
+          AgentMessageKind.system,
+        ),
+      ).thenAnswer((_) async => [marker]);
+
+      final result = await syncService.reconciledAgentState('agent-1');
+
+      expect(result!.lastWakeAt, DateTime(2024, 3, 9));
+      // The healed row is persisted, propagating the correction to peers.
+      final upserted = verify(
+        () => mockRepository.upsertEntity(captureAny()),
+      ).captured.whereType<AgentStateEntity>().single;
+      expect(upserted.lastWakeAt, DateTime(2024, 3, 9));
+    });
   });
 }

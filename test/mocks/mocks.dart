@@ -603,6 +603,22 @@ List<Object?> capturedMilestones(MockAgentSyncService mock) => verify(
   ),
 ).captured;
 
+/// Stubs [MockAgentSyncService.reconciledAgentState] (the wake-start read
+/// cutover, PR 4 B6) to delegate to the repository's raw `getAgentState`. In
+/// unit tests there is no divergence, so the reconcile is the identity — this
+/// lets workflow tests keep stubbing `getAgentState` while the wake reads the
+/// reconciled state. The real reconcile + persist + convergence is covered by
+/// the projection sim tests.
+void stubReconciledAgentState(
+  MockAgentSyncService sync,
+  MockAgentRepository repo,
+) {
+  when(() => sync.reconciledAgentState(any())).thenAnswer(
+    (invocation) =>
+        repo.getAgentState(invocation.positionalArguments.single as String),
+  );
+}
+
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 
 class MockBackfillResponseHandler extends Mock
