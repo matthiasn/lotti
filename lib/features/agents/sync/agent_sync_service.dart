@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:uuid/uuid.dart';
 
 /// Per-chain transaction context, stored in a [Zone] value so that
 /// concurrent transaction chains each have their own isolated buffer.
@@ -61,6 +64,8 @@ class AgentSyncService {
   final OutboxService _outboxService;
   final VectorClockService _vectorClockService;
   final SyncSequenceLogService? sequenceLogService;
+
+  static const _uuid = Uuid();
 
   /// The underlying repository for read-only operations.
   AgentRepository get repository => _repository;
@@ -148,6 +153,44 @@ class AgentSyncService {
       return _appendMessage(entity);
     }
     return _upsertEntityRaw(entity, fromSync: fromSync);
+  }
+
+  /// Appends a milestone marker — a `system` message tagged with
+  /// [AgentMessageMetadata.milestone] — to the agent's log.
+  ///
+  /// This is how a wake-completion watermark (`lastWakeAt`,
+  /// `slots.lastOneOnOneAt`, …) is event-sourced: the marker's [createdAt] is
+  /// the source of truth for the matching watermark, which the
+  /// State-as-Projection fold (PR 4) derives as the `max(createdAt)` of markers
+  /// carrying that milestone. Because it derives from the synced log rather than
+  /// a last-writer-wins row, the watermark converges across devices — no missed
+  /// or double ritual under a partition.
+  ///
+  /// The marker is routed through [upsertEntity] (so it chains into the causal
+  /// DAG like any message). [threadId] defaults to the marker's own id, which
+  /// suits the completion paths that have no wake thread (the dormant-skip wake
+  /// and the improver one-on-one). Callers continue to write the cached
+  /// watermark row alongside this marker; reads do not switch to the projection
+  /// until the cutover (B6).
+  Future<void> appendMilestone({
+    required String agentId,
+    required AgentMilestone milestone,
+    required DateTime createdAt,
+    String? threadId,
+    String? runKey,
+  }) {
+    final id = _uuid.v4();
+    return upsertEntity(
+      AgentDomainEntity.agentMessage(
+        id: id,
+        agentId: agentId,
+        threadId: threadId ?? id,
+        kind: AgentMessageKind.system,
+        createdAt: createdAt,
+        vectorClock: null,
+        metadata: AgentMessageMetadata(runKey: runKey, milestone: milestone),
+      ),
+    );
   }
 
   /// Raw upsert: VC-stamp, persist, and enqueue (or defer inside a

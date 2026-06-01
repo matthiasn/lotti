@@ -307,6 +307,17 @@ class DayAgentWorkflow {
             scheduledWakeAt: _remainingScheduledWakeAt(latestState, now),
           ),
         );
+
+        // Event-source the `lastWakeAt` watermark (PR 4, B2): the marker's
+        // createdAt is what the projection folds; the cached row above stays the
+        // read source until the cutover (B6).
+        await syncService.appendMilestone(
+          agentId: agentId,
+          milestone: AgentMilestone.wakeCompleted,
+          createdAt: now,
+          threadId: threadId,
+          runKey: runKey,
+        );
       });
       onPersistedStateChanged
         ?..call(agentId)

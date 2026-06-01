@@ -80,6 +80,11 @@ _AgentMessageMetadata _$AgentMessageMetadataFromJson(
   errorMessage: json['errorMessage'] as String?,
   policyDenied: json['policyDenied'] as bool? ?? false,
   denialReason: json['denialReason'] as String?,
+  milestone: $enumDecodeNullable(
+    _$AgentMilestoneEnumMap,
+    json['milestone'],
+    unknownValue: JsonKey.nullForUndefinedEnumValue,
+  ),
 );
 
 Map<String, dynamic> _$AgentMessageMetadataToJson(
@@ -91,4 +96,13 @@ Map<String, dynamic> _$AgentMessageMetadataToJson(
   'errorMessage': instance.errorMessage,
   'policyDenied': instance.policyDenied,
   'denialReason': instance.denialReason,
+  'milestone': _$AgentMilestoneEnumMap[instance.milestone],
+};
+
+const _$AgentMilestoneEnumMap = {
+  AgentMilestone.wakeCompleted: 'wakeCompleted',
+  AgentMilestone.oneOnOneCompleted: 'oneOnOneCompleted',
+  AgentMilestone.feedbackScanCompleted: 'feedbackScanCompleted',
+  AgentMilestone.dailyWakeCompleted: 'dailyWakeCompleted',
+  AgentMilestone.weeklyReviewCompleted: 'weeklyReviewCompleted',
 };

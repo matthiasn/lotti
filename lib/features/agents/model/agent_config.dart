@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 
 part 'agent_config.freezed.dart';
@@ -98,6 +99,19 @@ abstract class AgentMessageMetadata with _$AgentMessageMetadata {
 
     /// Denial reason if policyDenied is true.
     String? denialReason,
+
+    /// Tags this message as recording the completion of a wake milestone.
+    ///
+    /// When set, the message's `createdAt` is the source of truth for the
+    /// corresponding derived watermark (e.g. `lastWakeAt`,
+    /// `slots.lastOneOnOneAt`). The State-as-Projection fold (PR 4) reads these
+    /// markers so watermarks converge across devices instead of being clobbered
+    /// by LWW. Null on every message today — emission is wired in B2.
+    ///
+    /// Forward-compatible: a milestone value an older client doesn't recognise
+    /// deserialises to `null` rather than throwing.
+    @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
+    AgentMilestone? milestone,
   }) = _AgentMessageMetadata;
 
   factory AgentMessageMetadata.fromJson(Map<String, dynamic> json) =>

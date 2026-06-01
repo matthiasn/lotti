@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -271,6 +272,7 @@ void main() {
     when(
       () => mockSyncService.insertLinkExclusive(any()),
     ).thenAnswer((_) async {});
+    stubAppendMilestone(mockSyncService);
 
     service = ImproverAgentService(
       agentService: mockAgentService,
@@ -1205,6 +1207,10 @@ void main() {
           });
           expect(updatedState.updatedAt, testDate);
           expect(notifiedAgentIds, [agentId]);
+          // The completed ritual event-sources lastOneOnOneAt (PR 4, B2).
+          expect(capturedMilestones(mockSyncService), [
+            AgentMilestone.oneOnOneCompleted,
+          ]);
         });
       });
 

@@ -186,6 +186,7 @@ void main() {
     );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    stubAppendMilestone(mockSyncService);
 
     // `_collectObservationPayloads` now batches via `getEntitiesByIds`.
     // Route the default stub through the per-id `getEntity` stubs so
@@ -479,6 +480,10 @@ void main() {
           expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
           expect(updatedState.slots.lastDailyWakeAt, isNull);
           expect(mockConversationRepository.deletedConversationIds, isEmpty);
+          // The dormant skip still advances lastWakeAt → emits wakeCompleted
+          // only (no daily-wake marker, since the digest didn't run).
+          final milestones = capturedMilestones(mockSyncService);
+          expect(milestones, [AgentMilestone.wakeCompleted]);
           verifyNever(
             () => mockAgentRepository.updateWakeRunTemplate(
               any(),
@@ -526,6 +531,14 @@ void main() {
           expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
           expect(updatedState.slots.lastDailyWakeAt, testDate);
           expect(updatedState.slots.pendingProjectActivityAt, isNull);
+          // A due scheduled wake advances both watermarks → both markers.
+          expect(
+            capturedMilestones(mockSyncService),
+            containsAll([
+              AgentMilestone.wakeCompleted,
+              AgentMilestone.dailyWakeCompleted,
+            ]),
+          );
         },
       );
 
@@ -564,6 +577,14 @@ void main() {
           expect(updatedState.scheduledWakeAt, futureSchedule);
           expect(updatedState.slots.lastDailyWakeAt, isNull);
           expect(updatedState.slots.pendingProjectActivityAt, isNull);
+          // A non-due wake advances lastWakeAt but not lastDailyWakeAt → only
+          // the wakeCompleted marker, never dailyWakeCompleted.
+          final milestones = capturedMilestones(mockSyncService);
+          expect(milestones, contains(AgentMilestone.wakeCompleted));
+          expect(
+            milestones,
+            isNot(contains(AgentMilestone.dailyWakeCompleted)),
+          );
         },
       );
 

@@ -573,6 +573,36 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
   Future<String> localHost() async => 'test-host';
 }
 
+/// Stubs [MockAgentSyncService.appendMilestone] to a no-op so workflow/service
+/// tests that don't assert on milestone emission don't trip over the unstubbed
+/// mock (the watermark markers from PR 4, B2 are fire-and-forget here). Calls
+/// are still recorded, so a test can `verify(() => mock.appendMilestone(...))`.
+/// Requires the `AgentMilestone` fallback from `registerAllFallbackValues()`.
+void stubAppendMilestone(MockAgentSyncService mock) {
+  when(
+    () => mock.appendMilestone(
+      agentId: any(named: 'agentId'),
+      milestone: any(named: 'milestone'),
+      createdAt: any(named: 'createdAt'),
+      threadId: any(named: 'threadId'),
+      runKey: any(named: 'runKey'),
+    ),
+  ).thenAnswer((_) async {});
+}
+
+/// Verifies [MockAgentSyncService.appendMilestone] was called and returns the
+/// captured `milestone` arguments, in call order — so a test can assert which
+/// watermark markers (PR 4, B2) a wake emitted (e.g. `contains(wakeCompleted)`).
+List<Object?> capturedMilestones(MockAgentSyncService mock) => verify(
+  () => mock.appendMilestone(
+    agentId: any(named: 'agentId'),
+    milestone: captureAny(named: 'milestone'),
+    createdAt: any(named: 'createdAt'),
+    threadId: any(named: 'threadId'),
+    runKey: any(named: 'runKey'),
+  ),
+).captured;
+
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 
 class MockBackfillResponseHandler extends Mock

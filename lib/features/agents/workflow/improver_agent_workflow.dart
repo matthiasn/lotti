@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
@@ -108,6 +109,13 @@ class ImproverAgentWorkflow {
           updatedAt: now,
         );
         await syncService.upsertEntity(updatedState);
+        await syncService.appendMilestone(
+          agentId: agentId,
+          milestone: AgentMilestone.feedbackScanCompleted,
+          createdAt: now,
+          threadId: threadId,
+          runKey: runKey,
+        );
 
         // Schedule next wake.
         await improverService.scheduleNextRitual(agentId);
@@ -172,6 +180,16 @@ class ImproverAgentWorkflow {
         updatedAt: now,
       );
       await syncService.upsertEntity(updatedState);
+
+      // Event-source the `lastFeedbackScanAt` watermark (PR 4, B2); the cached
+      // row above stays the read source until the cutover (B6).
+      await syncService.appendMilestone(
+        agentId: agentId,
+        milestone: AgentMilestone.feedbackScanCompleted,
+        createdAt: now,
+        threadId: threadId,
+        runKey: runKey,
+      );
 
       developer.log(
         'Started ritual session for template $targetTemplateId',

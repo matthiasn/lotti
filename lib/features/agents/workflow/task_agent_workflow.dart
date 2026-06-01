@@ -669,6 +669,17 @@ class TaskAgentWorkflow {
             wakeCounter: state.wakeCounter.increment(hostId),
           ),
         );
+
+        // 12. Event-source the `lastWakeAt` watermark: emit a milestone marker
+        // whose createdAt the projection folds as the watermark (PR 4, B2). The
+        // cached row above stays the read source until the cutover (B6).
+        await syncService.appendMilestone(
+          agentId: agentId,
+          milestone: AgentMilestone.wakeCompleted,
+          createdAt: now,
+          threadId: threadId,
+          runKey: runKey,
+        );
       });
 
       // 9b. Embed the report for vector search (fire-and-forget).

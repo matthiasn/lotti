@@ -144,6 +144,7 @@ void main() {
     );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
+    stubAppendMilestone(mockSyncService);
 
     // The workflow's `_collectObservationPayloads` switched from a per-id
     // `Future.wait(getEntity)` fan-out to the bulk
@@ -730,6 +731,11 @@ void main() {
 
         // User message (payload + message) + state update = 3 upsert calls.
         verify(() => mockSyncService.upsertEntity(any())).called(3);
+
+        // A completed wake event-sources lastWakeAt (PR 4, B2).
+        expect(capturedMilestones(mockSyncService), [
+          AgentMilestone.wakeCompleted,
+        ]);
 
         // Verify conversation was cleaned up in finally.
         expect(

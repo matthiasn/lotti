@@ -273,6 +273,7 @@ void main() {
         currentState = entity;
       }
     });
+    stubAppendMilestone(syncService);
   });
 
   group('DayAgentWorkflow', () {
@@ -399,6 +400,8 @@ void main() {
         expect(finalState.lastWakeAt, now);
         expect(finalState.consecutiveFailureCount, 0);
         expect(finalState.wakeCounter.value, 1);
+        // The completed wake event-sources lastWakeAt (PR 4, B2).
+        expect(capturedMilestones(syncService), [AgentMilestone.wakeCompleted]);
 
         final payloads = upsertedEntities
             .whereType<AgentMessagePayloadEntity>();

@@ -627,7 +627,17 @@ mixin _$AgentMessageMetadata {
  String? get operationId;/// Error message if the tool call failed.
  String? get errorMessage;/// Whether the tool call was denied by policy.
  bool get policyDenied;/// Denial reason if policyDenied is true.
- String? get denialReason;
+ String? get denialReason;/// Tags this message as recording the completion of a wake milestone.
+///
+/// When set, the message's `createdAt` is the source of truth for the
+/// corresponding derived watermark (e.g. `lastWakeAt`,
+/// `slots.lastOneOnOneAt`). The State-as-Projection fold (PR 4) reads these
+/// markers so watermarks converge across devices instead of being clobbered
+/// by LWW. Null on every message today — emission is wired in B2.
+///
+/// Forward-compatible: a milestone value an older client doesn't recognise
+/// deserialises to `null` rather than throwing.
+@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) AgentMilestone? get milestone;
 /// Create a copy of AgentMessageMetadata
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -640,16 +650,16 @@ $AgentMessageMetadataCopyWith<AgentMessageMetadata> get copyWith => _$AgentMessa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentMessageMetadata&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.policyDenied, policyDenied) || other.policyDenied == policyDenied)&&(identical(other.denialReason, denialReason) || other.denialReason == denialReason));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentMessageMetadata&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.policyDenied, policyDenied) || other.policyDenied == policyDenied)&&(identical(other.denialReason, denialReason) || other.denialReason == denialReason)&&(identical(other.milestone, milestone) || other.milestone == milestone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,runKey,toolName,operationId,errorMessage,policyDenied,denialReason);
+int get hashCode => Object.hash(runtimeType,runKey,toolName,operationId,errorMessage,policyDenied,denialReason,milestone);
 
 @override
 String toString() {
-  return 'AgentMessageMetadata(runKey: $runKey, toolName: $toolName, operationId: $operationId, errorMessage: $errorMessage, policyDenied: $policyDenied, denialReason: $denialReason)';
+  return 'AgentMessageMetadata(runKey: $runKey, toolName: $toolName, operationId: $operationId, errorMessage: $errorMessage, policyDenied: $policyDenied, denialReason: $denialReason, milestone: $milestone)';
 }
 
 
@@ -660,7 +670,7 @@ abstract mixin class $AgentMessageMetadataCopyWith<$Res>  {
   factory $AgentMessageMetadataCopyWith(AgentMessageMetadata value, $Res Function(AgentMessageMetadata) _then) = _$AgentMessageMetadataCopyWithImpl;
 @useResult
 $Res call({
- String? runKey, String? toolName, String? operationId, String? errorMessage, bool policyDenied, String? denialReason
+ String? runKey, String? toolName, String? operationId, String? errorMessage, bool policyDenied, String? denialReason,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) AgentMilestone? milestone
 });
 
 
@@ -677,7 +687,7 @@ class _$AgentMessageMetadataCopyWithImpl<$Res>
 
 /// Create a copy of AgentMessageMetadata
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? runKey = freezed,Object? toolName = freezed,Object? operationId = freezed,Object? errorMessage = freezed,Object? policyDenied = null,Object? denialReason = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? runKey = freezed,Object? toolName = freezed,Object? operationId = freezed,Object? errorMessage = freezed,Object? policyDenied = null,Object? denialReason = freezed,Object? milestone = freezed,}) {
   return _then(_self.copyWith(
 runKey: freezed == runKey ? _self.runKey : runKey // ignore: cast_nullable_to_non_nullable
 as String?,toolName: freezed == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
@@ -685,7 +695,8 @@ as String?,operationId: freezed == operationId ? _self.operationId : operationId
 as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,policyDenied: null == policyDenied ? _self.policyDenied : policyDenied // ignore: cast_nullable_to_non_nullable
 as bool,denialReason: freezed == denialReason ? _self.denialReason : denialReason // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,milestone: freezed == milestone ? _self.milestone : milestone // ignore: cast_nullable_to_non_nullable
+as AgentMilestone?,
   ));
 }
 
@@ -770,10 +781,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentMilestone? milestone)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentMessageMetadata() when $default != null:
-return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason);case _:
+return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason,_that.milestone);case _:
   return orElse();
 
 }
@@ -791,10 +802,10 @@ return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentMilestone? milestone)  $default,) {final _that = this;
 switch (_that) {
 case _AgentMessageMetadata():
-return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason);case _:
+return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason,_that.milestone);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -811,10 +822,10 @@ return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? runKey,  String? toolName,  String? operationId,  String? errorMessage,  bool policyDenied,  String? denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  AgentMilestone? milestone)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentMessageMetadata() when $default != null:
-return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason);case _:
+return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage,_that.policyDenied,_that.denialReason,_that.milestone);case _:
   return null;
 
 }
@@ -826,7 +837,7 @@ return $default(_that.runKey,_that.toolName,_that.operationId,_that.errorMessage
 @JsonSerializable()
 
 class _AgentMessageMetadata implements AgentMessageMetadata {
-  const _AgentMessageMetadata({this.runKey, this.toolName, this.operationId, this.errorMessage, this.policyDenied = false, this.denialReason});
+  const _AgentMessageMetadata({this.runKey, this.toolName, this.operationId, this.errorMessage, this.policyDenied = false, this.denialReason, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.milestone});
   factory _AgentMessageMetadata.fromJson(Map<String, dynamic> json) => _$AgentMessageMetadataFromJson(json);
 
 /// The run key of the wake that produced this message.
@@ -841,6 +852,17 @@ class _AgentMessageMetadata implements AgentMessageMetadata {
 @override@JsonKey() final  bool policyDenied;
 /// Denial reason if policyDenied is true.
 @override final  String? denialReason;
+/// Tags this message as recording the completion of a wake milestone.
+///
+/// When set, the message's `createdAt` is the source of truth for the
+/// corresponding derived watermark (e.g. `lastWakeAt`,
+/// `slots.lastOneOnOneAt`). The State-as-Projection fold (PR 4) reads these
+/// markers so watermarks converge across devices instead of being clobbered
+/// by LWW. Null on every message today — emission is wired in B2.
+///
+/// Forward-compatible: a milestone value an older client doesn't recognise
+/// deserialises to `null` rather than throwing.
+@override@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) final  AgentMilestone? milestone;
 
 /// Create a copy of AgentMessageMetadata
 /// with the given fields replaced by the non-null parameter values.
@@ -855,16 +877,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentMessageMetadata&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.policyDenied, policyDenied) || other.policyDenied == policyDenied)&&(identical(other.denialReason, denialReason) || other.denialReason == denialReason));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentMessageMetadata&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.operationId, operationId) || other.operationId == operationId)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.policyDenied, policyDenied) || other.policyDenied == policyDenied)&&(identical(other.denialReason, denialReason) || other.denialReason == denialReason)&&(identical(other.milestone, milestone) || other.milestone == milestone));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,runKey,toolName,operationId,errorMessage,policyDenied,denialReason);
+int get hashCode => Object.hash(runtimeType,runKey,toolName,operationId,errorMessage,policyDenied,denialReason,milestone);
 
 @override
 String toString() {
-  return 'AgentMessageMetadata(runKey: $runKey, toolName: $toolName, operationId: $operationId, errorMessage: $errorMessage, policyDenied: $policyDenied, denialReason: $denialReason)';
+  return 'AgentMessageMetadata(runKey: $runKey, toolName: $toolName, operationId: $operationId, errorMessage: $errorMessage, policyDenied: $policyDenied, denialReason: $denialReason, milestone: $milestone)';
 }
 
 
@@ -875,7 +897,7 @@ abstract mixin class _$AgentMessageMetadataCopyWith<$Res> implements $AgentMessa
   factory _$AgentMessageMetadataCopyWith(_AgentMessageMetadata value, $Res Function(_AgentMessageMetadata) _then) = __$AgentMessageMetadataCopyWithImpl;
 @override @useResult
 $Res call({
- String? runKey, String? toolName, String? operationId, String? errorMessage, bool policyDenied, String? denialReason
+ String? runKey, String? toolName, String? operationId, String? errorMessage, bool policyDenied, String? denialReason,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) AgentMilestone? milestone
 });
 
 
@@ -892,7 +914,7 @@ class __$AgentMessageMetadataCopyWithImpl<$Res>
 
 /// Create a copy of AgentMessageMetadata
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? runKey = freezed,Object? toolName = freezed,Object? operationId = freezed,Object? errorMessage = freezed,Object? policyDenied = null,Object? denialReason = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? runKey = freezed,Object? toolName = freezed,Object? operationId = freezed,Object? errorMessage = freezed,Object? policyDenied = null,Object? denialReason = freezed,Object? milestone = freezed,}) {
   return _then(_AgentMessageMetadata(
 runKey: freezed == runKey ? _self.runKey : runKey // ignore: cast_nullable_to_non_nullable
 as String?,toolName: freezed == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
@@ -900,7 +922,8 @@ as String?,operationId: freezed == operationId ? _self.operationId : operationId
 as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,policyDenied: null == policyDenied ? _self.policyDenied : policyDenied // ignore: cast_nullable_to_non_nullable
 as bool,denialReason: freezed == denialReason ? _self.denialReason : denialReason // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,milestone: freezed == milestone ? _self.milestone : milestone // ignore: cast_nullable_to_non_nullable
+as AgentMilestone?,
   ));
 }
 

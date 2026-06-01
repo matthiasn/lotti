@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
@@ -238,6 +239,16 @@ class ImproverAgentService {
     );
 
     await syncService.upsertEntity(updatedState);
+
+    // Event-source the `lastOneOnOneAt` watermark (PR 4, B2): the marker's
+    // createdAt is what the projection folds, so the one-on-one watermark
+    // converges across devices. No wake thread here — the marker gets its own.
+    // The cached row above stays the read source until the cutover (B6).
+    await syncService.appendMilestone(
+      agentId: agentId,
+      milestone: AgentMilestone.oneOnOneCompleted,
+      createdAt: now,
+    );
     onPersistedStateChanged?.call(agentId);
 
     developer.log(

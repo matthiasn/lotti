@@ -179,9 +179,49 @@ extension _GeneratedSyncWriteKindX on _GeneratedSyncWriteKind {
   }
 }
 
+/// One generated `appendMilestone` call: any milestone, with the thread id and
+/// run key independently present or absent, at any created-at offset.
+class _GeneratedMilestoneScenario {
+  const _GeneratedMilestoneScenario({
+    required this.milestone,
+    required this.threadId,
+    required this.runKey,
+    required this.createdAt,
+  });
+
+  final AgentMilestone milestone;
+  final String? threadId;
+  final String? runKey;
+  final DateTime createdAt;
+
+  @override
+  String toString() =>
+      '_GeneratedMilestoneScenario(milestone: $milestone, '
+      'threadId: $threadId, runKey: $runKey, createdAt: $createdAt)';
+}
+
 extension _AnyGeneratedAgentSyncServiceScenario on glados.Any {
   glados.Generator<_GeneratedSyncWriteKind> get syncWriteKind =>
       glados.AnyUtils(this).choose(_GeneratedSyncWriteKind.values);
+
+  glados.Generator<_GeneratedMilestoneScenario> get milestoneScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.AnyUtils(this).choose(AgentMilestone.values),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 28),
+        (
+          AgentMilestone milestone,
+          int threadSelector,
+          int runSelector,
+          int dayOffset,
+        ) => _GeneratedMilestoneScenario(
+          milestone: milestone,
+          threadId: threadSelector == 0 ? null : 'thread-$threadSelector',
+          runKey: runSelector == 0 ? null : 'run-$runSelector',
+          createdAt: DateTime(2024, 3, 15).add(Duration(days: dayOffset)),
+        ),
+      );
 
   glados.Generator<_GeneratedSyncOperationKind> get syncOperationKind =>
       glados.AnyUtils(this).choose(_GeneratedSyncOperationKind.values);
@@ -1547,5 +1587,120 @@ void main() {
       expect(upserted.whereType<AgentStateEntity>(), isEmpty);
       verifyNever(() => mockRepository.getAgentState(any()));
     });
+  });
+
+  group('AgentSyncService.appendMilestone', () {
+    AgentMessageEntity capturedMessage() => verify(
+      () => mockRepository.upsertEntity(captureAny()),
+    ).captured.whereType<AgentMessageEntity>().single;
+
+    test('emits a system message tagged with the milestone, via the append '
+        'path', () async {
+      when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+        (_) async => makeTestState(agentId: 'agent-1').copyWith(
+          recentHeadMessageId: 'prev-head',
+        ),
+      );
+
+      await syncService.appendMilestone(
+        agentId: 'agent-1',
+        milestone: AgentMilestone.wakeCompleted,
+        createdAt: DateTime(2024, 3, 15),
+        threadId: 'thread-1',
+        runKey: 'run-1',
+      );
+
+      final message = capturedMessage();
+      expect(message.kind, AgentMessageKind.system);
+      expect(message.agentId, 'agent-1');
+      expect(message.threadId, 'thread-1');
+      expect(message.createdAt, DateTime(2024, 3, 15));
+      expect(message.metadata.milestone, AgentMilestone.wakeCompleted);
+      expect(message.metadata.runKey, 'run-1');
+      // Routed through _appendMessage: chained to the head and head advanced.
+      expect(message.prevMessageId, 'prev-head');
+      expect(
+        verify(() => mockRepository.upsertLink(captureAny())).captured.single,
+        isA<MessagePrevLink>()
+            .having((l) => l.fromId, 'fromId', message.id)
+            .having((l) => l.toId, 'toId', 'prev-head'),
+      );
+    });
+
+    test('defaults threadId to the marker id for thread-less paths', () async {
+      await syncService.appendMilestone(
+        agentId: 'agent-1',
+        milestone: AgentMilestone.oneOnOneCompleted,
+        createdAt: DateTime(2024, 3, 15),
+      );
+
+      final message = capturedMessage();
+      // No wake thread to join (dormant-skip / one-on-one): the marker stands
+      // alone in its own thread keyed by its own id.
+      expect(message.threadId, message.id);
+      expect(message.metadata.milestone, AgentMilestone.oneOnOneCompleted);
+      expect(message.metadata.runKey, isNull);
+    });
+
+    glados.Glados(
+      glados.any.milestoneScenario,
+      glados.ExploreConfig(numRuns: 200),
+    ).test('emits a system marker preserving milestone, runKey and createdAt, '
+        'defaulting threadId to the marker id', (scenario) async {
+      // Fresh wiring per run so captures don't accumulate across iterations.
+      final repository = MockAgentRepository();
+      final upserted = <AgentDomainEntity>[];
+      when(() => repository.upsertEntity(any())).thenAnswer((invocation) async {
+        upserted.add(
+          invocation.positionalArguments.single as AgentDomainEntity,
+        );
+      });
+      when(() => repository.upsertLink(any())).thenAnswer((_) async {});
+      when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+      when(
+        () => repository.getAgentState(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => repository.getAgentMessages(any()),
+      ).thenAnswer((_) async => <AgentMessageEntity>[]);
+      final outboxService = MockOutboxService();
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
+      final vectorClockService = MockVectorClockService();
+      when(
+        () => vectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer((_) async => testClock);
+      final service = AgentSyncService(
+        repository: repository,
+        outboxService: outboxService,
+        vectorClockService: vectorClockService,
+      );
+
+      await service.appendMilestone(
+        agentId: 'agent-x',
+        milestone: scenario.milestone,
+        createdAt: scenario.createdAt,
+        threadId: scenario.threadId,
+        runKey: scenario.runKey,
+      );
+
+      final message = upserted.whereType<AgentMessageEntity>().single;
+      expect(message.kind, AgentMessageKind.system, reason: '$scenario');
+      expect(message.agentId, 'agent-x', reason: '$scenario');
+      expect(message.createdAt, scenario.createdAt, reason: '$scenario');
+      expect(
+        message.metadata.milestone,
+        scenario.milestone,
+        reason: '$scenario',
+      );
+      expect(message.metadata.runKey, scenario.runKey, reason: '$scenario');
+      // An explicit thread joins the wake; otherwise the marker keys its own.
+      expect(
+        message.threadId,
+        scenario.threadId ?? message.id,
+        reason: '$scenario',
+      );
+    }, tags: 'glados');
   });
 }

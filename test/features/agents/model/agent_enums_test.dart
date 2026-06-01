@@ -24,6 +24,7 @@ enum _GeneratedAgentEnumFamily {
   observationPriority,
   observationCategory,
   agentMessageKind,
+  agentMilestone,
   parsedItemKind,
   parsedItemConfidence,
 }
@@ -249,6 +250,9 @@ List<Enum> _agentEnumValues(_GeneratedAgentEnumFamily family) {
     ),
     _GeneratedAgentEnumFamily.agentMessageKind => List<Enum>.of(
       AgentMessageKind.values,
+    ),
+    _GeneratedAgentEnumFamily.agentMilestone => List<Enum>.of(
+      AgentMilestone.values,
     ),
     _GeneratedAgentEnumFamily.parsedItemKind => List<Enum>.of(
       ParsedItemKind.values,

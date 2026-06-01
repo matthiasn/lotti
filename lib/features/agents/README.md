@@ -326,6 +326,30 @@ Current state:
 - the UI can render summary messages if they ever exist, but the production
   wake path still relies on the raw persisted message and report records
 
+### Wake milestone markers: emitted, not yet read
+
+State-as-projection (PR 4) moves agent-state **reads** onto a projection of the
+append-only log. Move 2 (B2) event-sources the convergence-critical timestamp
+watermarks: every place a wake advances a watermark also emits a `system` message
+tagged with `AgentMessageMetadata.milestone` (an `AgentMilestone`), via
+`AgentSyncService.appendMilestone(...)`. The watermark is then derivable as the
+`max(createdAt)` of messages carrying that milestone — a convergent fold of the
+synced log instead of a last-writer-wins row, so two devices can't miss or
+double-count a ritual under a partition.
+
+| Watermark | Milestone | Emitted by |
+| --- | --- | --- |
+| `lastWakeAt` | `wakeCompleted` | task / day / project wakes, incl. the project dormant-skip path |
+| `slots.lastDailyWakeAt` | `dailyWakeCompleted` | project wake when the scheduled daily digest was due |
+| `slots.lastFeedbackScanAt` | `feedbackScanCompleted` | improver workflow (skip and ritual-started paths) |
+| `slots.lastOneOnOneAt` | `oneOnOneCompleted` | `ImproverAgentService.scheduleNextRitual` |
+| `slots.lastWeeklyReviewAt` | `weeklyReviewCompleted` | *no emit site yet — the weekly-review feature is unimplemented* |
+
+Current state: markers are written **alongside** the still-authoritative cached
+`AgentStateEntity` row (a dual-write). Nothing reads them yet — the fold
+(`deriveAgentState`) lands in B5 and reads flip to it in B6. The markers do show up
+as `System` rows in the `AgentInternalsBody` activity log.
+
 ## Agent Kinds and Lifecycle
 
 The current persisted agent kinds are:
