@@ -111,13 +111,13 @@ String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
 String _fourDigits(int value) => value.toString().padLeft(4, '0');
 
-/// Writes a minimal valid 8-bit PCM WAV file to a temp path and returns it.
+/// Writes a minimal valid 8-bit PCM WAV file into [dir] and returns it.
 ///
 /// The file contains 100 ms of silence (800 samples @ 8 kHz, mono, 8-bit).
 /// This is the smallest standard WAV that a media library can open without
 /// errors.  The returned [File] is already on disk; callers are responsible
 /// for deleting it (e.g. via [addTearDown]).
-Future<File> _writeMinimalWav() async {
+Future<File> _writeMinimalWav(Directory dir) async {
   const sampleRate = 8000;
   const numSamples = 800; // 100 ms of silence
   const headerSize = 44;
@@ -154,7 +154,7 @@ Future<File> _writeMinimalWav() async {
     ..setUint32(40, numSamples, Endian.little);
   // Remaining bytes default to zero (silence for unsigned 8-bit PCM).
 
-  final tmp = File('/tmp/audio_metadata_extractor_test_minimal.wav');
+  final tmp = File('${dir.path}/minimal.wav');
   await tmp.writeAsBytes(bytes.buffer.asUint8List());
   return tmp;
 }
@@ -411,6 +411,8 @@ void main() {
     // They are skipped on Linux CI where libmpv is not installed, and run on
     // developer machines and macOS CI where the native library is available.
     group('extractDuration (with MediaKit)', () {
+      late Directory tmpDir;
+
       setUpAll(() {
         // Skip the whole group when the native mpv library is absent.
         // This mirrors the guard in test/utils/utils.dart: ensureMpvInitialized.
@@ -423,6 +425,7 @@ void main() {
       });
 
       setUp(() {
+        tmpDir = Directory.systemTemp.createTempSync('audio_meta_');
         // Ensure bypass flag is off so the real Player path is taken.
         AudioMetadataExtractor.bypassMediaKitInTests = false;
       });
@@ -430,15 +433,19 @@ void main() {
       tearDown(() {
         // Always restore so other test groups are unaffected.
         AudioMetadataExtractor.bypassMediaKitInTests = false;
+        if (tmpDir.existsSync()) tmpDir.deleteSync(recursive: true);
       });
 
       test(
         'returns Duration.zero for a non-existent file (open catch path)',
+        skip: (lotti_platform.isTestEnv && lotti_platform.isLinux)
+            ? 'libmpv not available on Linux CI'
+            : false,
         () async {
-          if (lotti_platform.isTestEnv && lotti_platform.isLinux) return;
-
+          final missingPath =
+              '${tmpDir.path}/does_not_exist_audio_metadata.m4a';
           final duration = await AudioMetadataExtractor.extractDuration(
-            '/tmp/does_not_exist_audio_metadata_extractor_test.m4a',
+            missingPath,
           );
           // open() fails on a missing file → inner catch(_) → Duration.zero
           expect(duration, Duration.zero);
@@ -447,18 +454,16 @@ void main() {
 
       test(
         'returns Duration.zero for a corrupted/empty audio file (open catch path)',
+        skip: (lotti_platform.isTestEnv && lotti_platform.isLinux)
+            ? 'libmpv not available on Linux CI'
+            : false,
         () async {
-          if (lotti_platform.isTestEnv && lotti_platform.isLinux) return;
-
           // Write an empty (0-byte) temp file; mpv will fail to parse it.
-          final tmp = File('/tmp/audio_metadata_extractor_test_empty.m4a');
-          await tmp.writeAsBytes(<int>[]);
-          addTearDown(() async {
-            if (tmp.existsSync()) await tmp.delete();
-          });
+          final emptyFile = File('${tmpDir.path}/empty.m4a');
+          await emptyFile.writeAsBytes(<int>[]);
 
           final duration = await AudioMetadataExtractor.extractDuration(
-            tmp.path,
+            emptyFile.path,
           );
           // Empty file → open() error → inner catch(_) → Duration.zero
           expect(duration, Duration.zero);
@@ -467,14 +472,12 @@ void main() {
 
       test(
         'returns Duration.zero for a minimal valid WAV (duration stream path)',
+        skip: (lotti_platform.isTestEnv && lotti_platform.isLinux)
+            ? 'libmpv not available on Linux CI'
+            : false,
         () async {
-          if (lotti_platform.isTestEnv && lotti_platform.isLinux) return;
-
           // Build the smallest well-formed PCM WAV (100 ms, 8-bit, mono, 8 kHz).
-          final tmp = await _writeMinimalWav();
-          addTearDown(() async {
-            if (tmp.existsSync()) await tmp.delete();
-          });
+          final tmp = await _writeMinimalWav(tmpDir);
 
           // open() may succeed; the duration stream returns either a real
           // duration or Duration.zero via orElse / timeout — both are valid

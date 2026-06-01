@@ -5,6 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/state/chart_scale_controller.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
+import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -212,44 +213,32 @@ void main() {
 
         await tester.pump(const Duration(seconds: 1));
 
-        // Locate the GestureDetector inside the CustomInteractiveViewer that
-        // fl_chart renders around each chart.  A two-pointer scale on that
-        // detector changes the shared TransformationController which fires the
-        // listener registered by DashboardPage in initState.
-        final gestureFinders = find.byType(GestureDetector);
-        expect(gestureFinders, findsWidgets);
-
-        // Perform a two-pointer pinch-out on the first GestureDetector that
-        // belongs to one of the charts.
-        final chartGesture = gestureFinders.first;
-        final chartCenter = tester.getCenter(chartGesture);
-
-        final pointer1 = await tester.startGesture(
-          chartCenter - const Offset(40, 0),
+        // DashboardPage creates the TransformationController in initState and
+        // hands it down to DashboardWidget, which forwards it to every chart's
+        // fl_chart interactive viewer. Grab that exact controller from the
+        // rendered DashboardWidget so we can drive it the same way fl_chart's
+        // pinch gesture would. A synthetic two-pointer pinch on the chart does
+        // not propagate through fl_chart's internal viewer in the headless test
+        // environment, so we mutate the shared controller directly instead.
+        final dashboardWidget = tester.widget<DashboardWidget>(
+          find.byType(DashboardWidget),
         );
-        final pointer2 = await tester.startGesture(
-          chartCenter + const Offset(40, 0),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
+        final controller = dashboardWidget.transformationController;
+        expect(controller, isNotNull);
 
-        await pointer1.moveBy(const Offset(-20, 0));
-        await pointer2.moveBy(const Offset(20, 0));
-        await tester.pump(const Duration(milliseconds: 100));
-
-        await pointer1.up();
-        await pointer2.up();
+        // Apply a horizontal pinch-out (2x scale on the x-axis). Setting the
+        // controller value fires the listener registered by DashboardPage in
+        // initState, which calls updateScale → scalesReceived is populated.
+        controller!.value = Matrix4.identity()..scaleByDouble(2, 1, 1, 1);
         await tester.pump(const Duration(seconds: 1));
 
-        // If the gesture reached the CustomInteractiveViewer the transformation
-        // controller value changed → the DashboardPage listener called
-        // updateScale → scalesReceived is non-empty.
-        // The chart must have non-zero size and a real layout for the gesture to
-        // propagate. When it does, we verify the received scale is > 0.
-        if (scalesReceived.isNotEmpty) {
-          for (final s in scalesReceived) {
-            expect(s, greaterThan(0));
-          }
+        // The listener must have fired: the captured scale is the x-axis factor
+        // we applied (> 0, and equal to 2.0 for this pinch-out).
+        expect(scalesReceived, isNotEmpty);
+        for (final s in scalesReceived) {
+          expect(s, greaterThan(0));
         }
+        expect(scalesReceived.last, 2.0);
       },
     );
   });

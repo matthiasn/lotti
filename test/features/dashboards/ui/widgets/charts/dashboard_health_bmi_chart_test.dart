@@ -34,10 +34,12 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  const chartConfig = DashboardItem.healthChart(
-    color: '#FF0000',
-    healthType: 'HealthDataType.WEIGHT',
-  ) as DashboardHealthItem;
+  const chartConfig =
+      DashboardItem.healthChart(
+            color: '#FF0000',
+            healthType: 'HealthDataType.WEIGHT',
+          )
+          as DashboardHealthItem;
 
   final rangeStart = DateTime(2024, 3);
   final rangeEnd = DateTime(2024, 3, 31);
@@ -118,10 +120,12 @@ void main() {
     testWidgets('falls back to raw health type when not in healthTypes', (
       tester,
     ) async {
-      const unknownConfig = DashboardItem.healthChart(
-        color: '#00FF00',
-        healthType: 'UnknownType',
-      ) as DashboardHealthItem;
+      const unknownConfig =
+          DashboardItem.healthChart(
+                color: '#00FF00',
+                healthType: 'UnknownType',
+              )
+              as DashboardHealthItem;
 
       await tester.pumpWidget(
         makeTestableWidget(

@@ -348,17 +348,29 @@ void main() {
         );
         await tester.pump();
 
+        // Capture the selected project id before tapping the FAB.
+        final selectedIdBeforeTap = container
+            .read(projectListDetailShowcaseControllerProvider)
+            .selectedProject
+            ?.project
+            .meta
+            .id;
+        expect(selectedIdBeforeTap, isNotNull);
+
         final fab = find.byType(DesignSystemFloatingActionButton).first;
         await tester.ensureVisible(fab);
         await tester.tap(fab);
         await tester.pump();
 
-        // After FAB tap, state is unchanged — no project was opened.
+        // After the no-op FAB tap, selection must be unchanged.
         expect(
           container
               .read(projectListDetailShowcaseControllerProvider)
-              .selectedProject,
-          isNotNull,
+              .selectedProject
+              ?.project
+              .meta
+              .id,
+          selectedIdBeforeTap,
         );
         expect(tester.takeException(), isNull);
       },

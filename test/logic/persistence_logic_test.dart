@@ -1357,10 +1357,21 @@ void main() {
               private: false,
             );
 
-        // The entry is created; geolocation hydration runs in the background
-        // (fire-and-forget) so we only assert the entry itself was persisted.
         expect(measurement, isNotNull);
         expect(measurement?.data.value, 250);
+
+        // Drain the event queue so the fire-and-forget geolocation addition
+        // (triggered by shouldAddGeolocation=true) has a chance to complete.
+        await pumpEventQueue();
+
+        // Assert the geolocation side effect: the entry in DB must now have
+        // geolocation attached (from mockDeviceLocation.getCurrentGeoLocation).
+        final persisted = await getIt<JournalDb>().journalEntityById(
+          measurement!.meta.id,
+        );
+        expect(persisted?.geolocation, isNotNull);
+        expect(persisted?.geolocation?.latitude, 37.7749);
+        expect(persisted?.geolocation?.longitude, -122.4194);
       },
     );
 
@@ -1384,6 +1395,19 @@ void main() {
 
         expect(completion, isNotNull);
         expect(completion?.data.habitId, habitFlossing.id);
+
+        // Drain the event queue so the fire-and-forget geolocation addition
+        // (triggered by shouldAddGeolocation=true) has a chance to complete.
+        await pumpEventQueue();
+
+        // Assert the geolocation side effect: the entry in DB must now have
+        // geolocation attached (from mockDeviceLocation.getCurrentGeoLocation).
+        final persisted = await getIt<JournalDb>().journalEntityById(
+          completion!.meta.id,
+        );
+        expect(persisted?.geolocation, isNotNull);
+        expect(persisted?.geolocation?.latitude, 37.7749);
+        expect(persisted?.geolocation?.longitude, -122.4194);
       },
     );
 

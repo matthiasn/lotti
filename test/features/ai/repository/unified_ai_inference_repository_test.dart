@@ -6751,19 +6751,51 @@ Take into account the following task context:
             ),
           );
 
+          // LabelAssignmentProcessor calls getIt<DomainLogger>() in its
+          // constructor — register a mock so the constructor doesn't throw.
+          final mockDomainLogger = MockDomainLogger();
+          if (!getIt.isRegistered<DomainLogger>()) {
+            getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+          }
+          addTearDown(() {
+            if (getIt.isRegistered<DomainLogger>()) {
+              getIt.unregister<DomainLogger>();
+            }
+          });
+
+          // Build real LabelDefinition fixtures — global (no applicableCategoryIds)
+          // and not deleted (no deletedAt) so the validator marks them valid.
+          LabelDefinition makeLabelDef(String id) => LabelDefinition(
+            id: id,
+            name: id,
+            color: '#000000',
+            vectorClock: null,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+          );
+          final labelA = makeLabelDef('label-A');
+          final labelB = makeLabelDef('label-B');
+
           // LabelAssignmentProcessor uses getIt<JournalDb>() directly:
           // stub journalEntityById so task suppression fetch works.
           when(
             () => mockJournalDb.journalEntityById(task.id),
           ).thenAnswer((_) async => task);
-          // stub getLabelDefinitionById so LabelValidator can validate the IDs;
-          // returning null means the labels are treated as invalid/unknown.
+          // Return matching LabelDefinition for each requested ID so the
+          // LabelValidator places them in the "valid" bucket.
           when(
-            () => mockJournalDb.getLabelDefinitionById(any()),
-          ).thenAnswer((_) async => null);
+            () => mockJournalDb.getLabelDefinitionById('label-A'),
+          ).thenAnswer((_) async => labelA);
           when(
-            () => mockJournalDb.getAllLabelDefinitions(),
-          ).thenAnswer((_) async => []);
+            () => mockJournalDb.getLabelDefinitionById('label-B'),
+          ).thenAnswer((_) async => labelB);
+          // Stub addLabels so the repository call in the success path completes.
+          when(
+            () => mockLabelsRepository.addLabels(
+              journalEntityId: task.id,
+              addedLabelIds: any(named: 'addedLabelIds'),
+            ),
+          ).thenAnswer((_) async => true);
 
           final result = await repository!.processToolCalls(
             toolCalls: [
@@ -6776,7 +6808,20 @@ Take into account the following task context:
             task: task,
           );
 
+          // processToolCalls returns languageWasSet; label assignment doesn't
+          // flip that flag.
           expect(result, isFalse);
+          // The success path (lines 1246-1247) must have called addLabels with
+          // both validated label IDs.
+          final captured = verify(
+            () => mockLabelsRepository.addLabels(
+              journalEntityId: task.id,
+              addedLabelIds: captureAny(named: 'addedLabelIds'),
+            ),
+          ).captured;
+          final assignedIds = captured.single as List<String>;
+          expect(assignedIds, containsAll(['label-A', 'label-B']));
+          expect(assignedIds, hasLength(2));
         },
       );
     },

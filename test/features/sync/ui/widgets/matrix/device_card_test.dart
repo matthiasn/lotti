@@ -290,8 +290,10 @@ void main() {
       await tester.tap(find.text('Verify'));
       await tester.pumpAndSettle();
 
-      // Lock was pre-acquired so tryAcquire() returns false → no modal shown.
+      // Lock was pre-acquired so tryAcquire() returns false → no modal shown
+      // and the verification service call is short-circuited.
       expect(find.byType(VerificationModal), findsNothing);
+      verifyNever(() => mockMatrixService.verifyDevice(mockDeviceKeys));
     },
   );
 }

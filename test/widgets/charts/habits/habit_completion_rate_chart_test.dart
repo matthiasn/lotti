@@ -121,13 +121,18 @@ void main() {
       // Tap the chart
       await tester.tapAt(chartCenter);
 
-      // Pump to allow addPostFrameCallback to execute
+      // Pump to allow addPostFrameCallback to execute. The original bug
+      // modified provider state during paint (setState/markNeedsBuild while
+      // painting), which throws a FlutterError. setInfoYmd is now deferred
+      // via addPostFrameCallback, so draining the post-frame callback here
+      // must not surface any exception.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // The test verifies the tap doesn't cause an error
-      // (the previous bug was modifying state during paint)
-      // The actual setInfoYmd call is deferred via addPostFrameCallback
+      // Regression guard: no exception was thrown while the deferred
+      // paint-time callback ran, and the chart is still mounted.
+      expect(tester.takeException(), isNull);
+      expect(find.byType(LineChart), findsOneWidget);
     });
 
     testWidgets('displays percentage info when day is selected', (
@@ -224,8 +229,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              habitsControllerProvider
-                  .overrideWith(_WithDaysController.new),
+              habitsControllerProvider.overrideWith(_WithDaysController.new),
             ],
             child: const MaterialApp(
               home: Scaffold(body: HabitCompletionRateChart()),
@@ -235,8 +239,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        final tooltipData =
-            lineChart.data.lineTouchData.touchTooltipData;
+        final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
 
         final items = tooltipData.getTooltipItems([]);
         expect(items, isEmpty);
@@ -249,8 +252,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              habitsControllerProvider
-                  .overrideWith(_WithDaysController.new),
+              habitsControllerProvider.overrideWith(_WithDaysController.new),
             ],
             child: const MaterialApp(
               home: Scaffold(body: HabitCompletionRateChart()),
@@ -260,8 +262,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        final tooltipData =
-            lineChart.data.lineTouchData.touchTooltipData;
+        final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
 
         // Use an x value far beyond the days list length
         final barDataObj = LineChartBarData(spots: const [FlSpot(999, 50)]);
@@ -360,9 +361,15 @@ void main() {
         allByDay: {
           day: {'h1', 'h2', 'h3', 'h4'},
         },
-        successfulByDay: {day: {'h1', 'h2'}},
-        skippedByDay: {day: {'h3'}},
-        failedByDay: {day: {'h4'}},
+        successfulByDay: {
+          day: {'h1', 'h2'},
+        },
+        skippedByDay: {
+          day: {'h3'},
+        },
+        failedByDay: {
+          day: {'h4'},
+        },
       );
 
       final result = barData(
@@ -395,9 +402,15 @@ void main() {
         allByDay: {
           day: {'h1', 'h2', 'h3', 'h4'},
         },
-        successfulByDay: {day: {'h1', 'h2'}},
-        skippedByDay: {day: {'h3'}},
-        failedByDay: {day: {'h4'}},
+        successfulByDay: {
+          day: {'h1', 'h2'},
+        },
+        skippedByDay: {
+          day: {'h3'},
+        },
+        failedByDay: {
+          day: {'h4'},
+        },
       );
 
       final result = barData(
@@ -430,7 +443,9 @@ void main() {
         allByDay: {
           day: {'h1', 'h2', 'h3', 'h4'},
         },
-        successfulByDay: {day: {'h1', 'h2', 'h3', 'h4', 'h5'}},
+        successfulByDay: {
+          day: {'h1', 'h2', 'h3', 'h4', 'h5'},
+        },
       );
 
       final result = barData(

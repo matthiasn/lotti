@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
@@ -20,8 +21,10 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
@@ -55,6 +58,7 @@ void main() {
     setUpAll(() {
       setFakeDocumentsPath();
       registerFallbackValue(FakeMeasurementData());
+      registerAllFallbackValues();
     });
 
     setUp(() async {
@@ -289,11 +293,49 @@ void main() {
     );
 
     testWidgets(
-      'DropTarget onDragDone callback passes entry ids to handleDroppedMedia',
+      'DropTarget onDragDone forwards dropped image to media import with '
+      'the entry id as linkedId',
       (tester) async {
         when(
           () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
         ).thenAnswer((_) async => testTextEntry);
+
+        // Stub the persistence seam reached by the media import pipeline:
+        // handleDroppedMedia -> importDroppedImages ->
+        // JournalRepository.createImageEntry -> PersistenceLogic.
+        when(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            categoryId: any(named: 'categoryId'),
+            flag: any(named: 'flag'),
+          ),
+        ).thenAnswer(
+          (_) async => Metadata(
+            id: 'image-meta-id',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+        );
+        // Signals when the import pipeline reaches persistence, letting the
+        // test await the fire-and-forget drop deterministically (no delays).
+        final createDbEntityCalled = Completer<void>();
+        when(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).thenAnswer((_) async {
+          if (!createDbEntityCalled.isCompleted) {
+            createDbEntityCalled.complete();
+          }
+          return true;
+        });
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -309,21 +351,44 @@ void main() {
         );
         final dropTarget = tester.widget<DropTarget>(dropTargetFinder);
 
-        // Simulate dropping an unsupported file type so no real import runs —
-        // the goal is confirming the callback body runs and uses the entry ids.
-        final unsupportedFile = _FakeDropItem(XFile('/tmp/note.txt'));
-        final dropDetails = DropDoneDetails(
-          files: [unsupportedFile],
-          localPosition: Offset.zero,
-          globalPosition: Offset.zero,
-        );
+        // onDragDone forwards to handleDroppedMedia (fire-and-forget). The whole
+        // pipeline performs real file IO (creating the temp source, copying it
+        // into the assets dir), so everything that touches dart:io must run
+        // inside runAsync; under the test's fake-async zone real IO never
+        // completes. Await the persistence seam being reached deterministically.
+        await tester.runAsync(() async {
+          final tempDir = await Directory.systemTemp.createTemp(
+            'entry_details_drop_',
+          );
+          addTearDown(() => tempDir.delete(recursive: true).ignore());
+          final imageFile = File(p.join(tempDir.path, 'dropped.png'));
+          await imageFile.writeAsBytes(List<int>.filled(64, 0));
 
-        expect(
-          () => dropTarget.onDragDone!.call(dropDetails),
-          returnsNormally,
-        );
+          final dropDetails = DropDoneDetails(
+            files: [_FakeDropItem(XFile(imageFile.path))],
+            localPosition: Offset.zero,
+            globalPosition: Offset.zero,
+          );
 
-        await tester.pump();
+          dropTarget.onDragDone!.call(dropDetails);
+
+          // Yield to the event loop (not just microtasks) so the real file
+          // copy and the async persistence chain can run to completion. Bounded
+          // so a genuine failure surfaces instead of hanging.
+          for (var i = 0; i < 100 && !createDbEntityCalled.isCompleted; i++) {
+            await Future<void>(() {});
+          }
+        });
+
+        // The dropped file's entry is created and linked to the open entry.
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: testTextEntry.meta.id,
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(1);
       },
     );
 

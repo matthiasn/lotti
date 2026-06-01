@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -1038,69 +1039,83 @@ void main() {
         'confirming a date in the date picker calls updateTargetDate and '
         'saveChanges on the controller',
         (tester) async {
-          late _TrackingProjectDetailController trackingController;
+          // Fix clock so _pickTargetDate's clock.now() is deterministic.
+          await withClock(
+            Clock.fixed(DateTime(2026, 3, 28, 9, 30)),
+            () async {
+              late _TrackingProjectDetailController trackingController;
 
-          final initialState = ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          );
-
-          final overrides = [
-            projectDetailControllerProvider(_projectId).overrideWith(() {
-              return trackingController = _TrackingProjectDetailController(
-                initialState,
-                _projectId,
+              final initialState = ProjectDetailState(
+                project: testProject,
+                linkedTasks: const [],
+                isLoading: false,
+                isSaving: false,
+                hasChanges: false,
               );
-            }),
-            projectDetailRecordProvider(_projectId).overrideWith(
-              (ref) => testRecord,
-            ),
-            projectDetailNowProvider.overrideWithValue(
-              () => DateTime(2026, 3, 28, 9, 30),
-            ),
-            projectAgentProvider(_projectId).overrideWith((ref) async => null),
-            agentIsRunningProvider.overrideWith(
-              (ref, agentId) => Stream.value(false),
-            ),
-          ];
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: overrides,
-              child: makeTestableWidget2(
-                Theme(
-                  data: DesignSystemTheme.dark(),
-                  child: const ProjectDetailsPage(projectId: _projectId),
+              final overrides = [
+                projectDetailControllerProvider(_projectId).overrideWith(() {
+                  return trackingController = _TrackingProjectDetailController(
+                    initialState,
+                    _projectId,
+                  );
+                }),
+                projectDetailRecordProvider(_projectId).overrideWith(
+                  (ref) => testRecord,
                 ),
-              ),
-            ),
+                projectDetailNowProvider.overrideWithValue(
+                  () => DateTime(2026, 3, 28, 9, 30),
+                ),
+                projectAgentProvider(_projectId).overrideWith(
+                  (ref) async => null,
+                ),
+                agentIsRunningProvider.overrideWith(
+                  (ref, agentId) => Stream.value(false),
+                ),
+              ];
+
+              await tester.pumpWidget(
+                ProviderScope(
+                  overrides: overrides,
+                  child: makeTestableWidget2(
+                    Theme(
+                      data: DesignSystemTheme.dark(),
+                      child: const ProjectDetailsPage(projectId: _projectId),
+                    ),
+                  ),
+                ),
+              );
+              await tester.pump();
+              await tester.pump();
+
+              final content = tester.widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              );
+
+              // Open the date picker.
+              content.onTargetDateTap!();
+              await tester.pump(const Duration(milliseconds: 300));
+
+              expect(find.byType(DatePickerDialog), findsOneWidget);
+
+              // Tap "OK" to confirm the default date selection.
+              final okButton = find.text('OK');
+              await tester.ensureVisible(okButton);
+              await tester.tap(okButton);
+              await tester.pumpAndSettle();
+
+              // The clock is fixed at 2026-03-28T09:30. Since testProject has
+              // no targetDate, _pickTargetDate uses clock.now() as initialDate,
+              // which the date picker strips to date-only → DateTime(2026, 3,
+              // 28).
+              expect(trackingController.updatedTargetDates, hasLength(1));
+              expect(
+                trackingController.updatedTargetDates.first,
+                DateTime(2026, 3, 28),
+              );
+              expect(trackingController.saveChangesCallCount, 1);
+            },
           );
-          await tester.pump();
-          await tester.pump();
-
-          final content = tester.widget<ProjectMobileDetailContent>(
-            find.byType(ProjectMobileDetailContent),
-          );
-
-          // Open the date picker.
-          content.onTargetDateTap!();
-          await tester.pump(const Duration(milliseconds: 300));
-
-          expect(find.byType(DatePickerDialog), findsOneWidget);
-
-          // Tap "OK" to confirm the default date selection.
-          final okButton = find.text('OK');
-          await tester.ensureVisible(okButton);
-          await tester.tap(okButton);
-          await tester.pumpAndSettle();
-
-          // The controller should have received a non-null date and saved.
-          expect(trackingController.updatedTargetDates, hasLength(1));
-          expect(trackingController.updatedTargetDates.first, isNotNull);
-          expect(trackingController.saveChangesCallCount, 1);
         },
       );
     });

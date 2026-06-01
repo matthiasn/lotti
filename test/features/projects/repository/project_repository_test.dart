@@ -1619,6 +1619,15 @@ void main() {
         ..registerSingleton<UpdateNotifications>(mockNotifications)
         ..registerSingleton<VectorClockService>(mockVectorClockService);
 
+      addTearDown(
+        () => getIt
+          ..unregister<JournalDb>()
+          ..unregister<EntitiesCacheService>()
+          ..unregister<PersistenceLogic>()
+          ..unregister<UpdateNotifications>()
+          ..unregister<VectorClockService>(),
+      );
+
       final container = ProviderContainer();
       addTearDown(container.dispose);
 

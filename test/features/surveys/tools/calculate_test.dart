@@ -64,9 +64,7 @@ class _AnswerSpec {
     _AnswerKind.choiceList ||
     _AnswerKind.choiceListDecoy ||
     _AnswerKind.imageChoice => value,
-    _AnswerKind.emptyList ||
-    _AnswerKind.missing ||
-    _AnswerKind.wrongType => 0,
+    _AnswerKind.emptyList || _AnswerKind.missing || _AnswerKind.wrongType => 0,
   };
 
   @override
@@ -94,18 +92,17 @@ class _ScoreScenario {
       case _AnswerKind.missing:
         return null;
       case _AnswerKind.choiceList:
-        return step()..setResult(<RPChoice>[RPChoice(text: 'a', value: spec.value)]);
+        return step()
+          ..setResult(<RPChoice>[RPChoice(text: 'a', value: spec.value)]);
       case _AnswerKind.choiceListDecoy:
-        return step()
-          ..setResult(<RPChoice>[
-            RPChoice(text: 'a', value: spec.value),
-            RPChoice(text: 'decoy', value: spec.value + 7),
-          ]);
+        return step()..setResult(<RPChoice>[
+          RPChoice(text: 'a', value: spec.value),
+          RPChoice(text: 'decoy', value: spec.value + 7),
+        ]);
       case _AnswerKind.imageChoice:
-        return step()
-          ..setResult(
-            RPImageChoice(imageUrl: 'i', description: 'd', value: spec.value),
-          );
+        return step()..setResult(
+          RPImageChoice(imageUrl: 'i', description: 'd', value: spec.value),
+        );
       case _AnswerKind.emptyList:
         return step()..setResult(<RPChoice>[]);
       case _AnswerKind.wrongType:
@@ -136,8 +133,9 @@ class _ScoreScenario {
     'C': _groupIds(_GroupSlot.c),
   };
 
-  int _sumFor(_GroupSlot slot) =>
-      specs.where((s) => s.slot == slot).fold(0, (a, s) => a + s.effectiveValue);
+  int _sumFor(_GroupSlot slot) => specs
+      .where((s) => s.slot == slot)
+      .fold(0, (a, s) => a + s.effectiveValue);
 
   Map<String, int> get expectedScores => {
     'A': _sumFor(_GroupSlot.a),
@@ -326,12 +324,14 @@ void main() {
     setUp(() async {
       await getIt.reset();
       mockPersistence = MockPersistenceLogic();
-      mt.when(
-        () => mockPersistence.createSurveyEntry(
-          data: mt.any(named: 'data'),
-          linkedId: mt.any(named: 'linkedId'),
-        ),
-      ).thenAnswer((_) async => true);
+      mt
+          .when(
+            () => mockPersistence.createSurveyEntry(
+              data: mt.any(named: 'data'),
+              linkedId: mt.any(named: 'linkedId'),
+            ),
+          )
+          .thenAnswer((_) async => true);
       getIt.registerSingleton<PersistenceLogic>(mockPersistence);
     });
 
@@ -367,12 +367,17 @@ void main() {
 
       callback(taskResult);
 
-      final captured = mt.verify(
-        () => mockPersistence.createSurveyEntry(
-          data: mt.captureAny(named: 'data'),
-          linkedId: 'linked-123',
-        ),
-      ).captured.single as SurveyData;
+      final captured =
+          mt
+                  .verify(
+                    () => mockPersistence.createSurveyEntry(
+                      data: mt.captureAny(named: 'data'),
+                      linkedId: 'linked-123',
+                    ),
+                  )
+                  .captured
+                  .single
+              as SurveyData;
 
       expect(captured.scoreDefinitions, scoreDefinitions);
       expect(captured.calculatedScores, {'S': 5});
@@ -398,13 +403,15 @@ void main() {
       );
       callback(RPTaskResult(identifier: 't'));
 
-      mt.verify(
-        () => mockPersistence.createSurveyEntry(
-          data: mt.any(named: 'data'),
-          // ignore: avoid_redundant_argument_values
-          linkedId: null,
-        ),
-      ).called(1);
+      mt
+          .verify(
+            () => mockPersistence.createSurveyEntry(
+              data: mt.any(named: 'data'),
+              // ignore: avoid_redundant_argument_values
+              linkedId: null,
+            ),
+          )
+          .called(1);
     });
   });
 }

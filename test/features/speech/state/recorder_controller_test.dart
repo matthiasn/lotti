@@ -1768,6 +1768,7 @@ void main() {
             ),
           ).thenAnswer((_) async => true);
 
+          final promptCompleter = Completer<void>();
           final mockTrigger = MockAutomaticPromptTrigger();
           when(
             () => mockTrigger.triggerAutomaticPrompts(
@@ -1778,7 +1779,9 @@ void main() {
                 named: 'realtimeTranscriptProvided',
               ),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async {
+            promptCompleter.complete();
+          });
 
           final localContainer = ProviderContainer(
             overrides: [
@@ -1834,8 +1837,8 @@ void main() {
             AudioRecorderStatus.stopped,
           );
 
-          // Give unawaited call time to execute
-          await Future<void>.delayed(Duration.zero);
+          // Wait for the unawaited triggerAutomaticPrompts call to complete.
+          await promptCompleter.future;
 
           verify(
             () => mockTrigger.triggerAutomaticPrompts(

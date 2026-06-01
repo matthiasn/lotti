@@ -1470,9 +1470,13 @@ void main() {
           final state = container.read(
             chatSessionControllerProvider('test-category'),
           );
-          // Controller should complete gracefully with no crash and clear flags
+          // Controller should complete gracefully with no crash and clear flags.
+          // streamingMessageId must be cleared — this is the key regression
+          // guard: if _finalizeStreamingMessage fails to reset the ID, any
+          // subsequent send would incorrectly believe a stream is still active.
           expect(state.isStreaming, isFalse);
           expect(state.isLoading, isFalse);
+          expect(state.streamingMessageId, isNull);
           sub.close();
         },
       );

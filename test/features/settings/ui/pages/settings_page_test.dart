@@ -775,14 +775,18 @@ void main() {
           reason: 'Hovered Sync row should suppress a divider',
         );
 
-        // Move the pointer off-screen so that when the Sync row disappears
-        // no other row accidentally gets hovered and re-suppresses a divider.
-        await gesture.moveTo(const Offset(5000, 5000));
-        await tester.pumpAndSettle();
-
-        // Toggle Matrix OFF → Sync row is removed from the list.
-        // didUpdateWidget should clear _hoveredId.
+        // Keep the pointer HOVERED on the Sync row and trigger the flag change.
+        // didUpdateWidget clears _hoveredId when the Sync row disappears from
+        // the list. Moving the mouse away before the update would allow the
+        // onHoverChanged(false) callback to clear _hoveredId — making the test
+        // pass even if didUpdateWidget never ran.
         matrixFlagController.add(false);
+        // Pump one frame so the widget rebuilds (didUpdateWidget runs) while
+        // the pointer is still physically over the old Sync-row position.
+        await tester.pump();
+        // Now move the pointer away so any stray hover-enter on the widget that
+        // slid into the Sync row's old position is resolved before we assert.
+        await gesture.moveTo(const Offset(5000, 5000));
         await tester.pumpAndSettle();
 
         // Sync row is gone.

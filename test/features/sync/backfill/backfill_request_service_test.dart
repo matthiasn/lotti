@@ -20,6 +20,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/mocks.dart';
 
+/// Minimal base subclass of [IOOverrides] that lets the outer [IOOverrides]
+/// scope call the default (real) file factory without re-entering the zone and
+/// causing infinite recursion.
+base class _BaseIO extends IOOverrides {}
+
+/// A [File] wrapper whose [existsSync] always returns `true` and whose
+/// [deleteSync] always throws a [FileSystemException].  All other calls are
+/// forwarded to the real [File] delegate.  Used to exercise the catch branch
+/// inside `_sweepLocalFiles` without any chmod / external-process dependency.
+class _UndeletableFile implements File {
+  _UndeletableFile(this._real);
+  final File _real;
+
+  @override
+  String get path => _real.path;
+
+  @override
+  bool existsSync() => true;
+
+  @override
+  void deleteSync({bool recursive = false}) =>
+      throw FileSystemException('injected failure in test', path);
+
+  @override
+  dynamic noSuchMethod(Invocation i) => _real.noSuchMethod(i);
+}
+
 class _MockQueuePipelineCoordinator extends Mock
     implements QueuePipelineCoordinator {}
 
@@ -2615,21 +2642,22 @@ void main() {
           final tmp = Directory.systemTemp.createTempSync(
             'backfill_sweep_err',
           );
+          addTearDown(() => tmp.deleteSync(recursive: true));
 
-          // Create the zombie file and make its parent directory read-only
-          // so deleteSync() throws a PathAccessException — this exercises
-          // the catch branch on lines 484-485.
+          // Create the zombie file so it genuinely exists on disk.
+          // We use IOOverrides.runZoned below to intercept the specific file
+          // path and make deleteSync() throw, exercising the catch branch on
+          // lines 484-485 — no chmod or external process needed.
           final agentEntitiesDir = Directory('${tmp.path}/agent_entities')
             ..createSync();
-          File('${agentEntitiesDir.path}/entity-99.json')
+          final entityFilePath = '${agentEntitiesDir.path}/entity-99.json';
+          File(entityFilePath)
             ..createSync()
             ..writeAsStringSync('stale');
-          Process.runSync('chmod', ['555', agentEntitiesDir.path]);
 
-          addTearDown(() {
-            Process.runSync('chmod', ['755', agentEntitiesDir.path]);
-            tmp.deleteSync(recursive: true);
-          });
+          // Use a base IOOverrides instance to call the real file factory
+          // inside the zone without causing infinite recursion.
+          final baseIO = _BaseIO();
 
           final traceMessages = <String>[];
           when(
@@ -2684,7 +2712,16 @@ void main() {
             () => mockSequenceService.markAsRequested(any()),
           ).thenAnswer((_) async {});
 
-          await service.processReRequest();
+          // Run processReRequest inside an IOOverrides zone so that the
+          // specific entity file returns existsSync()==true but throws on
+          // deleteSync() — this is the portable way to exercise the catch
+          // branch without chmod or any external process.
+          await IOOverrides.runZoned(
+            service.processReRequest,
+            createFile: (path) => path == entityFilePath
+                ? _UndeletableFile(baseIO.createFile(path))
+                : baseIO.createFile(path),
+          );
 
           // The catch block on lines 484-485 must trace the failure and
           // then continue without crashing.
