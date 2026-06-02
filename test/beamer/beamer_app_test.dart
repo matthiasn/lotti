@@ -1550,6 +1550,7 @@ void main() {
           tester,
           navService: mockNavService,
           aiSetupPromptOverride: _ShowAiSetupPromptService.new,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
         );
 
         await tester.pump();
@@ -1590,6 +1591,7 @@ void main() {
           navService: mockNavService,
           aiSetupPromptOverride: () =>
               _DismissCountingAiSetupPromptService(() => dismissCount++),
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
         );
 
         await tester.pump();
@@ -1638,6 +1640,7 @@ void main() {
           tester,
           navService: mockNavService,
           aiSetupPromptOverride: _ShowAiSetupPromptService.new,
+          whatsNewOverride: _StableUnseenWhatsNewController.new,
           extraOverrides: [
             ai_repo.aiConfigRepositoryProvider.overrideWithValue(
               mockAiConfigRepo,
@@ -2135,4 +2138,18 @@ class _UnseenToSeenWhatsNewController extends WhatsNewController {
     }
     return const WhatsNewState();
   }
+}
+
+/// A [WhatsNewController] that stably reports an unseen release and never
+/// transitions to seen. The AppScreen listener invalidates
+/// `aiSetupPromptServiceProvider` only on a `prevHasUnseen && !nextHasUnseen`
+/// (unseen -> seen) transition; by never producing one, this keeps the
+/// AI-setup modal opening exactly once. Pinning it makes the AI-modal tests
+/// independent of whatsNew state leaked from earlier files in a bundled
+/// `very_good test` run, where extra unseen->seen transitions would otherwise
+/// re-invalidate the provider and stack duplicate modals.
+class _StableUnseenWhatsNewController extends WhatsNewController {
+  @override
+  Future<WhatsNewState> build() async =>
+      WhatsNewState(unseenContent: [_unseenWhatsNewContent]);
 }

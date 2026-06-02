@@ -1,79 +1,16 @@
-// The clipboard-copy test drives `super_clipboard`'s native write path, which
-// routes through the irondash message channel. We register mock handlers on a
-// `MockMessageChannelContext` so the write succeeds and can be observed. These
-// two packages are transitive (via `super_clipboard`), hence the lint ignore.
-// ignore_for_file: depend_on_referenced_packages
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:irondash_message_channel/irondash_message_channel.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:super_native_extensions/src/native/context.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_helper.dart';
-
-/// Installs mock handlers on the irondash channels that `super_clipboard` uses
-/// when writing to the system clipboard, and captures what was written.
-///
-/// `SystemClipboard.instance` is non-null in the Linux test runner, so the
-/// modal's double-tap handler reaches `clipboard.write(...)`. Without these
-/// handlers the unawaited write throws `NoSuchChannelException` and fails the
-/// test, so we provide them and record the serialized payload.
-class _ClipboardTestChannel {
-  _ClipboardTestChannel() {
-    _context
-      ..registerMockMethodCallHandler('DataProviderManager', (call) {
-        if (call.method == 'registerDataProvider') {
-          // The serialized provider carries the representations we care about,
-          // e.g. {representations: ({type: simple, format: text/plain,
-          // data: <text>}), suggestedName: null}.
-          final args = call.arguments as Map<Object?, Object?>?;
-          final representations = (args?['representations'] as Iterable?)
-              ?.cast<Map<Object?, Object?>>();
-          for (final representation
-              in representations ?? const <Map<Object?, Object?>>[]) {
-            final data = representation['data'];
-            if (representation['format'] == 'text/plain' && data is String) {
-              writtenPlainText.add(data);
-            }
-          }
-          return _nextProviderId++;
-        }
-        return null;
-      })
-      ..registerMockMethodCallHandler('ClipboardWriter', (call) {
-        if (call.method == 'writeToClipboard') {
-          writtenProviderIds.add(
-            (call.arguments as Iterable).cast<int>().toList(),
-          );
-        }
-        return null;
-      });
-    setContextOverride(_context);
-  }
-
-  final MockMessageChannelContext _context = MockMessageChannelContext();
-
-  /// Plain-text payloads handed to `registerDataProvider`, in write order.
-  final List<String> writtenPlainText = [];
-
-  /// Provider id lists handed to `writeToClipboard`, one entry per write call.
-  final List<List<int>> writtenProviderIds = [];
-
-  int _nextProviderId = 1;
-
-  /// Restores a clean, handler-less context so other test files behave exactly
-  /// like the default test environment (writes throw `NoSuchChannelException`).
-  void dispose() {
-    setContextOverride(MockMessageChannelContext());
-  }
-}
+import '../../../test_utils/clipboard_test_context.dart';
 
 void main() {
   const testId = 'test-ai-response-id';
@@ -105,9 +42,6 @@ void main() {
     testWidgets(
       'double-tapping the Input tab copies the prompt to the clipboard',
       (tester) async {
-        final channel = _ClipboardTestChannel();
-        addTearDown(channel.dispose);
-
         await tester.pumpWidget(
           WidgetTestBench(
             child: AiResponseSummaryModalContent(
@@ -132,21 +66,22 @@ void main() {
           ),
         );
 
-        // Invoke the production double-tap handler directly; the gesture target
-        // is wrapped in a SelectionArea, so simulating a raw double tap is
-        // unreliable.
+        // Reset the shared clipboard recorder so we observe only this test's
+        // write, then invoke the production double-tap handler directly; the
+        // gesture target is wrapped in a SelectionArea, so simulating a raw
+        // double tap is unreliable.
+        resetClipboardTestRecorder();
         gestureDetector.onDoubleTap!();
         // Let the unawaited clipboard write complete through the mock channel.
         await tester.pump(const Duration(milliseconds: 10));
 
         // The handler must have written the prompt (and only the prompt) as
-        // plain text, then committed it to the clipboard.
-        expect(
-          channel.writtenPlainText,
-          [testAiResponse.data.prompt],
-        );
-        expect(channel.writtenProviderIds, hasLength(1));
-        expect(channel.writtenProviderIds.single, [1]);
+        // plain text, then committed it to the clipboard as a single item. The
+        // provider id is an opaque, process-monotonic handle (shared across the
+        // run), so assert that exactly one item was written, not its value.
+        expect(clipboardWrittenPlainText, [testAiResponse.data.prompt]);
+        expect(clipboardWrittenProviderIds, hasLength(1));
+        expect(clipboardWrittenProviderIds.single, hasLength(1));
       },
     );
 

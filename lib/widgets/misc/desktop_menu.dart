@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -25,7 +25,14 @@ class DesktopMenuWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!Platform.isMacOS) {
+    // Gate on the *target* platform rather than the host OS (`Platform.isMacOS`).
+    // `PlatformProvidedMenuItem` is only valid when `defaultTargetPlatform` is
+    // macOS; in widget tests that value defaults to `TargetPlatform.android`,
+    // so a host check would build the macOS menu on a Mac dev box and throw
+    // "Platform android has no platform provided menu". In a real macOS build
+    // `defaultTargetPlatform` is `TargetPlatform.macOS`, so behavior there is
+    // unchanged.
+    if (defaultTargetPlatform != TargetPlatform.macOS) {
       return child;
     }
 

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/foundation.dart';
@@ -382,89 +381,96 @@ void main() {
     testWidgets(
       'passes zoom controller to DesktopMenuWrapper and ZoomWrapper',
       (tester) async {
-        if (Platform.isMacOS) {
-          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-        }
+        // Unconditionally drive the macOS PlatformMenuBar path so it is
+        // exercised on every host (including Linux/Windows CI), now that
+        // DesktopMenuWrapper gates on `defaultTargetPlatform` rather than the
+        // host OS. Reset in a `finally` (not `tearDown`): Flutter's
+        // `debugAssertAllFoundationVarsUnset` invariant runs at the end of the
+        // test body *before* tearDowns, so the override has to be cleared
+        // within the body — and the `finally` also clears it if an expectation
+        // throws, so a failure can't leak the override into later files in a
+        // bundled `very_good test` run.
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
 
-        final mockMatrix = MockMatrixService();
-        when(
-          mockMatrix.getIncomingKeyVerificationStream,
-        ).thenAnswer((_) => const Stream<KeyVerification>.empty());
-        when(
-          () => mockMatrix.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+        try {
+          final mockMatrix = MockMatrixService();
+          when(
+            mockMatrix.getIncomingKeyVerificationStream,
+          ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+          when(
+            () => mockMatrix.incomingKeyVerificationRunnerStream,
+          ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
 
-        final mockOutboxService = MockOutboxService();
-        when(
-          () => mockOutboxService.notLoggedInGateStream,
-        ).thenAnswer((_) => const Stream<void>.empty());
+          final mockOutboxService = MockOutboxService();
+          when(
+            () => mockOutboxService.notLoggedInGateStream,
+          ).thenAnswer((_) => const Stream<void>.empty());
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              themingControllerProvider.overrideWith(
-                _ReadyThemingController.new,
-              ),
-              enableTooltipsProvider.overrideWith(
-                (ref) => Stream.value(true),
-              ),
-              zoomControllerProvider.overrideWith(
-                _TestZoomController.new,
-              ),
-              agentInitializationProvider.overrideWith((ref) async {}),
-              matrixServiceProvider.overrideWithValue(mockMatrix),
-              loginStateStreamProvider.overrideWith(
-                (ref) => Stream.value(LoginState.loggedIn),
-              ),
-              outboxServiceProvider.overrideWithValue(mockOutboxService),
-              aiSetupPromptServiceProvider.overrideWith(
-                _MockAiSetupPromptService.new,
-              ),
-              audioRecorderControllerProvider.overrideWith(
-                () => _TestAudioRecorderController(
-                  AudioRecorderState(
-                    status: AudioRecorderStatus.stopped,
-                    progress: Duration.zero,
-                    vu: -20,
-                    dBFS: -160,
-                    showIndicator: false,
-                    modalVisible: false,
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                themingControllerProvider.overrideWith(
+                  _ReadyThemingController.new,
+                ),
+                enableTooltipsProvider.overrideWith(
+                  (ref) => Stream.value(true),
+                ),
+                zoomControllerProvider.overrideWith(
+                  _TestZoomController.new,
+                ),
+                agentInitializationProvider.overrideWith((ref) async {}),
+                matrixServiceProvider.overrideWithValue(mockMatrix),
+                loginStateStreamProvider.overrideWith(
+                  (ref) => Stream.value(LoginState.loggedIn),
+                ),
+                outboxServiceProvider.overrideWithValue(mockOutboxService),
+                aiSetupPromptServiceProvider.overrideWith(
+                  _MockAiSetupPromptService.new,
+                ),
+                audioRecorderControllerProvider.overrideWith(
+                  () => _TestAudioRecorderController(
+                    AudioRecorderState(
+                      status: AudioRecorderStatus.stopped,
+                      progress: Duration.zero,
+                      vu: -20,
+                      dBFS: -160,
+                      showIndicator: false,
+                      modalVisible: false,
+                    ),
                   ),
                 ),
-              ),
-              shouldAutoShowWhatsNewProvider.overrideWith(
-                (ref) async => false,
-              ),
-            ],
-            child: MyBeamerApp(navService: mockNavService),
-          ),
-        );
-        await tester.pump();
-        await tester.pump();
+                shouldAutoShowWhatsNewProvider.overrideWith(
+                  (ref) async => false,
+                ),
+              ],
+              child: MyBeamerApp(navService: mockNavService),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
 
-        // Verify zoom widgets are in the tree
-        expect(find.byType(DesktopMenuWrapper), findsOneWidget);
-        expect(find.byType(ZoomWrapper), findsOneWidget);
+          // Verify zoom widgets are in the tree
+          expect(find.byType(DesktopMenuWrapper), findsOneWidget);
+          expect(find.byType(ZoomWrapper), findsOneWidget);
 
-        // Verify zoom callbacks are wired (non-null)
-        final wrapper = tester.widget<DesktopMenuWrapper>(
-          find.byType(DesktopMenuWrapper),
-        );
-        expect(wrapper.onZoomIn, isNotNull);
-        expect(wrapper.onZoomOut, isNotNull);
-        expect(wrapper.onZoomReset, isNotNull);
+          // Verify zoom callbacks are wired (non-null)
+          final wrapper = tester.widget<DesktopMenuWrapper>(
+            find.byType(DesktopMenuWrapper),
+          );
+          expect(wrapper.onZoomIn, isNotNull);
+          expect(wrapper.onZoomOut, isNotNull);
+          expect(wrapper.onZoomReset, isNotNull);
 
-        // Verify ZoomWrapper receives the scale from the controller
-        final zoomWrapper = tester.widget<ZoomWrapper>(
-          find.byType(ZoomWrapper),
-        );
-        expect(zoomWrapper.scale, defaultZoomScale);
+          // Verify ZoomWrapper receives the scale from the controller
+          final zoomWrapper = tester.widget<ZoomWrapper>(
+            find.byType(ZoomWrapper),
+          );
+          expect(zoomWrapper.scale, defaultZoomScale);
 
-        // Clean up — drain pending timers from provider initialization
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pumpAndSettle();
-
-        if (Platform.isMacOS) {
+          // Clean up — drain pending timers from provider initialization
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
+        } finally {
           debugDefaultTargetPlatformOverride = null;
         }
       },
