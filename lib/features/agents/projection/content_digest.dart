@@ -74,13 +74,15 @@ class ContentDigest {
         // `{'1': 'x'}`). Sort by key so insertion order is irrelevant.
         final entries = <MapEntry<String, Object?>>[];
         for (final entry in map.entries) {
-          if (entry.key is! String) {
+          final key = entry.key;
+          if (key is! String) {
             throw ArgumentError(
               'ContentDigest only supports maps with String keys, got '
-              '${entry.key.runtimeType}',
+              '${key.runtimeType}',
             );
           }
-          entries.add(MapEntry(entry.key! as String, entry.value));
+          // `key` is promoted to String here, so no cast/`!` is needed.
+          entries.add(MapEntry(key, entry.value));
         }
         entries.sort((a, b) => a.key.compareTo(b.key));
         out.write('{');

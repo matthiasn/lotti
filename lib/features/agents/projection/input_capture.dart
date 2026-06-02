@@ -262,10 +262,18 @@ Object? _freezeJson(Object? value) {
     case final List<Object?> list:
       return List<Object?>.unmodifiable(list.map(_freezeJson));
     case final Map<Object?, Object?> map:
-      return Map<String, Object?>.unmodifiable({
-        for (final entry in map.entries)
-          entry.key! as String: _freezeJson(entry.value),
-      });
+      final frozen = <String, Object?>{};
+      for (final entry in map.entries) {
+        final key = entry.key;
+        if (key is! String) {
+          throw ArgumentError(
+            'Only JSON-able content can be captured, got a non-String map key',
+          );
+        }
+        // `key` is promoted to String here, so no cast/`!` is needed.
+        frozen[key] = _freezeJson(entry.value);
+      }
+      return Map<String, Object?>.unmodifiable(frozen);
     default:
       throw ArgumentError(
         'Only JSON-able content can be captured, got ${value.runtimeType}',

@@ -52,18 +52,24 @@ class AgentLogCompactor {
       agentId,
       AgentMessageKind.summary,
     );
+    final live = [
+      for (final m in messages)
+        if (m.deletedAt == null && m.contentEntryId != null) m,
+    ];
+    // Load every checkpoint payload concurrently (avoids an N+1 per summary).
+    final payloads = await Future.wait(
+      live.map((m) => _repository.getEntity(m.contentEntryId!)),
+    );
+
     final checkpoints = <SummaryCheckpoint>[];
-    for (final message in messages) {
-      if (message.deletedAt != null) continue;
-      final payloadId = message.contentEntryId;
-      if (payloadId == null) continue;
-      final payload = await _repository.getEntity(payloadId);
+    for (var i = 0; i < live.length; i++) {
+      final payload = payloads[i];
       if (payload is! AgentMessagePayloadEntity) continue;
       final coveredRaw = payload.content['coveredSources'];
       checkpoints.add(
         SummaryCheckpoint(
-          id: message.id,
-          contentDigest: payloadId,
+          id: live[i].id,
+          contentDigest: live[i].contentEntryId!,
           coveredSources: <String, String>{
             if (coveredRaw is Map)
               for (final entry in coveredRaw.entries)
@@ -74,6 +80,31 @@ class AgentLogCompactor {
       );
     }
     return checkpoints;
+  }
+
+  /// Loads the payloads for [entryIds] from [frontier] **concurrently**,
+  /// preserving the given order and dropping any whose payload is missing.
+  Future<List<({CaptureReference ref, AgentMessagePayloadEntity payload})>>
+  _loadFrontierSources(
+    Map<String, CaptureReference> frontier,
+    List<String> entryIds,
+  ) async {
+    final refs = [
+      for (final entryId in entryIds)
+        if (frontier[entryId] != null) frontier[entryId]!,
+    ];
+    final payloads = await Future.wait(
+      refs.map((ref) => _repository.getEntity(ref.contentDigest)),
+    );
+    final result =
+        <({CaptureReference ref, AgentMessagePayloadEntity payload})>[];
+    for (var i = 0; i < refs.length; i++) {
+      final payload = payloads[i];
+      if (payload is AgentMessagePayloadEntity) {
+        result.add((ref: refs[i], payload: payload));
+      }
+    }
+    return result;
   }
 
   /// Assembles the read-side compacted task log for [agentId] (ADR 0017
@@ -97,25 +128,22 @@ class AgentLogCompactor {
       summaries: await loadSummaries(agentId),
     );
 
-    final tail = <RenderedSource>[];
-    for (final entryId in active.uncoveredEntryIds) {
-      final ref = frontier[entryId];
-      if (ref == null) continue;
-      final payload = await _repository.getEntity(ref.contentDigest);
-      if (payload is! AgentMessagePayloadEntity) continue;
-      tail.add(
-        RenderedSource(
-          contentEntryId: entryId,
-          sourceCreatedAt: ref.sourceCreatedAt,
-          content: payload.content,
-        ),
-      );
-    }
-    tail.sort((a, b) {
-      final byTime = a.sourceCreatedAt.compareTo(b.sourceCreatedAt);
-      if (byTime != 0) return byTime;
-      return a.contentEntryId.compareTo(b.contentEntryId);
-    });
+    final tail =
+        [
+          for (final loaded in await _loadFrontierSources(
+            frontier,
+            active.uncoveredEntryIds,
+          ))
+            RenderedSource(
+              contentEntryId: loaded.ref.contentEntryId,
+              sourceCreatedAt: loaded.ref.sourceCreatedAt,
+              content: loaded.payload.content,
+            ),
+        ]..sort((a, b) {
+          final byTime = a.sourceCreatedAt.compareTo(b.sourceCreatedAt);
+          if (byTime != 0) return byTime;
+          return a.contentEntryId.compareTo(b.contentEntryId);
+        });
 
     return assembleCompactedTaskLog(
       summaryText: active.checkpoint?.summaryText,
@@ -153,32 +181,31 @@ class AgentLogCompactor {
     );
 
     // The uncovered tail (sources not yet folded), with token costs, in
-    // chronological assembly order.
-    final uncovered = <_Uncovered>[];
-    for (final entryId in active.uncoveredEntryIds) {
-      final ref = frontier[entryId];
-      if (ref == null) continue;
-      final payload = await _repository.getEntity(ref.contentDigest);
-      if (payload is! AgentMessagePayloadEntity) continue;
-      uncovered.add(
-        _Uncovered(
-          source: RenderedSource(
-            contentEntryId: entryId,
-            sourceCreatedAt: ref.sourceCreatedAt,
-            content: payload.content,
-          ),
-          digest: ref.contentDigest,
-          tokens: TextChunker.estimateTokens(jsonEncode(payload.content)),
-        ),
-      );
-    }
-    uncovered.sort((a, b) {
-      final byTime = a.source.sourceCreatedAt.compareTo(
-        b.source.sourceCreatedAt,
-      );
-      if (byTime != 0) return byTime;
-      return a.source.contentEntryId.compareTo(b.source.contentEntryId);
-    });
+    // chronological assembly order. Payloads load concurrently.
+    final uncovered =
+        [
+          for (final loaded in await _loadFrontierSources(
+            frontier,
+            active.uncoveredEntryIds,
+          ))
+            _Uncovered(
+              source: RenderedSource(
+                contentEntryId: loaded.ref.contentEntryId,
+                sourceCreatedAt: loaded.ref.sourceCreatedAt,
+                content: loaded.payload.content,
+              ),
+              digest: loaded.ref.contentDigest,
+              tokens: TextChunker.estimateTokens(
+                jsonEncode(loaded.payload.content),
+              ),
+            ),
+        ]..sort((a, b) {
+          final byTime = a.source.sourceCreatedAt.compareTo(
+            b.source.sourceCreatedAt,
+          );
+          if (byTime != 0) return byTime;
+          return a.source.contentEntryId.compareTo(b.source.contentEntryId);
+        });
 
     final plan = planCompaction(
       tail: [
