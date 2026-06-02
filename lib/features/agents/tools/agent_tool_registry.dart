@@ -114,11 +114,12 @@ class AgentToolRegistry {
       name: TaskAgentToolNames.setTaskTitle,
       description:
           'Set the title of the task. When the task has no title yet the '
-          'title is applied immediately without user confirmation so the '
-          'task starts life with a meaningful name. When an existing '
-          'title is present the change goes through the standard user '
-          'confirmation flow; only call it then if the user has '
-          'explicitly asked to rename.',
+          'title is applied immediately without user confirmation when '
+          'category policy permits it, so the task starts life with a '
+          'meaningful name. If policy blocks that immediate write, or when '
+          'an existing title is present, the change goes through the '
+          'standard user confirmation flow; only call it then if the user '
+          'has explicitly asked to rename.',
       parameters: {
         'type': 'object',
         'properties': {

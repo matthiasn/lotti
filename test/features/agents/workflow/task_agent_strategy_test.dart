@@ -2655,6 +2655,99 @@ void main() {
       );
 
       test(
+        'set_task_title falls back to a proposal when initial auto-apply is '
+        'policy denied',
+        () async {
+          const emptyTitleSnapshot =
+              (
+                    title: null,
+                    status: 'IN PROGRESS',
+                    priority: 'P1',
+                    estimateMinutes: 120,
+                    dueDate: '2026-03-15',
+                    languageCode: 'en',
+                  )
+                  as TaskMetadataSnapshot;
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => emptyTitleSnapshot,
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Policy denied: Category cat-999 not in allowed set',
+              policyDenied: true,
+              denialReason: 'Category cat-999 not in allowed set',
+            ),
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-policy-denied-title',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'PR Review for Ibad'}),
+              ),
+            ),
+            ChatCompletionMessageToolCall(
+              id: 'call-repeat-title',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'PR Review for Ibad'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isTrue);
+          expect(builder.items, hasLength(1));
+          expect(
+            builder.items.single.toolName,
+            TaskAgentToolNames.setTaskTitle,
+          );
+          expect(
+            builder.items.single.humanSummary,
+            'Set title to "PR Review for Ibad"',
+          );
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-policy-denied-title',
+              response: any(
+                named: 'response',
+                that: contains('set_task_title proposal recorded'),
+              ),
+            ),
+          ).called(1);
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-repeat-title',
+              response: any(
+                named: 'response',
+                that: contains('already called this session'),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'set_task_title stays deferred when an existing title is present',
         () async {
           final (:strategy, :builder) = _createStrategyWithMetadata(
