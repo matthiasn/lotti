@@ -121,6 +121,31 @@ void main() {
       },
     );
 
+    test('freezes nested JSON (lists + maps) deeply and immutably', () {
+      final result = captureSources([
+        RenderedSource(
+          contentEntryId: 'e1',
+          sourceCreatedAt: DateTime.utc(2024, 3, 10),
+          content: const {
+            'items': [1, 'a', true],
+            'nested': {'k': 'v'},
+          },
+        ),
+      ]);
+      final content = result.payloads.single.content;
+      expect(content['items'], [1, 'a', true]);
+      expect((content['nested']! as Map)['k'], 'v');
+      // The whole tree is unmodifiable, not just the top map.
+      expect(
+        () => (content['items']! as List).add(2),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => (content['nested']! as Map)['x'] = 'y',
+        throwsUnsupportedError,
+      );
+    });
+
     test(
       'shares one payload across identical content from distinct entries',
       () {

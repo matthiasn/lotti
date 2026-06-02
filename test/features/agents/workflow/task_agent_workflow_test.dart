@@ -5829,6 +5829,137 @@ void main() {
         expect(userText, isNot(contains('stale captured content')));
         expect(userText, isNot(contains('## Task Log')));
       });
+
+      test('a failing summarizer is non-fatal: the wake still read-flips to the '
+          'uncovered tail', () async {
+        // budget 0 + two captured sources ⇒ compaction tries to fold the oldest
+        // and calls the summarizer, which throws. Emission must be swallowed and
+        // the wake must still assemble the captured (un-summarized) tail.
+        const olderContent = {'entryType': 'text', 'text': 'older entry'};
+        const newerContent = {'entryType': 'text', 'text': 'newer entry'};
+        final olderDigest = ContentDigest.of(olderContent);
+        final newerDigest = ContentDigest.of(newerContent);
+
+        when(
+          () => mockSyncService.repository,
+        ).thenReturn(mockAgentRepository);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.system,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.summary,
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => mockAgentRepository.getLinksFrom(agentId)).thenAnswer(
+          (_) async => [
+            AgentLink.messagePayload(
+              id: 'pl-1',
+              fromId: agentId,
+              toId: olderDigest,
+              createdAt: DateTime(2024, 6, 2),
+              updatedAt: DateTime(2024, 6, 2),
+              vectorClock: null,
+              contentEntryId: 'e1',
+              sourceCreatedAt: DateTime(2024, 6),
+            ),
+            AgentLink.messagePayload(
+              id: 'pl-2',
+              fromId: agentId,
+              toId: newerDigest,
+              createdAt: DateTime(2024, 6, 2),
+              updatedAt: DateTime(2024, 6, 2),
+              vectorClock: null,
+              contentEntryId: 'e2',
+              sourceCreatedAt: DateTime(2024, 6, 2),
+            ),
+          ],
+        );
+        when(() => mockAgentRepository.getEntity(olderDigest)).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: olderDigest,
+            agentId: 'shared-input-content',
+            createdAt: DateTime(2024, 6, 2),
+            vectorClock: null,
+            content: olderContent,
+          ),
+        );
+        when(() => mockAgentRepository.getEntity(newerDigest)).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: newerDigest,
+            agentId: 'shared-input-content',
+            createdAt: DateTime(2024, 6, 2),
+            vectorClock: null,
+            content: newerContent,
+          ),
+        );
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(
+            id: taskId,
+            includeLogEntries: false,
+          ),
+        ).thenAnswer((_) async => '{"title":"Slim header"}');
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+
+        final workflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          inputCaptureService: _RecordingCaptureService(),
+          compactionEnabled: true,
+          compactionTailBudgetTokens: 0,
+          summarizer: ({required sources, priorSummary}) async =>
+              throw StateError('summarizer boom'),
+        );
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+
+        // The wake completes despite the summarizer throwing, and no summary was
+        // persisted — so the assembled tail still carries both sources verbatim.
+        expect(result.success, isTrue);
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(
+          captured.whereType<AgentMessageEntity>().where(
+            (m) => m.kind == AgentMessageKind.summary,
+          ),
+          isEmpty,
+        );
+        final userText = capturedPayloadEntities(captured)
+            .map((p) => p.content['text'] as String? ?? '')
+            .firstWhere((t) => t.contains('Current Task Context'));
+        expect(userText, contains('older entry'));
+        expect(userText, contains('newer entry'));
+        expect(userText, isNot(contains('Summary of earlier activity')));
+      });
     });
   });
 }

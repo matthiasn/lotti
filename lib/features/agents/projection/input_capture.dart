@@ -266,17 +266,26 @@ Object? _freezeJson(Object? value) {
       for (final entry in map.entries) {
         final key = entry.key;
         if (key is! String) {
+          // Unreachable via capture: `ContentDigest.of` already validated the
+          // same content (and rejects non-String keys) before this runs. Kept
+          // because the promotion `frozen[key]` below needs a String key.
+          // coverage:ignore-start
           throw ArgumentError(
             'Only JSON-able content can be captured, got a non-String map key',
           );
+          // coverage:ignore-end
         }
         // `key` is promoted to String here, so no cast/`!` is needed.
         frozen[key] = _freezeJson(entry.value);
       }
       return Map<String, Object?>.unmodifiable(frozen);
     default:
+      // Unreachable via capture: `ContentDigest.of` already rejected non-JSON
+      // content; kept for switch exhaustiveness.
+      // coverage:ignore-start
       throw ArgumentError(
         'Only JSON-able content can be captured, got ${value.runtimeType}',
       );
+    // coverage:ignore-end
   }
 }

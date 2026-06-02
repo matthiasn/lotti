@@ -113,6 +113,23 @@ void main() {
     },
   );
 
+  test(
+    'assembleContext orders the uncovered tail by time then entry id',
+    () async {
+      // e2 and e3 share a timestamp, so the chronological tiebreak orders them by
+      // entry id; no compaction keeps all three as the verbatim tail.
+      await captureAll([
+        src('e1', 'alpha', day: 1),
+        src('e3', 'charlie', day: 3),
+        src('e2', 'bravo', day: 3),
+      ], 10);
+
+      final context = await compactor.assembleContext(_agentId);
+      expect(context.indexOf('alpha'), lessThan(context.indexOf('bravo')));
+      expect(context.indexOf('bravo'), lessThan(context.indexOf('charlie')));
+    },
+  );
+
   test('does not compact when the tail fits the budget', () async {
     await captureAll([src('e1', 'a', day: 1), src('e2', 'b', day: 2)], 10);
     expect(await compact(budget: 100000), isNull);

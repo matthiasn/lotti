@@ -224,6 +224,7 @@ TaskAgentWorkflow createTestWorkflow({
   AgentInputCaptureService? inputCaptureService,
   AgentSummarizer? summarizer,
   bool compactionEnabled = false,
+  int compactionTailBudgetTokens = 6000,
 }) {
   return TaskAgentWorkflow(
     agentRepository: agentRepository,
@@ -241,6 +242,7 @@ TaskAgentWorkflow createTestWorkflow({
     inputCaptureService: inputCaptureService,
     summarizer: summarizer,
     compactionEnabled: compactionEnabled,
+    compactionTailBudgetTokens: compactionTailBudgetTokens,
   );
 }
 

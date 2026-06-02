@@ -128,22 +128,17 @@ class AgentLogCompactor {
       summaries: await loadSummaries(agentId),
     );
 
-    final tail =
-        [
-          for (final loaded in await _loadFrontierSources(
-            frontier,
-            active.uncoveredEntryIds,
-          ))
-            RenderedSource(
-              contentEntryId: loaded.ref.contentEntryId,
-              sourceCreatedAt: loaded.ref.sourceCreatedAt,
-              content: loaded.payload.content,
-            ),
-        ]..sort((a, b) {
-          final byTime = a.sourceCreatedAt.compareTo(b.sourceCreatedAt);
-          if (byTime != 0) return byTime;
-          return a.contentEntryId.compareTo(b.contentEntryId);
-        });
+    final tail = [
+      for (final loaded in await _loadFrontierSources(
+        frontier,
+        active.uncoveredEntryIds,
+      ))
+        RenderedSource(
+          contentEntryId: loaded.ref.contentEntryId,
+          sourceCreatedAt: loaded.ref.sourceCreatedAt,
+          content: loaded.payload.content,
+        ),
+    ]..sort(_byChrono);
 
     return assembleCompactedTaskLog(
       summaryText: active.checkpoint?.summaryText,
@@ -182,30 +177,23 @@ class AgentLogCompactor {
 
     // The uncovered tail (sources not yet folded), with token costs, in
     // chronological assembly order. Payloads load concurrently.
-    final uncovered =
-        [
-          for (final loaded in await _loadFrontierSources(
-            frontier,
-            active.uncoveredEntryIds,
-          ))
-            _Uncovered(
-              source: RenderedSource(
-                contentEntryId: loaded.ref.contentEntryId,
-                sourceCreatedAt: loaded.ref.sourceCreatedAt,
-                content: loaded.payload.content,
-              ),
-              digest: loaded.ref.contentDigest,
-              tokens: TextChunker.estimateTokens(
-                jsonEncode(loaded.payload.content),
-              ),
-            ),
-        ]..sort((a, b) {
-          final byTime = a.source.sourceCreatedAt.compareTo(
-            b.source.sourceCreatedAt,
-          );
-          if (byTime != 0) return byTime;
-          return a.source.contentEntryId.compareTo(b.source.contentEntryId);
-        });
+    final uncovered = [
+      for (final loaded in await _loadFrontierSources(
+        frontier,
+        active.uncoveredEntryIds,
+      ))
+        _Uncovered(
+          source: RenderedSource(
+            contentEntryId: loaded.ref.contentEntryId,
+            sourceCreatedAt: loaded.ref.sourceCreatedAt,
+            content: loaded.payload.content,
+          ),
+          digest: loaded.ref.contentDigest,
+          tokens: TextChunker.estimateTokens(
+            jsonEncode(loaded.payload.content),
+          ),
+        ),
+    ]..sort((a, b) => _byChrono(a.source, b.source));
 
     final plan = planCompaction(
       tail: [
@@ -270,6 +258,15 @@ class AgentLogCompactor {
     });
     return summaryId;
   }
+}
+
+/// Chronological assembly order for captured sources (ADR 0020 rule 4): by
+/// [RenderedSource.sourceCreatedAt], then [RenderedSource.contentEntryId] as a
+/// stable, log-derived tiebreak.
+int _byChrono(RenderedSource a, RenderedSource b) {
+  final byTime = a.sourceCreatedAt.compareTo(b.sourceCreatedAt);
+  if (byTime != 0) return byTime;
+  return a.contentEntryId.compareTo(b.contentEntryId);
 }
 
 class _Uncovered {

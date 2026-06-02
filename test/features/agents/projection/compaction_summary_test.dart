@@ -208,6 +208,41 @@ void main() {
       expect(text, contains('spoken words'));
     });
 
+    test('renders the per-entry duration when it carries information', () {
+      final text = assembleCompactedTaskLog(
+        tail: [
+          RenderedSource(
+            contentEntryId: 'e1',
+            sourceCreatedAt: DateTime.utc(2024, 3, 11),
+            content: const {
+              'entryType': 'audio',
+              'loggedDuration': '00:30',
+              'text': 'spoke for a while',
+            },
+          ),
+        ],
+      );
+      expect(text, contains('· 00:30'));
+      expect(text, contains('spoke for a while'));
+    });
+
+    test('omits a zero per-entry duration', () {
+      final text = assembleCompactedTaskLog(
+        tail: [
+          RenderedSource(
+            contentEntryId: 'e1',
+            sourceCreatedAt: DateTime.utc(2024, 3, 11),
+            content: const {
+              'entryType': 'text',
+              'loggedDuration': '00:00',
+              'text': 'no time logged',
+            },
+          ),
+        ],
+      );
+      expect(text, isNot(contains('·')));
+    });
+
     test('renders tail entries in the given (canonical) order', () {
       final text = assembleCompactedTaskLog(
         tail: [_src('e1', 'first'), _src('e2', 'second', day: 11)],
