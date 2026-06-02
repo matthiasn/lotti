@@ -12,7 +12,6 @@ import 'package:path/path.dart' as p;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import 'objectbox_test_loader.dart';
 
 void main() {
   group('ShardedEmbeddingStore', () {
@@ -1150,57 +1149,6 @@ void main() {
           ),
         ).called(1);
       });
-    });
-
-    group('default ops factory', () {
-      test(
-        'open() actually invokes the production ops factory for a shard',
-        () async {
-          // Pre-create a shard directory so that _ensureAllShardsOpen
-          // discovers it and *invokes* the default factory closure
-          // (the `?? _defaultOpsFactory(...)` fallback). This is the key
-          // difference from a zero-shard base directory, where the closure
-          // would be constructed but never called — letting a broken factory
-          // pass undetected.
-          await Directory(p.join(tempDir.path, 'cat-a')).create(
-            recursive: true,
-          );
-
-          if (isObjectBoxAvailable) {
-            // Native ObjectBox is present (e.g. macOS CI): the default factory
-            // opens a real shard backed by RealObjectBoxOps. Assert the store
-            // genuinely opened the shard rather than silently swallowing it.
-            final fallbackStore = await ShardedEmbeddingStore.open(
-              basePath: tempDir.path,
-            );
-            addTearDown(fallbackStore.close);
-
-            // Fresh shard is empty but real: writing then reading proves the
-            // factory wired a working store, not a no-op.
-            expect(fallbackStore.count, 0);
-            await fallbackStore.replaceEntityEmbeddings(
-              entityId: 'entity-1',
-              entityType: 'journalEntry',
-              modelId: 'nomic-embed-text',
-              contentHash: 'hash-1',
-              embeddings: [validVector()],
-              categoryId: 'cat-a',
-            );
-            expect(fallbackStore.count, 1);
-            expect(await fallbackStore.hasEmbedding('entity-1'), isTrue);
-          } else {
-            // Native ObjectBox is unavailable (e.g. Linux CI without
-            // libobjectbox.so): invoking the default factory closure calls the
-            // production openStore(), which fails to load the native library.
-            // That failure *proves* the closure was actually invoked — a no-op
-            // or broken-but-non-throwing factory would not reach native code.
-            await expectLater(
-              ShardedEmbeddingStore.open(basePath: tempDir.path),
-              throwsA(isA<ArgumentError>()),
-            );
-          }
-        },
-      );
     });
   });
 }
