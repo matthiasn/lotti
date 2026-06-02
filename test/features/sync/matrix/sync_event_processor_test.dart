@@ -2,15 +2,18 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -1811,4 +1814,211 @@ void main() {
       },
     );
   });
+
+  test(
+    'cachePurgeListener forwards to a SmartJournalEntityLoader so a real '
+    'stale-descriptor purge invokes the processor-supplied callback',
+    () async {
+      const relJson = '/text_entries/2024-01-01/purge.text.json';
+      final index = AttachmentIndex(logging: loggingService);
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('evt-purge');
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.content).thenReturn({'relativePath': relJson});
+      final room = MockRoom();
+      final client = MockMatrixClient();
+      final database = MockMatrixDatabase();
+      when(() => ev.room).thenReturn(room);
+      when(() => room.client).thenReturn(client);
+      when(() => client.database).thenReturn(database);
+      final descriptorUri = Uri.parse('mxc://server/purge');
+      when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
+      when(
+        () => database.deleteFile(descriptorUri),
+      ).thenAnswer((_) async => true);
+      when(
+        () => loggingService.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+
+      JournalEntry buildEntry(int clock, String text) => JournalEntry(
+        meta: Metadata(
+          id: 'purge',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          vectorClock: VectorClock({'n': clock}),
+        ),
+        entryText: EntryText(plainText: text),
+      );
+
+      var downloads = 0;
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+        downloads++;
+        final entry = downloads == 1
+            ? buildEntry(1, 'stale')
+            : buildEntry(
+                2,
+                'fresh',
+              );
+        return MatrixFile(
+          bytes: Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits),
+          name: 'entry.json',
+        );
+      });
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+      final processorWithSmartLoader = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: loader,
+      );
+
+      var purges = 0;
+      processorWithSmartLoader.cachePurgeListener = () => purges++;
+
+      final loaded = await loader.load(
+        jsonPath: relJson,
+        incomingVectorClock: const VectorClock({'n': 2}),
+      );
+
+      // The callback the processor forwarded fired exactly once for the
+      // single stale descriptor that was purged before the fresh re-fetch.
+      expect(purges, 1);
+      expect(loaded.entryText?.plainText, 'fresh');
+      verify(() => database.deleteFile(descriptorUri)).called(1);
+    },
+  );
+
+  test(
+    'self-echo lookup swallows a throwing VectorClockService.getHost — the '
+    'event is treated as non-self-echo and flows through the normal apply '
+    'path while the failure is logged and the null host id is cached',
+    () async {
+      final localVcService = MockVectorClockService();
+      when(localVcService.getHost).thenThrow(Exception('vc unavailable'));
+
+      final processorWithVc = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        vectorClockService: localVcService,
+      );
+
+      const message = SyncMessage.journalEntity(
+        id: 'entity-vc-throws',
+        jsonPath: '/entity-vc-throws.json',
+        vectorClock: VectorClock({'host-peer': 1}),
+        status: SyncEntryStatus.update,
+        originatingHostId: 'host-peer',
+      );
+      when(
+        () => journalEntityLoader.load(
+          jsonPath: '/entity-vc-throws.json',
+          incomingVectorClock: const VectorClock({'host-peer': 1}),
+        ),
+      ).thenAnswer((_) async => fallbackJournalEntity);
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      // Two events so we can assert the failed lookup is cached: getHost is
+      // attempted once, the null result memoized, and the message still
+      // applies (not skipped as a self-echo).
+      await processorWithVc.process(event: event, journalDb: journalDb);
+      await processorWithVc.process(event: event, journalDb: journalDb);
+
+      verify(localVcService.getHost).called(1);
+      verify(
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'processor.selfEcho.hostLookup',
+        ),
+      ).called(1);
+      verify(
+        () => journalDb.updateJournalEntity(fallbackJournalEntity),
+      ).called(2);
+    },
+  );
+
+  test(
+    'SyncEntityDefinition carrying a LabelDefinition upserts it and notifies '
+    'the labels channel alongside the entity id',
+    () async {
+      final message = SyncMessage.entityDefinition(
+        entityDefinition: testLabelDefinition1,
+        status: SyncEntryStatus.initial,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(
+        () => journalDb.upsertEntityDefinition(testLabelDefinition1),
+      ).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {testLabelDefinition1.id, labelsNotification},
+          fromSync: true,
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'SyncSyncNodeProfile rethrows and logs when the directory upsert fails so '
+    'the inbound event stays eligible for retry',
+    () async {
+      final repo = MockSyncNodeProfileRepository();
+      final profile = SyncNodeProfile(
+        hostId: 'peer-fail',
+        displayName: 'Flaky',
+        platform: 'linux',
+        capabilities: const [NodeCapability.ollamaLlm],
+        updatedAt: DateTime.utc(2026, 3, 15, 12),
+      );
+      when(
+        () => repo.upsertNode(profile),
+      ).thenThrow(Exception('write refused'));
+
+      final processorWithRepo = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        syncNodeProfileRepository: repo,
+      );
+
+      when(() => event.text).thenReturn(
+        encodeMessage(SyncMessage.syncNodeProfile(profile: profile)),
+      );
+
+      await expectLater(
+        processorWithRepo.process(event: event, journalDb: journalDb),
+        throwsA(isA<Exception>()),
+      );
+      verify(() => repo.upsertNode(profile)).called(1);
+      verify(
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'apply.upsert',
+        ),
+      ).called(1);
+    },
+  );
 }

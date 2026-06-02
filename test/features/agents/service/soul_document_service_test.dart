@@ -428,6 +428,95 @@ void main() {
       final updatedHead = captured[2] as SoulDocumentHeadEntity;
       expect(updatedHead.versionId, 'version-1');
     });
+
+    test('throws when no head exists for the soul', () async {
+      when(
+        () => mockRepo.getSoulDocumentHead(kTestSoulId),
+      ).thenAnswer((_) async => null);
+
+      await expectLater(
+        () => service.rollbackToVersion(
+          soulId: kTestSoulId,
+          versionId: 'version-1',
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('No head found for soul $kTestSoulId'),
+          ),
+        ),
+      );
+
+      // Bails before reading the target version or writing anything.
+      verifyNever(() => mockRepo.getEntity(any()));
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test('throws when the target version is missing', () async {
+      final head = makeTestSoulDocumentHead(versionId: 'version-2');
+      when(
+        () => mockRepo.getSoulDocumentHead(kTestSoulId),
+      ).thenAnswer((_) async => head);
+      when(
+        () => mockRepo.getEntity('missing-version'),
+      ).thenAnswer((_) async => null);
+
+      await expectLater(
+        () => service.rollbackToVersion(
+          soulId: kTestSoulId,
+          versionId: 'missing-version',
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains(
+              'No version missing-version found for soul $kTestSoulId',
+            ),
+          ),
+        ),
+      );
+
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test(
+      'throws when the target version belongs to a different soul',
+      () async {
+        final head = makeTestSoulDocumentHead(versionId: 'version-2');
+        // A real version entity, but owned by another soul — the agentId guard
+        // in mapOrNull rejects it, so validVersion resolves to null.
+        final foreignVersion = makeTestSoulDocumentVersion(
+          id: 'version-foreign',
+          agentId: 'some-other-soul',
+        );
+        when(
+          () => mockRepo.getSoulDocumentHead(kTestSoulId),
+        ).thenAnswer((_) async => head);
+        when(
+          () => mockRepo.getEntity('version-foreign'),
+        ).thenAnswer((_) async => foreignVersion);
+
+        await expectLater(
+          () => service.rollbackToVersion(
+            soulId: kTestSoulId,
+            versionId: 'version-foreign',
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains(
+                'No version version-foreign found for soul $kTestSoulId',
+              ),
+            ),
+          ),
+        );
+
+        verifyNever(() => mockSync.upsertEntity(any()));
+      },
+    );
   });
 
   group('unassignSoul', () {
@@ -615,6 +704,18 @@ void main() {
       final updated = await service.updateSoul(soulId: 'soul-upd');
 
       expect(updated.displayName, 'Keep This');
+    });
+
+    test('rejects whitespace-only display name before touching repo', () async {
+      await expectLater(
+        () => service.updateSoul(soulId: 'soul-upd', displayName: '   '),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      // The blank guard runs before the transaction, so nothing is read or
+      // written.
+      verifyNever(() => mockRepo.getSoulDocument(any()));
+      verifyNever(() => mockSync.upsertEntity(any()));
     });
   });
 

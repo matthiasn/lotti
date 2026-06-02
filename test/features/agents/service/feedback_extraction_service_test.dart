@@ -1049,6 +1049,139 @@ void main() {
       expect(item.confidence, 1.0);
     });
 
+    test('classifies critical templateImprovement observation as negative '
+        'regardless of text sentiment', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-improvement',
+      );
+      // Text contains only POSITIVE keywords ("excellent", "great"), yet the
+      // explicit critical templateImprovement category must force negative
+      // sentiment — proving the category branch wins over text heuristics.
+      final payload = makeTestMessagePayload(
+        id: 'payload-improvement',
+        content: {
+          'text':
+              'The template did great work but could be excellent if the '
+              'priority directive were tightened.',
+          'priority': 'critical',
+          'category': 'templateImprovement',
+        },
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(
+        () => mockRepo.getEntity('payload-improvement'),
+      ).thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      final item = result.items.first;
+      expect(item.sentiment, FeedbackSentiment.negative);
+      expect(item.observationPriority, ObservationPriority.critical);
+      expect(item.confidence, 1.0);
+      // templateImprovement maps to the general feedback category.
+      expect(item.category, FeedbackCategory.general);
+    });
+
+    test('classifies critical operational observation via text heuristic '
+        'rather than category-derived sentiment', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-critical-operational',
+      );
+      // Critical priority with the operational category falls through to the
+      // keyword heuristic. Negative keywords ("error", "failed") must drive a
+      // negative sentiment, distinguishing this from the fixed-sentiment
+      // grievance/excellence/templateImprovement branches.
+      final payload = makeTestMessagePayload(
+        id: 'payload-critical-operational',
+        content: {
+          'text': 'A transient error occurred and the sync job failed midway.',
+          'priority': 'critical',
+          'category': 'operational',
+        },
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(
+        () => mockRepo.getEntity('payload-critical-operational'),
+      ).thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      final item = result.items.first;
+      // Derived from negative keywords, not a fixed category sentiment.
+      expect(item.sentiment, FeedbackSentiment.negative);
+      expect(item.observationPriority, ObservationPriority.critical);
+      // Still critical, so confidence is pinned to full.
+      expect(item.confidence, 1.0);
+      expect(item.category, FeedbackCategory.general);
+    });
+
+    test('classifies critical operational observation as positive when text '
+        'is positive', () async {
+      stubEmptyData();
+      final observation = makeTestMessage(
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+        contentEntryId: 'payload-critical-op-positive',
+      );
+      // Same operational fall-through branch, but positive keywords flip the
+      // heuristic result — confirming the branch genuinely consults the text.
+      final payload = makeTestMessagePayload(
+        id: 'payload-critical-op-positive',
+        content: {
+          'text':
+              'The migration completed successfully and the result was '
+              'excellent.',
+          'priority': 'critical',
+          'category': 'operational',
+        },
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [observation]);
+      when(
+        () => mockRepo.getEntity('payload-critical-op-positive'),
+      ).thenAnswer((_) async => payload);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.sentiment, FeedbackSentiment.positive);
+      expect(result.items.first.confidence, 1.0);
+    });
+
     test('routine observations fall back to keyword heuristic', () async {
       stubEmptyData();
       final observation = makeTestMessage(
@@ -1963,6 +2096,27 @@ void main() {
       );
 
       expect(result, isEmpty);
+    });
+
+    test('uses clock.now() as window end when until is omitted', () async {
+      final now = DateTime(2024, 3, 18, 9, 45);
+      when(
+        () => mockSoulService.getTemplatesUsingSoul('soul-1'),
+      ).thenAnswer((_) async => ['template-1']);
+      stubEmptyData();
+
+      final result = await withClock(
+        Clock.fixed(now),
+        () => service.extractForSoul(
+          soulId: 'soul-1',
+          since: windowStart,
+        ),
+      );
+
+      expect(result, hasLength(1));
+      // The clock-derived effectiveUntil is propagated into each template's
+      // extraction window.
+      expect(result['template-1']!.windowEnd, now);
     });
 
     test('aggregates feedback from single template', () async {

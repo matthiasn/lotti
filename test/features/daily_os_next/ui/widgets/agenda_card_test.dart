@@ -293,7 +293,9 @@ void main() {
       },
     );
 
-    testWidgets('renders non-open state and progress metadata', (tester) async {
+    testWidgets('renders progress metadata alongside a state pill', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           const Material(
@@ -313,12 +315,80 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Done'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       final indicator = tester.widget<LinearProgressIndicator>(
         find.byType(LinearProgressIndicator),
       );
       expect(indicator.value, 0.75);
+    });
+
+    // Drives the non-open branches of `_StateMeta`'s switch: each state maps to
+    // a distinct alert color token and localized label, rendered as the state
+    // pill's label text. The `open` state is intentionally absent: the meta row
+    // only builds `_StateMeta` when `state != open`, so that branch is
+    // unreachable through the widget.
+    final alertColors = dsTokensLight.colors.alert;
+    final stateCases = <(AgendaItemState, String, Color)>[
+      (
+        AgendaItemState.inProgress,
+        'In progress',
+        alertColors.warning.defaultColor,
+      ),
+      (AgendaItemState.overdue, 'Overdue', alertColors.error.defaultColor),
+      (AgendaItemState.done, 'Done', alertColors.success.defaultColor),
+    ];
+
+    for (final (state, label, expectedColor) in stateCases) {
+      testWidgets('maps $state to its alert color and "$label" label', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            Material(
+              child: AgendaCard(
+                index: 4,
+                item: AgendaItem(
+                  id: 'a1',
+                  title: 'Close out shipped work',
+                  category: _category,
+                  linkedBlockIds: const ['b1'],
+                  state: state,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final labelFinder = find.text(label);
+        expect(labelFinder, findsOneWidget);
+        final labelText = tester.widget<Text>(labelFinder);
+        expect(labelText.style?.color, expectedColor);
+      });
+    }
+
+    testWidgets('omits the state pill for the open state', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const Material(
+            child: AgendaCard(
+              index: 4,
+              item: AgendaItem(
+                id: 'a1',
+                title: 'Plain open item',
+                category: _category,
+                linkedBlockIds: ['b1'],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Open'), findsNothing);
+      expect(find.text('In progress'), findsNothing);
+      expect(find.text('Overdue'), findsNothing);
+      expect(find.text('Done'), findsNothing);
     });
   });
 }

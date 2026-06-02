@@ -93,6 +93,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
@@ -116,6 +117,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:matrix/matrix.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -491,6 +493,9 @@ class MockVectorClockService extends Mock implements VectorClockService {
 
 class MockSettingsDb extends Mock implements SettingsDb {}
 
+class MockSyncNodeProfileRepository extends Mock
+    implements SyncNodeProfileRepository {}
+
 class MockAudioPlayerController extends Mock implements AudioPlayerController {}
 
 class MockAudioRecorderRepository extends Mock
@@ -542,6 +547,10 @@ class FakeQuillController extends Fake implements QuillController {
 }
 
 class FakeJournalAudio extends Fake implements JournalAudio {}
+
+/// Fallback for the MediaKit [Playable] (e.g. `Media`) passed to
+/// `Player.open(...)`. Register via `registerFallbackValue(FakePlayable())`.
+class FakePlayable extends Fake implements Playable {}
 
 class FakeMeasurementData extends Fake implements MeasurementData {}
 
@@ -817,3 +826,11 @@ class MockEntryCreationService extends Mock implements EntryCreationService {}
 
 class MockSpeechDictionaryService extends Mock
     implements SpeechDictionaryService {}
+
+/// Mock for the MediaKit [Player] used by audio duration extraction and the
+/// speech recorder.
+class MockPlayer extends Mock implements Player {}
+
+/// Mock for the MediaKit [PlayerStream] exposing event streams such as
+/// `duration`.
+class MockPlayerStream extends Mock implements PlayerStream {}

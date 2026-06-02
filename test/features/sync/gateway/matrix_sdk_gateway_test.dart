@@ -7,6 +7,9 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
+// CachedStreamController is the concrete return type of
+// Client.onLoginStateChanged and is not re-exported from matrix.dart.
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -269,6 +272,66 @@ void main() {
     when(() => client.getRoomById('!room:server')).thenReturn(room);
 
     expect(gateway.getRoomById('!room:server'), room);
+  });
+
+  test('client getter exposes the underlying matrix client', () {
+    expect(gateway.client, same(client));
+  });
+
+  test('loginStateChanges exposes the injected login state stream', () async {
+    final expectation = expectLater(
+      gateway.loginStateChanges,
+      emitsInOrder(<LoginState>[LoginState.loggedIn, LoginState.loggedOut]),
+    );
+
+    loginStateController
+      ..add(LoginState.loggedIn)
+      ..add(LoginState.loggedOut);
+
+    await expectation;
+  });
+
+  test(
+    'loginStateChanges falls back to client stream when none injected',
+    () async {
+      // No loginStateStream injected, so the getter must read from
+      // client.onLoginStateChanged.stream.
+      final clientLoginStates = CachedStreamController<LoginState>();
+      addTearDown(clientLoginStates.close);
+      when(() => client.onLoginStateChanged).thenReturn(clientLoginStates);
+
+      final fallbackGateway = MatrixSdkGateway(
+        client: client,
+        sentEventRegistry: sentEventRegistry,
+        roomStateStream: roomStateController.stream,
+        keyVerificationRequestStream: keyVerificationController.stream,
+      );
+      addTearDown(fallbackGateway.dispose);
+
+      final expectation = expectLater(
+        fallbackGateway.loginStateChanges,
+        emits(LoginState.loggedIn),
+      );
+
+      clientLoginStates.add(LoginState.loggedIn);
+
+      await expectation;
+    },
+  );
+
+  test('changePassword forwards old and new passwords to client', () async {
+    when(
+      () => client.changePassword('new-pass', oldPassword: 'old-pass'),
+    ).thenAnswer((_) async {});
+
+    await gateway.changePassword(
+      oldPassword: 'old-pass',
+      newPassword: 'new-pass',
+    );
+
+    verify(
+      () => client.changePassword('new-pass', oldPassword: 'old-pass'),
+    ).called(1);
   });
 
   test('invite stream emits only invite membership events', () async {

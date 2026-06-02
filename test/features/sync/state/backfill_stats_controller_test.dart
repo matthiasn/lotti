@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/widgets.dart'
+    show AppLifecycleState, WidgetsBinding, WidgetsFlutterBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
@@ -968,6 +970,172 @@ void main() {
 
             // Second tick: flag was reset, so the second call fires.
             async.elapse(const Duration(seconds: 30));
+            expect(callCount, 3);
+          });
+        },
+      );
+    });
+
+    group('app visibility lifecycle', () {
+      late WidgetsBinding binding;
+
+      setUp(() {
+        // Establish a deterministic `resumed` baseline so the
+        // AppLifecycleListener created inside the controller's build()
+        // starts from a known state and the resumed -> inactive -> hidden
+        // -> inactive transitions below are all valid.
+        binding = WidgetsFlutterBinding.ensureInitialized()
+          ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      });
+
+      tearDown(() {
+        // Restore a resumed state for any subsequent tests.
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      });
+
+      test(
+        'onHide pauses the auto-refresh timer so a backgrounded app stops '
+        'running the stats aggregation even while the provider stays mounted',
+        () {
+          fakeAsync((async) {
+            var callCount = 0;
+            when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+              _,
+            ) async {
+              callCount++;
+              return testStats;
+            });
+
+            createAndLoad(async);
+            expect(callCount, 1); // build/_loadStats ran once
+
+            // Drive the app to the background: resumed -> inactive -> hidden
+            // fires the listener's onHide, which cancels the timer.
+            binding
+              ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+              ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+
+            // A full auto-refresh interval passes while backgrounded.
+            async.elapse(const Duration(seconds: 30));
+
+            // The silent refresh must NOT have fired — the timer is paused.
+            expect(callCount, 1);
+          });
+        },
+      );
+
+      test(
+        'onShow re-arms the auto-refresh timer when the app returns to the '
+        'foreground so live stats resume ticking',
+        () {
+          fakeAsync((async) {
+            var callCount = 0;
+            when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+              _,
+            ) async {
+              callCount++;
+              return testStats;
+            });
+
+            createAndLoad(async);
+            expect(callCount, 1);
+
+            // Background the app (onHide cancels the timer).
+            binding
+              ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+              ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+
+            async.elapse(const Duration(seconds: 30));
+            expect(callCount, 1); // confirmed paused
+
+            // Foreground the app again: hidden -> inactive fires onShow,
+            // which sets _appVisible = true and restarts the timer.
+            binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+
+            // The re-armed timer fires after one more interval.
+            async.elapse(const Duration(seconds: 30));
+            expect(callCount, 2);
+          });
+        },
+      );
+
+      test(
+        'repeated hide -> show -> hide leaves the timer cancelled so a '
+        'backgrounded app never silently refreshes across multiple intervals',
+        () {
+          // NOTE on the in-callback `if (!_appVisible) return;` guard:
+          // `onHide` sets `_appVisible = false` AND synchronously cancels the
+          // periodic timer (and `onShow` re-arms it only after flipping
+          // `_appVisible` back to true). Because `Timer.cancel()` prevents a
+          // not-yet-fired periodic tick from running, there is no execution
+          // window in which the periodic callback fires while
+          // `_appVisible == false` — the in-callback guard is unreachable
+          // defensive code. This test therefore asserts the actually-reachable
+          // contract: after a hide/show/hide churn the timer ends cancelled and
+          // no silent refresh fires, no matter how many intervals elapse. A
+          // regression that dropped only the in-callback guard would (correctly)
+          // still pass here; a regression that dropped the `onHide` cancel would
+          // fail.
+          fakeAsync((async) {
+            var callCount = 0;
+            when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+              _,
+            ) async {
+              callCount++;
+              return testStats;
+            });
+
+            createAndLoad(async);
+            expect(callCount, 1);
+
+            // Hide -> show -> hide. The final transition is `onHide`, which
+            // cancels the timer; `onShow` in the middle re-armed it, so this
+            // also proves the final hide re-cancels a freshly-armed timer.
+            binding
+              ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+              ..handleAppLifecycleStateChanged(AppLifecycleState.hidden)
+              ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+              ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+
+            // Many intervals pass while backgrounded; the cancelled timer must
+            // never fire.
+            async.elapse(const Duration(seconds: 120));
+            expect(callCount, 1);
+          });
+        },
+      );
+
+      test(
+        'a periodic tick that fires while the app is visible runs the silent '
+        'refresh, confirming the timer/guard wiring is exercised end to end',
+        () {
+          // Positive counterpart to the cancel test above: with the app
+          // visible (`_appVisible == true`) and the timer armed, an elapsed
+          // interval drives the periodic callback past its guards into
+          // `_loadStatsSilent`, incrementing the call count. This is the
+          // reachable path the in-callback guard *would* protect if a tick
+          // could ever fire while hidden.
+          fakeAsync((async) {
+            var callCount = 0;
+            when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+              _,
+            ) async {
+              callCount++;
+              return testStats;
+            });
+
+            createAndLoad(async);
+            expect(callCount, 1);
+
+            // App stays in the foreground; the armed timer fires each interval.
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
+            expect(callCount, 2);
+
+            async
+              ..elapse(const Duration(seconds: 30))
+              ..flushMicrotasks();
             expect(callCount, 3);
           });
         },

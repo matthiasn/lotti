@@ -14,26 +14,59 @@ void main() {
     Center(child: child),
   );
 
-  group('StreamingContent', () {
-    testWidgets('shows spinner and Thinking label when content is empty', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        wrap(
-          StreamingContent(
-            content: '',
-            isUser: false,
-            theme: ThemeData(),
-          ),
-        ),
-      );
-      // Use pump() instead of pumpAndSettle() because
-      // CircularProgressIndicator animates indefinitely.
-      await tester.pump();
+  // A theme whose primary-related colors are all distinct so that the
+  // isUser ? onPrimary : primary/onSurfaceVariant branches can be told apart.
+  final distinctTheme = ThemeData(
+    colorScheme: const ColorScheme.light().copyWith(
+      onPrimary: const Color(0xFF111111),
+      primary: const Color(0xFF222222),
+      onSurfaceVariant: const Color(0xFF333333),
+    ),
+  );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Thinking...'), findsOneWidget);
-    });
+  group('StreamingContent', () {
+    // Empty content renders the spinner + "Thinking..." label, where the
+    // spinner color and the label color depend on isUser. Drive both branches
+    // and assert the exact resolved colors (lines selecting onPrimary vs
+    // primary/onSurfaceVariant).
+    for (final isUser in [false, true]) {
+      testWidgets(
+        'empty content shows spinner + Thinking label with '
+        'isUser=$isUser colors',
+        (tester) async {
+          await tester.pumpWidget(
+            wrap(
+              StreamingContent(
+                content: '',
+                isUser: isUser,
+                theme: distinctTheme,
+              ),
+            ),
+          );
+          // Use pump() instead of pumpAndSettle() because
+          // CircularProgressIndicator animates indefinitely.
+          await tester.pump();
+
+          expect(find.text('Thinking...'), findsOneWidget);
+
+          final spinner = tester.widget<CircularProgressIndicator>(
+            find.byType(CircularProgressIndicator),
+          );
+          final label = tester.widget<Text>(find.text('Thinking...'));
+
+          final expectedSpinnerColor = isUser
+              ? distinctTheme.colorScheme.onPrimary
+              : distinctTheme.colorScheme.primary;
+          final expectedLabelColor = isUser
+              ? distinctTheme.colorScheme.onPrimary
+              : distinctTheme.colorScheme.onSurfaceVariant;
+
+          expect(spinner.color, expectedSpinnerColor);
+          expect(label.style?.color, expectedLabelColor);
+          expect(label.style?.fontStyle, FontStyle.italic);
+        },
+      );
+    }
 
     testWidgets('renders visible markdown segments and reasoning disclosure', (
       tester,

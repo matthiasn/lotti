@@ -219,6 +219,52 @@ void main() {
       },
     );
 
+    testWidgets(
+      'didUpdateWidget re-evaluates selection when only recommendedModelId '
+      'changes',
+      (tester) async {
+        final hostKey = GlobalKey<_DialogHostState>();
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            _DialogHost(
+              key: hostKey,
+              initialModels: [recommendedModel, voxtralModel],
+              initialRecommendedId: recommendedModel.providerModelId,
+            ),
+          ),
+        );
+
+        // Initially the recommended badge sits on the recommended model row.
+        final recommendedRadio = tester.widget<RadioListTile<String>>(
+          find.ancestor(
+            of: find.text(recommendedModel.name),
+            matching: find.byType(RadioListTile<String>),
+          ),
+        );
+        expect(recommendedRadio.value, recommendedModel.providerModelId);
+        expect(find.text('Recommended'), findsOneWidget);
+
+        // Change ONLY the recommended id (same models list instance), which
+        // forces didUpdateWidget to evaluate the recommendedModelId branch and
+        // rebuild the ordering so Voxtral becomes the recommended row.
+        hostKey.currentState!.changeRecommendedIdOnly(
+          voxtralModel.providerModelId,
+        );
+        await tester.pump();
+
+        // The recommended badge now labels the Voxtral row, proving the index
+        // was rebuilt off the new recommendedModelId.
+        expect(find.text('Recommended'), findsOneWidget);
+        final badgeRow = tester.widget<RadioListTile<String>>(
+          find.ancestor(
+            of: find.text('Recommended'),
+            matching: find.byType(RadioListTile<String>),
+          ),
+        );
+        expect(badgeRow.value, voxtralModel.providerModelId);
+      },
+    );
+
     testWidgets('show static helper resolves with the selected model', (
       tester,
     ) async {
@@ -274,6 +320,51 @@ void main() {
       expect(find.text('Checking model status'), findsOneWidget);
       expect(channel.installCalls, 1);
     });
+
+    testWidgets(
+      'reports a Flutter error when starting the install throws',
+      (tester) async {
+        final model = _model(
+          id: 'qwen-17b-8bit',
+          name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+          providerModelId: mlxAudioQwenAsr17B8BitModelId,
+        );
+        // The store status path still needs a working channel; only the
+        // install call is forced to throw via the overridden store notifier.
+        final channel = _TerminalMlxAudioChannel(
+          model.providerModelId,
+          MlxAudioModelStatus.notInstalled,
+        );
+        addTearDown(channel.close);
+
+        final installError = StateError('install boom');
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            MlxAudioModelDownloadDialog(model: model),
+            overrides: [
+              mlxAudioChannelProvider.overrideWithValue(channel),
+              mlxAudioModelProgressStoreProvider.overrideWith(
+                () => _ThrowingInstallStore(installError),
+              ),
+            ],
+          ),
+        );
+        // Let the post-frame callback run so _startDownload executes and the
+        // overridden installModel throws into the dialog's catch block.
+        await tester.pump();
+        await Future<void>.value();
+        await tester.pump();
+
+        // The dialog funnels the failure through FlutterError.reportError; the
+        // test binding captures it so we can assert on the reported exception.
+        final reported = tester.takeException();
+        expect(reported, same(installError));
+
+        // The dialog itself does not crash and keeps rendering its UI.
+        expect(find.byType(MlxAudioModelDownloadDialog), findsOneWidget);
+      },
+    );
 
     testWidgets('renders measured downloading progress as percent', (
       tester,
@@ -532,6 +623,15 @@ class _DialogHostState extends State<_DialogHost> {
     });
   }
 
+  /// Changes only the recommended id while keeping the *same* models list
+  /// instance, so `didUpdateWidget` short-circuits the `identical(models)`
+  /// check and evaluates the `recommendedModelId` comparison branch.
+  void changeRecommendedIdOnly(String recommendedId) {
+    setState(() {
+      _recommendedId = recommendedId;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -580,4 +680,19 @@ class _TerminalMlxAudioChannel extends MlxAudioChannel {
   Future<void> installModel(String modelId) async {}
 
   Future<void> close() async {}
+}
+
+/// Store override whose [installModel] always throws, exercising the download
+/// dialog's `_startDownload` catch branch that funnels into
+/// [FlutterError.reportError].
+class _ThrowingInstallStore extends MlxAudioModelProgressStore {
+  _ThrowingInstallStore(this.error);
+
+  final Object error;
+
+  @override
+  Future<void> installModel(String modelId) async {
+    // ignore: only_throw_errors
+    throw error;
+  }
 }

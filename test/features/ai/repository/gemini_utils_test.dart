@@ -590,6 +590,79 @@ void main() {
       expect(nestedItems['required'], ['name']);
     });
 
+    test('strips additionalProperties from sub-schemas inside list values', () {
+      // A schema value that is a List of Map sub-schemas (e.g. anyOf) must
+      // have additionalProperties stripped recursively from each list element.
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Call a function'),
+        ),
+      ];
+
+      const tools = [
+        ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(
+            name: 'my_tool',
+            parameters: {
+              'type': 'object',
+              'properties': {
+                'value': {
+                  'anyOf': [
+                    {
+                      'type': 'object',
+                      'properties': {
+                        'kind': {'type': 'string'},
+                      },
+                      'additionalProperties': false,
+                    },
+                    {
+                      'type': 'number',
+                      // Plain string element in the same list exercises the
+                      // non-map branch (returns the element unchanged).
+                    },
+                    'scalar',
+                  ],
+                },
+              },
+            },
+          ),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.5,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 128),
+        tools: tools,
+      );
+
+      final toolsArr = (body['tools'] as List).cast<Map<String, dynamic>>();
+      final funcDecl =
+          (toolsArr.first['functionDeclarations'] as List).first
+              as Map<String, dynamic>;
+      final params = funcDecl['parameters'] as Map<String, dynamic>;
+      final properties = params['properties'] as Map<String, dynamic>;
+      final valueSchema = properties['value'] as Map<String, dynamic>;
+      final anyOf = valueSchema['anyOf'] as List<dynamic>;
+
+      // First element is a Map sub-schema: additionalProperties stripped via
+      // the list-element recursion, while its other keys are preserved.
+      final firstSub = anyOf[0] as Map<String, dynamic>;
+      expect(firstSub.containsKey('additionalProperties'), isFalse);
+      expect(firstSub['type'], 'object');
+      expect(
+        (firstSub['properties'] as Map<String, dynamic>)['kind'],
+        {'type': 'string'},
+      );
+
+      // Second element is a Map without additionalProperties: kept intact.
+      expect(anyOf[1], {'type': 'number'});
+
+      // Third element is a non-map scalar: returned unchanged.
+      expect(anyOf[2], 'scalar');
+    });
+
     test('strips additionalProperties from buildRequestBody tools too', () {
       const tools = [
         ChatCompletionTool(

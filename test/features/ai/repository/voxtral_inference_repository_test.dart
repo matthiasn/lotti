@@ -1100,6 +1100,114 @@ data: [DONE]
           ),
         ).called(1);
       });
+
+      test('should log and wrap TimeoutException from the request', () async {
+        // Arrange - a bare TimeoutException (not the inline onTimeout, which
+        // throws VoxtralInferenceException) propagates from the awaited send()
+        // and is caught by the dedicated `on TimeoutException` handler.
+        when(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String?>(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenThrow(TimeoutException('socket timed out'));
+
+        // Act
+        final transcriptionStream = repository.transcribeAudio(
+          model: model,
+          audioBase64: audioBase64,
+          baseUrl: baseUrl,
+        );
+
+        // Assert - rewrapped as a VoxtralInferenceException carrying the
+        // request-timeout status code and the original TimeoutException.
+        await expectLater(
+          transcriptionStream.toList(),
+          throwsA(
+            isA<VoxtralInferenceException>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('timed out'),
+                )
+                .having((e) => e.statusCode, 'statusCode', 408)
+                .having(
+                  (e) => e.originalError,
+                  'originalError',
+                  isA<TimeoutException>(),
+                ),
+          ),
+        );
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(that: isA<TimeoutException>()),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'timeout',
+          ),
+        ).called(1);
+      });
+
+      test('should log and wrap FormatException from the request', () async {
+        // Arrange - a FormatException raised outside the per-chunk SSE parse
+        // (which has its own inner catch) reaches the dedicated outer
+        // `on FormatException` handler.
+        when(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String?>(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenThrow(const FormatException('bad framing'));
+
+        // Act
+        final transcriptionStream = repository.transcribeAudio(
+          model: model,
+          audioBase64: audioBase64,
+          baseUrl: baseUrl,
+        );
+
+        // Assert - rewrapped with the generic invalid-format message and no
+        // status code, preserving the original FormatException.
+        await expectLater(
+          transcriptionStream.toList(),
+          throwsA(
+            isA<VoxtralInferenceException>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  'Invalid response format from transcription service',
+                )
+                .having((e) => e.statusCode, 'statusCode', isNull)
+                .having(
+                  (e) => e.originalError,
+                  'originalError',
+                  isA<FormatException>(),
+                ),
+          ),
+        );
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.speech,
+            any<Object>(that: isA<FormatException>()),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'format_error',
+          ),
+        ).called(1);
+      });
     });
 
     group('edge cases', () {

@@ -419,6 +419,79 @@ void main() {
       );
     });
 
+    group('toJson legacy budget from thinkingMode', () {
+      // Exercises _thinkingBudget()'s thinkingMode-present branch and every
+      // arm of GeminiThinkingModeApi.toThinkingBudget(). The legacy path is
+      // taken when modelId is null or a non-Gemini-3 model, while the config
+      // carries a thinkingMode (as produced by fromMode / the mode presets).
+      final modeBudgets = <GeminiThinkingMode, int>{
+        GeminiThinkingMode.minimal: 0,
+        GeminiThinkingMode.low: 1024,
+        GeminiThinkingMode.medium: 4096,
+        GeminiThinkingMode.high: -1,
+      };
+
+      for (final entry in modeBudgets.entries) {
+        final mode = entry.key;
+        final expectedBudget = entry.value;
+
+        test(
+          'mode ${mode.name} serializes legacy budget with null modelId',
+          () {
+            final config = GeminiThinkingConfig.fromMode(mode);
+
+            // thinkingBudget field equals the mode's preset budget, but the
+            // legacy serialization recomputes it via toThinkingBudget().
+            expect(
+              config.toJson(),
+              {
+                'thinkingBudget': expectedBudget,
+                'includeThoughts': false,
+              },
+            );
+          },
+        );
+
+        test(
+          'mode ${mode.name} serializes legacy budget for non-Gemini-3 model',
+          () {
+            final config = GeminiThinkingConfig.fromMode(
+              mode,
+              includeThoughts: true,
+            );
+
+            expect(
+              config.toJson(modelId: 'models/gemini-2.5-pro'),
+              {
+                'thinkingBudget': expectedBudget,
+                'includeThoughts': true,
+              },
+            );
+          },
+        );
+      }
+
+      test('toThinkingBudget maps each mode to its documented budget', () {
+        // Drives the extension directly via the legacy toJson path so each
+        // switch arm (minimal/low/medium/high) is covered explicitly.
+        for (final entry in modeBudgets.entries) {
+          final config = GeminiThinkingConfig.fromMode(entry.key);
+          expect(config.toJson()['thinkingBudget'], entry.value);
+        }
+      });
+
+      test('legacy budget overrides a divergent thinkingBudget field', () {
+        // When thinkingMode is set, _thinkingBudget() ignores the stored
+        // thinkingBudget field and uses the mode's mapping instead.
+        const config = GeminiThinkingConfig(
+          thinkingBudget: 99999,
+          thinkingMode: GeminiThinkingMode.low,
+        );
+
+        expect(config.toJson()['thinkingBudget'], 1024);
+      });
+    });
+
     group('thinking capability check', () {
       test('budget != 0 indicates thinking is enabled', () {
         // This tests the pattern used in cloud_inference_repository.dart

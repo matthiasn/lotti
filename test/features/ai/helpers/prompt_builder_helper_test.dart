@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1883,6 +1884,138 @@ void main() {
           );
 
           expect(result, equals('Content: [No transcription available]'));
+        },
+      );
+    });
+
+    group('_logPlaceholderFailure on placeholder build error', () {
+      // Exercises the catch block around _buildCorrectionExamplesPromptText
+      // (the correction_examples injection) and the _logPlaceholderFailure
+      // helper itself. The failure must originate OUTSIDE the inner try/catch
+      // of _buildCorrectionExamplesPromptText so it propagates to the outer
+      // catch in buildPromptWithData. _findLinkedTask (called before the inner
+      // try) is the throwing point: it awaits journalRepository.getLinkedEntities.
+
+      AiConfigPrompt correctionExamplesConfig() => AiConfigPrompt(
+        id: 'transcription-prompt',
+        name: 'Transcription',
+        systemMessage: 'System',
+        userMessage: 'Transcribe: {{correction_examples}}',
+        defaultModelId: 'model-1',
+        modelIds: const ['model-1'],
+        createdAt: DateTime(2024, 3, 15),
+        useReasoning: false,
+        requiredInputData: const [InputDataType.audioFiles],
+        aiResponseType: AiResponseType.audioTranscription,
+      );
+
+      JournalAudio audioEntity(String id) => JournalAudio(
+        data: AudioData(
+          audioFile: 'audio.m4a',
+          audioDirectory: '/test',
+          duration: const Duration(minutes: 1),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        meta: Metadata(
+          id: id,
+          createdAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+        ),
+      );
+
+      test(
+        'replaces {{correction_examples}} with empty string and logs error '
+        'via DomainLogger when building examples throws',
+        () async {
+          final mockLogger = MockDomainLogger();
+          final mockJournalRepository = MockJournalRepository();
+
+          // _findLinkedTask -> getLinkedEntities throws, propagating out of
+          // _buildCorrectionExamplesPromptText to the outer catch (line ~186).
+          when(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'audio-boom',
+            ),
+          ).thenThrow(Exception('linked lookup exploded'));
+
+          await setUpTestGetIt(
+            additionalSetup: () {
+              // Override the real DomainLogger with a verifiable mock.
+              getIt
+                ..unregister<DomainLogger>()
+                ..registerSingleton<DomainLogger>(mockLogger);
+            },
+          );
+          addTearDown(tearDownTestGetIt);
+
+          final builder = PromptBuilderHelper(
+            aiInputRepository: mockAiInputRepository,
+            journalRepository: mockJournalRepository,
+            taskSummaryResolver: MockTaskSummaryResolver(),
+          );
+
+          final result = await builder.buildPromptWithData(
+            promptConfig: correctionExamplesConfig(),
+            entity: audioEntity('audio-boom'),
+          );
+
+          // Placeholder replaced with '' despite the failure (graceful fallback).
+          expect(result, equals('Transcribe: '));
+          expect(result, isNot(contains('{{correction_examples}}')));
+
+          // The error was routed through _logPlaceholderFailure -> DomainLogger.
+          // The second positional arg is the formatted message built in
+          // _logPlaceholderFailure; it names the placeholder, the entity id and
+          // carries the original error (with no trailing context suffix).
+          final captured = verify(
+            () => mockLogger.error(
+              LogDomain.ai,
+              captureAny(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'placeholder_injection',
+            ),
+          ).captured;
+          expect(captured, hasLength(1));
+          final message = captured.single as String;
+          expect(
+            message,
+            equals(
+              'Failed to inject {{correction_examples}} for '
+              'entity=audio-boom: Exception: linked lookup exploded',
+            ),
+          );
+        },
+      );
+
+      test(
+        'does not crash and still injects empty string when DomainLogger is '
+        'not registered',
+        () async {
+          // No GetIt setup at all -> _loggingService getter returns null, so
+          // _logPlaceholderFailure must no-op on the null-aware call without
+          // throwing. Confirms the placeholder is still replaced.
+          final mockJournalRepository = MockJournalRepository();
+          when(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'audio-no-logger',
+            ),
+          ).thenThrow(Exception('boom'));
+
+          final builder = PromptBuilderHelper(
+            aiInputRepository: mockAiInputRepository,
+            journalRepository: mockJournalRepository,
+            taskSummaryResolver: MockTaskSummaryResolver(),
+          );
+
+          final result = await builder.buildPromptWithData(
+            promptConfig: correctionExamplesConfig(),
+            entity: audioEntity('audio-no-logger'),
+          );
+
+          expect(result, equals('Transcribe: '));
         },
       );
     });

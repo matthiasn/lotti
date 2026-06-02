@@ -62,6 +62,31 @@ void main() {
       expect(updated.meta.vectorClock, const VectorClock({'host-b': 5}));
     });
 
+    // `entity.title` / `entity.body` resolve to the freezed base-class
+    // accessors, so they never exercise the extension's switch getters.
+    // Invoke the extension explicitly to cover both union arms.
+    for (final overdue in [false, true]) {
+      final label = overdue ? 'taskOverdue' : 'taskSuggestion';
+      test('extension title/body getters cover the $label arm', () {
+        final entity = overdue
+            ? _overdue(
+                id: 'ex-od',
+                linkedTaskId: 'task-ex',
+                title: 'Ext title',
+                body: 'Ext body',
+              )
+            : _suggestion(
+                id: 'ex-sg',
+                linkedTaskId: 'task-ex',
+                title: 'Ext title',
+                body: 'Ext body',
+              );
+
+        expect(NotificationEntityFields(entity).title, 'Ext title');
+        expect(NotificationEntityFields(entity).body, 'Ext body');
+      });
+    }
+
     test('copyWithMeta preserves the overdue variant', () {
       final entity = _overdue(
         id: 'od-2',

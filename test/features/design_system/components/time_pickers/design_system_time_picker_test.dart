@@ -76,6 +76,67 @@ void main() {
       expect(changedTime, isNotNull);
     });
 
+    testWidgets('reports updated hour when scrolling hour column', (
+      tester,
+    ) async {
+      TimeOfDay? changedTime;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DesignSystemTimePicker(
+            initialTime: const TimeOfDay(hour: 9, minute: 41),
+            onTimeChanged: (time) => changedTime = time,
+            semanticsLabel: 'Select time',
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      // Hour column is the first ListWheelScrollView. Dragging up by one item
+      // extent (31px) advances the selected hour index from 9 to 10.
+      final scrollViews = find.byType(ListWheelScrollView);
+      await tester.drag(scrollViews.first, const Offset(0, -31));
+      await tester.pumpAndSettle();
+
+      expect(changedTime, isNotNull);
+      // 24h mode: selected hour index maps directly to the hour.
+      expect(changedTime!.hour, 10);
+      // Minute is untouched by the hour-column scroll.
+      expect(changedTime!.minute, 41);
+    });
+
+    testWidgets('reports period change when scrolling AM/PM column', (
+      tester,
+    ) async {
+      TimeOfDay? changedTime;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DesignSystemTimePicker(
+            format: DesignSystemTimeFormat.twelveHour,
+            // 9:41 AM -> hourOfPeriod 9, period AM (index 0).
+            initialTime: const TimeOfDay(hour: 9, minute: 41),
+            onTimeChanged: (time) => changedTime = time,
+            semanticsLabel: 'Select time',
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      // AM/PM column is the third ListWheelScrollView in 12h mode. Dragging up
+      // by one item extent moves the period from AM (0) to PM (1).
+      final scrollViews = find.byType(ListWheelScrollView);
+      expect(scrollViews, findsNWidgets(3));
+      await tester.drag(scrollViews.at(2), const Offset(0, -31));
+      await tester.pumpAndSettle();
+
+      expect(changedTime, isNotNull);
+      // Flipping AM -> PM keeps the hour-of-period (9) but adds 12 hours.
+      expect(changedTime!.hour, 21);
+      // Minute is untouched by the period-column scroll.
+      expect(changedTime!.minute, 41);
+    });
+
     testWidgets('provides semantics label', (tester) async {
       const pickerKey = Key('semantics-picker');
 

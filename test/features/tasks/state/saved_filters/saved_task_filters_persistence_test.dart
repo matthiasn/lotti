@@ -220,5 +220,93 @@ void main() {
         ).called(1);
       });
     });
+
+    test(
+      'skips write when DB value normalizes to the same encoding (no prior '
+      'load)',
+      () {
+        fakeAsync((async) {
+          // Stored payload is a re-encoded (key-reordered) variant of _saved.
+          // _normalize must round-trip it through SavedTaskFilter so the
+          // canonical encoding matches what save() produces, suppressing the
+          // redundant DB write.
+          final reordered = _saved
+              .map((e) {
+                final json = e.toJson();
+                return {
+                  'filter': json['filter'],
+                  'name': json['name'],
+                  'id': json['id'],
+                };
+              })
+              .toList(growable: false);
+          when(
+            () => mockSettingsDb.itemByKey(any()),
+          ).thenAnswer((_) async => jsonEncode(reordered));
+
+          // No load() — save() must call _normalize on the stored value.
+          sut.save(_saved);
+          async.flushMicrotasks();
+
+          verify(
+            () => mockSettingsDb.itemByKey(
+              SavedTaskFiltersPersistence.storageKey,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockSettingsDb.saveSettingsItem(any(), any()),
+          );
+        });
+      },
+    );
+
+    test('writes when DB value normalizes to a different encoding (no prior '
+        'load)', () {
+      fakeAsync((async) {
+        // Decodable stored value that holds only the first filter; the saved
+        // list has two, so the normalized encoding differs and a write occurs.
+        final stored = jsonEncode(
+          _saved.take(1).map((e) => e.toJson()).toList(growable: false),
+        );
+        when(
+          () => mockSettingsDb.itemByKey(any()),
+        ).thenAnswer((_) async => stored);
+
+        sut.save(_saved);
+        async.flushMicrotasks();
+
+        final captured = verify(
+          () => mockSettingsDb.saveSettingsItem(
+            SavedTaskFiltersPersistence.storageKey,
+            captureAny(),
+          ),
+        ).captured;
+        final decoded = jsonDecode(captured.single as String) as List<dynamic>;
+        expect(decoded, hasLength(2));
+        expect((decoded[1] as Map<String, dynamic>)['id'], 'sv-2');
+      });
+    });
+
+    test('treats malformed DB value as raw and writes when it differs (no '
+        'prior load)', () {
+      fakeAsync((async) {
+        // Malformed JSON exercises the catch branch in _normalize: the raw
+        // string is kept verbatim, never equals the encoded filters, so save
+        // proceeds with a write.
+        when(
+          () => mockSettingsDb.itemByKey(any()),
+        ).thenAnswer((_) async => '{not-json');
+
+        sut.save(_saved);
+        async.flushMicrotasks();
+
+        verify(
+          () => mockSettingsDb.saveSettingsItem(
+            SavedTaskFiltersPersistence.storageKey,
+            any(),
+          ),
+        ).called(1);
+      });
+    });
   });
 }

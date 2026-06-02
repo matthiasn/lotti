@@ -739,6 +739,77 @@ void main() {
         },
       );
 
+      // Drives _dispatchFailureMessage / _looksLikeNoActiveTimerError via the
+      // dispatch-throws path for running-timer updates. dispatchThrew==true so
+      // the item is always auto-retracted, and the retraction reason embeds the
+      // sanitised error message produced by _dispatchFailureMessage. We assert
+      // on that observable retraction reason / result.errorMessage rather than
+      // re-implementing the mapping.
+      for (final scenario in const [
+        (
+          name: 'maps generic thrown error to a runtimeType-only message',
+          thrown: 'database connection lost',
+          expectedErrorMessage: 'Tool dispatch failed (StateError)',
+        ),
+        (
+          name: 'maps "no timer is currently running" wording to noActiveTimer',
+          thrown: 'no timer is currently running right now',
+          expectedErrorMessage: RunningTimerUpdateFailure.noActiveTimer,
+        ),
+      ]) {
+        test(
+          'dispatch-throws on running-timer update: ${scenario.name}',
+          () async {
+            final changeSet = makeChangeSetWith(
+              items: const [
+                ChangeItem(
+                  toolName: TaskAgentToolNames.updateRunningTimer,
+                  args: {
+                    'timerId': 'timer-entry-001',
+                    'summary': 'Refined timer text',
+                  },
+                  humanSummary: 'Update running timer text',
+                ),
+              ],
+            );
+
+            when(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            ).thenThrow(StateError(scenario.thrown));
+            when(
+              () => mockSyncService.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+
+            await withClock(testClock, () async {
+              final result = await service.confirmItem(changeSet, 0);
+
+              expect(result.success, isFalse);
+              expect(result.errorMessage, scenario.expectedErrorMessage);
+              // The raw thrown text must never leak into the result message.
+              expect(result.errorMessage, isNot(contains(scenario.thrown)));
+
+              final captured = verify(
+                () => mockSyncService.upsertEntity(captureAny()),
+              ).captured;
+
+              expect(captured, hasLength(4));
+              final retraction = captured[2] as ChangeDecisionEntity;
+              expect(retraction.verdict, ChangeDecisionVerdict.retracted);
+              // _failedConfirmationRetractionReason takes the non-empty
+              // errorMessage branch and embeds it in the reason.
+              expect(
+                retraction.retractionReason,
+                contains(scenario.expectedErrorMessage),
+              );
+              expect(
+                (captured[3] as ChangeSetEntity).items.single.status,
+                ChangeItemStatus.retracted,
+              );
+            });
+          },
+        );
+      }
+
       test('invokes post-confirm callback after successful dispatch', () async {
         final changeSet = makeChangeSetWith(
           items: const [

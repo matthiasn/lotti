@@ -519,5 +519,98 @@ void main() {
       // Should not crash
       expect(find.byType(AudioProgressBar), findsOneWidget);
     });
+
+    testWidgets(
+      'throttle timer flushes the last pending seek after the delay',
+      (WidgetTester tester) async {
+        await pumpProgressBar(
+          tester,
+          total: const Duration(seconds: 100),
+        );
+
+        final progressBar = find.byType(AudioProgressBar);
+        final rect = tester.getRect(progressBar);
+
+        // Begin a horizontal drag near the left edge. The first move resolves
+        // the gesture arena as a drag and fires onHorizontalDragStart, which
+        // emits immediately because there is no prior invocation (recording
+        // _lastSeekInvocation).
+        final gesture = await tester.startGesture(rect.centerLeft);
+        // Move past the touch slop (kTouchSlop ~= 18) so the horizontal drag is
+        // recognised and onHorizontalDragStart fires.
+        await gesture.moveBy(const Offset(40, 0));
+        expect(seekCalls.length, 1);
+        final immediateSeek = seekCalls.last;
+
+        // A second update happens within the 60ms throttle window, so instead
+        // of emitting immediately it stores a pending seek and arms the timer.
+        await gesture.moveTo(Offset(rect.right - 5, rect.center.dy));
+        expect(
+          seekCalls.length,
+          1,
+          reason: 'second update should be throttled, not emitted',
+        );
+
+        // Advance time past the throttle delay WITHOUT ending the drag so the
+        // pending seek is flushed by the timer callback itself.
+        await tester.pump(const Duration(milliseconds: 80));
+
+        expect(
+          seekCalls.length,
+          2,
+          reason: 'timer callback should emit the pending seek',
+        );
+        // The flushed seek targets the right edge (~end), clearly past the
+        // initial left-edge seek.
+        expect(
+          seekCalls.last.inSeconds,
+          greaterThan(immediateSeek.inSeconds + 80),
+        );
+
+        await gesture.up();
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'falls back to MediaQuery width when constraints are unbounded',
+      (WidgetTester tester) async {
+        // A horizontally-scrolling viewport hands the LayoutBuilder unbounded
+        // width constraints, exercising the MediaQuery.sizeOf fallback path.
+        const viewportWidth = 600.0;
+        tester.view.physicalSize = const Size(viewportWidth, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: viewportWidth,
+                  child: AudioProgressBar(
+                    progress: Duration.zero,
+                    buffered: Duration.zero,
+                    total: const Duration(seconds: 100),
+                    onSeek: seekCalls.add,
+                    enabled: true,
+                    compact: false,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Tap near the centre of the visible viewport. Because width came from
+        // MediaQuery (== viewportWidth), the centre maps to ~50% of total.
+        await tester.tapAt(const Offset(viewportWidth / 2, 18));
+        await tester.pump();
+
+        expect(seekCalls.length, 1);
+        expect(seekCalls.first.inSeconds, closeTo(50, 5));
+      },
+    );
   });
 }

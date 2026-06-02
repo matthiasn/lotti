@@ -52,6 +52,45 @@ void main() {
       );
     }
 
+    // Pumps a button that opens the modal, taps it, and settles.
+    Future<void> openModal(
+      WidgetTester tester, {
+      Set<String> existingLinkedIds = const {},
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: existingLinkedIds,
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+    }
+
+    void stubTasks(List<Task> tasks) {
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => tasks);
+    }
+
     setUp(() async {
       await getIt.reset();
 
@@ -900,5 +939,60 @@ void main() {
       // Should fallback to title matching
       expect(find.text('Test Task'), findsOneWidget);
     });
+
+    testWidgets(
+      'shows no-tasks message when loading tasks throws (catch branch)',
+      (tester) async {
+        // getTasks throws -> _loadTasks catch sets _isLoading = false and
+        // leaves _tasks empty, so the empty-state message is shown.
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(Exception('db failure'));
+
+        await openModal(tester);
+
+        // Loading spinner must be gone (catch branch flipped _isLoading)...
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        // ...and the empty list yields the "no tasks" message.
+        expect(find.text('No tasks available to link'), findsOneWidget);
+      },
+    );
+
+    // Covers the done/rejected arms of both _getStatusLabel and
+    // _getStatusIcon, which the other status tests do not exercise.
+    final terminalStatuses = <String, ({TaskStatus status, IconData icon})>{
+      'Done': (
+        status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
+        icon: Icons.check_circle_rounded,
+      ),
+      'Rejected': (
+        status: TaskStatus.rejected(
+          id: 's-rejected',
+          createdAt: now,
+          utcOffset: 0,
+        ),
+        icon: Icons.cancel_rounded,
+      ),
+    };
+
+    for (final entry in terminalStatuses.entries) {
+      final label = entry.key;
+      final status = entry.value.status;
+      final icon = entry.value.icon;
+
+      testWidgets('shows $label status label and icon', (tester) async {
+        stubTasks([buildTask(title: '$label Task', status: status)]);
+
+        await openModal(tester);
+
+        expect(find.text(label), findsOneWidget);
+        expect(find.byIcon(icon), findsOneWidget);
+      });
+    }
   });
 }

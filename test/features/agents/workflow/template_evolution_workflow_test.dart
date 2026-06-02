@@ -1469,6 +1469,95 @@ void main() {
       expect(antiSycophancy, 'Current policy.');
     });
 
+    test(
+      'falls back to current voiceDirective when proposal voice is empty',
+      () async {
+        final mockSoulService = MockSoulDocumentService();
+        final soulVersion = makeTestSoulDocumentVersion(
+          id: 'sv-active',
+          voiceDirective: 'Current voice.',
+          toneBounds: 'Current bounds.',
+          coachingStyle: 'Current coaching.',
+          antiSycophancyPolicy: 'Current policy.',
+        );
+        when(
+          () => mockSoulService.resolveActiveSoulForTemplate(kTestTemplateId),
+        ).thenAnswer((_) async => soulVersion);
+
+        final newVersion = makeTestSoulDocumentVersion(
+          id: 'sv-new',
+          version: 2,
+          voiceDirective: 'Current voice.',
+          toneBounds: 'Updated bounds.',
+        );
+        when(
+          () => mockSoulService.createVersion(
+            soulId: any(named: 'soulId'),
+            voiceDirective: any(named: 'voiceDirective'),
+            authoredBy: any(named: 'authoredBy'),
+            toneBounds: any(named: 'toneBounds'),
+            coachingStyle: any(named: 'coachingStyle'),
+            antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+            sourceSessionId: any(named: 'sourceSessionId'),
+          ),
+        ).thenAnswer((_) async => newVersion);
+
+        // Propose only tone_bounds; voice_directive is absent (empty) so it
+        // must fall back to the current soul version's voiceDirective.
+        final strategy = EvolutionStrategy();
+        final manager = ConversationManager(conversationId: 'conv-empty-voice')
+          ..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-empty-voice',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_soul_directives',
+            arguments:
+                '{"tone_bounds":"Updated bounds.","rationale":"Tone only."}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+        expect(strategy.latestSoulProposal, isNotNull);
+        expect(strategy.latestSoulProposal!.voiceDirective, isEmpty);
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: MockAiConfigRepository(),
+          cloudInferenceRepository: MockCloudInferenceRepository(),
+          soulDocumentService: mockSoulService,
+        );
+        workflow.activeSessions['session-empty-voice'] = ActiveEvolutionSession(
+          sessionId: 'session-empty-voice',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-empty-voice',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        await workflow.approveSoulProposal(sessionId: 'session-empty-voice');
+
+        final captured = verify(
+          () => mockSoulService.createVersion(
+            soulId: captureAny(named: 'soulId'),
+            voiceDirective: captureAny(named: 'voiceDirective'),
+            authoredBy: captureAny(named: 'authoredBy'),
+            toneBounds: captureAny(named: 'toneBounds'),
+            coachingStyle: captureAny(named: 'coachingStyle'),
+            antiSycophancyPolicy: captureAny(named: 'antiSycophancyPolicy'),
+            sourceSessionId: captureAny(named: 'sourceSessionId'),
+          ),
+        ).captured;
+
+        // voiceDirective falls back to current; toneBounds is the proposal.
+        expect(captured[1], 'Current voice.');
+        expect(captured[3], 'Updated bounds.');
+      },
+    );
+
     test('returns null when no soul proposal exists', () async {
       final workflow = TemplateEvolutionWorkflow(
         conversationRepository: _TestConversationRepository(),
@@ -4590,6 +4679,108 @@ void main() {
         expect(captured[3], 'Current bounds.');
         expect(captured[4], 'Current coaching.');
         expect(captured[5], 'Current policy.');
+      },
+    );
+
+    test(
+      'falls back to current voiceDirective when proposal voice is empty',
+      () async {
+        final currentSoulVersion = makeTestSoulDocumentVersion(
+          id: 'sv-current',
+          // ignore: avoid_redundant_argument_values
+          agentId: kTestSoulId,
+          voiceDirective: 'Current voice.',
+          toneBounds: 'Current bounds.',
+          coachingStyle: 'Current coaching.',
+          antiSycophancyPolicy: 'Current policy.',
+        );
+        when(
+          () => mockSoulService.getActiveSoulVersion(kTestSoulId),
+        ).thenAnswer((_) async => currentSoulVersion);
+
+        final newVersion = makeTestSoulDocumentVersion(
+          id: 'sv-new',
+          version: 2,
+          voiceDirective: 'Current voice.',
+          toneBounds: 'Updated bounds.',
+        );
+        when(
+          () => mockSoulService.createVersion(
+            soulId: any(named: 'soulId'),
+            voiceDirective: any(named: 'voiceDirective'),
+            authoredBy: any(named: 'authoredBy'),
+            toneBounds: any(named: 'toneBounds'),
+            coachingStyle: any(named: 'coachingStyle'),
+            antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+            sourceSessionId: any(named: 'sourceSessionId'),
+          ),
+        ).thenAnswer((_) async => newVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+
+        // Propose only tone_bounds; voice_directive is absent (empty) so it
+        // must fall back to the current soul version's voiceDirective.
+        final strategy = EvolutionStrategy();
+        final manager = ConversationManager(
+          conversationId: 'conv-empty-voice',
+        )..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-empty-voice',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_soul_directives',
+            arguments:
+                '{"tone_bounds":"Updated bounds.","rationale":"Tone only."}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+        expect(strategy.latestSoulProposal, isNotNull);
+        expect(strategy.latestSoulProposal!.voiceDirective, isEmpty);
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: MockAiConfigRepository(),
+          cloudInferenceRepository: MockCloudInferenceRepository(),
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+          soulDocumentService: mockSoulService,
+        );
+        workflow.activeSessions['sess-empty-voice'] = ActiveEvolutionSession(
+          sessionId: 'sess-empty-voice',
+          templateId: kTestSoulId,
+          conversationId: 'conv-empty-voice',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        final result = await workflow.completeSoulSession(
+          sessionId: 'sess-empty-voice',
+        );
+        expect(result, isNotNull);
+
+        final captured = verify(
+          () => mockSoulService.createVersion(
+            soulId: captureAny(named: 'soulId'),
+            voiceDirective: captureAny(named: 'voiceDirective'),
+            authoredBy: captureAny(named: 'authoredBy'),
+            toneBounds: captureAny(named: 'toneBounds'),
+            coachingStyle: captureAny(named: 'coachingStyle'),
+            antiSycophancyPolicy: captureAny(named: 'antiSycophancyPolicy'),
+            sourceSessionId: captureAny(named: 'sourceSessionId'),
+          ),
+        ).captured;
+
+        // voiceDirective falls back to current; toneBounds is the proposal.
+        expect(captured[1], 'Current voice.');
+        expect(captured[3], 'Updated bounds.');
       },
     );
 

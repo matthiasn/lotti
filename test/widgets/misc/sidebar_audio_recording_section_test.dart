@@ -3,13 +3,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_orb.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
 class _FakeAudioRecorderController extends AudioRecorderController {
@@ -18,9 +22,16 @@ class _FakeAudioRecorderController extends AudioRecorderController {
   final AudioRecorderState _initial;
   int stopCalls = 0;
   int stopRealtimeCalls = 0;
+  final List<String?> setCategoryIdCalls = <String?>[];
 
   @override
   AudioRecorderState build() => _initial;
+
+  @override
+  void setCategoryId(String? categoryId) {
+    setCategoryIdCalls.add(categoryId);
+    super.setCategoryId(categoryId);
+  }
 
   @override
   Future<String?> stop() async {
@@ -85,6 +96,25 @@ void main() {
         statusHistory: const [],
       ),
       entryText: const EntryText(plainText: 'task fallback text'),
+    );
+  }
+
+  JournalEntry makeEntry(
+    String id, {
+    String? plainText = 'standalone voice memo',
+    String? categoryId = 'category-9',
+  }) {
+    final now = DateTime(2026, 5, 22, 14);
+    return JournalEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+        categoryId: categoryId,
+      ),
+      entryText: plainText == null ? null : EntryText(plainText: plainText),
     );
   }
 
@@ -257,5 +287,116 @@ void main() {
     await pumpSection(tester, recorderState());
 
     expect(find.text('Audio recording in progress'), findsOneWidget);
+  });
+
+  testWidgets(
+    'shows linked non-task entry text as the title',
+    (tester) async {
+      await pumpSection(
+        tester,
+        recorderState(linkedId: 'entry-1'),
+        linkedEntry: makeEntry('entry-1', plainText: '  Morning thoughts  '),
+      );
+      await tester.pump(SidebarAudioRecordingSection.animationDuration);
+
+      // The non-Task branch falls through to entryText.plainText (trimmed).
+      expect(find.text('Morning thoughts'), findsOneWidget);
+      expect(find.text('Audio recording in progress'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'falls back to localized title when linked entry has no text',
+    (tester) async {
+      await pumpSection(
+        tester,
+        recorderState(linkedId: 'entry-blank'),
+        linkedEntry: makeEntry('entry-blank', plainText: '   '),
+      );
+      await tester.pump(SidebarAudioRecordingSection.animationDuration);
+
+      // Whitespace-only text is not a usable title, so the fallback wins.
+      expect(find.text('Audio recording in progress'), findsOneWidget);
+    },
+  );
+
+  group('linked entry provider + modal tap', () {
+    late MockJournalDb mockJournalDb;
+
+    setUp(() async {
+      await getIt.reset();
+      mockJournalDb = MockJournalDb();
+      getIt.registerSingleton<JournalDb>(mockJournalDb);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    Future<void> pumpWithRealProvider(
+      WidgetTester tester,
+      AudioRecorderState state,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SidebarAudioRecordingSection(),
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(() {
+              return controller = _FakeAudioRecorderController(state);
+            }),
+          ],
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets(
+      'resolves the linked entry title via JournalDb from get_it',
+      (tester) async {
+        when(
+          () => mockJournalDb.journalEntityById('entry-db'),
+        ).thenAnswer((_) async => makeEntry('entry-db', plainText: 'From DB'));
+
+        await pumpWithRealProvider(
+          tester,
+          recorderState(linkedId: 'entry-db'),
+        );
+        // Let the FutureProvider body (getIt<JournalDb>().journalEntityById)
+        // resolve and rebuild the card with the fetched title.
+        await tester.pump();
+        await tester.pump(SidebarAudioRecordingSection.animationDuration);
+
+        verify(() => mockJournalDb.journalEntityById('entry-db')).called(1);
+        expect(find.text('From DB'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping the card opens the modal and forwards the linked categoryId',
+      (tester) async {
+        when(() => mockJournalDb.journalEntityById('entry-tap')).thenAnswer(
+          (_) async =>
+              makeEntry('entry-tap', plainText: 'Tap me', categoryId: 'cat-42'),
+        );
+
+        await pumpWithRealProvider(
+          tester,
+          recorderState(linkedId: 'entry-tap'),
+        );
+        await tester.pump();
+        await tester.pump(SidebarAudioRecordingSection.animationDuration);
+
+        expect(controller.state.modalVisible, isFalse);
+
+        await tester.tap(
+          find.byKey(const Key('sidebar_audio_recording_card')),
+        );
+        await tester.pump();
+
+        // show() sets the modal visible and forwards the resolved categoryId.
+        expect(controller.state.modalVisible, isTrue);
+        expect(controller.setCategoryIdCalls, contains('cat-42'));
+      },
+    );
   });
 }

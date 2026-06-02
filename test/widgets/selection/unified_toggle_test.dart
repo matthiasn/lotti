@@ -370,6 +370,84 @@ void main() {
 
       expect(value, true);
     });
+
+    // Drives the enabled/disabled text-color branches for both the title
+    // (lib lines 252-256) and subtitle (lines 264-268). When disabled, both
+    // texts are dimmed to alpha 0.38; when enabled they use the full-strength
+    // scheme colors. We assert the real resolved Text style colors here.
+    for (final enabled in [true, false]) {
+      testWidgets(
+        'title/subtitle colors honor enabled=$enabled',
+        (WidgetTester tester) async {
+          const title = 'Field Title';
+          const subtitle = 'Field Subtitle';
+
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: ThemeData.light(),
+              home: Scaffold(
+                body: UnifiedToggleField(
+                  value: false,
+                  onChanged: enabled ? (_) {} : null,
+                  title: title,
+                  subtitle: subtitle,
+                  enabled: enabled,
+                ),
+              ),
+            ),
+          );
+
+          final scheme = Theme.of(
+            tester.element(find.text(title)),
+          ).colorScheme;
+
+          final titleColor = tester.widget<Text>(find.text(title)).style?.color;
+          final subtitleColor = tester
+              .widget<Text>(find.text(subtitle))
+              .style
+              ?.color;
+
+          if (enabled) {
+            expect(titleColor, scheme.onSurface);
+            expect(subtitleColor, scheme.onSurfaceVariant);
+          } else {
+            expect(titleColor, scheme.onSurface.withValues(alpha: 0.38));
+            expect(
+              subtitleColor,
+              scheme.onSurfaceVariant.withValues(alpha: 0.38),
+            );
+          }
+        },
+      );
+    }
+
+    testWidgets('disabled field does not toggle on tap', (
+      WidgetTester tester,
+    ) async {
+      var changed = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: Scaffold(
+            body: UnifiedToggleField(
+              value: false,
+              onChanged: (_) => changed = true,
+              title: 'Disabled Field',
+              enabled: false,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Disabled Field'));
+      await tester.pump();
+
+      expect(changed, false);
+      // The underlying InkWell is disabled (no onTap).
+      final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+      expect(inkWell.onTap, isNull);
+    });
   });
 
   group('UnifiedAiToggleField', () {

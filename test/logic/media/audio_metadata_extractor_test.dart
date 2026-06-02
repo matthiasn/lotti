@@ -1,11 +1,17 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/utils/platform.dart' as lotti_platform;
 import 'package:media_kit/media_kit.dart';
+import 'package:mocktail/mocktail.dart' as mt;
+
+import '../../helpers/fallbacks.dart';
+import '../../mocks/mocks.dart';
 
 class _GeneratedAudioFilenameScenario {
   const _GeneratedAudioFilenameScenario({
@@ -488,6 +494,163 @@ void main() {
           expect(duration, isA<Duration>());
         },
       );
+    });
+
+    // Exercises the real MediaKit Player code path in extractDuration via an
+    // injected fake Player (no native libmpv required), so these run on Linux
+    // CI too. Covers player construction, open(), the duration stream,
+    // dispose() in the finally block, and the TimeoutException branches.
+    group('extractDuration (faked Player)', () {
+      late MockPlayer player;
+      late MockPlayerStream playerStream;
+      late Player Function() originalFactory;
+
+      setUpAll(registerAllFallbackValues);
+
+      setUp(() {
+        AudioMetadataExtractor.bypassMediaKitInTests = false;
+        // Read the current factory before overriding: this exercises the
+        // default `playerFactory = Player.new` initializer deterministically
+        // (lazy static init runs on first read) and lets us restore the exact
+        // previous value rather than hardcoding `Player.new`.
+        originalFactory = AudioMetadataExtractor.playerFactory;
+        player = MockPlayer();
+        playerStream = MockPlayerStream();
+        mt.when(() => player.stream).thenReturn(playerStream);
+        mt.when(() => player.dispose()).thenAnswer((_) async {});
+        AudioMetadataExtractor.playerFactory = () => player;
+      });
+
+      tearDown(() {
+        AudioMetadataExtractor.bypassMediaKitInTests = false;
+        AudioMetadataExtractor.playerFactory = originalFactory;
+      });
+
+      test('returns the first non-zero duration emitted by the stream', () async {
+        const expected = Duration(seconds: 42);
+        mt
+            .when(() => player.open(mt.any(), play: mt.any(named: 'play')))
+            .thenAnswer((_) async {});
+        mt
+            .when(() => playerStream.duration)
+            .thenAnswer(
+              (_) => Stream<Duration>.fromIterable(const [
+                Duration.zero, // skipped by firstWhere(d > zero)
+                expected,
+                Duration(seconds: 99),
+              ]),
+            );
+
+        final duration = await AudioMetadataExtractor.extractDuration(
+          'any/path.m4a',
+        );
+
+        expect(duration, expected);
+        // Player was opened with play disabled and disposed in the finally block.
+        final captured = mt
+            .verify(
+              () => player.open(
+                mt.captureAny(),
+                play: mt.captureAny(named: 'play'),
+              ),
+            )
+            .captured;
+        expect(captured[0], isA<Media>());
+        // Media normalizes the path; the filename must survive.
+        expect((captured[0] as Media).uri, endsWith('path.m4a'));
+        expect(captured[1], isFalse);
+        mt.verify(() => player.dispose()).called(1);
+      });
+
+      test('returns Duration.zero when the stream only emits zero', () async {
+        mt
+            .when(() => player.open(mt.any(), play: mt.any(named: 'play')))
+            .thenAnswer((_) async {});
+        mt
+            .when(() => playerStream.duration)
+            .thenAnswer(
+              (_) => Stream<Duration>.fromIterable(const [Duration.zero]),
+            );
+
+        final duration = await AudioMetadataExtractor.extractDuration(
+          'any/path.m4a',
+        );
+
+        // firstWhere(d > zero) matches nothing -> orElse -> Duration.zero.
+        expect(duration, Duration.zero);
+        mt.verify(() => player.dispose()).called(1);
+      });
+
+      test(
+        'returns Duration.zero when open() throws (open catch path)',
+        () async {
+          mt
+              .when(() => player.open(mt.any(), play: mt.any(named: 'play')))
+              .thenThrow(Exception('cannot open'));
+
+          final duration = await AudioMetadataExtractor.extractDuration(
+            'bad/path.m4a',
+          );
+
+          expect(duration, Duration.zero);
+          mt.verify(() => player.dispose()).called(1);
+        },
+      );
+
+      test('returns Duration.zero when open() exceeds the timeout '
+          '(open TimeoutException path)', () {
+        // open() never completes; the open() timeout (3s) must fire and the
+        // TimeoutException branch must return Duration.zero. Driven with
+        // fakeAsync so no real time elapses.
+        fakeAsync((async) {
+          mt
+              .when(() => player.open(mt.any(), play: mt.any(named: 'play')))
+              .thenAnswer((_) => Completer<void>().future); // never completes
+
+          Duration? result;
+          AudioMetadataExtractor.extractDuration(
+            'any/path.m4a',
+          ).then((value) => result = value);
+
+          // Advance past the open timeout (3s).
+          async
+            ..elapse(AudioMetadataExtractor.playerOpenTimeout)
+            ..flushMicrotasks();
+
+          expect(result, Duration.zero);
+          mt.verify(() => player.dispose()).called(1);
+        });
+      });
+
+      test('returns Duration.zero when the duration stream never emits '
+          '(stream timeout path)', () {
+        // open() completes, but the duration stream never emits a value, so the
+        // durationStreamTimeout (5s) onTimeout callback must yield Duration.zero.
+        fakeAsync((async) {
+          mt
+              .when(() => player.open(mt.any(), play: mt.any(named: 'play')))
+              .thenAnswer((_) async {});
+          // A stream that never emits and never closes.
+          final controller = StreamController<Duration>();
+          addTearDown(controller.close);
+          mt
+              .when(() => playerStream.duration)
+              .thenAnswer((_) => controller.stream);
+
+          Duration? result;
+          AudioMetadataExtractor.extractDuration(
+            'any/path.m4a',
+          ).then((value) => result = value);
+
+          async
+            ..flushMicrotasks()
+            ..elapse(AudioMetadataExtractor.durationStreamTimeout)
+            ..flushMicrotasks();
+
+          expect(result, Duration.zero);
+          mt.verify(() => player.dispose()).called(1);
+        });
+      });
     });
 
     group('selectReader', () {

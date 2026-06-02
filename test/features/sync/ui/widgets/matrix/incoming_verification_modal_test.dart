@@ -268,14 +268,73 @@ void main() {
     },
   );
 
-  // Lines 56-57: the catch block inside _acceptEmojiVerification resets
-  // _awaitingOtherDevice when acceptEmojiVerification() throws.  Verifying
-  // the full round-trip (tap → awaiting → error → reset) requires the
-  // unhandled Future error from rethrow to be suppressed — which is not
-  // supported by the standard testWidgets Zone.  Instead we verify the
-  // *awaiting* state transition (tap → button disabled) and that
-  // acceptEmojiVerification was actually called, which is the meaningful
-  // precondition for the catch path.
+  testWidgets(
+    'Accept failure resets awaiting state and surfaces the error',
+    (tester) async {
+      final runner = MockKeyVerificationRunner();
+      final emojis = List.generate(
+        8,
+        (index) => FakeKeyVerificationEmoji('😀', 'emoji$index'),
+      );
+
+      when(() => runner.lastStep).thenReturn('m.key.verification.key');
+      when(() => runner.emojis).thenReturn(emojis);
+      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
+      when(runner.cancelVerification).thenAnswer((_) async {});
+      // acceptEmojiVerification fails so the catch block (lines 56-57) runs:
+      // it resets _awaitingOtherDevice to false and then rethrows.
+      when(runner.acceptEmojiVerification).thenAnswer(
+        (_) async => throw Exception('boom'),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          IncomingVerificationModal(mockKeyVerification),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      controller.add(runner);
+      await tester.pump();
+
+      final acceptFinder = find.text('Accept');
+      expect(acceptFinder, findsOneWidget);
+      await tester.ensureVisible(acceptFinder);
+
+      // The rethrow propagates out of the discarded onPressed future as an
+      // unhandled async error; capture it via a guarded zone so it does not
+      // fail the test. Only the tap + pumps that trigger the async failure run
+      // inside the zone, so other assertions still fail the test normally.
+      final asyncErrors = <Object>[];
+      await runZonedGuarded(
+        () async {
+          await tester.tap(acceptFinder);
+          // Flush the microtasks so the failed acceptEmojiVerification future
+          // settles and the catch block runs setState.
+          await tester.pump();
+          await tester.pump();
+        },
+        (error, stack) => asyncErrors.add(error),
+      );
+
+      // The rethrow surfaced as an unhandled async error.
+      expect(asyncErrors, isNotEmpty);
+
+      // After the failure the catch block reset _awaitingOtherDevice to false,
+      // so the button is interactive again and shows the "Accept" label rather
+      // than the "continue verification" awaiting label.
+      verify(runner.acceptEmojiVerification).called(1);
+      expect(find.text('Accept'), findsOneWidget);
+      final context = tester.element(find.byType(IncomingVerificationModal));
+      expect(
+        find.text(context.messages.settingsMatrixContinueVerificationLabel),
+        findsNothing,
+      );
+    },
+  );
+
   testWidgets(
     'tapping Accept while not awaiting calls acceptEmojiVerification and sets awaiting state',
     (tester) async {
@@ -373,11 +432,15 @@ void main() {
       when(() => mockDeviceKeys.deviceId).thenReturn('OTHER_DEVICE');
       when(() => mockDeviceKeys.deviceDisplayName).thenReturn('Other Device');
 
-      // Return non-empty first, then empty to end the loop.
+      // build() calls getUnverifiedDevices() once per build before the loop
+      // ever runs, so we keep returning a non-empty list for the first few
+      // calls. That forces the loop's `isEmpty` check (line 73) to fail and
+      // drive execution into the `await Future.delayed` + mounted re-check
+      // (lines 76-77). After enough calls we return empty so the loop breaks.
       var callCount = 0;
       when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
         callCount++;
-        if (callCount <= 1) return [mockDeviceKeys];
+        if (callCount <= 3) return [mockDeviceKeys];
         return [];
       });
 
@@ -400,13 +463,15 @@ void main() {
       controller.add(runner);
       await tester.pump();
 
-      // Advance time to allow the delay in refreshUnverifiedDevices loop to fire.
+      // Advance time repeatedly so the 400ms delay inside the loop fires more
+      // than once, proving lines 76-77 (the delay + mounted re-check) ran.
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.pump(const Duration(milliseconds: 500));
 
-      // Should have called getUnverifiedDevices at least twice — once while
-      // non-empty (triggering the delay path, lines 76-77), and once returning
-      // empty to break out.
-      expect(callCount, greaterThanOrEqualTo(2));
+      // getUnverifiedDevices was polled more than the single build()-time call,
+      // which can only happen if the loop traversed the delay path at least
+      // once (the loop is the only other caller).
+      expect(callCount, greaterThan(2));
     },
   );
 
@@ -472,6 +537,53 @@ void main() {
 
         // The modal content (IncomingVerificationModal) should now be visible.
         expect(find.byType(IncomingVerificationModal), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'closing the modal releases the lock so a later request reopens it',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const IncomingVerificationWrapper(),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+            ],
+          ),
+        );
+
+        when(
+          () => mockMatrixService.incomingKeyVerificationRunnerStream,
+        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+        when(() => mockKeyVerification.deviceId).thenReturn('DEVICE1');
+
+        // First request opens the modal (lock acquired).
+        incomingController.add(mockKeyVerification);
+        await tester.pumpAndSettle();
+        expect(find.byType(IncomingVerificationModal), findsOneWidget);
+
+        // Dismiss the modal by popping the navigator. This completes the
+        // showVerificationModalSheet future and runs the finally block
+        // (lines 268-269 invalidate while mounted, 271 lock.release()).
+        final modalContext = tester.element(
+          find.byType(IncomingVerificationModal),
+        );
+        Navigator.of(modalContext).pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(IncomingVerificationModal), findsNothing);
+
+        // The lock was released, so a second incoming request must be able to
+        // reopen the modal. If release() (line 271) had not run, tryAcquire()
+        // would return false and no modal would appear.
+        incomingController.add(mockKeyVerification);
+        await tester.pumpAndSettle();
+        expect(find.byType(IncomingVerificationModal), findsOneWidget);
+
+        // Clean up the still-open second modal.
+        Navigator.of(
+          tester.element(find.byType(IncomingVerificationModal)),
+        ).pop();
+        await tester.pumpAndSettle();
       },
     );
 

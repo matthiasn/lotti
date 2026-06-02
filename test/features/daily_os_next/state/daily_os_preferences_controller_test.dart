@@ -1,11 +1,50 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../widget_test_utils.dart';
 
 void main() {
+  group('DailyOsPreferences', () {
+    for (final entry in const <String, bool>{
+      'Daily OS User': true,
+      'value': true,
+      '   padded   ': true,
+      '': false,
+      '   ': false,
+    }.entries) {
+      test('hasUserName is ${entry.value} for "${entry.key}"', () {
+        expect(
+          DailyOsPreferences(userName: entry.key).hasUserName,
+          entry.value,
+        );
+      });
+    }
+
+    test('allowsCategory / allowsCategoryId reflect the excluded set', () {
+      final prefs = DailyOsPreferences(
+        excludedCategoryIds: const {'cat_health'},
+      );
+      const excluded = DayAgentCategory(
+        id: 'cat_health',
+        name: 'Health',
+        colorHex: 'FF0000',
+      );
+      const allowed = DayAgentCategory(
+        id: 'cat_work',
+        name: 'Work',
+        colorHex: '00FF00',
+      );
+
+      expect(prefs.allowsCategory(excluded), isFalse);
+      expect(prefs.allowsCategory(allowed), isTrue);
+      expect(prefs.allowsCategoryId('cat_health'), isFalse);
+      expect(prefs.allowsCategoryId('cat_work'), isTrue);
+    });
+  });
+
   group('DailyOsPreferencesController', () {
     late ProviderContainer container;
     late TestGetItMocks mocks;
@@ -109,6 +148,33 @@ void main() {
         () => mocks.settingsDb.saveSettingsItem(
           dailyOsExcludedCategoryIdsSettingsKey,
           '["cat_meals"]',
+        ),
+      ).called(1);
+    });
+
+    test('includeAllCategories clears exclusions and persists empty list', () {
+      final notifier = container.read(
+        dailyOsPreferencesControllerProvider.notifier,
+      )..setCategoryEnabled('cat_health', enabled: false);
+      expect(
+        container
+            .read(dailyOsPreferencesControllerProvider)
+            .excludedCategoryIds,
+        {'cat_health'},
+      );
+
+      notifier.includeAllCategories();
+
+      expect(
+        container
+            .read(dailyOsPreferencesControllerProvider)
+            .excludedCategoryIds,
+        isEmpty,
+      );
+      verify(
+        () => mocks.settingsDb.saveSettingsItem(
+          dailyOsExcludedCategoryIdsSettingsKey,
+          '[]',
         ),
       ).called(1);
     });

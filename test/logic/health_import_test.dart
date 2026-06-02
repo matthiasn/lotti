@@ -12,6 +12,10 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/health_service.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
+import 'package:permission_handler/permission_handler.dart';
+// ignore: depend_on_referenced_packages
+import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart'
+    show PermissionHandlerPlatform;
 import 'package:uuid/uuid.dart';
 
 import '../mocks/mocks.dart';
@@ -19,6 +23,24 @@ import '../mocks/mocks.dart';
 class MockHealthService extends Mock implements HealthService {}
 
 class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
+
+/// Fake [PermissionHandlerPlatform] that records every requested permission set
+/// and grants them all, so the default [HealthImport] permission request path
+/// can be exercised without the native plugin.
+class _RecordingPermissionHandler extends PermissionHandlerPlatform {
+  final List<List<Permission>> requestedPermissions = [];
+
+  @override
+  Future<Map<Permission, PermissionStatus>> requestPermissions(
+    List<Permission> permissions,
+  ) async {
+    requestedPermissions.add(permissions);
+    return {
+      for (final permission in permissions)
+        permission: PermissionStatus.granted,
+    };
+  }
+}
 
 class FakeQuantitativeData extends Fake implements CumulativeQuantityData {}
 
@@ -1572,6 +1594,64 @@ void main() {
       // Flag should be reset even if auth fails
       expect(mobileImport.workoutImportRunning, false);
     });
+  });
+
+  group('default permission request', () {
+    /// Forces mobile platform flags and restores them afterwards, without
+    /// injecting a [requestPermissions] override, so the production default
+    /// ([HealthImport]'s static permission request) is exercised.
+    HealthImport createMobileHealthImportWithDefaultPermissions() {
+      final originalIsDesktop = platform.isDesktop;
+      final originalIsMobile = platform.isMobile;
+      platform.isDesktop = false;
+      platform.isMobile = true;
+      addTearDown(() {
+        platform.isDesktop = originalIsDesktop;
+        platform.isMobile = originalIsMobile;
+      });
+
+      return HealthImport(
+        persistenceLogic: mockPersistenceLogic,
+        db: mockJournalDb,
+        health: mockHealthService,
+        deviceInfo: mockDeviceInfoPlugin,
+      );
+    }
+
+    test(
+      'requests activityRecognition and location via the default handler',
+      () async {
+        final recordingHandler = _RecordingPermissionHandler();
+        final originalHandler = PermissionHandlerPlatform.instance;
+        PermissionHandlerPlatform.instance = recordingHandler;
+        addTearDown(
+          () => PermissionHandlerPlatform.instance = originalHandler,
+        );
+
+        final mobileImport = createMobileHealthImportWithDefaultPermissions();
+
+        // Deny health auth so the flow returns right after the default
+        // permission request, isolating the permission request path.
+        when(
+          () => mockHealthService.requestAuthorization(any()),
+        ).thenAnswer((_) async => false);
+
+        await mobileImport.getActivityHealthData(
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        );
+
+        // The default handler must have requested exactly the two
+        // permissions, each as its own single-element request.
+        expect(
+          recordingHandler.requestedPermissions,
+          [
+            [Permission.activityRecognition],
+            [Permission.location],
+          ],
+        );
+      },
+    );
   });
 
   group('top-level type lists', () {

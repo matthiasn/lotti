@@ -881,6 +881,34 @@ void main() {
       });
     });
 
+    group('localHost', () {
+      test('returns the host id from the vector clock service', () async {
+        when(
+          () => mockVectorClockService.getHost(),
+        ).thenAnswer((_) async => 'host-abc');
+
+        expect(await syncService.localHost(), 'host-abc');
+        verify(() => mockVectorClockService.getHost()).called(1);
+      });
+
+      test('throws a StateError when the host id is unset', () async {
+        when(
+          () => mockVectorClockService.getHost(),
+        ).thenAnswer((_) async => null);
+
+        await expectLater(
+          syncService.localHost(),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('no host id'),
+            ),
+          ),
+        );
+      });
+    });
+
     group('insertLinkExclusive', () {
       test('stamps clock and enqueues outside of wake/transaction', () async {
         await syncService.insertLinkExclusive(testBasicLink);
@@ -1899,5 +1927,84 @@ void main() {
       ).captured.whereType<AgentStateEntity>().single;
       expect(upserted.lastWakeAt, DateTime(2024, 3, 9));
     });
+
+    test(
+      'falls back to the cached row (and logs) when the reconcile fold throws '
+      'on a corrupt log — a malformed peer log must not abort the wake',
+      () async {
+        // Capture the error log so we can assert the fall-back path logged it.
+        final logger = MockDomainLogger();
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
+        }
+        getIt.registerSingleton<DomainLogger>(logger);
+        addTearDown(() {
+          if (getIt.isRegistered<DomainLogger>()) {
+            getIt.unregister<DomainLogger>();
+          }
+          getIt.registerSingleton<DomainLogger>(MockDomainLogger());
+        });
+
+        final cache = makeTestState(
+          agentId: 'agent-1',
+          lastWakeAt: DateTime(2024, 3, 5),
+        );
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => cache);
+        // A corrupt log: two distinct `system` markers share one id (different
+        // vector clocks make them unequal events), so the kernel's
+        // canonicalOrder throws DuplicateEventIdException inside the fold.
+        when(
+          () => mockRepository.getMessagesByKind(
+            'agent-1',
+            AgentMessageKind.system,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            makeTestMessage(
+              id: 'dup',
+              agentId: 'agent-1',
+              kind: AgentMessageKind.system,
+              createdAt: DateTime(2024, 3, 6),
+              vectorClock: const VectorClock({'a': 1}),
+              metadata: const AgentMessageMetadata(
+                milestone: AgentMilestone.wakeCompleted,
+              ),
+            ),
+            makeTestMessage(
+              id: 'dup',
+              agentId: 'agent-1',
+              kind: AgentMessageKind.system,
+              createdAt: DateTime(2024, 3, 7),
+              vectorClock: const VectorClock({'b': 1}),
+              metadata: const AgentMessageMetadata(
+                milestone: AgentMilestone.wakeCompleted,
+              ),
+            ),
+          ],
+        );
+
+        // Must NOT rethrow: the malformed log falls back to the cached row.
+        final result = await syncService.reconciledAgentState('agent-1');
+
+        expect(result, same(cache));
+        // No heal is persisted on the fall-back path.
+        verifyNever(() => mockRepository.upsertEntity(any()));
+        // The divergence is logged under the reconcile sub-domain.
+        verify(
+          () => logger.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'agentSync.reconcile',
+            message: any(
+              named: 'message',
+              that: contains('reconcile fold failed for agent-1'),
+            ),
+          ),
+        ).called(1);
+      },
+    );
   });
 }

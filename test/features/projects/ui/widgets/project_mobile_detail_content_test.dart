@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
+import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 
@@ -278,6 +279,126 @@ void main() {
           );
           expect(report.onCancelScheduledWake, isNull);
         });
+      },
+    );
+
+    testWidgets(
+      'shows the empty-report placeholder when both the AI summary and the '
+      'report content are empty',
+      (tester) async {
+        final record = makeTestProjectRecord(
+          aiSummary: '',
+          reportContent: '',
+        );
+
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: record,
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The empty-summary branch feeds `agentReportNone` into the report
+        // section body, which the section renders as its TLDR.
+        final report = tester.widget<ExpandableReportSection>(
+          find.byType(ExpandableReportSection),
+        );
+        expect(report.body, 'No report available yet.');
+        expect(find.textContaining('No report available yet.'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders the tappable category placeholder when the project has no '
+      'category but the page wires up onCategoryTap',
+      (tester) async {
+        var categoryTapCount = 0;
+        final record = ProjectRecord(
+          project: makeTestProject(
+            id: 'project-1',
+            title: 'Uncategorised project',
+          ),
+          category: null,
+          healthScore: 78,
+          healthMetrics: null,
+          reportNextWakeAt: null,
+          completedTaskCount: 0,
+          totalTaskCount: 0,
+          blockedTaskCount: 0,
+          aiSummary: 'Test AI summary.',
+          reportContent: 'Test AI summary.',
+          recommendations: const [],
+          reportUpdatedAt: DateTime(2026, 4, 2, 7, 30),
+          highlightedTaskSummaries: const [],
+          reviewSessions: const [],
+          highlightedTasksTotalDuration: Duration.zero,
+        );
+
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: record,
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onCategoryTap: () => categoryTapCount++,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // No real category tag is shown; the placeholder tag carries the
+        // "Category:" label and is marked as a placeholder.
+        expect(find.byType(CategoryTag), findsNothing);
+        final placeholder = tester.widget<OutlinedMetaTag>(
+          find.widgetWithText(OutlinedMetaTag, 'Category:'),
+        );
+        expect(placeholder.isPlaceholder, isTrue);
+
+        await tester.tap(find.text('Category:'));
+        await tester.pump();
+        expect(categoryTapCount, 1);
+      },
+    );
+
+    testWidgets(
+      'omits the category placeholder when the project has no category and '
+      'onCategoryTap is not wired up',
+      (tester) async {
+        final record = ProjectRecord(
+          project: makeTestProject(
+            id: 'project-1',
+            title: 'Uncategorised project',
+          ),
+          category: null,
+          healthScore: 78,
+          healthMetrics: null,
+          reportNextWakeAt: null,
+          completedTaskCount: 0,
+          totalTaskCount: 0,
+          blockedTaskCount: 0,
+          aiSummary: 'Test AI summary.',
+          reportContent: 'Test AI summary.',
+          recommendations: const [],
+          reportUpdatedAt: DateTime(2026, 4, 2, 7, 30),
+          highlightedTaskSummaries: const [],
+          reviewSessions: const [],
+          highlightedTasksTotalDuration: Duration.zero,
+        );
+
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: record,
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(CategoryTag), findsNothing);
+        expect(find.text('Category:'), findsNothing);
       },
     );
   });

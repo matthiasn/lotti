@@ -173,6 +173,42 @@ void main() {
     });
 
     test(
+      'unbalanced nesting where the only close lands at end of input is '
+      'open-ended: whole remainder (incl. inner open) becomes thinking '
+      '(covers _extractNested natural loop exit, line 144)',
+      () {
+        // One inner <think> raises depth to 2; the single </think> sits at the
+        // very end of the string, dropping depth to 1 while pos reaches the end
+        // of content. The while loop exits without depth==0 and without ever
+        // seeing nextClose<0, hitting the final open-ended return.
+        final result = parseThinking('<think>x<think>y</think>');
+        expect(result.visible, '');
+        // The inner open token and the trailing close are part of the body.
+        expect(result.thinking, 'x<think>y</think>');
+      },
+    );
+
+    test(
+      'unbalanced nesting with surrounding visible text (line 144 path)',
+      () {
+        final result = parseThinking(
+          'pre <think>a<think>b</think> post',
+        );
+        expect(result.visible, 'pre');
+        expect(result.thinking, 'a<think>b</think> post');
+      },
+    );
+
+    test(
+      'bracket unbalanced nesting is also open-ended (line 144 via brackets)',
+      () {
+        final result = parseThinking('[think]p[think]q[/think]');
+        expect(result.visible, '');
+        expect(result.thinking, 'p[think]q[/think]');
+      },
+    );
+
+    test(
       'ThinkingUtils.stripThinking removes thinking and returns visible',
       () {
         final stripped = ThinkingUtils.stripThinking('<think>hide</think>show');
@@ -341,6 +377,21 @@ void main() {
       expect(thinking, hasLength(1));
       expect(thinking.first.text, contains('deep'));
     });
+
+    test(
+      'unbalanced nesting (only close at end) is one open-ended thinking '
+      'segment carrying the inner open token (covers line 144 via split)',
+      () {
+        final segments = splitThinkingSegments(
+          'pre <think>a<think>b</think> post',
+        );
+        expect(segments, hasLength(2));
+        expect(segments[0].isThinking, isFalse);
+        expect(segments[0].text, 'pre ');
+        expect(segments[1].isThinking, isTrue);
+        expect(segments[1].text, 'a<think>b</think> post');
+      },
+    );
   });
 
   // -------------------------------------------------------------------------

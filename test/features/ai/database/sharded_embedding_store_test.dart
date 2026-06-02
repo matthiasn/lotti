@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import 'objectbox_test_loader.dart';
 
 void main() {
   group('ShardedEmbeddingStore', () {
@@ -234,6 +235,61 @@ void main() {
 
         expect(results, isEmpty);
       });
+
+      test('throws ArgumentError when vector length is wrong', () async {
+        await openStore();
+
+        final wrongVector = Float32List(kEmbeddingDimensions - 1);
+
+        await expectLater(
+          () => store.search(queryVector: wrongVector),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              allOf(
+                contains('${kEmbeddingDimensions - 1}'),
+                contains('$kEmbeddingDimensions'),
+              ),
+            ),
+          ),
+        );
+      });
+
+      test(
+        'opens a shard directory created after the store was opened',
+        () async {
+          // Open with no shards on disk.
+          await openStoreWithShards([]);
+
+          // Create a new shard directory on disk *after* the store opened, so
+          // _ensureAllShardsOpen did not discover it. A category-scoped search
+          // must lazily open it via _openExistingShard.
+          await Directory(
+            p.join(tempDir.path, 'cat-late'),
+          ).create(recursive: true);
+
+          // No mock exists yet for this directory; the opsFactory creates one
+          // on demand. Search the late category specifically.
+          final results = await store.search(
+            queryVector: validVector(),
+            categoryIds: {'cat-late'},
+          );
+
+          // The shard was opened and queried (empty result by default stub).
+          expect(results, isEmpty);
+          final lateOps = getShardOps('cat-late');
+          verify(
+            () => lateOps.nearestNeighborSearch(
+              queryVector: any(named: 'queryVector'),
+              maxResults: any(named: 'maxResults'),
+              limit: any(named: 'limit'),
+              entityTypeFilter: any(named: 'entityTypeFilter'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('returns empty when no shards exist', () async {
         await openStore();
@@ -494,6 +550,39 @@ void main() {
         );
 
         expect(await store.hasEmbedding('entity-1'), isFalse);
+      });
+
+      test('indexes taskId so related reports are reachable', () async {
+        await openStore();
+
+        // Insert a report with a non-empty taskId. This must populate the
+        // reverse-task index so moveRelatedReportEmbeddings can find it.
+        await store.replaceEntityEmbeddings(
+          entityId: 'report-1',
+          entityType: 'aiResponse',
+          modelId: 'nomic-embed-text',
+          contentHash: 'hash-1',
+          embeddings: [validVector()],
+          categoryId: 'cat-a',
+          taskId: 'task-1',
+        );
+
+        // The reverse-task index now links task-1 -> report-1. Moving the task
+        // must cascade to report-1, proving the index was populated on insert.
+        final oldOps = getShardOps('cat-a');
+        when(
+          () => oldOps.findEntitiesByEntityId('report-1'),
+        ).thenReturn([
+          makeEntity(
+            entityId: 'report-1',
+            categoryId: 'cat-a',
+            taskId: 'task-1',
+          ),
+        ]);
+
+        await store.moveRelatedReportEmbeddings('task-1', 'cat-b');
+
+        expect(await store.getCategoryId('report-1'), 'cat-b');
       });
 
       test('updates reverseTaskIndex for taskId', () async {
@@ -1061,6 +1150,57 @@ void main() {
           ),
         ).called(1);
       });
+    });
+
+    group('default ops factory', () {
+      test(
+        'open() actually invokes the production ops factory for a shard',
+        () async {
+          // Pre-create a shard directory so that _ensureAllShardsOpen
+          // discovers it and *invokes* the default factory closure
+          // (the `?? _defaultOpsFactory(...)` fallback). This is the key
+          // difference from a zero-shard base directory, where the closure
+          // would be constructed but never called — letting a broken factory
+          // pass undetected.
+          await Directory(p.join(tempDir.path, 'cat-a')).create(
+            recursive: true,
+          );
+
+          if (isObjectBoxAvailable) {
+            // Native ObjectBox is present (e.g. macOS CI): the default factory
+            // opens a real shard backed by RealObjectBoxOps. Assert the store
+            // genuinely opened the shard rather than silently swallowing it.
+            final fallbackStore = await ShardedEmbeddingStore.open(
+              basePath: tempDir.path,
+            );
+            addTearDown(fallbackStore.close);
+
+            // Fresh shard is empty but real: writing then reading proves the
+            // factory wired a working store, not a no-op.
+            expect(fallbackStore.count, 0);
+            await fallbackStore.replaceEntityEmbeddings(
+              entityId: 'entity-1',
+              entityType: 'journalEntry',
+              modelId: 'nomic-embed-text',
+              contentHash: 'hash-1',
+              embeddings: [validVector()],
+              categoryId: 'cat-a',
+            );
+            expect(fallbackStore.count, 1);
+            expect(await fallbackStore.hasEmbedding('entity-1'), isTrue);
+          } else {
+            // Native ObjectBox is unavailable (e.g. Linux CI without
+            // libobjectbox.so): invoking the default factory closure calls the
+            // production openStore(), which fails to load the native library.
+            // That failure *proves* the closure was actually invoked — a no-op
+            // or broken-but-non-throwing factory would not reach native code.
+            await expectLater(
+              ShardedEmbeddingStore.open(basePath: tempDir.path),
+              throwsA(isA<ArgumentError>()),
+            );
+          }
+        },
+      );
     });
   });
 }

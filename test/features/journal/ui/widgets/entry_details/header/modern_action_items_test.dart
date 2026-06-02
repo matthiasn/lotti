@@ -20,8 +20,18 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/media_file_actions.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:share_plus/share_plus.dart';
+// SharePlatform is only re-exported from share_plus with a `show` clause that
+// omits it, so the platform interface package is imported directly here to
+// install a fake instance. It is a transitive dependency of share_plus.
+// ignore: depend_on_referenced_packages
+import 'package:share_plus_platform_interface/share_plus_platform_interface.dart'
+    show SharePlatform;
 
 import '../../../../../../helpers/fake_entry_controller.dart';
 import '../../../../../../mocks/mocks.dart';
@@ -66,11 +76,18 @@ void main() {
   final now = DateTime(2025, 12, 31, 12);
 
   late Directory documentsDirectory;
+  late _FakeSharePlatform fakeSharePlatform;
 
   setUpAll(() async {
     documentsDirectory = Directory.systemTemp.createTempSync(
       'modern_action_items_test_',
     );
+
+    // Install a fake share platform before `SharePlus.instance` is first
+    // accessed, so its lazily-initialized singleton captures this fake.
+    // The production `ModernShareItem` calls `SharePlus.instance.share(...)`.
+    fakeSharePlatform = _FakeSharePlatform();
+    SharePlatform.instance = fakeSharePlatform;
 
     await setUpTestGetIt(
       additionalSetup: () {
@@ -1520,6 +1537,82 @@ void main() {
       },
     );
   });
+
+  group('ModernShareItem — onTap shares the media file', () {
+    // On Linux/Windows the production handler returns before reaching the
+    // share call (lines 363-365). Force the non-Linux/Windows branch so the
+    // `JournalImage` / `JournalAudio` share blocks (lines 367-373) execute.
+    setUp(() {
+      final prevIsLinux = platform.isLinux;
+      final prevIsWindows = platform.isWindows;
+      platform.isLinux = false;
+      platform.isWindows = false;
+      fakeSharePlatform.reset();
+      addTearDown(() {
+        platform.isLinux = prevIsLinux;
+        platform.isWindows = prevIsWindows;
+      });
+    });
+
+    testWidgets('shares the full image path for image entries', (tester) async {
+      final entry = buildImageEntry();
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShareItem(entryId: 'image-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pumpAndSettle();
+
+      final expectedPath = '${getDocumentsDirectory().path}/images/test.jpg';
+      final params = fakeSharePlatform.lastParams;
+      expect(params, isNotNull);
+      expect(params!.files, isNotNull);
+      expect(params.files!.map((f) => f.path), [expectedPath]);
+      // The route is also dismissed (Navigator.pop ran first).
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets('shares the full audio path for audio entries', (tester) async {
+      final entry = buildAudioEntry();
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShareItem(entryId: 'audio-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pumpAndSettle();
+
+      final expectedPath = '${getDocumentsDirectory().path}/audio/test.m4a';
+      final params = fakeSharePlatform.lastParams;
+      expect(params, isNotNull);
+      expect(params!.files, isNotNull);
+      expect(params.files!.map((f) => f.path), [expectedPath]);
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+  });
+}
+
+/// Fake [SharePlatform] that records the [ShareParams] passed to [share]
+/// instead of invoking a real platform channel.
+class _FakeSharePlatform extends SharePlatform with MockPlatformInterfaceMixin {
+  ShareParams? lastParams;
+
+  void reset() => lastParams = null;
+
+  @override
+  Future<ShareResult> share(ShareParams params) async {
+    lastParams = params;
+    return const ShareResult('shared', ShareResultStatus.success);
+  }
 }
 
 /// Fake EntryController that tracks [delete] calls.

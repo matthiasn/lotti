@@ -9,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
+import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -1466,6 +1467,82 @@ void main() {
           container.read(captureControllerProvider).transcript,
           '',
         );
+      },
+    );
+  });
+
+  group('CaptureController resolves realtimeService from the provider', () {
+    late MockAudioRecorderRepository recorder;
+    late MockAudioTranscriptionService transcriber;
+    late MockRealtimeTranscriptionService realtimeService;
+    late StreamController<Amplitude> ampController;
+
+    setUp(() {
+      recorder = MockAudioRecorderRepository();
+      transcriber = MockAudioTranscriptionService();
+      realtimeService = MockRealtimeTranscriptionService();
+      ampController = StreamController<Amplitude>.broadcast();
+
+      when(
+        () => realtimeService.resolveRealtimeConfig(),
+      ).thenAnswer((_) async => null);
+      when(realtimeService.dispose).thenAnswer((_) async {});
+      when(recorder.hasPermission).thenAnswer((_) async => true);
+      when(
+        () => recorder.amplitudeStream,
+      ).thenAnswer((_) => ampController.stream);
+      when(
+        recorder.startRecording,
+      ).thenAnswer((_) async => _audioNoteFixture());
+      when(recorder.stopRecording).thenAnswer((_) async {});
+      when(
+        () => transcriber.transcribe(
+          any(),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+        ),
+      ).thenAnswer((_) async => 'provider-resolved');
+    });
+
+    tearDown(() async {
+      await ampController.close();
+    });
+
+    test(
+      'with no realtimeService override the controller reads '
+      'realtimeTranscriptionServiceProvider and uses that instance',
+      () async {
+        // No `realtimeService:` override here — this forces the
+        // `_realtimeServiceOverride ?? ref.read(realtimeTranscriptionServiceProvider)`
+        // default initializer to resolve the service from the provider.
+        final container = ProviderContainer(
+          overrides: [
+            realtimeTranscriptionServiceProvider.overrideWithValue(
+              realtimeService,
+            ),
+            captureControllerProvider.overrideWith(
+              () => CaptureController(
+                recorder: recorder,
+                transcriber: transcriber,
+                persistAudio: (_) async => _persistedAudio(),
+                docDir: Directory.systemTemp.createTempSync,
+                now: () => _recordingStartedAt,
+              ),
+            ),
+          ],
+        )..listen(captureControllerProvider, (_, _) {});
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier);
+        await notifier.toggle();
+        await notifier.toggle();
+
+        // The provider-resolved realtime service was the one queried for a
+        // realtime config, proving `_realtimeService` came from the provider.
+        verify(realtimeService.resolveRealtimeConfig).called(1);
+
+        final state = container.read(captureControllerProvider);
+        expect(state.phase, CapturePhase.captured);
+        expect(state.transcript, 'provider-resolved');
       },
     );
   });

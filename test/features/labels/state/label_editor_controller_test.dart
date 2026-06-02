@@ -330,6 +330,51 @@ void main() {
     });
   });
 
+  test('selectedColor parses the current colorHex into a Color', () {
+    final provider = labelEditorControllerProvider(
+      LabelEditorArgs(label: testLabelDefinition1),
+    );
+    final notifier = container.read(provider.notifier);
+
+    // testLabelDefinition1.color == '#FF0000' -> opaque red.
+    expect(notifier.selectedColor, const Color(0xFFFF0000));
+
+    // After changing the color, the getter reflects the new hex.
+    notifier.setColor(const Color(0xFF00FF00));
+    expect(notifier.selectedColor, const Color(0xFF00FF00));
+  });
+
+  test('resetToInitial restores state from the initial label', () {
+    final provider = labelEditorControllerProvider(
+      LabelEditorArgs(label: testLabelDefinition1),
+    );
+    final notifier = container.read(provider.notifier);
+
+    notifier.setName('Mutated');
+    notifier.setColor(const Color(0xFF00FF00));
+    notifier.setPrivate(isPrivateValue: true);
+    notifier.setDescription('Mutated description');
+    notifier.addCategoryId('cat-x');
+
+    final mutated = container.read(provider);
+    expect(mutated.name, 'Mutated');
+    // Description must actually change so the reset assertion below exercises
+    // the description-restore path rather than passing trivially.
+    expect(mutated.description, 'Mutated description');
+    expect(mutated.description, isNot(testLabelDefinition1.description));
+    expect(mutated.hasChanges, isTrue);
+
+    notifier.resetToInitial();
+
+    final reset = container.read(provider);
+    expect(reset.name, testLabelDefinition1.name);
+    expect(reset.colorHex, testLabelDefinition1.color.toUpperCase());
+    expect(reset.isPrivate, testLabelDefinition1.private ?? false);
+    expect(reset.description, testLabelDefinition1.description);
+    expect(reset.selectedCategoryIds, isEmpty);
+    expect(reset.hasChanges, isFalse);
+  });
+
   test('save validates empty name', () async {
     final provider = labelEditorControllerProvider(const LabelEditorArgs());
     final notifier = container.read(provider.notifier);

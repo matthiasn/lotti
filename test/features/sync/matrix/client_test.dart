@@ -159,5 +159,36 @@ void main() {
         expect(segments.last.length, 4);
       },
     );
+
+    test(
+      'falls back to a default DeviceInfoPlugin when none is provided',
+      () async {
+        // Exercises the `deviceInfoPlugin ?? DeviceInfoPlugin()` default
+        // branch. On non-iOS/macOS/Android hosts none of the platform getters
+        // are awaited, so constructing the real plugin is safe and the device
+        // name is derived purely from Platform.operatingSystem.
+        final datePattern = RegExp(r'\d{4}-\d{2}-\d{2}');
+
+        final deviceName = await createMatrixDeviceName();
+
+        expect(deviceName.startsWith(Platform.operatingSystem), isTrue);
+
+        final segments = deviceName.split(' ');
+        expect(segments.length, greaterThanOrEqualTo(3));
+        expect(datePattern.hasMatch(segments[1]), isTrue);
+        // The trailing uuid fragment is always 4 characters long.
+        expect(segments.last.length, 4);
+      },
+      // On iOS/macOS/Android hosts the default DeviceInfoPlugin's real
+      // platform getters (iosInfo/macosInfo/androidInfo) are awaited, which is
+      // host-dependent and brittle in test environments. Skipping there keeps
+      // this test hermetic while still covering the `?? DeviceInfoPlugin()`
+      // default-construction branch on Linux/Windows CI, where no platform
+      // getter is awaited.
+      skip: (Platform.isIOS || Platform.isMacOS || Platform.isAndroid)
+          ? 'createMatrixDeviceName awaits the real DeviceInfoPlugin platform '
+                'getters on this host'
+          : false,
+    );
   });
 }

@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_fl
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -25,9 +26,17 @@ void main() {
     setUp(() async {
       await setUpTestGetIt();
       mockRepository = MockCategoryRepository();
+      // Row taps drive navigation via the top-level `beamToNamed`, which
+      // otherwise delegates through `getIt<NavService>()` (not registered
+      // in these widget tests). Install a no-op override by default; the
+      // navigation test replaces it with a capturing closure.
+      beamToNamedOverride = (_) {};
     });
 
-    tearDown(tearDownTestGetIt);
+    tearDown(() async {
+      beamToNamedOverride = null;
+      await tearDownTestGetIt();
+    });
 
     /// Pumps the [CategoriesListPage] with the given overrides.
     Future<void> pumpCategoriesListPage(
@@ -569,22 +578,82 @@ void main() {
         expect(find.byType(DesignSystemListItem), findsOneWidget);
       });
 
-      testWidgets('DesignSystemListItem is tappable', (tester) async {
-        final categories = [
-          CategoryTestUtils.createTestCategory(),
-        ];
+      testWidgets(
+        'tapping a category row beams to that category detail route',
+        (tester) async {
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
 
-        when(() => mockRepository.watchCategories()).thenAnswer(
-          (_) => Stream.value(categories),
-        );
+          final categories = [
+            CategoryTestUtils.createTestCategory(
+              id: 'cat-42',
+              name: 'Work',
+            ),
+          ];
 
-        await pumpCategoriesListPage(tester);
+          when(() => mockRepository.watchCategories()).thenAnswer(
+            (_) => Stream.value(categories),
+          );
 
-        final item = tester.widget<DesignSystemListItem>(
-          find.byType(DesignSystemListItem),
-        );
-        expect(item.onTap, isNotNull);
-      });
+          await pumpCategoriesListPage(tester);
+
+          // Nothing has been beamed before the tap.
+          expect(beamedTo, isNull);
+
+          await tester.tap(find.byType(DesignSystemListItem));
+          await tester.pump();
+
+          // The row's onTap routes through the top-level `beamToNamed`
+          // with the category-id-scoped settings path.
+          expect(beamedTo, '/settings/categories/cat-42');
+        },
+      );
+
+      // NOTE: The `_CategoryListItem` subtitle's `error: (_, _) => ''`
+      // branch (source line 270) is not exercised here. In this Riverpod
+      // version a `FutureProvider` whose future completes with an error
+      // settles into `AsyncLoading(error: …)` rather than a terminal
+      // `AsyncError`, so `AsyncValue.when` (used without
+      // `skipLoadingOnReload`) always routes through `loading:` — the
+      // error branch is unreachable through provider overrides, which only
+      // accept a future-returning function, never a direct `AsyncError`.
+    });
+
+    group('CategoriesListBody embedded alias', () {
+      testWidgets(
+        'CategoriesListBody renders a CategoriesListPage with its content',
+        (tester) async {
+          final categories = [
+            CategoryTestUtils.createTestCategory(
+              id: 'cat-body',
+              name: 'Embedded',
+            ),
+          ];
+
+          when(() => mockRepository.watchCategories()).thenAnswer(
+            (_) => Stream.value(categories),
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+                categoryTaskCountProvider.overrideWith(
+                  (ref, id) async => 3,
+                ),
+              ],
+              child: const CategoriesListBody(),
+            ),
+          );
+          await tester.pump();
+          await tester.pumpAndSettle();
+
+          // The body alias delegates to the full page, so the page widget
+          // and its rendered category content are both present.
+          expect(find.byType(CategoriesListPage), findsOneWidget);
+          expect(find.text('Embedded'), findsOneWidget);
+        },
+      );
     });
 
     group('Status Indicators', () {

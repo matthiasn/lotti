@@ -46,4 +46,51 @@ void main() {
     final required = itemSchema['required']! as List<dynamic>;
     expect(required, contains('id'));
   });
+
+  group('ChecklistCompletionSuggestion.fromJson', () {
+    test('deserializes all fields including known confidence levels', () {
+      for (final entry in {
+        'high': ChecklistCompletionConfidence.high,
+        'medium': ChecklistCompletionConfidence.medium,
+        'low': ChecklistCompletionConfidence.low,
+      }.entries) {
+        final suggestion = ChecklistCompletionSuggestion.fromJson({
+          'checklistItemId': 'item-123',
+          'reason': 'mentioned as done in transcript',
+          'confidence': entry.key,
+        });
+
+        expect(suggestion.checklistItemId, 'item-123');
+        expect(suggestion.reason, 'mentioned as done in transcript');
+        expect(suggestion.confidence, entry.value);
+      }
+    });
+
+    test('falls back to low confidence for unknown enum value', () {
+      final suggestion = ChecklistCompletionSuggestion.fromJson({
+        'checklistItemId': 'item-456',
+        'reason': 'unclear',
+        'confidence': 'totally-unknown',
+      });
+
+      expect(suggestion.checklistItemId, 'item-456');
+      expect(suggestion.confidence, ChecklistCompletionConfidence.low);
+    });
+  });
+
+  group('AddChecklistItemResult.fromJson', () {
+    test('deserializes all fields', () {
+      for (final created in [true, false]) {
+        final result = AddChecklistItemResult.fromJson({
+          'checklistId': 'checklist-1',
+          'checklistItemId': 'item-9',
+          'checklistCreated': created,
+        });
+
+        expect(result.checklistId, 'checklist-1');
+        expect(result.checklistItemId, 'item-9');
+        expect(result.checklistCreated, created);
+      }
+    });
+  });
 }

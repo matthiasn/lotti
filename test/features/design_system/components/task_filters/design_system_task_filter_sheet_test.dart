@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -66,6 +67,41 @@ void main() {
         expect(roundTrip.selectedIds, {'ai-coding', 'agents'});
       },
     );
+  });
+
+  group('DesignSystemTaskFilterToggle', () {
+    test('copyWith without a value keeps the original toggle value', () {
+      const toggleOn = DesignSystemTaskFilterToggle(
+        id: 'showDate',
+        label: 'Show date',
+        value: true,
+      );
+      const toggleOff = DesignSystemTaskFilterToggle(
+        id: 'showDue',
+        label: 'Show due date',
+        value: false,
+      );
+
+      // copyWith() with no `value` argument exercises the `?? this.value`
+      // fallback, preserving the existing value for both polarities.
+      final keptOn = toggleOn.copyWith();
+      final keptOff = toggleOff.copyWith();
+      final flipped = toggleOff.copyWith(value: true);
+
+      expect(keptOn.value, isTrue);
+      expect(keptOn.id, 'showDate');
+      expect(keptOn.label, 'Show date');
+      expect(keptOff.value, isFalse);
+      expect(flipped.value, isTrue);
+
+      // Round trip preserves all fields.
+      final roundTrip = DesignSystemTaskFilterToggle.fromJson(
+        toggleOn.toJson(),
+      );
+      expect(roundTrip.id, 'showDate');
+      expect(roundTrip.label, 'Show date');
+      expect(roundTrip.value, isTrue);
+    });
   });
 
   group('DesignSystemTaskFilterState', () {
@@ -151,6 +187,66 @@ void main() {
       // clearAll clears project field too
       final cleared = state.clearAll();
       expect(cleared.projectField!.selectedIds, isEmpty);
+    });
+
+    group('togglePriority (multi-select toggle semantics)', () {
+      DesignSystemTaskFilterState seed({Set<String>? selected}) {
+        return DesignSystemTaskFilterState(
+          title: 't',
+          clearAllLabel: 'c',
+          applyLabel: 'a',
+          priorityOptions: const [
+            DesignSystemTaskFilterOption(
+              id: DesignSystemTaskFilterState.allPriorityId,
+              label: 'All',
+            ),
+            DesignSystemTaskFilterOption(id: 'p0', label: 'P0'),
+            DesignSystemTaskFilterOption(id: 'p2', label: 'P2'),
+          ],
+          selectedPriorityIds: selected,
+        );
+      }
+
+      test('returns the same state when no priority section is configured', () {
+        final state = DesignSystemTaskFilterState(
+          title: 't',
+          clearAllLabel: 'c',
+          applyLabel: 'a',
+        );
+        expect(state.togglePriority('p0'), same(state));
+      });
+
+      test(
+        'tapping allPriorityId is a no-op when the selection is already empty',
+        () {
+          final empty = seed();
+          // Exercises the `selectedPriorityIds.isEmpty -> return this` branch.
+          expect(
+            empty.togglePriority(DesignSystemTaskFilterState.allPriorityId),
+            same(empty),
+          );
+        },
+      );
+
+      test('tapping allPriorityId clears a non-empty selection', () {
+        final populated = seed(selected: {'p0', 'p2'});
+        // Exercises the `return copyWith(selectedPriorityIds: {})` branch.
+        final cleared = populated.togglePriority(
+          DesignSystemTaskFilterState.allPriorityId,
+        );
+        expect(cleared.selectedPriorityIds, isEmpty);
+      });
+
+      test('toggling a concrete id adds then removes it from the set', () {
+        final added = seed().togglePriority('p0');
+        expect(added.selectedPriorityIds, equals({'p0'}));
+
+        final removed = added.togglePriority('p0');
+        expect(removed.selectedPriorityIds, isEmpty);
+
+        final both = seed(selected: {'p0'}).togglePriority('p2');
+        expect(both.selectedPriorityIds, equals({'p0', 'p2'}));
+      });
     });
 
     group('selectPriority (single-select replacement semantics)', () {
@@ -729,6 +825,125 @@ void main() {
       await tester.pump();
 
       expect(lastChanged!.projectField!.selectedIds, {'p2'});
+    });
+  });
+
+  group('DesignSystemTaskFilterActionBar save popup', () {
+    Future<List<String>> openSavePopup(
+      WidgetTester tester, {
+      String? initialSaveName,
+    }) async {
+      final committed = <String>[];
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Theme(
+            data: DesignSystemTheme.dark(),
+            child: Scaffold(
+              body: Center(
+                child: DesignSystemTaskFilterActionBar(
+                  state: DesignSystemTaskFilterState(
+                    title: 'Apply filter',
+                    clearAllLabel: 'Clear all',
+                    applyLabel: 'Apply',
+                  ),
+                  onChanged: (_) {},
+                  onApplyPressed: (_) {},
+                  onSavePressed: committed.add,
+                  canSave: true,
+                  initialSaveName: initialSaveName,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(
+        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
+        findsOneWidget,
+      );
+      return committed;
+    }
+
+    testWidgets('pressing Escape in the name field closes the popup', (
+      tester,
+    ) async {
+      final committed = await openSavePopup(tester);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      // Escape routes through the Focus.onKeyEvent handler -> onCancel,
+      // which closes the menu without committing a name.
+      expect(
+        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
+        findsNothing,
+      );
+      expect(committed, isEmpty);
+    });
+
+    testWidgets(
+      'a non-escape key is ignored by the field handler and keeps the popup '
+      'open',
+      (tester) async {
+        final committed = await openSavePopup(tester);
+
+        // Arrow keys hit the KeyEventResult.ignored path; the popup stays.
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pump();
+
+        expect(
+          find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
+          findsOneWidget,
+        );
+        expect(committed, isEmpty);
+      },
+    );
+
+    testWidgets('submitting the field commits the trimmed name', (
+      tester,
+    ) async {
+      final committed = await openSavePopup(tester);
+
+      final field = find.byKey(
+        DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
+      );
+      await tester.enterText(field, '  Blocked work  ');
+      await tester.pump();
+      // testTextInput.receiveAction drives onSubmitted -> _commit().
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(committed, ['Blocked work']);
+      expect(
+        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
+        findsNothing,
+      );
+    });
+
+    testWidgets('submitting an all-whitespace name does not commit', (
+      tester,
+    ) async {
+      final committed = await openSavePopup(tester, initialSaveName: 'seed');
+
+      final field = find.byKey(
+        DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
+      );
+      await tester.enterText(field, '    ');
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      // _commit() short-circuits because _canCommit is false; the popup
+      // stays open and nothing is committed.
+      expect(committed, isEmpty);
+      expect(
+        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
+        findsOneWidget,
+      );
     });
   });
 
