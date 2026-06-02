@@ -278,12 +278,15 @@ class TaskAgentStrategy extends ConversationStrategy {
             policyFallbackBuilder != null &&
             AgentToolRegistry.deferredTools.contains(toolName)) {
           final csBuilder = policyFallbackBuilder;
+          _taskMetadataResolved = false;
+          _cachedTaskMetadata = null;
           final itemCountBefore = csBuilder.items.length;
           final response = await _addToChangeSet(csBuilder, toolName, args);
           if (csBuilder.items.length > itemCountBefore) {
             _usedDeferredTools.add(toolName);
           }
           manager.addToolResponse(toolCallId: call.id, response: response);
+          await _recordToolResultMessage(toolName: toolName);
           continue;
         }
         manager.addToolResponse(toolCallId: call.id, response: result.output);
