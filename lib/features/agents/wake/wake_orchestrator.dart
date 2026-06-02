@@ -61,6 +61,14 @@ typedef TaskContentChecker = Future<bool> Function(String taskId);
 /// state mutation that must propagate to other devices.
 typedef SyncEntityWriter = Future<void> Function(AgentDomainEntity entity);
 
+/// Optional hook run **once per wake, just before the executor**. Used by fork
+/// healing (ADR 0018 rule 8): collapse a surviving multi-head `messagePrev` fork
+/// into one continuation node before the wake acts, so context and the
+/// on-device prefix stay bounded. Best-effort — a failure is logged and the wake
+/// proceeds (healing is an optimization, never a correctness mechanism).
+typedef WakeStartHook =
+    Future<void> Function(String agentId, String runKey, String threadId);
+
 /// Signature for the callback that executes a wake cycle.
 ///
 /// [agentId] is the target agent's ID.
@@ -101,6 +109,7 @@ class WakeOrchestrator {
     this.onPersistedStateChanged,
     this.taskContentChecker,
     this.syncEntityWriter,
+    this.onWakeStart,
   }) {
     _throttle = WakeThrottleCoordinator(
       repository: repository,
@@ -132,6 +141,11 @@ class WakeOrchestrator {
   /// propagate across devices (e.g. clearing the `awaitingContent` flag).
   /// When null, falls back to the raw [repository] write.
   SyncEntityWriter? syncEntityWriter;
+
+  /// Optional pre-wake hook (fork healing, ADR 0018 rule 8) run just before the
+  /// executor for each wake. When null (the default), wakes run exactly as
+  /// before — this is the off state of the join-healing flag.
+  WakeStartHook? onWakeStart;
 
   /// Optional callback fired when persisted throttle state changes for an
   /// agent (set/clear `nextWakeAt`).
@@ -169,6 +183,13 @@ class WakeOrchestrator {
   /// result is ignored and its mutations are treated like any other DB
   /// write — i.e. they may surface as new notifications.
   static const wakeRunMaxDuration = Duration(minutes: 2);
+
+  /// Hard cap for the pre-wake [onWakeStart] hook (fork healing). The hook runs
+  /// before the executor's [wakeRunMaxDuration] race is armed, so it gets its
+  /// own bound — a pathological full-log load must not stall the wake. A timeout
+  /// is treated like any other hook failure: logged, then the wake proceeds
+  /// (healing is an optimization, never required).
+  static const wakeStartHookTimeout = Duration(seconds: 30);
 
   // Follow-up drains are handled by [WakeThrottleCoordinator]'s deferred
   // drain timer. After a subscription wake completes, a new drain is scheduled
@@ -1022,6 +1043,27 @@ class WakeOrchestrator {
           errorMessage: 'No wake executor registered',
         );
         return;
+      }
+
+      // Pre-wake fork healing (ADR 0018 rule 8): collapse a surviving multi-head
+      // fork into one continuation node before the wake acts. Best-effort and
+      // non-fatal — healing is an optimization, so a failure here must never
+      // abort the wake; log and continue.
+      final wakeStart = onWakeStart;
+      if (wakeStart != null) {
+        try {
+          await wakeStart(
+            job.agentId,
+            job.runKey,
+            threadId,
+          ).timeout(wakeStartHookTimeout);
+        } catch (e, s) {
+          _logError(
+            'pre-wake hook failed for ${DomainLogger.sanitizeId(job.agentId)}',
+            error: e,
+            stackTrace: s,
+          );
+        }
       }
 
       final startTime = clock.now();

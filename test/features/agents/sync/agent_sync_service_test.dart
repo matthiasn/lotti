@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -16,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_data/entity_factories.dart';
+import 'fork_test_support.dart';
 
 enum _GeneratedSyncWriteKind {
   entity,
@@ -2004,6 +2006,263 @@ void main() {
             ),
           ),
         ).called(1);
+      },
+    );
+  });
+
+  group('AgentSyncService.appendJoin', () {
+    // ── write behaviour (mock repository) ────────────────────────────────────
+
+    test(
+      'writes the join node, an edge per parent, and advances the head',
+      () async {
+        when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+          (_) async => makeTestState(
+            agentId: 'agent-1',
+          ).copyWith(recentHeadMessageId: 'a'),
+        );
+        final joinId = computeJoinId(['a', 'b']);
+
+        await syncService.appendJoin(
+          agentId: 'agent-1',
+          joinId: joinId,
+          parentIds: ['b', 'a'], // unsorted on purpose
+          at: DateTime(2024, 3, 15),
+        );
+
+        final upserted = verify(
+          () => mockRepository.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        final joinMsg = upserted.whereType<AgentMessageEntity>().single;
+        expect(joinMsg.id, joinId);
+        expect(joinMsg.kind, AgentMessageKind.system);
+        expect(
+          upserted.whereType<AgentStateEntity>().single.recentHeadMessageId,
+          joinId,
+        );
+        final edges = verify(
+          () => mockRepository.upsertLink(captureAny()),
+        ).captured.cast<AgentLink>().whereType<MessagePrevLink>().toList();
+        expect(edges.map((l) => l.id).toSet(), {
+          'msgprev-$joinId-a',
+          'msgprev-$joinId-b',
+        });
+        expect(edges.every((l) => l.fromId == joinId), isTrue);
+        expect(edges.map((l) => l.toId).toSet(), {'a', 'b'});
+      },
+    );
+
+    test(
+      'does not rewrite the join node when it already exists (idempotent)',
+      () async {
+        final joinId = computeJoinId(['a', 'b']);
+        when(() => mockRepository.getEntity(joinId)).thenAnswer(
+          (_) async => makeTestMessage(
+            id: joinId,
+            agentId: 'agent-1',
+            kind: AgentMessageKind.system,
+          ),
+        );
+        when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+          (_) async => makeTestState(
+            agentId: 'agent-1',
+          ).copyWith(recentHeadMessageId: joinId),
+        );
+
+        await syncService.appendJoin(
+          agentId: 'agent-1',
+          joinId: joinId,
+          parentIds: ['a', 'b'],
+          at: DateTime(2024, 3, 15),
+        );
+
+        // Node present + head already at the join ⇒ no entity write at all, but
+        // the edges are re-asserted (idempotent by id).
+        verifyNever(() => mockRepository.upsertEntity(any()));
+        verify(() => mockRepository.upsertLink(any())).called(2);
+      },
+    );
+
+    test(
+      'advances a stale head even when the join node already exists',
+      () async {
+        // The peer's identical join synced in (node present) but this device's
+        // head pointer still sits on a now-joined parent — left there, the next
+        // local append would immediately re-fork, so the head must advance.
+        final joinId = computeJoinId(['a', 'b']);
+        when(() => mockRepository.getEntity(joinId)).thenAnswer(
+          (_) async => makeTestMessage(
+            id: joinId,
+            agentId: 'agent-1',
+            kind: AgentMessageKind.system,
+          ),
+        );
+        when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+          (_) async => makeTestState(
+            agentId: 'agent-1',
+          ).copyWith(recentHeadMessageId: 'a'),
+        );
+
+        await syncService.appendJoin(
+          agentId: 'agent-1',
+          joinId: joinId,
+          parentIds: ['a', 'b'],
+          at: DateTime(2024, 3, 15),
+        );
+
+        final upserted = verify(
+          () => mockRepository.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        expect(upserted.whereType<AgentMessageEntity>(), isEmpty); // node kept
+        expect(
+          upserted.whereType<AgentStateEntity>().single.recentHeadMessageId,
+          joinId,
+        );
+      },
+    );
+
+    test(
+      'with no state row, writes node and edges but advances no head',
+      () async {
+        final joinId = computeJoinId(['a', 'b']);
+        // Default getAgentState ⇒ null.
+        await syncService.appendJoin(
+          agentId: 'agent-1',
+          joinId: joinId,
+          parentIds: ['a', 'b'],
+          at: DateTime(2024, 3, 15),
+        );
+
+        final upserted = verify(
+          () => mockRepository.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        expect(upserted.whereType<AgentMessageEntity>().single.id, joinId);
+        expect(upserted.whereType<AgentStateEntity>(), isEmpty);
+        verify(() => mockRepository.upsertLink(any())).called(2);
+      },
+    );
+
+    test(
+      'ignores a degenerate call with fewer than two distinct parents',
+      () async {
+        await syncService.appendJoin(
+          agentId: 'agent-1',
+          joinId: 'x',
+          parentIds: ['a', 'a'], // collapses to one head
+          at: DateTime(2024, 3, 15),
+        );
+        verifyNever(() => mockRepository.upsertEntity(any()));
+        verifyNever(() => mockRepository.upsertLink(any()));
+      },
+    );
+
+    // ── DAG convergence (real projection over an in-memory log) ───────────────
+    // Bench, fork seeding, and head computation come from `fork_test_support`.
+
+    test('heals a two-head fork to a single head (real projection)', () async {
+      final b = makeForkBench();
+      await seedForkInto(b.repo, head: 'b');
+      expect(headsOfLog(b.repo.messages, b.repo.links).toSet(), {'a', 'b'});
+
+      final joinId = computeJoinId(['a', 'b']);
+      await b.service.appendJoin(
+        agentId: 'agent-1',
+        joinId: joinId,
+        parentIds: ['a', 'b'],
+        at: DateTime(2024, 2),
+      );
+
+      // The fork collapses: a, b are now the join's parents ⇒ the join is the
+      // sole head, and this device's head pointer follows.
+      expect(headsOfLog(b.repo.messages, b.repo.links), [joinId]);
+      final state = await b.repo.getAgentState('agent-1');
+      expect(state!.recentHeadMessageId, joinId);
+    });
+
+    test(
+      'two devices emitting the same join converge to one node + head',
+      () async {
+        final a = makeForkBench();
+        final c = makeForkBench();
+        await seedForkInto(a.repo, head: 'a'); // device A extended branch a
+        await seedForkInto(c.repo, head: 'b'); // device C extended branch b
+        final joinId = computeJoinId(['a', 'b']);
+        for (final dev in [a, c]) {
+          await dev.service.appendJoin(
+            agentId: 'agent-1',
+            joinId: joinId,
+            parentIds: ['a', 'b'],
+            at: DateTime(2024, 2),
+          );
+        }
+
+        // Set-union the two devices' logs, deduping by id — models the DB
+        // (insertOnConflictUpdate). AgentEvent equality includes the per-device
+        // envelope, so an *un-deduped* union would trip DuplicateEventIdException;
+        // the dedupe is exactly what makes the content-addressed join converge.
+        final messages = <String, AgentMessageEntity>{
+          for (final m in [...a.repo.messages, ...c.repo.messages]) m.id: m,
+        };
+        final links = <String, AgentLink>{
+          for (final l in [...a.repo.links, ...c.repo.links]) l.id: l,
+        };
+
+        expect(messages[joinId], isNotNull); // exactly one join node (by id)
+        expect(
+          links.values
+              .whereType<MessagePrevLink>()
+              .where((l) => l.fromId == joinId)
+              .length,
+          2, // exactly two join edges — no storm
+        );
+        expect(headsOfLog(messages.values, links.values), [joinId]);
+      },
+    );
+
+    test(
+      'completes the edge set + head on a retry after a partial commit',
+      () async {
+        // appendJoin commits node + edges + head atomically, so a true partial
+        // commit can't occur — but a re-run must still be self-completing. Seed a
+        // fork plus *only* the join node (no edges, head still on a parent), then
+        // run appendJoin: the edges and the head advance are (re-)asserted.
+        final b = makeForkBench();
+        await seedForkInto(b.repo, head: 'a');
+        final joinId = computeJoinId(['a', 'b']);
+        b.repo.seed([
+          makeTestMessage(
+            id: joinId,
+            agentId: 'agent-1',
+            kind: AgentMessageKind.system,
+          ),
+        ]);
+        // The parentless join node is itself a third head until its edges land.
+        expect(headsOfLog(b.repo.messages, b.repo.links).toSet(), {
+          'a',
+          'b',
+          joinId,
+        });
+
+        await b.service.appendJoin(
+          agentId: 'agent-1',
+          joinId: joinId,
+          parentIds: ['a', 'b'],
+          at: DateTime(2024, 2),
+        );
+
+        expect(
+          b.repo.links
+              .whereType<MessagePrevLink>()
+              .where((l) => l.fromId == joinId)
+              .map((l) => l.toId)
+              .toSet(),
+          {'a', 'b'},
+        );
+        expect(
+          (await b.repo.getAgentState('agent-1'))!.recentHeadMessageId,
+          joinId,
+        );
+        expect(headsOfLog(b.repo.messages, b.repo.links), [joinId]);
       },
     );
   });

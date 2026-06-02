@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/sync/fork_healer.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -152,6 +154,13 @@ WakeRunner wakeRunner(Ref ref) {
   return runner;
 }
 
+/// Fork-healing rollout flag (ADR 0018 rule 8 / PR 6). Default off: the
+/// join-by-continuation mechanism is fully built and wired, but inert until
+/// deliberately enabled with `--dart-define=LOTTI_JOIN_HEALING=true` (mirrors
+/// the compaction rollout). Turning it on appends `join` nodes to the synced
+/// agent log — a user-visible, multi-device behaviour change.
+const bool _joinHealingEnabled = bool.fromEnvironment('LOTTI_JOIN_HEALING');
+
 /// The wake orchestrator (notification listener + subscription matching).
 @Riverpod(keepAlive: true)
 WakeOrchestrator wakeOrchestrator(Ref ref) {
@@ -162,6 +171,19 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
       notifications.notifyUiOnly({agentId, agentNotification});
     };
   }
+  // Construct the fork healer once (not per wake) when the rollout flag is on.
+  WakeStartHook? onWakeStart;
+  if (_joinHealingEnabled) {
+    final forkHealer = ForkHealer(
+      syncService: ref.read(agentSyncServiceProvider),
+    );
+    onWakeStart = (agentId, runKey, threadId) => forkHealer.maybeHealFork(
+      agentId: agentId,
+      at: clock.now(),
+      threadId: threadId,
+      runKey: runKey,
+    );
+  }
   return WakeOrchestrator(
     repository: ref.watch(agentRepositoryProvider),
     queue: ref.watch(wakeQueueProvider),
@@ -170,6 +192,7 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     onPersistedStateChanged: onPersistedStateChanged,
     syncEntityWriter: (entity) =>
         ref.read(agentSyncServiceProvider).upsertEntity(entity),
+    onWakeStart: onWakeStart,
     taskContentChecker: (taskId) async {
       final journalDb = ref.read(journalDbProvider);
 

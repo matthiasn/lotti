@@ -24,6 +24,13 @@ diagnostic compare — reads do not flip to the projection until PR 4.
 | `agent_event_adapter.dart` | `agentEventsFromLog()` — maps persisted `AgentMessageEntity` + `messagePrev` links onto `AgentEvent` (PR 3 bridge). |
 | `shadow_projection.dart` | `compareShadowProjection()` + `ShadowProjectionReport`/`Status` — non-throwing compare of the projection against the live head. |
 | `derived_agent_state.dart` | `deriveAgentState()` + `DerivedAgentState` — the storage-coupled full-state fold (kernel + watermarks + active slots); `compareDerivedAgentState()` + `DerivedStateReport` — full-state shadow compare (PR 4 B5); `reconcileAgentState()` — folds the log over the cached row for the wake-start read cutover (PR 4 B6). |
+| `content_digest.dart` | `ContentDigest.of()` — versioned (`sha256-v1:`) content-addressed digest over canonical JSON; the address for captured inputs, compaction artifacts, and join ids (PR 5 / ADR 0017 §6 / ADR 0020). |
+| `input_capture.dart` | `RenderedSource`/`CapturedPayload`/`CaptureReference`/`CaptureResult`; `captureSources()` + `reconcileCapture()` — fold a wake's rendered user content into deduplicated, content-addressed per-source captures (PR 5 / ADR 0020). |
+| `input_frontier.dart` | `projectInputFrontier()` + `inputFrontierDigests()` — the active input frontier (latest-wins over `messagePayload` links and retraction markers). |
+| `compaction_plan.dart` | `planCompaction()` + `CompactionPlan`/`TailEntry` — fold the oldest tail prefix that overflows a token budget (PR 5 / ADR 0017). |
+| `compaction_summary.dart` | `selectActiveSummary()` (source-frontier maximal-complete checkpoint) + `assembleCompactedTaskLog()` — the read side: active summary + uncovered verbatim tail. |
+| `checkpoint_selection.dart` | `selectActiveCheckpoint()` — message-DAG checkpoint selection (deepest summary ancestral to every head). |
+| `join_plan.dart` | `computeJoinId()` + `planJoin()`/`JoinPlan` — fork-healing decision (PR 6 / ADR 0018 rule 8): the content-addressed join id and the ≥2-heads-over-a-complete-view gate. |
 
 ## The causal model (the load-bearing decision)
 

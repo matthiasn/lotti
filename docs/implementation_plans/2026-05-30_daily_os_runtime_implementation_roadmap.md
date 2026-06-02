@@ -82,11 +82,12 @@ Grouped into the six phases of §10. Each PR: **Goal · Depends on · Touches ·
 - **Done when:** long-lived agents read frozen-summary + tail; **replay-from-summary is equivalent to replay-from-genesis in the scoped sense** — identical *projection state* (heads, pointers, derived fields), preserved *provenance* (the summary records which frontier it covers via `frontierDigest`), and byte-identical replay of the *uncovered tail*. This is **not** a claim of byte-identical or semantically-lossless reproduction of the summarized prose (infeasible for LLM/text summaries); the equivalence is over projected state + coverage metadata + tail, not over the summary text itself. Two devices summarizing the same trunk converge (sim test).
 - **Realizes:** §6; ADR 0017.
 
-**PR 6 — Join-by-continuation (fork healing)**
+**PR 6 — Join-by-continuation (fork healing)** — **implemented (flag-gated
+default-off)**; detailed plan: [`2026-06-02_join_by_continuation_plan.md`](./2026-06-02_join_by_continuation_plan.md).
 - **Goal:** lazy, capped, content-addressed join node (`id = hash("join-v1" + sorted parent-head ids)`); deterministic payload, canonical envelope reconciliation.
-- **Depends on:** PR 1, PR 3 (DAG).
-- **Touches:** projection (head detection), a join-emitting behavior, sync envelope reconciliation for content-addressed events.
-- **Done when:** two devices concurrently emitting a join over the same heads write one merged node (sim test); context/prefix stay bounded under repeated forks.
+- **Depends on:** PR 1, PR 3 (DAG). ✅ both merged.
+- **Touches:** `projection/join_plan.dart` (pure decision + id), `AgentSyncService.appendJoin` (multi-parent append), `ForkHealer` + a `WakeOrchestrator.onWakeStart` pre-wake hook (one seam, all agent kinds), DI flag `LOTTI_JOIN_HEALING`.
+- **Done when:** ✅ two devices concurrently emitting a join over the same heads write one merged node (sim test in `fork_healer_test.dart`); context/prefix stay bounded under repeated forks (sim). **Scope note:** the gate is eager-at-wake-start + complete-view (no cross-wake marker, no `AgentStateEntity` field — see plan); sync-path **envelope canonicalization is deferred** (inert while `hostIdOf` is unpopulated and joins are immutable — see plan's open decision).
 - **Realizes:** §8; ADR 0018 rule 8.
 
 ### Phase 4 — Execution safety
