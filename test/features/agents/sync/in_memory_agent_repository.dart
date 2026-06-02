@@ -1,3 +1,4 @@
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
@@ -65,15 +66,30 @@ class InMemoryAgentRepository extends MockAgentRepository {
     String agentId,
     AgentMessageKind kind, {
     int? limit,
-  }) async => messages
-      .where(
-        (m) => m.agentId == agentId && m.kind == kind && m.deletedAt == null,
-      )
-      .toList();
+  }) async {
+    // Mirror the real query: most-recent first, then apply the limit.
+    final matching =
+        messages
+            .where(
+              (m) =>
+                  m.agentId == agentId && m.kind == kind && m.deletedAt == null,
+            )
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    if (limit != null && limit >= 0 && matching.length > limit) {
+      return matching.sublist(0, limit);
+    }
+    return matching;
+  }
 
   @override
   Future<List<AgentLink>> getLinksFrom(String fromId, {String? type}) async =>
       _links.values
-          .where((l) => l.fromId == fromId && l.deletedAt == null)
+          .where(
+            (l) =>
+                l.fromId == fromId &&
+                l.deletedAt == null &&
+                (type == null || AgentDbConversions.linkType(l) == type),
+          )
           .toList();
 }

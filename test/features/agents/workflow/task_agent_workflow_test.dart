@@ -5646,6 +5646,83 @@ void main() {
           expect(userText, contains('captured tail content'));
         },
       );
+
+      test('falls back to the inline log when nothing is captured yet', () async {
+        // Compaction on, but the captured frontier is empty (capture unwired or
+        // failed) — the wake must keep the full journal log, not a blank header.
+        when(
+          () => mockSyncService.repository,
+        ).thenReturn(mockAgentRepository);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.system,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.summary,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAgentRepository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+
+        final workflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          compactionEnabled: true,
+          summarizer: ({required sources, priorSummary}) async => 'SUMMARY',
+        );
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        // Full inline log requested; the slim (includeLogEntries: false) variant
+        // is NOT used when there's nothing to replace it with.
+        verify(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).called(1);
+        verifyNever(
+          () => mockAiInputRepository.buildTaskDetailsJson(
+            id: taskId,
+            includeLogEntries: false,
+          ),
+        );
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final userText = capturedPayloadEntities(captured)
+            .map((p) => p.content['text'] as String? ?? '')
+            .firstWhere((t) => t.contains('Current Task Context'));
+        expect(userText, isNot(contains('## Task Log')));
+      });
     });
   });
 }

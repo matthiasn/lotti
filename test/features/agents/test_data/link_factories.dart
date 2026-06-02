@@ -43,13 +43,15 @@ model.AgentLink makeTestBasicLink({
   );
 }
 
-// ── Input-capture reference factory (message → content-addressed payload) ─────
+// ── Input-capture reference factory (agent → content-addressed payload) ───────
 // Backs the active input frontier (ADR 0020): provenance (`contentEntryId`) and
 // canonical ordering (`sourceCreatedAt`) live on the reference, not the payload.
+// Defaults to the runtime topology (`fromId = agentId`), which `getLinksFrom`
+// resolves the frontier from.
 
 model.AgentLink makeTestMessagePayloadLink({
   String id = 'link-payload-001',
-  String fromId = 'msg-001',
+  String fromId = kTestAgentId,
   String toId = 'sha256-v1:payload',
   DateTime? createdAt,
   DateTime? updatedAt,

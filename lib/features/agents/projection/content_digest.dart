@@ -69,14 +69,25 @@ class ContentDigest {
         }
         out.write(']');
       case final Map<Object?, Object?> map:
-        // Sort by the string form of each key so insertion order is irrelevant.
-        final entries = map.entries.toList()
-          ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
+        // JSON objects have string keys only — reject non-string keys rather
+        // than coercing them (which would let `{1: 'x'}` collide with
+        // `{'1': 'x'}`). Sort by key so insertion order is irrelevant.
+        final entries = <MapEntry<String, Object?>>[];
+        for (final entry in map.entries) {
+          if (entry.key is! String) {
+            throw ArgumentError(
+              'ContentDigest only supports maps with String keys, got '
+              '${entry.key.runtimeType}',
+            );
+          }
+          entries.add(MapEntry(entry.key! as String, entry.value));
+        }
+        entries.sort((a, b) => a.key.compareTo(b.key));
         out.write('{');
         for (var i = 0; i < entries.length; i++) {
           if (i > 0) out.write(',');
           out
-            ..write(jsonEncode(entries[i].key.toString()))
+            ..write(jsonEncode(entries[i].key))
             ..write(':');
           _write(out, entries[i].value);
         }
@@ -89,7 +100,14 @@ class ContentDigest {
   }
 
   static void _writeDouble(StringBuffer out, double d) {
-    if (d.isFinite && d == d.roundToDouble() && d.abs() < 1e15) {
+    // NaN/Infinity are not JSON numbers — fail fast rather than hash them.
+    if (!d.isFinite) {
+      throw ArgumentError('ContentDigest cannot canonicalize $d');
+    }
+    // Collapse integral doubles to their integer form across the whole IEEE-754
+    // safe-integer range (2^53), so `1.0`/`1` and `1e16`/`10000000000000000`
+    // agree as the "integral doubles collapse to integers" contract promises.
+    if (d == d.roundToDouble() && d.abs() <= 9007199254740992.0) {
       out.write(d.toInt().toString());
     } else {
       out.write(d.toString());

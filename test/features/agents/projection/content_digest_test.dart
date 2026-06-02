@@ -106,6 +106,30 @@ void main() {
 
     // ── error path ───────────────────────────────────────────────────────────
 
+    test('collapses integral doubles up to the safe-integer boundary', () {
+      // 2^53 is the largest double for which integer round-trip is exact.
+      expect(
+        ContentDigest.of(9007199254740992.0),
+        ContentDigest.of(9007199254740992),
+      );
+    });
+
+    test('throws on non-finite doubles', () {
+      expect(() => ContentDigest.of(double.nan), throwsArgumentError);
+      expect(() => ContentDigest.of(double.infinity), throwsArgumentError);
+      expect(
+        () => ContentDigest.of(double.negativeInfinity),
+        throwsArgumentError,
+      );
+    });
+
+    test('throws on a non-String map key', () {
+      expect(
+        () => ContentDigest.of(<Object?, Object?>{1: 'x'}),
+        throwsArgumentError,
+      );
+    });
+
     test('throws ArgumentError on non-JSON-able content', () {
       expect(
         () => ContentDigest.of(const Duration(seconds: 1)),

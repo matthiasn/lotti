@@ -120,7 +120,13 @@ CaptureResult captureSources(Iterable<RenderedSource> sources) {
     final digest = ContentDigest.of(source.content);
     payloadsByDigest.putIfAbsent(
       digest,
-      () => CapturedPayload(contentDigest: digest, content: source.content),
+      // Freeze the JSON tree: the digest is already computed, so a later
+      // mutation of the caller's map must not desync `contentDigest` from
+      // `content` (which would corrupt dedupe + persisted rows).
+      () => CapturedPayload(
+        contentDigest: digest,
+        content: _freezeJson(source.content)! as Map<String, Object?>,
+      ),
     );
     // `|` cannot occur in a journal-entity id (UUID) or in a digest
     // (`sha256-v1:` + base64url), so it is a safe composite-key separator that
@@ -243,4 +249,26 @@ CaptureDelta reconcileCapture({
     newReferences: changedReferences,
     retractedEntryIds: retractedEntryIds,
   );
+}
+
+/// Deep-copies a JSON tree into an unmodifiable one so a captured payload can
+/// never be mutated out from under its `contentDigest`. Throws [ArgumentError]
+/// on non-JSON-able content (the same contract as [ContentDigest.of], which has
+/// already validated the same value before this is reached).
+Object? _freezeJson(Object? value) {
+  switch (value) {
+    case null || String() || num() || bool() || DateTime():
+      return value;
+    case final List<Object?> list:
+      return List<Object?>.unmodifiable(list.map(_freezeJson));
+    case final Map<Object?, Object?> map:
+      return Map<String, Object?>.unmodifiable({
+        for (final entry in map.entries)
+          entry.key! as String: _freezeJson(entry.value),
+      });
+    default:
+      throw ArgumentError(
+        'Only JSON-able content can be captured, got ${value.runtimeType}',
+      );
+  }
 }

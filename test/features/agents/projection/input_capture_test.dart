@@ -99,6 +99,29 @@ void main() {
     });
 
     test(
+      'captured payload content is frozen against later source mutation',
+      () {
+        final mutable = <String, Object?>{'text': 'v1'};
+        final result = captureSources([
+          RenderedSource(
+            contentEntryId: 'e1',
+            sourceCreatedAt: DateTime.utc(2024, 3, 10),
+            content: mutable,
+          ),
+        ]);
+        // Mutating the caller's map afterwards must not change the captured
+        // payload (its digest was already computed), and the payload itself is
+        // unmodifiable.
+        mutable['text'] = 'mutated';
+        expect(result.payloads.single.content['text'], 'v1');
+        expect(
+          () => result.payloads.single.content['text'] = 'x',
+          throwsUnsupportedError,
+        );
+      },
+    );
+
+    test(
       'shares one payload across identical content from distinct entries',
       () {
         const content = {'text': 'shared note'};

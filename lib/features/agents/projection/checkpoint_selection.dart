@@ -63,23 +63,20 @@ CheckpointSelection selectActiveCheckpoint(Iterable<AgentEvent> ordered) {
     );
   }
 
-  final byId = {for (final event in events) event.id: event};
-  final ancestorCache = <String, Set<String>>{};
-
-  Set<String> ancestorsInclusive(String id) {
-    final cached = ancestorCache[id];
-    if (cached != null) return cached;
-    final result = <String>{id};
-    final event = byId[id];
-    if (event != null) {
-      for (final parentId in event.causalParents) {
-        if (byId.containsKey(parentId)) {
-          result.addAll(ancestorsInclusive(parentId));
-        }
-      }
+  // [events] is `canonicalOrder` output — every causal parent precedes its
+  // child — so a single **forward pass** builds each event's inclusive ancestor
+  // set by unioning its present parents' already-computed sets. This is
+  // iterative by construction: no recursion, so a long linear history cannot
+  // overflow the VM stack (and a cycle can't arise — `canonicalOrder` rejects
+  // it upstream).
+  final ancestors = <String, Set<String>>{};
+  for (final event in events) {
+    final set = <String>{event.id};
+    for (final parentId in event.causalParents) {
+      final parentAncestors = ancestors[parentId];
+      if (parentAncestors != null) set.addAll(parentAncestors);
     }
-    ancestorCache[id] = result;
-    return result;
+    ancestors[event.id] = set;
   }
 
   final heads = project(events).headIds;
@@ -87,8 +84,10 @@ CheckpointSelection selectActiveCheckpoint(Iterable<AgentEvent> ordered) {
   // Common ancestors = intersection of every head's inclusive ancestors.
   Set<String>? common;
   for (final head in heads) {
-    final ancestors = ancestorsInclusive(head);
-    common = common == null ? {...ancestors} : (common..retainAll(ancestors));
+    final headAncestors = ancestors[head] ?? <String>{head};
+    common = common == null
+        ? {...headAncestors}
+        : (common..retainAll(headAncestors));
   }
   common ??= <String>{};
 
@@ -98,7 +97,7 @@ CheckpointSelection selectActiveCheckpoint(Iterable<AgentEvent> ordered) {
   for (final event in events) {
     if (event.kind != AgentEventKind.summary) continue;
     if (!common.contains(event.id)) continue;
-    final coverage = ancestorsInclusive(event.id).length;
+    final coverage = (ancestors[event.id] ?? const <String>{}).length;
     if (coverage > bestCoverage ||
         (coverage == bestCoverage &&
             (active == null || event.id.compareTo(active.id) < 0))) {
@@ -118,7 +117,7 @@ CheckpointSelection selectActiveCheckpoint(Iterable<AgentEvent> ordered) {
     );
   }
 
-  final covered = ancestorsInclusive(active.id);
+  final covered = ancestors[active.id] ?? <String>{active.id};
   return CheckpointSelection(
     activeCheckpointId: active.id,
     coveredIds: covered.toList()..sort(),

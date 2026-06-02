@@ -292,16 +292,21 @@ class TaskAgentWorkflow {
     // can be backed by a better retrieval path.
     // With compaction on, the inline log entries are dropped from the task
     // header and supplied instead as `active summary + uncovered tail` from the
-    // captured log (the read-flip). Off → the full journal task JSON, unchanged.
+    // captured log (the read-flip). But only when a real compacted replacement
+    // exists: capture/compaction are optional and non-fatal, so if nothing was
+    // captured (`assembleContext` empty), fall back to the full inline log
+    // rather than leaving the wake with no task log at all.
     final compactedTaskLog = compactor != null
         ? await compactor.assembleContext(agentId)
         : null;
+    final useCompactedLog =
+        compactedTaskLog != null && compactedTaskLog.trim().isNotEmpty;
     final (
       taskDetailsJson,
       projectContextJson,
       linkedTasksJson,
     ) = await (
-      compactionEnabled
+      useCompactedLog
           ? aiInputRepository.buildTaskDetailsJson(
               id: taskId,
               includeLogEntries: false,

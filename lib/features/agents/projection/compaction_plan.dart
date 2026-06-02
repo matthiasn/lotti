@@ -55,6 +55,18 @@ CompactionPlan planCompaction({
   required List<TailEntry> tail,
   required int budget,
 }) {
+  // Fail fast on a bad estimator: a negative token cost would make the reverse
+  // budget walk keep entries that should have been folded.
+  for (final entry in tail) {
+    if (entry.tokens < 0) {
+      throw ArgumentError.value(
+        entry.tokens,
+        'tail.tokens',
+        'must be non-negative',
+      );
+    }
+  }
+
   if (tail.isEmpty) {
     return const CompactionPlan(foldIds: [], keepIds: []);
   }

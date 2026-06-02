@@ -114,6 +114,13 @@ void main() {
 
     // ── examples ─────────────────────────────────────────────────────────────
 
+    test('rejects a negative token estimate', () {
+      expect(
+        () => planCompaction(tail: _tail([5, -1]), budget: 10),
+        throwsArgumentError,
+      );
+    });
+
     test('empty tail yields an empty plan', () {
       final plan = planCompaction(tail: const [], budget: 100);
       expect(plan.shouldCompact, isFalse);
