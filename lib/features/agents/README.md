@@ -633,21 +633,25 @@ is null or empty-after-trim, the call routes through `AgentToolExecutor`
 like any other immediate tool — the title is applied without a user
 confirmation prompt so a freshly dictated task gets a meaningful name
 without an empty-looking suggestion sitting in the panel waiting for
-approval. Once a title is present the tool reverts to the normal
-deferred path.
+approval. If `AgentToolExecutor` rejects that autonomous write with a
+category-policy denial, the strategy converts the same tool call back
+into a normal change-set proposal instead of returning the denial to the
+model. Once a title is present the tool reverts to the normal deferred
+path.
 
-The auto-apply check (`_shouldAutoApplyInitialTitle`) deliberately
+The auto-apply check (`_shouldAutoApplyInitialField`) deliberately
 re-runs the metadata resolver on every call rather than trusting the
-cached snapshot, so a title populated by any source — a concurrent
-user edit, a prior auto-apply in the same wake, a synced edit from
-another device — is seen before dispatch. After a successful auto-apply
-the strategy also marks `set_task_title` as used in `_usedDeferredTools`
-and invalidates the cached snapshot, so a repeat call in the same wake
-cannot re-auto-apply on the pre-write snapshot. The dispatcher itself
-stays simple: it is the single write path for both auto-applied initial
-titles and user-confirmed renames, so the "don't overwrite a populated
-title" invariant is enforced at the strategy boundary and not at the
-mutation boundary (where it would otherwise block legitimate renames).
+cached snapshot, so a title populated by any source — a concurrent user
+edit, a prior auto-apply in the same wake, a synced edit from another
+device — is seen before dispatch. After a successful auto-apply or
+policy-fallback proposal, the strategy also marks `set_task_title` as
+used in `_usedDeferredTools`, so a repeat call in the same wake cannot
+re-auto-apply on the pre-write snapshot and instead hits the same
+single-use guard as other deferred tools. The dispatcher itself stays
+simple: it is the single write path for both auto-applied initial titles
+and user-confirmed renames, so the "don't overwrite a populated title"
+invariant is enforced at the strategy boundary and not at the mutation
+boundary (where it would otherwise block legitimate renames).
 
 ### Confirmation Path
 

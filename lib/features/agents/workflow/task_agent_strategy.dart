@@ -253,11 +253,13 @@ class TaskAgentStrategy extends ConversationStrategy {
       // `set_task_language` on a task with no language yet is applied
       // immediately, while language changes on tasks that already have
       // one continue to require user confirmation.
+      final canUseInitialAutoApply = !_usedDeferredTools.contains(toolName);
       final autoApplyInitial =
-          (toolName == TaskAgentToolNames.setTaskTitle &&
-              await _shouldAutoApplyInitialField((s) => s.title)) ||
-          (toolName == TaskAgentToolNames.setTaskLanguage &&
-              await _shouldAutoApplyInitialField((s) => s.languageCode));
+          canUseInitialAutoApply &&
+          ((toolName == TaskAgentToolNames.setTaskTitle &&
+                  await _shouldAutoApplyInitialField((s) => s.title)) ||
+              (toolName == TaskAgentToolNames.setTaskLanguage &&
+                  await _shouldAutoApplyInitialField((s) => s.languageCode)));
       if (autoApplyInitial) {
         await _recordActionMessage(toolName: toolName, args: args);
         final result = await executor.execute(
@@ -268,6 +270,25 @@ class TaskAgentStrategy extends ConversationStrategy {
           executeHandler: () => executeToolHandler(toolName, args, manager),
           readVectorClock: readVectorClock,
         );
+        // The initial-field shortcut is still an autonomous write. If the
+        // category policy blocks it, keep the user path alive by converting
+        // the same tool call into the normal confirmable proposal.
+        final policyFallbackBuilder = changeSetBuilder;
+        if (result.policyDenied &&
+            policyFallbackBuilder != null &&
+            AgentToolRegistry.deferredTools.contains(toolName)) {
+          final csBuilder = policyFallbackBuilder;
+          _taskMetadataResolved = false;
+          _cachedTaskMetadata = null;
+          final itemCountBefore = csBuilder.items.length;
+          final response = await _addToChangeSet(csBuilder, toolName, args);
+          if (csBuilder.items.length > itemCountBefore) {
+            _usedDeferredTools.add(toolName);
+          }
+          manager.addToolResponse(toolCallId: call.id, response: response);
+          await _recordToolResultMessage(toolName: toolName);
+          continue;
+        }
         manager.addToolResponse(toolCallId: call.id, response: result.output);
         if (result.success) {
           // The field is now populated. Prevent a repeat call to the
