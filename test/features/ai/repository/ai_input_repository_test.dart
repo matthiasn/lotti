@@ -1662,6 +1662,64 @@ void main() {
         expect(() => jsonDecode(result!), returnsNormally);
       });
 
+      test('omits logEntries when includeLogEntries is false', () async {
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
+          (_) async => (const Duration(minutes: 30), <String, TimeRange>{}),
+        );
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: 'Compacted Task',
+            status: TaskStatus.inProgress(
+              id: 'status-c',
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+          ),
+        );
+        final linkedEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'le-1',
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          entryText: const EntryText(plainText: 'a log entry'),
+        );
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [linkedEntry]);
+
+        final full = await repository.buildTaskDetailsJson(id: taskId);
+        final slim = await repository.buildTaskDetailsJson(
+          id: taskId,
+          includeLogEntries: false,
+        );
+
+        // The full header carries the log; the slim (compaction) header drops
+        // it entirely, so the captured log + summary can supply it instead.
+        expect(full, contains('logEntries'));
+        expect(full, contains('a log entry'));
+        expect(slim, isNot(contains('logEntries')));
+        expect(slim, isNot(contains('a log entry')));
+        expect(slim, contains('"title": "Compacted Task"'));
+      });
+
       test('returns null for non-task entity', () async {
         // Arrange
         when(() => mockDb.journalEntityById(taskId)).thenAnswer(

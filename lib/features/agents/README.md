@@ -312,26 +312,73 @@ embedding dependencies are available, `TaskAgentWorkflow` embeds newly
 persisted reports after the wake commits so later semantic retrieval can use
 the report text.
 
-### Memory compaction: prepared, not active
+### Memory compaction & input capture (ADR 0020 + ADR 0017)
 
-There is scaffolding for message-span summaries, but no active compaction
-pipeline yet.
+The agent's **inputs** are captured into the append-only log so the wake context
+becomes a projection of the log rather than a live read of the mutable journal
+(ADR 0020), and that log is compacted by **summary checkpoints** over causal
+frontiers (ADR 0017). The mechanism is built and tested; the production *read*
+still uses the journal (the read-flip is the last switch — see below).
 
-Prepared model fields include:
+**Capture (active, in shadow).** Each task wake snapshots the user-content
+sources it read — one per linked journal log entry, the rendered text only (an
+audio entry contributes its transcript, never the raw audio) — via
+`AgentInputCaptureService.captureWakeInputs`:
 
-- `AgentMessageKind.summary`
-- `summaryStartMessageId`
-- `summaryEndMessageId`
-- `summaryDepth`
-- `AgentStateEntity.recentHeadMessageId`
-- `AgentStateEntity.latestSummaryMessageId`
+- `renderTaskSources` turns the task's linked entries into `RenderedSource`s
+  (mirrors `AiInputRepository.generate`, keeping each entry id as provenance);
+- `reconcileCapture` diffs them against the agent's active **input frontier**
+  and appends only the delta;
+- each new/changed source becomes a content-addressed `AgentMessagePayloadEntity`
+  (id = `ContentDigest.of(content)`, so identical content dedupes across wakes
+  *and* agents) plus a `messagePayload` link (`fromId = agentId`) carrying
+  provenance (`contentEntryId`) and canonical ordering (`sourceCreatedAt`);
+- a source that vanished is **soft-retracted** by a `system` message tagged
+  `metadata.retractsContentEntryId` — the snapshot stays auditable, but the
+  active frontier excludes it (a later capture re-adds it).
 
-Current state:
+`projectInputFrontier` folds those links + retractions to the latest,
+non-retracted content per source — a pure function of the log, so two devices
+converge regardless of arrival order.
 
-- task, project, and improver workflows do not write summary messages
-- the runtime does not currently compact old message spans into summaries
-- the UI can render summary messages if they ever exist, but the production
-  wake path still relies on the raw persisted message and report records
+**Compaction (selection + planning built; LLM emission pending).** `summary`
+checkpoint events fold a frontier of older content:
+
+- `selectActiveCheckpoint` picks the active checkpoint — the deepest summary
+  ancestral to every head — plus the uncovered verbatim tail;
+- `planCompaction` decides, against a model token budget, which oldest tail
+  prefix to fold so the most-recent suffix fits.
+
+The dormant model fields now earn their keep: `AgentMessageKind.summary`,
+`summaryStartMessageId`/`summaryEndMessageId`/`summaryDepth`,
+`AgentStateEntity.recentHeadMessageId`/`latestSummaryMessageId`.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Capturing: wake reads user content
+  Capturing --> Capturing: per source — dedupe payload by contentDigest; append messagePayload link; retract vanished sources
+  Capturing --> Folding: input frontier updated
+  Folding --> Compacting: uncovered tail beyond model budget?
+  Compacting --> Idle: append summary checkpoint over the folded frontier
+  Folding --> Idle: tail within budget
+```
+
+**Wired behind a default-off flag.** The full activation is implemented but
+gated by `TaskAgentWorkflow.compactionEnabled` (**default `false`**):
+
+- when **off** (production today), the wake prompt assembles `## Current Task
+  Context` from the journal exactly as before — byte-identical behaviour;
+- when **on**, each wake (after capture) runs `AgentLogCompactor.maybeCompact`
+  — folding the oldest tail beyond a token budget into a `summary` checkpoint
+  via an injected `AgentSummarizer` — and assembles the task log as
+  `AgentLogCompactor.assembleContext` (`active summary + uncovered tail`),
+  while the task header drops its inline `logEntries`
+  (`buildTaskDetailsJson(includeLogEntries: false)`).
+
+Flipping the flag and wiring a real summarizer activates it; that is a
+deliberate, user-visible rollout (it changes every wake's prompt), so it is left
+off by default. The UI already renders `summary` messages when they exist.
 
 ### State-as-projection: the log is the source of truth (PR 4)
 
@@ -1084,25 +1131,13 @@ For provider selection and residency details, see [../ai/README.md](../ai/README
 
 ## Planned Improvements
 
-One planned improvement is activating message-memory compaction on top of
-the summary scaffolding that already exists in the model.
-
-Current state:
-
-- summary message fields exist, but the production wake flows do not compact
-  message spans yet
-
-Why that is still on the roadmap:
-
-- it would let long-lived agents retain distilled conversation history instead
-  of depending only on raw message logs, reports, and observations
-- it would make the existing summary-related entity fields earn their keep
-- it would give the runtime a cleaner long-horizon memory path for persistent
-  agents
-
-This is not implemented today. The current runtime still resolves behavior from
-the existing template and version directive fields, and message history is not
-yet compacted into summary messages.
+Input capture + log compaction (ADR 0020 + ADR 0017) is partially landed — see
+*Memory compaction & input capture* above. Capture runs in shadow today; the
+remaining work is the production read-flip (assemble the wake context from
+`active summary + uncovered tail`, drop the per-wake prompt blob) and emitting
+LLM-generated `summary` checkpoints when the verbatim tail exceeds the model's
+token budget. Until then, long-lived agents still read the full task log plus
+the latest report rather than a distilled summary + tail.
 
 ## User-Facing UI Surfaces
 

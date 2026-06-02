@@ -43,6 +43,36 @@ model.AgentLink makeTestBasicLink({
   );
 }
 
+// ── Input-capture reference factory (agent → content-addressed payload) ───────
+// Backs the active input frontier (ADR 0020): provenance (`contentEntryId`) and
+// canonical ordering (`sourceCreatedAt`) live on the reference, not the payload.
+// Defaults to the runtime topology (`fromId = agentId`), which `getLinksFrom`
+// resolves the frontier from.
+
+model.AgentLink makeTestMessagePayloadLink({
+  String id = 'link-payload-001',
+  String fromId = kTestAgentId,
+  String toId = 'sha256-v1:payload',
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  String? contentEntryId,
+  DateTime? sourceCreatedAt,
+  DateTime? deletedAt,
+}) {
+  return model.AgentLink.messagePayload(
+    id: id,
+    fromId: fromId,
+    toId: toId,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    contentEntryId: contentEntryId,
+    sourceCreatedAt: sourceCreatedAt,
+    deletedAt: deletedAt,
+  );
+}
+
 // ── Active-slot link factories (agent → target) ──────────────────────────────
 // These back `slots.active{Task,Project,Day,Template}Id` in the projection fold.
 

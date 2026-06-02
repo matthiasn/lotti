@@ -36,6 +36,19 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = MessagePrevLink;
 
+  /// Reference from a consuming message ([fromId]) to a content-addressed
+  /// payload ([toId] = the payload's `contentDigest`), per ADR 0020.
+  ///
+  /// Provenance and canonical-ordering metadata live **on the reference, not
+  /// the payload**, so one shared payload can be pointed at by many references
+  /// with distinct provenance:
+  /// - [contentEntryId] — the originating journal entity (provenance);
+  /// - [sourceCreatedAt] — the source's chronological position, snapshotted at
+  ///   capture time so the canonical assembly order is a pure function of the
+  ///   log and never a live read of the (mutable) journal.
+  ///
+  /// Both are nullable: links written before ADR 0020 — and non-input payload
+  /// references — simply carry neither.
   const factory AgentLink.messagePayload({
     required String id,
     required String fromId,
@@ -43,6 +56,8 @@ abstract class AgentLink with _$AgentLink {
     required DateTime createdAt,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
+    String? contentEntryId,
+    DateTime? sourceCreatedAt,
     DateTime? deletedAt,
   }) = MessagePayloadLink;
 
