@@ -451,21 +451,26 @@ class AgentSyncService {
   /// carries no payload; its parents live in the edges and its identity in the
   /// content-addressed id (the `sha256-v1:` prefix + a multi-parent `system`
   /// message is what marks a node as a join). Per-device envelope fields
-  /// (`createdAt`, vector clock) are reconciled separately (J4); they never
-  /// affect the merge, which is keyed by id.
+  /// (`createdAt`, vector clock) are *not* canonicalized (deferred — inert while
+  /// the projection orders by `(hostId, id)` with `hostId = ''` and joins are
+  /// immutable); they never affect the merge, which is keyed by id.
   ///
   /// **Its own append path — never routed through [upsertEntity]/[_appendMessage]**,
   /// which chain a *single* parent off `recentHeadMessageId` and would both add a
   /// spurious `msgprev-${joinId}` edge and collide with the per-parent edge ids.
   ///
   /// **Idempotent and atomic.** Node, all *n* edges, and the head advance commit
-  /// in one [runInTransaction]; the node is (re-)written only when absent, the
-  /// edges are idempotent by id, and the head is advanced to [joinId] **whenever
-  /// it isn't already there** — including when the join node arrived by sync —
-  /// because a head pointer left at a now-joined parent would immediately
-  /// re-fork on the next local append. Mirrors [_appendMessage]'s head
-  /// maintenance via [_upsertEntityRaw], keeping the append path the sole head
-  /// mover.
+  /// in one [runInTransaction]; the node is (re-)written only when absent, and
+  /// the edges are idempotent by id. The head is advanced to [joinId] **only
+  /// when it still points at one of the joined parents (or is unset)** —
+  /// including when the join node arrived by sync, where the head still sits on
+  /// a parent. If the head has since moved *past* the parents — e.g. the wake
+  /// timed this heal out (the future is not cancellable) and the executor
+  /// appended new messages first, or a newer message arrived — it is left alone:
+  /// collapsing back to the join would move the head **backwards** and orphan
+  /// that progress. The join node + edges are still recorded, so the residual
+  /// fork heals on the next wake. Mirrors [_appendMessage]'s head maintenance
+  /// via [_upsertEntityRaw], keeping the append path the sole head mover.
   Future<void> appendJoin({
     required String agentId,
     required String joinId,
@@ -504,8 +509,15 @@ class AgentSyncService {
           ),
         );
       }
+      // Only collapse the head onto the join while it still sits on a joined
+      // parent (or is unset). If it has moved on (a timed-out heal racing the
+      // executor, or a newer append), advancing would regress the head and
+      // orphan that progress — leave it; the residual fork heals next wake.
       final state = await _repository.getAgentState(agentId);
-      if (state != null && state.recentHeadMessageId != joinId) {
+      final head = state?.recentHeadMessageId;
+      if (state != null &&
+          head != joinId &&
+          (head == null || parents.contains(head))) {
         await _upsertEntityRaw(
           state.copyWith(recentHeadMessageId: joinId, updatedAt: at),
         );

@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
@@ -54,6 +55,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
+import '../sync/fork_test_support.dart';
 import '../test_utils.dart';
 import '../workflow/task_agent_workflow_test_helpers.dart';
 import 'agent_providers_test_helpers.dart';
@@ -4351,6 +4353,34 @@ void main() {
       );
 
       expect(result, isEmpty);
+    });
+  });
+
+  group('forkHealingHook', () {
+    test('returns a hook that heals a fork when run', () async {
+      final bench = makeForkBench();
+      await seedForkInto(bench.repo, head: 'b'); // a 2-head fork {a, b}
+
+      final hook = forkHealingHook(bench.service, () => DateTime(2024, 2));
+      await hook('agent-1', 'run-key', 'thread-1');
+
+      // The fork collapsed to a single head: the content-addressed join.
+      expect(headsOfLog(bench.repo.messages, bench.repo.links), [
+        computeJoinId(['a', 'b']),
+      ]);
+    });
+
+    test('stamps the join with the supplied wake timestamp', () async {
+      final bench = makeForkBench();
+      await seedForkInto(bench.repo, head: 'b');
+
+      final hook = forkHealingHook(bench.service, () => DateTime(2024, 7, 4));
+      await hook('agent-1', 'rk', 'thread-1');
+
+      final join = bench.repo.messages.firstWhere(
+        (m) => m.id == computeJoinId(['a', 'b']),
+      );
+      expect(join.createdAt, DateTime(2024, 7, 4));
     });
   });
 }

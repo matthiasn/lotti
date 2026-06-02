@@ -2122,6 +2122,37 @@ void main() {
     );
 
     test(
+      'does not regress the head when it has moved past the joined parents',
+      () async {
+        // Models a timed-out heal whose appendJoin completes *after* the
+        // executor already advanced the head past the fork: collapsing back to
+        // the join would orphan that progress, so the head is left alone.
+        final joinId = computeJoinId(['a', 'b']);
+        when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+          (_) async => makeTestState(
+            agentId: 'agent-1',
+          ).copyWith(recentHeadMessageId: 'w-latest'), // moved past a/b
+        );
+
+        await syncService.appendJoin(
+          agentId: 'agent-1',
+          joinId: joinId,
+          parentIds: ['a', 'b'],
+          at: DateTime(2024, 3, 15),
+        );
+
+        final upserted = verify(
+          () => mockRepository.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        // The join node + edges are still recorded (the residual fork heals on
+        // the next wake), but the head is NOT regressed onto the join.
+        expect(upserted.whereType<AgentMessageEntity>().single.id, joinId);
+        expect(upserted.whereType<AgentStateEntity>(), isEmpty);
+        verify(() => mockRepository.upsertLink(any())).called(2);
+      },
+    );
+
+    test(
       'with no state row, writes node and edges but advances no head',
       () async {
         final joinId = computeJoinId(['a', 'b']);

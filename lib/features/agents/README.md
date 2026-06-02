@@ -438,9 +438,11 @@ it — so the DAG re-converges to one tip and the prefix re-warms.
   and each edge id is `msgprev-${joinId}-${parentId}`. Two devices healing the
   *same* fork mint byte-identical rows, so the log set-unions their concurrent
   emissions into **one** node — no join storm. The join carries no payload and no
-  wall-clock/host/clock in its *content*; the per-device envelope is reconciled
-  separately by the sync layer (and is currently inert for the projection, which
-  orders by `(hostId, id)` with `hostId = ''`).
+  wall-clock/host/clock in its *content*; the per-device envelope (`createdAt`,
+  vector clock) is **not yet canonicalized** — reconciliation is deferred because
+  it is inert for the projection today, which orders by `(hostId, id)` with
+  `hostId = ''` and never re-resolves an immutable join. It becomes load-bearing
+  only if `hostIdOf` is ever populated (see the plan's open decisions).
 - **Eager at wake start, no cross-wake state.** A fork seen at wake start was
   created by a *prior* cycle (this wake has appended nothing yet), so healing it is
   faithful to ADR 0018's "≥2 heads survive past one wake cycle." Forks never

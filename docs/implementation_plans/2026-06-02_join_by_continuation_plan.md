@@ -109,11 +109,11 @@ exactly as PR 5's compaction did.
 
 - **Pure logic — `lib/features/agents/projection/join_plan.dart` (new).**
   `computeJoinId(List<String> headIds)` and `planJoin({required List<String>
-  headIds, String? lastHeadSetDigest})` → `JoinPlan?` (null = no join). Pure
-  functions of the head set + the prior digest; no I/O, no clocks. This is where
-  the "≥2 heads + survived a cycle" rule and the content-addressed id live, and
-  where the Glados properties bite (determinism, permutation-invariance over the
-  head set, idempotence).
+  headIds, required bool viewComplete})` → `JoinPlan?` (null = no join). Pure
+  functions of the head set + the `viewComplete` flag; no I/O, no clocks, no
+  cross-wake state. This is where the "≥2 heads over a complete view" gate and
+  the content-addressed id live, and where the Glados properties bite
+  (determinism, permutation-invariance over the head set, idempotence).
 - **Append mechanism — `AgentSyncService` (`agent_sync_service.dart`).** A new
   `appendJoin(...)` (or a generalized `_appendMessage` that accepts an explicit
   parent *list*) writes the join message, its *n* content-addressed `messagePrev`
@@ -161,16 +161,16 @@ stateDiagram-v2
 
 ## Increments (each shippable green on its own)
 
-1. **J1 — Pure join planning + id (no wiring).** New
+1. **J1 — Pure join planning + id (no wiring). ✅ done.** New
    `projection/join_plan.dart`: `computeJoinId(headIds)` (domain-tagged
-   `ContentDigest.of`) and `planJoin({headIds, lastHeadSetDigest})` → `JoinPlan?`
-   (`{joinId, parentIds (sorted), headSetDigest}`), returning null unless
-   `headIds.length >= 2` **and** `ContentDigest.of(sortedHeadIds) ==
-   lastHeadSetDigest` (the fork survived a cycle). Glados-tested:
-   permutation-invariance over the head set, determinism, the id is stable and
-   tag-isolated from a same-input `frontierDigest`, single-head/empty → null,
-   changed-head-set → null. Unused in production. *Done when:* analyze clean,
-   Glados green.
+   `ContentDigest.of`) and `planJoin({headIds, viewComplete})` → `JoinPlan?`
+   (`{joinId, parentIds (sorted)}`), returning null unless `headIds.length >= 2`
+   **and** `viewComplete` (no dangling parents — the local DAG view has settled).
+   Stateless: a pure function of the head set + that boolean, no cross-wake
+   marker. Glados-tested: permutation-invariance over the head set, determinism,
+   the id is stable and tag-isolated from a same-input `frontierDigest`,
+   single-head/empty/dups → null, `!viewComplete` → null. Unused in production.
+   *Done when:* analyze clean, Glados green.
 2. **J2 — Multi-parent append path.** A **dedicated** `AgentSyncService.appendJoin
    ({agentId, joinId, parentIds, at, ...})` — **not** routed through
    `_appendMessage` (red-team J1): `_appendMessage` would add a spurious
