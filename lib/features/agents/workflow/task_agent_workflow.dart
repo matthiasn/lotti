@@ -238,6 +238,11 @@ class TaskAgentWorkflow {
     // per-source and content-addressed, BEFORE assembly so the input frontier
     // reflects the latest content. Non-fatal: a capture failure must not abort.
     final captureService = inputCaptureService;
+    // Whether THIS wake's capture refreshed the input frontier. The read-flip
+    // only trusts the captured frontier when this is true — otherwise capture
+    // failed (or didn't run) and the frontier may predate the current journal,
+    // so the wake falls back to the full inline log.
+    var captureSucceeded = false;
     if (captureService != null) {
       try {
         final linked = await journalDb.getLinkedEntities(taskId);
@@ -248,6 +253,7 @@ class TaskAgentWorkflow {
           threadId: threadId,
           runKey: runKey,
         );
+        captureSucceeded = true;
       } catch (e) {
         _logError('failed to capture wake inputs', error: e);
       }
@@ -299,8 +305,12 @@ class TaskAgentWorkflow {
     final compactedTaskLog = compactor != null
         ? await compactor.assembleContext(agentId)
         : null;
+    // Only trust the captured frontier when this wake's capture succeeded;
+    // otherwise it may be stale relative to the journal, so keep the full log.
     final useCompactedLog =
-        compactedTaskLog != null && compactedTaskLog.trim().isNotEmpty;
+        captureSucceeded &&
+        compactedTaskLog != null &&
+        compactedTaskLog.trim().isNotEmpty;
     final (
       taskDetailsJson,
       projectContextJson,
@@ -384,7 +394,9 @@ class TaskAgentWorkflow {
       taskId: taskId,
       ledger: ledger,
       timeService: getIt<TimeService>(),
-      compactedTaskLog: compactedTaskLog,
+      // Only attach the compacted log when we're actually using it (the inline
+      // log was dropped); otherwise the full inline log already carries it.
+      compactedTaskLog: useCompactedLog ? compactedTaskLog : null,
     );
 
     // 6. Create conversation and run with strategy.

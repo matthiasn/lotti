@@ -129,8 +129,15 @@ String assembleCompactedTaskLog({
       final body = (text is String && text.isNotEmpty)
           ? text
           : (transcript is String ? transcript : '');
+      // Keep the per-entry time evidence when it carries information.
+      final duration = source.content['loggedDuration'];
+      final durationTag =
+          (duration is String && duration.isNotEmpty && duration != '00:00')
+          ? ' · $duration'
+          : '';
       buffer.writeln(
-        '- [${source.sourceCreatedAt.toIso8601String()}] ($type) $body',
+        '- [${source.sourceCreatedAt.toIso8601String()}] '
+        '($type$durationTag) $body',
       );
     }
   }

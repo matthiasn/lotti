@@ -1,5 +1,7 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 /// Renders a task's linked journal **log entries** into [RenderedSource]s for
 /// input capture (ADR 0020) — the per-source equivalent of the `logEntries`
@@ -52,6 +54,9 @@ List<RenderedSource> renderTaskSources(Iterable<JournalEntity> linkedEntities) {
         sourceCreatedAt: linked.meta.dateFrom,
         content: <String, Object?>{
           'entryType': entryType,
+          // Preserve the per-entry logged duration that `generate`'s logEntries
+          // carry, so the compacted read-flip keeps the same time evidence.
+          'loggedDuration': formatHhMm(entryDuration(linked)),
           'text': editedText ?? '',
           'audioTranscript': ?audioTranscript,
           'transcriptLanguage': ?transcriptLanguage,

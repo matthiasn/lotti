@@ -26,6 +26,18 @@ class AgentInputCaptureService {
 
   static const _uuid = Uuid();
 
+  /// Owner `agentId` for content-addressed input payloads.
+  ///
+  /// Payloads dedupe by `contentDigest` **across agents** (ADR 0020 rule 2), so
+  /// a payload is shared — it must not belong to whichever agent happened to
+  /// capture it first. `hardDeleteAgent` cascades by `agent_id` (deletes the
+  /// agent's entities *and any link pointing at them*), so an agent-owned shared
+  /// payload would take other agents' references down with it on delete. A fixed
+  /// sentinel owner (never a real agent id) keeps shared content global and
+  /// untouched by per-agent deletion; each agent's own `messagePayload` links
+  /// (`fromId == agentId`) are still deleted with it.
+  static const sharedContentAgentId = 'shared-input-content';
+
   AgentRepository get _repository => _sync.repository;
 
   /// Captures the [sources] a wake rendered for [agentId], appending only the
@@ -76,7 +88,10 @@ class AgentInputCaptureService {
         await _sync.upsertEntity(
           AgentDomainEntity.agentMessagePayload(
             id: payload.contentDigest,
-            agentId: agentId,
+            // Shared owner, not `agentId` — see [sharedContentAgentId]: the
+            // payload is content-addressed and deduped across agents, so it
+            // must survive any single agent's hard delete.
+            agentId: sharedContentAgentId,
             createdAt: at,
             vectorClock: null,
             content: payload.content,

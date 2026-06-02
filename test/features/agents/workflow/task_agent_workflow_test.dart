@@ -5614,6 +5614,8 @@ void main() {
             labelsRepository: mockLabelsRepository,
             syncService: mockSyncService,
             templateService: mockTemplateService,
+            // A succeeding capture service so the read-flip trusts the frontier.
+            inputCaptureService: _RecordingCaptureService(),
             compactionEnabled: true,
             summarizer: ({required sources, priorSummary}) async => 'SUMMARY',
           );
@@ -5721,6 +5723,110 @@ void main() {
         final userText = capturedPayloadEntities(captured)
             .map((p) => p.content['text'] as String? ?? '')
             .firstWhere((t) => t.contains('Current Task Context'));
+        expect(userText, isNot(contains('## Task Log')));
+      });
+
+      test('a capture failure falls back to the inline log even if a stale '
+          'frontier exists', () async {
+        // A non-empty captured frontier exists from a prior wake, but THIS
+        // wake's capture throws — so the frontier may be stale and must not be
+        // used; the wake keeps the full inline log.
+        const tailContent = {
+          'entryType': 'text',
+          'text': 'stale captured content',
+        };
+        final tailDigest = ContentDigest.of(tailContent);
+        when(
+          () => mockSyncService.repository,
+        ).thenReturn(mockAgentRepository);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.system,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.summary,
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => mockAgentRepository.getLinksFrom(agentId)).thenAnswer(
+          (_) async => [
+            AgentLink.messagePayload(
+              id: 'pl-1',
+              fromId: agentId,
+              toId: tailDigest,
+              createdAt: DateTime(2024, 6, 2),
+              updatedAt: DateTime(2024, 6, 2),
+              vectorClock: null,
+              contentEntryId: 'e1',
+              sourceCreatedAt: DateTime(2024, 6),
+            ),
+          ],
+        );
+        when(() => mockAgentRepository.getEntity(tailDigest)).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: tailDigest,
+            agentId: 'shared-input-content',
+            createdAt: DateTime(2024, 6, 2),
+            vectorClock: null,
+            content: tailContent,
+          ),
+        );
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+
+        final workflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          inputCaptureService: _ThrowingCaptureService(),
+          compactionEnabled: true,
+          summarizer: ({required sources, priorSummary}) async => 'SUMMARY',
+        );
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).called(1);
+        verifyNever(
+          () => mockAiInputRepository.buildTaskDetailsJson(
+            id: taskId,
+            includeLogEntries: false,
+          ),
+        );
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final userText = capturedPayloadEntities(captured)
+            .map((p) => p.content['text'] as String? ?? '')
+            .firstWhere((t) => t.contains('Current Task Context'));
+        expect(userText, isNot(contains('stale captured content')));
         expect(userText, isNot(contains('## Task Log')));
       });
     });

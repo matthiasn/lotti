@@ -84,6 +84,24 @@ void main() {
     },
   );
 
+  test(
+    'content payloads are owned by the shared sentinel, not the agent',
+    () async {
+      // Content-addressed payloads dedupe across agents, so they must not be
+      // owned by one agent (a hard delete would orphan others' references).
+      await captureSourcesAt([source('e1', 'alpha')], 10);
+      expect(repo.payloads, isNotEmpty);
+      expect(
+        repo.payloads.every(
+          (p) => p.agentId == AgentInputCaptureService.sharedContentAgentId,
+        ),
+        isTrue,
+      );
+      // The agent still owns its messagePayload links (deleted with it).
+      expect(repo.payloadLinks.every((l) => l.fromId == _agentId), isTrue);
+    },
+  );
+
   test('re-capturing identical sources writes nothing', () async {
     final sources = [source('e1', 'alpha')];
     await captureSourcesAt(sources, 10);

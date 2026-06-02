@@ -59,7 +59,11 @@ void main() {
       expect(sources, hasLength(1));
       expect(sources.single.contentEntryId, 'e1');
       expect(sources.single.sourceCreatedAt, DateTime(2024, 3, 10));
-      expect(sources.single.content, {'entryType': 'text', 'text': 'a note'});
+      expect(sources.single.content, {
+        'entryType': 'text',
+        'loggedDuration': '00:00',
+        'text': 'a note',
+      });
     });
 
     test('renders an audio transcript when the entry is not hand-edited', () {
@@ -69,6 +73,7 @@ void main() {
 
       expect(sources.single.content, {
         'entryType': 'audio',
+        'loggedDuration': '00:00',
         'text': '',
         'audioTranscript': 'spoken words',
         'transcriptLanguage': 'de',
@@ -87,6 +92,7 @@ void main() {
       // The transcript is dropped once the user has edited the text.
       expect(sources.single.content, {
         'entryType': 'audio',
+        'loggedDuration': '00:00',
         'text': 'corrected text',
       });
     });
@@ -105,7 +111,11 @@ void main() {
 
       final sources = renderTaskSources([image]);
 
-      expect(sources.single.content, {'entryType': 'image', 'text': 'caption'});
+      expect(sources.single.content, {
+        'entryType': 'image',
+        'loggedDuration': '00:00',
+        'text': 'caption',
+      });
     });
 
     test('skips non-log linked entities', () {
