@@ -90,6 +90,29 @@ void main() {
     expect(summaryMessages(), isEmpty);
   });
 
+  test('assembleContext is empty before anything is captured', () async {
+    expect(await compactor.assembleContext(_agentId), isEmpty);
+  });
+
+  test(
+    'assembleContext renders the active summary above the uncovered tail',
+    () async {
+      await captureAll([
+        src('e1', 'alpha', day: 1),
+        src('e2', 'beta', day: 2),
+        src('e3', 'gamma', day: 3),
+      ], 10);
+      await compact(budget: 0); // folds e1,e2 into a summary; tail = [e3]
+
+      final context = await compactor.assembleContext(_agentId);
+      expect(context, contains('Summary of earlier activity'));
+      expect(context, contains('SUMMARY(2)'));
+      expect(context, contains('gamma')); // uncovered tail rendered verbatim
+      expect(context, isNot(contains('alpha'))); // folded away into the summary
+      expect(context, isNot(contains('beta')));
+    },
+  );
+
   test('does not compact when the tail fits the budget', () async {
     await captureAll([src('e1', 'a', day: 1), src('e2', 'b', day: 2)], 10);
     expect(await compact(budget: 100000), isNull);

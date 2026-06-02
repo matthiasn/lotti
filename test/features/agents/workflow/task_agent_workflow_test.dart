@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -5528,6 +5529,121 @@ void main() {
           );
 
           expect(result.success, isTrue);
+        },
+      );
+    });
+
+    group('compaction read-flip (ADR 0017/0020)', () {
+      test(
+        'assembles the task log from the captured frontier and drops the '
+        'inline journal log',
+        () async {
+          // The captured frontier holds one source; with no summary yet it is
+          // the verbatim tail.
+          const tailContent = {
+            'entryType': 'text',
+            'text': 'captured tail content',
+          };
+          final tailDigest = ContentDigest.of(tailContent);
+
+          when(
+            () => mockSyncService.repository,
+          ).thenReturn(mockAgentRepository);
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.system,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.summary,
+            ),
+          ).thenAnswer((_) async => []);
+          when(() => mockAgentRepository.getLinksFrom(agentId)).thenAnswer(
+            (_) async => [
+              AgentLink.messagePayload(
+                id: 'pl-1',
+                fromId: agentId,
+                toId: tailDigest,
+                createdAt: DateTime(2024, 6, 2),
+                updatedAt: DateTime(2024, 6, 2),
+                vectorClock: null,
+                contentEntryId: 'e1',
+                sourceCreatedAt: DateTime(2024, 6),
+              ),
+            ],
+          );
+          when(() => mockAgentRepository.getEntity(tailDigest)).thenAnswer(
+            (_) async => AgentDomainEntity.agentMessagePayload(
+              id: tailDigest,
+              agentId: agentId,
+              createdAt: DateTime(2024, 6, 2),
+              vectorClock: null,
+              content: tailContent,
+            ),
+          );
+          when(
+            () => mockAiInputRepository.buildTaskDetailsJson(
+              id: taskId,
+              includeLogEntries: false,
+            ),
+          ).thenAnswer((_) async => '{"title":"Slim header"}');
+          stubFullExecutePath(
+            mockAgentRepository: mockAgentRepository,
+            mockAiInputRepository: mockAiInputRepository,
+            mockAiConfigRepository: mockAiConfigRepository,
+            mockConversationManager: mockConversationManager,
+            testAgentState: testAgentState,
+            geminiModel: geminiModel,
+            geminiProvider: geminiProvider,
+            agentId: agentId,
+            taskId: taskId,
+          );
+
+          final workflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            compactionEnabled: true,
+            summarizer: ({required sources, priorSummary}) async => 'SUMMARY',
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockAiInputRepository.buildTaskDetailsJson(
+              id: taskId,
+              includeLogEntries: false,
+            ),
+          ).called(1);
+
+          // The persisted prompt carries the slim header + the assembled task
+          // log (the captured tail) — proving the read-flip.
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final userText = capturedPayloadEntities(captured)
+              .map((p) => p.content['text'] as String? ?? '')
+              .firstWhere((t) => t.contains('Current Task Context'));
+          expect(userText, contains('Slim header'));
+          expect(userText, contains('## Task Log'));
+          expect(userText, contains('captured tail content'));
         },
       );
     });

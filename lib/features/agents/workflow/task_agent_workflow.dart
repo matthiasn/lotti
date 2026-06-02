@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
+import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -95,6 +96,9 @@ class TaskAgentWorkflow {
     this.projectRepository,
     this.changeSetNotificationService,
     this.inputCaptureService,
+    this.summarizer,
+    this.compactionEnabled = false,
+    this.compactionTailBudgetTokens = 6000,
   });
 
   final AgentRepository agentRepository;
@@ -138,6 +142,23 @@ class TaskAgentWorkflow {
   /// log rather than a live journal read. Null disables capture (unit tests
   /// that don't exercise it); production wires it in `agent_workflow_providers`.
   final AgentInputCaptureService? inputCaptureService;
+
+  /// Optional summarizer used by compaction to distill folded input sources
+  /// (ADR 0017). Required for [compactionEnabled] to actually emit summaries;
+  /// null leaves emission inert.
+  final AgentSummarizer? summarizer;
+
+  /// Feature flag for input-log compaction (ADR 0017/0020), **default off**.
+  /// When on, the wake context is assembled as `active summary + uncovered
+  /// tail` from the captured log (the inline journal log is dropped from the
+  /// task header), and the oldest tail beyond [compactionTailBudgetTokens] is
+  /// folded into a `summary` checkpoint via [summarizer]. Off → production
+  /// behaviour is unchanged (full journal task JSON, no summaries).
+  final bool compactionEnabled;
+
+  /// Token budget for the verbatim uncovered tail before compaction folds its
+  /// oldest entries (ADR 0017). Used only when [compactionEnabled].
+  final int compactionTailBudgetTokens;
 
   static const _uuid = Uuid();
 
@@ -210,6 +231,50 @@ class TaskAgentWorkflow {
       subDomain: 'execute',
     );
 
+    // Capture timestamp once for the whole wake so all writes share causality.
+    final now = clock.now();
+
+    // 1a. Capture this wake's user-content sources into the log (ADR 0020),
+    // per-source and content-addressed, BEFORE assembly so the input frontier
+    // reflects the latest content. Non-fatal: a capture failure must not abort.
+    final captureService = inputCaptureService;
+    if (captureService != null) {
+      try {
+        final linked = await journalDb.getLinkedEntities(taskId);
+        await captureService.captureWakeInputs(
+          agentId: agentId,
+          sources: renderTaskSources(linked),
+          at: now,
+          threadId: threadId,
+          runKey: runKey,
+        );
+      } catch (e) {
+        _logError('failed to capture wake inputs', error: e);
+      }
+    }
+
+    // 1b. Compaction (ADR 0017) — gated behind the default-off flag plus an
+    // injected summarizer: fold the oldest tail beyond the token budget into a
+    // summary checkpoint so the assembled context stays bounded. Non-fatal.
+    final compactor = compactionEnabled
+        ? AgentLogCompactor(syncService: syncService)
+        : null;
+    final summarizeFn = summarizer;
+    if (compactor != null && summarizeFn != null) {
+      try {
+        await compactor.maybeCompact(
+          agentId: agentId,
+          budget: compactionTailBudgetTokens,
+          summarize: summarizeFn,
+          at: now,
+          threadId: threadId,
+          runKey: runKey,
+        );
+      } catch (e) {
+        _logError('failed to compact agent log', error: e);
+      }
+    }
+
     final lastReport = await agentRepository.getLatestReport(
       agentId,
       AgentReportScopes.current,
@@ -225,12 +290,23 @@ class TaskAgentWorkflow {
     // Injecting sibling-task TLDRs polluted the context window, and the
     // related-task drill-down tool is currently hidden from the LLM until it
     // can be backed by a better retrieval path.
+    // With compaction on, the inline log entries are dropped from the task
+    // header and supplied instead as `active summary + uncovered tail` from the
+    // captured log (the read-flip). Off → the full journal task JSON, unchanged.
+    final compactedTaskLog = compactor != null
+        ? await compactor.assembleContext(agentId)
+        : null;
     final (
       taskDetailsJson,
       projectContextJson,
       linkedTasksJson,
     ) = await (
-      aiInputRepository.buildTaskDetailsJson(id: taskId),
+      compactionEnabled
+          ? aiInputRepository.buildTaskDetailsJson(
+              id: taskId,
+              includeLogEntries: false,
+            )
+          : aiInputRepository.buildTaskDetailsJson(id: taskId),
       aiInputRepository.buildProjectContextJsonForTask(taskId),
       _buildLinkedTasksContextJson(taskId),
     ).wait;
@@ -303,6 +379,7 @@ class TaskAgentWorkflow {
       taskId: taskId,
       ledger: ledger,
       timeService: getIt<TimeService>(),
+      compactedTaskLog: compactedTaskLog,
     );
 
     // 6. Create conversation and run with strategy.
@@ -310,10 +387,6 @@ class TaskAgentWorkflow {
       systemMessage: systemPrompt,
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
-
-    // Capture timestamp once for all persistence in this wake (both success
-    // and failure paths) so causality tracking is consistent.
-    final now = clock.now();
 
     // 6a. Persist the user message for inspectability before sending to LLM.
     try {
@@ -342,27 +415,6 @@ class TaskAgentWorkflow {
     } catch (e) {
       _logError('failed to persist user message', error: e);
       // Non-fatal: continue with execution even if audit fails.
-    }
-
-    // 6b. Capture the user-content sources this wake read into the log
-    // (ADR 0020), per-source and content-addressed, so the agent's inputs are a
-    // projection of the log. Shadow for now — assembly still reads the journal
-    // (the read flips in PR 5 C4). Non-fatal: a capture failure must not abort
-    // the wake.
-    final captureService = inputCaptureService;
-    if (captureService != null) {
-      try {
-        final linked = await journalDb.getLinkedEntities(taskId);
-        await captureService.captureWakeInputs(
-          agentId: agentId,
-          sources: renderTaskSources(linked),
-          at: now,
-          threadId: threadId,
-          runKey: runKey,
-        );
-      } catch (e) {
-        _logError('failed to capture wake inputs', error: e);
-      }
     }
 
     try {
@@ -1382,6 +1434,7 @@ to keep the user-facing suggestion list clean and trustworthy:
     required String taskId,
     ProposalLedger ledger = const ProposalLedger.empty(),
     TimeService? timeService,
+    String? compactedTaskLog,
   }) async {
     final buffer = StringBuffer();
 
@@ -1445,6 +1498,16 @@ to keep the user-facing suggestion list clean and trustworthy:
       ..writeln(taskDetailsJson)
       ..writeln('```')
       ..writeln();
+
+    // With compaction on (ADR 0017/0020), the task log is supplied here as the
+    // active summary + uncovered verbatim tail from the captured log, replacing
+    // the inline `logEntries` dropped from the task header above.
+    if (compactedTaskLog != null && compactedTaskLog.trim().isNotEmpty) {
+      buffer
+        ..writeln('## Task Log')
+        ..writeln(compactedTaskLog)
+        ..writeln();
+    }
 
     // --- Volatile tail: changes most across wakes, so it follows the stable
     // header above to keep that header byte-identical and prefix-cacheable. ---

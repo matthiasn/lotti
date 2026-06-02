@@ -189,7 +189,10 @@ class AiInputRepository {
     return aiInput;
   }
 
-  Future<String?> buildTaskDetailsJson({required String id}) async {
+  Future<String?> buildTaskDetailsJson({
+    required String id,
+    bool includeLogEntries = true,
+  }) async {
     final aiInput = await generate(id);
 
     if (aiInput == null) {
@@ -198,6 +201,13 @@ class AiInputRepository {
 
     // Start with the base task JSON
     final base = aiInput.toJson();
+
+    // Agent wakes with compaction enabled (ADR 0020/0017) drop the inline log
+    // entries here: the verbatim/distilled log is supplied separately from the
+    // captured input frontier + summary, so it isn't duplicated in this header.
+    if (!includeLogEntries) {
+      base.remove('logEntries');
+    }
 
     // Extend with assigned labels [{id,name}] when available
     try {

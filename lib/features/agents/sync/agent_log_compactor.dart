@@ -76,6 +76,53 @@ class AgentLogCompactor {
     return checkpoints;
   }
 
+  /// Assembles the read-side compacted task log for [agentId] (ADR 0017
+  /// Decision 6): the active summary's prose followed by the uncovered verbatim
+  /// tail, in canonical assembly order. Returns the empty string when the agent
+  /// has no captured input yet. Pure read — no writes.
+  Future<String> assembleContext(String agentId) async {
+    final systemMessages = await _repository.getMessagesByKind(
+      agentId,
+      AgentMessageKind.system,
+    );
+    final links = await _repository.getLinksFrom(agentId);
+    final frontier = projectInputFrontier(
+      messages: systemMessages,
+      links: links,
+    );
+    if (frontier.isEmpty) return '';
+
+    final active = selectActiveSummary(
+      frontier: inputFrontierDigests(frontier),
+      summaries: await loadSummaries(agentId),
+    );
+
+    final tail = <RenderedSource>[];
+    for (final entryId in active.uncoveredEntryIds) {
+      final ref = frontier[entryId];
+      if (ref == null) continue;
+      final payload = await _repository.getEntity(ref.contentDigest);
+      if (payload is! AgentMessagePayloadEntity) continue;
+      tail.add(
+        RenderedSource(
+          contentEntryId: entryId,
+          sourceCreatedAt: ref.sourceCreatedAt,
+          content: payload.content,
+        ),
+      );
+    }
+    tail.sort((a, b) {
+      final byTime = a.sourceCreatedAt.compareTo(b.sourceCreatedAt);
+      if (byTime != 0) return byTime;
+      return a.contentEntryId.compareTo(b.contentEntryId);
+    });
+
+    return assembleCompactedTaskLog(
+      summaryText: active.checkpoint?.summaryText,
+      tail: tail,
+    );
+  }
+
   /// Compacts [agentId] if its uncovered tail exceeds [budget] tokens, calling
   /// [summarize] to distill the folded sources. Returns the appended summary's
   /// id, or null when nothing needed folding (a pure read in that case — no

@@ -364,12 +364,21 @@ stateDiagram-v2
   Folding --> Idle: tail within budget
 ```
 
-**Not yet active (the remaining switch).** The wake prompt still assembles
-`## Current Task Context` from the journal (`buildTaskDetailsJson`), and the
-whole assembled prompt is still persisted as one blob per wake. The read-flip —
-assembling context from `active summary + uncovered tail`, removing the blob,
-and emitting LLM-generated summary checkpoints on budget overflow — is the final
-production change. The UI can already render `summary` messages if they exist.
+**Wired behind a default-off flag.** The full activation is implemented but
+gated by `TaskAgentWorkflow.compactionEnabled` (**default `false`**):
+
+- when **off** (production today), the wake prompt assembles `## Current Task
+  Context` from the journal exactly as before — byte-identical behaviour;
+- when **on**, each wake (after capture) runs `AgentLogCompactor.maybeCompact`
+  — folding the oldest tail beyond a token budget into a `summary` checkpoint
+  via an injected `AgentSummarizer` — and assembles the task log as
+  `AgentLogCompactor.assembleContext` (`active summary + uncovered tail`),
+  while the task header drops its inline `logEntries`
+  (`buildTaskDetailsJson(includeLogEntries: false)`).
+
+Flipping the flag and wiring a real summarizer activates it; that is a
+deliberate, user-visible rollout (it changes every wake's prompt), so it is left
+off by default. The UI already renders `summary` messages when they exist.
 
 ### State-as-projection: the log is the source of truth (PR 4)
 
