@@ -123,23 +123,33 @@ String assembleCompactedTaskLog({
   if (tail.isNotEmpty) {
     buffer.writeln('### Recent entries');
     for (final source in tail) {
-      final type = source.content['entryType'] ?? 'entry';
-      final text = source.content['text'] ?? '';
-      final transcript = source.content['audioTranscript'];
-      final body = (text is String && text.isNotEmpty)
-          ? text
-          : (transcript is String ? transcript : '');
-      // Keep the per-entry time evidence when it carries information.
-      final duration = source.content['loggedDuration'];
-      final durationTag =
-          (duration is String && duration.isNotEmpty && duration != '00:00')
-          ? ' · $duration'
-          : '';
-      buffer.writeln(
-        '- [${source.sourceCreatedAt.toIso8601String()}] '
-        '($type$durationTag) $body',
-      );
+      buffer.writeln(renderCompactedSourceLine(source));
     }
   }
   return buffer.toString().trimRight();
+}
+
+/// Renders one captured source as the single line the compacted task log uses:
+/// `- [iso8601] (entryType · loggedDuration) body`, where the body falls back
+/// to the audio transcript when the text is empty and the duration tag is
+/// omitted when it carries no information (`00:00`/absent).
+///
+/// Shared by [assembleCompactedTaskLog] (the prompt's verbatim tail) and the
+/// LLM summarizer (the fold input), so what gets distilled is byte-identical to
+/// what the prompt would otherwise show.
+String renderCompactedSourceLine(RenderedSource source) {
+  final type = source.content['entryType'] ?? 'entry';
+  final text = source.content['text'] ?? '';
+  final transcript = source.content['audioTranscript'];
+  final body = (text is String && text.isNotEmpty)
+      ? text
+      : (transcript is String ? transcript : '');
+  // Keep the per-entry time evidence when it carries information.
+  final duration = source.content['loggedDuration'];
+  final durationTag =
+      (duration is String && duration.isNotEmpty && duration != '00:00')
+      ? ' · $duration'
+      : '';
+  return '- [${source.sourceCreatedAt.toIso8601String()}] '
+      '($type$durationTag) $body';
 }

@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
+import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
@@ -169,6 +170,9 @@ void registerAllFallbackValues() {
 
   // Agent repository fallback (for setter verification with `any()`)
   registerFallbackValue(MockAgentRepository());
+
+  // Captured input sources (compaction summarizer stubs with `any()`)
+  registerFallbackValue(const <RenderedSource>[]);
 
   // Agent database fallbacks
   registerFallbackValue(

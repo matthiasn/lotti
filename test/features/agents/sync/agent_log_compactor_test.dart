@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -7,6 +9,7 @@ import 'package:lotti/features/agents/projection/input_frontier.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -66,13 +69,19 @@ void main() {
         at: DateTime.utc(2024, 3, day),
       );
 
-  Future<String?> compact({required int budget, int day = 20}) =>
+  Future<String?> compact({required int budget, int? retain, int day = 20}) =>
       compactor.maybeCompact(
         agentId: _agentId,
         budget: budget,
+        retainTokens: retain,
         summarize: stubSummarize,
         at: DateTime.utc(2024, 3, day),
       );
+
+  /// The token cost the compactor assigns a captured `{'text': ...}` payload —
+  /// used to pick budgets relative to real entry sizes instead of guessing.
+  int tokensOf(String text) =>
+      TextChunker.estimateTokens(jsonEncode({'text': text}));
 
   List<AgentMessageEntity> summaryMessages() =>
       repo.messages.where((m) => m.kind == AgentMessageKind.summary).toList();
@@ -134,6 +143,54 @@ void main() {
     await captureAll([src('e1', 'a', day: 1), src('e2', 'b', day: 2)], 10);
     expect(await compact(budget: 100000), isNull);
     expect(summaryMessages(), isEmpty);
+  });
+
+  test('hysteresis: no fold while the tail fits the trigger, even above the '
+      'retain mark', () async {
+    await captureAll([src('e1', 'a', day: 1), src('e2', 'b', day: 2)], 10);
+    // The retain (low) watermark is irrelevant until the trigger (high)
+    // watermark is exceeded — between folds, wakes are pure reads and the
+    // prompt's summary block stays byte-stable (prefix-cache friendly).
+    expect(await compact(budget: 100000, retain: 0), isNull);
+    expect(summaryMessages(), isEmpty);
+  });
+
+  test(
+    'folds down to the retain watermark once the trigger is exceeded',
+    () async {
+      await captureAll([
+        src('e1', 'alpha alpha alpha', day: 1),
+        src('e2', 'bravo bravo bravo', day: 2),
+        src('e3', 'charlie charlie', day: 3),
+      ], 10);
+      // Trigger chosen so a fold-to-trigger would fold ONLY e1 (e2+e3 still
+      // fit), but the retain watermark folds deeper — e1 AND e2 — leaving
+      // headroom so the next wakes do not immediately re-summarize.
+      final budget =
+          tokensOf('bravo bravo bravo') + tokensOf('charlie charlie');
+      expect(await compact(budget: budget, retain: 0), isNotNull);
+      expect(summarizeCalls.single.count, 2); // e1 + e2 folded, not just e1
+
+      final active = activeNow(await compactor.loadSummaries(_agentId));
+      expect(active.checkpoint!.coveredSources.keys.toSet(), {'e1', 'e2'});
+      expect(active.uncoveredEntryIds, ['e3']);
+    },
+  );
+
+  test('a retain at or above the trigger folds only to the trigger', () async {
+    await captureAll([
+      src('e1', 'alpha alpha alpha', day: 1),
+      src('e2', 'bravo bravo bravo', day: 2),
+      src('e3', 'charlie charlie', day: 3),
+    ], 10);
+    final budget = tokensOf('bravo bravo bravo') + tokensOf('charlie charlie');
+    // Degenerate watermarks (retain >= trigger) fall back to fold-to-trigger.
+    expect(await compact(budget: budget, retain: budget), isNotNull);
+    expect(summarizeCalls.single.count, 1); // only e1
+
+    final active = activeNow(await compactor.loadSummaries(_agentId));
+    expect(active.checkpoint!.coveredSources.keys.toSet(), {'e1'});
+    expect(active.uncoveredEntryIds, ['e2', 'e3']);
   });
 
   test(

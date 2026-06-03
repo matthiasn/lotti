@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
@@ -96,9 +97,10 @@ class TaskAgentWorkflow {
     this.projectRepository,
     this.changeSetNotificationService,
     this.inputCaptureService,
-    this.summarizer,
+    this.logSummarizer,
     this.compactionEnabled = false,
-    this.compactionTailBudgetTokens = 6000,
+    this.compactionTailBudgetTokens = 12000,
+    this.compactionTailRetainTokens = 4000,
   });
 
   final AgentRepository agentRepository;
@@ -143,22 +145,33 @@ class TaskAgentWorkflow {
   /// that don't exercise it); production wires it in `agent_workflow_providers`.
   final AgentInputCaptureService? inputCaptureService;
 
-  /// Optional summarizer used by compaction to distill folded input sources
-  /// (ADR 0017). Required for [compactionEnabled] to actually emit summaries;
-  /// null leaves emission inert.
-  final AgentSummarizer? summarizer;
+  /// Optional LLM summarizer used by compaction to distill folded input
+  /// sources (ADR 0017), invoked with the wake's resolved model/provider.
+  /// Required for [compactionEnabled] to actually emit summaries; null leaves
+  /// emission inert.
+  final AgentLogLlmSummarizer? logSummarizer;
 
   /// Feature flag for input-log compaction (ADR 0017/0020), **default off**.
   /// When on, the wake context is assembled as `active summary + uncovered
   /// tail` from the captured log (the inline journal log is dropped from the
   /// task header), and the oldest tail beyond [compactionTailBudgetTokens] is
-  /// folded into a `summary` checkpoint via [summarizer]. Off → production
+  /// folded into a `summary` checkpoint via [logSummarizer]. Off → production
   /// behaviour is unchanged (full journal task JSON, no summaries).
   final bool compactionEnabled;
 
   /// Token budget for the verbatim uncovered tail before compaction folds its
-  /// oldest entries (ADR 0017). Used only when [compactionEnabled].
+  /// oldest entries (ADR 0017). This is the *trigger* (high watermark): no
+  /// summarization happens while the tail fits it. Used only when
+  /// [compactionEnabled].
   final int compactionTailBudgetTokens;
+
+  /// Low watermark for the fold (hysteresis): once
+  /// [compactionTailBudgetTokens] is exceeded, the tail is folded down so only
+  /// this many tokens of the most recent verbatim entries remain — leaving
+  /// `budget - retain` tokens of headroom before the next summarization. Keeps
+  /// the summarizer infrequent and the prompt's summary block stable between
+  /// folds (prefix-cache friendly). Used only when [compactionEnabled].
+  final int compactionTailRetainTokens;
 
   static const _uuid = Uuid();
 
@@ -259,19 +272,71 @@ class TaskAgentWorkflow {
       }
     }
 
+    // 2. Resolve the agent's template and active version. (Resolved before
+    // compaction so the summarizer can use the wake's own model.)
+    final templateCtx = await _resolveTemplate(agentId);
+    if (templateCtx == null) {
+      _log('no template assigned — aborting wake', subDomain: 'execute');
+      return const WakeResult(
+        success: false,
+        error: 'No template assigned to agent',
+      );
+    }
+
+    _log(
+      'template=${DomainLogger.sanitizeId(templateCtx.template.id)}, '
+      'version=${DomainLogger.sanitizeId(templateCtx.version.id)}, '
+      'model=${templateCtx.version.modelId ?? templateCtx.template.modelId}',
+      subDomain: 'execute',
+    );
+
+    // 3. Resolve inference profile (or legacy modelId) → provider.
+    final profileResolver = ProfileResolver(
+      aiConfigRepository: aiConfigRepository,
+    );
+    final resolvedProfile = await profileResolver.resolve(
+      agentConfig: agentIdentity.config,
+      template: templateCtx.template,
+      version: templateCtx.version,
+    );
+    if (resolvedProfile == null) {
+      final modelId =
+          templateCtx.version.modelId ?? templateCtx.template.modelId;
+      _log(
+        'no provider configured for model $modelId — aborting wake',
+        subDomain: 'execute',
+      );
+      return const WakeResult(
+        success: false,
+        error: 'No inference provider configured',
+      );
+    }
+    final modelId = resolvedProfile.thinkingModelId;
+    final provider = resolvedProfile.thinkingProvider;
+
     // 1b. Compaction (ADR 0017) — gated behind the default-off flag plus an
-    // injected summarizer: fold the oldest tail beyond the token budget into a
-    // summary checkpoint so the assembled context stays bounded. Non-fatal.
+    // injected summarizer: fold the oldest tail beyond the trigger watermark
+    // (down to the retain watermark) into a summary checkpoint so the
+    // assembled context stays bounded. The fold is distilled with the wake's
+    // resolved model — the agent summarizes its own memory with the brain it
+    // thinks with. Non-fatal.
     final compactor = compactionEnabled
         ? AgentLogCompactor(syncService: syncService)
         : null;
-    final summarizeFn = summarizer;
-    if (compactor != null && summarizeFn != null) {
+    final summarizerService = logSummarizer;
+    if (compactor != null && summarizerService != null) {
       try {
         await compactor.maybeCompact(
           agentId: agentId,
           budget: compactionTailBudgetTokens,
-          summarize: summarizeFn,
+          retainTokens: compactionTailRetainTokens,
+          summarize: ({required sources, priorSummary}) =>
+              summarizerService.summarize(
+                sources: sources,
+                priorSummary: priorSummary,
+                model: modelId,
+                provider: provider,
+              ),
           at: now,
           threadId: threadId,
           runKey: runKey,
@@ -330,47 +395,6 @@ class TaskAgentWorkflow {
       _log('task not found in journal — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'Task not found');
     }
-
-    // 3. Resolve the agent's template and active version.
-    final templateCtx = await _resolveTemplate(agentId);
-    if (templateCtx == null) {
-      _log('no template assigned — aborting wake', subDomain: 'execute');
-      return const WakeResult(
-        success: false,
-        error: 'No template assigned to agent',
-      );
-    }
-
-    _log(
-      'template=${DomainLogger.sanitizeId(templateCtx.template.id)}, '
-      'version=${DomainLogger.sanitizeId(templateCtx.version.id)}, '
-      'model=${templateCtx.version.modelId ?? templateCtx.template.modelId}',
-      subDomain: 'execute',
-    );
-
-    // 4. Resolve inference profile (or legacy modelId) → provider.
-    final profileResolver = ProfileResolver(
-      aiConfigRepository: aiConfigRepository,
-    );
-    final resolvedProfile = await profileResolver.resolve(
-      agentConfig: agentIdentity.config,
-      template: templateCtx.template,
-      version: templateCtx.version,
-    );
-    if (resolvedProfile == null) {
-      final modelId =
-          templateCtx.version.modelId ?? templateCtx.template.modelId;
-      _log(
-        'no provider configured for model $modelId — aborting wake',
-        subDomain: 'execute',
-      );
-      return const WakeResult(
-        success: false,
-        error: 'No inference provider configured',
-      );
-    }
-    final modelId = resolvedProfile.thinkingModelId;
-    final provider = resolvedProfile.thinkingProvider;
 
     // 5. Assemble conversation context.
     // One ledger fetch feeds both the LLM prompt (status-sorted view of

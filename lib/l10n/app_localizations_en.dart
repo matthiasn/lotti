@@ -2556,6 +2556,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Replace the current DailyOS surface with the new voice-first, agent-led capture and reconcile flow. Early preview — backend logic is mocked.';
 
   @override
+  String get configFlagEnableAgentCompaction => 'Agent memory compaction';
+
+  @override
+  String get configFlagEnableAgentCompactionDescription =>
+      'Summarize older task log entries into a rolling memory so the agent\'s context stays compact. Uses the agent\'s own model.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Enable AI streaming for task actions';
 

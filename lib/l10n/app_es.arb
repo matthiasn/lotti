@@ -1244,6 +1244,8 @@
   "configFlagAttemptEmbeddingDescription": "Cuando está habilitado, la aplicación intentará generar incrustaciones para tus entradas para mejorar la búsqueda y las sugerencias de contenido relacionado.",
   "configFlagDailyOsNextEnabled": "Usar el nuevo DailyOS agéntico",
   "configFlagDailyOsNextEnabledDescription": "Reemplaza la superficie actual de DailyOS por el nuevo flujo de captura y reconciliación con voz dirigido por agente. Vista previa temprana — la lógica del backend está simulada.",
+  "configFlagEnableAgentCompaction": "Compactación de memoria del agente",
+  "configFlagEnableAgentCompactionDescription": "Resume las entradas antiguas del registro de la tarea en una memoria continua para que el contexto del agente se mantenga compacto. Usa el modelo del propio agente.",
   "configFlagEnableAiStreaming": "Habilitar streaming de IA para acciones de tareas",
   "configFlagEnableAiStreamingDescription": "Transmitir respuestas de IA para acciones relacionadas con tareas. Desactívelo para almacenar respuestas en búfer y mantener la interfaz más fluida.",
   "configFlagEnableAiSummaryTts": "Reproducción de resúmenes de IA",

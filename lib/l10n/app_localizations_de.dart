@@ -2591,6 +2591,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ersetze die bisherige DailyOS-Oberfläche durch den neuen sprachgeführten, agentischen Capture- und Reconcile-Ablauf. Frühe Vorschau — die Backend-Logik ist noch gemockt.';
 
   @override
+  String get configFlagEnableAgentCompaction =>
+      'Agenten-Gedächtnis-Kompaktierung';
+
+  @override
+  String get configFlagEnableAgentCompactionDescription =>
+      'Fasst ältere Task-Log-Einträge zu einem fortlaufenden Gedächtnis zusammen, damit der Kontext des Agenten kompakt bleibt. Verwendet das Modell des Agenten.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'AI-Streaming für Aufgabenaktionen aktivieren';
 

@@ -341,13 +341,33 @@ audio entry contributes its transcript, never the raw audio) — via
 non-retracted content per source — a pure function of the log, so two devices
 converge regardless of arrival order.
 
-**Compaction (selection + planning built; LLM emission pending).** `summary`
+**Compaction (selection + planning + LLM emission built).** `summary`
 checkpoint events fold a frontier of older content:
 
 - `selectActiveCheckpoint` picks the active checkpoint — the deepest summary
   ancestral to every head — plus the uncovered verbatim tail;
 - `planCompaction` decides, against a model token budget, which oldest tail
-  prefix to fold so the most-recent suffix fits.
+  prefix to fold so the most-recent suffix fits;
+- `AgentLogLlmSummarizer` (the LLM edge) distills the folded sources into
+  rolling summary prose with a one-shot generation call, using the **wake's
+  resolved model/provider** — the agent summarizes its own memory with the
+  brain it thinks with. Oversized fold sets are distilled in chronological
+  chunks, rolling the summary through each call; an empty model response
+  throws (caught as "no compaction this wake") rather than persisting an empty
+  checkpoint that would erase folded memory.
+
+**Cadence (hysteresis) & prefix caching.** `maybeCompact` uses two watermarks:
+the *trigger* (`compactionTailBudgetTokens`, default 12000) — no summarization
+while the uncovered tail fits it — and the *retain* mark
+(`compactionTailRetainTokens`, default 4000) — once triggered, the fold goes
+deep, keeping only that much recent verbatim content. So the summarizer runs
+roughly once per `trigger − retain` (~8k) tokens of *new* activity (most tasks
+never reach the trigger at all), and between folds every wake is a pure read.
+Compaction is never destructive: every entry stays in the journal and in the
+content-addressed captured payloads — only the *prompt* sees the summary. The prompt orders for prefix caching: the
+`## Task Log` block (summary + chronologically-appended tail) sits in the
+stable prefix and only changes at a fold; volatile sections (timer, ledger,
+observations, trigger tokens) follow it.
 
 The dormant model fields now earn their keep: `AgentMessageKind.summary`,
 `summaryStartMessageId`/`summaryEndMessageId`/`summaryDepth`,
@@ -364,21 +384,25 @@ stateDiagram-v2
   Folding --> Idle: tail within budget
 ```
 
-**Wired behind a default-off flag.** The full activation is implemented but
-gated by `TaskAgentWorkflow.compactionEnabled` (**default `false`**):
+**Wired behind a default-off config flag.** The full activation — including
+the real LLM summarizer, wired in DI — is gated by
+`TaskAgentWorkflow.compactionEnabled`, set from the runtime config flag
+`enable_agent_compaction` (Settings → Flags → "Agent memory compaction",
+default **off**; watched, so a flip takes effect from the next wake without a
+restart):
 
 - when **off** (production today), the wake prompt assembles `## Current Task
   Context` from the journal exactly as before — byte-identical behaviour;
-- when **on**, each wake (after capture) runs `AgentLogCompactor.maybeCompact`
-  — folding the oldest tail beyond a token budget into a `summary` checkpoint
-  via an injected `AgentSummarizer` — and assembles the task log as
-  `AgentLogCompactor.assembleContext` (`active summary + uncovered tail`),
-  while the task header drops its inline `logEntries`
-  (`buildTaskDetailsJson(includeLogEntries: false)`).
+- when **on**, each wake (after capture and profile resolution) runs
+  `AgentLogCompactor.maybeCompact` — folding the oldest tail past the trigger
+  watermark into a `summary` checkpoint via `AgentLogLlmSummarizer` — and
+  assembles the task log as `AgentLogCompactor.assembleContext`
+  (`active summary + uncovered tail`), while the task header drops its inline
+  `logEntries` (`buildTaskDetailsJson(includeLogEntries: false)`).
 
-Flipping the flag and wiring a real summarizer activates it; that is a
-deliberate, user-visible rollout (it changes every wake's prompt), so it is left
-off by default. The UI already renders `summary` messages when they exist.
+Enabling the flag changes every wake's prompt and starts emitting synced
+checkpoints, so it ships off by default. The UI already renders `summary`
+messages when they exist.
 
 ### State-as-projection: the log is the source of truth (PR 4)
 

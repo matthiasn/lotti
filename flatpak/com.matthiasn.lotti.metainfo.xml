@@ -34,6 +34,7 @@
   <releases>
     <release version="0.9.1013" date="2026-06-02">
       <description>
+          <p>New "Agent memory compaction" flag in Settings (off by default): task agents summarize older task-log entries into a rolling memory using their own model, keeping the wake context compact while recent entries stay verbatim.</p>
           <p>Task agents now fall back to a pending title-change proposal when the immediate initial-title write is blocked by category policy, instead of repeatedly reporting a policy-denied tool error.</p>
       </description>
     </release>

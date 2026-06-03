@@ -2605,6 +2605,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Remplace l\'interface DailyOS actuelle par le nouveau flux de capture et de réconciliation piloté par l\'agent vocal. Aperçu précoce — la logique back-end est simulée.';
 
   @override
+  String get configFlagEnableAgentCompaction =>
+      'Compactage de la mémoire de l\'agent';
+
+  @override
+  String get configFlagEnableAgentCompactionDescription =>
+      'Résume les anciennes entrées du journal de tâche en une mémoire continue afin que le contexte de l\'agent reste compact. Utilise le modèle de l\'agent.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Activer le streaming IA pour les actions liées aux tâches';
 

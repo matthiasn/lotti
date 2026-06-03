@@ -150,11 +150,22 @@ class AgentLogCompactor {
   /// [summarize] to distill the folded sources. Returns the appended summary's
   /// id, or null when nothing needed folding (a pure read in that case — no
   /// writes, no outbox churn).
+  ///
+  /// **Hysteresis.** [budget] is the *trigger* (high watermark): nothing happens
+  /// while the tail fits it. Once exceeded, the fold goes *deeper* — down to
+  /// [retainTokens] (low watermark) of most-recent verbatim content — so the
+  /// next `budget - retainTokens` tokens of new activity arrive without another
+  /// summarization. Folding only back to [budget] would leave the tail at the
+  /// boundary, re-summarizing (and churning the cache-stable summary block in
+  /// the prompt prefix) on nearly every subsequent wake. When [retainTokens] is
+  /// null or `>= budget`, the fold stops at [budget] (the pre-hysteresis
+  /// behaviour).
   Future<String?> maybeCompact({
     required String agentId,
     required int budget,
     required AgentSummarizer summarize,
     required DateTime at,
+    int? retainTokens,
     String? threadId,
     String? runKey,
   }) async {
@@ -195,16 +206,19 @@ class AgentLogCompactor {
         ),
     ]..sort((a, b) => _byChrono(a.source, b.source));
 
-    final plan = planCompaction(
-      tail: [
-        for (final entry in uncovered)
-          TailEntry(id: entry.source.contentEntryId, tokens: entry.tokens),
-      ],
-      budget: budget,
-    );
+    final tail = [
+      for (final entry in uncovered)
+        TailEntry(id: entry.source.contentEntryId, tokens: entry.tokens),
+    ];
+    final plan = planCompaction(tail: tail, budget: budget);
     if (!plan.shouldCompact) return null;
 
-    final foldSet = plan.foldIds.toSet();
+    // Triggered — fold down to the low watermark (see the docstring).
+    final foldPlan = retainTokens != null && retainTokens < budget
+        ? planCompaction(tail: tail, budget: retainTokens)
+        : plan;
+
+    final foldSet = foldPlan.foldIds.toSet();
     final foldedSources = [
       for (final entry in uncovered)
         if (foldSet.contains(entry.source.contentEntryId)) entry.source,

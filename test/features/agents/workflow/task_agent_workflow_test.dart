@@ -374,6 +374,17 @@ void main() {
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
+        // Template + provider resolution now precedes the task-details load
+        // (the compaction summarizer needs the wake's model), so stub it to
+        // succeed and let the flow reach the task-not-found branch.
+        when(
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [geminiModel]);
+        when(
+          () => mockAiConfigRepository.getConfigById(
+            geminiModel.inferenceProviderId,
+          ),
+        ).thenAnswer((_) async => geminiProvider);
         when(
           () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
         ).thenAnswer((_) async => null);
@@ -5617,7 +5628,7 @@ void main() {
             // A succeeding capture service so the read-flip trusts the frontier.
             inputCaptureService: _RecordingCaptureService(),
             compactionEnabled: true,
-            summarizer: ({required sources, priorSummary}) async => 'SUMMARY',
+            logSummarizer: stubLogSummarizer(),
           );
 
           final result = await workflow.execute(
@@ -5695,7 +5706,7 @@ void main() {
           syncService: mockSyncService,
           templateService: mockTemplateService,
           compactionEnabled: true,
-          summarizer: ({required sources, priorSummary}) async => 'SUMMARY',
+          logSummarizer: stubLogSummarizer(),
         );
 
         final result = await workflow.execute(
@@ -5800,7 +5811,7 @@ void main() {
           templateService: mockTemplateService,
           inputCaptureService: _ThrowingCaptureService(),
           compactionEnabled: true,
-          summarizer: ({required sources, priorSummary}) async => 'SUMMARY',
+          logSummarizer: stubLogSummarizer(),
         );
 
         final result = await workflow.execute(
@@ -5915,6 +5926,9 @@ void main() {
           taskId: taskId,
         );
 
+        final boomSummarizer = stubLogSummarizer(
+          error: StateError('summarizer boom'),
+        );
         final workflow = createTestWorkflow(
           agentRepository: mockAgentRepository,
           conversationRepository: mockConversationRepository,
@@ -5930,8 +5944,7 @@ void main() {
           inputCaptureService: _RecordingCaptureService(),
           compactionEnabled: true,
           compactionTailBudgetTokens: 0,
-          summarizer: ({required sources, priorSummary}) async =>
-              throw StateError('summarizer boom'),
+          logSummarizer: boomSummarizer,
         );
 
         final result = await workflow.execute(
@@ -5944,6 +5957,16 @@ void main() {
         // The wake completes despite the summarizer throwing, and no summary was
         // persisted — so the assembled tail still carries both sources verbatim.
         expect(result.success, isTrue);
+        // The summarizer was invoked with the wake's resolved provider — the
+        // agent distills its own memory with the model it thinks with.
+        verify(
+          () => boomSummarizer.summarize(
+            sources: any(named: 'sources'),
+            priorSummary: any(named: 'priorSummary'),
+            model: any(named: 'model'),
+            provider: geminiProvider,
+          ),
+        ).called(1);
         final captured = verify(
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
