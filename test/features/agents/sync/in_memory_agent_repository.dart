@@ -59,7 +59,10 @@ class InMemoryAgentRepository extends MockAgentRepository {
 
   @override
   Future<List<AgentMessageEntity>> getAgentMessages(String agentId) async =>
-      messages.where((m) => m.agentId == agentId).toList();
+      // Mirror the real query: soft-deleted messages are excluded.
+      messages
+          .where((m) => m.agentId == agentId && m.deletedAt == null)
+          .toList();
 
   @override
   Future<List<AgentMessageEntity>> getMessagesByKind(
@@ -92,4 +95,21 @@ class InMemoryAgentRepository extends MockAgentRepository {
                 (type == null || AgentDbConversions.linkType(l) == type),
           )
           .toList();
+
+  @override
+  Future<Map<String, List<AgentLink>>> getLinksFromMultiple(
+    List<String> fromIds, {
+    required String type,
+  }) async {
+    final ids = fromIds.toSet();
+    final result = <String, List<AgentLink>>{};
+    for (final link in _links.values) {
+      if (ids.contains(link.fromId) &&
+          link.deletedAt == null &&
+          AgentDbConversions.linkType(link) == type) {
+        (result[link.fromId] ??= []).add(link);
+      }
+    }
+    return result;
+  }
 }

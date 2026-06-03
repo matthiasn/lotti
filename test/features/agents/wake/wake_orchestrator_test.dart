@@ -2412,6 +2412,98 @@ void main() {
       });
     });
 
+    group('pre-wake hook (fork healing)', () {
+      test('runs onWakeStart before the executor, with the wake context', () {
+        fakeAsync((async) {
+          final order = <String>[];
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            onWakeStart: (agentId, runKey, threadId) async {
+              order.add('hook:$agentId:$runKey:$threadId');
+            },
+            wakeExecutor: (agentId, runKey, triggers, threadId) async {
+              order.add('executor');
+              return null;
+            },
+          );
+
+          queue.enqueue(makeJob());
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // The hook ran first, with agentId + runKey + threadId (= runKey).
+          expect(order, ['hook:agent-1:rk-1:rk-1', 'executor']);
+        });
+      });
+
+      test('a throwing onWakeStart is non-fatal — the wake still executes and '
+          'completes', () {
+        fakeAsync((async) {
+          var executed = false;
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            onWakeStart: (agentId, runKey, threadId) async {
+              throw StateError('fork-heal boom');
+            },
+            wakeExecutor: (agentId, runKey, triggers, threadId) async {
+              executed = true;
+              return null;
+            },
+          );
+
+          queue.enqueue(makeJob());
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Healing is an optimization — its failure must not abort the wake.
+          expect(executed, isTrue);
+          verify(
+            () => mockRepository.updateWakeRunStatus(
+              'rk-1',
+              WakeRunStatus.completed.name,
+              completedAt: any(named: 'completedAt'),
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test(
+        'a hanging onWakeStart is bounded by its timeout — wake proceeds',
+        () {
+          fakeAsync((async) {
+            var executed = false;
+            orchestrator = WakeOrchestrator(
+              repository: mockRepository,
+              queue: queue,
+              runner: runner,
+              // Never completes — must be bounded by wakeStartHookTimeout.
+              onWakeStart: (agentId, runKey, threadId) =>
+                  Completer<void>().future,
+              wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                executed = true;
+                return null;
+              },
+            );
+
+            queue.enqueue(makeJob());
+            orchestrator.processNext();
+            async.flushMicrotasks();
+            expect(executed, isFalse); // blocked awaiting the hook
+
+            async
+              ..elapse(WakeOrchestrator.wakeStartHookTimeout)
+              ..flushMicrotasks();
+            expect(executed, isTrue); // timeout fired, the wake ran anyway
+          });
+        },
+      );
+    });
+
     group('enqueueManualWake', () {
       test('enqueues a job and triggers processNext', () {
         fakeAsync((async) {

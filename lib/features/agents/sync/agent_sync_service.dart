@@ -439,6 +439,92 @@ class AgentSyncService {
     return messages.last.id;
   }
 
+  /// Appends a **join-by-continuation** node healing a fork (ADR 0018 rule 8):
+  /// a `system` message [joinId] linked via `messagePrev` to *every* head in
+  /// [parentIds], after which the agent's head advances to the join so the DAG
+  /// re-converges to one tip and the on-device prefix re-warms.
+  ///
+  /// **Content-addressed and deterministic.** [joinId] (from `computeJoinId`)
+  /// and each edge id (`msgprev-${joinId}-${parentId}`) derive purely from the
+  /// sorted parent set, so two devices healing the same fork emit byte-identical
+  /// rows that set-union into one node + one edge set — no join storm. The join
+  /// carries no payload; its parents live in the edges and its identity in the
+  /// content-addressed id (the `sha256-v1:` prefix + a multi-parent `system`
+  /// message is what marks a node as a join). Per-device envelope fields
+  /// (`createdAt`, vector clock) are *not* canonicalized (deferred — inert while
+  /// the projection orders by `(hostId, id)` with `hostId = ''` and joins are
+  /// immutable); they never affect the merge, which is keyed by id.
+  ///
+  /// **Its own append path — never routed through [upsertEntity]/[_appendMessage]**,
+  /// which chain a *single* parent off `recentHeadMessageId` and would both add a
+  /// spurious `msgprev-${joinId}` edge and collide with the per-parent edge ids.
+  ///
+  /// **Idempotent and atomic.** Node, all *n* edges, and the head advance commit
+  /// in one [runInTransaction]; the node is (re-)written only when absent, and
+  /// the edges are idempotent by id. The head is advanced to [joinId] **only
+  /// when it still points at one of the joined parents (or is unset)** —
+  /// including when the join node arrived by sync, where the head still sits on
+  /// a parent. If the head has since moved *past* the parents — e.g. the wake
+  /// timed this heal out (the future is not cancellable) and the executor
+  /// appended new messages first, or a newer message arrived — it is left alone:
+  /// collapsing back to the join would move the head **backwards** and orphan
+  /// that progress. The join node + edges are still recorded, so the residual
+  /// fork heals on the next wake. Mirrors [_appendMessage]'s head maintenance
+  /// via [_upsertEntityRaw], keeping the append path the sole head mover.
+  Future<void> appendJoin({
+    required String agentId,
+    required String joinId,
+    required List<String> parentIds,
+    required DateTime at,
+    String? threadId,
+    String? runKey,
+  }) async {
+    // Defensive: a join heals ≥2 distinct heads (planJoin already gates this).
+    final parents = parentIds.toSet().toList()..sort();
+    if (parents.length < 2) return;
+    await runInTransaction(() async {
+      final existing = await _repository.getEntity(joinId);
+      if (existing is! AgentMessageEntity) {
+        await _upsertEntityRaw(
+          AgentDomainEntity.agentMessage(
+            id: joinId,
+            agentId: agentId,
+            threadId: threadId ?? joinId,
+            kind: AgentMessageKind.system,
+            createdAt: at,
+            vectorClock: null,
+            metadata: AgentMessageMetadata(runKey: runKey),
+          ),
+        );
+      }
+      for (final parentId in parents) {
+        await upsertLink(
+          AgentLink.messagePrev(
+            id: 'msgprev-$joinId-$parentId',
+            fromId: joinId,
+            toId: parentId,
+            createdAt: at,
+            updatedAt: at,
+            vectorClock: null,
+          ),
+        );
+      }
+      // Only collapse the head onto the join while it still sits on a joined
+      // parent (or is unset). If it has moved on (a timed-out heal racing the
+      // executor, or a newer append), advancing would regress the head and
+      // orphan that progress — leave it; the residual fork heals next wake.
+      final state = await _repository.getAgentState(agentId);
+      final head = state?.recentHeadMessageId;
+      if (state != null &&
+          head != joinId &&
+          (head == null || parents.contains(head))) {
+        await _upsertEntityRaw(
+          state.copyWith(recentHeadMessageId: joinId, updatedAt: at),
+        );
+      }
+    });
+  }
+
   /// Upsert an [AgentLink] and enqueue a sync message unless [fromSync]
   /// is `true`.
   ///

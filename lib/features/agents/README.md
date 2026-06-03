@@ -415,6 +415,60 @@ device-local scheduling fields are still cache-only (no backing log event yet). 
 milestone markers also show up as `System` rows in the `AgentInternalsBody`
 activity log.
 
+### Fork healing: join-by-continuation (PR 6 / ADR 0018 rule 8)
+
+When two devices wake the same agent off a shared head, each appends its own
+`messagePrev` child of that head — a **fork**: the DAG now has ≥2 heads. This is
+**legal, not corruption**. The projection (`project(canonicalOrder(...))`) is
+multi-head tolerant: it returns every tip in `headIds` and context assembly reads
+across all of them, so every device converges with or without any coordination.
+The cost of an *unhealed* fork is only that the on-device prefix never re-warms
+(each branch is a distinct prefix) and context fans out across a widening head set.
+
+**Fork healing** collapses the fork: at wake start, `ForkHealer.maybeHealFork`
+folds the agent's full log (`getAgentMessages` + the `messagePrev` edges fetched by
+`getLinksFromMultiple(messageIds, type: message_prev)`), and `planJoin` emits a
+**join-by-continuation** node when there are ≥2 heads over a *complete* view (no
+dangling parents). `AgentSyncService.appendJoin` then writes a `system` message
+that links (`messagePrev`) to **every** head and advances `recentHeadMessageId` to
+it — so the DAG re-converges to one tip and the prefix re-warms.
+
+- **Content-addressed, deterministic.** The join id is
+  `computeJoinId(headIds) = ContentDigest.of({'_tag':'join-v1','parents':sortedHeads})`
+  and each edge id is `msgprev-${joinId}-${parentId}`. Two devices healing the
+  *same* fork mint byte-identical rows, so the log set-unions their concurrent
+  emissions into **one** node — no join storm. The join carries no payload and no
+  wall-clock/host/clock in its *content*; the per-device envelope (`createdAt`,
+  vector clock) is **not yet canonicalized** — reconciliation is deferred because
+  it is inert for the projection today, which orders by `(hostId, id)` with
+  `hostId = ''` and never re-resolves an immutable join. It becomes load-bearing
+  only if `hostIdOf` is ever populated (see the plan's open decisions).
+- **Eager at wake start, no cross-wake state.** A fork seen at wake start was
+  created by a *prior* cycle (this wake has appended nothing yet), so healing it is
+  faithful to ADR 0018's "≥2 heads survive past one wake cycle." Forks never
+  self-resolve, so there is nothing to wait out beyond a partially-synced view (a
+  node arrived before its parent edge) — which the *complete-view* gate covers. The
+  decision is a pure function of the current projection; no marker is persisted.
+- **Wiring.** The four wake workflows share no base class but all dispatch through
+  the `WakeOrchestrator`, which fires one optional `onWakeStart` hook just before
+  the executor (covering every agent kind in one seam). Healing is best-effort and
+  non-fatal: a corrupt synced log (cycle / duplicate id) or a slow load is caught
+  or timed out (`wakeStartHookTimeout`), and the wake proceeds regardless — healing
+  is an optimization, never a correctness mechanism.
+- **Flag-gated off.** DI wires the hook only when
+  `--dart-define=LOTTI_JOIN_HEALING=true`; by default `onWakeStart` is null and
+  wakes are byte-identical to today.
+
+```mermaid
+stateDiagram-v2
+  [*] --> SingleHead
+  SingleHead --> Forked: two devices append off the same head (concurrent messagePrev children)
+  Forked --> Forked: local view still settling (a dangling parent) — defer
+  Forked --> Joining: a wake starts and observes ≥2 heads over a complete view
+  Joining --> SingleHead: appendJoin (messagePrev → all heads); recentHeadMessageId := joinId; prefix re-warms
+  Joining --> SingleHead: peer emitted the same joinId concurrently → set-union merges to one node
+```
+
 ## Agent Kinds and Lifecycle
 
 The current persisted agent kinds are:

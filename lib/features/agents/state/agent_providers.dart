@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/sync/fork_healer.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -152,6 +154,32 @@ WakeRunner wakeRunner(Ref ref) {
   return runner;
 }
 
+/// Fork-healing rollout flag (ADR 0018 rule 8 / PR 6). Default off: the
+/// join-by-continuation mechanism is fully built and wired, but inert until
+/// deliberately enabled with `--dart-define=LOTTI_JOIN_HEALING=true` (mirrors
+/// the compaction rollout). Turning it on appends `join` nodes to the synced
+/// agent log — a user-visible, multi-device behaviour change.
+const bool _joinHealingEnabled = bool.fromEnvironment('LOTTI_JOIN_HEALING');
+
+/// Builds the wake-start fork-healing hook (ADR 0018 rule 8): a [WakeStartHook]
+/// that, at the start of each wake, heals the agent's fork via a [ForkHealer]
+/// over [syncService] ([now] supplies the join timestamp). The healer is built
+/// once (not per wake). Extracted from [wakeOrchestrator] so the wiring is
+/// unit-testable — the rollout flag gating it (`LOTTI_JOIN_HEALING`) is a
+/// compile-time const that tests cannot flip.
+WakeStartHook forkHealingHook(
+  AgentSyncService syncService,
+  DateTime Function() now,
+) {
+  final forkHealer = ForkHealer(syncService: syncService);
+  return (agentId, runKey, threadId) => forkHealer.maybeHealFork(
+    agentId: agentId,
+    at: now(),
+    threadId: threadId,
+    runKey: runKey,
+  );
+}
+
 /// The wake orchestrator (notification listener + subscription matching).
 @Riverpod(keepAlive: true)
 WakeOrchestrator wakeOrchestrator(Ref ref) {
@@ -162,6 +190,18 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
       notifications.notifyUiOnly({agentId, agentNotification});
     };
   }
+  // Fork healing (ADR 0018 rule 8), gated by the default-off rollout flag. The
+  // flag is a compile-time const tests can't flip, so the gated resolution is
+  // coverage-ignored; the wiring it calls (`forkHealingHook`) is unit-tested.
+  WakeStartHook? onWakeStart;
+  // coverage:ignore-start
+  if (_joinHealingEnabled) {
+    onWakeStart = forkHealingHook(
+      ref.watch(agentSyncServiceProvider),
+      clock.now,
+    );
+  }
+  // coverage:ignore-end
   return WakeOrchestrator(
     repository: ref.watch(agentRepositoryProvider),
     queue: ref.watch(wakeQueueProvider),
@@ -170,6 +210,7 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     onPersistedStateChanged: onPersistedStateChanged,
     syncEntityWriter: (entity) =>
         ref.read(agentSyncServiceProvider).upsertEntity(entity),
+    onWakeStart: onWakeStart,
     taskContentChecker: (taskId) async {
       final journalDb = ref.read(journalDbProvider);
 
