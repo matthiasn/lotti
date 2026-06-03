@@ -929,4 +929,113 @@ void main() {
       });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Dedicated Glados property tests for parseMinutes (pure function)
+  // ---------------------------------------------------------------------------
+
+  group('parseMinutes — Glados properties', () {
+    // Property 1: valid int in [1, maxEstimateMinutes] round-trips unchanged.
+    glados.Glados(
+      glados.any.intInRange(1, maxEstimateMinutes),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'int value in valid range is returned as-is',
+      (v) {
+        expect(
+          parseMinutes(v),
+          equals(v),
+          reason: 'valid int $v must parse to itself',
+        );
+      },
+      tags: 'glados',
+    );
+
+    // Property 2: double whose round() is in range is accepted and rounded.
+    glados.Glados(
+      glados.any.intInRange(1, maxEstimateMinutes),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'double value whose round() is in valid range is accepted and rounded',
+      (v) {
+        // Use v + 0.25 so the double rounds down to v — still in range.
+        final d = v + 0.25;
+        expect(
+          parseMinutes(d),
+          equals(v),
+          reason: 'double $d must round to $v',
+        );
+      },
+      tags: 'glados',
+    );
+
+    // Property 3: numeric string in valid range is accepted.
+    glados.Glados(
+      glados.any.intInRange(1, maxEstimateMinutes),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'numeric string in valid range is accepted',
+      (v) {
+        expect(
+          parseMinutes('$v'),
+          equals(v),
+          reason: 'numeric string "$v" must parse to $v',
+        );
+      },
+      tags: 'glados',
+    );
+
+    // Property 4: any value <= 0 is rejected (returns null).
+    glados.Glados(
+      glados.any.intInRange(-1000, 0),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'non-positive int is rejected',
+      (v) {
+        expect(
+          parseMinutes(v),
+          isNull,
+          reason: 'non-positive value $v must return null',
+        );
+      },
+      tags: 'glados',
+    );
+
+    // Property 5: any value > maxEstimateMinutes is rejected.
+    glados.Glados(
+      glados.any.intInRange(maxEstimateMinutes + 1, maxEstimateMinutes + 5000),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'int above maxEstimateMinutes is rejected',
+      (v) {
+        expect(
+          parseMinutes(v),
+          isNull,
+          reason: 'out-of-range value $v must return null',
+        );
+      },
+      tags: 'glados',
+    );
+
+    // Property 6: null input always returns null.
+    test('null input returns null', () {
+      expect(parseMinutes(null), isNull);
+    });
+
+    // Property 7: returned value, when non-null, is always in [1, maxEstimateMinutes].
+    glados.Glados(
+      glados.any.intInRange(1, maxEstimateMinutes),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result is always in bounds when non-null',
+      (v) {
+        final result = parseMinutes(v);
+        if (result != null) {
+          expect(result, greaterThanOrEqualTo(1));
+          expect(result, lessThanOrEqualTo(maxEstimateMinutes));
+        }
+      },
+      tags: 'glados',
+    );
+  });
 }

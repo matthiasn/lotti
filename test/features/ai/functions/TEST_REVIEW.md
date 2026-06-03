@@ -65,7 +65,7 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `lib/features/ai/functions/task_estimate_handler.dart` (`parseMinutes`) — this is a pure function with a clear domain (int/double/numeric-string → int in [1,1440]; nulls and out-of-range → null). The existing Glados scenario (`_GeneratedEstimateToolCallScenario`) exercises `parseMinutes` indirectly through the full handler. A dedicated Glados property directly on `parseMinutes` would be smaller, faster, and more precise for catching regressions:
+- [x] **[HIGH]** `lib/features/ai/functions/task_estimate_handler.dart` (`parseMinutes`) — this is a pure function with a clear domain (int/double/numeric-string → int in [1,1440]; nulls and out-of-range → null). The existing Glados scenario (`_GeneratedEstimateToolCallScenario`) exercises `parseMinutes` indirectly through the full handler. A dedicated Glados property directly on `parseMinutes` would be smaller, faster, and more precise for catching regressions:
   - Property: `∀ valid int v ∈ [1,1440]: parseMinutes(v) == v`
   - Property: `∀ double d where round(d) ∈ [1,1440]: parseMinutes(d) == d.round()`
   - Property: `∀ v > 1440 || v <= 0: parseMinutes(v) == null`

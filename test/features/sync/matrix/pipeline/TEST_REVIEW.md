@@ -138,7 +138,7 @@ The pure helper functions are also covered:
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `metrics_utils.dart` has **no test file** at all. The
+- [x] **[HIGH]** `metrics_utils.dart` has **no test file** at all. The
   `MetricsUtils.buildSnapshot` method is only exercised indirectly through
   `MetricsCounters.snapshot()` in `metrics_counters_signal_test.dart`. A dedicated
   `test/features/sync/matrix/pipeline/metrics_utils_test.dart` is needed to satisfy

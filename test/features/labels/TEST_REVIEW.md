@@ -121,7 +121,7 @@
 
 - [ ] **[HIGH]** `test/features/labels/ui/label_details_page_test.dart` — 21 `pumpAndSettle` calls in 15 tests (~1.4 per test). Several of these (e.g., the `pumpAndSettle` immediately after `tester.pumpWidget(...)` when the controller state is synchronously set via `overrideWithBuild`) could be replaced with `tester.pump()`. After a synchronous state override, there is no animation; a single frame pump suffices. **Estimated saving: 0.5–2s per shard.**
 
-- [ ] **[HIGH]** 6 test files covering `label_assignment_processor.dart` run as separate test files in the `very_good test` suite. Each file instantiates its own `LabelAssignmentEventService`, does `getIt.reset()`, and runs its setUp/tearDown independently. Consolidating into one file eliminates 5 redundant `getIt` warm-up/reset cycles and allows `setUpAll` to register constants once. **Estimated saving: 0.3–1s per shard.**
+- [x] **[HIGH]** 6 test files covering `label_assignment_processor.dart` run as separate test files in the `very_good test` suite. Each file instantiates its own `LabelAssignmentEventService`, does `getIt.reset()`, and runs its setUp/tearDown independently. Consolidating into one file eliminates 5 redundant `getIt` warm-up/reset cycles and allows `setUpAll` to register constants once. **Estimated saving: 0.3–1s per shard.**
 
 - [ ] **[MED]** `test/features/labels/ui/labels_list_page_test.dart` (stray copy) has 14 `pumpAndSettle` calls across 14 tests and uses a custom `_buildPage` that constructs a fresh `ProviderScope` per test. The canonical `test/features/labels/ui/pages/labels_list_page_test.dart` has 5 `pumpAndSettle` calls and uses a shared `pumpLabelsListPage` helper. After consolidation the per-test pump overhead is halved.
 

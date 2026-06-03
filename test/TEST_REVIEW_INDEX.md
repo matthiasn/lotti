@@ -23,6 +23,51 @@ itself a markdown checklist so completion can be tracked as the improvement work
 
 ---
 
+## Improvement-phase progress (HIGH items)
+
+Items are tracked in-place: each addressed HIGH item is flipped from `- [ ]` to `- [x]` in its
+report once the change is **verified** (analyzer clean + targeted tests green). Live count:
+`grep -rhcE '^\s*- \[x\].*\[HIGH\]' $(find test -name 'TEST_REVIEW*.md')`.
+
+Order of attack: (1) **additive** items first (new Glados / missing-test for pure public functions —
+cannot break existing tests); (2) **test-only refactors** (mock centralization, fake-time,
+`pumpAndSettle`→`pump`, one-file-per-source merges — verified per file); (3) **`lib/` file-splits**
+last — these touch production code and need full-suite/CI verification beyond this VM, so they are
+flagged for CI/human-reviewed PRs rather than done blind here.
+
+Method: write-only subagents author additive tests in parallel (no flutter — avoids concurrent-build
+OOM); the main thread verifies centrally (`dart fix` + `flutter analyze` + `flutter test`) before any
+checkbox is flipped. Agents are forbidden from running any `pub`/build command (one early agent ran
+`pub add` and was reverted).
+
+**Status:** 100 / 1003 HIGH addressed & verified, plus ~100 bonus MED/LOW Glados/round-trip tests
+and ~6 files of MED mock-centralization. This session: 24 new test files; 46 redundant test files
+merged-away (one-file-per-source consolidations — **no tests lost**, all moved); 77 existing files
+extended — every change analyzer-clean + targeted tests green; pubspec protected (dependency-tampering
+attempts by agents caught & reverted).
+
+Two whole HIGH categories are now essentially complete: **additive Glados/missing-test** and
+**one-file-per-source merges**. The remaining ~906 are:
+- **`lib/` file-splits (~245):** production refactors — need full-suite/CI (OOMs here) → CI-PRs.
+- **In-place test refactors (~250):** mock-centralization, getIt→setUpTestGetIt, fake-time,
+  `pumpAndSettle`→`pump` — modify existing tests; must be verified one file at a time (re-run),
+  not safely mass-parallelized; ~1–3 verified/turn.
+- **Private-fn / DB-/widget-coupled (~remainder):** need extraction (=a split) or infra harnesses.
+
+**Remaining ~933 HIGH, by category (require different handling):**
+- **`lib/` file-splits (~245):** production-code refactors. The project requires `make analyze` +
+  `make test` green before merge; the full suite OOMs on this 3-core VM, so these must be done as
+  **CI-verified, human-reviewed PRs** — not blind in this loop. Each report lists concrete split seams.
+- **Test-only refactors (~350+):** mock centralization → `test/mocks/mocks.dart`, fake-time fixes,
+  `pumpAndSettle`→`pump`, one-file-per-source merges. These modify existing tests; doable here but
+  must be verified one file at a time (re-run the file) — slow, not safely mass-parallelizable.
+- **Private-function / DB-/widget-coupled items:** need extraction (=a split) or infra harnesses.
+
+The 3,397 `- [ ]` checklist items across these reports are the ready-made, prioritized backlog for
+that PR work.
+
+---
+
 ## Cross-cutting findings (the patterns that repeat everywhere)
 
 These are the themes that recurred across nearly every area. Tackling them as repo-wide sweeps will

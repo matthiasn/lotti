@@ -694,4 +694,81 @@ void main() {
       tags: 'glados',
     );
   });
+
+  // -----------------------------------------------------------------------
+  // ringBufferAdd — Glados properties
+  // -----------------------------------------------------------------------
+
+  group('ringBufferAdd — Glados properties', () {
+    glados.Glados2(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        20,
+        glados.any.letterOrDigits,
+      ),
+      glados.IntAnys(glados.any).intInRange(1, 10),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'buffer never exceeds maxSize after N insertions',
+      (entries, maxSize) {
+        final buf = <String>[];
+        for (final entry in entries) {
+          ringBufferAdd(buf, entry, maxSize);
+        }
+        expect(
+          buf.length,
+          lessThanOrEqualTo(maxSize),
+          reason: 'maxSize=$maxSize entries=${entries.length}',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        20,
+        glados.any.letterOrDigits,
+      ),
+      glados.IntAnys(glados.any).intInRange(1, 10),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'last inserted entry is always the last element of the buffer',
+      (entries, maxSize) {
+        final buf = <String>[];
+        for (final entry in entries) {
+          ringBufferAdd(buf, entry, maxSize);
+        }
+        expect(
+          buf.last,
+          entries.last,
+          reason: 'maxSize=$maxSize',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        20,
+        glados.any.letterOrDigits,
+      ),
+      glados.IntAnys(glados.any).intInRange(1, 10),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'buffer contains the last min(n, maxSize) inserted entries in order',
+      (entries, maxSize) {
+        final buf = <String>[];
+        for (final entry in entries) {
+          ringBufferAdd(buf, entry, maxSize);
+        }
+        final expectedTail = entries.length <= maxSize
+            ? entries
+            : entries.sublist(entries.length - maxSize);
+        expect(buf, expectedTail, reason: 'maxSize=$maxSize');
+      },
+      tags: 'glados',
+    );
+  });
 }

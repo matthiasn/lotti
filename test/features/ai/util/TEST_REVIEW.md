@@ -51,7 +51,7 @@
 
 - [ ] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` (1812 lines) — every `sendMessage` subtest re-declares the same 8-argument `when(() => mockOllamaRepo.generateTextWithMessages(...))` block verbatim. There are at least 18 copies (lines 157, 211, 274, 325, 399, 503, 588, 670, 711, 816, 914, 984, 1082, 1218, 1317, 1401, 1489, 1551, 1657, 1696). A `_stubGenerateText(mockOllamaRepo, {Stream? stream})` helper would reduce this by ~300 lines and make the tests readable. *(This file is in the conversation/ scope but the pattern also appears in the util/ tests.)*
 
-- [ ] **[HIGH]** `test/features/ai/util/preconfigured_prompts_test.dart` (96 lines) only tests `imagePromptGenerationPrompt`. **`coverArtGenerationPrompt` has no tests at all** — its structure, required input data, `useReasoning: false`, `AiResponseType.imageGeneration`, and template placeholders (`{{audioTranscript}}`, `{{current_task_summary}}`, `{{task}}`) are untested. This is a meaningful gap because these are tested at the UI layer by checking the prompt type.
+- [x] **[HIGH]** `test/features/ai/util/preconfigured_prompts_test.dart` (96 lines) only tests `imagePromptGenerationPrompt`. **`coverArtGenerationPrompt` has no tests at all** — its structure, required input data, `useReasoning: false`, `AiResponseType.imageGeneration`, and template placeholders (`{{audioTranscript}}`, `{{current_task_summary}}`, `{{task}}`) are untested. This is a meaningful gap because these are tested at the UI layer by checking the prompt type.
 
 - [ ] **[MED]** `test/features/ai/util/ai_error_utils_test.dart` line 204: the test `'test helpers expose dynamic fields'` only verifies that inline test helper class properties are readable. This is a constructor smoke test with zero value for the production code — it proves nothing about `AiErrorUtils`. Remove or collapse it into an actual extraction test.
 
@@ -83,7 +83,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `coverArtGenerationPrompt` in `preconfigured_prompts.dart` (lines 178–248) has **zero test coverage**. The prompt's composition requirements (16:9 aspect ratio, Dynamic Island safe zone, `useReasoning: false`), input data type, and AI response type are untested.
+- [x] **[HIGH]** `coverArtGenerationPrompt` in `preconfigured_prompts.dart` (lines 178–248) has **zero test coverage**. The prompt's composition requirements (16:9 aspect ratio, Dynamic Island safe zone, `useReasoning: false`), input data type, and AI response type are untested.
 
 - [ ] **[HIGH]** `lib/features/ai/util/known_models.dart` lines 91–100: `isMlxAudioSpeechToTextModel` only has three fixture tests in `known_models_test.dart` (lines 634–661). The function's logic depends on `inputModalities.contains(Modality.audio) && outputModalities.contains(Modality.text)`. Edge cases like audio-only input (Parakeet, line 163) and TTS-only output are implicitly covered by the three concrete cases but not by an exhaustive property.
 

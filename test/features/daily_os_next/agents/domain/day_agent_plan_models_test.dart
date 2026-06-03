@@ -113,6 +113,36 @@ void main() {
       );
     });
   });
+
+  group('DayAgentLearning — generated JSON round-trips', () {
+    glados.Glados<DayAgentLearningBullet>(
+      glados.any.learningBullet,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('roundtrips generated bullets through JSON', (bullet) {
+      final decoded = DayAgentLearningBullet.fromJson(
+        jsonDecode(jsonEncode(bullet.toJson())) as Map<String, dynamic>,
+      );
+      expect(decoded, bullet,
+          reason: 'text="${bullet.text}" tone=${bullet.tone}');
+      expect(decoded.hashCode, bullet.hashCode,
+          reason: 'text="${bullet.text}" tone=${bullet.tone}');
+    }, tags: 'glados');
+
+    glados.Glados<DayAgentLearningCard>(
+      glados.any.learningCard,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('roundtrips generated cards (incl. bullet list) through JSON',
+        (card) {
+      final decoded = DayAgentLearningCard.fromJson(
+        jsonDecode(jsonEncode(card.toJson())) as Map<String, dynamic>,
+      );
+      expect(decoded, card,
+          reason: 'id=${card.id} kind=${card.kind} '
+              'bullets=${card.bullets.length}');
+      expect(decoded.hashCode, card.hashCode,
+          reason: 'id=${card.id} kind=${card.kind}');
+    }, tags: 'glados');
+  });
 }
 
 class _GeneratedEnergyBand {
@@ -168,6 +198,40 @@ extension _AnyDayAgentPlanModels on glados.Any {
           durationMinute: durationMinute,
           level: level,
           labelIndex: labelIndex,
+        ),
+      );
+
+  glados.Generator<DayAgentLearningBulletTone> get bulletTone =>
+      glados.AnyUtils(this).choose(DayAgentLearningBulletTone.values);
+
+  glados.Generator<DayAgentLearningBullet> get learningBullet =>
+      glados.CombinableAny(this).combine2(
+        glados.any.letterOrDigits,
+        bulletTone,
+        (String text, DayAgentLearningBulletTone tone) =>
+            DayAgentLearningBullet(text: text, tone: tone),
+      );
+
+  glados.Generator<DayAgentLearningCard> get learningCard =>
+      glados.CombinableAny(this).combine5(
+        glados.any.letterOrDigits,
+        glados.any.letterOrDigits,
+        glados.any.letterOrDigits,
+        glados.ListAnys(this).listWithLengthInRange(0, 4, learningBullet),
+        glados.AnyUtils(this).choose(const ['standard', 'nudge']),
+        (
+          String id,
+          String overline,
+          String summary,
+          List<DayAgentLearningBullet> bullets,
+          String kind,
+        ) =>
+            DayAgentLearningCard(
+          id: id,
+          overline: overline,
+          summary: summary,
+          bullets: bullets,
+          kind: kind,
         ),
       );
 }

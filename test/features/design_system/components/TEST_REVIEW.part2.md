@@ -41,7 +41,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `task_filters/design_system_task_filter_sheet.dart` (1567 lines) — far exceeds the 1000-line hard cap and the ~500-line preferred limit. Contains at least 15 distinct classes. Natural split seams:
+- [x] **[HIGH]** `task_filters/design_system_task_filter_sheet.dart` (1567 lines) — far exceeds the 1000-line hard cap and the ~500-line preferred limit. Contains at least 15 distinct classes. Natural split seams:
   - Data-model layer (lines 1–525): `DesignSystemTaskFilterOption`, `DesignSystemTaskFilterFieldState`, `DesignSystemTaskFilterToggle`, `DesignSystemTaskFilterState` → `design_system_task_filter_state.dart`
   - Sheet widget (lines 527–793): `DesignSystemTaskFilterSheet` → `design_system_task_filter_sheet.dart` (keep this name for the widget, move models out)
   - Action bar (lines 795–1059): `DesignSystemTaskFilterActionBar`, `_DesignSystemTaskFilterActionBarState`, `_FooterButtonSlot`, `_SaveNamePopup`/`_SaveNamePopupState` → `design_system_task_filter_action_bar.dart`

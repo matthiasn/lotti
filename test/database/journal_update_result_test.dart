@@ -1,5 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/journal_update_result.dart';
+
+extension _AnySkipReason on glados.Any {
+  glados.Generator<JournalUpdateSkipReason> get skipReason =>
+      glados.AnyUtils(this).choose(JournalUpdateSkipReason.values);
+}
 
 void main() {
   group('JournalUpdateResult.applied', () {
@@ -52,4 +58,23 @@ void main() {
       );
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Glados property — LOW item: label is non-empty for every enum value
+  // -------------------------------------------------------------------------
+
+  glados.Glados(
+    glados.any.skipReason,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'label is non-empty for every JournalUpdateSkipReason value',
+    (reason) {
+      expect(
+        reason.label,
+        isNotEmpty,
+        reason: 'label must be a non-empty string for $reason',
+      );
+    },
+    tags: 'glados',
+  );
 }

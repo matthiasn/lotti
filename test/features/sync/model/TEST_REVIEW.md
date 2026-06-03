@@ -49,7 +49,7 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `sync_message_test.dart`: `SyncMessage` JSON round-trips are a classic generative target. The `runtimeType` discriminator + all scalar fields can be generated. A single Glados property — *decode(encode(m)) == m* — over the full union of message variants would replace or compress the 8+ static round-trip tests and would catch any new variant that fails to fully serialize/deserialize. Generator shape: a `_GeneratedSyncMessage` sealed class with a `choose` over variants; each variant generates its specific fields.
+- [x] **[HIGH]** `sync_message_test.dart`: `SyncMessage` JSON round-trips are a classic generative target. The `runtimeType` discriminator + all scalar fields can be generated. A single Glados property — *decode(encode(m)) == m* — over the full union of message variants would replace or compress the 8+ static round-trip tests and would catch any new variant that fails to fully serialize/deserialize. Generator shape: a `_GeneratedSyncMessage` sealed class with a `choose` over variants; each variant generates its specific fields.
 
 - [ ] **[MED]** `sync_error_test.dart`: `SyncError.fromException` keyword-classification is a pure mapping function. A Glados property over generated exception message strings could verify the exhaustive rule: the returned `SyncErrorType` is one of the four valid values, and any message containing `'database'` always maps to `SyncErrorType.database`, etc. This replaces the brittle one-keyword-one-test pattern.
 

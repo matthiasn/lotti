@@ -42,7 +42,7 @@
 ## Test quality improvements
 
 - [ ] **[HIGH]** `chat_interface_test.dart` line 118: `GetIt.instance.pushNewScope()` / `GetIt.instance.registerSingleton` / `GetIt.instance.resetScope()` / `GetIt.instance.popScope()` is manual GetIt management. Use `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`.
-- [ ] **[HIGH]** Two test files cover `thinking_parser.dart`:
+- [x] **[HIGH]** Two test files cover `thinking_parser.dart`:
   - `test/features/ai_chat/ui/widgets/thinking_parser_test.dart` (495 ln)
   - `test/features/ai_chat/ui/widgets/chat_interface/thinking_parser_test.dart` (292 ln)
   This violates the "one test file per source file" rule. The second file must be merged into the first or deleted. Check for coverage overlap and consolidate.

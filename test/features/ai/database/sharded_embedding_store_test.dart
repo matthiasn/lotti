@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/entity_metadata_row.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
@@ -12,6 +13,15 @@ import 'package:path/path.dart' as p;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+
+/// Safe shard-key character set: alphanumeric, hyphen, underscore.
+final _safeChars = RegExp(r'^[a-zA-Z0-9_-]+$');
+
+extension _AnySanitize on glados.Any {
+  /// Arbitrary strings (including path-traversal sequences like `../`).
+  glados.Generator<String> get rawShardKey =>
+      glados.any.stringOf(r'abcABC09_-./\:?#%!@^');
+}
 
 void main() {
   group('ShardedEmbeddingStore', () {
@@ -1151,4 +1161,64 @@ void main() {
       });
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Standalone pure-function tests for sanitizeShardKey.
+  // -------------------------------------------------------------------------
+  group('sanitizeShardKey — unit tests', () {
+    test('empty string returns kDefaultShardKey', () {
+      expect(sanitizeShardKey(''), kDefaultShardKey);
+    });
+
+    test('already-safe alphanumeric key is preserved', () {
+      expect(sanitizeShardKey('my-category_01'), 'my-category_01');
+    });
+
+    test('replaces forward slashes (path-traversal risk)', () {
+      expect(sanitizeShardKey('../etc/passwd'), startsWith('__'));
+      expect(sanitizeShardKey('../etc/passwd'), isNot(contains('/')));
+    });
+
+    test('replaces dots, colons and spaces', () {
+      final result = sanitizeShardKey('my cat: id.v2');
+      expect(result, isNot(contains('.')));
+      expect(result, isNot(contains(':')));
+      expect(result, isNot(contains(' ')));
+    });
+
+    test('output always matches safe-char pattern for known inputs', () {
+      for (final raw in ['../secret', 'a/b/c', 'hello world', 'abc?q=1']) {
+        final result = sanitizeShardKey(raw);
+        expect(result, matches(_safeChars),
+            reason: '"$raw" → "$result" contains unsafe chars');
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados property: sanitizeShardKey output is always path-safe.
+  // -------------------------------------------------------------------------
+  glados.Glados(
+    glados.any.rawShardKey,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'sanitizeShardKey output only contains safe characters',
+    (raw) {
+      final result = sanitizeShardKey(raw);
+      if (raw.isEmpty) {
+        expect(result, kDefaultShardKey);
+      } else {
+        expect(
+          result,
+          matches(_safeChars),
+          reason: 'Input "$raw" produced unsafe key "$result"',
+        );
+        // Must not allow path traversal.
+        expect(result, isNot(contains('..')));
+        expect(result, isNot(contains('/')));
+        expect(result, isNot(contains(r'\')));
+      }
+    },
+    tags: 'glados',
+  );
 }

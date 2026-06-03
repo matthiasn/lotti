@@ -24,7 +24,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/…/recording/audio_recording_modal_test.dart` (1137 lines) and `audio_recording_modal_coverage_test.dart` (913 lines) both test `AudioRecordingModal` from the same source file. Per AGENTS.md: "One test file per source file." Merge them. The `coverage_test.dart` file was clearly created to add more tests without splitting; merge it back into `audio_recording_modal_test.dart`. After merging, if the combined file is too large, split on *subgroups* (e.g. `audio_recording_modal_interaction_test.dart` for tap/button tests) rather than on coverage percentage.
+- [x] **[HIGH]** `test/…/recording/audio_recording_modal_test.dart` (1137 lines) and `audio_recording_modal_coverage_test.dart` (913 lines) both test `AudioRecordingModal` from the same source file. Per AGENTS.md: "One test file per source file." Merge them. The `coverage_test.dart` file was clearly created to add more tests without splitting; merge it back into `audio_recording_modal_test.dart`. After merging, if the combined file is too large, split on *subgroups* (e.g. `audio_recording_modal_interaction_test.dart` for tap/button tests) rather than on coverage percentage.
 
 - [ ] **[MED]** `test/…/recording/audio_recording_indicator_timer_text_test.dart` (58 lines) tests a sub-widget of the same source file as `audio_recording_indicator_test.dart`. Fold it into the indicator test; 479 + 58 = 537 lines is acceptable.
 

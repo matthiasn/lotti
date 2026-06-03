@@ -1160,4 +1160,54 @@ void main() {
       );
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Glados property test for PromptCapabilityFilter.isLocalOnlyProviderType
+  // A closed-enum property: exactly {whisper, ollama, voxtral, mlxAudio} are
+  // local-only; all other variants must return false.
+  // ---------------------------------------------------------------------------
+  group('isLocalOnlyProviderType — Glados property', () {
+    const localOnlyTypes = {
+      InferenceProviderType.whisper,
+      InferenceProviderType.ollama,
+      InferenceProviderType.voxtral,
+      InferenceProviderType.mlxAudio,
+    };
+
+    // Property: for every enum variant, the return value equals membership in
+    // the known local-only set.  This auto-detects any future variant that is
+    // misclassified.
+    glados.Glados(
+      glados.AnyUtils(glados.any).choose(InferenceProviderType.values),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result matches membership in the known local-only set',
+      (providerType) {
+        final result =
+            PromptCapabilityFilter.isLocalOnlyProviderType(providerType);
+        final expectedLocal = localOnlyTypes.contains(providerType);
+
+        expect(
+          result,
+          equals(expectedLocal),
+          reason:
+              '$providerType should${expectedLocal ? '' : ' not'} be local-only',
+        );
+      },
+      tags: 'glados',
+    );
+
+    // Static worked examples for each variant (documentation + regression).
+    for (final t in InferenceProviderType.values) {
+      final expected = localOnlyTypes.contains(t);
+      test(
+        'isLocalOnlyProviderType($t) == $expected',
+        () => expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(t),
+          equals(expected),
+          reason: '$t classification',
+        ),
+      );
+    }
+  });
 }

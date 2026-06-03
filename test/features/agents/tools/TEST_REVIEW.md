@@ -47,11 +47,11 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `agent_tool_registry_test.dart` — `AgentToolDefinition.enabled` field is never asserted. `get_related_task_details` is the only tool with `enabled: false`; add a test: `expect(tool.enabled, isFalse)`. All other tools should assert `enabled: true` (or at minimum the default value of `true`). This field is load-bearing for LLM tool exposure.
+- [x] **[HIGH]** `agent_tool_registry_test.dart` — `AgentToolDefinition.enabled` field is never asserted. `get_related_task_details` is the only tool with `enabled: false`; add a test: `expect(tool.enabled, isFalse)`. All other tools should assert `enabled: true` (or at minimum the default value of `true`). This field is load-bearing for LLM tool exposure.
 
-- [ ] **[HIGH]** `agent_tool_registry_test.dart` — `deferredTools` membership is only spot-checked for `createTimeEntry` and `updateTimeEntry`. Add a systematic test verifying the full expected set of 14 deferred tool names and that non-deferred tools (e.g. `updateReport`, `recordObservations`) are absent from the set.
+- [x] **[HIGH]** `agent_tool_registry_test.dart` — `deferredTools` membership is only spot-checked for `createTimeEntry` and `updateTimeEntry`. Add a systematic test verifying the full expected set of 14 deferred tool names and that non-deferred tools (e.g. `updateReport`, `recordObservations`) are absent from the set.
 
-- [ ] **[HIGH]** `agent_tool_registry_test.dart` — `explodedBatchTools` is tested only for `assign_task_labels`. Add assertions for all 4 entries: `addMultipleChecklistItems→'items'`, `updateChecklistItems→'items'`, `assignTaskLabels→'labels'`, `migrateChecklistItems→'items'`.
+- [x] **[HIGH]** `agent_tool_registry_test.dart` — `explodedBatchTools` is tested only for `assign_task_labels`. Add assertions for all 4 entries: `addMultipleChecklistItems→'items'`, `updateChecklistItems→'items'`, `assignTaskLabels→'labels'`, `migrateChecklistItems→'items'`.
 
 - [ ] **[MED]** `agent_tool_executor_test.dart` — The `ToolExecutionResult.fromHandlerResult` factory contains an `assert` (`lib/features/agents/tools/agent_tool_executor.dart:41–44`) that fires when `didWrite=true` and `entityId` is null or empty. This is never triggered by any test. Add a debug-mode assertion test, or at minimum document the gap. In release builds this is silently skipped.
 
@@ -81,9 +81,9 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `agent_tool_registry_test.dart` — The `retractSuggestions` tool (line 550–598 in impl) is defined in `taskAgentTools` but has no dedicated per-tool test group in the registry test. The schema has nested `proposals[].fingerprint` and `proposals[].reason` with `minItems:1` and `minLength:1`/`maxLength:500` constraints that no test currently touches.
+- [x] **[HIGH]** `agent_tool_registry_test.dart` — The `retractSuggestions` tool (line 550–598 in impl) is defined in `taskAgentTools` but has no dedicated per-tool test group in the registry test. The schema has nested `proposals[].fingerprint` and `proposals[].reason` with `minItems:1` and `minLength:1`/`maxLength:500` constraints that no test currently touches.
 
-- [ ] **[HIGH]** `agent_tool_registry_test.dart` — The `createFollowUpTask` and `migrateChecklistItems` tools have no dedicated per-tool groups. `migrateChecklistItems` requires both `items` and `targetTaskId`, and `items[].id`/`items[].title` are both required — none of this is tested.
+- [x] **[HIGH]** `agent_tool_registry_test.dart` — The `createFollowUpTask` and `migrateChecklistItems` tools have no dedicated per-tool groups. `migrateChecklistItems` requires both `items` and `targetTaskId`, and `items[].id`/`items[].title` are both required — none of this is tested.
 
 - [ ] **[MED]** `agent_tool_executor_test.dart` — The `_recordMessage` helper (`lib/features/agents/tools/agent_tool_executor.dart:382–416`) creates either 1 or 2 `upsertEntity` calls depending on whether `payloadText` is `null`. The null-payload path (called when `payloadText == null`) is never explicitly exercised. Add a test that stubs a handler returning a result with `output: ''` and verifies that only 1 entity (the message, no payload) is upserted for that leg.
 

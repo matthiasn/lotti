@@ -394,7 +394,10 @@ void main() {
 
         tooltipController.addError(error);
 
-        await completer.future.timeout(const Duration(milliseconds: 100));
+        // Error propagation is deterministic (addError -> provider error ->
+        // listener completes the completer on a microtask), so await directly
+        // rather than racing a real wall-clock timeout (fake-time policy).
+        await completer.future;
 
         final state = container.read(enableTooltipsProvider);
         expect(state.hasError, isTrue);

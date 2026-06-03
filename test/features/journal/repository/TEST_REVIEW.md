@@ -84,7 +84,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/features/journal/util/entry_tools.dart` — **No test file exists** (`test/features/journal/util/entry_tools_test.dart` is absent). The file contains five untested pure functions:
+- [x] **[HIGH]** `lib/features/journal/util/entry_tools.dart` — **No test file exists** (`test/features/journal/util/entry_tools_test.dart` is absent). The file contains five untested pure functions:
   - `entryDuration(JournalEntity)` — trivial dateTo − dateFrom subtraction
   - `formatDuration(Duration?)` — non-trivial: null guard, hour-padding branch (`substring(1,2) == ':'`); the padding branch is a real edge case
   - `fromNullableBool(bool?)` — null-safe coercion
@@ -92,7 +92,7 @@
   - `entryTextForWorkout(WorkoutData, {bool includeTitle})` — optional `includeTitle` flag affects output; branch untested
   - `entryTextForMeasurable(MeasurementData, MeasurableDataType)` — pure string formatting
 
-- [ ] **[HIGH]** `lib/features/journal/utils/entry_type_gating.dart` — **No dedicated unit test file** (`test/features/journal/utils/entry_type_gating_test.dart` is absent). The function is only exercised indirectly as an oracle inside `journal_page_controller_test.dart`. Direct unit tests should cover all eight flag combinations (2³) and verify the exact excluded type sets. Using it as its own test oracle provides zero coverage of the function's contract.
+- [x] **[HIGH]** `lib/features/journal/utils/entry_type_gating.dart` — **No dedicated unit test file** (`test/features/journal/utils/entry_type_gating_test.dart` is absent). The function is only exercised indirectly as an oracle inside `journal_page_controller_test.dart`. Direct unit tests should cover all eight flag combinations (2³) and verify the exact excluded type sets. Using it as its own test oracle provides zero coverage of the function's contract.
 
 - [ ] **[MED]** `lib/features/journal/repository/journal_repository.dart:338–345` — `removeLink` has only one test (success path, returns `1`). The case where `deleteLink` returns `0` (link did not exist) is not verified; nor is the DB-exception path.
 

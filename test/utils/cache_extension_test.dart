@@ -76,6 +76,60 @@ void main() {
       tags: 'glados',
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // Duration constants — regression protection
+  //
+  // These tests pin the exported Duration constants so that accidental changes
+  // (e.g., during a rebase or bulk find-replace) are caught immediately.
+  // ---------------------------------------------------------------------------
+  group('exported Duration constants', () {
+    test('dashboardCacheDuration is 5 minutes', () {
+      expect(
+        dashboardCacheDuration,
+        const Duration(minutes: 5),
+        reason: 'dashboardCacheDuration changed — update consumers first',
+      );
+    });
+
+    test('entryCacheDuration is 1 minute', () {
+      expect(
+        entryCacheDuration,
+        const Duration(minutes: 1),
+        reason: 'entryCacheDuration changed — update consumers first',
+      );
+    });
+
+    test('inferenceStateCacheDuration is 2 minutes', () {
+      expect(
+        inferenceStateCacheDuration,
+        const Duration(minutes: 2),
+        reason: 'inferenceStateCacheDuration changed — update consumers first',
+      );
+    });
+
+    test('entry cache is shorter than dashboard cache', () {
+      expect(
+        entryCacheDuration,
+        lessThan(dashboardCacheDuration),
+        reason:
+            'entry cache should expire sooner than the dashboard aggregate',
+      );
+    });
+
+    test('inference-state cache is between entry and dashboard durations', () {
+      expect(
+        inferenceStateCacheDuration,
+        greaterThan(entryCacheDuration),
+        reason: 'inference-state cache should outlive per-entry cache',
+      );
+      expect(
+        inferenceStateCacheDuration,
+        lessThan(dashboardCacheDuration),
+        reason: 'inference-state cache should expire before dashboard cache',
+      );
+    });
+  });
 }
 
 class _GeneratedCacheDuration {

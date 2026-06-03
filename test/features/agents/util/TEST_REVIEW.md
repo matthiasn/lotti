@@ -25,7 +25,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `text_utils.dart` has no test file. The file contains a single function `truncateAgentText` with at least four distinct code branches:
+- [x] **[HIGH]** `text_utils.dart` has no test file. The file contains a single function `truncateAgentText` with at least four distinct code branches:
   - `maxLength <= 0` → returns `''`
   - `singleLine.length <= maxLength` → returns unchanged single-line string
   - `maxLength == 1` → returns `'…'`
@@ -43,7 +43,7 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `text_utils.dart` — `truncateAgentText` is a pure function with structured input (`(String text, int maxLength)`). It has clear algebraic properties:
+- [x] **[HIGH]** `text_utils.dart` — `truncateAgentText` is a pure function with structured input (`(String text, int maxLength)`). It has clear algebraic properties:
   - **Length invariant**: `truncateAgentText(text, n).length <= n` for all `n >= 1`.
   - **No-truncation identity**: if (after newline-collapse) `text.length <= maxLength`, the result equals the collapsed-and-trimmed text.
   - **Suffix invariant**: if truncation occurs (`maxLength < collapsed.length`), the result ends with `'…'`.
@@ -57,7 +57,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `text_utils.dart` / `truncateAgentText` — All code paths are completely uncovered (no test file). At minimum cover:
+- [x] **[HIGH]** `text_utils.dart` / `truncateAgentText` — All code paths are completely uncovered (no test file). At minimum cover:
   - `maxLength = 0` → `''`
   - `maxLength = 1` → `'…'`
   - `maxLength = 1` with text that is already 1 char (boundary ambiguity in current impl: `min(maxLength - 1, singleLine.length)` = `min(0, 1)` = `0`, so `substring(0, 0)` = `''`, result = `'…'`)

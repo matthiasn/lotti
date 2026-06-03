@@ -370,6 +370,48 @@ void main() {
         verifyNever(() => notificationService.cancelNotification(any()));
       },
     );
+
+    // HIGH coverage gap from TEST_REVIEW.md:
+    // `!entity.meta.scheduledFor.isAfter(effectiveNow)` is true when equal,
+    // so scheduledFor == now must route to showNotificationNow, not scheduleNotificationAt.
+    test(
+      'shows notification immediately when scheduledFor equals now exactly',
+      () async {
+        final now = DateTime.utc(2026, 5, 17, 10);
+        final entity = _notification(
+          id: 'exact-now-id',
+          linkedTaskId: 'task-exact',
+          scheduledFor: now, // exactly equal to effectiveNow
+        );
+
+        await scheduler.schedule(entity, now: now);
+
+        verify(
+          () => notificationService.showNotificationNow(
+            title: 'Due title',
+            body: 'Due body',
+            notificationId: NotificationScheduler.notificationIdFor(
+              'exact-now-id',
+            ),
+            showOnMobile: true,
+            showOnDesktop: true,
+            deepLink: '/tasks/task-exact',
+          ),
+        ).called(1);
+        verifyNever(
+          () => notificationService.scheduleNotificationAt(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notifyAt: any(named: 'notifyAt'),
+            notificationId: any(named: 'notificationId'),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        );
+        verifyNever(() => notificationService.cancelNotification(any()));
+      },
+    );
   });
 }
 

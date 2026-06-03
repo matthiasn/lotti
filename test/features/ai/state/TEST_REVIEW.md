@@ -47,7 +47,7 @@
   - `trigger_new_inference_provider_test.dart` — `triggerNewInferenceProvider` (~lines 686–947)
   The shared `_TestBench` / helper setup should be extracted into a file-local helper to stay DRY across the split files.
 
-- [ ] **[HIGH]** `test/features/ai/state/settings/inference_model_form_controller_dirty_state_test.dart` (308 lines) and `test/features/ai/state/settings/inference_provider_form_controller_dirty_state_test.dart` (323 lines) both violate the one-test-file-per-source-file rule. Their tests must be merged back into their respective primary test files (`inference_model_form_controller_test.dart` and `inference_provider_form_controller_test.dart`).
+- [x] **[HIGH]** `test/features/ai/state/settings/inference_model_form_controller_dirty_state_test.dart` (308 lines) and `test/features/ai/state/settings/inference_provider_form_controller_dirty_state_test.dart` (323 lines) both violate the one-test-file-per-source-file rule. Their tests must be merged back into their respective primary test files (`inference_model_form_controller_test.dart` and `inference_provider_form_controller_test.dart`).
 
 - [ ] **[MED]** `lib/features/ai/state/unified_ai_controller.dart` — 635 lines. Three conceptually separate provider families live here: `UnifiedAiController` + `triggerNewInferenceProvider` (controller wiring), `availableSkillsForEntityProvider` + `hasAvailableSkillsProvider` (entity capability queries), and `triggerSkillProvider` (skill dispatch). Splitting into `unified_ai_controller.dart`, `available_skills_providers.dart`, and `trigger_skill_provider.dart` would bring each file under ~250 lines.
 
@@ -59,7 +59,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/features/ai/state/unified_ai_controller_test.dart` — `MockUnifiedAiInferenceRepository` is declared inline at line 37–38. The same class is also declared inline in `test/features/ai/state/linked_entity_inference_test.dart` (line 16–17). Neither file uses the centralized `test/mocks/mocks.dart`. `MockUnifiedAiInferenceRepository` should be added to `test/mocks/mocks.dart` and the inline declarations removed from both files.
+- [x] **[HIGH]** `test/features/ai/state/unified_ai_controller_test.dart` — `MockUnifiedAiInferenceRepository` is declared inline at line 37–38. The same class is also declared inline in `test/features/ai/state/linked_entity_inference_test.dart` (line 16–17). Neither file uses the centralized `test/mocks/mocks.dart`. `MockUnifiedAiInferenceRepository` should be added to `test/mocks/mocks.dart` and the inline declarations removed from both files.
 
 - [ ] **[HIGH]** `test/features/ai/state/unified_ai_controller_test.dart` — 18 manual `getIt.isRegistered` / `getIt.unregister` / `getIt.registerSingleton` calls in `setUp` (lines 96–124). This is precisely the anti-pattern that `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart` is designed to replace.
 

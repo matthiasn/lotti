@@ -58,7 +58,7 @@ _Date: 2026-06-02_
     `testWidgets` cases (lines ~2 650–2 930)
   - `entry_controller_io_test.dart` — `copyImage`, `setLanguage`, real-I/O setUp at lines ~2 930–3 034
 
-- [ ] **[HIGH]** `test/features/journal/state/journal_page_controller_refresh_test.dart` (1 790
+- [x] **[HIGH]** `test/features/journal/state/journal_page_controller_refresh_test.dart` (1 790
   lines) and `journal_page_controller_filter_test.dart` (1 274 lines) **violate the
   one-test-file-per-source rule** (`AGENTS.md § Test Infrastructure Rules`). Both test the same
   source file (`journal_page_controller.dart`) as the primary `journal_page_controller_test.dart`.
@@ -226,7 +226,7 @@ genuine candidates with algebraic invariants over pure logic:
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/features/journal/state/journal_page_subscriptions.dart` — **No test file
+- [x] **[HIGH]** `lib/features/journal/state/journal_page_subscriptions.dart` — **No test file
   at all**. The `setup()` subscription wiring and the static `applyJournalConfigFlags()` method
   (38 lines of conditional logic) are exercised only indirectly through the controller tests.
   A dedicated `journal_page_subscriptions_test.dart` should at minimum test

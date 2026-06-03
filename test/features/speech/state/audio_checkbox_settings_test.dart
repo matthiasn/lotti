@@ -15,16 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
-class MockAudioRecorderRepository extends Mock
-    implements AudioRecorderRepository {}
-
-class MockPlayer extends Mock implements Player {}
-
 class MockPlayerState extends Mock implements PlayerState {}
-
-class MockPlayerStream extends Mock implements PlayerStream {}
-
-class FakePlayable extends Fake implements Playable {}
 
 void main() {
   late ProviderContainer container;

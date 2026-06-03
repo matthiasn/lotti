@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/utils/timezone.dart';
 
 void main() {
@@ -75,5 +76,67 @@ void main() {
         await tempDir.delete(recursive: true);
       }
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados property tests for the Linux whitespace-trim path
+  //
+  // The review identified that only two concrete whitespace examples are tested.
+  // This property proves that `.trim()` is correct for any combination of
+  // leading/trailing whitespace from the representative set.
+  // ---------------------------------------------------------------------------
+  group('getLocalTimezone — properties (Linux only)', () {
+    // Known valid timezone strings drawn from common real values.
+    const knownTimezones = [
+      'UTC',
+      'Europe/Berlin',
+      'America/New_York',
+      'Asia/Tokyo',
+      'Australia/Sydney',
+      'America/Los_Angeles',
+      'Europe/London',
+      'America/Chicago',
+    ];
+
+    // Whitespace chars that can pad the file content.
+    const whitespaceOptions = ['', ' ', '  ', '\t', '\n', ' \t', '\n '];
+
+    late Directory tempDir0;
+    late File tzFile0;
+
+    setUpAll(() async {
+      tempDir0 = await Directory.systemTemp.createTemp('tz_glados');
+      tzFile0 = File('${tempDir0.path}/timezone');
+    });
+
+    tearDownAll(() async {
+      await tempDir0.delete(recursive: true);
+    });
+
+    glados.Glados3(
+      glados.AnyUtils(glados.any).choose(knownTimezones),
+      glados.AnyUtils(glados.any).choose(whitespaceOptions),
+      glados.AnyUtils(glados.any).choose(whitespaceOptions),
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'trims any leading/trailing whitespace from the timezone file',
+      (timezone, leadingWs, trailingWs) async {
+        if (!Platform.isLinux) return;
+
+        await tzFile0.writeAsString('$leadingWs$timezone$trailingWs');
+        final result = await getLocalTimezone(
+          linuxTimezoneFilePath: tzFile0.path,
+          overrideIsTestEnv: false,
+        );
+        expect(
+          result,
+          timezone,
+          reason:
+              'leading="$leadingWs", trailing="$trailingWs", raw content '
+              '"$leadingWs$timezone$trailingWs"',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

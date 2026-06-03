@@ -12,6 +12,45 @@ import 'package:glados/glados.dart'
         any;
 import 'package:lotti/features/ai/service/text_chunker.dart';
 
+// ---------------------------------------------------------------------------
+// Generators for estimateTokens mutual-exclusivity property.
+// ---------------------------------------------------------------------------
+enum _EstimateTokensInputKind {
+  /// Multiple whitespace-delimited ASCII words → word-count path.
+  multiWord,
+
+  /// Single CJK-only token → rune-count path.
+  cjkSingleToken,
+
+  /// Single long non-CJK whitespace-free token (≥ 1024 chars) → char/4 path.
+  longNonCjkToken,
+}
+
+extension _AnyEstimateTokens on Any {
+  Generator<String> get estimateTokensInput =>
+      CombinableAny(this).combine2(
+        AnyUtils(this).choose(_EstimateTokensInputKind.values),
+        intInRange(2, 30), // word count or token count
+        (kind, countFactor) {
+          switch (kind) {
+            case _EstimateTokensInputKind.multiWord:
+              // Generate 2–30 ASCII words separated by spaces.
+              return List.generate(
+                countFactor,
+                (i) => 'word$i',
+              ).join(' ');
+            case _EstimateTokensInputKind.cjkSingleToken:
+              // 2–30 CJK characters with no spaces.
+              return List.generate(countFactor, (i) => '漢').join();
+            case _EstimateTokensInputKind.longNonCjkToken:
+              // Single ASCII token of length ≥ 1024.
+              final length = kChunkTargetTokens * 4 + countFactor * 10;
+              return 'a' * length;
+          }
+        },
+      );
+}
+
 class _GeneratedChunkText {
   const _GeneratedChunkText({
     required this.wordCounts,
@@ -572,6 +611,44 @@ void main() {
             chunks.join().length,
             greaterThanOrEqualTo(scenario.token.length),
             reason: '$scenario',
+          );
+        },
+        tags: 'glados',
+      );
+    });
+
+    // -------------------------------------------------------------------------
+    // Glados properties for estimateTokens path invariants.
+    // -------------------------------------------------------------------------
+    group('estimateTokens — Glados path invariants', () {
+      Glados(
+        any.estimateTokensInput,
+        ExploreConfig(numRuns: 120),
+      ).test(
+        'non-empty input always yields a positive token count',
+        (input) {
+          // All generated inputs are non-empty by construction.
+          expect(input, isNotEmpty);
+          final result = TextChunker.estimateTokens(input);
+          expect(
+            result,
+            greaterThan(0),
+            reason: 'estimateTokens("$input") must be > 0 for non-empty input',
+          );
+        },
+        tags: 'glados',
+      );
+
+      Glados(
+        any.estimateTokensInput,
+        ExploreConfig(numRuns: 120),
+      ).test(
+        'result is consistent across two calls with identical input',
+        (input) {
+          expect(
+            TextChunker.estimateTokens(input),
+            TextChunker.estimateTokens(input),
+            reason: 'estimateTokens must be deterministic',
           );
         },
         tags: 'glados',

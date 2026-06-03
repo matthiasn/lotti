@@ -359,7 +359,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     svc.captureEvent('should be logged', domain: 'TOGGLE');
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+    await svc.flushAllForTest();
 
     final logFile = _findLogFile(tempDocs);
     expect(logFile, isNotNull, reason: 'Log file should exist after enabling');
@@ -373,7 +373,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     svc.captureEvent('should be skipped again', domain: 'TOGGLE');
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+    await svc.flushAllForTest();
 
     // File content should not contain the disabled event
     final content2 = logFile.readAsStringSync();
@@ -687,8 +687,8 @@ void main() {
         );
       }
 
-      // Give the async write chain time to complete
-      await Future<void>.delayed(const Duration(milliseconds: 500));
+      // Deterministically flush the buffered write chain (fake-time policy).
+      await bufferedLogging.flushAllForTest();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist');
@@ -704,8 +704,8 @@ void main() {
         domain: 'EXC_BUF',
       );
 
-      // Give the async write chain time to complete
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      // Deterministically flush the buffered write chain (fake-time policy).
+      await bufferedLogging.flushAllForTest();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist');
@@ -742,8 +742,8 @@ void main() {
         level: InsightLevel.error,
       );
 
-      // Give the async write chain time to complete
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      // Deterministically flush the buffered write chain (fake-time policy).
+      await bufferedLogging.flushAllForTest();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist');

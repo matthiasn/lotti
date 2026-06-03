@@ -70,7 +70,7 @@ Counts are approximated from the per-subdir summaries; "~" denotes a rounded fig
 
 - [ ] **[HIGH]** `agent_template_detail_page_test.dart` (2 391 lines): extract `_stubGetAgentsEmpty(mockTemplateService)` helper (copied verbatim 38 times) and `makeTestableWidgetWithContainer` to remove 2 raw `ProviderContainer`+`MaterialApp` bypasses. → **ui/TEST_REVIEW.md**
 
-- [ ] **[HIGH]** Add `test/features/agents/util/text_utils_test.dart` — `truncateAgentText` (11-line pure function) is completely uncovered; it is an ideal `Glados2<String, int>` candidate with clear algebraic invariants (length-invariant, suffix-invariant, no-truncation identity). → **util/TEST_REVIEW.md**
+- [x] **[HIGH]** Add `test/features/agents/util/text_utils_test.dart` — `truncateAgentText` (11-line pure function) is completely uncovered; it is an ideal `Glados2<String, int>` candidate with clear algebraic invariants (length-invariant, suffix-invariant, no-truncation identity). → **util/TEST_REVIEW.md**
 
 - [ ] **[MED]** `agent_tool_registry_test.dart`: assert `enabled: false` for `get_related_task_details`; verify full 14-entry `deferredTools` set; verify all 4 `explodedBatchTools` entries; add per-tool groups for `retractSuggestions`, `createFollowUpTask`, and `migrateChecklistItems` (schema constraints currently unchecked). → **tools/TEST_REVIEW.md**
 

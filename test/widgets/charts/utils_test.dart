@@ -77,6 +77,83 @@ extension _AnySumByDay on Any {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Scenario for aggregateAvgByDay property tests
+//
+// Like _SumByDayScenario, but the expected output omits days with no
+// measurements and emits the arithmetic mean instead of the sum.
+// ---------------------------------------------------------------------------
+
+/// A measurement landing on day `offset` (relative to range start)
+/// with the given signed integer `value`.  Same record shape as `_DaySpec`.
+typedef _AvgDaySpec = ({int offset, int value});
+
+class _AvgByDayScenario {
+  const _AvgByDayScenario({required this.rangeDays, required this.rawSpecs});
+
+  final int rangeDays;
+  final List<_AvgDaySpec> rawSpecs;
+
+  static final DateTime base = DateTime(2024, 6);
+
+  DateTime get rangeStart => base;
+  DateTime get rangeEnd => base.add(Duration(days: rangeDays));
+
+  /// Specs clamped into `[0, rangeDays)` so every offset is in-range.
+  Iterable<_AvgDaySpec> get specs =>
+      rawSpecs.map((s) => (offset: s.offset % rangeDays, value: s.value));
+
+  List<JournalEntity> get entities => <JournalEntity>[
+    for (final (index, spec) in specs.indexed)
+      buildMeasurementEntry(
+        id: 'a$index',
+        timestamp: base.add(Duration(days: spec.offset, hours: 6)),
+        value: spec.value,
+      ),
+  ];
+
+  /// Expected per-day arithmetic means (only days with ≥1 measurement).
+  Map<String, double> get expectedMeanForDay {
+    final sums = <int, int>{};
+    final counts = <int, int>{};
+    for (final spec in specs) {
+      sums[spec.offset] = (sums[spec.offset] ?? 0) + spec.value;
+      counts[spec.offset] = (counts[spec.offset] ?? 0) + 1;
+    }
+    final result = <String, double>{};
+    for (final entry in counts.entries) {
+      final dayOffset = entry.key;
+      final count = entry.value;
+      final day = base.add(Duration(days: dayOffset));
+      final dayString = day.toIso8601String().substring(0, 10);
+      result[dayString] = sums[dayOffset]! / count;
+    }
+    return result;
+  }
+
+  /// Number of days in range that carry ≥1 measurement.
+  int get measuredDayCount => specs.map((s) => s.offset).toSet().length;
+
+  @override
+  String toString() =>
+      '_AvgByDayScenario(rangeDays: $rangeDays, rawSpecs: $rawSpecs)';
+}
+
+extension _AnyAvgByDay on Any {
+  Generator<_AvgDaySpec> get avgDaySpec => combine2(
+    intInRange(0, 7),
+    intInRange(-5, 15),
+    (int offset, int value) => (offset: offset, value: value),
+  );
+
+  Generator<_AvgByDayScenario> get avgByDayScenario => combine2(
+    intInRange(1, 8),
+    listWithLengthInRange(0, 15, avgDaySpec),
+    (int rangeDays, List<_AvgDaySpec> rawSpecs) =>
+        _AvgByDayScenario(rangeDays: rangeDays, rawSpecs: rawSpecs),
+  );
+}
+
 void main() {
   group('Chart utils', () {
     test('Hours as int are correctly formatted', () {
@@ -487,5 +564,43 @@ void main() {
       final twin = habitFlossing.copyWith(id: 'a-different-id');
       expect(habitSorter(habitFlossing, twin), 0);
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // aggregateAvgByDay — Glados property test
+  //
+  // Property: for any random set of measurements in [rangeStart, rangeEnd),
+  //   • output length equals the number of distinct days that carry at least
+  //     one measurement (days with count == 0 are omitted),
+  //   • each emitted Observation.value equals the arithmetic mean of all
+  //     measurements on that day.
+  // -------------------------------------------------------------------------
+  group('aggregateAvgByDay — Glados properties', () {
+    Glados(any.avgByDayScenario, ExploreConfig(numRuns: 120)).test(
+      'output length equals distinct measured-day count and '
+      'values equal per-day arithmetic mean',
+      (scenario) {
+        final result = aggregateAvgByDay(
+          scenario.entities,
+          rangeStart: scenario.rangeStart,
+          rangeEnd: scenario.rangeEnd,
+        );
+
+        // Result must contain exactly the days that have measurements.
+        expect(result, hasLength(scenario.measuredDayCount),
+            reason: '$scenario');
+
+        // Each observation must equal the per-day arithmetic mean.
+        for (final obs in result) {
+          final dayString = obs.dateTime.toIso8601String().substring(0, 10);
+          final expected = scenario.expectedMeanForDay[dayString];
+          expect(expected, isNotNull,
+              reason: 'day $dayString not in expected map — $scenario');
+          expect(obs.value, closeTo(expected!, 1e-9),
+              reason: 'mean mismatch for $dayString — $scenario');
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

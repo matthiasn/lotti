@@ -87,9 +87,9 @@ No Glados opportunities exist for the generated Freezed classes (`*.freezed.dart
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/…/model/pending_wake_record.dart` — `PendingWakeRecord.id` is a computed property (`'${agent.agentId}:${type.name}:${dueAt.toIso8601String()}'`) used as a deduplication key in the wake orchestrator. No test file exists. The format of this key is semantically important and should be pinned with at least one deterministic assertion.
+- [x] **[HIGH]** `lib/…/model/pending_wake_record.dart` — `PendingWakeRecord.id` is a computed property (`'${agent.agentId}:${type.name}:${dueAt.toIso8601String()}'`) used as a deduplication key in the wake orchestrator. No test file exists. The format of this key is semantically important and should be pinned with at least one deterministic assertion.
 
-- [ ] **[HIGH]** `lib/…/model/proposal_ledger.dart` — `LedgerEntry.isOpen` and `ProposalLedger.isEmpty` are predicates used by the UI and prompt builder. Neither is tested. Both can be exercised trivially with a handful of concrete value-class constructions.
+- [x] **[HIGH]** `lib/…/model/proposal_ledger.dart` — `LedgerEntry.isOpen` and `ProposalLedger.isEmpty` are predicates used by the UI and prompt builder. Neither is tested. Both can be exercised trivially with a handful of concrete value-class constructions.
 
 - [ ] **[MED]** `lib/…/model/seeded_directives.dart` — `seedDirectiveChangelog` entries are never validated. Adding a test that iterates the list and asserts each `entry.dateTime` parses without throwing would catch copy-paste date typos before they reach the agent context builder.
 

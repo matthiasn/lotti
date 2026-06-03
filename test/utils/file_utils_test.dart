@@ -181,6 +181,61 @@ extension _AnyFileUtilsPath on glados.Any {
       );
 }
 
+// ---------------------------------------------------------------------------
+// Extra generators for the relativeEntityPath and resolveJsonCandidateFile
+// Glados property tests added below main().
+// ---------------------------------------------------------------------------
+
+class _GeneratedEntityScenario {
+  const _GeneratedEntityScenario({required this.meta});
+
+  final Metadata meta;
+
+  @override
+  String toString() =>
+      '_GeneratedEntityScenario(id=${meta.id}, createdAt=${meta.createdAt})';
+}
+
+extension _AnyEntityScenario on glados.Any {
+  /// Generates a valid calendar date in the range [2000, 2030].
+  /// Day is capped at 28 to sidestep month-end edge cases.
+  glados.Generator<DateTime> get _entityDate =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(2000, 2030),
+        glados.IntAnys(this).intInRange(1, 12),
+        glados.IntAnys(this).intInRange(1, 28),
+        DateTime.new,
+      );
+
+  /// Produces an entity scenario with a generated non-empty alphanumeric id
+  /// and a generated creation date.
+  glados.Generator<_GeneratedEntityScenario> get generatedEntityScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.StringAnys(this).nonEmptyLetterOrDigits,
+        _entityDate,
+        (String id, DateTime createdAt) => _GeneratedEntityScenario(
+          meta: Metadata(
+            id: id,
+            createdAt: createdAt,
+            dateTo: createdAt,
+            dateFrom: createdAt,
+            updatedAt: createdAt,
+          ),
+        ),
+      );
+
+  /// Generates a "safe" relative path from two segment tokens joined by `/`.
+  /// The [pathSegment] generator (from [_AnyFileUtilsPath]) never produces
+  /// `..`, so the result is always a sandbox-safe relative path.
+  glados.Generator<String> get safeRelativePath =>
+      glados.CombinableAny(this).combine2(
+        pathSegment,
+        pathSegment,
+        (_GeneratedPathSegment a, _GeneratedPathSegment b) =>
+            '${a.text}/${b.text}',
+      );
+}
+
 void main() {
   final dt = DateTime.fromMillisecondsSinceEpoch(1638265606966);
 
@@ -606,6 +661,168 @@ void main() {
           isAgentPayloadPath(relativeAgentLinkPath(payloadId.encoded)),
           isTrue,
           reason: '$payloadId',
+        );
+      },
+      tags: 'glados',
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // relativeEntityPath — Glados properties
+  //
+  // Tests the `orElse` branch (non-image, non-audio entity types) where the
+  // path is built from folderForJournalEntity / typeSuffix / createdAt / id.
+  // We parameterise over generated ids and creation dates and verify the
+  // structural invariants without re-implementing DateFormat.
+  // ---------------------------------------------------------------------------
+  group('relativeEntityPath — properties', () {
+    // Shared generator that produces (year, month, day, id) tuples.
+    // Day is capped at 28 to avoid dealing with month-end edge cases.
+
+    glados.Glados(
+      glados.any.generatedEntityScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'journalEntry path ends with .json and contains the entity id',
+      (scenario) {
+        final entity = JournalEntity.journalEntry(
+          meta: scenario.meta,
+        );
+        final path = relativeEntityPath(entity);
+
+        expect(
+          path.endsWith('.json'),
+          isTrue,
+          reason: 'path=$path, scenario=$scenario',
+        );
+        expect(
+          path.contains(scenario.meta.id),
+          isTrue,
+          reason: 'path=$path, scenario=$scenario',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.generatedEntityScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'journalEntry path folder matches folderForJournalEntity',
+      (scenario) {
+        final entity = JournalEntity.journalEntry(
+          meta: scenario.meta,
+        );
+        final path = relativeEntityPath(entity);
+        final expected = folderForJournalEntity(entity);
+
+        // Path format: /$folder/$date/$id.$suffix.json
+        expect(
+          path.startsWith('/$expected/'),
+          isTrue,
+          reason: 'path=$path, folder=$expected, scenario=$scenario',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.generatedEntityScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'journalEntry path type-suffix matches typeSuffix helper',
+      (scenario) {
+        final entity = JournalEntity.journalEntry(
+          meta: scenario.meta,
+        );
+        final path = relativeEntityPath(entity);
+        final suffix = typeSuffix(entity);
+
+        // The filename portion is: $id.$suffix.json
+        expect(
+          path.contains('.$suffix.json'),
+          isTrue,
+          reason: 'path=$path, suffix=$suffix, scenario=$scenario',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.generatedEntityScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'journalEntry date subfolder matches yyyy-MM-dd of createdAt',
+      (scenario) {
+        final entity = JournalEntity.journalEntry(
+          meta: scenario.meta,
+        );
+        final path = relativeEntityPath(entity);
+        final createdAt = scenario.meta.createdAt;
+
+        // Build expected date string without importing intl.
+        final yyyy = createdAt.year.toString().padLeft(4, '0');
+        final mm = createdAt.month.toString().padLeft(2, '0');
+        final dd = createdAt.day.toString().padLeft(2, '0');
+        final expectedDate = '$yyyy-$mm-$dd';
+
+        expect(
+          path.contains('/$expectedDate/'),
+          isTrue,
+          reason: 'path=$path, expectedDate=$expectedDate, scenario=$scenario',
+        );
+      },
+      tags: 'glados',
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // resolveJsonCandidateFile — Glados properties
+  //
+  // Verifies the sandbox invariant: any safe relative path resolves inside
+  // the documents directory, and any path-traversal attempt throws.
+  // ---------------------------------------------------------------------------
+  group('resolveJsonCandidateFile — properties', () {
+    late Directory propDocDir;
+
+    setUpAll(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      setFakeDocumentsPath();
+      propDocDir = await getApplicationDocumentsDirectory();
+      await getIt.reset();
+      getIt.registerSingleton<Directory>(propDocDir);
+    });
+
+    tearDownAll(getIt.reset);
+
+    glados.Glados(
+      glados.any.safeRelativePath,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'safe relative paths always resolve inside the documents directory',
+      (relativePath) {
+        final result = resolveJsonCandidateFile(relativePath);
+        expect(
+          result.path.startsWith(propDocDir.path),
+          isTrue,
+          reason: 'relativePath="$relativePath", resolved="${result.path}"',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.pathSegment,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'path-traversal prefix causes FileSystemException',
+      (segment) {
+        // Prepend enough ../ to escape any realistic nesting.
+        final escapingPath = '../../../${segment.text}';
+        expect(
+          () => resolveJsonCandidateFile(escapingPath),
+          throwsA(isA<FileSystemException>()),
+          reason: 'escapingPath="$escapingPath"',
         );
       },
       tags: 'glados',

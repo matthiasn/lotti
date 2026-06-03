@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
@@ -23,6 +25,7 @@ import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -72,6 +75,136 @@ class TestTaskProgressState implements TaskProgressState {
   @override
   String toString() =>
       'TestTaskProgressState(progress: $_progress, estimate: $_estimate)';
+}
+
+// ---------------------------------------------------------------------------
+// From ai_input_repository_language_test.dart — bare mock (no getTaskProgress
+// override) used only in the 'Language support in task data' group below.
+// ---------------------------------------------------------------------------
+
+class MockTaskProgressRepositoryBare extends Mock
+    implements TaskProgressRepository {}
+
+// ---------------------------------------------------------------------------
+// From ai_input_repository_suppressed_ids_test.dart
+// ---------------------------------------------------------------------------
+
+class TestAiInputRepo extends AiInputRepository {
+  TestAiInputRepo(super.ref, {required super.projectRepository})
+    : super(taskSummaryResolver: TaskSummaryResolver(null));
+
+  @override
+  Future<AiInputTaskObject?> generate(String id) async {
+    // Return minimal task JSON base to allow buildTaskDetailsJson to extend
+    return AiInputTaskObject(
+      title: 't',
+      status: 'OPEN',
+      priority: 'P2',
+      creationDate: DateTime(2024),
+      actionItems: const [],
+      logEntries: const [],
+      estimatedDuration: '00:00',
+      timeSpent: '00:00',
+      languageCode: 'en',
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// From ai_linked_task_context_test.dart — Glados generators for round-trip
+// property tests (must be at top-level; Dart extensions cannot be inside fns).
+// ---------------------------------------------------------------------------
+
+/// Wraps the combination of variant choices for a generated AiLinkedTaskContext.
+class _GeneratedLinkedTaskContextScenario {
+  const _GeneratedLinkedTaskContextScenario({
+    required this.idIndex,
+    required this.titleIndex,
+    required this.statusIndex,
+    required this.priorityIndex,
+    required this.estimateIndex,
+    required this.langIndex,
+    required this.summaryIndex,
+  });
+
+  final int idIndex;
+  final int titleIndex;
+  final int statusIndex;
+  final int priorityIndex;
+  final int estimateIndex;
+  final int langIndex;
+  final int summaryIndex;
+
+  static const List<String> _ids = ['task-001', 'task-abc', 'epic-42', 'subtask-x'];
+  static const List<String> _titles = [
+    'Fix login bug',
+    'Implement search',
+    'Write tests',
+    'Deploy to prod',
+  ];
+  static const List<String> _statuses = [
+    'OPEN',
+    'GROOMED',
+    'IN PROGRESS',
+    'DONE',
+    'REJECTED',
+  ];
+  static const List<String> _priorities = ['P0', 'P1', 'P2', 'P3'];
+  static const List<String> _times = ['00:00', '01:30', '10:00', '40:00'];
+  // null encodes as index 0, non-null values at 1+
+  static const List<String?> _langs = [null, 'en', 'de', 'fr'];
+  static const List<String?> _summaries = [
+    null,
+    '',
+    'Completed the auth flow.',
+    'Blocked by external API.',
+  ];
+
+  String get id => _ids[idIndex % _ids.length];
+  String get title => _titles[titleIndex % _titles.length];
+  String get status => _statuses[statusIndex % _statuses.length];
+  String get priority => _priorities[priorityIndex % _priorities.length];
+  String get estimate => _times[estimateIndex % _times.length];
+  String get timeSpent => _times[(estimateIndex + 1) % _times.length];
+  String? get languageCode => _langs[langIndex % _langs.length];
+  String? get latestSummary => _summaries[summaryIndex % _summaries.length];
+
+  @override
+  String toString() =>
+      '_GeneratedLinkedTaskContextScenario(id: $id, title: $title, '
+      'status: $status, priority: $priority, estimate: $estimate, '
+      'lang: $languageCode, summary: $latestSummary)';
+}
+
+extension _AnyLinkedTaskContext on glados.Any {
+  glados.Generator<_GeneratedLinkedTaskContextScenario>
+  get linkedTaskContextScenario =>
+      glados.CombinableAny(this).combine7(
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 3),
+        (
+          int idIdx,
+          int titleIdx,
+          int statusIdx,
+          int priorityIdx,
+          int estimateIdx,
+          int langIdx,
+          int summaryIdx,
+        ) => _GeneratedLinkedTaskContextScenario(
+          idIndex: idIdx,
+          titleIndex: titleIdx,
+          statusIndex: statusIdx,
+          priorityIndex: priorityIdx,
+          estimateIndex: estimateIdx,
+          langIndex: langIdx,
+          summaryIndex: summaryIdx,
+        ),
+      );
 }
 
 /// Test helper to build a ProviderContainer with task progress overrides
@@ -2368,5 +2501,1576 @@ void main() {
         expect(result, equals('{}'));
       },
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // From ai_input_repository_language_test.dart
+  // ---------------------------------------------------------------------------
+
+  group('Language support in task data', () {
+    late AiInputRepository repository;
+    late MockJournalDb mockDbLang;
+    late ProviderContainer containerLang;
+    late MockTaskProgressRepositoryBare mockTaskProgressRepoLang;
+    late MockPersistenceLogic mockPersistenceLogicLang;
+    late MockProjectRepository mockProjectRepositoryLang;
+
+    final testDate = DateTime(2024, 3, 15, 10, 30);
+
+    Metadata createMetadata({String id = 'test-id'}) {
+      return Metadata(
+        id: id,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+      );
+    }
+
+    void setupTaskProgressMock() {
+      when(
+        () => mockTaskProgressRepoLang.getTaskProgress(
+          timeRanges: any(named: 'timeRanges'),
+          estimate: any(named: 'estimate'),
+        ),
+      ).thenReturn(
+        const TaskProgressState(
+          progress: Duration.zero,
+          estimate: Duration.zero,
+        ),
+      );
+    }
+
+    setUp(() {
+      mockDbLang = MockJournalDb();
+      mockTaskProgressRepoLang = MockTaskProgressRepositoryBare();
+      mockPersistenceLogicLang = MockPersistenceLogic();
+      mockProjectRepositoryLang = MockProjectRepository();
+
+      getIt.allowReassignment = true;
+      getIt
+        ..registerSingleton<JournalDb>(mockDbLang)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogicLang);
+
+      containerLang = ProviderContainer(
+        overrides: [
+          taskProgressRepositoryProvider.overrideWithValue(
+            mockTaskProgressRepoLang,
+          ),
+        ],
+      );
+
+      final ref = containerLang.read(testRefProvider);
+      repository = AiInputRepository(
+        ref,
+        taskSummaryResolver: TaskSummaryResolver(null),
+        projectRepository: mockProjectRepositoryLang,
+      );
+    });
+
+    tearDown(() {
+      containerLang.dispose();
+      if (getIt.isRegistered<JournalDb>()) {
+        getIt.unregister<JournalDb>();
+      }
+      if (getIt.isRegistered<PersistenceLogic>()) {
+        getIt.unregister<PersistenceLogic>();
+      }
+    });
+
+    test('includes languageCode in generated task object', () async {
+      final task = Task(
+        meta: createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: testDate,
+          dateTo: testDate,
+          languageCode: 'de',
+        ),
+      );
+
+      when(
+        () => mockDbLang.journalEntityById('test-id'),
+      ).thenAnswer((_) async => task);
+      when(
+        () => mockTaskProgressRepoLang.getTaskProgressData(id: 'test-id'),
+      ).thenAnswer((_) async => null);
+      setupTaskProgressMock();
+      when(
+        () => mockDbLang.getLinkedEntities('test-id'),
+      ).thenAnswer((_) async => []);
+
+      final result = await repository.generate('test-id');
+
+      expect(result, isNotNull);
+      expect(result!.languageCode, equals('de'));
+    });
+
+    test('handles null languageCode', () async {
+      final task = Task(
+        meta: createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+      );
+
+      when(
+        () => mockDbLang.journalEntityById('test-id'),
+      ).thenAnswer((_) async => task);
+      when(
+        () => mockTaskProgressRepoLang.getTaskProgressData(id: 'test-id'),
+      ).thenAnswer((_) async => null);
+      setupTaskProgressMock();
+      when(
+        () => mockDbLang.getLinkedEntities('test-id'),
+      ).thenAnswer((_) async => []);
+
+      final result = await repository.generate('test-id');
+
+      expect(result, isNotNull);
+      expect(result!.languageCode, isNull);
+    });
+
+    test(
+      'includes transcript language in log entries when no edited text',
+      () async {
+        final task = Task(
+          meta: createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+        );
+
+        // Audio entry WITHOUT edited text - should use original transcript
+        final audioEntry = JournalAudio(
+          meta: createMetadata(id: 'audio-1'),
+          data: AudioData(
+            dateFrom: testDate,
+            dateTo: testDate,
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio',
+            duration: const Duration(minutes: 5),
+            transcripts: [
+              AudioTranscript(
+                created: testDate,
+                library: 'whisper',
+                model: 'base',
+                detectedLanguage: 'es',
+                transcript: 'Este es un texto en español',
+              ),
+            ],
+          ),
+          // No entryText - so audioTranscript should be included
+        );
+
+        when(
+          () => mockDbLang.journalEntityById('test-id'),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockTaskProgressRepoLang.getTaskProgressData(id: 'test-id'),
+        ).thenAnswer((_) async => null);
+        setupTaskProgressMock();
+        when(
+          () => mockDbLang.getLinkedEntities('test-id'),
+        ).thenAnswer((_) async => [audioEntry]);
+
+        final result = await repository.generate('test-id');
+
+        expect(result, isNotNull);
+        expect(result!.logEntries, hasLength(1));
+
+        final logEntry = result.logEntries.first;
+        expect(logEntry.entryType, equals('audio'));
+        expect(logEntry.audioTranscript, equals('Este es un texto en español'));
+        expect(logEntry.transcriptLanguage, equals('es'));
+        expect(logEntry.text, isEmpty);
+      },
+    );
+
+    test(
+      'uses edited text instead of original transcript when available',
+      () async {
+        final task = Task(
+          meta: createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+        );
+
+        // Audio entry WITH edited text - should use edited text, not transcript
+        final audioEntry = JournalAudio(
+          meta: createMetadata(id: 'audio-1'),
+          data: AudioData(
+            dateFrom: testDate,
+            dateTo: testDate,
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio',
+            duration: const Duration(minutes: 5),
+            transcripts: [
+              AudioTranscript(
+                created: testDate,
+                library: 'whisper',
+                model: 'base',
+                detectedLanguage: 'es',
+                transcript: 'Original transcript with errors',
+              ),
+            ],
+          ),
+          entryText: const EntryText(
+            plainText: 'Corrected transcript by user',
+          ),
+        );
+
+        when(
+          () => mockDbLang.journalEntityById('test-id'),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockTaskProgressRepoLang.getTaskProgressData(id: 'test-id'),
+        ).thenAnswer((_) async => null);
+        setupTaskProgressMock();
+        when(
+          () => mockDbLang.getLinkedEntities('test-id'),
+        ).thenAnswer((_) async => [audioEntry]);
+
+        final result = await repository.generate('test-id');
+
+        expect(result, isNotNull);
+        expect(result!.logEntries, hasLength(1));
+
+        final logEntry = result.logEntries.first;
+        expect(logEntry.entryType, equals('audio'));
+        // Edited text takes precedence - audioTranscript should be null
+        expect(logEntry.audioTranscript, isNull);
+        expect(logEntry.transcriptLanguage, isNull);
+        expect(logEntry.text, equals('Corrected transcript by user'));
+      },
+    );
+
+    test(
+      'empty edited text takes precedence over original transcript',
+      () async {
+        final task = Task(
+          meta: createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+        );
+
+        // Audio entry with explicitly cleared text (empty string)
+        // Should NOT fall back to original transcript
+        final audioEntry = JournalAudio(
+          meta: createMetadata(id: 'audio-1'),
+          data: AudioData(
+            dateFrom: testDate,
+            dateTo: testDate,
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio',
+            duration: const Duration(minutes: 5),
+            transcripts: [
+              AudioTranscript(
+                created: testDate,
+                library: 'whisper',
+                model: 'base',
+                detectedLanguage: 'en',
+                transcript: 'Original transcript should not appear',
+              ),
+            ],
+          ),
+          entryText: const EntryText(
+            plainText: '', // User explicitly cleared the text
+          ),
+        );
+
+        when(
+          () => mockDbLang.journalEntityById('test-id'),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockTaskProgressRepoLang.getTaskProgressData(id: 'test-id'),
+        ).thenAnswer((_) async => null);
+        setupTaskProgressMock();
+        when(
+          () => mockDbLang.getLinkedEntities('test-id'),
+        ).thenAnswer((_) async => [audioEntry]);
+
+        final result = await repository.generate('test-id');
+
+        expect(result, isNotNull);
+        expect(result!.logEntries, hasLength(1));
+
+        final logEntry = result.logEntries.first;
+        expect(logEntry.entryType, equals('audio'));
+        // Empty edited text still takes precedence - no fallback to transcript
+        expect(logEntry.audioTranscript, isNull);
+        expect(logEntry.transcriptLanguage, isNull);
+        expect(logEntry.text, isEmpty);
+      },
+    );
+
+    test('handles multiple audio transcripts', () async {
+      final task = Task(
+        meta: createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+      );
+
+      final audioEntry = JournalAudio(
+        meta: createMetadata(id: 'audio-1'),
+        data: AudioData(
+          dateFrom: testDate,
+          dateTo: testDate,
+          audioFile: 'test.mp3',
+          audioDirectory: '/audio',
+          duration: const Duration(minutes: 5),
+          transcripts: [
+            AudioTranscript(
+              created: testDate.subtract(const Duration(hours: 1)),
+              library: 'whisper',
+              model: 'base',
+              detectedLanguage: 'en',
+              transcript: 'Old English transcript',
+            ),
+            AudioTranscript(
+              created: testDate,
+              library: 'whisper',
+              model: 'base',
+              detectedLanguage: 'de',
+              transcript: 'Dies ist die neueste deutsche Transkription',
+            ),
+          ],
+        ),
+      );
+
+      when(
+        () => mockDbLang.journalEntityById('test-id'),
+      ).thenAnswer((_) async => task);
+      when(
+        () => mockTaskProgressRepoLang.getTaskProgressData(id: 'test-id'),
+      ).thenAnswer((_) async => null);
+      setupTaskProgressMock();
+      when(
+        () => mockDbLang.getLinkedEntities('test-id'),
+      ).thenAnswer((_) async => [audioEntry]);
+
+      final result = await repository.generate('test-id');
+
+      expect(result, isNotNull);
+      expect(result!.logEntries, hasLength(1));
+
+      final logEntry = result.logEntries.first;
+      // Should use the most recent transcript
+      expect(
+        logEntry.audioTranscript,
+        equals('Dies ist die neueste deutsche Transkription'),
+      );
+      expect(logEntry.transcriptLanguage, equals('de'));
+    });
+
+    test('sets correct entry types for different journal entities', () async {
+      final task = Task(
+        meta: createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+      );
+
+      final textEntry = JournalEntry(
+        meta: createMetadata(id: 'text-1'),
+        entryText: const EntryText(plainText: 'Some text'),
+      );
+
+      final imageEntry = JournalImage(
+        meta: createMetadata(id: 'image-1'),
+        data: ImageData(
+          capturedAt: testDate,
+          imageId: 'img-1',
+          imageFile: 'test.jpg',
+          imageDirectory: '/images',
+        ),
+      );
+
+      final audioEntry = JournalAudio(
+        meta: createMetadata(id: 'audio-1'),
+        data: AudioData(
+          dateFrom: testDate,
+          dateTo: testDate,
+          audioFile: 'test.mp3',
+          audioDirectory: '/audio',
+          duration: const Duration(minutes: 5),
+        ),
+      );
+
+      when(
+        () => mockDbLang.journalEntityById('test-id'),
+      ).thenAnswer((_) async => task);
+      when(
+        () => mockTaskProgressRepoLang.getTaskProgressData(id: 'test-id'),
+      ).thenAnswer((_) async => null);
+      setupTaskProgressMock();
+      when(
+        () => mockDbLang.getLinkedEntities('test-id'),
+      ).thenAnswer((_) async => [textEntry, imageEntry, audioEntry]);
+
+      final result = await repository.generate('test-id');
+
+      expect(result, isNotNull);
+      expect(result!.logEntries, hasLength(3));
+
+      expect(result.logEntries[0].entryType, equals('text'));
+      expect(result.logEntries[1].entryType, equals('image'));
+      expect(result.logEntries[2].entryType, equals('audio'));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // From ai_input_repository_suppressed_ids_test.dart
+  // ---------------------------------------------------------------------------
+
+  group('buildTaskDetailsJson suppressed label IDs', () {
+    test('buildTaskDetailsJson includes aiSuppressedLabelIds', () async {
+      final db = MockJournalDb();
+      final mockProjectRepository = MockProjectRepository();
+      getIt.allowReassignment = true;
+      getIt.registerSingleton<JournalDb>(db);
+      final container = ProviderContainer();
+      addTearDown(() {
+        container.dispose();
+        getIt.reset();
+      });
+
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final task = Task(
+        meta: Metadata(
+          id: 't1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          labelIds: const ['a'],
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 's',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: const [],
+          title: 't',
+          aiSuppressedLabelIds: const {'x', 'y'},
+        ),
+      );
+      when(() => db.journalEntityById('t1')).thenAnswer((_) async => task);
+      when(db.getAllLabelDefinitions).thenAnswer((_) async => const []);
+
+      final repo = TestAiInputRepo(
+        container.read(testRefProvider),
+        projectRepository: mockProjectRepository,
+      );
+      final jsonStr = await repo.buildTaskDetailsJson(id: 't1');
+      expect(jsonStr, isNotNull);
+      final map = jsonDecode(jsonStr!) as Map<String, dynamic>;
+      expect(map['aiSuppressedLabelIds'], containsAll(['x', 'y']));
+
+      // Clean up registration
+      await getIt.reset();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // From ai_linked_task_context_test.dart
+  // ---------------------------------------------------------------------------
+
+  group('AiLinkedTaskContext', () {
+    final testDate = DateTime(2025, 12, 20, 14, 30);
+    final createdDate = DateTime(2025, 12, 15, 10);
+
+    test('serializes to JSON correctly', () {
+      final context = AiLinkedTaskContext(
+        id: 'task-123',
+        title: 'Implement login form',
+        status: 'DONE',
+        statusSince: testDate,
+        priority: 'P1',
+        estimate: '02:00',
+        timeSpent: '01:45',
+        createdAt: createdDate,
+        labels: [
+          {'id': 'l1', 'name': 'frontend'},
+        ],
+        languageCode: 'en',
+        latestSummary: 'Implemented the login form with validation.',
+      );
+
+      final json = context.toJson();
+
+      expect(json['id'], equals('task-123'));
+      expect(json['title'], equals('Implement login form'));
+      expect(json['status'], equals('DONE'));
+      expect(json['statusSince'], equals(testDate.toIso8601String()));
+      expect(json['priority'], equals('P1'));
+      expect(json['estimate'], equals('02:00'));
+      expect(json['timeSpent'], equals('01:45'));
+      expect(json['createdAt'], equals(createdDate.toIso8601String()));
+      expect(json['labels'], isA<List<Map<String, String>>>());
+      expect((json['labels']! as List<Map<String, String>>).length, equals(1));
+      expect(json['languageCode'], equals('en'));
+      expect(
+        json['latestSummary'],
+        equals('Implemented the login form with validation.'),
+      );
+    });
+
+    test('deserializes from JSON correctly', () {
+      final json = {
+        'id': 'task-456',
+        'title': 'Authentication Epic',
+        'status': 'IN PROGRESS',
+        'statusSince': testDate.toIso8601String(),
+        'priority': 'P0',
+        'estimate': '40:00',
+        'timeSpent': '12:30',
+        'createdAt': createdDate.toIso8601String(),
+        'labels': [
+          {'id': 'l2', 'name': 'auth'},
+          {'id': 'l3', 'name': 'epic'},
+        ],
+        'languageCode': 'en',
+        'latestSummary': 'Parent epic for authentication.',
+      };
+
+      final context = AiLinkedTaskContext.fromJson(json);
+
+      expect(context.id, equals('task-456'));
+      expect(context.title, equals('Authentication Epic'));
+      expect(context.status, equals('IN PROGRESS'));
+      expect(context.statusSince, equals(testDate));
+      expect(context.priority, equals('P0'));
+      expect(context.estimate, equals('40:00'));
+      expect(context.timeSpent, equals('12:30'));
+      expect(context.createdAt, equals(createdDate));
+      expect(context.labels.length, equals(2));
+      expect(context.languageCode, equals('en'));
+      expect(context.latestSummary, equals('Parent epic for authentication.'));
+    });
+
+    test('handles null latestSummary', () {
+      final context = AiLinkedTaskContext(
+        id: 'task-789',
+        title: 'New Task',
+        status: 'OPEN',
+        statusSince: testDate,
+        priority: 'P2',
+        estimate: '00:00',
+        timeSpent: '00:00',
+        createdAt: createdDate,
+        labels: [],
+      );
+
+      final json = context.toJson();
+
+      expect(json['latestSummary'], isNull);
+
+      // Round-trip test
+      final restored = AiLinkedTaskContext.fromJson(json);
+      expect(restored.latestSummary, isNull);
+    });
+
+    test('handles null languageCode', () {
+      final context = AiLinkedTaskContext(
+        id: 'task-abc',
+        title: 'Task without language',
+        status: 'GROOMED',
+        statusSince: testDate,
+        priority: 'P3',
+        estimate: '01:00',
+        timeSpent: '00:00',
+        createdAt: createdDate,
+        labels: [],
+      );
+
+      final json = context.toJson();
+
+      expect(json['languageCode'], isNull);
+
+      // Round-trip test
+      final restored = AiLinkedTaskContext.fromJson(json);
+      expect(restored.languageCode, isNull);
+    });
+
+    test('handles empty labels list', () {
+      final context = AiLinkedTaskContext(
+        id: 'task-xyz',
+        title: 'Task without labels',
+        status: 'BLOCKED',
+        statusSince: testDate,
+        priority: 'P1',
+        estimate: '03:00',
+        timeSpent: '02:00',
+        createdAt: createdDate,
+        labels: [],
+      );
+
+      final json = context.toJson();
+
+      expect(json['labels'], isA<List<Map<String, String>>>());
+      expect((json['labels']! as List<Map<String, String>>).isEmpty, isTrue);
+    });
+
+    test('JSON output is valid for prompt injection', () {
+      final linkedFrom = [
+        AiLinkedTaskContext(
+          id: 'child-1',
+          title: 'Child Task 1',
+          status: 'DONE',
+          statusSince: testDate,
+          priority: 'P2',
+          estimate: '01:00',
+          timeSpent: '00:45',
+          createdAt: createdDate,
+          labels: [
+            {'id': 'l1', 'name': 'frontend'},
+          ],
+          languageCode: 'en',
+          latestSummary:
+              'Completed the UI.\n\n## Links\n- [PR #123](https://github.com/org/repo/pull/123)',
+        ),
+      ];
+
+      final linkedTo = [
+        AiLinkedTaskContext(
+          id: 'parent-1',
+          title: 'Parent Epic',
+          status: 'IN PROGRESS',
+          statusSince: testDate,
+          priority: 'P0',
+          estimate: '40:00',
+          timeSpent: '12:30',
+          createdAt: createdDate,
+          labels: [
+            {'id': 'l2', 'name': 'epic'},
+          ],
+          languageCode: 'en',
+          latestSummary: 'Epic for the feature.',
+        ),
+      ];
+
+      final data = <String, dynamic>{
+        'linked_from': linkedFrom.map((c) => c.toJson()).toList(),
+        'linked_to': linkedTo.map((c) => c.toJson()).toList(),
+        'note':
+            'If summaries contain links to GitHub PRs, Issues, or similar '
+            'platforms, use web search to retrieve additional context when relevant.',
+      };
+
+      const encoder = JsonEncoder.withIndent('    ');
+      final jsonString = encoder.convert(data);
+
+      // Verify the JSON is valid
+      expect(() => jsonDecode(jsonString), returnsNormally);
+
+      // Verify structure
+      final parsed = jsonDecode(jsonString) as Map<String, dynamic>;
+      expect(parsed['linked_from'], isA<List<dynamic>>());
+      expect(parsed['linked_to'], isA<List<dynamic>>());
+      expect(parsed['note'], contains('web search'));
+
+      // Verify linked_from content
+      final linkedFromParsed = parsed['linked_from'] as List<dynamic>;
+      expect(linkedFromParsed.length, equals(1));
+      final linkedFromFirst = linkedFromParsed[0] as Map<String, dynamic>;
+      expect(linkedFromFirst['title'], equals('Child Task 1'));
+      expect(linkedFromFirst['latestSummary'], contains('[PR #123]'));
+
+      // Verify linked_to content
+      final linkedToParsed = parsed['linked_to'] as List<dynamic>;
+      expect(linkedToParsed.length, equals(1));
+      final linkedToFirst = linkedToParsed[0] as Map<String, dynamic>;
+      expect(linkedToFirst['title'], equals('Parent Epic'));
+    });
+
+    test('handles all task statuses', () {
+      final statuses = [
+        'OPEN',
+        'GROOMED',
+        'IN PROGRESS',
+        'BLOCKED',
+        'ON HOLD',
+        'DONE',
+        'REJECTED',
+      ];
+
+      for (final status in statuses) {
+        final context = AiLinkedTaskContext(
+          id: 'task-$status',
+          title: 'Task with status $status',
+          status: status,
+          statusSince: testDate,
+          priority: 'P2',
+          estimate: '01:00',
+          timeSpent: '00:30',
+          createdAt: createdDate,
+          labels: [],
+        );
+
+        final json = context.toJson();
+        expect(json['status'], equals(status));
+
+        final restored = AiLinkedTaskContext.fromJson(json);
+        expect(restored.status, equals(status));
+      }
+    });
+
+    test('handles all priority levels', () {
+      final priorities = ['P0', 'P1', 'P2', 'P3'];
+
+      for (final priority in priorities) {
+        final context = AiLinkedTaskContext(
+          id: 'task-$priority',
+          title: 'Task with priority $priority',
+          status: 'OPEN',
+          statusSince: testDate,
+          priority: priority,
+          estimate: '01:00',
+          timeSpent: '00:00',
+          createdAt: createdDate,
+          labels: [],
+        );
+
+        final json = context.toJson();
+        expect(json['priority'], equals(priority));
+
+        final restored = AiLinkedTaskContext.fromJson(json);
+        expect(restored.priority, equals(priority));
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados round-trip property — toJson → jsonEncode → jsonDecode → fromJson
+  // must preserve every field value.
+  // -------------------------------------------------------------------------
+  group('AiLinkedTaskContext — Glados JSON round-trip', () {
+    // Deterministic dates to avoid DateTime.now() in tests.
+    final fixedStatusSince = DateTime(2025, 6, 1, 12);
+    final fixedCreatedAt = DateTime(2024, 1, 10, 8, 30);
+
+    glados.Glados(
+      glados.any.linkedTaskContextScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'toJson → jsonDecode(jsonEncode) → fromJson preserves all fields',
+      (scenario) {
+        final original = AiLinkedTaskContext(
+          id: scenario.id,
+          title: scenario.title,
+          status: scenario.status,
+          statusSince: fixedStatusSince,
+          priority: scenario.priority,
+          estimate: scenario.estimate,
+          timeSpent: scenario.timeSpent,
+          createdAt: fixedCreatedAt,
+          labels: const [],
+          languageCode: scenario.languageCode,
+          latestSummary: scenario.latestSummary,
+        );
+
+        final roundTripped = AiLinkedTaskContext.fromJson(
+          jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
+        );
+
+        expect(
+          roundTripped.id,
+          equals(original.id),
+          reason: 'id — $scenario',
+        );
+        expect(
+          roundTripped.title,
+          equals(original.title),
+          reason: 'title — $scenario',
+        );
+        expect(
+          roundTripped.status,
+          equals(original.status),
+          reason: 'status — $scenario',
+        );
+        expect(
+          roundTripped.statusSince,
+          equals(original.statusSince),
+          reason: 'statusSince — $scenario',
+        );
+        expect(
+          roundTripped.priority,
+          equals(original.priority),
+          reason: 'priority — $scenario',
+        );
+        expect(
+          roundTripped.estimate,
+          equals(original.estimate),
+          reason: 'estimate — $scenario',
+        );
+        expect(
+          roundTripped.timeSpent,
+          equals(original.timeSpent),
+          reason: 'timeSpent — $scenario',
+        );
+        expect(
+          roundTripped.createdAt,
+          equals(original.createdAt),
+          reason: 'createdAt — $scenario',
+        );
+        expect(
+          roundTripped.languageCode,
+          equals(original.languageCode),
+          reason: 'languageCode — $scenario',
+        );
+        expect(
+          roundTripped.latestSummary,
+          equals(original.latestSummary),
+          reason: 'latestSummary — $scenario',
+        );
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('AiInputRepository - Linked Task Context', () {
+    late MockJournalDb mockDbLinked;
+    late MockTaskProgressRepository mockTaskProgressRepositoryLinked;
+    late MockPersistenceLogic mockPersistenceLogicLinked;
+    late MockEntitiesCacheService mockCacheServiceLinked;
+    late MockProjectRepository mockProjectRepositoryLinked;
+    late ProviderContainer containerLinked;
+    late AiInputRepository repositoryLinked;
+
+    final testDate = DateTime(2025, 12, 20, 14, 30);
+    final createdDate = DateTime(2025, 12, 15, 10);
+    const taskId = 'task-123';
+    const childTaskId = 'child-task-456';
+    const parentTaskId = 'parent-task-789';
+
+    setUp(() {
+      mockDbLinked = MockJournalDb();
+      mockTaskProgressRepositoryLinked = MockTaskProgressRepository();
+      mockPersistenceLogicLinked = MockPersistenceLogic();
+      mockCacheServiceLinked = MockEntitiesCacheService();
+      mockProjectRepositoryLinked = MockProjectRepository();
+      containerLinked = ProviderContainer(
+        overrides: [
+          taskProgressRepositoryProvider.overrideWithValue(
+            mockTaskProgressRepositoryLinked,
+          ),
+          projectRepositoryProvider.overrideWithValue(mockProjectRepositoryLinked),
+        ],
+      );
+
+      getIt.allowReassignment = true;
+      getIt
+        ..registerSingleton<JournalDb>(mockDbLinked)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogicLinked)
+        ..registerSingleton<EntitiesCacheService>(mockCacheServiceLinked);
+
+      repositoryLinked = containerLinked.read(aiInputRepositoryProvider);
+
+      // Default mocks
+      when(
+        () => mockTaskProgressRepositoryLinked.getTaskProgressData(
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((_) async => (null, <String, TimeRange>{}));
+      when(() => mockDbLinked.journalEntityById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockDbLinked.getLinkedEntities(any()),
+      ).thenAnswer((_) async => <JournalEntity>[]);
+      when(
+        () => mockDbLinked.getBulkLinkedEntities(any()),
+      ).thenAnswer((_) async => <String, List<JournalEntity>>{});
+      when(
+        () => mockDbLinked.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => <LabelDefinition>[]);
+      when(() => mockCacheServiceLinked.getLabelById(any())).thenReturn(null);
+      when(
+        () => mockProjectRepositoryLinked.getProjectForTask(any()),
+      ).thenAnswer((_) async => null);
+    });
+
+    tearDown(() {
+      containerLinked.dispose();
+      getIt
+        ..unregister<JournalDb>()
+        ..unregister<PersistenceLogic>()
+        ..unregister<EntitiesCacheService>();
+    });
+
+    Task createTestTask({
+      required String id,
+      required String title,
+      TaskStatus? status,
+      DateTime? createdAt,
+      List<String>? labelIds,
+      Duration? estimate,
+      String? languageCode,
+      DateTime? deletedAt,
+    }) {
+      final taskStatus =
+          status ??
+          TaskStatus.inProgress(
+            id: 'status-$id',
+            createdAt: createdAt ?? createdDate,
+            utcOffset: 0,
+          );
+      return Task(
+        meta: Metadata(
+          id: id,
+          dateFrom: createdAt ?? createdDate,
+          dateTo: createdAt ?? createdDate,
+          createdAt: createdAt ?? createdDate,
+          updatedAt: createdAt ?? createdDate,
+          labelIds: labelIds,
+          deletedAt: deletedAt,
+        ),
+        data: TaskData(
+          title: title,
+          status: taskStatus,
+          statusHistory: [],
+          dateFrom: createdAt ?? createdDate,
+          dateTo: createdAt ?? createdDate,
+          estimate: estimate,
+          languageCode: languageCode,
+        ),
+      );
+    }
+
+    JournalDbEntity createDbEntityFromTask(Task task) {
+      return JournalDbEntity(
+        id: task.id,
+        createdAt: task.meta.createdAt,
+        updatedAt: task.meta.updatedAt,
+        dateFrom: task.meta.dateFrom,
+        dateTo: task.meta.dateTo,
+        deleted: task.meta.deletedAt != null,
+        starred: false,
+        private: false,
+        task: true,
+        flag: 0,
+        type: 'Task',
+        serialized: jsonEncode(task.toJson()),
+        schemaVersion: 1,
+        plainText: task.data.title,
+        category: '',
+      );
+    }
+
+    /// Creates a JournalEntry with specified duration for time tracking tests.
+    JournalEntity createJournalEntryWithDuration({
+      required String id,
+      required Duration duration,
+      DateTime? dateFrom,
+    }) {
+      final from = dateFrom ?? createdDate;
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: id,
+          dateFrom: from,
+          dateTo: from.add(duration),
+          createdAt: from,
+          updatedAt: from,
+        ),
+      );
+    }
+
+    group('buildLinkedFromContext', () {
+      test('returns empty list when no tasks link to this task', () async {
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => []);
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result, isEmpty);
+        verify(() => mockDbLinked.getLinkedToEntities(taskId)).called(1);
+      });
+
+      test('returns context for child tasks linking to this task', () async {
+        final childTask = createTestTask(
+          id: childTaskId,
+          title: 'Child Task',
+          estimate: const Duration(hours: 2),
+          languageCode: 'en',
+        );
+        final childDbEntity = createDbEntityFromTask(childTask);
+
+        // Create a journal entry with 45 minutes duration for time tracking
+        final timeEntry = createJournalEntryWithDuration(
+          id: 'time-entry-1',
+          duration: const Duration(minutes: 45),
+        );
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [childDbEntity]);
+        // Bulk fetch returns entities for time calculation
+        when(() => mockDbLinked.getBulkLinkedEntities({childTaskId})).thenAnswer(
+          (_) async => {
+            childTaskId: [timeEntry],
+          },
+        );
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result.length, equals(1));
+        expect(result[0].id, equals(childTaskId));
+        expect(result[0].title, equals('Child Task'));
+        expect(result[0].status, equals('IN PROGRESS'));
+        expect(result[0].estimate, equals('02:00'));
+        expect(result[0].timeSpent, equals('00:45'));
+        expect(result[0].languageCode, equals('en'));
+      });
+
+      test('filters out deleted tasks', () async {
+        final deletedTask = createTestTask(
+          id: 'deleted-task',
+          title: 'Deleted Task',
+          status: TaskStatus.open(
+            id: 'status-deleted',
+            createdAt: createdDate,
+            utcOffset: 0,
+          ),
+          deletedAt: testDate, // Marked as deleted
+        );
+        final deletedDbEntity = createDbEntityFromTask(deletedTask);
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [deletedDbEntity]);
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result, isEmpty);
+      });
+
+      test('sorts tasks by creation date (oldest first)', () async {
+        final olderTask = createTestTask(
+          id: 'older-task',
+          title: 'Older Task',
+          createdAt: DateTime(2025, 12, 10),
+        );
+        final newerTask = createTestTask(
+          id: 'newer-task',
+          title: 'Newer Task',
+          createdAt: DateTime(2025, 12, 20),
+        );
+        final olderDbEntity = createDbEntityFromTask(olderTask);
+        final newerDbEntity = createDbEntityFromTask(newerTask);
+
+        // Return in reverse order to test sorting
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [newerDbEntity, olderDbEntity]);
+        when(() => mockDbLinked.getLinkedEntities(any())).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(
+            id: any(named: 'id'),
+          ),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result.length, equals(2));
+        expect(result[0].title, equals('Older Task'));
+        expect(result[1].title, equals('Newer Task'));
+      });
+    });
+
+    group('buildLinkedToContext', () {
+      test('returns empty list when task has no parent links', () async {
+        when(
+          () => mockDbLinked.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
+
+        final result = await repositoryLinked.buildLinkedToContext(taskId);
+
+        expect(result, isEmpty);
+        verify(() => mockDbLinked.getLinkedEntities(taskId)).called(1);
+      });
+
+      test('returns context for parent tasks this task links to', () async {
+        final parentTask = createTestTask(
+          id: parentTaskId,
+          title: 'Parent Epic',
+          status: TaskStatus.inProgress(
+            id: 'status-parent',
+            createdAt: createdDate,
+            utcOffset: 0,
+          ),
+          estimate: const Duration(hours: 40),
+        );
+
+        // Create time entry for 12 hours 30 minutes
+        final timeEntry = createJournalEntryWithDuration(
+          id: 'work-entry',
+          duration: const Duration(hours: 12, minutes: 30),
+        );
+
+        when(
+          () => mockDbLinked.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [parentTask]);
+        // Bulk fetch returns entities for time calculation
+        when(() => mockDbLinked.getBulkLinkedEntities({parentTaskId})).thenAnswer(
+          (_) async => {
+            parentTaskId: [timeEntry],
+          },
+        );
+
+        final result = await repositoryLinked.buildLinkedToContext(taskId);
+
+        expect(result.length, equals(1));
+        expect(result[0].id, equals(parentTaskId));
+        expect(result[0].title, equals('Parent Epic'));
+        expect(result[0].estimate, equals('40:00'));
+        expect(result[0].timeSpent, equals('12:30'));
+      });
+
+      test('filters non-Task entities from results', () async {
+        final parentTask = createTestTask(
+          id: parentTaskId,
+          title: 'Parent Task',
+        );
+        final journalEntry = JournalEntry(
+          meta: Metadata(
+            id: 'entry-1',
+            dateFrom: createdDate,
+            dateTo: createdDate,
+            createdAt: createdDate,
+            updatedAt: createdDate,
+          ),
+          entryText: const EntryText(plainText: 'Some entry'),
+        );
+
+        when(
+          () => mockDbLinked.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [parentTask, journalEntry]);
+        when(
+          () => mockDbLinked.getLinkedEntities(parentTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(
+            id: parentTaskId,
+          ),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
+
+        final result = await repositoryLinked.buildLinkedToContext(taskId);
+
+        expect(result.length, equals(1));
+        expect(result[0].id, equals(parentTaskId));
+      });
+    });
+
+    group('buildLinkedTasksJson', () {
+      test('returns JSON with empty arrays when no linked tasks', () async {
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDbLinked.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
+
+        final result = await repositoryLinked.buildLinkedTasksJson(taskId);
+        final parsed = jsonDecode(result) as Map<String, dynamic>;
+
+        expect(parsed['linked_from'], isA<List<dynamic>>());
+        expect((parsed['linked_from'] as List<dynamic>).isEmpty, isTrue);
+        expect(parsed['linked_to'], isA<List<dynamic>>());
+        expect((parsed['linked_to'] as List<dynamic>).isEmpty, isTrue);
+        expect(parsed['note'], isNull);
+      });
+
+      test('does not include note (note is added by prompt builder)', () async {
+        final childTask = createTestTask(
+          id: childTaskId,
+          title: 'Child Task',
+        );
+        final childDbEntity = createDbEntityFromTask(childTask);
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [childDbEntity]);
+        when(
+          () => mockDbLinked.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDbLinked.getBulkLinkedEntities({childTaskId}),
+        ).thenAnswer((_) async => {childTaskId: <JournalEntity>[]});
+
+        final result = await repositoryLinked.buildLinkedTasksJson(taskId);
+        final parsed = jsonDecode(result) as Map<String, dynamic>;
+
+        // Note is intentionally NOT included in repository output
+        // The prompt builder is responsible for adding contextual notes
+        expect(parsed['note'], isNull);
+        expect(parsed['linked_from'], isNotEmpty);
+      });
+
+      test('produces valid JSON that can be parsed', () async {
+        final childTask = createTestTask(
+          id: childTaskId,
+          title: 'Child Task',
+          labelIds: ['label-1'],
+          languageCode: 'de',
+        );
+        final parentTask = createTestTask(
+          id: parentTaskId,
+          title: 'Parent Epic',
+        );
+        final childDbEntity = createDbEntityFromTask(childTask);
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [childDbEntity]);
+        when(
+          () => mockDbLinked.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [parentTask]);
+        when(
+          () => mockDbLinked.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDbLinked.getLinkedEntities(parentTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(
+            id: any(named: 'id'),
+          ),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
+
+        // Use cache service for label lookups
+        when(() => mockCacheServiceLinked.getLabelById('label-1')).thenReturn(
+          LabelDefinition(
+            id: 'label-1',
+            name: 'Test Label',
+            color: '#FF0000',
+            createdAt: createdDate,
+            updatedAt: createdDate,
+            vectorClock: null,
+            private: false,
+          ),
+        );
+
+        final result = await repositoryLinked.buildLinkedTasksJson(taskId);
+
+        expect(() => jsonDecode(result), returnsNormally);
+
+        final parsed = jsonDecode(result) as Map<String, dynamic>;
+        expect(parsed['linked_from'], isA<List<dynamic>>());
+        expect(parsed['linked_to'], isA<List<dynamic>>());
+        expect((parsed['linked_from'] as List<dynamic>).length, equals(1));
+        expect((parsed['linked_to'] as List<dynamic>).length, equals(1));
+      });
+    });
+
+    group('_getLatestTaskSummary', () {
+      test('returns null when task has no AI summaries', () async {
+        final childTask = createTestTask(
+          id: childTaskId,
+          title: 'Child Task',
+        );
+        final childDbEntity = createDbEntityFromTask(childTask);
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [childDbEntity]);
+        when(
+          () => mockDbLinked.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(id: childTaskId),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result.length, equals(1));
+        expect(result[0].latestSummary, isNull);
+      });
+
+      test('returns latest summary when AI response exists', () async {
+        final childTask = createTestTask(
+          id: childTaskId,
+          title: 'Child Task',
+        );
+        final childDbEntity = createDbEntityFromTask(childTask);
+
+        final summaryEntry = AiResponseEntry(
+          meta: Metadata(
+            id: 'summary-1',
+            dateFrom: testDate,
+            dateTo: testDate,
+            createdAt: testDate,
+            updatedAt: testDate,
+          ),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: 'thoughts',
+            response:
+                'This is the task summary with\n## Links\n- [PR #123](https://github.com/org/repo/pull/123)',
+            // ignore: deprecated_member_use_from_same_package
+            type: AiResponseType.taskSummary,
+          ),
+        );
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [childDbEntity]);
+        // Bulk fetch returns the AI summary entry
+        when(() => mockDbLinked.getBulkLinkedEntities({childTaskId})).thenAnswer(
+          (_) async => {
+            childTaskId: [summaryEntry],
+          },
+        );
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result.length, equals(1));
+        expect(result[0].latestSummary, isNotNull);
+        expect(result[0].latestSummary, contains('task summary'));
+        expect(result[0].latestSummary, contains('[PR #123]'));
+      });
+
+      test('returns most recent summary when multiple exist', () async {
+        final childTask = createTestTask(
+          id: childTaskId,
+          title: 'Child Task',
+        );
+        final childDbEntity = createDbEntityFromTask(childTask);
+
+        final olderSummary = AiResponseEntry(
+          meta: Metadata(
+            id: 'summary-old',
+            dateFrom: DateTime(2025, 12, 10),
+            dateTo: DateTime(2025, 12, 10),
+            createdAt: DateTime(2025, 12, 10),
+            updatedAt: DateTime(2025, 12, 10),
+          ),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: 'thoughts',
+            response: 'Old summary',
+            // ignore: deprecated_member_use_from_same_package
+            type: AiResponseType.taskSummary,
+          ),
+        );
+
+        final newerSummary = AiResponseEntry(
+          meta: Metadata(
+            id: 'summary-new',
+            dateFrom: DateTime(2025, 12, 20),
+            dateTo: DateTime(2025, 12, 20),
+            createdAt: DateTime(2025, 12, 20),
+            updatedAt: DateTime(2025, 12, 20),
+          ),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: 'thoughts',
+            response: 'Newer summary - this is the latest',
+            // ignore: deprecated_member_use_from_same_package
+            type: AiResponseType.taskSummary,
+          ),
+        );
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [childDbEntity]);
+        // Return in wrong order to test sorting
+        when(() => mockDbLinked.getBulkLinkedEntities({childTaskId})).thenAnswer(
+          (_) async => {
+            childTaskId: [olderSummary, newerSummary],
+          },
+        );
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result.length, equals(1));
+        expect(
+          result[0].latestSummary,
+          equals('Newer summary - this is the latest'),
+        );
+      });
+
+      test('ignores non-taskSummary AI responses', () async {
+        final childTask = createTestTask(
+          id: childTaskId,
+          title: 'Child Task',
+        );
+        final childDbEntity = createDbEntityFromTask(childTask);
+
+        final imageAnalysis = AiResponseEntry(
+          meta: Metadata(
+            id: 'image-analysis',
+            dateFrom: testDate,
+            dateTo: testDate,
+            createdAt: testDate,
+            updatedAt: testDate,
+          ),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: 'system',
+            prompt: 'prompt',
+            thoughts: 'thoughts',
+            response: 'This is image analysis, not a summary',
+            type: AiResponseType.imageAnalysis,
+          ),
+        );
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [childDbEntity]);
+        when(
+          () => mockDbLinked.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => [imageAnalysis]);
+        when(
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(id: childTaskId),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result.length, equals(1));
+        expect(result[0].latestSummary, isNull);
+      });
+    });
+
+    group('label resolution', () {
+      test('resolves label IDs to names', () async {
+        final childTask = createTestTask(
+          id: childTaskId,
+          title: 'Child Task',
+          labelIds: ['label-1', 'label-2'],
+        );
+        final childDbEntity = createDbEntityFromTask(childTask);
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [childDbEntity]);
+        when(
+          () => mockDbLinked.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(id: childTaskId),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
+
+        // Use cache service for label lookups (O(1) per label)
+        when(() => mockCacheServiceLinked.getLabelById('label-1')).thenReturn(
+          LabelDefinition(
+            id: 'label-1',
+            name: 'Frontend',
+            color: '#FF0000',
+            createdAt: createdDate,
+            updatedAt: createdDate,
+            vectorClock: null,
+            private: false,
+          ),
+        );
+        when(() => mockCacheServiceLinked.getLabelById('label-2')).thenReturn(
+          LabelDefinition(
+            id: 'label-2',
+            name: 'Bug',
+            color: '#00FF00',
+            createdAt: createdDate,
+            updatedAt: createdDate,
+            vectorClock: null,
+            private: false,
+          ),
+        );
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result.length, equals(1));
+        expect(result[0].labels.length, equals(2));
+        final labelNames = result[0].labels.map((l) => l['name']).toSet();
+        expect(labelNames, contains('Frontend'));
+        expect(labelNames, contains('Bug'));
+      });
+
+      test('returns empty labels list when task has no labels', () async {
+        final childTask = createTestTask(
+          id: childTaskId,
+          title: 'Child Task',
+        );
+        final childDbEntity = createDbEntityFromTask(childTask);
+
+        when(
+          () => mockDbLinked.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => [childDbEntity]);
+        when(
+          () => mockDbLinked.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(id: childTaskId),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
+
+        final result = await repositoryLinked.buildLinkedFromContext(taskId);
+
+        expect(result.length, equals(1));
+        expect(result[0].labels, isEmpty);
+      });
+    });
   });
 }

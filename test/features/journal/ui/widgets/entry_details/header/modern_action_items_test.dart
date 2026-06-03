@@ -3,22 +3,40 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill_localizations;
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
+import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/media_file_actions.dart';
@@ -35,6 +53,7 @@ import 'package:share_plus_platform_interface/share_plus_platform_interface.dart
 
 import '../../../../../../helpers/fake_entry_controller.dart';
 import '../../../../../../mocks/mocks.dart';
+import '../../../../../../test_data/test_data.dart';
 import '../../../../../../test_helper.dart';
 import '../../../../../../widget_test_utils.dart';
 
@@ -1599,6 +1618,1008 @@ void main() {
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
   });
+
+  group('ModernGenerateCoverArtItem - Satellite Tests', () {
+    final now = DateTime(2025, 12, 31, 12);
+
+    late MockEditorStateService mockEditorStateServiceSrc;
+    late MockPersistenceLogic mockPersistenceLogicSrc;
+    late MockJournalDb mockJournalDbSrc;
+    late MockUpdateNotifications mockUpdateNotificationsSrc;
+
+    setUpAll(() {
+      mockEditorStateServiceSrc = MockEditorStateService();
+      mockPersistenceLogicSrc = MockPersistenceLogic();
+      mockJournalDbSrc = MockJournalDb();
+      mockUpdateNotificationsSrc = MockUpdateNotifications();
+
+      when(
+        () => mockUpdateNotificationsSrc.updateStream,
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+
+      getIt.allowReassignment = true;
+      getIt
+        ..registerSingleton<EditorStateService>(mockEditorStateServiceSrc)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogicSrc)
+        ..registerSingleton<JournalDb>(mockJournalDbSrc)
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotificationsSrc);
+    });
+
+    tearDownAll(() async {
+      await getIt.reset();
+    });
+
+    JournalAudio buildAudioEntrySrc({String id = 'audio-1'}) {
+      return JournalAudio(
+        meta: Metadata(
+          id: id,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: AudioData(
+          audioFile: 'test.m4a',
+          audioDirectory: '/tmp',
+          dateFrom: now,
+          dateTo: now,
+          duration: const Duration(seconds: 30),
+        ),
+      );
+    }
+
+    Task buildTaskSrc({String id = 'task-1'}) {
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+          categoryId: 'category-1',
+        ),
+        data: TaskData(
+          title: 'Test Task',
+          checklistIds: const [],
+          status: TaskStatus.open(
+            id: 'status',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          statusHistory: const [],
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+    }
+
+    JournalImage buildImageEntrySrc({String id = 'image-1'}) {
+      return JournalImage(
+        meta: Metadata(
+          id: id,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          imageId: 'img-uuid',
+          imageFile: 'test.jpg',
+          imageDirectory: '/tmp',
+          capturedAt: now,
+        ),
+      );
+    }
+
+    testWidgets('shows SizedBox.shrink for non-audio entry', (tester) async {
+      final imageEntry = buildImageEntrySrc();
+      final task = buildTaskSrc();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            createEntryControllerOverride(imageEntry),
+            createEntryControllerOverride(task),
+          ],
+          child: const Scaffold(
+            body: ModernGenerateCoverArtItem(
+              entryId: 'image-1',
+              linkedFromId: 'task-1',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+      expect(find.byType(SizedBox), findsWidgets);
+    });
+
+    testWidgets('shows SizedBox.shrink when linkedFromId is null', (
+      tester,
+    ) async {
+      final audioEntry = buildAudioEntrySrc();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            createEntryControllerOverride(audioEntry),
+          ],
+          child: const Scaffold(
+            body: ModernGenerateCoverArtItem(
+              entryId: 'audio-1',
+              linkedFromId: null,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets('shows SizedBox.shrink when linked entry is not a Task', (
+      tester,
+    ) async {
+      final audioEntry = buildAudioEntrySrc();
+      final linkedImage = buildImageEntrySrc(id: 'linked-image');
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            createEntryControllerOverride(audioEntry),
+            createEntryControllerOverride(linkedImage),
+          ],
+          child: const Scaffold(
+            body: ModernGenerateCoverArtItem(
+              entryId: 'audio-1',
+              linkedFromId: 'linked-image',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets('renders action item when audio linked to task', (
+      tester,
+    ) async {
+      final audioEntry = buildAudioEntrySrc();
+      final task = buildTaskSrc();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(audioEntry),
+            createEntryControllerOverride(task),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernGenerateCoverArtItem(
+                entryId: 'audio-1',
+                linkedFromId: 'task-1',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(ModernGenerateCoverArtItem), findsOneWidget);
+      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
+    });
+
+    testWidgets('action item displays correct labels', (tester) async {
+      final audioEntry = buildAudioEntrySrc();
+      final task = buildTaskSrc();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(audioEntry),
+            createEntryControllerOverride(task),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernGenerateCoverArtItem(
+                entryId: 'audio-1',
+                linkedFromId: 'task-1',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Generate Cover Art'), findsOneWidget);
+      expect(find.text('Create image from voice description'), findsOneWidget);
+    });
+
+    test('requires entryId parameter', () {
+      const widget = ModernGenerateCoverArtItem(
+        entryId: 'audio-1',
+        linkedFromId: 'task-1',
+      );
+
+      expect(widget.entryId, 'audio-1');
+      expect(widget.linkedFromId, 'task-1');
+    });
+
+    test('linkedFromId can be null', () {
+      const widget = ModernGenerateCoverArtItem(
+        entryId: 'audio-1',
+        linkedFromId: null,
+      );
+
+      expect(widget.entryId, 'audio-1');
+      expect(widget.linkedFromId, isNull);
+    });
+  });
+
+  group('ModernLabelsItem - Satellite Tests', () {
+    late MockEntitiesCacheService cacheService;
+    late MockEditorStateService editorStateService;
+    late MockJournalDb journalDb;
+    late MockUpdateNotifications updateNotifications;
+    late _MockLabelsRepository repository;
+
+    setUpAll(() {
+      registerFallbackValue(testLabelDefinition1);
+    });
+
+    setUp(() async {
+      cacheService = MockEntitiesCacheService();
+      editorStateService = MockEditorStateService();
+      journalDb = MockJournalDb();
+      updateNotifications = MockUpdateNotifications();
+      repository = _MockLabelsRepository();
+
+      await getIt.reset();
+      getIt
+        ..registerSingleton<EntitiesCacheService>(cacheService)
+        ..registerSingleton<EditorStateService>(editorStateService)
+        ..registerSingleton<JournalDb>(journalDb)
+        ..registerSingleton<UpdateNotifications>(updateNotifications);
+
+      when(() => cacheService.showPrivateEntries).thenReturn(true);
+      when(
+        () => cacheService.filterLabelsForCategory(any(), any()),
+      ).thenAnswer(
+        (invocation) =>
+            invocation.positionalArguments.first as List<LabelDefinition>,
+      );
+      when(
+        () => cacheService.getLabelById(testLabelDefinition1.id),
+      ).thenReturn(testLabelDefinition1);
+      when(
+        () => cacheService.getLabelById(testLabelDefinition2.id),
+      ).thenReturn(testLabelDefinition2);
+      when(
+        () => cacheService.sortedLabels,
+      ).thenReturn([testLabelDefinition1, testLabelDefinition2]);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    /// Builds a widget tree that properly handles the Navigator.pop() call
+    /// that ModernLabelsItem makes when opening the labels modal.
+    ProviderScope buildWrapper(JournalEntity entry) {
+      return ProviderScope(
+        overrides: [
+          entryControllerProvider(id: entry.id).overrideWith(
+            () => _TestEntryController(entry),
+          ),
+          labelsStreamProvider.overrideWith(
+            (ref) => Stream<List<LabelDefinition>>.value(
+              [testLabelDefinition1, testLabelDefinition2],
+            ),
+          ),
+          labelsRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: MediaQuery(
+          data: const MediaQueryData(size: Size(390, 844)),
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              FormBuilderLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (dialogContext) => Dialog(
+                        child: SingleChildScrollView(
+                          child: ModernLabelsItem(entryId: entry.id),
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    /// Simple wrapper for testing widget visibility only (no modal interaction)
+    ProviderScope buildSimpleWrapper(JournalEntity entry) {
+      return ProviderScope(
+        overrides: [
+          entryControllerProvider(id: entry.id).overrideWith(
+            () => _TestEntryController(entry),
+          ),
+          labelsStreamProvider.overrideWith(
+            (ref) => Stream<List<LabelDefinition>>.value(
+              [testLabelDefinition1, testLabelDefinition2],
+            ),
+          ),
+          labelsRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: MediaQuery(
+          data: const MediaQueryData(size: Size(390, 844)),
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              FormBuilderLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ModernLabelsItem(entryId: entry.id),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    JournalEntity textEntryWithLabels(List<String> labelIds) {
+      final testDate = DateTime(2023);
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'entry-123',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          labelIds: labelIds,
+        ),
+      );
+    }
+
+    JournalEntity taskWithLabels(List<String> labelIds) {
+      final testDate = DateTime(2023);
+      return JournalEntity.task(
+        meta: Metadata(
+          id: 'task-123',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          labelIds: labelIds,
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: testDate.timeZoneOffset.inMinutes,
+          ),
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: [],
+          title: 'Sample task',
+        ),
+      );
+    }
+
+    group('ModernLabelsItem visibility', () {
+      testWidgets('shows for non-task entries', (tester) async {
+        final entry = textEntryWithLabels(const []);
+
+        await tester.pumpWidget(buildSimpleWrapper(entry));
+        await tester.pump();
+
+        expect(find.text('Labels'), findsOneWidget);
+      });
+
+      testWidgets('is hidden for Task entries', (tester) async {
+        final task = taskWithLabels(const []);
+
+        await tester.pumpWidget(buildSimpleWrapper(task));
+        await tester.pump();
+
+        expect(find.text('Labels'), findsNothing);
+      });
+
+      testWidgets('shows subtitle text', (tester) async {
+        final entry = textEntryWithLabels(const []);
+
+        await tester.pumpWidget(buildSimpleWrapper(entry));
+        await tester.pump();
+
+        expect(
+          find.text('Assign labels to organize this entry'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows label icon', (tester) async {
+        final entry = textEntryWithLabels(const []);
+
+        await tester.pumpWidget(buildSimpleWrapper(entry));
+        await tester.pump();
+
+        expect(find.byType(Icon), findsWidgets);
+      });
+    });
+
+    group('Labels modal opening', () {
+      testWidgets('tapping opens labels modal', (tester) async {
+        final entry = textEntryWithLabels(['label-1']);
+        when(
+          () => repository.setLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
+      });
+
+      testWidgets('modal shows search bar', (tester) async {
+        final entry = textEntryWithLabels(const []);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TextField), findsOneWidget);
+      });
+
+      testWidgets('passes entry categoryId to selector', (tester) async {
+        final entry = textEntryWithLabels(const []).copyWith(
+          meta:
+              textEntryWithLabels(const []).meta.copyWith(categoryId: 'work'),
+        );
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        final content = tester.widget<LabelSelectionSliverContent>(
+          find.byType(LabelSelectionSliverContent),
+        );
+        expect(content.categoryId, equals('work'));
+      });
+
+      testWidgets('passes null categoryId when entry has none', (tester) async {
+        final entry = textEntryWithLabels(const []).copyWith(
+          meta: textEntryWithLabels(const []).meta.copyWith(categoryId: null),
+        );
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        final content = tester.widget<LabelSelectionSliverContent>(
+          find.byType(LabelSelectionSliverContent),
+        );
+        expect(content.categoryId, isNull);
+      });
+    });
+
+    group('Modal actions', () {
+      testWidgets('modal shows cancel button', (tester) async {
+        final entry = textEntryWithLabels(const []);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        expect(find.widgetWithText(OutlinedButton, 'Cancel'), findsOneWidget);
+      });
+
+      testWidgets('apply button saves labels and closes modal', (tester) async {
+        final entry = textEntryWithLabels(const []);
+        when(
+          () => repository.setLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Urgent'));
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => repository.setLabels(
+            journalEntityId: 'entry-123',
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).called(1);
+
+        expect(find.widgetWithText(FilledButton, 'Apply'), findsNothing);
+      });
+
+      testWidgets('shows error snackbar when apply fails', (tester) async {
+        final entry = textEntryWithLabels(const []);
+        when(
+          () => repository.setLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Failed to update labels'), findsWidgets);
+        expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
+      });
+    });
+
+    group('Search functionality', () {
+      testWidgets('search filters labels', (tester) async {
+        final entry = textEntryWithLabels(const []);
+        when(
+          () => repository.setLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        final searchField = find.descendant(
+          of: find.byType(TextField),
+          matching: find.byType(EditableText),
+        );
+        await tester.enterText(searchField, 'Urgent');
+        await tester.pump();
+
+        expect(find.byType(CheckboxListTile), findsOneWidget);
+      });
+
+      testWidgets('clearing search shows all labels', (tester) async {
+        final entry = textEntryWithLabels(const []);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        final searchField = find.descendant(
+          of: find.byType(TextField),
+          matching: find.byType(EditableText),
+        );
+        await tester.enterText(searchField, 'test');
+        await tester.pump();
+
+        await tester.enterText(searchField, '');
+        await tester.pump();
+
+        expect(find.text('Urgent'), findsOneWidget);
+        expect(find.text('Backlog'), findsOneWidget);
+      });
+    });
+
+    group('Label selection', () {
+      testWidgets('shows initially selected labels as checked', (tester) async {
+        final entry = textEntryWithLabels(['label-1']);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        final checkbox = tester.widget<CheckboxListTile>(
+          find.ancestor(
+            of: find.text('Urgent'),
+            matching: find.byType(CheckboxListTile),
+          ),
+        );
+        expect(checkbox.value, isTrue);
+      });
+
+      testWidgets('toggles label selection on tap', (tester) async {
+        final entry = textEntryWithLabels(const []);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        var checkbox = tester.widget<CheckboxListTile>(
+          find.ancestor(
+            of: find.text('Urgent'),
+            matching: find.byType(CheckboxListTile),
+          ),
+        );
+        expect(checkbox.value, isFalse);
+
+        await tester.tap(find.text('Urgent'));
+        await tester.pump();
+
+        checkbox = tester.widget<CheckboxListTile>(
+          find.ancestor(
+            of: find.text('Urgent'),
+            matching: find.byType(CheckboxListTile),
+          ),
+        );
+        expect(checkbox.value, isTrue);
+      });
+    });
+
+    group('Entry with existing labels', () {
+      testWidgets('passes existing labelIds to selector', (tester) async {
+        final entry = textEntryWithLabels(['label-1', 'label-2']);
+
+        await tester.pumpWidget(buildWrapper(entry));
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Labels'));
+        await tester.pumpAndSettle();
+
+        final content = tester.widget<LabelSelectionSliverContent>(
+          find.byType(LabelSelectionSliverContent),
+        );
+        expect(content.initialLabelIds, containsAll(['label-1', 'label-2']));
+      });
+    });
+  });
+
+  group('ModernRateSessionItem - Satellite Tests', () {
+    const entryId = 'time-entry-1';
+
+    testWidgets(
+      'shows "Rate Session" with outline icon when no rating exists',
+      (tester) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(true),
+              ),
+              ratingControllerProvider(
+                targetId: entryId,
+              ).overrideWith(_FakeNoRatingController.new),
+            ],
+            child: const ModernRateSessionItem(entryId: entryId),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(ModernRateSessionItem));
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        expect(find.byIcon(Icons.star_rate_outlined), findsOneWidget);
+        expect(
+          find.text(context.messages.sessionRatingRateAction),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('hidden when feature flag is disabled', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(false),
+            ),
+            ratingControllerProvider(
+              targetId: entryId,
+            ).overrideWith(_FakeNoRatingController.new),
+          ],
+          child: const ModernRateSessionItem(entryId: entryId),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets(
+      'shows "View Rating" with filled icon when rating exists',
+      (tester) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(true),
+              ),
+              ratingControllerProvider(
+                targetId: entryId,
+              ).overrideWith(_FakeHasRatingController.new),
+            ],
+            child: const ModernRateSessionItem(entryId: entryId),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(ModernRateSessionItem));
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
+        expect(
+          find.text(context.messages.sessionRatingViewAction),
+          findsOneWidget,
+        );
+      },
+    );
+  });
+
+  group('ModernCopyEntryTextItem - ', () {
+    setUpAll(() async {
+      getIt.allowReassignment = true;
+      getIt
+        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
+        ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
+        ..registerSingleton<UpdateNotifications>(UpdateNotifications())
+        ..registerSingleton<EditorStateService>(EditorStateService());
+    });
+
+    tearDownAll(() async {
+      await getIt.reset();
+    });
+
+    testWidgets('Copy as text triggers copy', (tester) async {
+      final controller = _CopyTextEntryController(initialText: 'Hello');
+      String? last;
+      final fakeClipboard = AppClipboard(
+        writePlainText: (t) async {
+          last = t;
+        },
+      );
+
+      await tester.pumpWidget(
+        _wrapWithCopyApp(
+          const Column(
+            children: [
+              ModernCopyEntryTextItem(entryId: 'e1', markdown: false),
+            ],
+          ),
+          overrides: [
+            entryControllerProvider(id: 'e1').overrideWith(() => controller),
+            appClipboardProvider.overrideWithValue(fakeClipboard),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Copy as text'), findsOneWidget);
+
+      await tester.tap(find.text('Copy as text'));
+      await tester.pump();
+
+      expect(controller.plainCalled, isTrue);
+      expect(last, 'Hello\n');
+    });
+
+    testWidgets('Copy as Markdown triggers copy', (tester) async {
+      final controller = _CopyTextEntryController(initialText: 'Hello');
+      String? last;
+      final fakeClipboard = AppClipboard(
+        writePlainText: (t) async {
+          last = t;
+        },
+      );
+
+      await tester.pumpWidget(
+        _wrapWithCopyApp(
+          const Column(
+            children: [
+              ModernCopyEntryTextItem(entryId: 'e1', markdown: true),
+            ],
+          ),
+          overrides: [
+            entryControllerProvider(id: 'e1').overrideWith(() => controller),
+            appClipboardProvider.overrideWithValue(fakeClipboard),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Copy as Markdown'), findsOneWidget);
+
+      await tester.tap(find.text('Copy as Markdown'));
+      await tester.pump();
+
+      expect(controller.markdownCalled, isTrue);
+      expect(last, 'Hello');
+    });
+
+    testWidgets('Copy actions hidden when no text', (tester) async {
+      final controller = _CopyTextEntryController();
+
+      await tester.pumpWidget(
+        _wrapWithCopyApp(
+          const Column(
+            children: [
+              ModernCopyEntryTextItem(entryId: 'e2', markdown: false),
+              ModernCopyEntryTextItem(entryId: 'e2', markdown: true),
+            ],
+          ),
+          overrides: [
+            entryControllerProvider(id: 'e2').overrideWith(() => controller),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Copy as text'), findsNothing);
+      expect(find.text('Copy as Markdown'), findsNothing);
+    });
+
+    testWidgets('Editor toolbar builds (coverage)', (tester) async {
+      final controller = _CopyTextEntryController(initialText: 'Toolbar');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(id: 'e3').overrideWith(() => controller),
+          ],
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: const [
+              ...AppLocalizations.localizationsDelegates,
+              quill_localizations.FlutterQuillLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(
+              body: EditorWidget(entryId: 'e3'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuillSimpleToolbar), findsOneWidget);
+    });
+
+    testWidgets('InitialModalPageContent includes copy actions', (
+      tester,
+    ) async {
+      final controller = _CopyTextEntryController(initialText: 'Hello');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(id: 'e4').overrideWith(() => controller),
+          ],
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: const [
+              ...AppLocalizations.localizationsDelegates,
+              quill_localizations.FlutterQuillLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: InitialModalPageContent(
+                  entryId: 'e4',
+                  linkedFromId: null,
+                  inLinkedEntries: false,
+                  link: null,
+                  pageIndexNotifier: ValueNotifier(0),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Copy as text'), findsOneWidget);
+      expect(find.text('Copy as Markdown'), findsOneWidget);
+    });
+  });
 }
 
 /// Fake [SharePlatform] that records the [ShareParams] passed to [share]
@@ -1771,4 +2792,91 @@ class _TrackingLinkedEntriesController extends LinkedEntriesController {
 
   @override
   Future<void> removeLink({required String toId}) async {}
+}
+
+/// EntryController that returns a fixed entry (used by ModernLabelsItem tests).
+class _TestEntryController extends EntryController {
+  _TestEntryController(this.entry);
+
+  final JournalEntity entry;
+
+  @override
+  Future<EntryState?> build({required String id}) async {
+    return EntryState.saved(
+      entryId: id,
+      entry: entry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+    );
+  }
+}
+
+class _MockLabelsRepository extends Mock implements LabelsRepository {}
+
+// A lightweight test controller that returns a minimal entry state and
+// exposes the base copy methods via super.* for coverage.
+class _CopyTextEntryController extends EntryController {
+  _CopyTextEntryController({this.initialText = ''});
+
+  final String initialText;
+
+  bool plainCalled = false;
+  bool markdownCalled = false;
+
+  @override
+  Future<EntryState?> build({required String id}) async {
+    // Initialize controller with initial text
+    controller = QuillController.basic();
+    if (initialText.isNotEmpty) {
+      controller.document.insert(0, initialText);
+    }
+
+    final fixed = DateTime.utc(2023);
+    final entry = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: fixed,
+        updatedAt: fixed,
+        dateFrom: fixed,
+        dateTo: fixed,
+      ),
+    );
+
+    return EntryState.saved(
+      entryId: id,
+      entry: entry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: true,
+    );
+  }
+
+  @override
+  Future<void> copyEntryTextPlain() async {
+    plainCalled = true;
+    await super.copyEntryTextPlain();
+  }
+
+  @override
+  Future<void> copyEntryTextMarkdown() async {
+    markdownCalled = true;
+    await super.copyEntryTextMarkdown();
+  }
+}
+
+Widget _wrapWithCopyApp(Widget child, {List<Override> overrides = const []}) {
+  return ProviderScope(
+    overrides: overrides,
+    child: MaterialApp(
+      theme: resolveTestTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Navigator(
+        onGenerateRoute: (settings) => MaterialPageRoute(
+          builder: (_) => Scaffold(body: child),
+        ),
+      ),
+    ),
+  );
 }

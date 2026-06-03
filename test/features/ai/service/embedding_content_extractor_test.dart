@@ -2,12 +2,28 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
+
+/// Generators for `extractTaskText` property tests.
+extension _AnyExtractTask on glados.Any {
+  /// Short titles (1–25 chars) from safe ASCII letters.
+  glados.Generator<String> get taskTitle =>
+      glados.any.stringOf('abcdefghijklmnopqrstuvwxyzABCDEFG ');
+
+  /// Label names: each 3–10 chars.
+  glados.Generator<String> get labelName =>
+      glados.any.stringOf('abcdefghijklmnopqrstuvwxyz');
+
+  /// Lists of 0–4 label names.
+  glados.Generator<List<String>> get labelNameList =>
+      glados.ListAnys(this).listWithLengthInRange(0, 4, labelName);
+}
 
 /// Builds a minimal [Metadata] for test entities.
 Metadata _meta({String id = 'test-id'}) => Metadata(
@@ -475,5 +491,81 @@ void main() {
       );
       expect(EmbeddingContentExtractor.extractText(entry), isNull);
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados properties for extractTaskText threshold and composition.
+  // -------------------------------------------------------------------------
+  group('extractTaskText — Glados properties', () {
+    glados.Glados2(
+      glados.any.taskTitle,
+      glados.any.labelNameList,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'returns null iff assembled text is below kMinEmbeddingTextLength',
+      (title, labels) {
+        final result = EmbeddingContentExtractor.extractTaskText(
+          title: title,
+          labelNames: labels,
+        );
+        final assembled = StringBuffer(title);
+        if (labels.isNotEmpty) {
+          assembled
+            ..write('\n')
+            ..write('Labels: ')
+            ..write(labels.join(', '));
+        }
+        final trimmed = assembled.toString().trim();
+        if (trimmed.length < kMinEmbeddingTextLength) {
+          expect(result, isNull,
+              reason: 'Short text ("$trimmed") should yield null');
+        } else {
+          expect(result, isNotNull,
+              reason: 'Long-enough text ("$trimmed") should not be null');
+          expect(result, trimmed);
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.taskTitle,
+      glados.any.labelNameList,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'non-null result always contains the title',
+      (title, labels) {
+        final result = EmbeddingContentExtractor.extractTaskText(
+          title: title,
+          labelNames: labels,
+        );
+        if (result != null) {
+          expect(result, startsWith(title.trim()),
+              reason: 'Result must start with the trimmed title');
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.taskTitle,
+      glados.any.labelNameList,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'non-null result contains each label when labels are non-empty',
+      (title, labels) {
+        final result = EmbeddingContentExtractor.extractTaskText(
+          title: title,
+          labelNames: labels,
+        );
+        if (result != null && labels.isNotEmpty) {
+          for (final label in labels) {
+            expect(result, contains(label),
+                reason: 'Result must contain label "$label"');
+          }
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

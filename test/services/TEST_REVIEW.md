@@ -114,7 +114,7 @@ All existing Glados tests in this scope correctly carry `tags: 'glados'`.
 
 - [ ] **[HIGH]** `lib/services/dev_logger.dart` — **No test file.** `DevLogger` has non-trivial behavior: `suppressOutput` flag, `capturedLogs` accumulation regardless of suppression, `warning()` prepending `'WARNING: '`, `error()` prepending `'ERROR: '` and appending the stack trace. These should be tested directly rather than incidentally through `logging_service_test.dart`.
 
-- [ ] **[HIGH]** `lib/services/logging_domains.dart` — **No test file.** While the file is mostly enum data, it encodes structural contracts (`wireName == name`, `flagName` format, `routesToSyncFile` gate, `defaultEnabled` contract) that could silently break on enum additions.
+- [x] **[HIGH]** `lib/services/logging_domains.dart` — **No test file.** While the file is mostly enum data, it encodes structural contracts (`wireName == name`, `flagName` format, `routesToSyncFile` gate, `defaultEnabled` contract) that could silently break on enum additions.
 
 - [ ] **[MED]** `lib/services/share_service.dart` — **No test file.** The file is a 9-line wrapper over `SharePlus.instance.share`. Given that it delegates entirely to a platform plugin, testing requires a mock of `SharePlus.instance`. The service is simple enough that a single test asserting the correct `ShareParams` are forwarded covers it. Low effort, low risk if left untested.
 
@@ -130,9 +130,9 @@ All existing Glados tests in this scope correctly carry `tags: 'glados'`.
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/services/logging_service_test.dart` lines 691, 708, 746 — Three tests in the `'buffered file writing (non-test env)'` group use `await Future.delayed(const Duration(milliseconds: 500/200/300))` to wait for async file writes. At 500 ms + 200 ms + 300 ms that is **at least 1 000 ms of real wall-clock time** in a non-fakeAsync context. Since the service already exposes `flushAllForTest()` (used at lines 658 and 672), these three tests should call `await bufferedLogging.flushAllForTest()` instead. **Impact: -1 s+ per suite run.**
+- [x] **[HIGH]** `test/services/logging_service_test.dart` lines 691, 708, 746 — Three tests in the `'buffered file writing (non-test env)'` group use `await Future.delayed(const Duration(milliseconds: 500/200/300))` to wait for async file writes. At 500 ms + 200 ms + 300 ms that is **at least 1 000 ms of real wall-clock time** in a non-fakeAsync context. Since the service already exposes `flushAllForTest()` (used at lines 658 and 672), these three tests should call `await bufferedLogging.flushAllForTest()` instead. **Impact: -1 s+ per suite run.**
 
-- [ ] **[HIGH]** `test/services/logging_service_test.dart` lines 362, 376 — `await Future.delayed(const Duration(milliseconds: 10))` twice in the config-flag toggle test. Although short individually, this is real wall time in an async test with real streams. Replacing with `fakeAsync` and `async.flushMicrotasks()` eliminates the delays and removes flakiness risk. **Impact: -20 ms per run, flakiness risk.**
+- [x] **[HIGH]** `test/services/logging_service_test.dart` lines 362, 376 — `await Future.delayed(const Duration(milliseconds: 10))` twice in the config-flag toggle test. Although short individually, this is real wall time in an async test with real streams. Replacing with `fakeAsync` and `async.flushMicrotasks()` eliminates the delays and removes flakiness risk. **Impact: -20 ms per run, flakiness risk.**
 
 - [ ] **[MED]** `test/services/nav_service_test.dart` Glados test (lines 302–377, `numRuns: 120`) — Each Glados iteration creates four live `StreamController<bool>` instances and a full `NavService` with real `SettingsDb` (in-memory Drift). 120 iterations × real async init overhead can be significant. Consider whether `numRuns: 80` would provide equivalent coverage for path/index invariants. **Impact: ~30% faster Glados CI lane for this test.**
 

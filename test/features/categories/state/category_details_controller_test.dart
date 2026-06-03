@@ -83,7 +83,7 @@ void main() {
       );
 
       // Wait for the category to load (short guard)
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       final state = container.read(
         categoryDetailsControllerProvider(testCategoryId),
@@ -128,7 +128,7 @@ void main() {
       );
 
       // Wait for the error to be processed (short guard)
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       final state = container.read(
         categoryDetailsControllerProvider(testCategoryId),
@@ -171,7 +171,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       // Test name change
       controller.updateFormField(name: 'New Name');
@@ -284,7 +284,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       // Set same values
       controller.updateFormField(
@@ -336,7 +336,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       // Update speech dictionary
       controller.updateSpeechDictionary(['term1', 'term2', 'term3']);
@@ -397,7 +397,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       // Set same values
       controller.updateSpeechDictionary(['term1', 'term2']);
@@ -449,7 +449,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       // Make a change
       controller.updateFormField(name: 'Updated');
@@ -501,7 +501,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       // Set empty name
       controller.updateFormField(name: '   ');
@@ -557,7 +557,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       controller.updateFormField(name: 'Updated');
       await controller.saveChanges();
@@ -607,7 +607,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       await controller.saveChanges();
 
@@ -650,7 +650,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       await controller.deleteCategory();
 
@@ -700,7 +700,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       await controller.deleteCategory();
 
@@ -786,7 +786,7 @@ void main() {
           categoryDetailsControllerProvider(testId).notifier,
         );
 
-        await completer.future.timeout(const Duration(milliseconds: 100));
+        await completer.future;
 
         // User makes local edits (name change)
         controller.updateFormField(name: 'Updated Name');
@@ -880,7 +880,7 @@ void main() {
           categoryDetailsControllerProvider(testId).notifier,
         );
 
-        await completer.future.timeout(const Duration(milliseconds: 100));
+        await completer.future;
 
         // User deletes example1 (index 0)
         controller.deleteCorrectionExampleAt(0);
@@ -973,7 +973,7 @@ void main() {
           categoryDetailsControllerProvider(testCategoryId).notifier,
         );
 
-        await completer.future.timeout(const Duration(milliseconds: 100));
+        await completer.future;
 
         // Delete the first example (index 0)
         controller.deleteCorrectionExampleAt(0);
@@ -1035,7 +1035,7 @@ void main() {
           categoryDetailsControllerProvider(testCategoryId).notifier,
         );
 
-        await completer.future.timeout(const Duration(milliseconds: 100));
+        await completer.future;
 
         // Delete the only example (index 0)
         controller.deleteCorrectionExampleAt(0);
@@ -1090,7 +1090,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       // Try to delete at invalid indices
       controller
@@ -1147,7 +1147,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       // Delete only the first duplicate (index 0)
       controller.deleteCorrectionExampleAt(0);
@@ -1194,7 +1194,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       controller.setDefaultProfileId('profile-123');
 
@@ -1246,7 +1246,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+      await completer.future;
 
       controller.setDefaultTemplateId('template-456');
 
@@ -1302,7 +1302,7 @@ void main() {
           categoryDetailsControllerProvider(testCategoryId).notifier,
         );
 
-        await completer.future.timeout(const Duration(milliseconds: 100));
+        await completer.future;
 
         controller
           ..setDefaultProfileId('existing-profile')

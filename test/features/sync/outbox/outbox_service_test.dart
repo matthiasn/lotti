@@ -50,8 +50,6 @@ class MockOutboxMessageSender extends Mock implements OutboxMessageSender {}
 
 class MockOutboxProcessor extends Mock implements OutboxProcessor {}
 
-class MockMatrixClient extends Mock implements Client {}
-
 class MockCachedLoginController extends Mock
     implements matrix_utils.CachedStreamController<LoginState> {}
 

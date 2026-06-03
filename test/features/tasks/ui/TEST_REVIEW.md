@@ -72,7 +72,7 @@
 
 - [ ] **[HIGH]** `lib/features/tasks/ui/linked_duration.dart` (75 ln) has no dedicated test file. `linked_duration_timer_text_test.dart` only checks text-width stability (one test). The actual rendering logic — progress bar color switch when `progress > estimate`, "clamp to 1.0" for the bar value, `SizedBox.shrink` when `state == null || estimate == Duration.zero` — is untested.
 
-- [ ] **[HIGH]** `lib/features/tasks/ui/utils.dart` (76 ln) has no test file. Functions `taskColorFromStatusString`, `taskIconFromStatusString`, and `taskLabelFromStatusString` are tested indirectly via widget tests at best. There is no dedicated unit test file, violating "One test file per source file."
+- [x] **[HIGH]** `lib/features/tasks/ui/utils.dart` (76 ln) has no test file. Functions `taskColorFromStatusString`, `taskIconFromStatusString`, and `taskLabelFromStatusString` are tested indirectly via widget tests at best. There is no dedicated unit test file, violating "One test file per source file."
 
 - [ ] **[MED]** `test/features/tasks/ui/task_app_bar_test.dart` (253 ln): assertions mostly check icon presence or text presence. The `task_app_bar.dart` orchestrates between compact and expandable app bars; the test should verify that the correct variant is assembled at given viewport widths.
 

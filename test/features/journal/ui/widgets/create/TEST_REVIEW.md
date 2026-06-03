@@ -18,9 +18,9 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/features/journal/ui/widgets/create/modern_create_entry_items_test.dart` is **1966 lines** — the single biggest test file flagged in scope. The file duplicates entire test infrastructure (6 independent `setUpAll`/`tearDownAll` blocks, each creating `JournalDb` + `EditorDb` in memory) for groups that could share a single shared fixture. Additionally, much of its content duplicates `create_entry_items_test.dart` for the same source file. **Split seams:** (a) Merge into `create_entry_items_test.dart` (one test file per source file), (b) collapse the 6 identical DB-setup blocks into a single file-level `setUpAll`.
+- [x] **[HIGH]** `test/features/journal/ui/widgets/create/modern_create_entry_items_test.dart` is **1966 lines** — the single biggest test file flagged in scope. The file duplicates entire test infrastructure (6 independent `setUpAll`/`tearDownAll` blocks, each creating `JournalDb` + `EditorDb` in memory) for groups that could share a single shared fixture. Additionally, much of its content duplicates `create_entry_items_test.dart` for the same source file. **Split seams:** (a) Merge into `create_entry_items_test.dart` (one test file per source file), (b) collapse the 6 identical DB-setup blocks into a single file-level `setUpAll`.
 
-- [ ] **[HIGH]** `test/features/journal/ui/widgets/create/create_entry_items_test.dart` is **1133 lines** and already covers `create_entry_items.dart`. The existence of `modern_create_entry_items_test.dart` as a **second test file for the same source file** (`create_entry_items.dart`) violates the one-test-file-per-source rule. The two files should be merged; tests that overlap should be deduplicated.
+- [x] **[HIGH]** `test/features/journal/ui/widgets/create/create_entry_items_test.dart` is **1133 lines** and already covers `create_entry_items.dart`. The existence of `modern_create_entry_items_test.dart` as a **second test file for the same source file** (`create_entry_items.dart`) violates the one-test-file-per-source rule. The two files should be merged; tests that overlap should be deduplicated.
 
 - [ ] **[LOW]** All four implementation files are well within 500-line guidance. No impl splits needed.
 

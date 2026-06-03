@@ -42,5 +42,99 @@ void main() {
       );
       expect(segmentedButton.segments.first.value, testValue);
     });
+
+    // -------------------------------------------------------------------------
+    // semanticsLabel coverage
+    //
+    // buttonSegment applies `semanticsLabel ?? label` to the Text widget.
+    // The two tests below verify both branches of that expression.
+    // -------------------------------------------------------------------------
+
+    testWidgets(
+      'uses label as semanticsLabel when semanticsLabel is not provided',
+      (WidgetTester tester) async {
+        const testValue = 'val';
+        const testLabel = 'My Label';
+        late ButtonSegment<String> segment;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  segment = buttonSegment(
+                    context: context,
+                    value: testValue,
+                    selected: testValue,
+                    label: testLabel,
+                    // semanticsLabel omitted — should default to label
+                  );
+                  return SegmentedButton<String>(
+                    segments: [segment],
+                    onSelectionChanged: (_) {},
+                    selected: const {testValue},
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        // The Text widget inside the label should carry semanticsLabel == label.
+        final textWidget = tester.widget<Text>(find.text(testLabel));
+        expect(
+          textWidget.semanticsLabel,
+          testLabel,
+          reason:
+              'when semanticsLabel is omitted, it should fall back to label',
+        );
+      },
+    );
+
+    testWidgets(
+      'uses explicit semanticsLabel when provided',
+      (WidgetTester tester) async {
+        const testValue = 'val2';
+        const testLabel = 'Visible Label';
+        const customSemantics = 'Accessible Description';
+        late ButtonSegment<String> segment;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  segment = buttonSegment(
+                    context: context,
+                    value: testValue,
+                    selected: testValue,
+                    label: testLabel,
+                    semanticsLabel: customSemantics,
+                  );
+                  return SegmentedButton<String>(
+                    segments: [segment],
+                    onSelectionChanged: (_) {},
+                    selected: const {testValue},
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        final textWidget = tester.widget<Text>(find.text(testLabel));
+        expect(
+          textWidget.semanticsLabel,
+          customSemantics,
+          reason:
+              'when semanticsLabel is supplied it must override the label',
+        );
+        expect(
+          segment.value,
+          testValue,
+          reason: 'segment value must always match the input value',
+        );
+      },
+    );
   });
 }

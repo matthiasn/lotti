@@ -7,6 +7,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -126,6 +127,40 @@ class _ThrowOnCancelDoubleStream extends Stream<double> {
     onDone?.call();
     return sub;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Glados generators for ChatRecorderState property tests
+// ---------------------------------------------------------------------------
+
+extension _AnyChatRecorderState on glados.Any {
+  glados.Generator<ChatRecorderStatus> get chatRecorderStatus =>
+      glados.AnyUtils(this).choose(ChatRecorderStatus.values);
+
+  glados.Generator<List<double>> get amplitudeHistory =>
+      glados.ListAnys(this).listWithLengthInRange(
+        0,
+        8,
+        glados.DoubleAnys(this).doubleInRange(-100, 10),
+      );
+
+  glados.Generator<ChatRecorderState> get chatRecorderState =>
+      glados.CombinableAny(this).combine4(
+        chatRecorderStatus,
+        amplitudeHistory,
+        glados.any.bool,
+        glados.any.bool,
+        (ChatRecorderStatus status,
+            List<double> history,
+            bool useRealtime,
+            bool hasOptional) =>
+            ChatRecorderState(
+              status: status,
+              amplitudeHistory: history,
+              useRealtimeMode: useRealtime,
+              transcript: hasOptional ? 'transcript-text' : null,
+            ),
+      );
 }
 
 void main() {
@@ -3336,5 +3371,161 @@ void main() {
         expect(state.transcript, 'callback transcript');
       },
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // ChatRecorderState.copyWith — pure-data property tests
+  // ---------------------------------------------------------------------------
+
+  group('ChatRecorderState.copyWith — properties', () {
+    // ----- Glados property: status field -----
+    glados.Glados<ChatRecorderStatus>(
+      glados.any.chatRecorderStatus,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'copyWith(status:) updates status and preserves all other fields',
+      (newStatus) {
+        const original = ChatRecorderState(
+          status: ChatRecorderStatus.idle,
+          amplitudeHistory: <double>[-40, -30],
+          transcript: 'hello',
+          partialTranscript: 'part',
+          error: 'err',
+          errorType: ChatRecorderErrorType.permissionDenied,
+          useRealtimeMode: true,
+        );
+        final updated = original.copyWith(status: newStatus);
+        expect(updated.status, newStatus);
+        expect(updated.useRealtimeMode, original.useRealtimeMode);
+        expect(updated.amplitudeHistory, original.amplitudeHistory);
+      },
+      tags: 'glados',
+    );
+
+    // ----- Glados property: useRealtimeMode field -----
+    glados.Glados<bool>(
+      glados.any.bool,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'copyWith(useRealtimeMode:) updates flag and preserves status',
+      (flag) {
+        const original = ChatRecorderState(
+          status: ChatRecorderStatus.recording,
+          amplitudeHistory: <double>[],
+        );
+        final updated = original.copyWith(useRealtimeMode: flag);
+        expect(updated.useRealtimeMode, flag);
+        expect(updated.status, original.status);
+        expect(updated.amplitudeHistory, original.amplitudeHistory);
+      },
+      tags: 'glados',
+    );
+
+    // ----- Glados property: amplitudeHistory field -----
+    glados.Glados<List<double>>(
+      glados.any.amplitudeHistory,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'copyWith(amplitudeHistory:) stores the provided list verbatim',
+      (history) {
+        const original = ChatRecorderState(
+          status: ChatRecorderStatus.idle,
+          amplitudeHistory: <double>[-50],
+        );
+        final updated = original.copyWith(amplitudeHistory: history);
+        expect(updated.amplitudeHistory, history);
+        expect(updated.status, original.status);
+      },
+      tags: 'glados',
+    );
+
+    // ----- Glados property: copyWith always clears optional nullable fields -----
+    glados.Glados<ChatRecorderState>(
+      glados.any.chatRecorderState,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'copyWith with no nullable overrides always resets transcript/error/errorType to null',
+      (state) {
+        // copyWith without optional field arguments always resets them to null
+        // (they have no ?? fallback in the constructor call).
+        final updated = state.copyWith();
+        expect(updated.transcript, isNull);
+        expect(updated.error, isNull);
+        expect(updated.errorType, isNull);
+        // Non-nullable fields are preserved
+        expect(updated.status, state.status);
+        expect(updated.useRealtimeMode, state.useRealtimeMode);
+        expect(updated.amplitudeHistory, state.amplitudeHistory);
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('ChatRecorderState.copyWith — worked examples', () {
+    test('initial state has idle status and empty history', () {
+      const s = ChatRecorderState.initial();
+      expect(s.status, ChatRecorderStatus.idle);
+      expect(s.amplitudeHistory, isEmpty);
+      expect(s.useRealtimeMode, isFalse);
+      expect(s.transcript, isNull);
+      expect(s.error, isNull);
+      expect(s.errorType, isNull);
+    });
+
+    test('copyWith without arguments preserves status, history, and mode', () {
+      // Note: transcript/error/errorType/partialTranscript are ALWAYS reset to
+      // null by copyWith unless explicitly provided — this is by design in the
+      // state class (nullable fields are positional-null by default).
+      const original = ChatRecorderState(
+        status: ChatRecorderStatus.processing,
+        amplitudeHistory: <double>[-20, -15],
+        useRealtimeMode: true,
+      );
+      final copy = original.copyWith();
+      expect(copy.status, original.status);
+      expect(copy.amplitudeHistory, original.amplitudeHistory);
+      expect(copy.useRealtimeMode, original.useRealtimeMode);
+      // Optional nullable fields default to null when not supplied.
+      expect(copy.transcript, isNull);
+      expect(copy.error, isNull);
+      expect(copy.errorType, isNull);
+    });
+
+    test('copyWith(status:) does not bleed into errorType', () {
+      const original = ChatRecorderState(
+        status: ChatRecorderStatus.idle,
+        amplitudeHistory: <double>[],
+        errorType: ChatRecorderErrorType.startFailed,
+      );
+      final updated = original.copyWith(status: ChatRecorderStatus.recording);
+      expect(updated.status, ChatRecorderStatus.recording);
+      expect(updated.errorType, isNull,
+          reason: 'copyWith always sets errorType to null unless overridden');
+    });
+
+    test('errorType variants are all settable', () {
+      for (final kind in ChatRecorderErrorType.values) {
+        const base = ChatRecorderState(
+          status: ChatRecorderStatus.idle,
+          amplitudeHistory: <double>[],
+        );
+        final updated = base.copyWith(errorType: kind);
+        expect(updated.errorType, kind);
+      }
+    });
+
+    test('transcript and error can be set independently', () {
+      const base = ChatRecorderState(
+        status: ChatRecorderStatus.idle,
+        amplitudeHistory: <double>[],
+      );
+      final withTranscript = base.copyWith(transcript: 'hello world');
+      expect(withTranscript.transcript, 'hello world');
+      expect(withTranscript.error, isNull);
+
+      final withError = base.copyWith(error: 'something failed');
+      expect(withError.error, 'something failed');
+      expect(withError.transcript, isNull);
+    });
   });
 }

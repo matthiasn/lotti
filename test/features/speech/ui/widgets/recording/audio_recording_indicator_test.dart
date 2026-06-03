@@ -21,10 +21,6 @@ import 'package:record/record.dart' show Amplitude;
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
-// Mock classes
-class MockAudioRecorderRepository extends Mock
-    implements AudioRecorderRepository {}
-
 // Test controller that provides a fixed state
 class TestAudioRecorderController extends AudioRecorderController {
   TestAudioRecorderController(this._testState);

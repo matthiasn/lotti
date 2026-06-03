@@ -46,7 +46,7 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `getNormalizedAmplitudeHistory()` in `chat_recorder_controller.dart` (lines 665–680) is a pure function mapping `List<double>` → `List<double>` with clamping. This is a perfect Glados candidate: property — for any dBFS input ∈ [−∞, −80], output must equal 0.05; for input ∈ [−10, ∞], output must equal 1.0; for any input, output ∈ [0.05, 1.0]; length-preserving.
+- [x] **[HIGH]** `getNormalizedAmplitudeHistory()` in `chat_recorder_controller.dart` (lines 665–680) is a pure function mapping `List<double>` → `List<double>` with clamping. This is a perfect Glados candidate: property — for any dBFS input ∈ [−∞, −80], output must equal 0.05; for input ∈ [−10, ∞], output must equal 1.0; for any input, output ∈ [0.05, 1.0]; length-preserving.
 - [ ] **[MED]** `ChatRecorderState.copyWith` — test that any field not passed is unchanged (round-trip / immutability property). The `useRealtimeMode` field is notably absent from round-trip checks in the existing static test.
 - [ ] **[LOW]** `computeOpenTagCarry` already has static tests; a Glados property (`any.string` → `carry.length <= input.length`, carry is always a suffix of input, carry is never a complete opener) would catch edge cases in the priority-picking loop.
 - [ ] **[LOW]** `chat_stream_parser_test.dart` already has an excellent Glados property for chunk-invariance. No gaps here.

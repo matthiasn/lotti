@@ -26,7 +26,7 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `formatAudioDuration(Duration d)` in `lib/…/progress/audio_progress_bar.dart` — This is a **pure formatting function** that clamps, converts to `HH:MM:SS`/`MM:SS`, and pads. An ideal Glados target:
+- [x] **[HIGH]** `formatAudioDuration(Duration d)` in `lib/…/progress/audio_progress_bar.dart` — This is a **pure formatting function** that clamps, converts to `HH:MM:SS`/`MM:SS`, and pads. An ideal Glados target:
   - Property: output always matches `RegExp(r'^\d{2}:\d{2}(:\d{2})?$')`.
   - Round-trip: parse output back → equals `clamp(d.inSeconds, 0, 359999)`.
   - Monotonicity: `d1 ≤ d2 → format(d1) ≤ format(d2)` (lexicographic, given fixed-width padding).
