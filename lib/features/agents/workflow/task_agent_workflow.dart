@@ -386,6 +386,15 @@ class TaskAgentWorkflow {
         captureSucceeded &&
         compactedTaskLog != null &&
         compactedTaskLog.trim().isNotEmpty;
+    if (compactionOn) {
+      // PII-safe read-flip diagnostics: which gate kept the inline log?
+      _log(
+        'compaction read-flip: capture=$captureSucceeded '
+        'assembledChars=${compactedTaskLog?.length ?? -1} '
+        'useCompactedLog=$useCompactedLog',
+        subDomain: 'compaction',
+      );
+    }
     final (
       taskDetailsJson,
       projectContextJson,
