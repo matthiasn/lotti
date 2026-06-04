@@ -3074,6 +3074,9 @@ void main() {
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           domainLoggerProvider.overrideWithValue(domainLogger),
+          // The workflow reads the compaction flag from the journal DB at
+          // each wake.
+          journalDbProvider.overrideWithValue(MockJournalDb()),
         ],
       );
       addTearDown(container.dispose);
@@ -4467,7 +4470,11 @@ void main() {
       final bench = makeForkBench();
       await seedForkInto(bench.repo, head: 'b'); // a 2-head fork {a, b}
 
-      final hook = forkHealingHook(bench.service, () => DateTime(2024, 2));
+      final hook = forkHealingHook(
+        () => bench.service,
+        () => DateTime(2024, 2),
+        isEnabled: () async => true,
+      );
       await hook('agent-1', 'run-key', 'thread-1');
 
       // The fork collapsed to a single head: the content-addressed join.
@@ -4480,13 +4487,45 @@ void main() {
       final bench = makeForkBench();
       await seedForkInto(bench.repo, head: 'b');
 
-      final hook = forkHealingHook(bench.service, () => DateTime(2024, 7, 4));
+      final hook = forkHealingHook(
+        () => bench.service,
+        () => DateTime(2024, 7, 4),
+        isEnabled: () async => true,
+      );
       await hook('agent-1', 'rk', 'thread-1');
 
       final join = bench.repo.messages.firstWhere(
         (m) => m.id == computeJoinId(['a', 'b']),
       );
       expect(join.createdAt, DateTime(2024, 7, 4));
+    });
+
+    test('consults the flag per invocation: off → no join, flipped on → '
+        'heals on the next wake without a rebuild', () async {
+      // The orchestrator captures the hook once at initialization; a Settings
+      // toggle must reach the NEXT invocation of the same closure.
+      final bench = makeForkBench();
+      await seedForkInto(bench.repo, head: 'b');
+
+      var flag = false;
+      final hook = forkHealingHook(
+        () => bench.service,
+        () => DateTime(2024, 2),
+        isEnabled: () async => flag,
+      );
+
+      await hook('agent-1', 'rk-1', 'thread-1');
+      // Disabled: the fork remains un-joined.
+      expect(
+        headsOfLog(bench.repo.messages, bench.repo.links).toSet(),
+        {'a', 'b'},
+      );
+
+      flag = true;
+      await hook('agent-1', 'rk-2', 'thread-1');
+      expect(headsOfLog(bench.repo.messages, bench.repo.links), [
+        computeJoinId(['a', 'b']),
+      ]);
     });
   });
 }

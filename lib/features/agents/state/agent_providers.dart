@@ -34,6 +34,7 @@ import 'package:lotti/providers/service_providers.dart'
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 export 'package:lotti/features/agents/state/agent_query_providers.dart';
@@ -154,30 +155,36 @@ WakeRunner wakeRunner(Ref ref) {
   return runner;
 }
 
-/// Fork-healing rollout flag (ADR 0018 rule 8 / PR 6). Default off: the
-/// join-by-continuation mechanism is fully built and wired, but inert until
-/// deliberately enabled with `--dart-define=LOTTI_JOIN_HEALING=true` (mirrors
-/// the compaction rollout). Turning it on appends `join` nodes to the synced
-/// agent log — a user-visible, multi-device behaviour change.
-const bool _joinHealingEnabled = bool.fromEnvironment('LOTTI_JOIN_HEALING');
-
 /// Builds the wake-start fork-healing hook (ADR 0018 rule 8): a [WakeStartHook]
 /// that, at the start of each wake, heals the agent's fork via a [ForkHealer]
-/// over [syncService] ([now] supplies the join timestamp). The healer is built
-/// once (not per wake). Extracted from [wakeOrchestrator] so the wiring is
-/// unit-testable — the rollout flag gating it (`LOTTI_JOIN_HEALING`) is a
-/// compile-time const that tests cannot flip.
+/// over [syncService] ([now] supplies the join timestamp). The healer is
+/// built lazily on the first enabled invocation, then reused — so wiring the
+/// hook costs nothing while the flag stays off. Extracted from
+/// [wakeOrchestrator] so the wiring is unit-testable.
+///
+/// [isEnabled] is consulted **per invocation** (the `enable_fork_healing`
+/// config flag in production): the orchestrator captures this hook at
+/// initialization, so a provider-rebuild-based flag would never reach the
+/// executing instance — the same captured-instance topology as the
+/// compaction flag. A throwing [isEnabled] propagates into the
+/// orchestrator's existing hook guard (logged, wake proceeds — healing is
+/// an optimization, never required).
 WakeStartHook forkHealingHook(
-  AgentSyncService syncService,
-  DateTime Function() now,
-) {
-  final forkHealer = ForkHealer(syncService: syncService);
-  return (agentId, runKey, threadId) => forkHealer.maybeHealFork(
-    agentId: agentId,
-    at: now(),
-    threadId: threadId,
-    runKey: runKey,
-  );
+  AgentSyncService Function() syncService,
+  DateTime Function() now, {
+  required Future<bool> Function() isEnabled,
+}) {
+  ForkHealer? forkHealer;
+  return (agentId, runKey, threadId) async {
+    if (!await isEnabled()) return;
+    forkHealer ??= ForkHealer(syncService: syncService());
+    await forkHealer!.maybeHealFork(
+      agentId: agentId,
+      at: now(),
+      threadId: threadId,
+      runKey: runKey,
+    );
+  };
 }
 
 /// The wake orchestrator (notification listener + subscription matching).
@@ -190,18 +197,15 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
       notifications.notifyUiOnly({agentId, agentNotification});
     };
   }
-  // Fork healing (ADR 0018 rule 8), gated by the default-off rollout flag. The
-  // flag is a compile-time const tests can't flip, so the gated resolution is
-  // coverage-ignored; the wiring it calls (`forkHealingHook`) is unit-tested.
-  WakeStartHook? onWakeStart;
-  // coverage:ignore-start
-  if (_joinHealingEnabled) {
-    onWakeStart = forkHealingHook(
-      ref.watch(agentSyncServiceProvider),
-      clock.now,
-    );
-  }
-  // coverage:ignore-end
+  // Fork healing (ADR 0018 rule 8), gated by the default-off
+  // `enable_fork_healing` config flag — read inside the hook at each wake, so
+  // a Settings toggle applies on the next wake without a restart.
+  final onWakeStart = forkHealingHook(
+    () => ref.read(agentSyncServiceProvider),
+    clock.now,
+    isEnabled: () =>
+        ref.read(journalDbProvider).getConfigFlag(enableForkHealingFlag),
+  );
   return WakeOrchestrator(
     repository: ref.watch(agentRepositoryProvider),
     queue: ref.watch(wakeQueueProvider),

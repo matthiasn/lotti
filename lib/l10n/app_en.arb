@@ -1456,6 +1456,8 @@
   "configFlagEnableEmbeddings": "Generate Embeddings",
   "configFlagEnableEvents": "Enable Events",
   "configFlagEnableEventsDescription": "Show the Events feature to create, track, and manage events in your journal.",
+  "configFlagEnableForkHealing": "Agent fork healing",
+  "configFlagEnableForkHealingDescription": "Heal divergent agent histories from multi-device use by merging them at the next wake.",
   "configFlagEnableHabitsPage": "Enable Habits page",
   "configFlagEnableHabitsPageDescription": "Show the Habits page in the main navigation. Track and manage your daily habits here.",
   "configFlagEnableLogging": "Enable logging",

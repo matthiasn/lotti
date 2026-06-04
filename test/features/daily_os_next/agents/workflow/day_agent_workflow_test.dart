@@ -250,6 +250,11 @@ void main() {
     when(() => repository.getEntitiesByIds(any())).thenAnswer(
       (_) async => const <String, AgentDomainEntity>{},
     );
+    // The memory substrate loads submitted captures each wake (inline
+    // events); default to none.
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: any(named: 'type')),
+    ).thenAnswer((_) async => const <AgentDomainEntity>[]);
     when(
       () => repository.updateWakeRunTemplate(
         any(),
@@ -278,6 +283,88 @@ void main() {
   });
 
   group('DayAgentWorkflow', () {
+    test('read-flips to a dayLog of capture transcripts and observations, '
+        'dropping the recentObservations listing', () async {
+      when(() => syncService.repository).thenReturn(repository);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+      ).thenAnswer((_) async => []);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+      ).thenAnswer((_) async => []);
+      when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.capture,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          AgentDomainEntity.capture(
+            id: 'cap-1',
+            agentId: agentId,
+            transcript: 'morning planning capture',
+            capturedAt: DateTime.utc(2026, 5, 25, 7),
+            createdAt: DateTime.utc(2026, 5, 25, 7, 1),
+            vectorClock: null,
+          ),
+        ],
+      );
+      final obs = AgentDomainEntity.agentMessage(
+        id: 'obs-1',
+        agentId: agentId,
+        threadId: 'old-thread',
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime.utc(2026, 5, 25, 8),
+        vectorClock: null,
+        contentEntryId: 'obs-payload-1',
+        metadata: const AgentMessageMetadata(),
+      );
+      when(
+        () =>
+            repository.getMessagesByKind(agentId, AgentMessageKind.observation),
+      ).thenAnswer((_) async => [obs as AgentMessageEntity]);
+      when(() => repository.getEntity('obs-payload-1')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: 'obs-payload-1',
+          agentId: agentId,
+          createdAt: DateTime.utc(2026, 5, 25, 8),
+          vectorClock: null,
+          content: const {'text': 'a day observation'},
+        ),
+      );
+
+      final sut = DayAgentWorkflow(
+        agentRepository: repository,
+        conversationRepository: conversationRepository,
+        aiConfigRepository: aiConfigRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        syncService: syncService,
+        templateService: templateService,
+        domainLogger: domainLogger,
+        onPersistedStateChanged: changedTokens.add,
+        compactionEnabled: true,
+      );
+      final result = await execute(sut, triggerTokens: {dayId});
+      expect(result.success, isTrue);
+
+      final userText = upsertedEntities
+          .whereType<AgentMessagePayloadEntity>()
+          .map((p) => p.content['text'] as String? ?? '')
+          .firstWhere((t) => t.contains('"dayId"'));
+
+      expect(userText, contains('"dayLog"'));
+      expect(userText, contains('(capture) morning planning capture'));
+      expect(userText, contains('(observation) a day observation'));
+      // The substrate supersedes the separate listing.
+      expect(userText, isNot(contains('"recentObservations"')));
+      // Event order inside the log: capture (07:01) before observation (08:00).
+      expect(
+        userText.indexOf('morning planning capture'),
+        lessThan(userText.indexOf('a day observation')),
+      );
+    });
+
     test(
       'records observations, schedules wake, and persists wake output',
       () async {

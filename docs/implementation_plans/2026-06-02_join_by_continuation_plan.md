@@ -195,10 +195,12 @@ stateDiagram-v2
    calls `planJoin`, and `appendJoin`s when due — catching a corrupt log as
    non-fatal. The `WakeOrchestrator` gains one optional `onWakeStart` hook fired
    just before the executor (covering all four agent kinds in one seam). DI
-   (`agent_providers.dart`) wires the hook to `ForkHealer` only when
-   `const bool.fromEnvironment('LOTTI_JOIN_HEALING')` is set — **default false →
-   `onWakeStart` is null → wakes run byte-identically to today**, and the flag
-   gives a real `--dart-define` enable path for the rollout (mirrors compaction).
+   (`agent_providers.dart`) always wires the hook, which consults the
+   default-off `enable_fork_healing` config flag **per invocation** —
+   **default false → the hook returns immediately → wakes run byte-identically
+   to today**. (Originally shipped behind a `LOTTI_JOIN_HEALING` dart-define;
+   migrated to the runtime config flag on 2026-06-04, mirroring compaction's
+   per-wake flag read.)
    **No `AgentStateEntity` field, no `build_runner`** (the eager gate is
    stateless). Tested: `ForkHealer` over the in-memory repo (fork→heal, no-op,
    defer-on-incomplete-view, idempotent re-fork prevention, non-fatal on a

@@ -2658,6 +2658,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar la función de eventos para crear, rastrear y gestionar eventos en tu diario.';
 
   @override
+  String get configFlagEnableForkHealing =>
+      'Reparación de bifurcaciones del agente';
+
+  @override
+  String get configFlagEnableForkHealingDescription =>
+      'Fusiona historiales de agente divergentes por el uso en varios dispositivos en el siguiente despertar.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Habilitar página Hábitos';
 
   @override

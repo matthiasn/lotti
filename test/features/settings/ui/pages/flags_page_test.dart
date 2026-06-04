@@ -102,6 +102,11 @@ void main() {
             description: 'Enable agent memory compaction?',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableForkHealingFlag,
+            description: 'Enable agent fork healing?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -132,8 +137,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 12 flags in the mock data.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+      // 13 flags in the mock data.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(13));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -142,7 +147,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsIcon), findsNWidgets(12));
+      expect(find.byType(SettingsIcon), findsNWidgets(13));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -320,7 +325,7 @@ void main() {
         DesignSystemListItem,
         context.messages.configFlagEnableWhatsNew,
       );
-      // The whats-new row sits toward the bottom of the 12-row list and
+      // The whats-new row sits toward the bottom of the 13-row list and
       // is offscreen under the testable wrapper's bounded
       // SingleChildScrollView. `ensureVisible` walks the target's
       // ancestor chain to find the right scrollable and drives the
@@ -374,6 +379,43 @@ void main() {
           find.descendant(
             of: item,
             matching: find.byIcon(Icons.compress_rounded),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+  });
+
+  group('FlagsPage — fork healing flag', () {
+    testWidgets(
+      'renders the fork-healing flag with localized title, description, and '
+      'merge icon',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(FlagsPage));
+        await tester.enterText(
+          find.byType(DesignSystemSearch),
+          context.messages.configFlagEnableForkHealing,
+        );
+        await tester.pumpAndSettle();
+
+        final item = find.widgetWithText(
+          DesignSystemListItem,
+          context.messages.configFlagEnableForkHealing,
+        );
+        expect(item, findsOneWidget);
+        expect(
+          find.text(context.messages.configFlagEnableForkHealingDescription),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: item,
+            matching: find.byIcon(Icons.call_merge_rounded),
           ),
           findsOneWidget,
         );
@@ -688,7 +730,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pumpAndSettle();
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
       },
     );
 
@@ -709,7 +751,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pumpAndSettle();
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
       },
     );
 
@@ -726,7 +768,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
       },
     );
   });

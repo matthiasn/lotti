@@ -1,14 +1,18 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
+import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -25,6 +29,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_servi
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -45,6 +50,11 @@ class DayAgentWorkflow {
     this.soulDocumentService,
     this.onPersistedStateChanged,
     this.config = const DayAgentConfig(),
+    this.journalDb,
+    this.logSummarizer,
+    this.compactionEnabled,
+    this.compactionTailBudgetTokens = 50000,
+    this.compactionTailRetainTokens = 20000,
   });
 
   /// Agent repository.
@@ -82,6 +92,20 @@ class DayAgentWorkflow {
 
   /// Planning defaults included in the prompt.
   final DayAgentConfig config;
+
+  /// Journal DB for the per-wake `enable_agent_compaction` flag read (see
+  /// `AgentWakeMemory`); null keeps compaction off.
+  final JournalDb? journalDb;
+
+  /// LLM edge for compaction folds (ADR 0017).
+  final AgentLogLlmSummarizer? logSummarizer;
+
+  /// Test override for the compaction flag; null = consult it per wake.
+  final bool? compactionEnabled;
+
+  /// Compaction watermarks — see `TaskAgentWorkflow` for the rationale.
+  final int compactionTailBudgetTokens;
+  final int compactionTailRetainTokens;
 
   static const _uuid = Uuid();
   static const minScheduledWakeLeadTime = Duration(minutes: 15);
@@ -159,6 +183,46 @@ class DayAgentWorkflow {
 
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
+
+    // Memory substrate (ADR 0016/0017): the day agent's durable inputs —
+    // submitted capture transcripts and its own observations — are ALREADY
+    // synced log entities, so they join the event log as inline/projected
+    // events (no payload capture step). The pipeline folds them past the
+    // trigger watermark and assembles the compacted day log.
+    final memory = AgentWakeMemory(
+      journalDb: journalDb,
+      syncService: syncService,
+      logSummarizer: logSummarizer,
+      compactionEnabled: compactionEnabled,
+      domainLogger: domainLogger,
+    );
+    var capturesLoaded = false;
+    var captureEntities = const <CaptureEntity>[];
+    try {
+      captureEntities = (await agentRepository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.capture,
+      )).whereType<CaptureEntity>().toList();
+      capturesLoaded = true;
+    } catch (e) {
+      _logError('failed to load capture entities', error: e);
+    }
+    final memoryView = await memory.compactAndAssemble(
+      agentId: agentId,
+      // Inline events derive from already-synced entities read in the same
+      // breath as the rest of this wake — there is no stale-frontier risk,
+      // so the gate is simply whether the load itself succeeded.
+      captureSucceeded: capturesLoaded,
+      model: modelId,
+      provider: provider,
+      at: now,
+      threadId: threadId,
+      runKey: runKey,
+      budget: compactionTailBudgetTokens,
+      retainTokens: compactionTailRetainTokens,
+      inlineEvents: dayCaptureEvents(captureEntities),
+    );
+
     final captureContext = await _captureContext(
       agentIdentity: agentIdentity,
       planDate: dayDate,
@@ -186,6 +250,7 @@ class DayAgentWorkflow {
       captureContext: captureContext,
       draftingContext: draftingContext,
       refineContext: refineContext,
+      compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
     );
 
     final conversationId = conversationRepository.createConversation(
@@ -662,23 +727,31 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required _CaptureContext? captureContext,
     required _DraftingContext? draftingContext,
     required _RefineContext? refineContext,
+    String? compactedLog,
   }) {
     final payload = <String, Object?>{
       'dayId': dayId,
       'planDate': planDate.toIso8601String(),
+      // The compacted day log (ADR 0017): capture transcripts and the
+      // agent's observations as an append-only event tail behind a summary.
+      // Placed before the per-wake volatile fields so the JSON-encoded
+      // prefix stays byte-stable across wakes; when present it supersedes
+      // the separate recentObservations listing below.
+      'dayLog': ?compactedLog,
       'triggerTokens': triggerTokens.toList()..sort(),
       if (captureContext != null) 'capture': captureContext.toJson(),
       if (draftingContext != null) 'drafting': draftingContext.toJson(),
       if (refineContext != null) 'refine': refineContext.toJson(),
-      'recentObservations': [
-        for (final observation in observations)
-          {
-            'createdAt': observation.createdAt.toIso8601String(),
-            'text': _extractPayloadText(
-              observationPayloads[observation.contentEntryId],
-            ),
-          },
-      ],
+      if (compactedLog == null)
+        'recentObservations': [
+          for (final observation in observations)
+            {
+              'createdAt': observation.createdAt.toIso8601String(),
+              'text': _extractPayloadText(
+                observationPayloads[observation.contentEntryId],
+              ),
+            },
+        ],
       // Keep the volatile wall-clock last so the rest of the payload stays a
       // stable prefix across wakes, maximizing prompt prefix / KV-cache reuse.
       'currentLocalTime': now.toIso8601String(),

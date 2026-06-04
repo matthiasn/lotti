@@ -11,6 +11,9 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/projection/content_digest.dart';
+import 'package:lotti/features/agents/projection/input_capture.dart';
+import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -417,6 +420,171 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
       });
+
+      test(
+        'captures project-linked journal entries into the agent log',
+        () async {
+          final note = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: 'note-1',
+              createdAt: DateTime(2024, 5),
+              updatedAt: DateTime(2024, 5),
+              dateFrom: DateTime(2024, 5),
+              dateTo: DateTime(2024, 5),
+            ),
+            entryText: const EntryText(plainText: 'project kickoff note'),
+          );
+          when(
+            () => mockJournalRepository.getLinkedEntities(linkedTo: projectId),
+          ).thenAnswer((_) async => [note]);
+
+          final recorder = _RecordingCaptureService();
+          final capturingWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            inputCaptureService: recorder,
+            compactionEnabled: false,
+          );
+
+          final result = await capturingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(recorder.callCount, 1);
+          expect(recorder.sources, hasLength(1));
+          expect(
+            recorder.sources.single.content['text'],
+            'project kickoff note',
+          );
+        },
+      );
+
+      test(
+        'read-flips to ## Project Log and drops the observations section',
+        () async {
+          const tailContent = {
+            'entryType': 'text',
+            'text': 'captured project note',
+          };
+          final tailDigest = ContentDigest.of(tailContent);
+          when(
+            () => mockSyncService.repository,
+          ).thenReturn(mockAgentRepository);
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.system,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.summary,
+            ),
+          ).thenAnswer((_) async => []);
+          when(() => mockAgentRepository.getLinksFrom(agentId)).thenAnswer(
+            (_) async => [
+              AgentLink.messagePayload(
+                id: 'pl-1',
+                fromId: agentId,
+                toId: tailDigest,
+                createdAt: DateTime(2024, 6, 2),
+                updatedAt: DateTime(2024, 6, 2),
+                vectorClock: null,
+                contentEntryId: 'e1',
+                sourceCreatedAt: DateTime(2024, 6),
+              ),
+            ],
+          );
+          when(() => mockAgentRepository.getEntity(tailDigest)).thenAnswer(
+            (_) async => AgentDomainEntity.agentMessagePayload(
+              id: tailDigest,
+              agentId: agentId,
+              createdAt: DateTime(2024, 6, 2),
+              vectorClock: null,
+              content: tailContent,
+            ),
+          );
+          // Observations exist — but with the read flipped they belong to the
+          // event tail, so the separate section must NOT render.
+          final obs = AgentDomainEntity.agentMessage(
+            id: 'obs-1',
+            agentId: agentId,
+            threadId: 'old-thread',
+            kind: AgentMessageKind.observation,
+            createdAt: DateTime(2024, 6),
+            vectorClock: null,
+            contentEntryId: 'obs-payload-1',
+            metadata: const AgentMessageMetadata(),
+          );
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.observation,
+            ),
+          ).thenAnswer((_) async => [obs as AgentMessageEntity]);
+          when(() => mockAgentRepository.getEntity('obs-payload-1')).thenAnswer(
+            (_) async => AgentDomainEntity.agentMessagePayload(
+              id: 'obs-payload-1',
+              agentId: agentId,
+              createdAt: DateTime(2024, 6),
+              vectorClock: null,
+              content: const {'text': 'a private project observation'},
+            ),
+          );
+
+          final compactedWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            inputCaptureService: _RecordingCaptureService(),
+            compactionEnabled: true,
+          );
+
+          final result = await compactedWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final userText = captured
+              .whereType<AgentMessagePayloadEntity>()
+              .map((p) => p.content['text'] as String? ?? '')
+              .firstWhere((t) => t.contains('## Project Context'));
+
+          expect(userText, contains('## Project Log'));
+          expect(userText, contains('captured project note'));
+          // Observations ride the event tail, not a separate section.
+          expect(
+            userText,
+            contains('(observation) a private project observation'),
+          );
+          expect(userText, isNot(contains('## Recent Observations')));
+          // Prefix-cache ordering: the append-only log precedes mutable state.
+          expect(
+            userText.indexOf('## Project Log'),
+            lessThan(userText.indexOf('## Project Context')),
+          );
+        },
+      );
 
       test('completes successfully and persists state', () async {
         final result = await workflow.execute(
@@ -3010,4 +3178,30 @@ JournalEntity _fakeProjectEntity() {
       dateTo: DateTime(2024, 12, 31),
     ),
   );
+}
+
+/// Records [AgentInputCaptureService.captureWakeInputs] calls so wiring tests
+/// can assert what the workflow captured, without a real log.
+class _RecordingCaptureService implements AgentInputCaptureService {
+  int callCount = 0;
+  List<RenderedSource> sources = const [];
+
+  @override
+  Future<CaptureDelta> captureWakeInputs({
+    required String agentId,
+    required List<RenderedSource> sources,
+    required DateTime at,
+    String? threadId,
+    String? runKey,
+    List<AgentMessageEntity>? systemMessages,
+    List<AgentLink>? links,
+  }) async {
+    callCount++;
+    this.sources = sources;
+    return const CaptureDelta(
+      newPayloads: [],
+      newReferences: [],
+      retractedEntryIds: [],
+    );
+  }
 }

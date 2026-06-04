@@ -1069,6 +1069,8 @@
   "configFlagEnableEmbeddings": "Generovat vektory",
   "configFlagEnableEvents": "Povolit události",
   "configFlagEnableEventsDescription": "Zobrazit funkci Události pro vytváření, sledování a správu událostí ve vašem deníku.",
+  "configFlagEnableForkHealing": "Slučování větví agenta",
+  "configFlagEnableForkHealingDescription": "Sloučí rozvětvené historie agenta z více zařízení při příštím probuzení.",
   "configFlagEnableHabitsPage": "Povolit stránku Návyků",
   "configFlagEnableHabitsPageDescription": "Zobrazit stránku Návyky v hlavní navigaci. Zde sledujte a spravujte své denní návyky.",
   "configFlagEnableLogging": "Povolit protokolování",

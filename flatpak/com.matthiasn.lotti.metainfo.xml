@@ -39,7 +39,8 @@
     </release>
     <release version="0.9.1014" date="2026-06-04">
       <description>
-          <p>New "Agent memory compaction" flag in Settings (off by default): task agents summarize older task-log entries into a rolling memory using their own model, keeping the wake context compact while recent entries stay verbatim.</p>
+          <p>New "Agent memory compaction" flag in Settings (off by default): task, project and day agents summarize the oldest entries of their memory log into a rolling memory using their own model, keeping the wake context compact while recent entries stay verbatim.</p>
+          <p>New "Agent fork healing" flag in Settings (off by default): agents whose histories diverged through multi-device use merge them back together at the next wake.</p>
           <p>Task agents now update their report only when its content would materially change, instead of re-publishing it on every wake.</p>
           <p>Task agents can now propose archiving a duplicate or obsolete checklist item, confirmed through the usual proposal flow and reversible.</p>
           <p>The agent conversation view now shows each wake's exact system prompt as an expandable row and labels milestone and retraction rows distinctly.</p>

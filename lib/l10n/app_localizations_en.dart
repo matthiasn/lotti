@@ -2611,6 +2611,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the Events feature to create, track, and manage events in your journal.';
 
   @override
+  String get configFlagEnableForkHealing => 'Agent fork healing';
+
+  @override
+  String get configFlagEnableForkHealingDescription =>
+      'Heal divergent agent histories from multi-device use by merging them at the next wake.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Enable Habits page';
 
   @override

@@ -322,6 +322,18 @@ folds — is live behind the default-off `enable_agent_compaction` config flag
 (see the activation section below); with the flag off, only capture runs and
 the wake reads the journal as before.
 
+**Scope.** The substrate covers task agents (captured journal entries +
+observations + proposal verdicts), project agents (captured project-linked
+journal entries + observations), and day agents (submitted capture
+transcripts + observations, both projected as inline events from
+already-synced entities — no payload capture step). The **improver** agent is
+deliberately out: its wake context is a per-ritual *windowed* snapshot
+(feedback since the last scan watermark, instance reports, version history) —
+there is no unbounded per-agent input stream to fold, and capturing it would
+duplicate other agents' synced data. All workflows share one pipeline,
+`AgentWakeMemory` (capture → per-wake flag read → fold → assemble → read-flip
+gates), so the failure isolation and diagnostics are identical everywhere.
+
 **Capture (always on).** Each task wake snapshots the user-content
 sources it read — one per linked journal log entry, the rendered text only (an
 audio entry contributes its transcript, never the raw audio) — via
@@ -548,9 +560,13 @@ it — so the DAG re-converges to one tip and the prefix re-warms.
   non-fatal: a corrupt synced log (cycle / duplicate id) or a slow load is caught
   or timed out (`wakeStartHookTimeout`), and the wake proceeds regardless — healing
   is an optimization, never a correctness mechanism.
-- **Flag-gated off.** DI wires the hook only when
-  `--dart-define=LOTTI_JOIN_HEALING=true`; by default `onWakeStart` is null and
-  wakes are byte-identical to today.
+- **Flag-gated off.** The hook is always wired but consults the default-off
+  `enable_fork_healing` config flag (Settings → Flags → "Agent fork healing")
+  **per invocation** — the orchestrator captures the hook at initialization, so
+  the flag is read inside it at each wake and a Settings toggle applies on the
+  next wake without a restart (the same captured-instance topology as the
+  compaction flag). Off → the hook returns immediately and wakes are
+  byte-identical to before.
 
 ```mermaid
 stateDiagram-v2
