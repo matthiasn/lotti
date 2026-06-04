@@ -100,7 +100,7 @@ void main() {
     );
     final checkpoint = selectActiveSummary(
       summaries: await compactor.loadSummaries(_agentId),
-      retractions: log.retractions,
+      log: log,
     );
     final tail = visibleTailEvents(log: log, cutoff: checkpoint?.cutoff);
     return (
@@ -392,6 +392,51 @@ void main() {
     expect(second, startsWith(first));
     expect(third, startsWith(second));
     expect(third, contains('(entry, edited) first note REVISED'));
+  });
+
+  test('a late-arriving pre-cutoff event (sync) re-expands the tail and the '
+      'next fold re-covers it', () async {
+    await captureAll([
+      src('e1', 'alpha', day: 1),
+      src('e2', 'beta', day: 2),
+      src('e3', 'gamma', day: 3),
+    ], 10);
+    await compact(budget: 0); // covers {e1,e2}, cutoff at day 10, tail [e3]
+    expect(
+      await compactor.assembleContext(_agentId),
+      contains('SUMMARY(2)'),
+    );
+
+    // Another device captured e-late BEFORE this device folded (capture time
+    // day 8 < cutoff day 10) and it syncs in now: it is in neither the prose
+    // nor the post-cutoff tail, so the checkpoint must die.
+    await capture.captureWakeInputs(
+      agentId: _agentId,
+      sources: [
+        src('e1', 'alpha', day: 1),
+        src('e2', 'beta', day: 2),
+        src('e3', 'gamma', day: 3),
+        src('e-late', 'late from other device', day: 4),
+      ],
+      at: DateTime.utc(2024, 3, 8),
+    );
+
+    final reExpanded = await compactor.assembleContext(_agentId);
+    expect(reExpanded, isNot(contains('SUMMARY(2)')));
+    expect(reExpanded, contains('late from other device'));
+    expect(reExpanded, contains('alpha')); // full verbatim re-expansion
+    expect(reExpanded, contains('gamma'));
+
+    // The next fold re-covers everything including the late arrival, and the
+    // new checkpoint is complete again.
+    await compact(budget: 0, day: 21);
+    final refolded = await compactor.assembleContext(_agentId);
+    expect(refolded, contains('Summary of earlier activity'));
+    expect(refolded, isNot(contains('late from other device')));
+    expect(refolded, contains('gamma')); // newest stays verbatim
+
+    final view = await activeView();
+    expect(view.checkpoint!.coveredSources.keys, contains('e-late'));
   });
 
   test('decision events share the substrate: they interleave, render as '

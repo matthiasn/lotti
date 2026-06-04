@@ -948,7 +948,7 @@ void main() {
           () => mockAgentRepository.getProposalLedger(
             agentId,
             taskId: taskId,
-            resolvedLimit: 200,
+            resolvedLimit: TaskAgentWorkflow.resolvedDecisionWindow,
           ),
         ).called(1);
       });

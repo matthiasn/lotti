@@ -154,7 +154,7 @@ class AgentLogCompactor {
     if (log.isEmpty) return (log: log, active: null);
     final active = selectActiveSummary(
       summaries: await loadSummaries(agentId),
-      retractions: log.retractions,
+      log: log,
     );
     return (log: log, active: active);
   }
@@ -265,10 +265,15 @@ class AgentLogCompactor {
     // (later events overwrite earlier digests for the same source).
     final coveredSources = <String, String>{
       ...?view.active?.coveredSources,
-      // Inline events (no digest) are skipped: coverage exists to detect
-      // retractions of covered SOURCES, and inline events have none.
+      // Inline events have no payload digest; cover them by the digest of
+      // their inline content so the checkpoint-completeness check can prove
+      // a folded verdict was seen (a key absent from this map at or before
+      // the cutoff invalidates the checkpoint as a late arrival).
       for (final loaded in folded)
-        loaded.event.contentEntryId: ?loaded.event.contentDigest,
+        loaded.event.contentEntryId:
+            loaded.event.contentDigest ??
+            // Exactly one of digest/inlineContent is set by construction.
+            ContentDigest.of(loaded.event.inlineContent),
     };
 
     final summaryText = await summarize(

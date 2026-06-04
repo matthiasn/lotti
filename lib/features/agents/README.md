@@ -316,11 +316,13 @@ the report text.
 
 The agent's **inputs** are captured into the append-only log so the wake context
 becomes a projection of the log rather than a live read of the mutable journal
-(ADR 0020), and that log is compacted by **summary checkpoints** over causal
-frontiers (ADR 0017). The mechanism is built and tested; the production *read*
-still uses the journal (the read-flip is the last switch — see below).
+(ADR 0020), and that log is compacted by **summary checkpoints** over a log
+prefix (ADR 0017). The full pipeline — capture, event-log read, LLM-distilled
+folds — is live behind the default-off `enable_agent_compaction` config flag
+(see the activation section below); with the flag off, only capture runs and
+the wake reads the journal as before.
 
-**Capture (active, in shadow).** Each task wake snapshots the user-content
+**Capture (always on).** Each task wake snapshots the user-content
 sources it read — one per linked journal log entry, the rendered text only (an
 audio entry contributes its transcript, never the raw audio) — via
 `AgentInputCaptureService.captureWakeInputs`:
@@ -376,9 +378,16 @@ checkpoint's cutoff, one line each, **rendered once and frozen forever**:
 everything up to a **cutoff position** (persisted as `coverageCutoff` in the
 checkpoint payload), not a state snapshot:
 
-- `selectActiveSummary` picks the valid checkpoint with the greatest cutoff;
-  a checkpoint dies only when a covered source is retracted *after* its
-  cutoff — an edit of folded content just appends a tail event that
+- `selectActiveSummary` picks the valid checkpoint with the greatest cutoff.
+  A checkpoint dies when a covered source is retracted *after* its cutoff,
+  or when it is **incomplete against the current log**: sync can deliver an
+  event positioned *before* an existing cutoff (a concurrent capture/
+  observation/verdict from another device), which would otherwise be in
+  neither the prose nor the post-cutoff tail — the checkpoint is discarded,
+  the tail re-expands, and the same wake's fold re-covers everything
+  including the late arrival. Completeness is checked by entry id, so a
+  late-arriving *superseded* version of a covered source does not
+  invalidate. An edit of folded content just appends a tail event that
   supersedes the stale prose, keeping the prompt prefix byte-stable;
 - `planCompaction` decides, against a token budget, which oldest event prefix
   to fold so the most-recent suffix fits;
@@ -1273,13 +1282,18 @@ For provider selection and residency details, see [../ai/README.md](../ai/README
 
 ## Planned Improvements
 
-Input capture + log compaction (ADR 0020 + ADR 0017) is partially landed — see
-*Memory compaction & input capture* above. Capture runs in shadow today; the
-remaining work is the production read-flip (assemble the wake context from
-`active summary + uncovered tail`, drop the per-wake prompt blob) and emitting
-LLM-generated `summary` checkpoints when the verbatim tail exceeds the model's
-token budget. Until then, long-lived agents still read the full task log plus
-the latest report rather than a distilled summary + tail.
+Input capture + log compaction (ADR 0020 + ADR 0017) is fully wired behind
+the default-off `enable_agent_compaction` flag — see *Memory compaction &
+input capture* above for the live behavior (event-log read, LLM-distilled
+summary checkpoints, decision/observation events). Remaining work:
+
+- drop the per-wake **user-prompt blob** persistence (the system prompt is
+  already content-addressed; the user message is still stored once per wake);
+- extend capture + compaction to the **project/day/improver** workflows
+  (task agents only today);
+- **profile-aware watermarks** — derive trigger/retain from the resolved
+  model's context window and local-vs-hosted inference instead of the global
+  50k/20k constructor defaults.
 
 ## User-Facing UI Surfaces
 

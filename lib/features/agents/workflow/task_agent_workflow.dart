@@ -189,6 +189,12 @@ class TaskAgentWorkflow {
   /// (prefix-cache friendly). Used only when [compactionEnabled].
   final int compactionTailRetainTokens;
 
+  /// How many resolved proposal verdicts the wake projects into the event
+  /// substrate (and the legacy ledger view). Sized far above any realistic
+  /// per-task verdict count — each one is a human confirmation click — and
+  /// saturation is logged loudly rather than silently truncating.
+  static const resolvedDecisionWindow = 500;
+
   static const _uuid = Uuid();
 
   void _log(String message, {String? subDomain}) {
@@ -341,8 +347,19 @@ class TaskAgentWorkflow {
     final ledger = await agentRepository.getProposalLedger(
       agentId,
       taskId: taskId,
-      resolvedLimit: 200,
+      resolvedLimit: resolvedDecisionWindow,
     );
+    if (ledger.resolved.length >= resolvedDecisionWindow) {
+      // No silent caps: beyond the window, the oldest UNFOLDED verdicts
+      // would leave the event substrate before being summarized (folded
+      // verdicts stay provably covered via the checkpoint's coveredSources).
+      _log(
+        'resolved-decision window saturated '
+        '(${ledger.resolved.length} >= $resolvedDecisionWindow): oldest '
+        'unfolded verdicts may drop from the event tail',
+        subDomain: 'compaction',
+      );
+    }
 
     // 1b. Compaction (ADR 0017) — gated behind the `enable_agent_compaction`
     // config flag (read fresh each wake, so a Settings toggle applies on the
@@ -357,9 +374,22 @@ class TaskAgentWorkflow {
     // they interleave chronologically with the content that motivated them
     // and fold into summaries — instead of being re-rendered (and eventually
     // capped away) in a separate prompt section every wake.
-    final compactionOn =
-        compactionEnabled ??
-        await journalDb.getConfigFlag(enableAgentCompactionFlag);
+    var compactionOn = compactionEnabled ?? false;
+    if (compactionEnabled == null) {
+      try {
+        compactionOn = await journalDb.getConfigFlag(
+          enableAgentCompactionFlag,
+        );
+      } catch (e) {
+        // Non-fatal like the rest of the compaction chain: a failed flag
+        // read degrades the wake to the legacy inline log, never aborts it.
+        _logError(
+          'failed to read $enableAgentCompactionFlag — compaction off '
+          'this wake',
+          error: e,
+        );
+      }
+    }
     final compactor = compactionOn
         ? AgentLogCompactor(
             syncService: syncService,
@@ -507,6 +537,10 @@ class TaskAgentWorkflow {
           ),
         );
       }
+      // NB: a `system` message WITH a contentEntryId is how the conversation
+      // UI identifies the prompt row (`_displayRank` ordering and the
+      // "System Prompt" badge both key on it) — keep `system`-kind
+      // bookkeeping rows (milestones, retractions) payload-free.
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessage(
           id: _uuid.v4(),

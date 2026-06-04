@@ -1,6 +1,10 @@
 # Executor Idempotency & Fencing (Move 4 — idempotency-first) — Implementation Plan (PR 7)
 
-- Status: **Paused — L1+L2 done (reusable key primitives); L3–L5 deferred to PR 8** · Date: 2026-06-02
+- Status: **Paused — deferred to PR 8 in full.** The L1+L2 key primitives
+  (`side_effect_key.dart`) were built and glados-tested but removed from the
+  tree on 2026-06-04 (no production caller — the repo's no-hoarding rule);
+  resurrect them from git history together with their PR 8 consumer.
+  · Date: 2026-06-02
   - Decision (after grounding): the only at-risk auto-effect today is the task-suggestion notification, whose cross-device duplication is **already mostly handled** (per-task retraction converges the bell) and whose remaining behavior is a **deliberate, documented re-surface-after-dismiss UX** — so deduping it would reverse intent, not fix a bug. The reusable key machinery (L1+L2) is landed; the effect-dedup (L3–L5) is deferred until **PR 8 (planner)** introduces genuinely *unguarded* side effects (schedule commits / external writes) where idempotency has clear value and no conflicting existing design. See "Grounding findings" below.
 - Part of: [`2026-05-30_daily_os_runtime_implementation_roadmap.md`](./2026-05-30_daily_os_runtime_implementation_roadmap.md) (PR 7).
 - Design baseline: [ADR 0018](../adr/0018-convergent-multi-device-execution.md) **rules 2–3, 9–10** (lease + fencing token; side-effect idempotency key; silent vs. visible reconciliation); [ADR 0019](../adr/0019-attention-negotiation-protocol.md) (the human gate is the safety boundary for irreversible effects; "convergence handles that, not the lease"); [ADR 0006](../adr/0006-change-set-deferred-tool-confirmation.md) (ChangeSet human gate); [ADR 0009](../adr/0009-redundant-change-proposal-suppression.md) (fingerprint dedup).
@@ -125,7 +129,8 @@ mocks + fixed clocks; no real timers.
 
 - **Soft designated-primary lease + fencing token (ADR 0018 rule 2).** A
   connected-case optimization to cut duplicate LLM cost. Deferred: it needs
-  synced lease state + fence-rejection-on-reconnect, degrades to this design
+  lease state to be synced plus fence-rejection-on-reconnect, degrades to this
+  design
   offline, and is not a correctness requirement. Revisit if duplicate-inference
   cost proves material in practice.
 - **External coordinator / hard lease.** Out of scope — no linearizable primitive

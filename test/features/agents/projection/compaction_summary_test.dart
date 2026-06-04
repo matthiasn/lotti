@@ -29,6 +29,22 @@ SummaryCheckpoint _summary(
 RetractionEvent _retraction(String entryId, int p) =>
     RetractionEvent(position: _pos(p), contentEntryId: entryId);
 
+/// An event log with the given [retractions] and (optionally) content
+/// [events] — the selection's completeness check runs against `events`.
+InputEventLog _log({
+  List<InputEvent> events = const [],
+  List<RetractionEvent> retractions = const [],
+}) => InputEventLog(events: events, retractions: retractions);
+
+/// A payload-backed content event for entry [entryId] at position [p].
+InputEvent _event(String entryId, int p, {String digest = 'd'}) => InputEvent(
+  position: _pos(p),
+  contentEntryId: entryId,
+  contentDigest: digest,
+  sourceCreatedAt: DateTime.utc(2024, 3).add(Duration(minutes: p)),
+  isEdit: false,
+);
+
 TailLine _line(
   String entryId,
   String text, {
@@ -100,11 +116,11 @@ void main() {
 
         final ordered = selectActiveSummary(
           summaries: summaries,
-          retractions: retractions,
+          log: _log(retractions: retractions),
         );
         final shuffled = selectActiveSummary(
           summaries: shuffledBySeed(summaries, seed),
-          retractions: retractions,
+          log: _log(retractions: retractions),
         );
         expect(shuffled, ordered);
 
@@ -135,7 +151,7 @@ void main() {
 
     test('no summaries → no active checkpoint', () {
       expect(
-        selectActiveSummary(summaries: const [], retractions: const []),
+        selectActiveSummary(summaries: const [], log: _log()),
         isNull,
       );
     });
@@ -146,7 +162,7 @@ void main() {
           _summary('s1', cutoff: 3, covers: {'e0': 'd'}),
           _summary('s2', cutoff: 7, covers: {'e0': 'd', 'e1': 'd'}),
         ],
-        retractions: const [],
+        log: _log(),
       );
       expect(active!.id, 's2');
     });
@@ -156,7 +172,7 @@ void main() {
         summaries: [
           _summary('s1', covers: {'e0': 'd'}),
         ],
-        retractions: const [],
+        log: _log(),
       );
       expect(active, isNull);
     });
@@ -168,7 +184,7 @@ void main() {
         summaries: [
           _summary('s1', cutoff: 5, covers: {'e0': 'd-old'}),
         ],
-        retractions: const [],
+        log: _log(),
       );
       expect(active!.id, 's1');
     });
@@ -178,7 +194,7 @@ void main() {
         summaries: [
           _summary('s1', cutoff: 5, covers: {'e0': 'd'}),
         ],
-        retractions: [_retraction('e0', 6)],
+        log: _log(retractions: [_retraction('e0', 6)]),
       );
       expect(active, isNull);
     });
@@ -189,7 +205,7 @@ void main() {
         summaries: [
           _summary('s1', cutoff: 5, covers: {'e0': 'd'}),
         ],
-        retractions: [_retraction('e0', 2)],
+        log: _log(retractions: [_retraction('e0', 2)]),
       );
       expect(active!.id, 's1');
     });
@@ -199,7 +215,7 @@ void main() {
         summaries: [
           _summary('s1', cutoff: 5, covers: {'e0': 'd'}),
         ],
-        retractions: [_retraction('e9', 6)],
+        log: _log(retractions: [_retraction('e9', 6)]),
       );
       expect(active!.id, 's1');
     });
@@ -212,7 +228,65 @@ void main() {
           _summary('s2', cutoff: 7, covers: {'e0': 'd', 'e1': 'd'}),
         ],
         // e1 retracted at 8: s2 (covers e1, cutoff 7) dies; s1 survives.
-        retractions: [_retraction('e1', 8)],
+        log: _log(retractions: [_retraction('e1', 8)]),
+      );
+      expect(active!.id, 's1');
+    });
+
+    test('a late-arriving pre-cutoff event of an UNKNOWN source invalidates '
+        'the checkpoint (sync completeness)', () {
+      // Device B's capture at position 3 syncs in after this device folded
+      // with cutoff 5: it is in neither the prose nor the post-cutoff tail,
+      // so the checkpoint must die and the tail re-expand.
+      final active = selectActiveSummary(
+        summaries: [
+          _summary('s1', cutoff: 5, covers: {'e0': 'd'}),
+        ],
+        log: _log(events: [_event('e0', 1), _event('e-late', 3)]),
+      );
+      expect(active, isNull);
+    });
+
+    test('a late-arriving superseded version of a COVERED source does not '
+        'invalidate (key containment, not digest match)', () {
+      final active = selectActiveSummary(
+        summaries: [
+          _summary('s1', cutoff: 5, covers: {'e0': 'd-new'}),
+        ],
+        // An older version of e0 (different digest) lands pre-cutoff: its
+        // information is superseded by the covered version — keep the
+        // checkpoint.
+        log: _log(events: [_event('e0', 2, digest: 'd-old')]),
+      );
+      expect(active!.id, 's1');
+    });
+
+    test('a suppressed pre-cutoff event does not invalidate (it was never '
+        'to be rendered)', () {
+      final active = selectActiveSummary(
+        summaries: [
+          _summary('s1', cutoff: 5, covers: {'e0': 'd'}),
+        ],
+        // e-gone's event (position 2) precedes its retraction (position 3):
+        // suppressed, so the checkpoint need not cover it.
+        log: _log(
+          events: [_event('e0', 1), _event('e-gone', 2)],
+          retractions: [_retraction('e-gone', 3)],
+        ),
+      );
+      expect(active!.id, 's1');
+    });
+
+    test('falls back across an incomplete newer checkpoint to a complete '
+        'older one', () {
+      final active = selectActiveSummary(
+        summaries: [
+          // s2 folded later but a late arrival at position 5 is uncovered.
+          _summary('s2', cutoff: 7, covers: {'e0': 'd', 'e1': 'd'}),
+          // s1's cutoff (3) predates the late arrival — complete.
+          _summary('s1', cutoff: 3, covers: {'e0': 'd'}),
+        ],
+        log: _log(events: [_event('e0', 1), _event('e-late', 5)]),
       );
       expect(active!.id, 's1');
     });
@@ -223,7 +297,7 @@ void main() {
           _summary('s2', cutoff: 5, covers: {'e0': 'd'}, digest: 'cB'),
           _summary('s1', cutoff: 5, covers: {'e0': 'd'}, digest: 'cA'),
         ],
-        retractions: const [],
+        log: _log(),
       );
       expect(active!.contentDigest, 'cA');
     });
@@ -373,6 +447,18 @@ void main() {
         expect(text, contains('note with trailing newline\n- ['));
       },
     );
+
+    test('collapses embedded newlines so one event is exactly one line', () {
+      final text = assembleCompactedTaskLog(
+        tail: [
+          _line('e1', 'first paragraph\n\nsecond  paragraph\n- a list item'),
+        ],
+      );
+      expect(
+        text,
+        contains('(text) first paragraph second paragraph - a list item'),
+      );
+    });
 
     test('renders tail entries in the given (event) order', () {
       final text = assembleCompactedTaskLog(

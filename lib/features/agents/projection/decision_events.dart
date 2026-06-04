@@ -1,6 +1,7 @@
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
+import 'package:lotti/utils/string_utils.dart';
 
 /// Renders one resolved [LedgerEntry] as the single line both the prompt's
 /// proposal ledger (legacy mode) and the event tail's `(decision)` events
@@ -24,8 +25,12 @@ String formatResolvedLedgerLine(LedgerEntry entry) {
     DecisionActor.agent => ' by agent',
     null => '',
   };
-  final summary = entry.humanSummary.trim();
-  final trimmedReason = entry.reason?.trim();
+  // Collapse whitespace runs (incl. embedded newlines) so one decision is
+  // always exactly one line in the event tail.
+  final summary = normalizeWhitespace(entry.humanSummary);
+  final trimmedReason = entry.reason == null
+      ? null
+      : normalizeWhitespace(entry.reason!);
   final reasonSuffix = (trimmedReason != null && trimmedReason.isNotEmpty)
       ? ' (reason: "$trimmedReason")'
       : '';
@@ -48,9 +53,18 @@ String formatResolvedLedgerLine(LedgerEntry entry) {
 ///
 /// Positioned at `resolvedAt` (falling back to the proposal's `createdAt`)
 /// with the `(changeSetId, itemIndex)` pair as the unique key — all synced
-/// data, so devices converge. The rare re-resolution of an item (e.g.
-/// deferred → confirmed) re-positions its event: one deliberate line
-/// mutation, mirroring how the ledger itself keeps only the newest verdict.
+/// data, so devices converge. Two acknowledged edges:
+/// - re-resolution of an item (e.g. deferred → confirmed) re-positions its
+///   event: one deliberate line mutation, mirroring how the ledger itself
+///   keeps only the newest verdict;
+/// - [resolved] is a bounded recent window
+///   (`TaskAgentWorkflow.resolvedDecisionWindow`, 500): once more verdicts
+///   than that exist, the oldest leave the projected set. Folded verdicts
+///   stay provably covered (they are in the checkpoint's `coveredSources`,
+///   so checkpoint completeness does not misfire on their absence); only a
+///   never-folding agent with >window UNFOLDED verdicts would see its oldest
+///   decision lines drop — the workflow logs loudly when the window
+///   saturates instead of truncating silently.
 List<InputEvent> decisionEventsFromLedger(Iterable<LedgerEntry> resolved) {
   return [
     for (final entry in resolved)

@@ -55,8 +55,15 @@ void main() {
     ).test(
       'every checklist item renders with its id and correct checkbox',
       (
-        items,
+        generated,
       ) {
+        // Re-key ids by index: the generator can emit duplicate ids, which
+        // would make the per-item `singleWhere` lookup ambiguous without
+        // weakening what the property asserts.
+        final items = [
+          for (var i = 0; i < generated.length; i++)
+            generated[i].copyWith(id: 'id-$i'),
+        ];
         final text = renderTaskStateMarkdown(_task(actionItems: items));
         for (final item in items) {
           final line = text

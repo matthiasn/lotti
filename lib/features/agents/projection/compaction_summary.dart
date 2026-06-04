@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
+import 'package:lotti/utils/string_utils.dart';
 
 /// A materialized summary checkpoint over a **prefix of the captured input
 /// event log** (ADR 0017 / ADR 0020 rule 6): it folds every content event up
@@ -53,30 +54,60 @@ class SummaryCheckpoint extends Equatable {
 }
 
 /// Selects the active checkpoint among the agent's materialized [summaries]
-/// given the log's [retractions].
+/// given the current event [log].
 ///
 /// A summary is a *candidate* only if it has a [SummaryCheckpoint.cutoff] and
-/// no covered source was retracted **after** that cutoff (a pre-cutoff
-/// retraction was already visible at fold time and its content excluded; a
-/// post-cutoff retraction means the prose may still mention deleted content —
-/// the checkpoint is discarded and the tail re-expands until the next fold).
+/// is **valid against the current log**:
+///
+/// - no covered source was retracted **after** the cutoff (a pre-cutoff
+///   retraction was already visible at fold time and its content excluded; a
+///   post-cutoff retraction means the prose may still mention deleted content
+///   — the checkpoint is discarded and the tail re-expands until the next
+///   fold);
+/// - **complete**: every non-suppressed event at or before the cutoff is
+///   provably covered (`contentEntryId` ∈ [SummaryCheckpoint.coveredSources]).
+///   Sync can deliver an event whose position sorts before an existing
+///   cutoff (a concurrent capture/observation/verdict from another device,
+///   landing after this device folded); it is in neither the prose nor the
+///   post-cutoff tail, so the checkpoint must die and the tail re-expand —
+///   the same wake's fold then re-covers everything including the late
+///   arrival. Coverage is checked by entry id, not digest, so a
+///   late-arriving *superseded* version of an already-covered source does
+///   not invalidate (its information is superseded anyway).
+///
 /// The active one covers the longest log prefix (greatest cutoff); ties —
 /// concurrent folds over the same region — break by lowest
 /// `(contentDigest, id)` (ADR 0017 Decision 3). Pure → two devices converge.
 SummaryCheckpoint? selectActiveSummary({
   required List<SummaryCheckpoint> summaries,
-  required List<RetractionEvent> retractions,
+  required InputEventLog log,
 }) {
+  // Latest retraction position per source (for the suppression carve-out of
+  // the completeness check).
+  final latestRetraction = <String, EventPosition>{};
+  for (final retraction in log.retractions) {
+    latestRetraction[retraction.contentEntryId] = retraction.position;
+  }
+
   SummaryCheckpoint? active;
   for (final summary in summaries) {
     final cutoff = summary.cutoff;
     if (cutoff == null) continue;
-    final invalidated = retractions.any(
+    final invalidated = log.retractions.any(
       (r) =>
           r.position.isAfter(cutoff) &&
           summary.coveredSources.containsKey(r.contentEntryId),
     );
     if (invalidated) continue;
+    final incomplete = log.events.any((event) {
+      if (event.position.isAfter(cutoff)) return false;
+      final retractedAt = latestRetraction[event.contentEntryId];
+      final suppressed =
+          retractedAt != null && retractedAt.isAfter(event.position);
+      if (suppressed) return false;
+      return !summary.coveredSources.containsKey(event.contentEntryId);
+    });
+    if (incomplete) continue;
     if (active == null ||
         cutoff.compareTo(active.cutoff!) > 0 ||
         (cutoff.compareTo(active.cutoff!) == 0 &&
@@ -144,6 +175,9 @@ String assembleCompactedTaskLog({
 /// falls back to the audio transcript when the text is empty and the duration
 /// tag is omitted when it carries no information (`00:00`/absent). [edited]
 /// marks an event that supersedes an earlier capture of the same source.
+/// Whitespace runs (including embedded newlines) collapse to single spaces so
+/// one event is always exactly one line — the line-oriented contract the
+/// append-only tail and its token accounting rely on.
 ///
 /// Shared by [assembleCompactedTaskLog] (the prompt's verbatim tail) and the
 /// LLM summarizer (the fold input), so what gets distilled matches what the
@@ -155,7 +189,7 @@ String renderCompactedSourceLine(RenderedSource source, {bool edited = false}) {
   final rawBody = (text is String && text.isNotEmpty)
       ? text
       : (transcript is String ? transcript : '');
-  final body = rawBody.trim();
+  final body = normalizeWhitespace(rawBody);
   final editedTag = edited ? ', edited' : '';
   // Keep the per-entry time evidence when it carries information.
   final duration = source.content['loggedDuration'];
