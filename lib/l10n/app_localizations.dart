@@ -8388,6 +8388,12 @@ abstract class AppLocalizations {
   /// **'Filter & Sort'**
   String get journalLinkedEntriesFilterModalTitle;
 
+  /// No description provided for @journalLinkedEntriesShowFlaggedOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Show flagged entries only'**
+  String get journalLinkedEntriesShowFlaggedOnly;
+
   /// No description provided for @journalLinkedEntriesShowHidden.
   ///
   /// In en, this message translates to:

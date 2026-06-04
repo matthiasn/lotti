@@ -7,9 +7,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Single-page modal that lets the user pick the sort order for linked
-/// entries and toggle visibility of hidden entries. Reuses the same
-/// exclusive-choice pill (`DesignSystemFilterChoicePill`) and palette as
-/// the task list filter modal.
+/// entries, toggle visibility of hidden entries, and narrow the list to
+/// flagged entries only. Reuses the same exclusive-choice pill
+/// (`DesignSystemFilterChoicePill`) and palette as the task list filter
+/// modal.
 Future<void> showLinkedEntriesFilterModal({
   required BuildContext context,
   required String entryId,
@@ -46,6 +47,13 @@ class _LinkedEntriesFilterModalBody extends ConsumerWidget {
     );
     final includeHiddenNotifier = ref.read(
       includeHiddenControllerProvider(id: entryId).notifier,
+    );
+
+    final showFlaggedOnly = ref.watch(
+      showFlaggedOnlyControllerProvider(id: entryId),
+    );
+    final showFlaggedOnlyNotifier = ref.read(
+      showFlaggedOnlyControllerProvider(id: entryId).notifier,
     );
 
     String sortLabel(LinkedEntriesSortOrder option) => switch (option) {
@@ -87,6 +95,14 @@ class _LinkedEntriesFilterModalBody extends ConsumerWidget {
           palette: palette,
           tokens: tokens,
           onChanged: () => includeHiddenNotifier.includeHidden = !includeHidden,
+        ),
+        _ToggleRow(
+          label: messages.journalLinkedEntriesShowFlaggedOnly,
+          value: showFlaggedOnly,
+          palette: palette,
+          tokens: tokens,
+          onChanged: () =>
+              showFlaggedOnlyNotifier.showFlaggedOnly = !showFlaggedOnly,
         ),
         SizedBox(height: spacing.step8),
       ],

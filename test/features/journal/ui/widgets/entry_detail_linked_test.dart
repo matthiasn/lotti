@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -480,6 +483,81 @@ void main() {
 
       // Non-task entry exists, so section is shown with filter bar
       expect(find.byType(LinkedEntriesActivityFilterBar), findsOneWidget);
+    });
+
+    testWidgets('flagged-only toggle reactively hides non-flagged entries', (
+      tester,
+    ) async {
+      final flaggedEntry = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(
+          id: 'flagged-entry-id',
+          flag: EntryFlag.import,
+        ),
+      );
+
+      final flaggedLink = EntryLink.basic(
+        id: 'link-flagged',
+        fromId: testTask.meta.id,
+        toId: flaggedEntry.meta.id,
+        createdAt: DateTime(2024, 1, 2),
+        updatedAt: DateTime(2024, 1, 2),
+        vectorClock: null,
+      );
+
+      mockLinkedEntries([testLink, flaggedLink]);
+
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(flaggedEntry.meta.id),
+      ).thenAnswer((_) async => flaggedEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Finder entryDetails(String id) => find.byWidgetPredicate(
+        (widget) => widget is EntryDetailsWidget && widget.itemId == id,
+      );
+
+      // Both linked entries render while the filter is off.
+      expect(entryDetails(flaggedEntry.meta.id), findsOneWidget);
+      expect(entryDetails(testTextEntry.meta.id), findsOneWidget);
+
+      // Toggling flagged-only on hides the non-flagged entry.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(LinkedEntriesWidget)),
+      );
+      container
+              .read(
+                showFlaggedOnlyControllerProvider(
+                  id: testTask.meta.id,
+                ).notifier,
+              )
+              .showFlaggedOnly =
+          true;
+      await tester.pumpAndSettle();
+
+      expect(entryDetails(flaggedEntry.meta.id), findsOneWidget);
+      expect(entryDetails(testTextEntry.meta.id), findsNothing);
+
+      // Toggling it back off restores the non-flagged entry.
+      container
+              .read(
+                showFlaggedOnlyControllerProvider(
+                  id: testTask.meta.id,
+                ).notifier,
+              )
+              .showFlaggedOnly =
+          false;
+      await tester.pumpAndSettle();
+
+      expect(entryDetails(flaggedEntry.meta.id), findsOneWidget);
+      expect(entryDetails(testTextEntry.meta.id), findsOneWidget);
     });
   });
 }

@@ -2461,6 +2461,7 @@
   "journalLinkedEntriesActivityFilterImages": "Images",
   "journalLinkedEntriesActivityFilterTimer": "Timer",
   "journalLinkedEntriesFilterModalTitle": "Filter & Sort",
+  "journalLinkedEntriesShowFlaggedOnly": "Show flagged entries only",
   "journalLinkedEntriesShowHidden": "Show hidden entries",
   "journalLinkedEntriesSortLabel": "Sort by",
   "journalLinkedEntriesSortNewestFirst": "Newest first",

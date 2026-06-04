@@ -2224,6 +2224,7 @@
   "journalLinkedEntriesActivityFilterImages": "Imagini",
   "journalLinkedEntriesActivityFilterTimer": "Cronometru",
   "journalLinkedEntriesFilterModalTitle": "Filtrare și sortare",
+  "journalLinkedEntriesShowFlaggedOnly": "Afișați doar intrările marcate",
   "journalLinkedEntriesShowHidden": "Afișați intrările ascunse",
   "journalLinkedEntriesSortLabel": "Sortați după",
   "journalLinkedEntriesSortNewestFirst": "Cele mai noi mai întâi",

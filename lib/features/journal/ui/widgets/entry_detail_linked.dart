@@ -37,6 +37,9 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final activeKinds = ref.watch(
       linkedEntriesActivityFilterControllerProvider(id: item.id),
     );
+    final showFlaggedOnly = ref.watch(
+      showFlaggedOnlyControllerProvider(id: item.id),
+    );
 
     if (orderedLinks.isEmpty) {
       return const SizedBox.shrink();
@@ -74,6 +77,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
                 isHighlighted: highlightedEntryId == toId,
                 isActiveTimer: activeTimerEntryId == toId,
                 activeKinds: activeKinds,
+                showFlaggedOnly: showFlaggedOnly,
               ),
             );
           },
@@ -83,14 +87,15 @@ class LinkedEntriesWidget extends ConsumerWidget {
   }
 }
 
-/// Wraps [EntryDetailsWidget] so the activity-filter pill set can hide
-/// entries whose kind has been toggled off without forcing the parent to
+/// Wraps [EntryDetailsWidget] so the activity-filter pill set and the
+/// flagged-only toggle can hide entries without forcing the parent to
 /// pre-resolve every linked entity.
 class _FilteredEntryDetails extends ConsumerWidget {
   const _FilteredEntryDetails({
     required this.itemId,
     required this.showAiEntry,
     required this.activeKinds,
+    required this.showFlaggedOnly,
     super.key,
     this.hideTaskEntries = false,
     this.linkedFrom,
@@ -107,6 +112,7 @@ class _FilteredEntryDetails extends ConsumerWidget {
   final JournalEntity? linkedFrom;
   final EntryLink? link;
   final Set<LinkedEntryActivityFilter> activeKinds;
+  final bool showFlaggedOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -114,6 +120,9 @@ class _FilteredEntryDetails extends ConsumerWidget {
     if (entry != null) {
       final kind = LinkedEntryActivityFilter.fromEntity(entry);
       if (kind != null && !activeKinds.contains(kind)) {
+        return const SizedBox.shrink();
+      }
+      if (showFlaggedOnly && entry.meta.flag != EntryFlag.import) {
         return const SizedBox.shrink();
       }
     }

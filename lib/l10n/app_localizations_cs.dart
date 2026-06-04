@@ -4841,6 +4841,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalLinkedEntriesFilterModalTitle => 'Filtrovat a řadit';
 
   @override
+  String get journalLinkedEntriesShowFlaggedOnly =>
+      'Zobrazit pouze označené záznamy';
+
+  @override
   String get journalLinkedEntriesShowHidden => 'Zobrazit skryté záznamy';
 
   @override
