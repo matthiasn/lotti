@@ -642,6 +642,21 @@ const List<KnownModel> mistralModels = [
         'Fast and efficient model with vision capabilities. '
         'Great for summaries, image analysis, and quick tasks.',
   ),
+  // Default model for the Mistral profile — general tasks, agentic thinking,
+  // and vision. Tracks the latest Mistral Medium release via the `-latest`
+  // alias.
+  KnownModel(
+    providerModelId: 'mistral-medium-latest',
+    name: 'Mistral Medium',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Balanced mid-tier multimodal model. Used as the default for general '
+        'tasks, agentic reasoning, and image analysis. Supports function '
+        'calling and vision.',
+  ),
   // Reasoning model - for complex tasks
   KnownModel(
     providerModelId: 'magistral-medium-2509',

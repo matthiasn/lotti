@@ -169,8 +169,8 @@ class ProfileSeedingService {
     AiConfigInferenceProfile(
       id: profileMistralEuId,
       name: 'Mistral (EU)',
-      thinkingModelId: 'magistral-medium-2509',
-      imageRecognitionModelId: 'mistral-small-2501',
+      thinkingModelId: 'mistral-medium-latest',
+      imageRecognitionModelId: 'mistral-medium-latest',
       transcriptionModelId: 'voxtral-mini-latest',
       skillAssignments: _mistralSkillAssignments,
       isDefault: true,
