@@ -32,7 +32,7 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1013" date="2026-06-02">
+    <release version="0.9.1014" date="2026-06-04">
       <description>
           <p>New "Agent memory compaction" flag in Settings (off by default): task agents summarize older task-log entries into a rolling memory using their own model, keeping the wake context compact while recent entries stay verbatim.</p>
           <p>Task agents now update their report only when its content would materially change, instead of re-publishing it on every wake.</p>
