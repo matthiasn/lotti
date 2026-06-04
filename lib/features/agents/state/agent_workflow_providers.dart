@@ -1,4 +1,3 @@
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -23,7 +22,6 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
-import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'agent_workflow_providers.g.dart';
@@ -112,13 +110,11 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     logSummarizer: AgentLogLlmSummarizer(
       inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     ),
-    // Compaction rollout flag (ADR 0017/0020 / PR 5), runtime-toggleable in
-    // Settings → Flags. Default off: input capture runs live (the substrate),
-    // but summarization + the read-flip stay inert until the user enables the
-    // flag. Watched, so flipping it rebuilds the workflow with the new value
-    // (effective from the next wake).
-    compactionEnabled:
-        ref.watch(configFlagProvider(enableAgentCompactionFlag)).value ?? false,
+    // Compaction is gated by the `enable_agent_compaction` config flag, which
+    // the workflow reads from the journal DB at each wake (Settings → Flags
+    // toggle applies on the next wake). Not watched here on purpose: the wake
+    // executor captures this workflow instance at initialization, so a
+    // provider-rebuild-based flag would not reach the executing instance.
   );
 }
 

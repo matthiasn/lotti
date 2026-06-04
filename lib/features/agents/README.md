@@ -386,10 +386,13 @@ stateDiagram-v2
 
 **Wired behind a default-off config flag.** The full activation — including
 the real LLM summarizer, wired in DI — is gated by
-`TaskAgentWorkflow.compactionEnabled`, set from the runtime config flag
-`enable_agent_compaction` (Settings → Flags → "Agent memory compaction",
-default **off**; watched, so a flip takes effect from the next wake without a
-restart):
+the runtime config flag `enable_agent_compaction` (Settings → Flags →
+"Agent memory compaction", default **off**), which the workflow reads from the
+journal DB **at each wake** — so a flip takes effect on the next wake without
+any restart. (Read per wake on purpose: the wake executor captures the
+workflow instance at initialization, so a provider-rebuild-based flag would
+not reach the executing instance. `TaskAgentWorkflow.compactionEnabled`
+remains an explicit override for tests.) When enabled:
 
 - when **off** (production today), the wake prompt assembles `## Current Task
   Context` from the journal exactly as before — byte-identical behaviour;

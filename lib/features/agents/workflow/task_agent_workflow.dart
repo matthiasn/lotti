@@ -51,6 +51,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -98,7 +99,7 @@ class TaskAgentWorkflow {
     this.changeSetNotificationService,
     this.inputCaptureService,
     this.logSummarizer,
-    this.compactionEnabled = false,
+    this.compactionEnabled,
     this.compactionTailBudgetTokens = 12000,
     this.compactionTailRetainTokens = 4000,
   });
@@ -151,13 +152,17 @@ class TaskAgentWorkflow {
   /// emission inert.
   final AgentLogLlmSummarizer? logSummarizer;
 
-  /// Feature flag for input-log compaction (ADR 0017/0020), **default off**.
-  /// When on, the wake context is assembled as `active summary + uncovered
-  /// tail` from the captured log (the inline journal log is dropped from the
-  /// task header), and the oldest tail beyond [compactionTailBudgetTokens] is
-  /// folded into a `summary` checkpoint via [logSummarizer]. Off → production
-  /// behaviour is unchanged (full journal task JSON, no summaries).
-  final bool compactionEnabled;
+  /// Feature flag for input-log compaction (ADR 0017/0020). When **null** (the
+  /// production wiring), the `enable_agent_compaction` config flag is read from
+  /// the journal DB **at each wake**, so a Settings toggle takes effect on the
+  /// next wake without any provider rebuild or runtime restart. An explicit
+  /// `true`/`false` (tests) overrides the flag. When on, the wake context is
+  /// assembled as `active summary + uncovered tail` from the captured log (the
+  /// inline journal log is dropped from the task header), and the oldest tail
+  /// beyond [compactionTailBudgetTokens] is folded into a `summary` checkpoint
+  /// via [logSummarizer]. Off → behaviour is unchanged (full journal task
+  /// JSON, no summaries).
+  final bool? compactionEnabled;
 
   /// Token budget for the verbatim uncovered tail before compaction folds its
   /// oldest entries (ADR 0017). This is the *trigger* (high watermark): no
@@ -314,13 +319,18 @@ class TaskAgentWorkflow {
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
 
-    // 1b. Compaction (ADR 0017) — gated behind the default-off flag plus an
-    // injected summarizer: fold the oldest tail beyond the trigger watermark
-    // (down to the retain watermark) into a summary checkpoint so the
-    // assembled context stays bounded. The fold is distilled with the wake's
-    // resolved model — the agent summarizes its own memory with the brain it
-    // thinks with. Non-fatal.
-    final compactor = compactionEnabled
+    // 1b. Compaction (ADR 0017) — gated behind the `enable_agent_compaction`
+    // config flag (read fresh each wake, so a Settings toggle applies on the
+    // next wake; an explicit [compactionEnabled] overrides it in tests) plus
+    // an injected summarizer: fold the oldest tail beyond the trigger
+    // watermark (down to the retain watermark) into a summary checkpoint so
+    // the assembled context stays bounded. The fold is distilled with the
+    // wake's resolved model — the agent summarizes its own memory with the
+    // brain it thinks with. Non-fatal.
+    final compactionOn =
+        compactionEnabled ??
+        await journalDb.getConfigFlag(enableAgentCompactionFlag);
+    final compactor = compactionOn
         ? AgentLogCompactor(syncService: syncService)
         : null;
     final summarizerService = logSummarizer;
