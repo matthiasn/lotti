@@ -299,6 +299,133 @@ abstract class _$IncludeAiEntriesController extends $Notifier<bool> {
   }
 }
 
+/// Per-entry toggle that narrows the linked entries list to flagged
+/// entries only (`meta.flag == EntryFlag.import`, the flag toggled via
+/// the entry header's flag icon). Defaults to off so all linked entries
+/// stay visible until the user opts in.
+
+@ProviderFor(ShowFlaggedOnlyController)
+final showFlaggedOnlyControllerProvider = ShowFlaggedOnlyControllerFamily._();
+
+/// Per-entry toggle that narrows the linked entries list to flagged
+/// entries only (`meta.flag == EntryFlag.import`, the flag toggled via
+/// the entry header's flag icon). Defaults to off so all linked entries
+/// stay visible until the user opts in.
+final class ShowFlaggedOnlyControllerProvider
+    extends $NotifierProvider<ShowFlaggedOnlyController, bool> {
+  /// Per-entry toggle that narrows the linked entries list to flagged
+  /// entries only (`meta.flag == EntryFlag.import`, the flag toggled via
+  /// the entry header's flag icon). Defaults to off so all linked entries
+  /// stay visible until the user opts in.
+  ShowFlaggedOnlyControllerProvider._({
+    required ShowFlaggedOnlyControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'showFlaggedOnlyControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$showFlaggedOnlyControllerHash();
+
+  @override
+  String toString() {
+    return r'showFlaggedOnlyControllerProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  ShowFlaggedOnlyController create() => ShowFlaggedOnlyController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ShowFlaggedOnlyControllerProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$showFlaggedOnlyControllerHash() =>
+    r'e3b93d0dec4b87e1ea1b105851996351b5b4c2ce';
+
+/// Per-entry toggle that narrows the linked entries list to flagged
+/// entries only (`meta.flag == EntryFlag.import`, the flag toggled via
+/// the entry header's flag icon). Defaults to off so all linked entries
+/// stay visible until the user opts in.
+
+final class ShowFlaggedOnlyControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          ShowFlaggedOnlyController,
+          bool,
+          bool,
+          bool,
+          String
+        > {
+  ShowFlaggedOnlyControllerFamily._()
+    : super(
+        retry: null,
+        name: r'showFlaggedOnlyControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Per-entry toggle that narrows the linked entries list to flagged
+  /// entries only (`meta.flag == EntryFlag.import`, the flag toggled via
+  /// the entry header's flag icon). Defaults to off so all linked entries
+  /// stay visible until the user opts in.
+
+  ShowFlaggedOnlyControllerProvider call({required String id}) =>
+      ShowFlaggedOnlyControllerProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'showFlaggedOnlyControllerProvider';
+}
+
+/// Per-entry toggle that narrows the linked entries list to flagged
+/// entries only (`meta.flag == EntryFlag.import`, the flag toggled via
+/// the entry header's flag icon). Defaults to off so all linked entries
+/// stay visible until the user opts in.
+
+abstract class _$ShowFlaggedOnlyController extends $Notifier<bool> {
+  late final _$args = ref.$arg as String;
+  String get id => _$args;
+
+  bool build({required String id});
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
+  }
+}
+
 /// Per-entry toggle state for the activity filter pills shown above the
 /// linked entries list (Timer / Audio / Images). Defaults to all kinds
 /// active so existing behavior is preserved when the bar mounts.

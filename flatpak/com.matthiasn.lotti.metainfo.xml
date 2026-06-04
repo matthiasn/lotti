@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1015" date="2026-06-04">
+      <description>
+          <p>The linked entries "Filter and Sort" modal now has a "Show flagged entries only" toggle that narrows the list below a task to flagged entries, updating immediately when the toggle or an entry's flag changes.</p>
+      </description>
+    </release>
     <release version="0.9.1014" date="2026-06-04">
       <description>
           <p>New "Agent memory compaction" flag in Settings (off by default): task agents summarize older task-log entries into a rolling memory using their own model, keeping the wake context compact while recent entries stay verbatim.</p>

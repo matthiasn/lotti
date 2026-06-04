@@ -40,7 +40,7 @@ void main() {
     return (tester, container, messages);
   }
 
-  testWidgets('renders sort pills and the show-hidden switch', (tester) async {
+  testWidgets('renders sort pills and the toggle switches', (tester) async {
     final (_, _, messages) = await pumpAndOpenModal(tester);
 
     expect(
@@ -57,6 +57,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text(messages.journalLinkedEntriesShowHidden), findsOneWidget);
+    expect(
+      find.text(messages.journalLinkedEntriesShowFlaggedOnly),
+      findsOneWidget,
+    );
   });
 
   testWidgets('tapping "Oldest first" updates the sort controller', (
@@ -98,4 +102,37 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets(
+    'tapping the flagged-only row flips the show-flagged-only state',
+    (tester) async {
+      final (_, container, messages) = await pumpAndOpenModal(tester);
+
+      expect(
+        container.read(showFlaggedOnlyControllerProvider(id: entryId)),
+        isFalse,
+      );
+
+      await tester.tap(
+        find.text(messages.journalLinkedEntriesShowFlaggedOnly),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        container.read(showFlaggedOnlyControllerProvider(id: entryId)),
+        isTrue,
+      );
+
+      // Toggling again restores the default.
+      await tester.tap(
+        find.text(messages.journalLinkedEntriesShowFlaggedOnly),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        container.read(showFlaggedOnlyControllerProvider(id: entryId)),
+        isFalse,
+      );
+    },
+  );
 }
