@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/utils/string_utils.dart' as string_utils;
@@ -103,8 +104,11 @@ class PendingCorrection {
   final DateTime createdAt;
 
   /// Returns the remaining time until the correction is saved.
+  ///
+  /// Reads the wall clock via `clock.now()` so tests can pin it with
+  /// `withClock`.
   Duration get remainingTime {
-    final elapsed = DateTime.now().difference(createdAt);
+    final elapsed = clock.now().difference(createdAt);
     final remaining = kCorrectionSaveDelay - elapsed;
     return remaining.isNegative ? Duration.zero : remaining;
   }

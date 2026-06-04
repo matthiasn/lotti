@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -17,8 +16,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
-
-class _MockSelectable<T> extends Mock implements Selectable<T> {}
 
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -398,10 +395,8 @@ void main() {
             .whereType<JournalDbEntity>()
             .toList();
 
-        // Create a mock Selectable that returns the rows when .get() is called
-        final mockSelectable = _MockSelectable<JournalDbEntity>();
-        when(mockSelectable.get).thenAnswer((_) async => rows);
-        return mockSelectable;
+        // Central MockSelectable returns the given rows from .get()
+        return MockSelectable<JournalDbEntity>(rows);
       });
       when(() => mockJournalDb.journalEntityById(any())).thenAnswer(
         (invocation) async => invocation.positionalArguments.first == 'item-1'
@@ -1237,9 +1232,7 @@ void main() {
             .whereType<JournalEntity>()
             .map(toDbEntity)
             .toList();
-        final selectable = _MockSelectable<JournalDbEntity>();
-        when(selectable.get).thenAnswer((_) async => rows);
-        return selectable;
+        return MockSelectable<JournalDbEntity>(rows);
       });
     }
 
@@ -1345,9 +1338,7 @@ void main() {
         when(
           () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
         ).thenAnswer((_) {
-          final selectable = _MockSelectable<JournalDbEntity>();
-          when(selectable.get).thenAnswer((_) async => [corruptRow]);
-          return selectable;
+          return MockSelectable<JournalDbEntity>([corruptRow]);
         });
 
         final task = buildTaskWithChecklists(const ['checklist-corrupt']);

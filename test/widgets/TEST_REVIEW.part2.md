@@ -101,7 +101,7 @@
 
 - [ ] **[HIGH]** `test/widgets/modal/modal_utils_test.dart` lines 213–233 and 729–751: `creates page with back button` has the callback commented out (`// backPressed = true`). The `onTapBack` callback is never invoked and its side effect never verified. Both back-button tests are dead-code assertions masquerading as real tests. Fix: actually tap the back button and assert the callback fires.
 
-- [ ] **[HIGH]** `test/widgets/misc/time_recording_indicator_navigation_test.dart` lines 16–43: Defines `MockNavService extends Mock implements NavService` and `FakeTimeService extends TimeService` inline. `MockNavService` is already present in `test/mocks/mocks.dart` (line 510). Use the centralized mock; define only `FakeTimeService` locally (it has stateful behavior inappropriate for a pure Mock).
+- [x] **[HIGH]** `test/widgets/misc/time_recording_indicator_navigation_test.dart` lines 16–43: Defines `MockNavService extends Mock implements NavService` and `FakeTimeService extends TimeService` inline. `MockNavService` is already present in `test/mocks/mocks.dart` (line 510). Use the centralized mock; define only `FakeTimeService` locally (it has stateful behavior inappropriate for a pure Mock).
 
 - [ ] **[HIGH]** `test/widgets/misc/time_recording_indicator_navigation_test.dart` lines 53–66 and `test/widgets/misc/time_recording_indicator_timer_text_test.dart` lines 13–19: Both files use non-standard GetIt scope management (`getIt.pushNewScope` / `getIt.popScope` / inline `getIt.registerSingleton`) instead of `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. This risks suite contamination.
 

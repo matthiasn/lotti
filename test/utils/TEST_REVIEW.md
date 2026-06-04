@@ -54,7 +54,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/utils/location_fallback_test.dart:48-50` — `MockLocation` and `MockLocationData` are defined inline. They should be moved to (or already exist in) `test/mocks/mocks.dart`. Inline definitions bypass the centralized stubs and can diverge from CI expectations.
+- [x] **[HIGH]** `test/utils/location_fallback_test.dart:48-50` — `MockLocation` and `MockLocationData` are defined inline. They should be moved to (or already exist in) `test/mocks/mocks.dart`. Inline definitions bypass the centralized stubs and can diverge from CI expectations.
 - [x] **[HIGH]** `test/utils/screenshots_test.dart:17-19`, `screenshots_platform_test.dart:19-21`, `screenshots_comprehensive_test.dart:22`, `screenshots_portal_integration_test.dart:15` — `MockWindowManager` is defined independently in four test files. One definition in `test/mocks/mocks.dart` would serve all four.
 - [ ] **[HIGH]** `test/utils/task_utils_test.dart:27-35` — `TaskStatus.inProgress(...)` is tested twice with identical assertions (lines 27–34 and 35–41). One call is an exact copy-paste. The second adds zero information; remove it.
 - [ ] **[MED]** `test/utils/location_test.dart` — tests two source files (`lib/utils/geohash.dart` and `lib/utils/location.dart`) in one file. Per AGENTS.md, one test file per source file. `getGeoHash` tests should move to `test/utils/geohash_test.dart`.

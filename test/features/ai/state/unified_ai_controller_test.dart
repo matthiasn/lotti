@@ -34,9 +34,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
 
-class MockUnifiedAiInferenceRepository extends Mock
-    implements UnifiedAiInferenceRepository {}
-
 /// Entry controller that returns null (entity not found).
 class FakeEntryControllerNull extends EntryController {
   @override
@@ -345,15 +342,14 @@ void main() {
               invocation.namedArguments[#onStatusChange]
                   as void Function(InferenceStatus);
 
-          // Simulate progress updates
+          // Simulate progress updates synchronously — listeners fire per
+          // state assignment, so no delays are needed (fake-time policy).
           onStatusChange(InferenceStatus.running);
           statusChangeCount++;
           onProgress('Starting inference...');
           progressUpdates.add('Starting inference...');
-          await Future<void>.delayed(const Duration(milliseconds: 10));
           onProgress('Processing...');
           progressUpdates.add('Processing...');
-          await Future<void>.delayed(const Duration(milliseconds: 10));
           onProgress('Complete!');
           progressUpdates.add('Complete!');
           onStatusChange(InferenceStatus.idle);
@@ -381,13 +377,9 @@ void main() {
           )).future,
         );
 
-        // Drive async execution through all delays
-        async
-          ..flushMicrotasks()
-          ..elapse(const Duration(milliseconds: 10))
-          ..flushMicrotasks()
-          ..elapse(const Duration(milliseconds: 10))
-          ..flushMicrotasks();
+        // Drive async execution — the mock fires synchronously, so a
+        // microtask flush is all that's needed.
+        async.flushMicrotasks();
 
         // Verify inference was called
         verify(
@@ -818,9 +810,9 @@ void main() {
               invocation.namedArguments[#onStatusChange]
                   as void Function(InferenceStatus);
 
-          // Simulate status changes
+          // Simulate status changes synchronously — listeners fire per
+          // state assignment, so no delay is needed (fake-time policy).
           onStatusChange(InferenceStatus.running);
-          await Future<void>.delayed(const Duration(milliseconds: 10));
           onStatusChange(InferenceStatus.idle);
         });
 
@@ -833,11 +825,9 @@ void main() {
           )).future,
         );
 
-        // Drive async execution through the delay
-        async
-          ..flushMicrotasks()
-          ..elapse(const Duration(milliseconds: 10))
-          ..flushMicrotasks();
+        // Drive async execution — the mock fires synchronously, so a
+        // microtask flush is all that's needed.
+        async.flushMicrotasks();
 
         // Both entities should have received the same status updates
         expect(mainEntityStatuses, contains(InferenceStatus.idle));
@@ -916,9 +906,9 @@ void main() {
               invocation.namedArguments[#onStatusChange]
                   as void Function(InferenceStatus);
 
-          // Simulate running status then error
+          // Simulate running status then error — synchronous, no delay
+          // needed (fake-time policy).
           onStatusChange(InferenceStatus.running);
-          await Future<void>.delayed(const Duration(milliseconds: 10));
           throw Exception('Test error');
         });
 
@@ -931,11 +921,9 @@ void main() {
           )).future,
         );
 
-        // Drive async execution through the delay
-        async
-          ..flushMicrotasks()
-          ..elapse(const Duration(milliseconds: 10))
-          ..flushMicrotasks();
+        // Drive async execution — the mock fires synchronously, so a
+        // microtask flush is all that's needed.
+        async.flushMicrotasks();
 
         // Both entities should have error status
         expect(mainEntityStatuses, contains(InferenceStatus.running));

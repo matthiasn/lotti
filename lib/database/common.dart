@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:intl/intl.dart';
@@ -47,7 +48,9 @@ Future<File> getDatabaseFile(String dbFileName) async {
 /// ```
 Future<void> createDbBackup(String fileName) async {
   final file = await getDatabaseFile(fileName);
-  final ts = DateFormat(_backupTimestampFormat).format(DateTime.now());
+  // clock.now() so tests can drive the backup timestamp deterministically
+  // via withClock.
+  final ts = DateFormat(_backupTimestampFormat).format(clock.now());
   final backupDir = await Directory(
     p.join(file.parent.path, _backupDirectoryName),
   ).create(recursive: true);

@@ -1280,6 +1280,14 @@ void main() {
           ).thenAnswer((_) async => soulVersion);
 
           container = createContainer();
+          // Keep the provider alive across the event-queue drain below —
+          // without a listener the autoDispose provider would be disposed
+          // and the post-drain read would observe a fresh loading state.
+          final sub = container.listen(
+            soulEvolutionChatStateProvider(kTestSoulId),
+            (_, _) {},
+          );
+          addTearDown(sub.close);
           await withClock(
             testClock,
             () => container.read(
@@ -1300,16 +1308,10 @@ void main() {
             );
           });
 
-          // Pump the event loop until the async approveSoulProposal completes.
-          await withClock(
-            testClock,
-            () async {
-              // Allow multiple event-loop ticks for the full async chain.
-              for (var i = 0; i < 10; i++) {
-                await Future<void>.microtask(() {});
-              }
-            },
-          );
+          // Drain the event queue deterministically so the async
+          // approveSoulProposal chain completes — no magic-count
+          // busy-wait loop (fake-time policy).
+          await withClock(testClock, pumpEventQueue);
 
           // completeSoulSession should have been called.
           verify(
@@ -1450,14 +1452,9 @@ void main() {
 
           // Wait for sendMessage async chain to complete so the workflow call
           // can be verified and dispose cleanup is safe.
-          await withClock(
-            testClock,
-            () async {
-              for (var i = 0; i < 10; i++) {
-                await Future<void>.microtask(() {});
-              }
-            },
-          );
+          // Drain the event queue deterministically — no magic-count
+          // busy-wait loop (fake-time policy).
+          await withClock(testClock, pumpEventQueue);
 
           verify(
             () => mockWorkflow.sendMessage(
@@ -1526,14 +1523,9 @@ void main() {
           );
 
           // Pump event loop for sendMessage async chain to settle.
-          await withClock(
-            testClock,
-            () async {
-              for (var i = 0; i < 10; i++) {
-                await Future<void>.microtask(() {});
-              }
-            },
-          );
+          // Drain the event queue deterministically — no magic-count
+          // busy-wait loop (fake-time policy).
+          await withClock(testClock, pumpEventQueue);
 
           verify(
             () => mockWorkflow.sendMessage(
@@ -1600,14 +1592,9 @@ void main() {
           );
 
           // Pump event loop for sendMessage async chain to settle.
-          await withClock(
-            testClock,
-            () async {
-              for (var i = 0; i < 10; i++) {
-                await Future<void>.microtask(() {});
-              }
-            },
-          );
+          // Drain the event queue deterministically — no magic-count
+          // busy-wait loop (fake-time policy).
+          await withClock(testClock, pumpEventQueue);
 
           verify(
             () => mockWorkflow.sendMessage(

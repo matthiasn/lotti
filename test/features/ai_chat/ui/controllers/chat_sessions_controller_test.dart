@@ -60,8 +60,9 @@ void main() {
           expect(state.recentSessions, isEmpty);
           expect(state.error, isNull);
 
-          // Wait for async loading to complete
-          await Future<void>.delayed(const Duration(milliseconds: 10));
+          // Drain the event queue deterministically so the async session
+          // load completes — no wall-clock delay (fake-time policy).
+          await pumpEventQueue();
 
           verify(
             () => mockChatRepository.getSessions(

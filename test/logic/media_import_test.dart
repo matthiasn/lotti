@@ -18,23 +18,6 @@ import 'package:path/path.dart' as path;
 
 import '../mocks/mocks.dart';
 
-class FakeJournalImage extends Fake implements JournalImage {}
-
-class FakeDropItem extends Fake implements DropItem {
-  FakeDropItem(this._xFile);
-
-  final XFile _xFile;
-
-  @override
-  String get name => _xFile.name;
-
-  @override
-  String get path => _xFile.path;
-
-  @override
-  Future<DateTime> lastModified() => _xFile.lastModified();
-}
-
 enum _GeneratedMediaKind {
   jpg,
   jpeg,

@@ -693,8 +693,9 @@ void main() {
       // Start first backfill (won't complete yet)
       final firstRun = controller().backfillCategories({_testCategoryId});
 
-      // Allow isRunning to be set
-      await Future<void>.delayed(Duration.zero);
+      // Drain the event queue deterministically until isRunning is set —
+      // no zero-duration Timers (fake-time policy).
+      await pumpEventQueue();
       expect(state().isRunning, isTrue);
 
       // Second call should be ignored

@@ -1,4 +1,3 @@
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
@@ -23,27 +22,30 @@ extension _AnyEvent on glados.Any {
 
 void main() {
   group('LabelAssignmentEventService — lifecycle', () {
-    test('stream emits an event published before a listener attaches', () async {
-      final service = LabelAssignmentEventService();
-      addTearDown(service.dispose);
+    test(
+      'stream emits an event published before a listener attaches',
+      () async {
+        final service = LabelAssignmentEventService();
+        addTearDown(service.dispose);
 
-      final received = <LabelAssignmentEvent>[];
-      final sub = service.stream.listen(received.add);
-      addTearDown(sub.cancel);
+        final received = <LabelAssignmentEvent>[];
+        final sub = service.stream.listen(received.add);
+        addTearDown(sub.cancel);
 
-      const event = LabelAssignmentEvent(
-        taskId: 'task-1',
-        assignedIds: <String>['label-a', 'label-b'],
-      );
-      service.publish(event);
+        const event = LabelAssignmentEvent(
+          taskId: 'task-1',
+          assignedIds: <String>['label-a', 'label-b'],
+        );
+        service.publish(event);
 
-      // Allow the broadcast stream to deliver the event.
-      await Future<void>.delayed(Duration.zero);
+        // Allow the broadcast stream to deliver the event.
+        await Future<void>.delayed(Duration.zero);
 
-      expect(received, hasLength(1));
-      expect(received.first.taskId, 'task-1');
-      expect(received.first.assignedIds, <String>['label-a', 'label-b']);
-    });
+        expect(received, hasLength(1));
+        expect(received.first.taskId, 'task-1');
+        expect(received.first.assignedIds, <String>['label-a', 'label-b']);
+      },
+    );
 
     test('stream delivers events to multiple concurrent listeners', () async {
       final service = LabelAssignmentEventService();
@@ -77,22 +79,24 @@ void main() {
       expect(received1[1].taskId, 'task-b');
     });
 
-    test('publish after dispose is silently ignored — no exception thrown',
-        () async {
-      final service = LabelAssignmentEventService();
-      await service.dispose();
+    test(
+      'publish after dispose is silently ignored — no exception thrown',
+      () async {
+        final service = LabelAssignmentEventService();
+        await service.dispose();
 
-      // Must not throw.
-      expect(
-        () => service.publish(
-          const LabelAssignmentEvent(
-            taskId: 'after-close',
-            assignedIds: <String>[],
+        // Must not throw.
+        expect(
+          () => service.publish(
+            const LabelAssignmentEvent(
+              taskId: 'after-close',
+              assignedIds: <String>[],
+            ),
           ),
-        ),
-        returnsNormally,
-      );
-    });
+          returnsNormally,
+        );
+      },
+    );
 
     test('stream emits no further events after dispose', () async {
       final service = LabelAssignmentEventService();

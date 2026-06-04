@@ -37,7 +37,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/features/journal/repository/journal_repository_test.dart:28–30` — **Inline mock class** `MockSelectableLinkedDbEntry extends Mock implements drift.Selectable<LinkedDbEntry>` is defined in the test file. `test/mocks/mocks.dart` already provides a generic `MockSelectable<T>` (line 126). The inline definition must be removed and replaced with `MockSelectable<LinkedDbEntry>` from central mocks.
+- [x] **[HIGH]** `test/features/journal/repository/journal_repository_test.dart:28–30` — **Inline mock class** `MockSelectableLinkedDbEntry extends Mock implements drift.Selectable<LinkedDbEntry>` is defined in the test file. `test/mocks/mocks.dart` already provides a generic `MockSelectable<T>` (line 126). The inline definition must be removed and replaced with `MockSelectable<LinkedDbEntry>` from central mocks.
 
 - [ ] **[HIGH]** `test/features/journal/repository/journal_repository_test.dart:74–141` — **Fallback values duplicated from central file.** `registerFallbackValue(Metadata(...))`, `registerFallbackValue(JournalEntity.journalEntry(...))`, `registerFallbackValue(SyncMessage.entryLink(...))`, `registerFallbackValue(EntryLink.basic(...))`, `registerFallbackValue(TaskData(...))`, `registerFallbackValue(EntryFlag.none)`, `registerFallbackValue(DateTime(2023))` are all re-registered inline. `test/helpers/fallbacks.dart` already centralizes these (`FakeMetadata`, `FakeTaskData`, `fallbackSyncMessage`, `EntryLink.basic(...)` at line 313, `LogDomain`, etc.). All seven `registerFallbackValue` calls in `setUp` should be replaced with a single `registerAllFallbackValues()` call.
 

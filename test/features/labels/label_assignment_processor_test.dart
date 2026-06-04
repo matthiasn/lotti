@@ -23,8 +23,6 @@ import '../../mocks/mocks.dart';
 // Top-level private helpers used only by edge_cases group
 // ---------------------------------------------------------------------------
 
-class _MockLabelsRepository extends Mock implements LabelsRepository {}
-
 // ---------------------------------------------------------------------------
 // Top-level helpers used by the category group
 // ---------------------------------------------------------------------------
@@ -393,123 +391,123 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('canonical', () {
-  late MockJournalDb mockDb;
-  late MockLabelsRepository mockRepo;
-  late MockDomainLogger mockLogging;
-  late LabelAssignmentProcessor processor;
+    late MockJournalDb mockDb;
+    late MockLabelsRepository mockRepo;
+    late MockDomainLogger mockLogging;
+    late LabelAssignmentProcessor processor;
 
-  setUp(() {
-    mockDb = MockJournalDb();
-    mockRepo = MockLabelsRepository();
-    mockLogging = MockDomainLogger();
-    getIt.registerSingleton<LabelAssignmentEventService>(
-      LabelAssignmentEventService(),
-    );
-    when(
-      () => mockRepo.addLabels(
-        journalEntityId: any(named: 'journalEntityId'),
-        addedLabelIds: any(named: 'addedLabelIds'),
-      ),
-    ).thenAnswer((_) async => true);
-    processor = LabelAssignmentProcessor(
-      db: mockDb,
-      repository: mockRepo,
-      logging: mockLogging,
-    );
-  });
+    setUp(() {
+      mockDb = MockJournalDb();
+      mockRepo = MockLabelsRepository();
+      mockLogging = MockDomainLogger();
+      getIt.registerSingleton<LabelAssignmentEventService>(
+        LabelAssignmentEventService(),
+      );
+      when(
+        () => mockRepo.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        ),
+      ).thenAnswer((_) async => true);
+      processor = LabelAssignmentProcessor(
+        db: mockDb,
+        repository: mockRepo,
+        logging: mockLogging,
+      );
+    });
 
-  tearDown(() {
-    getIt.reset();
-  });
+    tearDown(() {
+      getIt.reset();
+    });
 
-  final testDate = DateTime(2024, 3, 15, 10, 30);
-  final testDeletedDate = DateTime(2024, 3, 15, 11);
+    final testDate = DateTime(2024, 3, 15, 10, 30);
+    final testDeletedDate = DateTime(2024, 3, 15, 11);
 
-  LabelDefinition makeLabel(String id, {bool deleted = false}) =>
-      LabelDefinition(
-        id: id,
-        name: id,
-        color: '#000',
-        description: null,
-        sortOrder: null,
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-        private: false,
-        deletedAt: deleted ? testDeletedDate : null,
+    LabelDefinition makeLabel(String id, {bool deleted = false}) =>
+        LabelDefinition(
+          id: id,
+          name: id,
+          color: '#000',
+          description: null,
+          sortOrder: null,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+          private: false,
+          deletedAt: deleted ? testDeletedDate : null,
+        );
+
+    test('assigns valid and filters invalid', () async {
+      // existing contains p0 (ignored for exclusivity)
+      when(
+        () => mockDb.getLabelDefinitionById('p0'),
+      ).thenAnswer((_) async => makeLabel('p0'));
+
+      // proposed: p1 (same group) -> now allowed, bug (no group) -> assigned, del (deleted) -> invalid
+      when(
+        () => mockDb.getLabelDefinitionById('p1'),
+      ).thenAnswer((_) async => makeLabel('p1'));
+      when(
+        () => mockDb.getLabelDefinitionById('bug'),
+      ).thenAnswer((_) async => makeLabel('bug'));
+      when(
+        () => mockDb.getLabelDefinitionById('del'),
+      ).thenAnswer((_) async => makeLabel('del', deleted: true));
+
+      final result = await processor.processAssignment(
+        taskId: 't1',
+        proposedIds: const ['p1', 'bug', 'del'],
+        existingIds: const ['p0'],
       );
 
-  test('assigns valid and filters invalid', () async {
-    // existing contains p0 (ignored for exclusivity)
-    when(
-      () => mockDb.getLabelDefinitionById('p0'),
-    ).thenAnswer((_) async => makeLabel('p0'));
+      expect(result.assigned, containsAll(['bug', 'p1']));
+      expect(result.invalid, contains('del'));
+      verify(
+        () => mockRepo.addLabels(
+          journalEntityId: 't1',
+          addedLabelIds: any(named: 'addedLabelIds'),
+        ),
+      ).called(1);
+    });
 
-    // proposed: p1 (same group) -> now allowed, bug (no group) -> assigned, del (deleted) -> invalid
-    when(
-      () => mockDb.getLabelDefinitionById('p1'),
-    ).thenAnswer((_) async => makeLabel('p1'));
-    when(
-      () => mockDb.getLabelDefinitionById('bug'),
-    ).thenAnswer((_) async => makeLabel('bug'));
-    when(
-      () => mockDb.getLabelDefinitionById('del'),
-    ).thenAnswer((_) async => makeLabel('del', deleted: true));
+    test('caps at maximum labels per assignment', () async {
+      // Prepare 7 valid labels; only first 5 should be considered
+      for (final id in const ['a', 'b', 'c', 'd', 'e', 'f', 'g']) {
+        when(
+          () => mockDb.getLabelDefinitionById(id),
+        ).thenAnswer((_) async => makeLabel(id));
+      }
 
-    final result = await processor.processAssignment(
-      taskId: 't1',
-      proposedIds: const ['p1', 'bug', 'del'],
-      existingIds: const ['p0'],
-    );
+      final result = await processor.processAssignment(
+        taskId: 't1',
+        proposedIds: const ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+        existingIds: const [],
+      );
 
-    expect(result.assigned, containsAll(['bug', 'p1']));
-    expect(result.invalid, contains('del'));
-    verify(
-      () => mockRepo.addLabels(
-        journalEntityId: 't1',
-        addedLabelIds: any(named: 'addedLabelIds'),
-      ),
-    ).called(1);
-  });
+      expect(result.assigned.length, lessThanOrEqualTo(5));
+      verify(
+        () => mockRepo.addLabels(
+          journalEntityId: 't1',
+          addedLabelIds: any(named: 'addedLabelIds'),
+        ),
+      ).called(1);
+    });
 
-  test('caps at maximum labels per assignment', () async {
-    // Prepare 7 valid labels; only first 5 should be considered
-    for (final id in const ['a', 'b', 'c', 'd', 'e', 'f', 'g']) {
-      when(
-        () => mockDb.getLabelDefinitionById(id),
-      ).thenAnswer((_) async => makeLabel(id));
-    }
+    test('returns early for empty proposed list', () async {
+      final result = await processor.processAssignment(
+        taskId: 't1',
+        proposedIds: const [],
+        existingIds: const [],
+      );
 
-    final result = await processor.processAssignment(
-      taskId: 't1',
-      proposedIds: const ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
-      existingIds: const [],
-    );
-
-    expect(result.assigned.length, lessThanOrEqualTo(5));
-    verify(
-      () => mockRepo.addLabels(
-        journalEntityId: 't1',
-        addedLabelIds: any(named: 'addedLabelIds'),
-      ),
-    ).called(1);
-  });
-
-  test('returns early for empty proposed list', () async {
-    final result = await processor.processAssignment(
-      taskId: 't1',
-      proposedIds: const [],
-      existingIds: const [],
-    );
-
-    expect(result.assigned, isEmpty);
-    verifyNever(
-      () => mockRepo.addLabels(
-        journalEntityId: any(named: 'journalEntityId'),
-        addedLabelIds: any(named: 'addedLabelIds'),
-      ),
-    );
-  });
+      expect(result.assigned, isEmpty);
+      verifyNever(
+        () => mockRepo.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        ),
+      );
+    });
   }); // end canonical group
 
   // ---------------------------------------------------------------------------
@@ -518,13 +516,13 @@ void main() {
 
   group('edge_cases', () {
     late MockJournalDb mockDbEdge;
-    late _MockLabelsRepository mockRepoEdge;
+    late MockLabelsRepository mockRepoEdge;
     late MockDomainLogger mockLoggingEdge;
     late LabelAssignmentProcessor processorEdge;
 
     setUp(() {
       mockDbEdge = MockJournalDb();
-      mockRepoEdge = _MockLabelsRepository();
+      mockRepoEdge = MockLabelsRepository();
       mockLoggingEdge = MockDomainLogger();
       getIt.allowReassignment = true;
       getIt.registerSingleton<LabelAssignmentEventService>(
@@ -553,47 +551,49 @@ void main() {
       private: false,
     );
 
-    test('concurrent assignments to same task do not duplicate labels',
-        () async {
-      when(
-        () => mockDbEdge.getLabelDefinitionById('a'),
-      ).thenAnswer((_) async => makeLabelEdge('a'));
+    test(
+      'concurrent assignments to same task do not duplicate labels',
+      () async {
+        when(
+          () => mockDbEdge.getLabelDefinitionById('a'),
+        ).thenAnswer((_) async => makeLabelEdge('a'));
 
-      // Delay persistence to increase overlap
-      when(
-        () => mockRepoEdge.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        ),
-      ).thenAnswer((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        return true;
-      });
+        // Delay persistence to increase overlap
+        when(
+          () => mockRepoEdge.addLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            addedLabelIds: any(named: 'addedLabelIds'),
+          ),
+        ).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          return true;
+        });
 
-      // Fire two assignments nearly simultaneously
-      final f1 = processorEdge.processAssignment(
-        taskId: 't1',
-        proposedIds: const ['a'],
-        existingIds: const [],
-      );
-      final f2 = processorEdge.processAssignment(
-        taskId: 't1',
-        proposedIds: const ['a'],
-        existingIds: const [],
-      );
+        // Fire two assignments nearly simultaneously
+        final f1 = processorEdge.processAssignment(
+          taskId: 't1',
+          proposedIds: const ['a'],
+          existingIds: const [],
+        );
+        final f2 = processorEdge.processAssignment(
+          taskId: 't1',
+          proposedIds: const ['a'],
+          existingIds: const [],
+        );
 
-      final results = await Future.wait([f1, f2]);
-      expect(results[0].assigned, ['a']);
-      expect(results[1].assigned, ['a']);
-      // Repository is called for both (current behavior), but labels API
-      // remains de-duplicating internally.
-      verify(
-        () => mockRepoEdge.addLabels(
-          journalEntityId: 't1',
-          addedLabelIds: ['a'],
-        ),
-      ).called(2);
-    });
+        final results = await Future.wait([f1, f2]);
+        expect(results[0].assigned, ['a']);
+        expect(results[1].assigned, ['a']);
+        // Repository is called for both (current behavior), but labels API
+        // remains de-duplicating internally.
+        verify(
+          () => mockRepoEdge.addLabels(
+            journalEntityId: 't1',
+            addedLabelIds: ['a'],
+          ),
+        ).called(2);
+      },
+    );
 
     test(
       'assignment when task is deleted mid-operation (persistence fails)',
@@ -627,31 +627,33 @@ void main() {
       },
     );
 
-    test('supports special characters in label IDs (spaces, unicode)',
-        () async {
-      for (final id in const ['with space', 'ünicode', 'emoji😀']) {
+    test(
+      'supports special characters in label IDs (spaces, unicode)',
+      () async {
+        for (final id in const ['with space', 'ünicode', 'emoji😀']) {
+          when(
+            () => mockDbEdge.getLabelDefinitionById(id),
+          ).thenAnswer((_) async => makeLabelEdge(id));
+        }
         when(
-          () => mockDbEdge.getLabelDefinitionById(id),
-        ).thenAnswer((_) async => makeLabelEdge(id));
-      }
-      when(
-        () => mockRepoEdge.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        ),
-      ).thenAnswer((_) async => true);
+          () => mockRepoEdge.addLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            addedLabelIds: any(named: 'addedLabelIds'),
+          ),
+        ).thenAnswer((_) async => true);
 
-      final result = await processorEdge.processAssignment(
-        taskId: 't3',
-        proposedIds: const ['with space', 'ünicode', 'emoji😀'],
-        existingIds: const [],
-      );
+        final result = await processorEdge.processAssignment(
+          taskId: 't3',
+          proposedIds: const ['with space', 'ünicode', 'emoji😀'],
+          existingIds: const [],
+        );
 
-      expect(
-        result.assigned,
-        containsAll(['with space', 'ünicode', 'emoji😀']),
-      );
-    });
+        expect(
+          result.assigned,
+          containsAll(['with space', 'ünicode', 'emoji😀']),
+        );
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -746,7 +748,9 @@ void main() {
       expect(res.assigned, ['in']);
       expect(res.invalid, isEmpty);
       expect(
-        res.skipped.any((m) => m['id'] == 'out' && m['reason'] == 'out_of_scope'),
+        res.skipped.any(
+          (m) => m['id'] == 'out' && m['reason'] == 'out_of_scope',
+        ),
         isTrue,
       );
     });
@@ -851,8 +855,9 @@ void main() {
         private: false,
       );
       for (final id in const ['a', 'b', 'c', 'd']) {
-        when(() => mockDbTelemetry.getLabelDefinitionById(id))
-            .thenAnswer((_) => def(id));
+        when(
+          () => mockDbTelemetry.getLabelDefinitionById(id),
+        ).thenAnswer((_) => def(id));
       }
 
       // Register mocks that LabelAssignmentProcessor may access indirectly

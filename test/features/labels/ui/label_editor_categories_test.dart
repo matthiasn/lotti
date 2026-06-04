@@ -15,11 +15,9 @@ import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
-class _MockLabelsRepository extends Mock implements LabelsRepository {}
-
 void main() {
   late MockEntitiesCacheService cacheService;
-  late _MockLabelsRepository repository;
+  late MockLabelsRepository repository;
 
   final categoryWork = CategoryDefinition(
     id: 'work',
@@ -45,7 +43,7 @@ void main() {
 
   setUp(() async {
     cacheService = MockEntitiesCacheService();
-    repository = _MockLabelsRepository();
+    repository = MockLabelsRepository();
 
     await getIt.reset();
     getIt.registerSingleton<EntitiesCacheService>(cacheService);

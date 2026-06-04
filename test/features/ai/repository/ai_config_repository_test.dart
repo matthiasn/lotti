@@ -911,9 +911,9 @@ void main() {
                   onError: (Object e, StackTrace s) {},
                 );
 
-            // Flush the event loop so the bootstrap Future settles.
-            await Future<void>.delayed(Duration.zero);
-            await Future<void>.delayed(Duration.zero);
+            // Drain the event queue deterministically so the bootstrap
+            // Future settles — no zero-duration Timers (fake-time policy).
+            await pumpEventQueue();
 
             await subscription.cancel();
           },
@@ -976,9 +976,9 @@ void main() {
         final testError = Exception('Watch stream failed');
         watchController.addError(testError);
 
-        // Allow the error to propagate through the event loop.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        // Drain the event queue deterministically so the error propagates —
+        // no zero-duration Timers (fake-time policy).
+        await pumpEventQueue();
 
         await subscription.cancel();
         await watchController.close();

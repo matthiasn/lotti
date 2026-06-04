@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/audio_note.dart';
@@ -38,7 +39,6 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/location.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:research_package/model.dart';
@@ -1726,20 +1726,23 @@ void main() {
     test(
       'createMeasurementEntry enables geolocation when data time is close to now',
       () async {
-        // Use DateTime.now() so shouldAddGeolocation evaluates to true.
-        // This covers line 239 (the `true` branch of shouldAddGeolocation).
-        final now = DateTime.now();
+        // Pin the clock so shouldAddGeolocation is deterministically true
+        // (data time == clock.now(); covers the `true` branch) — no
+        // wall-clock race (fake-time policy).
+        final now = DateTime(2024, 3, 15, 10, 30);
         await getIt<JournalDb>().upsertMeasurableDataType(measurableWater);
-        final measurement = await getIt<PersistenceLogic>()
-            .createMeasurementEntry(
-              data: MeasurementData(
-                dateFrom: now,
-                dateTo: now,
-                value: 250,
-                dataTypeId: measurableWater.id,
-              ),
-              private: false,
-            );
+        final measurement = await withClock(
+          Clock.fixed(now),
+          () => getIt<PersistenceLogic>().createMeasurementEntry(
+            data: MeasurementData(
+              dateFrom: now,
+              dateTo: now,
+              value: 250,
+              dataTypeId: measurableWater.id,
+            ),
+            private: false,
+          ),
+        );
 
         expect(measurement, isNotNull);
         expect(measurement?.data.value, 250);
@@ -1762,20 +1765,23 @@ void main() {
     test(
       'createHabitCompletionEntry enables geolocation when data time is close to now',
       () async {
-        // Use DateTime.now() so shouldAddGeolocation evaluates to true.
-        // This covers line 282 (the `true` branch of shouldAddGeolocation).
-        final now = DateTime.now();
+        // Pin the clock so shouldAddGeolocation is deterministically true
+        // (data time == clock.now(); covers the `true` branch) — no
+        // wall-clock race (fake-time policy).
+        final now = DateTime(2024, 3, 15, 10, 30);
         await getIt<PersistenceLogic>().upsertEntityDefinition(habitFlossing);
 
-        final completion = await getIt<PersistenceLogic>()
-            .createHabitCompletionEntry(
-              data: HabitCompletionData(
-                dateFrom: now,
-                dateTo: now,
-                habitId: habitFlossing.id,
-              ),
-              habitDefinition: habitFlossing,
-            );
+        final completion = await withClock(
+          Clock.fixed(now),
+          () => getIt<PersistenceLogic>().createHabitCompletionEntry(
+            data: HabitCompletionData(
+              dateFrom: now,
+              dateTo: now,
+              habitId: habitFlossing.id,
+            ),
+            habitDefinition: habitFlossing,
+          ),
+        );
 
         expect(completion, isNotNull);
         expect(completion?.data.habitId, habitFlossing.id);
@@ -3892,4 +3898,3 @@ void main() {
 }
 
 // Mock DeviceLocation — not available in central mocks
-class MockDeviceLocation extends Mock implements DeviceLocation {}

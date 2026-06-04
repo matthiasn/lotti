@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -25,9 +24,6 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockSelectableLinkedDbEntry extends Mock
-    implements drift.Selectable<LinkedDbEntry> {}
 
 void main() {
   group('JournalRepository', () {
@@ -1324,12 +1320,13 @@ void main() {
         'returns empty list without sorting when there are no links',
         () async {
           const fromId = 'from-id';
-          final mockLinksQuery = MockSelectableLinkedDbEntry();
+          final mockLinksQuery = MockSelectable<LinkedDbEntry>(
+            <LinkedDbEntry>[],
+          );
 
           when(
             () => mockJournalDb.linksFromId(fromId, [false]),
           ).thenReturn(mockLinksQuery);
-          when(mockLinksQuery.get).thenAnswer((_) async => <LinkedDbEntry>[]);
 
           final result = await repository.getLinksFromId(fromId);
 
@@ -1388,13 +1385,12 @@ void main() {
         );
 
         final mockEntries = [mockDbEntry1, mockDbEntry2];
-        final mockLinksQuery = MockSelectableLinkedDbEntry();
+        final mockLinksQuery = MockSelectable<LinkedDbEntry>(mockEntries);
 
         // Mock the linksFromId query
         when(
           () => mockJournalDb.linksFromId(fromId, [false]),
         ).thenReturn(mockLinksQuery);
-        when(mockLinksQuery.get).thenAnswer((_) async => mockEntries);
 
         // Mock the journalEntityIdsByDateFromDesc query
         when(
@@ -1449,13 +1445,12 @@ void main() {
         );
 
         final mockEntries = [mockDbEntry];
-        final mockLinksQuery = MockSelectableLinkedDbEntry();
+        final mockLinksQuery = MockSelectable<LinkedDbEntry>(mockEntries);
 
         // Mock the linksFromId query
         when(
           () => mockJournalDb.linksFromId(fromId, [false, true]),
         ).thenReturn(mockLinksQuery);
-        when(mockLinksQuery.get).thenAnswer((_) async => mockEntries);
 
         // Mock the journalEntityIdsByDateFromDesc query
         when(
@@ -1526,13 +1521,12 @@ void main() {
         );
 
         final mockEntries = [mockDbEntry1, mockDbEntry2];
-        final mockLinksQuery = MockSelectableLinkedDbEntry();
+        final mockLinksQuery = MockSelectable<LinkedDbEntry>(mockEntries);
 
         // Mock the linksFromId query
         when(
           () => mockJournalDb.linksFromId(fromId, [false]),
         ).thenReturn(mockLinksQuery);
-        when(mockLinksQuery.get).thenAnswer((_) async => mockEntries);
 
         // Mock the journalEntityIdsByDateFromDesc query to return an ID that doesn't exist
         // in our links map to test the nonNulls filtering
@@ -2449,7 +2443,9 @@ void main() {
         ..registerSingleton<NotificationService>(MockNotificationService())
         ..registerSingleton<LoggingService>(MockLoggingService())
         ..registerSingleton<VectorClockService>(collapsedMockVectorClockService)
-        ..registerSingleton<UpdateNotifications>(collapsedMockUpdateNotifications)
+        ..registerSingleton<UpdateNotifications>(
+          collapsedMockUpdateNotifications,
+        )
         ..registerSingleton<OutboxService>(collapsedMockOutboxService)
         ..registerSingleton<TimeService>(MockTimeService());
 
@@ -2560,7 +2556,9 @@ void main() {
         verify(
           () => collapsedMockVectorClockService.getNextVectorClock(),
         ).called(1);
-        verify(() => collapsedMockOutboxService.enqueueMessage(any())).called(1);
+        verify(
+          () => collapsedMockOutboxService.enqueueMessage(any()),
+        ).called(1);
       });
 
       test('skips update when collapsed is unchanged (both null)', () async {
@@ -2663,7 +2661,9 @@ void main() {
         verify(
           () => collapsedMockVectorClockService.getNextVectorClock(),
         ).called(1);
-        verify(() => collapsedMockOutboxService.enqueueMessage(any())).called(1);
+        verify(
+          () => collapsedMockOutboxService.enqueueMessage(any()),
+        ).called(1);
       });
 
       test('notifies affected IDs after collapsed update', () async {

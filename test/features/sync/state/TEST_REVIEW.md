@@ -96,7 +96,7 @@ Two Glados tests already exist in this directory and are well-designed:
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** **`sync_activity_signaler_test.dart` has 6 `await Future<void>.delayed(Duration.zero)` calls** (lines 21, 39, 53, 69, 81, 86), each forcing a real event-loop turn. Converting these to `await Future<void>.value()` (or `fakeAsync` + `flushMicrotasks`) would make the 6 tests run in microseconds instead of milliseconds and remove the real-time dependency.
+- [x] **[HIGH]** **`sync_activity_signaler_test.dart` has 6 `await Future<void>.delayed(Duration.zero)` calls** (lines 21, 39, 53, 69, 81, 86), each forcing a real event-loop turn. Converting these to `await Future<void>.value()` (or `fakeAsync` + `flushMicrotasks`) would make the 6 tests run in microseconds instead of milliseconds and remove the real-time dependency.
 
 - [ ] **[MED]** **`backfill_stats_controller_test.dart` creates and resets `getIt` in every `setUp`/`tearDown`** (lines 43–56). `getIt.reset()` is an async operation that tears down all singletons; on the CI runner with limited CPU this adds measurable overhead per test. If the `getIt` coupling were removed from the controller (services injected via `ref.watch`), the tests could use a simple `ProviderContainer` override and avoid `getIt` entirely.
 

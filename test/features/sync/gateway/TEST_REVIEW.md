@@ -26,7 +26,7 @@
 
 - [ ] **[HIGH]** `matrix_sdk_gateway_test.dart` lines 17–27, 681: defines 6 `Mock`/`Fake` classes inline (`MockClient`, `MockLoginResponse`, `MockDeviceKeys`, `MockDeviceKeysList`, `MockMatrixFile`, `MockGetVersionsResponse`, `FakeKeyVerification`). These are not present in `test/mocks/mocks.dart`. Per AGENTS.md the centralized mock file is the mandatory location. Add all six there, then remove the inline definitions.
 
-- [ ] **[HIGH]** `matrix_sdk_gateway_test.dart` lines 400 and 419: uses `await Future<void>.delayed(Duration.zero)` to let stream events propagate before asserting. This is a fake-time violation (AGENTS.md / test/README.md). Replace with `await pumpEventQueue()` or, within a `testWidgets`/`fakeAsync` context, `async.flushMicrotasks()`. For plain `test()` bodies, `await pumpEventQueue()` is the idiomatic replacement.
+- [x] **[HIGH]** `matrix_sdk_gateway_test.dart` lines 400 and 419: uses `await Future<void>.delayed(Duration.zero)` to let stream events propagate before asserting. This is a fake-time violation (AGENTS.md / test/README.md). Replace with `await pumpEventQueue()` or, within a `testWidgets`/`fakeAsync` context, `async.flushMicrotasks()`. For plain `test()` bodies, `await pumpEventQueue()` is the idiomatic replacement.
 
 - [ ] **[MED]** `matrix_sync_gateway_test.dart` (16 lines) contains exactly one test that only checks two field values on `RoomInviteEvent` after construction. Per AGENTS.md "no constructor smoke tests" — this is existence-only. The abstract interface itself has no behavior to test, but `RoomInviteEvent` is a concrete value class; the single test covers equality at best. Either expand to test the equality/hashCode contract, or delete the file if it adds no value beyond the compile check.
 

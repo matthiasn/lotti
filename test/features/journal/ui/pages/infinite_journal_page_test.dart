@@ -159,16 +159,12 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    // Helper function to replace pumpAndSettle
+    // Helper function to replace pumpAndSettle. All data comes from
+    // synchronous mock stubs, so one event-loop pump plus a single 16 ms
+    // frame is enough — no need to spin a dozen extra frames.
     Future<void> pumpWithDelay(WidgetTester tester) async {
-      // Give the widget time to build and load initial data
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // Additional pumps to progress animations
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await tester.pump(const Duration(milliseconds: 16));
     }
 
     testWidgets('page is rendered with text entry', (tester) async {

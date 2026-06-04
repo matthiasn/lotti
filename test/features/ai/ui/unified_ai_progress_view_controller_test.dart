@@ -16,9 +16,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
-class MockUnifiedAiInferenceRepository extends Mock
-    implements UnifiedAiInferenceRepository {}
-
 void main() {
   late AiConfigPrompt testPromptConfig;
   late MockUnifiedAiInferenceRepository mockRepository;

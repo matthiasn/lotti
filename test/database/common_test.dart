@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -196,14 +197,16 @@ void main() {
       final sourceFile = File(p.join(testDir.path, fileName));
       await sourceFile.writeAsString('test data');
 
-      // Create first backup
-      await createDbBackup(fileName);
-
-      // Wait a bit to ensure a different timestamp
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-
-      // Create second backup
-      await createDbBackup(fileName);
+      // Drive the backup timestamps with fixed clocks so the filenames are
+      // guaranteed distinct — no wall-clock wait (fake-time policy).
+      await withClock(
+        Clock.fixed(DateTime(2024, 3, 15, 10, 30)),
+        () => createDbBackup(fileName),
+      );
+      await withClock(
+        Clock.fixed(DateTime(2024, 3, 15, 10, 30, 1)),
+        () => createDbBackup(fileName),
+      );
 
       // Verify that two distinct backup files were created
       final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));

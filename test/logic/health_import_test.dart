@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -10,7 +9,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/health_service.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -20,10 +18,6 @@ import 'package:permission_handler_platform_interface/permission_handler_platfor
 import 'package:uuid/uuid.dart';
 
 import '../mocks/mocks.dart';
-
-class MockHealthService extends Mock implements HealthService {}
-
-class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 
 /// Fake [PermissionHandlerPlatform] that records every requested permission set
 /// and grants them all, so the default [HealthImport] permission request path
@@ -42,12 +36,6 @@ class _RecordingPermissionHandler extends PermissionHandlerPlatform {
     };
   }
 }
-
-class FakeQuantitativeData extends Fake implements CumulativeQuantityData {}
-
-class FakeDiscreteQuantityData extends Fake implements DiscreteQuantityData {}
-
-class FakeWorkoutData extends Fake implements WorkoutData {}
 
 void main() {
   late HealthImport healthImport;

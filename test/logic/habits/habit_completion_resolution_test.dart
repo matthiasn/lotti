@@ -424,21 +424,22 @@ class _GeneratedComparePair {
   final String idB;
 
   HabitCompletionEntry get a => _entryFromOffsets(
-        id: idA,
-        updatedAtMinutes: updatedA,
-        createdAtMinutes: createdA,
-        dateToMinutes: dateToA,
-      );
+    id: idA,
+    updatedAtMinutes: updatedA,
+    createdAtMinutes: createdA,
+    dateToMinutes: dateToA,
+  );
 
   HabitCompletionEntry get b => _entryFromOffsets(
-        id: idB,
-        updatedAtMinutes: updatedB,
-        createdAtMinutes: createdB,
-        dateToMinutes: dateToB,
-      );
+    id: idB,
+    updatedAtMinutes: updatedB,
+    createdAtMinutes: createdB,
+    dateToMinutes: dateToB,
+  );
 
   @override
-  String toString() => '_GeneratedComparePair('
+  String toString() =>
+      '_GeneratedComparePair('
       'updatedA=$updatedA, updatedB=$updatedB, '
       'createdA=$createdA, createdB=$createdB, '
       'dateToA=$dateToA, dateToB=$dateToB, '

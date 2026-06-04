@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockRealtimeService extends Mock
-    implements RealtimeTranscriptionService {}
+import '../../../../../mocks/mocks.dart';
 
-/// Creates a [MockRealtimeService] that reports realtime config available.
-MockRealtimeService realtimeServiceWithConfig() {
-  final mock = MockRealtimeService();
+/// Creates a [MockRealtimeTranscriptionService] (from the central mocks
+/// file) that reports realtime config available.
+MockRealtimeTranscriptionService realtimeServiceWithConfig() {
+  final mock = MockRealtimeTranscriptionService();
   when(mock.resolveRealtimeConfig).thenAnswer(
     (_) async => (
       provider: const FakeProvider(),

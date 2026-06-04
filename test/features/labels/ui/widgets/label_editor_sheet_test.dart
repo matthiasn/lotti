@@ -303,5 +303,82 @@ void main() {
         expect(saved, created);
       },
     );
+
+    testWidgets('is disabled while the name is empty', (tester) async {
+      await pumpSheet(tester);
+
+      final createButton = find.widgetWithText(FilledButton, 'Create');
+      expect(createButton, findsOneWidget);
+      expect(tester.widget<FilledButton>(createButton).onPressed, isNull);
+    });
+
+    testWidgets('becomes enabled once a name is entered', (tester) async {
+      await pumpSheet(tester);
+
+      await tester.enterText(find.byType(TextField).first, 'Release blocker');
+      await tester.pump();
+
+      final createButton = find.widgetWithText(FilledButton, 'Create');
+      expect(tester.widget<FilledButton>(createButton).onPressed, isNotNull);
+    });
+
+    testWidgets('renders the duplicate-name error from save()', (
+      tester,
+    ) async {
+      // An existing label with the same name makes save() set the
+      // duplicate error message, which the sheet must render.
+      when(() => repository.getAllLabels()).thenAnswer(
+        (_) async => [_label(name: 'Release blocker')],
+      );
+
+      await pumpSheet(tester);
+      await tester.enterText(find.byType(TextField).first, 'Release blocker');
+      await tester.pump();
+
+      final createButton = find.widgetWithText(FilledButton, 'Create');
+      await tester.ensureVisible(createButton);
+      await tester.pump();
+      await tester.tap(createButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('A label with this name already exists.'),
+        findsOneWidget,
+      );
+      verifyNever(
+        () => repository.createLabel(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          description: any(named: 'description'),
+          private: any(named: 'private'),
+          applicableCategoryIds: any(named: 'applicableCategoryIds'),
+        ),
+      );
+    });
+  });
+
+  group('private toggle', () {
+    testWidgets('tapping the switch flips isPrivate on the controller', (
+      tester,
+    ) async {
+      await pumpSheet(tester, recordController: true);
+
+      expect(
+        _RecordingLabelEditorController.last!.state.isPrivate,
+        isFalse,
+      );
+
+      final toggleFinder = find.byType(SwitchListTile);
+      expect(toggleFinder, findsOneWidget);
+      await tester.ensureVisible(toggleFinder);
+      await tester.pump();
+      await tester.tap(toggleFinder);
+      await tester.pump();
+
+      expect(
+        _RecordingLabelEditorController.last!.state.isPrivate,
+        isTrue,
+      );
+    });
   });
 }

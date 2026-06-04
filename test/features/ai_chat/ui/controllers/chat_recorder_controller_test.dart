@@ -150,16 +150,17 @@ extension _AnyChatRecorderState on glados.Any {
         amplitudeHistory,
         glados.any.bool,
         glados.any.bool,
-        (ChatRecorderStatus status,
-            List<double> history,
-            bool useRealtime,
-            bool hasOptional) =>
-            ChatRecorderState(
-              status: status,
-              amplitudeHistory: history,
-              useRealtimeMode: useRealtime,
-              transcript: hasOptional ? 'transcript-text' : null,
-            ),
+        (
+          ChatRecorderStatus status,
+          List<double> history,
+          bool useRealtime,
+          bool hasOptional,
+        ) => ChatRecorderState(
+          status: status,
+          amplitudeHistory: history,
+          useRealtimeMode: useRealtime,
+          transcript: hasOptional ? 'transcript-text' : null,
+        ),
       );
 }
 
@@ -473,10 +474,9 @@ void main() {
     });
     // Emit amplitude events so state changes to recording
     when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
-      (_) => Stream.periodic(
-        const Duration(milliseconds: 50),
-        (_) => record.Amplitude(current: -40, max: -30),
-      ).take(5),
+      (_) => Stream<record.Amplitude>.fromIterable(
+        List.filled(5, record.Amplitude(current: -40, max: -30)),
+      ),
     );
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
@@ -533,10 +533,9 @@ void main() {
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     // Emit amplitude events so state changes to recording
     when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
-      (_) => Stream.periodic(
-        const Duration(milliseconds: 50),
-        (_) => record.Amplitude(current: -40, max: -30),
-      ).take(5),
+      (_) => Stream<record.Amplitude>.fromIterable(
+        List.filled(5, record.Amplitude(current: -40, max: -30)),
+      ),
     );
 
     // Recorder.start creates file
@@ -596,10 +595,9 @@ void main() {
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     // Emit amplitude events so state changes to recording
     when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
-      (_) => Stream.periodic(
-        const Duration(milliseconds: 50),
-        (_) => record.Amplitude(current: -40, max: -30),
-      ).take(5),
+      (_) => Stream<record.Amplitude>.fromIterable(
+        List.filled(5, record.Amplitude(current: -40, max: -30)),
+      ),
     );
     when(
       () => mockRecorder.start(
@@ -3499,8 +3497,11 @@ void main() {
       );
       final updated = original.copyWith(status: ChatRecorderStatus.recording);
       expect(updated.status, ChatRecorderStatus.recording);
-      expect(updated.errorType, isNull,
-          reason: 'copyWith always sets errorType to null unless overridden');
+      expect(
+        updated.errorType,
+        isNull,
+        reason: 'copyWith always sets errorType to null unless overridden',
+      );
     });
 
     test('errorType variants are all settable', () {

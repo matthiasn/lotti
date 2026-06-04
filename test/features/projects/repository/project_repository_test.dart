@@ -413,16 +413,14 @@ void main() {
       final subscription = stream.listen(emissions.add);
 
       // Wait for initial emission
-      await Future<void>.microtask(() {});
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(emissions, hasLength(1));
 
       // Emit an unrelated ID that is not a project, task token, category,
       // or private toggle token
       updateStreamController.add({'unrelated-entity-999'});
-      await Future<void>.microtask(() {});
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // No additional emission should have occurred
       expect(emissions, hasLength(1));
@@ -1375,10 +1373,9 @@ void main() {
       // doFetch() in the finally block.
       firstFetchCompleter.complete([projectV1]);
 
-      // Allow both doFetch completions to propagate.
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.microtask(() {});
-      await Future<void>.delayed(Duration.zero);
+      // Allow both doFetch completions to propagate — drain the event queue
+      // deterministically (fake-time policy).
+      await pumpEventQueue();
 
       await subscription.cancel();
 

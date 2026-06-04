@@ -7,16 +7,10 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
-import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/utils/location.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
-
-class MockMetadataService extends Mock implements MetadataService {}
-
-class MockDeviceLocation extends Mock implements DeviceLocation {}
 
 class _GeneratedGeolocationPendingScenario {
   const _GeneratedGeolocationPendingScenario({required this.idSlots});

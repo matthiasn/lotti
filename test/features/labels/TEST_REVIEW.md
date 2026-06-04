@@ -73,7 +73,7 @@
 
 ## Test Quality Improvements
 
-- [ ] **[HIGH]** Four inline mock class definitions of `_MockLabelsRepository extends Mock implements LabelsRepository {}` exist in:
+- [x] **[HIGH]** Four inline mock class definitions of `_MockLabelsRepository extends Mock implements LabelsRepository {}` exist in:
   - `test/features/labels/label_assignment_processor_edge_cases_test.dart:13`
   - `test/features/labels/state/label_editor_controller_test.dart:13`
   - `test/features/labels/ui/label_details_page_test.dart:45`
@@ -81,7 +81,7 @@
 
   `MockLabelsRepository` already exists in `test/mocks/mocks.dart`. All four files should import the central class. Similarly, `race_condition_labels_persistence_test.dart` defines `_MockJournalDb`, `_MockUpdateNotifications`, `_MockNotificationService`, and `_MockOutboxService` inline — all exist in `test/mocks/mocks.dart`.
 
-- [ ] **[HIGH]** `test/features/labels/ui/label_editor_sheet_test.dart` (the stray copy at `ui/` level) defines its own `_MockEntitiesCacheService` (line 14) which is already in `test/mocks/mocks.dart`. The file also rolls its own `MaterialApp` + localization + `Scaffold` wrapper (lines 36–70) instead of using `makeTestableWidget()`. Since the canonical file is `test/features/labels/ui/widgets/label_editor_sheet_test.dart`, the stray file should simply be deleted after verifying no unique test cases are lost.
+- [x] **[HIGH]** `test/features/labels/ui/label_editor_sheet_test.dart` (the stray copy at `ui/` level) defines its own `_MockEntitiesCacheService` (line 14) which is already in `test/mocks/mocks.dart`. The file also rolls its own `MaterialApp` + localization + `Scaffold` wrapper (lines 36–70) instead of using `makeTestableWidget()`. Since the canonical file is `test/features/labels/ui/widgets/label_editor_sheet_test.dart`, the stray file should simply be deleted after verifying no unique test cases are lost.
 
 - [ ] **[MED]** `test/features/labels/ui/label_details_page_test.dart` uses `ProviderContainer` + `UncontrolledProviderScope` + `makeTestableWidget2` in 15 consecutive tests with the same shape. Per AGENTS.md, this setup should be extracted into a file-level helper. Additionally, `label_editor_controller_test.dart` uses `_MockLabelsRepository` (inline) and manually calls `getIt.reset()` in teardown without using `setUpTestGetIt()` / `tearDownTestGetIt()`.
 

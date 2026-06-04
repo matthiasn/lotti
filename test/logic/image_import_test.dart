@@ -28,23 +28,6 @@ import '../mocks/mocks.dart';
 // Top-level fakes / helpers used by the canonical tests
 // ---------------------------------------------------------------------------
 
-class FakeJournalImage extends Fake implements JournalImage {}
-
-class FakeDropItem extends Fake implements DropItem {
-  FakeDropItem(this._xFile);
-
-  final XFile _xFile;
-
-  @override
-  String get name => _xFile.name;
-
-  @override
-  String get path => _xFile.path;
-
-  @override
-  Future<DateTime> lastModified() => _xFile.lastModified();
-}
-
 // ---------------------------------------------------------------------------
 // Shared JPEG builder helpers (used by multiple groups below)
 // ---------------------------------------------------------------------------
@@ -322,564 +305,564 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('canonical', () {
-  late MockDomainLogger mockDomainLogger;
-  late MockPersistenceLogic mockPersistenceLogic;
-  late MockJournalDb mockJournalDb;
-  late Directory tempDir;
+    late MockDomainLogger mockDomainLogger;
+    late MockPersistenceLogic mockPersistenceLogic;
+    late MockJournalDb mockJournalDb;
+    late Directory tempDir;
 
-  setUpAll(() {
-    registerFallbackValue(StackTrace.current);
-    registerFallbackValue(FakeJournalImage());
-    registerFallbackValue(FakeMetadata());
-    registerFallbackValue(DateTime(2024, 3, 15));
-  });
-
-  setUp(() async {
-    mockDomainLogger = MockDomainLogger();
-    mockPersistenceLogic = MockPersistenceLogic();
-    mockJournalDb = MockJournalDb();
-
-    tempDir = await Directory.systemTemp.createTemp('image_import_test_');
-
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    if (getIt.isRegistered<PersistenceLogic>()) {
-      getIt.unregister<PersistenceLogic>();
-    }
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<Directory>()) {
-      getIt.unregister<Directory>();
-    }
-
-    getIt
-      ..registerSingleton<DomainLogger>(mockDomainLogger)
-      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<Directory>(tempDir);
-
-    when(
-      () => mockDomainLogger.error(
-        any<LogDomain>(),
-        any<Object>(),
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenAnswer((_) async {});
-
-    when(
-      () => mockPersistenceLogic.createMetadata(
-        dateFrom: any(named: 'dateFrom'),
-        dateTo: any(named: 'dateTo'),
-        uuidV5Input: any(named: 'uuidV5Input'),
-        categoryId: any(named: 'categoryId'),
-        flag: any(named: 'flag'),
-      ),
-    ).thenAnswer(
-      (_) async => Metadata(
-        id: 'test-id',
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        dateFrom: DateTime(2024, 3, 15),
-        dateTo: DateTime(2024, 3, 15),
-      ),
-    );
-
-    when(
-      () => mockPersistenceLogic.createDbEntity(
-        any(that: isA<JournalImage>()),
-        linkedId: any(named: 'linkedId'),
-        shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-        enqueueSync: any(named: 'enqueueSync'),
-      ),
-    ).thenAnswer((_) async => true);
-  });
-
-  tearDown(() async {
-    try {
-      await tempDir.delete(recursive: true);
-    } catch (_) {}
-
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    if (getIt.isRegistered<PersistenceLogic>()) {
-      getIt.unregister<PersistenceLogic>();
-    }
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<Directory>()) {
-      getIt.unregister<Directory>();
-    }
-  });
-
-  Future<File> createTestImageFile(String filename, int sizeBytes) async {
-    final file = File(path.join(tempDir.path, filename));
-    await file.create(recursive: true);
-    await file.writeAsBytes(List<int>.filled(sizeBytes, 0));
-    return file;
-  }
-
-  DropDoneDetails createDropDetails(List<XFile> xfiles) {
-    final dropItems = xfiles.map(FakeDropItem.new).toList();
-    return DropDoneDetails(
-      files: dropItems,
-      localPosition: Offset.zero,
-      globalPosition: Offset.zero,
-    );
-  }
-
-  group('ImageImportConstants', () {
-    test('defines supported extensions', () {
-      expect(
-        ImageImportConstants.supportedExtensions,
-        containsAll(['jpg', 'jpeg', 'png']),
-      );
-      expect(ImageImportConstants.supportedExtensions, hasLength(3));
+    setUpAll(() {
+      registerFallbackValue(StackTrace.current);
+      registerFallbackValue(FakeJournalImage());
+      registerFallbackValue(FakeMetadata());
+      registerFallbackValue(DateTime(2024, 3, 15));
     });
 
-    test('defines reasonable file size limit', () {
-      expect(
-        ImageImportConstants.maxFileSizeBytes,
-        equals(50 * 1024 * 1024),
-      );
-    });
+    setUp(() async {
+      mockDomainLogger = MockDomainLogger();
+      mockPersistenceLogic = MockPersistenceLogic();
+      mockJournalDb = MockJournalDb();
 
-    test('defines directory prefix', () {
-      expect(ImageImportConstants.directoryPrefix, equals('/images/'));
-    });
+      tempDir = await Directory.systemTemp.createTemp('image_import_test_');
 
-    test('defines logging domain', () {
-      expect(ImageImportConstants.loggingDomain, equals('image_import'));
-    });
-  });
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
+      }
+      if (getIt.isRegistered<PersistenceLogic>()) {
+        getIt.unregister<PersistenceLogic>();
+      }
+      if (getIt.isRegistered<JournalDb>()) {
+        getIt.unregister<JournalDb>();
+      }
+      if (getIt.isRegistered<Directory>()) {
+        getIt.unregister<Directory>();
+      }
 
-  group('importPastedImages', () {
-    test('rejects images exceeding size limit', () async {
-      final oversizedData = Uint8List(
-        ImageImportConstants.maxFileSizeBytes + 1,
-      );
+      getIt
+        ..registerSingleton<DomainLogger>(mockDomainLogger)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<Directory>(tempDir);
 
-      await importPastedImages(
-        data: oversizedData,
-        fileExtension: 'png',
-        linkedId: 'test-id',
-        categoryId: 'category-id',
-      );
-
-      verify(
+      when(
         () => mockDomainLogger.error(
-          LogDomain.ai,
-          any<Object>(that: contains('too large')),
-          subDomain: 'importPastedImages',
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
         ),
-      ).called(1);
+      ).thenAnswer((_) async {});
+
+      when(
+        () => mockPersistenceLogic.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+          categoryId: any(named: 'categoryId'),
+          flag: any(named: 'flag'),
+        ),
+      ).thenAnswer(
+        (_) async => Metadata(
+          id: 'test-id',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+      );
+
+      when(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).thenAnswer((_) async => true);
     });
 
-    test('accepts images within size limit', () async {
-      final validData = Uint8List(1000);
-
+    tearDown(() async {
       try {
+        await tempDir.delete(recursive: true);
+      } catch (_) {}
+
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt.unregister<DomainLogger>();
+      }
+      if (getIt.isRegistered<PersistenceLogic>()) {
+        getIt.unregister<PersistenceLogic>();
+      }
+      if (getIt.isRegistered<JournalDb>()) {
+        getIt.unregister<JournalDb>();
+      }
+      if (getIt.isRegistered<Directory>()) {
+        getIt.unregister<Directory>();
+      }
+    });
+
+    Future<File> createTestImageFile(String filename, int sizeBytes) async {
+      final file = File(path.join(tempDir.path, filename));
+      await file.create(recursive: true);
+      await file.writeAsBytes(List<int>.filled(sizeBytes, 0));
+      return file;
+    }
+
+    DropDoneDetails createDropDetails(List<XFile> xfiles) {
+      final dropItems = xfiles.map(FakeDropItem.new).toList();
+      return DropDoneDetails(
+        files: dropItems,
+        localPosition: Offset.zero,
+        globalPosition: Offset.zero,
+      );
+    }
+
+    group('ImageImportConstants', () {
+      test('defines supported extensions', () {
+        expect(
+          ImageImportConstants.supportedExtensions,
+          containsAll(['jpg', 'jpeg', 'png']),
+        );
+        expect(ImageImportConstants.supportedExtensions, hasLength(3));
+      });
+
+      test('defines reasonable file size limit', () {
+        expect(
+          ImageImportConstants.maxFileSizeBytes,
+          equals(50 * 1024 * 1024),
+        );
+      });
+
+      test('defines directory prefix', () {
+        expect(ImageImportConstants.directoryPrefix, equals('/images/'));
+      });
+
+      test('defines logging domain', () {
+        expect(ImageImportConstants.loggingDomain, equals('image_import'));
+      });
+    });
+
+    group('importPastedImages', () {
+      test('rejects images exceeding size limit', () async {
+        final oversizedData = Uint8List(
+          ImageImportConstants.maxFileSizeBytes + 1,
+        );
+
         await importPastedImages(
-          data: validData,
+          data: oversizedData,
           fileExtension: 'png',
           linkedId: 'test-id',
           categoryId: 'category-id',
         );
-      } catch (e) {
-        // Expected to fail due to missing file system setup
-      }
 
-      verifyNever(
-        () => mockDomainLogger.error(
-          LogDomain.ai,
-          any<Object>(that: contains('too large')),
-          subDomain: 'importPastedImages',
-        ),
-      );
-    });
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any<Object>(that: contains('too large')),
+            subDomain: 'importPastedImages',
+          ),
+        ).called(1);
+      });
 
-    test('successfully creates image entry for valid pasted image', () async {
-      final validData = Uint8List.fromList(List<int>.filled(500, 0xFF));
+      test('accepts images within size limit', () async {
+        final validData = Uint8List(1000);
 
-      await importPastedImages(
-        data: validData,
-        fileExtension: 'png',
-        linkedId: 'linked-123',
-        categoryId: 'cat-456',
-      );
+        try {
+          await importPastedImages(
+            data: validData,
+            fileExtension: 'png',
+            linkedId: 'test-id',
+            categoryId: 'category-id',
+          );
+        } catch (e) {
+          // Expected to fail due to missing file system setup
+        }
 
-      verify(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
+        verifyNever(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any<Object>(that: contains('too large')),
+            subDomain: 'importPastedImages',
+          ),
+        );
+      });
+
+      test('successfully creates image entry for valid pasted image', () async {
+        final validData = Uint8List.fromList(List<int>.filled(500, 0xFF));
+
+        await importPastedImages(
+          data: validData,
+          fileExtension: 'png',
           linkedId: 'linked-123',
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      ).called(1);
+          categoryId: 'cat-456',
+        );
+
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: 'linked-123',
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(1);
+      });
+
+      test('creates image entry without linkedId or categoryId', () async {
+        final validData = Uint8List.fromList(List<int>.filled(200, 0xAA));
+
+        await importPastedImages(
+          data: validData,
+          fileExtension: 'jpg',
+        );
+
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(1);
+      });
     });
 
-    test('creates image entry without linkedId or categoryId', () async {
-      final validData = Uint8List.fromList(List<int>.filled(200, 0xAA));
+    group('importDroppedImages', () {
+      test('successfully imports valid JPG file', () async {
+        final testFile = await createTestImageFile('test.jpg', 1024);
+        final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-      await importPastedImages(
-        data: validData,
-        fileExtension: 'jpg',
-      );
+        await importDroppedImages(data: dropDetails);
 
-      verify(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
-          linkedId: any(named: 'linkedId'),
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      ).called(1);
-    });
-  });
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(1);
+      });
 
-  group('importDroppedImages', () {
-    test('successfully imports valid JPG file', () async {
-      final testFile = await createTestImageFile('test.jpg', 1024);
-      final dropDetails = createDropDetails([XFile(testFile.path)]);
+      test('successfully imports valid PNG file', () async {
+        final testFile = await createTestImageFile('test.png', 1024);
+        final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-      await importDroppedImages(data: dropDetails);
+        await importDroppedImages(data: dropDetails);
 
-      verify(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
-          linkedId: any(named: 'linkedId'),
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      ).called(1);
-    });
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(1);
+      });
 
-    test('successfully imports valid PNG file', () async {
-      final testFile = await createTestImageFile('test.png', 1024);
-      final dropDetails = createDropDetails([XFile(testFile.path)]);
+      test('skips non-image file silently', () async {
+        final testFile = await createTestImageFile('test.txt', 1024);
+        final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-      await importDroppedImages(data: dropDetails);
+        await importDroppedImages(data: dropDetails);
 
-      verify(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
-          linkedId: any(named: 'linkedId'),
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      ).called(1);
-    });
+        verifyNever(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        );
+      });
 
-    test('skips non-image file silently', () async {
-      final testFile = await createTestImageFile('test.txt', 1024);
-      final dropDetails = createDropDetails([XFile(testFile.path)]);
+      test('logs error for file exceeding size limit', () async {
+        const largeSize = ImageImportConstants.maxFileSizeBytes + 1;
+        final testFile = await createTestImageFile('large.jpg', largeSize);
+        final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-      await importDroppedImages(data: dropDetails);
+        await importDroppedImages(data: dropDetails);
 
-      verifyNever(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
-          linkedId: any(named: 'linkedId'),
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      );
-    });
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any<Object>(that: contains('too large')),
+            subDomain: 'importDroppedImages',
+          ),
+        ).called(1);
+      });
 
-    test('logs error for file exceeding size limit', () async {
-      const largeSize = ImageImportConstants.maxFileSizeBytes + 1;
-      final testFile = await createTestImageFile('large.jpg', largeSize);
-      final dropDetails = createDropDetails([XFile(testFile.path)]);
+      test('passes linkedId and categoryId', () async {
+        final testFile = await createTestImageFile('test.jpg', 1024);
+        final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-      await importDroppedImages(data: dropDetails);
-
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.ai,
-          any<Object>(that: contains('too large')),
-          subDomain: 'importDroppedImages',
-        ),
-      ).called(1);
-    });
-
-    test('passes linkedId and categoryId', () async {
-      final testFile = await createTestImageFile('test.jpg', 1024);
-      final dropDetails = createDropDetails([XFile(testFile.path)]);
-
-      await importDroppedImages(
-        data: dropDetails,
-        linkedId: 'parent-123',
-        categoryId: 'cat-456',
-      );
-
-      verify(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
+        await importDroppedImages(
+          data: dropDetails,
           linkedId: 'parent-123',
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      ).called(1);
+          categoryId: 'cat-456',
+        );
+
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: 'parent-123',
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(1);
+      });
+
+      test('imports multiple files', () async {
+        final file1 = await createTestImageFile('photo1.jpg', 1024);
+        final file2 = await createTestImageFile('photo2.png', 2048);
+        final dropDetails = createDropDetails([
+          XFile(file1.path),
+          XFile(file2.path),
+        ]);
+
+        await importDroppedImages(data: dropDetails);
+
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(2);
+      });
+
+      test('handles exception during import and continues', () async {
+        // Use a non-existent file path to trigger an exception
+        final validFile = await createTestImageFile('good.jpg', 1024);
+        final dropDetails = createDropDetails([
+          XFile('/nonexistent/path/bad.jpg'),
+          XFile(validFile.path),
+        ]);
+
+        await importDroppedImages(data: dropDetails);
+
+        // The bad file causes an error, but the good file still gets imported
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'importDroppedImages',
+          ),
+        ).called(1);
+
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(1);
+      });
     });
 
-    test('imports multiple files', () async {
-      final file1 = await createTestImageFile('photo1.jpg', 1024);
-      final file2 = await createTestImageFile('photo2.png', 2048);
-      final dropDetails = createDropDetails([
-        XFile(file1.path),
-        XFile(file2.path),
-      ]);
+    group('importGeneratedImageBytes', () {
+      test('rejects images exceeding size limit', () async {
+        final oversizedData = Uint8List(
+          ImageImportConstants.maxFileSizeBytes + 1,
+        );
 
-      await importDroppedImages(data: dropDetails);
+        final result = await importGeneratedImageBytes(
+          data: oversizedData,
+          fileExtension: 'png',
+          linkedId: 'test-id',
+        );
 
-      verify(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
-          linkedId: any(named: 'linkedId'),
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      ).called(2);
-    });
+        expect(result, isNull);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any<Object>(that: contains('too large')),
+            subDomain: 'importGeneratedImageBytes',
+          ),
+        ).called(1);
+      });
 
-    test('handles exception during import and continues', () async {
-      // Use a non-existent file path to trigger an exception
-      final validFile = await createTestImageFile('good.jpg', 1024);
-      final dropDetails = createDropDetails([
-        XFile('/nonexistent/path/bad.jpg'),
-        XFile(validFile.path),
-      ]);
+      test('successfully creates entry and returns its ID', () async {
+        final validData = Uint8List.fromList(List<int>.filled(500, 0xBB));
 
-      await importDroppedImages(data: dropDetails);
-
-      // The bad file causes an error, but the good file still gets imported
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.ai,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'importDroppedImages',
-        ),
-      ).called(1);
-
-      verify(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
-          linkedId: any(named: 'linkedId'),
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      ).called(1);
-    });
-  });
-
-  group('importGeneratedImageBytes', () {
-    test('rejects images exceeding size limit', () async {
-      final oversizedData = Uint8List(
-        ImageImportConstants.maxFileSizeBytes + 1,
-      );
-
-      final result = await importGeneratedImageBytes(
-        data: oversizedData,
-        fileExtension: 'png',
-        linkedId: 'test-id',
-      );
-
-      expect(result, isNull);
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.ai,
-          any<Object>(that: contains('too large')),
-          subDomain: 'importGeneratedImageBytes',
-        ),
-      ).called(1);
-    });
-
-    test('successfully creates entry and returns its ID', () async {
-      final validData = Uint8List.fromList(List<int>.filled(500, 0xBB));
-
-      final result = await importGeneratedImageBytes(
-        data: validData,
-        fileExtension: 'png',
-        linkedId: 'linked-task-id',
-        categoryId: 'cat-id',
-      );
-
-      // createDbEntity returns true, so createImageEntry returns the entity
-      expect(result, equals('test-id'));
-
-      verify(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
+        final result = await importGeneratedImageBytes(
+          data: validData,
+          fileExtension: 'png',
           linkedId: 'linked-task-id',
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      ).called(1);
+          categoryId: 'cat-id',
+        );
+
+        // createDbEntity returns true, so createImageEntry returns the entity
+        expect(result, equals('test-id'));
+
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: 'linked-task-id',
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(1);
+      });
+
+      test('returns null when entry creation fails', () async {
+        when(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).thenThrow(Exception('DB error'));
+
+        final validData = Uint8List.fromList(List<int>.filled(200, 0xCC));
+
+        final result = await importGeneratedImageBytes(
+          data: validData,
+          fileExtension: 'png',
+          linkedId: 'linked-id',
+        );
+
+        expect(result, isNull);
+      });
     });
 
-    test('returns null when entry creation fails', () async {
-      when(
-        () => mockPersistenceLogic.createDbEntity(
-          any(that: isA<JournalImage>()),
-          linkedId: any(named: 'linkedId'),
-          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-          enqueueSync: any(named: 'enqueueSync'),
-        ),
-      ).thenThrow(Exception('DB error'));
+    group('parseRational', () {
+      test('parses fraction format', () {
+        expect(parseRational('37/1'), equals(37.0));
+        expect(parseRational('122/1'), equals(122.0));
+      });
 
-      final validData = Uint8List.fromList(List<int>.filled(200, 0xCC));
+      test('parses decimal format', () {
+        expect(parseRational('37.7749'), closeTo(37.7749, 0.0001));
+      });
 
-      final result = await importGeneratedImageBytes(
-        data: validData,
-        fileExtension: 'png',
-        linkedId: 'linked-id',
-      );
+      test('returns null for invalid input', () {
+        expect(parseRational('invalid'), isNull);
+        expect(parseRational(''), isNull);
+      });
 
-      expect(result, isNull);
-    });
-  });
-
-  group('parseRational', () {
-    test('parses fraction format', () {
-      expect(parseRational('37/1'), equals(37.0));
-      expect(parseRational('122/1'), equals(122.0));
+      test('handles division by zero', () {
+        expect(parseRational('37/0'), isNull);
+      });
     });
 
-    test('parses decimal format', () {
-      expect(parseRational('37.7749'), closeTo(37.7749, 0.0001));
+    group('parseGpsCoordinate', () {
+      test('returns null for null data', () {
+        expect(parseGpsCoordinate(null, 'N'), isNull);
+      });
+
+      test('returns null for invalid coordinate format', () {
+        // Only 2 parts instead of 3 (degrees, minutes, seconds)
+        expect(parseGpsCoordinate('[37, 0]', 'N'), isNull);
+      });
     });
 
-    test('returns null for invalid input', () {
-      expect(parseRational('invalid'), isNull);
-      expect(parseRational(''), isNull);
+    group('extractGpsCoordinates', () {
+      test('returns null for empty data', () async {
+        final result = await extractGpsCoordinates(
+          Uint8List(0),
+          DateTime(2024, 3, 15),
+        );
+        expect(result, isNull);
+      });
+
+      test('returns null for non-image data', () async {
+        final result = await extractGpsCoordinates(
+          Uint8List.fromList([0, 1, 2, 3, 4]),
+          DateTime(2024, 3, 15),
+        );
+        expect(result, isNull);
+      });
     });
 
-    test('handles division by zero', () {
-      expect(parseRational('37/0'), isNull);
-    });
-  });
+    group('createAnalysisCallback', () {
+      late MockAutomaticImageAnalysisTrigger mockTrigger;
 
-  group('parseGpsCoordinate', () {
-    test('returns null for null data', () {
-      expect(parseGpsCoordinate(null, 'N'), isNull);
-    });
+      setUp(() {
+        mockTrigger = MockAutomaticImageAnalysisTrigger();
 
-    test('returns null for invalid coordinate format', () {
-      // Only 2 parts instead of 3 (degrees, minutes, seconds)
-      expect(parseGpsCoordinate('[37, 0]', 'N'), isNull);
-    });
-  });
+        when(
+          () => mockTrigger.triggerAutomaticImageAnalysis(
+            imageEntryId: any(named: 'imageEntryId'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+          ),
+        ).thenAnswer((_) async {});
+      });
 
-  group('extractGpsCoordinates', () {
-    test('returns null for empty data', () async {
-      final result = await extractGpsCoordinates(
-        Uint8List(0),
-        DateTime(2024, 3, 15),
-      );
-      expect(result, isNull);
-    });
+      test('returns null when analysisTrigger is null', () {
+        final callback = createAnalysisCallback(null, 'linked');
+        expect(callback, isNull);
+      });
 
-    test('returns null for non-image data', () async {
-      final result = await extractGpsCoordinates(
-        Uint8List.fromList([0, 1, 2, 3, 4]),
-        DateTime(2024, 3, 15),
-      );
-      expect(result, isNull);
-    });
-  });
+      test('returns callback when analysisTrigger is provided', () {
+        final callback = createAnalysisCallback(
+          mockTrigger,
+          'linked',
+        );
+        expect(callback, isNotNull);
+      });
 
-  group('createAnalysisCallback', () {
-    late MockAutomaticImageAnalysisTrigger mockTrigger;
+      test('callback triggers analysis with correct parameters', () {
+        final callback = createAnalysisCallback(
+          mockTrigger,
+          'linked-456',
+        );
 
-    setUp(() {
-      mockTrigger = MockAutomaticImageAnalysisTrigger();
+        final testEntity = JournalImage(
+          meta: Metadata(
+            id: 'image-789',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+          ),
+          data: ImageData(
+            imageId: 'img-id',
+            imageFile: 'test.jpg',
+            imageDirectory: '/images/2024/',
+            capturedAt: DateTime(2024),
+          ),
+        );
 
-      when(
-        () => mockTrigger.triggerAutomaticImageAnalysis(
-          imageEntryId: any(named: 'imageEntryId'),
-          linkedTaskId: any(named: 'linkedTaskId'),
-        ),
-      ).thenAnswer((_) async {});
-    });
+        callback!(testEntity);
 
-    test('returns null when analysisTrigger is null', () {
-      final callback = createAnalysisCallback(null, 'linked');
-      expect(callback, isNull);
-    });
+        verify(
+          () => mockTrigger.triggerAutomaticImageAnalysis(
+            imageEntryId: 'image-789',
+            linkedTaskId: 'linked-456',
+          ),
+        ).called(1);
+      });
 
-    test('returns callback when analysisTrigger is provided', () {
-      final callback = createAnalysisCallback(
-        mockTrigger,
-        'linked',
-      );
-      expect(callback, isNotNull);
-    });
+      test('callback works with null linkedId', () {
+        final callback = createAnalysisCallback(mockTrigger, null);
 
-    test('callback triggers analysis with correct parameters', () {
-      final callback = createAnalysisCallback(
-        mockTrigger,
-        'linked-456',
-      );
+        final testEntity = JournalImage(
+          meta: Metadata(
+            id: 'image-abc',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+          ),
+          data: ImageData(
+            imageId: 'img-id',
+            imageFile: 'test.jpg',
+            imageDirectory: '/images/2024/',
+            capturedAt: DateTime(2024),
+          ),
+        );
 
-      final testEntity = JournalImage(
-        meta: Metadata(
-          id: 'image-789',
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          dateFrom: DateTime(2024),
-          dateTo: DateTime(2024),
-        ),
-        data: ImageData(
-          imageId: 'img-id',
-          imageFile: 'test.jpg',
-          imageDirectory: '/images/2024/',
-          capturedAt: DateTime(2024),
-        ),
-      );
+        callback!(testEntity);
 
-      callback!(testEntity);
-
-      verify(
-        () => mockTrigger.triggerAutomaticImageAnalysis(
-          imageEntryId: 'image-789',
-          linkedTaskId: 'linked-456',
-        ),
-      ).called(1);
-    });
-
-    test('callback works with null linkedId', () {
-      final callback = createAnalysisCallback(mockTrigger, null);
-
-      final testEntity = JournalImage(
-        meta: Metadata(
-          id: 'image-abc',
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          dateFrom: DateTime(2024),
-          dateTo: DateTime(2024),
-        ),
-        data: ImageData(
-          imageId: 'img-id',
-          imageFile: 'test.jpg',
-          imageDirectory: '/images/2024/',
-          capturedAt: DateTime(2024),
-        ),
-      );
-
-      callback!(testEntity);
-
-      verify(
-        () => mockTrigger.triggerAutomaticImageAnalysis(
-          imageEntryId: 'image-abc',
-        ),
-      ).called(1);
-    });
-  }); // end createAnalysisCallback group
+        verify(
+          () => mockTrigger.triggerAutomaticImageAnalysis(
+            imageEntryId: 'image-abc',
+          ),
+        ).called(1);
+      });
+    }); // end createAnalysisCallback group
   }); // end canonical group
 
   // ---------------------------------------------------------------------------
@@ -912,20 +895,22 @@ void main() {
     });
 
     group('EXIF Timestamp Extraction', () {
-      test('extracts DateTimeOriginal from real EXIF data successfully',
-          () async {
-        // Use real valid EXIF data to trigger success path
-        final jpegWithExif = _createJpegWithValidExif();
+      test(
+        'extracts DateTimeOriginal from real EXIF data successfully',
+        () async {
+          // Use real valid EXIF data to trigger success path
+          final jpegWithExif = _createJpegWithValidExif();
 
-        // This should successfully extract DateTimeOriginal: 2024:01:15 10:20:30
-        await importPastedImages(
-          data: jpegWithExif,
-          fileExtension: 'jpg',
-        );
+          // This should successfully extract DateTimeOriginal: 2024:01:15 10:20:30
+          await importPastedImages(
+            data: jpegWithExif,
+            fileExtension: 'jpg',
+          );
 
-        // Test passes if no exception thrown and import completes
-        expect(true, isTrue);
-      });
+          // Test passes if no exception thrown and import completes
+          expect(true, isTrue);
+        },
+      );
 
       test('extracts Image DateTime when DateTimeOriginal missing', () async {
         // Use JPEG with only Image DateTime to test fallback path
@@ -941,21 +926,23 @@ void main() {
         expect(true, isTrue);
       });
 
-      test('handles malformed EXIF datetime that fails DateTime.parse',
-          () async {
-        // Use JPEG with malformed datetime to trigger DateTime.parse exception
-        final jpegWithMalformed = _createJpegWithMalformedDateTime();
+      test(
+        'handles malformed EXIF datetime that fails DateTime.parse',
+        () async {
+          // Use JPEG with malformed datetime to trigger DateTime.parse exception
+          final jpegWithMalformed = _createJpegWithMalformedDateTime();
 
-        // This should trigger the DateTime.parse exception path (line 249)
-        // and fall back to DateTime.now()
-        await importPastedImages(
-          data: jpegWithMalformed,
-          fileExtension: 'jpg',
-        );
+          // This should trigger the DateTime.parse exception path (line 249)
+          // and fall back to DateTime.now()
+          await importPastedImages(
+            data: jpegWithMalformed,
+            fileExtension: 'jpg',
+          );
 
-        // Test passes if no exception thrown (fallback worked)
-        expect(true, isTrue);
-      });
+          // Test passes if no exception thrown (fallback worked)
+          expect(true, isTrue);
+        },
+      );
 
       test('extracts DateTimeOriginal from real image with EXIF', () async {
         // Create a minimal but valid JPEG with basic structure
@@ -1617,8 +1604,7 @@ void main() {
     });
 
     group('extractGpsCoordinates Integration Tests', () {
-      test('handles minimal EXIF structure without GPS returning null',
-          () async {
+      test('handles minimal EXIF structure without GPS returning null', () async {
         // Minimal EXIF structure that lacks proper GPS data
         final jpegWithGps = Uint8List.fromList([
           0xFF, 0xD8, // SOI
@@ -1735,8 +1721,7 @@ void main() {
 
     group('GPS Edge Cases', () {
       test('parseGpsCoordinate handles whitespace in coordinates', () {
-        final result =
-            parseGpsCoordinate('[  37/1  ,  46/1  ,  0/1  ]', 'N');
+        final result = parseGpsCoordinate('[  37/1  ,  46/1  ,  0/1  ]', 'N');
         expect(result, closeTo(37.7667, 0.0001));
       });
 
@@ -1891,7 +1876,10 @@ void main() {
       test('covers all branches in parseRational', () {
         // Fraction path (line 273-284)
         expect(parseRational('123/456'), closeTo(0.2697, 0.0001));
-        expect(parseRational('10/0'), isNull); // Division by zero (line 281-282)
+        expect(
+          parseRational('10/0'),
+          isNull,
+        ); // Division by zero (line 281-282)
         expect(parseRational('1/2/3'), isNull); // Invalid format (line 276-277)
 
         // Decimal path (line 286-287)
@@ -1992,8 +1980,7 @@ void main() {
 
       test('handles high precision GPS coordinates', () {
         // Very precise seconds value
-        final precise =
-            parseGpsCoordinate('[37/1, 46/1, 2964123/100000]', 'N');
+        final precise = parseGpsCoordinate('[37/1, 46/1, 2964123/100000]', 'N');
         expect(precise, isNotNull);
         expect(precise, closeTo(37.7749, 0.001));
       });
@@ -2014,8 +2001,7 @@ void main() {
 
       test('covers string operations in coordinate parsing', () {
         // Test bracket removal (line 308-309)
-        final withBrackets =
-            parseGpsCoordinate('[[1/1], [2/1], [3/1]]', 'N');
+        final withBrackets = parseGpsCoordinate('[[1/1], [2/1], [3/1]]', 'N');
         expect(withBrackets, isNotNull);
 
         // Test comma splitting (line 310)
@@ -2025,8 +2011,7 @@ void main() {
 
       test('covers trim operation on parts', () {
         // Test trimming (line 317-319)
-        final withSpaces =
-            parseGpsCoordinate('[  1/1  ,  2/1  ,  3/1  ]', 'N');
+        final withSpaces = parseGpsCoordinate('[  1/1  ,  2/1  ,  3/1  ]', 'N');
         expect(withSpaces, isNotNull);
       });
     });
@@ -2065,8 +2050,7 @@ void main() {
         ..registerSingleton<DomainLogger>(mockLoggingServiceWidget);
 
       // Create temp directory for file operations
-      tempDirWidget =
-          await Directory.systemTemp.createTemp('lotti_test_');
+      tempDirWidget = await Directory.systemTemp.createTemp('lotti_test_');
     });
 
     tearDownAll(() async {
@@ -2095,15 +2079,15 @@ void main() {
         // Override PhotoManager.requestPermissionExtend to return denied
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return denied permission state (index 2 in PermissionState enum)
-              return 2;
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return denied permission state (index 2 in PermissionState enum)
+                  return 2;
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2127,24 +2111,24 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
       });
 
       testWidgets('returns early when context is not mounted', (tester) async {
         // Override PhotoManager.requestPermissionExtend to return authorized
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return authorized permission state (index 3 in PermissionState enum)
-              return 3;
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return authorized permission state (index 3 in PermissionState enum)
+                  return 3;
+                }
+                return null;
+              },
+            );
 
         BuildContext? savedContext;
 
@@ -2174,9 +2158,9 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
       });
 
       testWidgets('handles null assets list when picker is cancelled', (
@@ -2184,31 +2168,31 @@ void main() {
       ) async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return authorized permission state (index 3 in PermissionState enum)
-              return 3;
-            }
-            if (call.method == 'getAssetPathList') {
-              // Return empty map with empty data array
-              return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return authorized permission state (index 3 in PermissionState enum)
+                  return 3;
+                }
+                if (call.method == 'getAssetPathList') {
+                  // Return empty map with empty data array
+                  return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+                }
+                return null;
+              },
+            );
 
         // Mock wechat_assets_picker to return null (user cancelled)
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          (call) async {
-            if (call.method == 'pickAssets') {
-              return null; // User cancelled
-            }
-            return null;
-          },
-        );
+              const MethodChannel('wechat_assets_picker'),
+              (call) async {
+                if (call.method == 'pickAssets') {
+                  return null; // User cancelled
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2232,43 +2216,43 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          null,
-        );
+              const MethodChannel('wechat_assets_picker'),
+              null,
+            );
       });
 
       testWidgets('handles empty assets list', (tester) async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return authorized permission state (index 3 in PermissionState enum)
-              return 3;
-            }
-            if (call.method == 'getAssetPathList') {
-              // Return empty map with empty data array
-              return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return authorized permission state (index 3 in PermissionState enum)
+                  return 3;
+                }
+                if (call.method == 'getAssetPathList') {
+                  // Return empty map with empty data array
+                  return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+                }
+                return null;
+              },
+            );
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          (call) async {
-            if (call.method == 'pickAssets') {
-              return []; // Empty list
-            }
-            return null;
-          },
-        );
+              const MethodChannel('wechat_assets_picker'),
+              (call) async {
+                if (call.method == 'pickAssets') {
+                  return []; // Empty list
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2292,43 +2276,43 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          null,
-        );
+              const MethodChannel('wechat_assets_picker'),
+              null,
+            );
       });
 
       testWidgets('passes linkedId parameter correctly', (tester) async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return authorized permission state (index 3 in PermissionState enum)
-              return 3;
-            }
-            if (call.method == 'getAssetPathList') {
-              // Return empty map with empty data array
-              return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return authorized permission state (index 3 in PermissionState enum)
+                  return 3;
+                }
+                if (call.method == 'getAssetPathList') {
+                  // Return empty map with empty data array
+                  return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+                }
+                return null;
+              },
+            );
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          (call) async {
-            if (call.method == 'pickAssets') {
-              return null;
-            }
-            return null;
-          },
-        );
+              const MethodChannel('wechat_assets_picker'),
+              (call) async {
+                if (call.method == 'pickAssets') {
+                  return null;
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2354,43 +2338,43 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          null,
-        );
+              const MethodChannel('wechat_assets_picker'),
+              null,
+            );
       });
 
       testWidgets('passes categoryId parameter correctly', (tester) async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return authorized permission state (index 3 in PermissionState enum)
-              return 3;
-            }
-            if (call.method == 'getAssetPathList') {
-              // Return empty map with empty data array
-              return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return authorized permission state (index 3 in PermissionState enum)
+                  return 3;
+                }
+                if (call.method == 'getAssetPathList') {
+                  // Return empty map with empty data array
+                  return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+                }
+                return null;
+              },
+            );
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          (call) async {
-            if (call.method == 'pickAssets') {
-              return null;
-            }
-            return null;
-          },
-        );
+              const MethodChannel('wechat_assets_picker'),
+              (call) async {
+                if (call.method == 'pickAssets') {
+                  return null;
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2416,14 +2400,14 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          null,
-        );
+              const MethodChannel('wechat_assets_picker'),
+              null,
+            );
       });
 
       testWidgets('passes both linkedId and categoryId parameters', (
@@ -2431,30 +2415,30 @@ void main() {
       ) async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return authorized permission state (index 3 in PermissionState enum)
-              return 3;
-            }
-            if (call.method == 'getAssetPathList') {
-              // Return empty map with empty data array
-              return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return authorized permission state (index 3 in PermissionState enum)
+                  return 3;
+                }
+                if (call.method == 'getAssetPathList') {
+                  // Return empty map with empty data array
+                  return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+                }
+                return null;
+              },
+            );
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          (call) async {
-            if (call.method == 'pickAssets') {
-              return null;
-            }
-            return null;
-          },
-        );
+              const MethodChannel('wechat_assets_picker'),
+              (call) async {
+                if (call.method == 'pickAssets') {
+                  return null;
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2481,14 +2465,14 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          null,
-        );
+              const MethodChannel('wechat_assets_picker'),
+              null,
+            );
       });
 
       testWidgets('handles permission request flow', (tester) async {
@@ -2496,16 +2480,16 @@ void main() {
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              permissionRequested = true;
-              // Return denied permission state (index 2 in PermissionState enum)
-              return 2;
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  permissionRequested = true;
+                  // Return denied permission state (index 2 in PermissionState enum)
+                  return 2;
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2528,9 +2512,9 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
       });
 
       testWidgets('configures asset picker with correct parameters', (
@@ -2540,21 +2524,21 @@ void main() {
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return authorized permission state (index 3 in PermissionState enum)
-              return 3;
-            }
-            if (call.method == 'getAssetPathList') {
-              pickerConfigReceived = true;
-              // AssetPicker is called, which internally calls getAssetPathList
-              // Return empty map with empty data array to simulate no assets available
-              return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return authorized permission state (index 3 in PermissionState enum)
+                  return 3;
+                }
+                if (call.method == 'getAssetPathList') {
+                  pickerConfigReceived = true;
+                  // AssetPicker is called, which internally calls getAssetPathList
+                  // Return empty map with empty data array to simulate no assets available
+                  return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2577,9 +2561,9 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
       });
 
       testWidgets('handles multiple rapid calls gracefully', (tester) async {
@@ -2587,20 +2571,20 @@ void main() {
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              callCount++;
-              // Return authorized permission state (index 3 in PermissionState enum)
-              return 3;
-            }
-            if (call.method == 'getAssetPathList') {
-              // Return empty map with empty data array
-              return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  callCount++;
+                  // Return authorized permission state (index 3 in PermissionState enum)
+                  return 3;
+                }
+                if (call.method == 'getAssetPathList') {
+                  // Return empty map with empty data array
+                  return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2631,9 +2615,9 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
       });
     });
 
@@ -2641,25 +2625,25 @@ void main() {
       testWidgets('handles PermissionState.authorized', (tester) async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return authorized permission state (index 3 in PermissionState enum)
-              return 3;
-            }
-            if (call.method == 'getAssetPathList') {
-              // Return empty map with empty data array
-              return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return authorized permission state (index 3 in PermissionState enum)
+                  return 3;
+                }
+                if (call.method == 'getAssetPathList') {
+                  // Return empty map with empty data array
+                  return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+                }
+                return null;
+              },
+            );
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          (call) async => null,
-        );
+              const MethodChannel('wechat_assets_picker'),
+              (call) async => null,
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2682,28 +2666,28 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          null,
-        );
+              const MethodChannel('wechat_assets_picker'),
+              null,
+            );
       });
 
       testWidgets('handles PermissionState.denied', (tester) async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return denied permission state (index 2 in PermissionState enum)
-              return 2;
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return denied permission state (index 2 in PermissionState enum)
+                  return 2;
+                }
+                return null;
+              },
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2727,33 +2711,33 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
       });
 
       testWidgets('handles PermissionState.limited', (tester) async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          (call) async {
-            if (call.method == 'requestPermissionExtend') {
-              // Return limited permission state (index 4 in PermissionState enum)
-              return 4;
-            }
-            if (call.method == 'getAssetPathList') {
-              // Return empty map with empty data array
-              return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
-            }
-            return null;
-          },
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (call) async {
+                if (call.method == 'requestPermissionExtend') {
+                  // Return limited permission state (index 4 in PermissionState enum)
+                  return 4;
+                }
+                if (call.method == 'getAssetPathList') {
+                  // Return empty map with empty data array
+                  return <String, dynamic>{'data': <Map<dynamic, dynamic>>[]};
+                }
+                return null;
+              },
+            );
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          (call) async => null,
-        );
+              const MethodChannel('wechat_assets_picker'),
+              (call) async => null,
+            );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -2776,14 +2760,14 @@ void main() {
         // Clean up
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('com.fluttercandies/photo_manager'),
-          null,
-        );
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
-          const MethodChannel('wechat_assets_picker'),
-          null,
-        );
+              const MethodChannel('wechat_assets_picker'),
+              null,
+            );
       });
     });
   });

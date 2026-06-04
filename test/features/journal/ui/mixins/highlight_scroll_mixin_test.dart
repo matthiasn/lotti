@@ -397,15 +397,16 @@ void main() {
             // Try to scroll to an entry that doesn't exist
             ..triggerScroll('non-existent-entry');
 
-      // The mixin uses Timer-based retries. In test mode (FLUTTER_TEST=true):
-      // maxScrollRetries=5, scrollRetryDelay=50ms
-      // In production: maxScrollRetries=30, scrollRetryDelay=100ms
-      // We need to pump long enough for all retries to complete
-      // Use a generous timeout to cover both modes
-      for (var i = 0; i < 35; i++) {
-        await tester.pump(const Duration(milliseconds: 120));
+      // The mixin uses Timer-based retries. Under flutter_test
+      // (FLUTTER_TEST=true) it runs maxScrollRetries=5 with
+      // scrollRetryDelay=50ms, and each pump(60ms) drives exactly one
+      // attempt (timer fire + scheduled frame), so 7 pumps leave
+      // comfortable headroom past the 5 attempts.
+      for (var i = 0; i < 7; i++) {
+        await tester.pump(const Duration(milliseconds: 60));
       }
 
+      // Drain remaining post-frame callbacks.
       await tester.pumpAndSettle();
 
       // Should not crash and should not highlight anything
@@ -421,16 +422,15 @@ void main() {
             log.contains('Failed to scroll to entry'),
       );
 
-      // Only assert if logs were captured (DevLogger might be in a different mode)
-      if (DevLogger.capturedLogs.isNotEmpty) {
-        expect(
-          hasWarning,
-          isTrue,
-          reason:
-              'Should log warning after max retries exceeded. '
-              'Logs: ${DevLogger.capturedLogs}',
-        );
-      }
+      // Unconditional: the warning must be captured — a conditional
+      // assertion could silently pass without verifying anything.
+      expect(
+        hasWarning,
+        isTrue,
+        reason:
+            'Should log warning after max retries exceeded. '
+            'Logs: ${DevLogger.capturedLogs}',
+      );
     });
 
     testWidgets(
@@ -459,7 +459,7 @@ void main() {
         // frames so the timer fires, the post-frame callback runs, and the
         // awaited (throwing) future settles.
         for (var i = 0; i < 5; i++) {
-          await tester.pump(const Duration(milliseconds: 60));
+          await tester.pump(const Duration(milliseconds: 120));
         }
 
         // The catch branch treats the throw as terminal: it cancels the retry
@@ -468,7 +468,7 @@ void main() {
         // attempt and the entry is never highlighted (highlight is only set on
         // the success path).
         for (var i = 0; i < 10; i++) {
-          await tester.pump(const Duration(milliseconds: 60));
+          await tester.pump(const Duration(milliseconds: 120));
         }
 
         expect(callbackInvoked, isTrue);

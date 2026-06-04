@@ -31,9 +31,6 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart' show resolveTestTheme;
 import '../test_utils.dart';
 
-class MockUnifiedAiInferenceRepository extends Mock
-    implements UnifiedAiInferenceRepository {}
-
 /// Helper to create override for UnifiedAiController with a specific state.
 Override unifiedAiControllerOverride(UnifiedAiState initialState) {
   return unifiedAiControllerProvider.overrideWithBuild(
@@ -410,261 +407,271 @@ void main() {
     ) async {
       // This test ensures the _subscribeToExistingInference method is called
       // when showExisting is true
-      await tester.runAsync(() async {
-        final container = ProviderContainer(
-          overrides: [
-            unifiedAiInferenceRepositoryProvider.overrideWithValue(
-              mockRepository,
-            ),
-            aiConfigByIdProvider('test-prompt-1').overrideWith(
-              (ref) async => testPromptConfig,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
+          aiConfigByIdProvider('test-prompt-1').overrideWith(
+            (ref) async => testPromptConfig,
+          ),
+          categoryRepositoryProvider.overrideWithValue(
+            mockCategoryRepository,
+          ),
+        ],
+      );
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MaterialApp(
-              localizationsDelegates: [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-              ],
-              home: Scaffold(
-                body: UnifiedAiProgressContent(
-                  entityId: 'test-entity',
-                  promptId: 'test-prompt-1',
-                  showExisting: true,
-                ),
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+            ],
+            home: Scaffold(
+              body: UnifiedAiProgressContent(
+                entityId: 'test-entity',
+                promptId: 'test-prompt-1',
+                showExisting: true,
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        // Wait for post frame callback
-        await tester.pump();
+      // Wait for post frame callback
+      await tester.pump();
 
-        // Verify the subscription logic was triggered
-        expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
-      });
+      // Verify the subscription logic was triggered
+      expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
+
+      // Unmount the tree and dispose the container inside the test body so
+      // the cacheFor keep-alive timers are cancelled before the binding's
+      // pending-timer check.
+      await tester.pumpWidget(const SizedBox());
+      container.dispose();
     });
 
     testWidgets('handles retry button click', (tester) async {
       // This test verifies the _handleRetry method works
-      await tester.runAsync(() async {
-        final container = ProviderContainer(
-          overrides: [
-            unifiedAiInferenceRepositoryProvider.overrideWithValue(
-              mockRepository,
-            ),
-            aiConfigByIdProvider('test-prompt-1').overrideWith(
-              (ref) async => testPromptConfig,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
+          aiConfigByIdProvider('test-prompt-1').overrideWith(
+            (ref) async => testPromptConfig,
+          ),
+          categoryRepositoryProvider.overrideWithValue(
+            mockCategoryRepository,
+          ),
+        ],
+      );
 
-        // Set status to error to show retry button
-        container
-            .read(
-              inferenceStatusControllerProvider(
-                id: 'test-entity',
-                // ignore: deprecated_member_use_from_same_package
-                aiResponseType: AiResponseType.taskSummary,
-              ).notifier,
-            )
-            .setStatus(InferenceStatus.error);
+      // Set status to error to show retry button
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: 'test-entity',
+              // ignore: deprecated_member_use_from_same_package
+              aiResponseType: AiResponseType.taskSummary,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.error);
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MaterialApp(
-              localizationsDelegates: [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-              ],
-              home: Scaffold(
-                body: UnifiedAiProgressContent(
-                  entityId: 'test-entity',
-                  promptId: 'test-prompt-1',
-                ),
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+            ],
+            home: Scaffold(
+              body: UnifiedAiProgressContent(
+                entityId: 'test-entity',
+                promptId: 'test-prompt-1',
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        // Find and tap retry button if it exists
-        final retryButton = find.text('Retry');
-        if (retryButton.evaluate().isNotEmpty) {
-          await tester.tap(retryButton);
-          await tester.pump();
-        }
+      // Find and tap retry button if it exists
+      final retryButton = find.text('Retry');
+      if (retryButton.evaluate().isNotEmpty) {
+        await tester.tap(retryButton);
+        await tester.pump();
+      }
 
-        expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
-      });
+      expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
+
+      // Unmount and dispose in-body so cacheFor timers are cancelled before
+      // the pending-timer check.
+      await tester.pumpWidget(const SizedBox());
+      container.dispose();
     });
 
     testWidgets('prevents duplicate inference triggers', (tester) async {
       // This test ensures _hasTriggeredInference flag prevents duplicate calls
-      await tester.runAsync(() async {
-        final container = ProviderContainer(
-          overrides: [
-            unifiedAiInferenceRepositoryProvider.overrideWithValue(
-              mockRepository,
-            ),
-            aiConfigByIdProvider('test-prompt-1').overrideWith(
-              (ref) async => testPromptConfig,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
+          aiConfigByIdProvider('test-prompt-1').overrideWith(
+            (ref) async => testPromptConfig,
+          ),
+          categoryRepositoryProvider.overrideWithValue(
+            mockCategoryRepository,
+          ),
+        ],
+      );
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MaterialApp(
-              localizationsDelegates: [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-              ],
-              home: Scaffold(
-                body: UnifiedAiProgressContent(
-                  entityId: 'test-entity',
-                  promptId: 'test-prompt-1',
-                ),
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+            ],
+            home: Scaffold(
+              body: UnifiedAiProgressContent(
+                entityId: 'test-entity',
+                promptId: 'test-prompt-1',
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        // Pump multiple times to ensure no duplicate triggers
-        await tester.pump();
-        await tester.pump();
-        await tester.pump();
+      // Pump multiple times to ensure no duplicate triggers
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
 
-        expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
-      });
+      expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
+
+      // Unmount and dispose in-body so cacheFor timers are cancelled before
+      // the pending-timer check.
+      await tester.pumpWidget(const SizedBox());
+      container.dispose();
     });
 
     testWidgets('handles model not installed error', (tester) async {
       // This test checks the _modelNotInstalledRegex pattern matching
-      await tester.runAsync(() async {
-        final container = ProviderContainer(
-          overrides: [
-            unifiedAiInferenceRepositoryProvider.overrideWithValue(
-              mockRepository,
-            ),
-            aiConfigByIdProvider('test-prompt-1').overrideWith(
-              (ref) async => testPromptConfig,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
+          aiConfigByIdProvider('test-prompt-1').overrideWith(
+            (ref) async => testPromptConfig,
+          ),
+          categoryRepositoryProvider.overrideWithValue(
+            mockCategoryRepository,
+          ),
+        ],
+      );
 
-        // Set error state with model not installed message
-        container
-            .read(
-              inferenceStatusControllerProvider(
-                id: 'test-entity',
-                // ignore: deprecated_member_use_from_same_package
-                aiResponseType: AiResponseType.taskSummary,
-              ).notifier,
-            )
-            .setStatus(InferenceStatus.error);
+      // Set error state with model not installed message
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: 'test-entity',
+              // ignore: deprecated_member_use_from_same_package
+              aiResponseType: AiResponseType.taskSummary,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.error);
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MaterialApp(
-              localizationsDelegates: [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-              ],
-              home: Scaffold(
-                body: UnifiedAiProgressContent(
-                  entityId: 'test-entity',
-                  promptId: 'test-prompt-1',
-                ),
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+            ],
+            home: Scaffold(
+              body: UnifiedAiProgressContent(
+                entityId: 'test-entity',
+                promptId: 'test-prompt-1',
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        // Verify the widget handles the error properly
-        expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
-      });
+      // Verify the widget handles the error properly
+      expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
+
+      // Unmount and dispose in-body so cacheFor timers are cancelled before
+      // the pending-timer check.
+      await tester.pumpWidget(const SizedBox());
+      container.dispose();
     });
 
     testWidgets('cleans up stream subscription on dispose', (tester) async {
       // This test ensures _progressSubscription is properly canceled
-      await tester.runAsync(() async {
-        final container = ProviderContainer(
-          overrides: [
-            unifiedAiInferenceRepositoryProvider.overrideWithValue(
-              mockRepository,
-            ),
-            aiConfigByIdProvider('test-prompt-1').overrideWith(
-              (ref) async => testPromptConfig,
-            ),
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider.overrideWithValue(
+            mockRepository,
+          ),
+          aiConfigByIdProvider('test-prompt-1').overrideWith(
+            (ref) async => testPromptConfig,
+          ),
+          categoryRepositoryProvider.overrideWithValue(
+            mockCategoryRepository,
+          ),
+        ],
+      );
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MaterialApp(
-              localizationsDelegates: [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-              ],
-              home: Scaffold(
-                body: UnifiedAiProgressContent(
-                  entityId: 'test-entity',
-                  promptId: 'test-prompt-1',
-                  showExisting: true,
-                ),
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+            ],
+            home: Scaffold(
+              body: UnifiedAiProgressContent(
+                entityId: 'test-entity',
+                promptId: 'test-prompt-1',
+                showExisting: true,
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pump();
+      await tester.pump();
 
-        // Remove the widget to trigger dispose
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(
-              body: SizedBox(),
-            ),
+      // Remove the widget to trigger dispose
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        // The dispose method should have cleaned up the subscription
-        expect(find.byType(UnifiedAiProgressContent), findsNothing);
-      });
+      // The dispose method should have cleaned up the subscription
+      expect(find.byType(UnifiedAiProgressContent), findsNothing);
+
+      // Dispose the container in-body so cacheFor timers are cancelled
+      // before the pending-timer check.
+      container.dispose();
     });
   });
 
@@ -1206,150 +1213,154 @@ Generate a widget that renders a login form.''',
     testWidgets(
       'shows streamed progress when showExisting=true and active inference exists',
       (tester) async {
-        await tester.runAsync(() async {
-          final container = ProviderContainer(
-            overrides: [
-              unifiedAiInferenceRepositoryProvider.overrideWithValue(
-                mockRepository,
-              ),
-              cloudInferenceRepositoryProvider.overrideWithValue(
-                mockCloudRepository,
-              ),
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
-              aiConfigByIdProvider(promptId).overrideWith(
-                (ref) async => testPromptConfig,
-              ),
-              triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
-            ],
-          );
-          addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            cloudInferenceRepositoryProvider.overrideWithValue(
+              mockCloudRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
+          ],
+        );
 
-          // Start an active inference so _subscribeToExistingInference finds it
-          container
-              .read(
-                activeInferenceControllerProvider(
+        // Start an active inference so _subscribeToExistingInference finds it
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: entityId,
+                // ignore: deprecated_member_use_from_same_package
+                aiResponseType: AiResponseType.taskSummary,
+              ).notifier,
+            )
+            .startInference(promptId: promptId);
+
+        // Push initial progress text
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: entityId,
+                // ignore: deprecated_member_use_from_same_package
+                aiResponseType: AiResponseType.taskSummary,
+              ).notifier,
+            )
+            .updateProgress('Partial result…');
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+              ],
+              home: Scaffold(
+                body: UnifiedAiProgressContent(
                   entityId: entityId,
-                  // ignore: deprecated_member_use_from_same_package
-                  aiResponseType: AiResponseType.taskSummary,
-                ).notifier,
-              )
-              .startInference(promptId: promptId);
-
-          // Push initial progress text
-          container
-              .read(
-                activeInferenceControllerProvider(
-                  entityId: entityId,
-                  // ignore: deprecated_member_use_from_same_package
-                  aiResponseType: AiResponseType.taskSummary,
-                ).notifier,
-              )
-              .updateProgress('Partial result…');
-
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: const MaterialApp(
-                localizationsDelegates: [
-                  AppLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                ],
-                home: Scaffold(
-                  body: UnifiedAiProgressContent(
-                    entityId: entityId,
-                    promptId: promptId,
-                    showExisting: true,
-                  ),
+                  promptId: promptId,
+                  showExisting: true,
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          // Allow the post-frame callback and async subscribe to run
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 50));
+        // Allow the post-frame callback and async subscribe to run
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-          // The initial progress text should now be displayed
-          expect(find.textContaining('Partial result'), findsOneWidget);
-        });
+        // The initial progress text should now be displayed
+        expect(find.textContaining('Partial result'), findsOneWidget);
+
+        // Unmount and dispose in-body so cacheFor timers are cancelled
+        // before the pending-timer check.
+        await tester.pumpWidget(const SizedBox());
+        container.dispose();
       },
     );
 
     testWidgets(
       'stream updates from active inference are reflected when showExisting=true',
       (tester) async {
-        await tester.runAsync(() async {
-          final container = ProviderContainer(
-            overrides: [
-              unifiedAiInferenceRepositoryProvider.overrideWithValue(
-                mockRepository,
-              ),
-              cloudInferenceRepositoryProvider.overrideWithValue(
-                mockCloudRepository,
-              ),
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
-              aiConfigByIdProvider(promptId).overrideWith(
-                (ref) async => testPromptConfig,
-              ),
-              triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
-            ],
-          );
-          addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            cloudInferenceRepositoryProvider.overrideWithValue(
+              mockCloudRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
+          ],
+        );
 
-          // Start an active inference
-          container
-              .read(
-                activeInferenceControllerProvider(
+        // Start an active inference
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: entityId,
+                // ignore: deprecated_member_use_from_same_package
+                aiResponseType: AiResponseType.taskSummary,
+              ).notifier,
+            )
+            .startInference(promptId: promptId);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+              ],
+              home: Scaffold(
+                body: UnifiedAiProgressContent(
                   entityId: entityId,
-                  // ignore: deprecated_member_use_from_same_package
-                  aiResponseType: AiResponseType.taskSummary,
-                ).notifier,
-              )
-              .startInference(promptId: promptId);
-
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: const MaterialApp(
-                localizationsDelegates: [
-                  AppLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                ],
-                home: Scaffold(
-                  body: UnifiedAiProgressContent(
-                    entityId: entityId,
-                    promptId: promptId,
-                    showExisting: true,
-                  ),
+                  promptId: promptId,
+                  showExisting: true,
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          // Allow subscription to attach
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 50));
+        // Allow subscription to attach
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-          // Push a stream update
-          container
-              .read(
-                activeInferenceControllerProvider(
-                  entityId: entityId,
-                  // ignore: deprecated_member_use_from_same_package
-                  aiResponseType: AiResponseType.taskSummary,
-                ).notifier,
-              )
-              .updateProgress('Stream update text');
+        // Push a stream update
+        container
+            .read(
+              activeInferenceControllerProvider(
+                entityId: entityId,
+                // ignore: deprecated_member_use_from_same_package
+                aiResponseType: AiResponseType.taskSummary,
+              ).notifier,
+            )
+            .updateProgress('Stream update text');
 
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-          expect(find.textContaining('Stream update text'), findsOneWidget);
-        });
+        expect(find.textContaining('Stream update text'), findsOneWidget);
+
+        // Unmount and dispose in-body so cacheFor timers are cancelled
+        // before the pending-timer check.
+        await tester.pumpWidget(const SizedBox());
+        container.dispose();
       },
     );
   });

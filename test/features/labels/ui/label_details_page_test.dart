@@ -42,8 +42,6 @@ class _FakeLabelEditorController extends LabelEditorController {
   }
 }
 
-class _MockLabelsRepository extends Mock implements LabelsRepository {}
-
 class _ColorSpyController extends _FakeLabelEditorController {
   _ColorSpyController(
     super.params, {
@@ -213,7 +211,7 @@ void main() {
     testWidgets('edit mode: delete flow calls repository.deleteLabel', (
       tester,
     ) async {
-      final repo = _MockLabelsRepository();
+      final repo = MockLabelsRepository();
       when(() => repo.watchLabel('label-1')).thenAnswer(
         (_) => Stream<LabelDefinition?>.value(
           testLabelDefinition1.copyWith(id: 'label-1'),
@@ -695,7 +693,7 @@ void main() {
         String? beamedTo;
         beamToNamedOverride = (path) => beamedTo = path;
 
-        final repo = _MockLabelsRepository();
+        final repo = MockLabelsRepository();
         when(() => repo.watchLabel('label-1')).thenAnswer(
           (_) => Stream<LabelDefinition?>.value(
             testLabelDefinition1.copyWith(id: 'label-1'),
