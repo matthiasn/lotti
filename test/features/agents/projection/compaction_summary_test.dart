@@ -460,6 +460,12 @@ void main() {
       );
     });
 
+    test('TailLine value equality follows its fields', () {
+      expect(_line('e1', 'same'), _line('e1', 'same'));
+      expect(_line('e1', 'same'), isNot(_line('e1', 'same', edited: true)));
+      expect(_line('e1', 'same'), isNot(_line('e1', 'other')));
+    });
+
     test('renders tail entries in the given (event) order', () {
       final text = assembleCompactedTaskLog(
         tail: [_line('e1', 'first'), _line('e2', 'second', day: 11)],

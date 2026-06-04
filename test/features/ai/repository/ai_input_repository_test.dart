@@ -1786,6 +1786,55 @@ void main() {
         expect(markdown, isNot(contains('{')));
       });
 
+      test('buildTaskStateMarkdown resolves assigned label names', () async {
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer((_) async => (Duration.zero, <String, TimeRange>{}));
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+            labelIds: const ['label-1'],
+          ),
+          data: TaskData(
+            title: 'Labelled Task',
+            status: TaskStatus.inProgress(
+              id: 'status-l',
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+          ),
+        );
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
+        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
+          (_) async => [
+            LabelDefinition(
+              id: 'label-1',
+              name: 'deep work',
+              color: '#FF0000',
+              createdAt: creationDate,
+              updatedAt: creationDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        final markdown = await repository.buildTaskStateMarkdown(taskId);
+
+        expect(markdown, contains('- Labels: deep work'));
+      });
+
       test(
         'buildTaskStateMarkdown returns null for a non-task entity',
         () async {

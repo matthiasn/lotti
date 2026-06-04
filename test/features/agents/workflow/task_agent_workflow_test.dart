@@ -6388,6 +6388,185 @@ void main() {
         expect(userText, isNot(contains('### Resolved')));
       });
 
+      test('a failing config-flag read degrades to the legacy inline log '
+          'instead of aborting the wake', () async {
+        when(
+          () => mockJournalDb.getConfigFlag(enableAgentCompactionFlag),
+        ).thenAnswer((_) => Future<bool>.error(Exception('db unavailable')));
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+
+        final workflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          inputCaptureService: _RecordingCaptureService(),
+          logSummarizer: stubLogSummarizer(),
+          compactionEnabled: null,
+        );
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        // Compaction off this wake: full inline log, no markdown state.
+        verify(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).called(1);
+        verifyNever(
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
+        );
+      });
+
+      test('a throwing assembleContext degrades to the legacy inline log '
+          'instead of killing the wake', () async {
+        when(
+          () => mockSyncService.repository,
+        ).thenReturn(mockAgentRepository);
+        // The compactor's projection read throws (both maybeCompact and
+        // assembleContext hit this; each is independently caught).
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.system,
+          ),
+        ).thenAnswer(
+          (_) => Future<List<AgentMessageEntity>>.error(
+            Exception('projection read failed'),
+          ),
+        );
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+
+        final workflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          inputCaptureService: _RecordingCaptureService(),
+          compactionEnabled: true,
+          logSummarizer: stubLogSummarizer(),
+        );
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).called(1);
+        verifyNever(
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
+        );
+      });
+
+      test('a saturated resolved-decision window logs loudly and the wake '
+          'still renders the full legacy ledger', () async {
+        final saturated = ProposalLedger(
+          open: const [],
+          resolved: List.generate(
+            TaskAgentWorkflow.resolvedDecisionWindow,
+            (i) => LedgerEntry(
+              changeSetId: 'cs-$i',
+              itemIndex: 0,
+              toolName: 'set_task_title',
+              args: const {},
+              humanSummary: 'Proposal $i',
+              fingerprint: 'set_task_title:$i',
+              status: ChangeItemStatus.confirmed,
+              createdAt: DateTime(2024, 6),
+              resolvedAt: DateTime(2024, 6, 1, 12),
+              resolvedBy: DecisionActor.user,
+              verdict: ChangeDecisionVerdict.confirmed,
+            ),
+          ),
+        );
+        when(
+          () => mockAgentRepository.getProposalLedger(
+            any(),
+            taskId: any(named: 'taskId'),
+            changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+            resolvedLimit: any(named: 'resolvedLimit'),
+          ),
+        ).thenAnswer((_) async => saturated);
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        // Legacy mode renders the full resolved listing — proving the
+        // saturated ledger flowed through unharmed.
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final userText = capturedPayloadEntities(captured)
+            .map((p) => p.content['text'] as String? ?? '')
+            .firstWhere((t) => t.contains('Current Task Context'));
+        expect(
+          userText,
+          contains(
+            '### Resolved (${TaskAgentWorkflow.resolvedDecisionWindow}, '
+            'most recent)',
+          ),
+        );
+      });
+
       test('the full prompt is append-only across wakes: identical bytes '
           'before the task log, appends inside it', () async {
         // The provider prefix-cache invariant at the PROMPT level: when a new

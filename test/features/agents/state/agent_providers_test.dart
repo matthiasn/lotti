@@ -868,6 +868,40 @@ void main() {
       );
     });
 
+    test('breaks same-time same-kind ties deterministically by id', () async {
+      final wakeAt = DateTime(2024, 3, 15, 10);
+      final obsB = makeTestMessage(
+        id: 'obs-b',
+        threadId: 'thread-a',
+        kind: AgentMessageKind.observation,
+        createdAt: wakeAt,
+      );
+      final obsA = makeTestMessage(
+        id: 'obs-a',
+        threadId: 'thread-a',
+        kind: AgentMessageKind.observation,
+        createdAt: wakeAt,
+      );
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [obsB, obsA]);
+
+      final container = createContainer();
+      final result = await container.read(
+        agentMessagesByThreadProvider(kTestAgentId).future,
+      );
+
+      expect(
+        [for (final m in result['thread-a']!) (m as AgentMessageEntity).id],
+        ['obs-a', 'obs-b'],
+      );
+    });
+
     test('returns empty map when no messages exist', () async {
       when(
         () => mockRepository.getEntitiesByAgentId(

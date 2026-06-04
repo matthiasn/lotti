@@ -1344,6 +1344,57 @@ void main() {
       );
     });
 
+    test(
+      'summarizes an archival using the title from the args when present',
+      () async {
+        final builder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+        );
+
+        await builder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-1', 'title': 'Known title', 'isArchived': true},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
+
+        expect(builder.items.first.humanSummary, 'Archive: "Known title"');
+      },
+    );
+
+    test(
+      'falls back to the truncated id when archiving without a resolver',
+      () async {
+        final builder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+        );
+
+        await builder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {
+                'id': 'abcdefgh-1234-5678-9012-abcdefghijkl',
+                'isArchived': true,
+              },
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
+
+        expect(builder.items.first.humanSummary, 'Archive item abcdefgh…');
+      },
+    );
+
     test('summarizes an unarchival as Restore', () async {
       final resolverBuilder = ChangeSetBuilder(
         agentId: 'agent-001',
