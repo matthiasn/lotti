@@ -471,13 +471,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentMessageKindAction => 'Acción';
 
   @override
+  String get agentMessageKindMilestone => 'Hito';
+
+  @override
   String get agentMessageKindObservation => 'Observación';
+
+  @override
+  String get agentMessageKindRetraction => 'Retractación';
 
   @override
   String get agentMessageKindSummary => 'Resumen';
 
   @override
   String get agentMessageKindSystem => 'Sistema';
+
+  @override
+  String get agentMessageKindSystemPrompt => 'Prompt del sistema';
 
   @override
   String get agentMessageKindThought => 'Pensamiento';
@@ -2600,6 +2609,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get configFlagDailyOsNextEnabledDescription =>
       'Reemplaza la superficie actual de DailyOS por el nuevo flujo de captura y reconciliación con voz dirigido por agente. Vista previa temprana — la lógica del backend está simulada.';
+
+  @override
+  String get configFlagEnableAgentCompaction =>
+      'Compactación de memoria del agente';
+
+  @override
+  String get configFlagEnableAgentCompactionDescription =>
+      'Resume las entradas antiguas del registro de la tarea en una memoria continua para que el contexto del agente se mantenga compacto. Usa el modelo del propio agente.';
 
   @override
   String get configFlagEnableAiStreaming =>

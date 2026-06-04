@@ -473,13 +473,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentMessageKindAction => 'Acțiune';
 
   @override
+  String get agentMessageKindMilestone => 'Reper';
+
+  @override
   String get agentMessageKindObservation => 'Observație';
+
+  @override
+  String get agentMessageKindRetraction => 'Retractare';
 
   @override
   String get agentMessageKindSummary => 'Rezumat';
 
   @override
   String get agentMessageKindSystem => 'Sistem';
+
+  @override
+  String get agentMessageKindSystemPrompt => 'Prompt de sistem';
 
   @override
   String get agentMessageKindThought => 'Gând';
@@ -2609,6 +2618,14 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagDailyOsNextEnabledDescription =>
       'Înlocuiește interfața DailyOS actuală cu noul flux vocal de captură și reconciliere coordonat de agent. Previzualizare timpurie — logica de backend este simulată.';
+
+  @override
+  String get configFlagEnableAgentCompaction =>
+      'Compactarea memoriei agentului';
+
+  @override
+  String get configFlagEnableAgentCompactionDescription =>
+      'Rezumă intrările mai vechi din jurnalul sarcinii într-o memorie continuă, pentru ca contextul agentului să rămână compact. Folosește modelul agentului.';
 
   @override
   String get configFlagEnableAiStreaming =>

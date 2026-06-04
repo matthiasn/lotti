@@ -97,6 +97,11 @@ void main() {
             description: 'Show the inline Wake Queue in the sidebar.',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableAgentCompactionFlag,
+            description: 'Enable agent memory compaction?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -127,8 +132,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 11 flags in the mock data.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(11));
+      // 12 flags in the mock data.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(12));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -137,7 +142,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsIcon), findsNWidgets(11));
+      expect(find.byType(SettingsIcon), findsNWidgets(12));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -315,7 +320,7 @@ void main() {
         DesignSystemListItem,
         context.messages.configFlagEnableWhatsNew,
       );
-      // The whats-new row sits toward the bottom of the 11-row list and
+      // The whats-new row sits toward the bottom of the 12-row list and
       // is offscreen under the testable wrapper's bounded
       // SingleChildScrollView. `ensureVisible` walks the target's
       // ancestor chain to find the right scrollable and drives the
@@ -335,6 +340,45 @@ void main() {
       );
       verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
     });
+  });
+
+  group('FlagsPage — agent compaction flag', () {
+    testWidgets(
+      'renders the compaction flag with localized title, description, and '
+      'compress icon',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(FlagsPage));
+        await tester.enterText(
+          find.byType(DesignSystemSearch),
+          context.messages.configFlagEnableAgentCompaction,
+        );
+        await tester.pumpAndSettle();
+
+        final item = find.widgetWithText(
+          DesignSystemListItem,
+          context.messages.configFlagEnableAgentCompaction,
+        );
+        expect(item, findsOneWidget);
+        expect(
+          find.text(
+            context.messages.configFlagEnableAgentCompactionDescription,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: item,
+            matching: find.byIcon(Icons.compress_rounded),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
   });
 
   group('FlagsPage — AI summary TTS flag', () {
@@ -644,7 +688,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pumpAndSettle();
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
 
@@ -665,7 +709,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pumpAndSettle();
-        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
 
@@ -682,7 +726,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
   });

@@ -3396,7 +3396,7 @@ void main() {
             executor: mockExecutor,
             syncService: mockSyncService,
             checklistItemStateResolver: (id) async =>
-                (title: 'Buy groceries', isChecked: true),
+                (title: 'Buy groceries', isChecked: true, isArchived: null),
           );
 
           final toolCalls = [

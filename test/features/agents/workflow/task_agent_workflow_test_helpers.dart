@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
-import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -222,9 +222,13 @@ TaskAgentWorkflow createTestWorkflow({
   required MockAgentTemplateService templateService,
   MockSoulDocumentService? soulDocumentService,
   AgentInputCaptureService? inputCaptureService,
-  AgentSummarizer? summarizer,
-  bool compactionEnabled = false,
-  int compactionTailBudgetTokens = 6000,
+  AgentLogLlmSummarizer? logSummarizer,
+  // Explicit override; null = consult the `enable_agent_compaction` config
+  // flag at wake time (the production path). Defaults to false so the bulk of
+  // the suite never touches the journal-DB flag read.
+  bool? compactionEnabled = false,
+  int compactionTailBudgetTokens = 50000,
+  int compactionTailRetainTokens = 20000,
 }) {
   return TaskAgentWorkflow(
     agentRepository: agentRepository,
@@ -240,10 +244,34 @@ TaskAgentWorkflow createTestWorkflow({
     templateService: templateService,
     soulDocumentService: soulDocumentService,
     inputCaptureService: inputCaptureService,
-    summarizer: summarizer,
+    logSummarizer: logSummarizer,
     compactionEnabled: compactionEnabled,
     compactionTailBudgetTokens: compactionTailBudgetTokens,
+    compactionTailRetainTokens: compactionTailRetainTokens,
   );
+}
+
+/// A stubbed [MockAgentLogLlmSummarizer] that returns [summary] (or throws
+/// [error]) for any fold — the workflow's compaction seam in tests.
+MockAgentLogLlmSummarizer stubLogSummarizer({
+  String summary = 'SUMMARY',
+  Object? error,
+}) {
+  final mock = MockAgentLogLlmSummarizer();
+  final stub = when(
+    () => mock.summarize(
+      sources: any(named: 'sources'),
+      priorSummary: any(named: 'priorSummary'),
+      model: any(named: 'model'),
+      provider: any(named: 'provider'),
+    ),
+  );
+  if (error != null) {
+    stub.thenAnswer((_) => Future<String>.error(error));
+  } else {
+    stub.thenAnswer((_) async => summary);
+  }
+  return mock;
 }
 
 // ── Capture helpers ──────────────────────────────────────────────────────────

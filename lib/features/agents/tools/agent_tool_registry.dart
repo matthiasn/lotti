@@ -226,10 +226,12 @@ class AgentToolRegistry {
       name: TaskAgentToolNames.updateChecklistItems,
       description:
           'Update existing checklist items. Each item needs its id and at '
-          'least one of isChecked or title. When an item was last toggled by '
-          'the user, you must provide a reason citing evidence from AFTER the '
-          "user's action to change its checked state. Title updates are "
-          'always allowed.',
+          'least one of isChecked, title, or isArchived. When an item was '
+          'last toggled by the user, you must provide a reason citing '
+          "evidence from AFTER the user's action to change its checked "
+          'state. Title updates are always allowed. Use isArchived: true to '
+          'archive a duplicate or obsolete item — archiving is reversible '
+          'and is the right way to deduplicate, never re-titling.',
       parameters: {
         'type': 'object',
         'properties': {
@@ -254,6 +256,13 @@ class AgentToolRegistry {
                   'description':
                       'New title for the item (e.g. fix a transcription '
                       'error). Max 400 characters.',
+                },
+                'isArchived': {
+                  'type': 'boolean',
+                  'description':
+                      'Archive (true) or restore (false) the item. Archive '
+                      'duplicates and obsolete items instead of re-titling '
+                      'them; archived items stay recoverable.',
                 },
                 'reason': {
                   'type': 'string',

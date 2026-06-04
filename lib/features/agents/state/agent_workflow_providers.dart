@@ -1,3 +1,4 @@
+import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -106,6 +107,14 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     inputCaptureService: AgentInputCaptureService(
       syncService: ref.watch(agentSyncServiceProvider),
     ),
+    logSummarizer: AgentLogLlmSummarizer(
+      inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+    ),
+    // Compaction is gated by the `enable_agent_compaction` config flag, which
+    // the workflow reads from the journal DB at each wake (Settings → Flags
+    // toggle applies on the next wake). Not watched here on purpose: the wake
+    // executor captures this workflow instance at initialization, so a
+    // provider-rebuild-based flag would not reach the executing instance.
   );
 }
 

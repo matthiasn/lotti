@@ -1291,8 +1291,9 @@ class AgentRepository {
           [nowSeconds, nowSeconds, nowIso, nowIso, link.toId, link.id],
         );
       }
-      // The global UNIQUE(from_id, to_id, type) constraint applies to
-      // ALL rows regardless of `deleted_at`, so the soft-delete above
+      // The partial unique index `idx_agent_links_unique_from_to_type`
+      // on (from_id, to_id, type) — all types except `message_payload` —
+      // applies regardless of `deleted_at`, so the soft-delete above
       // does NOT free the natural-key slot when an existing row has
       // the exact same `(type, from_id, to_id)` triple but a
       // different `id` (e.g. the same soul↔template binding

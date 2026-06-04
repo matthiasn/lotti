@@ -796,6 +796,112 @@ void main() {
       expect((thread[2] as AgentMessageEntity).id, 'msg-1');
     });
 
+    test('breaks the shared wake timestamp by conversation order: system '
+        'prompt first, bookkeeping last', () async {
+      // A wake persists several rows with ONE shared timestamp (causality).
+      // Without a conversation-order tiebreak the wake-completed milestone
+      // (kind system, no content) rendered above the agent's output, looking
+      // like a late-arriving system prompt.
+      final wakeAt = DateTime(2024, 3, 15, 10);
+      final milestone = makeTestMessage(
+        id: 'msg-milestone',
+        threadId: 'thread-a',
+        kind: AgentMessageKind.system,
+        createdAt: wakeAt,
+        metadata: const AgentMessageMetadata(
+          milestone: AgentMilestone.wakeCompleted,
+        ),
+      );
+      final observation = makeTestMessage(
+        id: 'msg-observation',
+        threadId: 'thread-a',
+        kind: AgentMessageKind.observation,
+        createdAt: wakeAt,
+      );
+      final user = makeTestMessage(
+        id: 'msg-user',
+        threadId: 'thread-a',
+        kind: AgentMessageKind.user,
+        createdAt: wakeAt,
+      );
+      final systemPrompt = makeTestMessage(
+        id: 'msg-prompt',
+        threadId: 'thread-a',
+        kind: AgentMessageKind.system,
+        createdAt: wakeAt,
+        contentEntryId: 'sha256-v1:prompt',
+      );
+      // A later-timestamped action must still sort strictly after.
+      final action = makeTestMessage(
+        id: 'msg-action',
+        threadId: 'thread-a',
+        kind: AgentMessageKind.action,
+        createdAt: wakeAt.add(const Duration(seconds: 5)),
+      );
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer(
+        (_) async => [milestone, observation, user, systemPrompt, action],
+      );
+
+      final container = createContainer();
+      final result = await container.read(
+        agentMessagesByThreadProvider(kTestAgentId).future,
+      );
+
+      expect(
+        [
+          for (final m in result['thread-a']!) (m as AgentMessageEntity).id,
+        ],
+        [
+          'msg-prompt',
+          'msg-user',
+          'msg-observation',
+          'msg-milestone',
+          'msg-action',
+        ],
+      );
+    });
+
+    test('breaks same-time same-kind ties deterministically by id', () async {
+      final wakeAt = DateTime(2024, 3, 15, 10);
+      final obsB = makeTestMessage(
+        id: 'obs-b',
+        threadId: 'thread-a',
+        kind: AgentMessageKind.observation,
+        createdAt: wakeAt,
+      );
+      final obsA = makeTestMessage(
+        id: 'obs-a',
+        threadId: 'thread-a',
+        kind: AgentMessageKind.observation,
+        createdAt: wakeAt,
+      );
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [obsB, obsA]);
+
+      final container = createContainer();
+      final result = await container.read(
+        agentMessagesByThreadProvider(kTestAgentId).future,
+      );
+
+      expect(
+        [for (final m in result['thread-a']!) (m as AgentMessageEntity).id],
+        ['obs-a', 'obs-b'],
+      );
+    });
+
     test('returns empty map when no messages exist', () async {
       when(
         () => mockRepository.getEntitiesByAgentId(

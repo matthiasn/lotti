@@ -45,7 +45,8 @@ void main() {
       final sorted = _unique(heads).toList()..sort();
       // The `join-v1` tag is inside the hashed content, so the join id differs
       // from both an untagged digest and a differently-tagged one over the
-      // identical id set — it can never be confused with a frontierDigest.
+      // identical id set — it can never be confused with another
+      // content-addressed digest kind.
       expect(
         computeJoinId(heads),
         isNot(ContentDigest.of({'parents': sorted})),

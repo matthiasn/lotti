@@ -469,13 +469,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentMessageKindAction => 'Akce';
 
   @override
+  String get agentMessageKindMilestone => 'Milník';
+
+  @override
   String get agentMessageKindObservation => 'Pozorování';
+
+  @override
+  String get agentMessageKindRetraction => 'Stažení';
 
   @override
   String get agentMessageKindSummary => 'Shrnutí';
 
   @override
   String get agentMessageKindSystem => 'Systém';
+
+  @override
+  String get agentMessageKindSystemPrompt => 'Systémový prompt';
 
   @override
   String get agentMessageKindThought => 'Myšlenka';
@@ -2594,6 +2603,13 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagDailyOsNextEnabledDescription =>
       'Nahradí stávající rozhraní DailyOS novým hlasově řízeným tokem zachycení a smíření vedeným agentem. Raná ukázka — logika backendu je simulovaná.';
+
+  @override
+  String get configFlagEnableAgentCompaction => 'Komprese paměti agenta';
+
+  @override
+  String get configFlagEnableAgentCompactionDescription =>
+      'Shrnuje starší záznamy úkolu do průběžné paměti, aby kontext agenta zůstal kompaktní. Používá model agenta.';
 
   @override
   String get configFlagEnableAiStreaming =>

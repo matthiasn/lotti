@@ -34,6 +34,10 @@
   <releases>
     <release version="0.9.1013" date="2026-06-02">
       <description>
+          <p>New "Agent memory compaction" flag in Settings (off by default): task agents summarize older task-log entries into a rolling memory using their own model, keeping the wake context compact while recent entries stay verbatim.</p>
+          <p>Task agents now update their report only when its content would materially change, instead of re-publishing it on every wake.</p>
+          <p>Task agents can now propose archiving a duplicate or obsolete checklist item, confirmed through the usual proposal flow and reversible.</p>
+          <p>The agent conversation view now shows each wake's exact system prompt as an expandable row and labels milestone and retraction rows distinctly.</p>
           <p>Task agents now fall back to a pending title-change proposal when the immediate initial-title write is blocked by category policy, instead of repeatedly reporting a policy-denied tool error.</p>
       </description>
     </release>

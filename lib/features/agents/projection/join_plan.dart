@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 
-/// Domain tag isolating the join-node digest from every other content-addressed
-/// use (notably the summary coverage `frontierDigest`, ADR 0017): the tag is
-/// part of the hashed content, so the two digests hash different shapes and can
-/// never collide or be confused (ADR 0018 rule 8).
+/// Domain tag isolating the join-node digest from every other
+/// content-addressed use (captured payloads, summary checkpoints — ADR 0017/
+/// 0020): the tag is part of the hashed content, so digests of different
+/// kinds hash different shapes and can never collide or be confused
+/// (ADR 0018 rule 8).
 const String _joinTag = 'join-v1';
 
 /// Content-addressed id of the join-by-continuation node over [headIds]

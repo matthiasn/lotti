@@ -22,6 +22,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
@@ -710,6 +711,8 @@ class MockConversationManager extends Mock implements ConversationManager {}
 class MockAgentToolExecutor extends Mock implements AgentToolExecutor {}
 
 class MockAgentTemplateService extends Mock implements AgentTemplateService {}
+
+class MockAgentLogLlmSummarizer extends Mock implements AgentLogLlmSummarizer {}
 
 class MockLabelAssignmentProcessor extends Mock
     implements LabelAssignmentProcessor {}

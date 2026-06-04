@@ -473,13 +473,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentMessageKindAction => 'Action';
 
   @override
+  String get agentMessageKindMilestone => 'Jalon';
+
+  @override
   String get agentMessageKindObservation => 'Observation';
+
+  @override
+  String get agentMessageKindRetraction => 'Rétractation';
 
   @override
   String get agentMessageKindSummary => 'Résumé';
 
   @override
   String get agentMessageKindSystem => 'Système';
+
+  @override
+  String get agentMessageKindSystemPrompt => 'Prompt système';
 
   @override
   String get agentMessageKindThought => 'Pensée';
@@ -2603,6 +2612,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get configFlagDailyOsNextEnabledDescription =>
       'Remplace l\'interface DailyOS actuelle par le nouveau flux de capture et de réconciliation piloté par l\'agent vocal. Aperçu précoce — la logique back-end est simulée.';
+
+  @override
+  String get configFlagEnableAgentCompaction =>
+      'Compactage de la mémoire de l\'agent';
+
+  @override
+  String get configFlagEnableAgentCompactionDescription =>
+      'Résume les anciennes entrées du journal de tâche en une mémoire continue afin que le contexte de l\'agent reste compact. Utilise le modèle de l\'agent.';
 
   @override
   String get configFlagEnableAiStreaming =>

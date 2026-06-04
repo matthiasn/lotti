@@ -16,11 +16,14 @@ import 'package:openai_dart/openai_dart.dart';
 /// Supports:
 /// - Marking items as checked/unchecked
 /// - Updating item titles (e.g., fixing transcription errors)
-/// - Combined updates (both status and title in one call)
+/// - Archiving/restoring items (e.g., deduplicating; reversible)
+/// - Combined updates (status, title and archival in one call)
 ///
 /// Enforces user sovereignty: when a checklist item was last toggled by the
 /// user, the agent must provide a `reason` citing post-dated evidence to
-/// change its checked state. Title updates are always allowed.
+/// change its checked state. Title and archival updates are always allowed
+/// (agent-proposed archivals pass the ChangeSet human gate before reaching
+/// this handler).
 class LottiChecklistUpdateHandler extends FunctionHandler {
   LottiChecklistUpdateHandler({
     required this.task,
@@ -56,31 +59,39 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
     _skippedItems.add(SkippedItemDetail(id: id, reason: reason));
   }
 
-  /// When the sovereignty guard blocks an isChecked change, still apply a
-  /// title update if one was requested and the title actually changed.
-  /// Returns `true` if a title update was successfully applied.
-  Future<bool> _applyTitleOnlyIfChanged({
+  /// When the sovereignty guard blocks an isChecked change, still apply the
+  /// non-checked updates (title and/or archival) if any actually changed.
+  /// Returns `true` if an update was successfully applied.
+  Future<bool> _applyNonCheckedChanges({
     required String id,
     required ChecklistItem entity,
     required String? newTitle,
     required bool titleChanged,
+    required bool? newIsArchived,
+    required bool isArchivedChanged,
     required bool currentIsChecked,
   }) async {
-    if (!titleChanged) return false;
+    if (!titleChanged && !isArchivedChanged) return false;
 
-    final titleOnlyData = entity.data.copyWith(title: newTitle!);
+    final partialData = entity.data.copyWith(
+      title: titleChanged ? newTitle! : entity.data.title,
+      isArchived: isArchivedChanged ? newIsArchived! : entity.data.isArchived,
+    );
     final success = await checklistRepository.updateChecklistItem(
       checklistItemId: id,
-      data: titleOnlyData,
+      data: partialData,
       taskId: task.id,
     );
     if (success) {
       _updatedItems.add(
         UpdatedItemDetail(
           id: id,
-          title: newTitle,
+          title: partialData.title,
           isChecked: currentIsChecked,
-          changes: ['title'],
+          changes: [
+            if (titleChanged) 'title',
+            if (isArchivedChanged) 'isArchived',
+          ],
         ),
       );
       return true;
@@ -172,14 +183,15 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
         final isChecked = item['isChecked'];
         final title = item['title'];
+        final isArchived = item['isArchived'];
         final reason = item['reason'];
 
         // Must have at least one update field
-        if (isChecked == null && title == null) {
+        if (isChecked == null && title == null && isArchived == null) {
           return _createErrorResult(
             call,
             'Item at index $i (id: $id) has no update fields. '
-            'Provide at least one of isChecked or title.',
+            'Provide at least one of isChecked, title, or isArchived.',
           );
         }
 
@@ -188,6 +200,15 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
           return _createErrorResult(
             call,
             'Item at index $i has invalid isChecked value. Must be a boolean.',
+          );
+        }
+
+        // Validate isArchived type if present
+        if (isArchived != null && isArchived is! bool) {
+          return _createErrorResult(
+            call,
+            'Item at index $i has invalid isArchived value. Must be a '
+            'boolean.',
           );
         }
 
@@ -233,6 +254,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
           'id': id.trim(),
           'isChecked': ?isChecked,
           'title': ?normalizedTitle,
+          'isArchived': ?isArchived,
           if (reasonStr != null && reasonStr.isNotEmpty) 'reason': reasonStr,
         });
       }
@@ -294,6 +316,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final id = item['id'] as String;
       final newIsChecked = item['isChecked'] as bool?;
       final newTitle = item['title'] as String?;
+      final newIsArchived = item['isArchived'] as bool?;
       final reason = item['reason'] as String?;
 
       final entity = entityMap[id];
@@ -316,12 +339,15 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       // Check if there are actual changes
       final currentIsChecked = entity.data.isChecked;
       final currentTitle = entity.data.title;
+      final currentIsArchived = entity.data.isArchived;
 
       final isCheckedChanged =
           newIsChecked != null && newIsChecked != currentIsChecked;
       final titleChanged = newTitle != null && newTitle != currentTitle;
+      final isArchivedChanged =
+          newIsArchived != null && newIsArchived != currentIsArchived;
 
-      if (!isCheckedChanged && !titleChanged) {
+      if (!isCheckedChanged && !titleChanged && !isArchivedChanged) {
         _skip(id, 'No changes detected');
         continue;
       }
@@ -350,11 +376,13 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
         if (skipReason != null) {
           _skip(id, skipReason);
-          if (await _applyTitleOnlyIfChanged(
+          if (await _applyNonCheckedChanges(
             id: id,
             entity: entity,
             newTitle: newTitle,
             titleChanged: titleChanged,
+            newIsArchived: newIsArchived,
+            isArchivedChanged: isArchivedChanged,
             currentIsChecked: currentIsChecked,
           )) {
             successCount++;
@@ -374,6 +402,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final updatedData = entity.data.copyWith(
         isChecked: newIsChecked ?? currentIsChecked,
         title: newTitle ?? currentTitle,
+        isArchived: newIsArchived ?? currentIsArchived,
         checkedBy: isCheckedChanged
             ? ChangeSource.agent
             : entity.data.checkedBy,
@@ -391,6 +420,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         final changes = <String>[
           if (isCheckedChanged) 'isChecked',
           if (titleChanged) 'title',
+          if (isArchivedChanged) 'isArchived',
         ];
         _updatedItems.add(
           UpdatedItemDetail(
@@ -456,11 +486,11 @@ I noticed errors in your checklist update call:
 $errorSummary
 
 Required format:
-{"items": [{"id": "item-uuid", "isChecked": true}, {"id": "other-uuid", "title": "Fixed title"}]}
+{"items": [{"id": "item-uuid", "isChecked": true}, {"id": "other-uuid", "title": "Fixed title"}, {"id": "dupe-uuid", "isArchived": true}]}
 
 Each item must have:
 - "id" (required): The checklist item ID
-- At least one of "isChecked" (boolean) or "title" (string)
+- At least one of "isChecked" (boolean), "title" (string), or "isArchived" (boolean)
 - "reason" (string, >= $minReasonLength chars): Required when changing isChecked on an item the user last toggled. Must cite specific post-dated evidence
 
 Please retry with the correct format.''';

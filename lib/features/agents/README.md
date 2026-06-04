@@ -316,11 +316,13 @@ the report text.
 
 The agent's **inputs** are captured into the append-only log so the wake context
 becomes a projection of the log rather than a live read of the mutable journal
-(ADR 0020), and that log is compacted by **summary checkpoints** over causal
-frontiers (ADR 0017). The mechanism is built and tested; the production *read*
-still uses the journal (the read-flip is the last switch — see below).
+(ADR 0020), and that log is compacted by **summary checkpoints** over a log
+prefix (ADR 0017). The full pipeline — capture, event-log read, LLM-distilled
+folds — is live behind the default-off `enable_agent_compaction` config flag
+(see the activation section below); with the flag off, only capture runs and
+the wake reads the journal as before.
 
-**Capture (active, in shadow).** Each task wake snapshots the user-content
+**Capture (always on).** Each task wake snapshots the user-content
 sources it read — one per linked journal log entry, the rendered text only (an
 audio entry contributes its transcript, never the raw audio) — via
 `AgentInputCaptureService.captureWakeInputs`:
@@ -332,22 +334,104 @@ audio entry contributes its transcript, never the raw audio) — via
 - each new/changed source becomes a content-addressed `AgentMessagePayloadEntity`
   (id = `ContentDigest.of(content)`, so identical content dedupes across wakes
   *and* agents) plus a `messagePayload` link (`fromId = agentId`) carrying
-  provenance (`contentEntryId`) and canonical ordering (`sourceCreatedAt`);
+  provenance (`contentEntryId`) and canonical ordering (`sourceCreatedAt`).
+  Many links may point at one shared payload — two sources rendering identical
+  bytes, or one source edited back to earlier content — so `agent_links`'
+  natural-key uniqueness on `(from_id, to_id, type)` deliberately exempts
+  `message_payload` (partial unique index, schema v11);
 - a source that vanished is **soft-retracted** by a `system` message tagged
   `metadata.retractsContentEntryId` — the snapshot stays auditable, but the
   active frontier excludes it (a later capture re-adds it).
 
 `projectInputFrontier` folds those links + retractions to the latest,
-non-retracted content per source — a pure function of the log, so two devices
-converge regardless of arrival order.
+non-retracted content per source — the **write-side** view `reconcileCapture`
+diffs against. The **read side** uses `projectInputEvents` instead: the same
+links/retractions (plus the agent's `observation` messages) as an ordered
+**event stream**, never folded into per-source state.
 
-**Compaction (selection + planning built; LLM emission pending).** `summary`
-checkpoint events fold a frontier of older content:
+**The read model is an append-only event log.** Every capture link is one
+event at position `(captureTime, sourceCreatedAt, key)` — a strict total order
+over synced metadata, so all devices agree (`sourceCreatedAt` orders a
+same-instant batch chronologically instead of by random ids). The rendered
+`## Task Log` tail is `visibleTailEvents`: events after the active
+checkpoint's cutoff, one line each, **rendered once and frozen forever**:
 
-- `selectActiveCheckpoint` picks the active checkpoint — the deepest summary
-  ancestral to every head — plus the uncovered verbatim tail;
-- `planCompaction` decides, against a model token budget, which oldest tail
-  prefix to fold so the most-recent suffix fits.
+- an **edit** appends a new `(text, edited)` line at the end — the original
+  line never changes (a ticking running-timer duration is excluded from
+  capture until final for the same reason);
+- the agent's own **observations** interleave as `(observation)` lines —
+  single memory substrate, same ordering, same folds (the separate
+  `## Agent Journal` section exists only in legacy mode);
+- resolved **proposal verdicts** interleave as `(decision)` lines (inline
+  events via `decisionEventsFromLedger` — no payload row; their content
+  derives from the synced ChangeSet/ChangeDecision entities), positioned at
+  resolution time so the narrative reads *user said X → agent proposed Y →
+  user rejected it*. The `## Proposal Ledger` section then carries only the
+  OPEN proposals (current state: fingerprints for `retract_suggestions`,
+  same-wake dedup) — the `### Resolved` listing, previously re-rendered and
+  capped every wake, exists only in legacy mode;
+- a **deletion** (retraction) is the one deliberate mutation: it strips that
+  source's lines (privacy beats cache) and invalidates any checkpoint whose
+  prose may mention it.
+
+**Compaction folds a log prefix.** `summary` checkpoint events cover
+everything up to a **cutoff position** (persisted as `coverageCutoff` in the
+checkpoint payload), not a state snapshot:
+
+- `selectActiveSummary` picks the valid checkpoint with the greatest cutoff.
+  A checkpoint dies when a covered source is retracted *after* its cutoff,
+  or when it is **incomplete against the current log**: sync can deliver an
+  event positioned *before* an existing cutoff (a concurrent capture/
+  observation/verdict from another device), which would otherwise be in
+  neither the prose nor the post-cutoff tail — the checkpoint is discarded,
+  the tail re-expands, and the same wake's fold re-covers everything
+  including the late arrival. Completeness is checked by entry id, so a
+  late-arriving *superseded* version of a covered source does not
+  invalidate. An edit of folded content just appends a tail event that
+  supersedes the stale prose, keeping the prompt prefix byte-stable;
+- `planCompaction` decides, against a token budget, which oldest event prefix
+  to fold so the most-recent suffix fits;
+- `AgentLogLlmSummarizer` (the LLM edge) distills the folded events into
+  rolling summary prose with a one-shot generation call, using the **wake's
+  resolved model/provider** — the agent summarizes its own memory with the
+  brain it thinks with. Oversized fold sets are distilled in chronological
+  chunks, rolling the summary through each call; an empty model response
+  throws (caught as "no compaction this wake") rather than persisting an empty
+  checkpoint that would erase folded memory.
+
+**Cadence (hysteresis) & prefix caching.** `maybeCompact` uses two watermarks:
+the *trigger* (`compactionTailBudgetTokens`, default 50000) — no summarization
+while the uncovered tail fits it — and the *retain* mark
+(`compactionTailRetainTokens`, default 20000) — once triggered, the fold goes
+deep, keeping only that much recent verbatim content. So the summarizer runs
+roughly once per `trigger − retain` (~30k) tokens of *new* activity (most
+tasks never reach the trigger at all), and between folds every wake is a pure
+read. The trigger is sized generously because the append-only tail is
+prefix-cached: warm wakes pay cache-read rates (local inference with a
+persistent KV cache: ~nothing) for the history; the costs that remain are the
+cold prefill on a session's first wake and attention quality on very long raw
+logs — which is why folding exists at all. Small-context/local deployments
+can pass tighter values through the workflow constructor.
+Compaction is never destructive: every entry stays in the journal and in the
+content-addressed captured payloads — only the *prompt* sees the summary.
+
+**The prompt invariant** (machine-checked by the append-only property tests in
+`input_events_test.dart` and the end-to-end prefix tests in the compactor and
+workflow tests): between folds, two consecutive wake prompts are byte-identical
+up to the end of the `## Task Log` block except for appended lines. Ordering
+is strictly by volatility: system prompt and rare-change context blocks, then
+the summary (changes once per fold), then the append-only event tail — and
+only *below* that the volatile tail: the compact markdown task **state**
+(`buildTaskStateMarkdown` — title/status/time/labels/checklist with item ids;
+its time fields tick on every working wake, which is why it must sit after the
+log), timer, ledger, trigger tokens. One flipped byte upstream voids the
+provider prefix cache for every byte after it.
+
+**The report is a projection, not memory.** The prior report's prose is never
+injected into the prompt (re-reading its own stale conclusions creates a
+feedback loop), and `update_report` is conditional: the agent publishes only
+when the report would materially change (the first report is still forced via
+a retry). A wake with nothing report-worthy ends with a plain-text note.
 
 The dormant model fields now earn their keep: `AgentMessageKind.summary`,
 `summaryStartMessageId`/`summaryEndMessageId`/`summaryDepth`,
@@ -358,27 +442,36 @@ stateDiagram-v2
   [*] --> Idle
   Idle --> Capturing: wake reads user content
   Capturing --> Capturing: per source — dedupe payload by contentDigest; append messagePayload link; retract vanished sources
-  Capturing --> Folding: input frontier updated
-  Folding --> Compacting: uncovered tail beyond model budget?
-  Compacting --> Idle: append summary checkpoint over the folded frontier
-  Folding --> Idle: tail within budget
+  Capturing --> Folding: event log appended
+  Folding --> Compacting: visible tail beyond trigger watermark?
+  Compacting --> Idle: append summary checkpoint with cutoff = last folded event
+  Folding --> Idle: tail within trigger
 ```
 
-**Wired behind a default-off flag.** The full activation is implemented but
-gated by `TaskAgentWorkflow.compactionEnabled` (**default `false`**):
+**Wired behind a default-off config flag.** The full activation — including
+the real LLM summarizer, wired in DI — is gated by
+the runtime config flag `enable_agent_compaction` (Settings → Flags →
+"Agent memory compaction", default **off**), which the workflow reads from the
+journal DB **at each wake** — so a flip takes effect on the next wake without
+any restart. (Read per wake on purpose: the wake executor captures the
+workflow instance at initialization, so a provider-rebuild-based flag would
+not reach the executing instance. `TaskAgentWorkflow.compactionEnabled`
+remains an explicit override for tests.) When enabled:
 
 - when **off** (production today), the wake prompt assembles `## Current Task
-  Context` from the journal exactly as before — byte-identical behaviour;
-- when **on**, each wake (after capture) runs `AgentLogCompactor.maybeCompact`
-  — folding the oldest tail beyond a token budget into a `summary` checkpoint
-  via an injected `AgentSummarizer` — and assembles the task log as
-  `AgentLogCompactor.assembleContext` (`active summary + uncovered tail`),
-  while the task header drops its inline `logEntries`
-  (`buildTaskDetailsJson(includeLogEntries: false)`).
+  Context` (full JSON header, inline `logEntries`) from the journal exactly as
+  before — byte-identical behaviour;
+- when **on**, each wake (after capture and profile resolution) runs
+  `AgentLogCompactor.maybeCompact` — folding the oldest event prefix past the
+  trigger watermark into a `summary` checkpoint via `AgentLogLlmSummarizer` —
+  and assembles the task log as `AgentLogCompactor.assembleContext`
+  (`active summary + append-only event tail`), with the JSON header replaced
+  by the compact markdown task state (`buildTaskStateMarkdown`) placed in the
+  volatile tail below the log.
 
-Flipping the flag and wiring a real summarizer activates it; that is a
-deliberate, user-visible rollout (it changes every wake's prompt), so it is left
-off by default. The UI already renders `summary` messages when they exist.
+Enabling the flag changes every wake's prompt and starts emitting synced
+checkpoints, so it ships off by default. The UI already renders `summary`
+messages when they exist.
 
 ### State-as-projection: the log is the source of truth (PR 4)
 
@@ -1189,13 +1282,18 @@ For provider selection and residency details, see [../ai/README.md](../ai/README
 
 ## Planned Improvements
 
-Input capture + log compaction (ADR 0020 + ADR 0017) is partially landed — see
-*Memory compaction & input capture* above. Capture runs in shadow today; the
-remaining work is the production read-flip (assemble the wake context from
-`active summary + uncovered tail`, drop the per-wake prompt blob) and emitting
-LLM-generated `summary` checkpoints when the verbatim tail exceeds the model's
-token budget. Until then, long-lived agents still read the full task log plus
-the latest report rather than a distilled summary + tail.
+Input capture + log compaction (ADR 0020 + ADR 0017) is fully wired behind
+the default-off `enable_agent_compaction` flag — see *Memory compaction &
+input capture* above for the live behavior (event-log read, LLM-distilled
+summary checkpoints, decision/observation events). Remaining work:
+
+- drop the per-wake **user-prompt blob** persistence (the system prompt is
+  already content-addressed; the user message is still stored once per wake);
+- extend capture + compaction to the **project/day/improver** workflows
+  (task agents only today);
+- **profile-aware watermarks** — derive trigger/retain from the resolved
+  model's context window and local-vs-hosted inference instead of the global
+  50k/20k constructor defaults.
 
 ## User-Facing UI Surfaces
 

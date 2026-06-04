@@ -111,6 +111,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableWhatsNewFlag,
     showSyncActivityIndicatorFlag,
     showSidebarWakeQueueFlag,
+    enableAgentCompactionFlag,
   ];
 
   @override
@@ -172,6 +173,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.network_check_rounded;
       case showSidebarWakeQueueFlag:
         return Icons.alarm_rounded;
+      case enableAgentCompactionFlag:
+        return Icons.compress_rounded;
       default:
         return Icons.settings;
     }
@@ -223,6 +226,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagShowSyncActivityIndicatorDescription;
       case showSidebarWakeQueueFlag:
         return context.messages.configFlagShowSidebarWakeQueueDescription;
+      case enableAgentCompactionFlag:
+        return context.messages.configFlagEnableAgentCompactionDescription;
       default:
         return flag.description;
     }
@@ -274,6 +279,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagShowSyncActivityIndicator;
       case showSidebarWakeQueueFlag:
         return context.messages.configFlagShowSidebarWakeQueue;
+      case enableAgentCompactionFlag:
+        return context.messages.configFlagEnableAgentCompaction;
       default:
         return flag.name;
     }

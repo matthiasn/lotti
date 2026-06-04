@@ -170,6 +170,62 @@ void main() {
       expect(find.text('System'), findsOneWidget);
     });
 
+    testWidgets('disambiguates the system-kind row flavors', (tester) async {
+      // `system` is the log's bookkeeping kind: a milestone marker, an input
+      // retraction, and the persisted system PROMPT all share it. The badge
+      // must name what each row actually is — a bare "System" badge made the
+      // wake-completed marker look like a late-arriving system prompt.
+      final messages = <AgentDomainEntity>[
+        makeTestMessage(
+          id: 'msg-prompt',
+          kind: AgentMessageKind.system,
+          createdAt: DateTime(2024, 3, 15, 10),
+          contentEntryId: 'sha256-v1:prompt-digest',
+        ),
+        makeTestMessage(
+          id: 'msg-milestone',
+          kind: AgentMessageKind.system,
+          createdAt: DateTime(2024, 3, 15, 10),
+          metadata: const AgentMessageMetadata(
+            milestone: AgentMilestone.wakeCompleted,
+          ),
+        ),
+        makeTestMessage(
+          id: 'msg-retraction',
+          kind: AgentMessageKind.system,
+          createdAt: DateTime(2024, 3, 15, 10),
+          metadata: const AgentMessageMetadata(
+            retractsContentEntryId: 'entry-gone',
+          ),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildSubject(
+          messagesValue: AsyncValue.data(messages),
+          payloadOverride: (ref, id) async => 'You are a Task Agent…',
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('System Prompt'), findsOneWidget);
+      expect(find.text('Milestone'), findsOneWidget);
+      expect(find.text('Retraction'), findsOneWidget);
+      expect(find.text('System'), findsNothing);
+      // The milestone row names its marker inline.
+      expect(find.text('wakeCompleted'), findsOneWidget);
+      // Only the prompt row carries a payload, so exactly one row is
+      // expandable.
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+
+      // Expanding the prompt row reveals the persisted prompt text.
+      await tester.tap(find.text('System Prompt'));
+      await tester.pump();
+      // Extra pump for the async payload provider to resolve.
+      await tester.pump();
+      expect(find.text('You are a Task Agent…'), findsOneWidget);
+    });
+
     testWidgets('shows tool name as text (not Chip) for action messages', (
       tester,
     ) async {

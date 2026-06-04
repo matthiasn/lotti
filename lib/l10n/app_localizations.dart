@@ -897,11 +897,23 @@ abstract class AppLocalizations {
   /// **'Action'**
   String get agentMessageKindAction;
 
+  /// No description provided for @agentMessageKindMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone'**
+  String get agentMessageKindMilestone;
+
   /// No description provided for @agentMessageKindObservation.
   ///
   /// In en, this message translates to:
   /// **'Observation'**
   String get agentMessageKindObservation;
+
+  /// No description provided for @agentMessageKindRetraction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retraction'**
+  String get agentMessageKindRetraction;
 
   /// No description provided for @agentMessageKindSummary.
   ///
@@ -914,6 +926,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System'**
   String get agentMessageKindSystem;
+
+  /// No description provided for @agentMessageKindSystemPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'System Prompt'**
+  String get agentMessageKindSystemPrompt;
 
   /// No description provided for @agentMessageKindThought.
   ///
@@ -4422,6 +4440,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Replace the current DailyOS surface with the new voice-first, agent-led capture and reconcile flow. Early preview — backend logic is mocked.'**
   String get configFlagDailyOsNextEnabledDescription;
+
+  /// No description provided for @configFlagEnableAgentCompaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent memory compaction'**
+  String get configFlagEnableAgentCompaction;
+
+  /// No description provided for @configFlagEnableAgentCompactionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize older task log entries into a rolling memory so the agent\'s context stays compact. Uses the agent\'s own model.'**
+  String get configFlagEnableAgentCompactionDescription;
 
   /// No description provided for @configFlagEnableAiStreaming.
   ///

@@ -117,7 +117,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          10,
+          11,
         );
 
         // Verify the new columns exist by querying them
@@ -233,7 +233,7 @@ void main() {
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        10,
+        11,
       );
 
       // Verify the partial unique index exists.
@@ -486,7 +486,7 @@ void main() {
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        10,
+        11,
       );
 
       // Verify the column exists by selecting it.
@@ -617,7 +617,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          10,
+          11,
         );
 
         final indexes = await db
@@ -754,7 +754,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          10,
+          11,
         );
 
         // Verify wake_run_log soul columns exist and are readable.
@@ -898,7 +898,7 @@ void main() {
       addTearDown(db.close);
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 10);
+      expect(versionResult.first.read<int>('user_version'), 11);
 
       final indexes = await db.customSelect('''
             SELECT name FROM sqlite_master WHERE type = 'index'
@@ -945,6 +945,22 @@ void main() {
               schema_version INTEGER NOT NULL DEFAULT 1
             )
           ''')
+          // A real v9 database always has agent_links (created at v1); the
+          // v11 migration rebuilds it, so the fixture must include it.
+          ..execute('''
+            CREATE TABLE agent_links (
+              id TEXT NOT NULL PRIMARY KEY,
+              from_id TEXT NOT NULL,
+              to_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1,
+              UNIQUE(from_id, to_id, type)
+            )
+          ''')
           ..execute(
             'CREATE INDEX idx_agent_entities_active_agent_type_created '
             'ON agent_entities(agent_id, type, created_at DESC) '
@@ -968,7 +984,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 10);
+        expect(versionResult.first.read<int>('user_version'), 11);
 
         final indexes = await db.customSelect('''
               SELECT name FROM sqlite_master WHERE type = 'index'
@@ -991,9 +1007,223 @@ void main() {
         await db.close();
       },
     );
+
+    test(
+      'v10 to v11 rebuilds agent_links so capture events can share a '
+      'payload while assignment links stay unique',
+      () async {
+        // The production bug (2026-06-04): two task entries rendering
+        // byte-identical content share one content-addressed payload, but the
+        // table-level UNIQUE(from_id, to_id, type) forbade the second
+        // message_payload link → SqliteException 2067 → every capture failed.
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE agent_links (
+              id TEXT NOT NULL PRIMARY KEY,
+              from_id TEXT NOT NULL,
+              to_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1,
+              UNIQUE(from_id, to_id, type)
+            )
+          ''')
+          ..execute(
+            'CREATE UNIQUE INDEX idx_unique_improver_per_template '
+            "ON agent_links(to_id) WHERE type = 'improver_target' "
+            'AND deleted_at IS NULL',
+          )
+          ..execute(
+            'CREATE UNIQUE INDEX idx_unique_soul_per_template '
+            "ON agent_links(from_id) WHERE type = 'soul_assignment' "
+            'AND deleted_at IS NULL',
+          )
+          ..execute('''
+            CREATE TABLE wake_run_log (
+              run_key TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              reason TEXT NOT NULL,
+              reason_id TEXT,
+              thread_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              logical_change_key TEXT,
+              created_at DATETIME NOT NULL,
+              started_at DATETIME,
+              completed_at DATETIME,
+              error_message TEXT,
+              template_id TEXT,
+              template_version_id TEXT,
+              resolved_model_id TEXT,
+              soul_id TEXT,
+              soul_version_id TEXT,
+              user_rating REAL,
+              rated_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE saga_log (
+              operation_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              run_key TEXT NOT NULL,
+              phase TEXT NOT NULL,
+              status TEXT NOT NULL,
+              tool_name TEXT NOT NULL,
+              last_error TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL
+            )
+          ''')
+          // Pre-existing rows that must survive the table rebuild: one
+          // capture link and one soul assignment.
+          ..execute(
+            'INSERT INTO agent_links '
+            '(id, from_id, to_id, type, created_at, updated_at, serialized) '
+            "VALUES ('link-1', 'agent-1', 'sha256-v1:abc', "
+            "'message_payload', 1, 1, '{}')",
+          )
+          ..execute(
+            'INSERT INTO agent_links '
+            '(id, from_id, to_id, type, created_at, updated_at, serialized) '
+            "VALUES ('link-2', 'tpl-1', 'soul-1', "
+            "'soul_assignment', 1, 1, '{}')",
+          )
+          ..execute('PRAGMA user_version = 10');
+        rawDb.dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 11);
+
+        // Rows survived the rebuild.
+        final ids = await db
+            .customSelect('SELECT id FROM agent_links ORDER BY id')
+            .get();
+        expect(
+          ids.map((row) => row.read<String>('id')).toList(),
+          ['link-1', 'link-2'],
+        );
+
+        // The regression: a SECOND capture link from the same agent to the
+        // same payload digest (different provenance) now inserts cleanly.
+        await db.customStatement(
+          'INSERT INTO agent_links '
+          '(id, from_id, to_id, type, created_at, updated_at, serialized) '
+          "VALUES ('link-3', 'agent-1', 'sha256-v1:abc', "
+          "'message_payload', 2, 2, '{}')",
+        );
+
+        // Assignment-style links keep natural-key uniqueness.
+        await expectLater(
+          db.customStatement(
+            'INSERT INTO agent_links '
+            '(id, from_id, to_id, type, created_at, updated_at, serialized) '
+            "VALUES ('link-4', 'tpl-1', 'soul-1', "
+            "'soul_assignment', 2, 2, '{}')",
+          ),
+          throwsA(isA<SqliteException>()),
+        );
+
+        // Recreated indexes, including the new partial unique.
+        final indexes = await db.customSelect('''
+              SELECT name FROM sqlite_master WHERE type = 'index'
+              AND tbl_name = 'agent_links' AND name LIKE 'idx_%'
+              ORDER BY name
+            ''').get();
+        expect(
+          indexes.map((row) => row.read<String>('name')).toList(),
+          containsAll(<String>[
+            'idx_agent_links_from',
+            'idx_agent_links_to',
+            'idx_agent_links_type',
+            'idx_agent_links_active_from_type_to',
+            'idx_agent_links_active_to_type',
+            'idx_agent_links_unique_from_to_type',
+            'idx_unique_improver_per_template',
+            'idx_unique_soul_per_template',
+          ]),
+        );
+
+        await db.close();
+      },
+    );
   });
 
   group('AgentDatabase fresh install', () {
+    test(
+      'two capture links may share a payload digest; assignment links '
+      'keep natural-key uniqueness',
+      () async {
+        final db = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        // Two sources rendering identical content → one shared payload,
+        // two links (ADR 0020). Must not violate any unique constraint.
+        await db.customStatement(
+          'INSERT INTO agent_links '
+          '(id, from_id, to_id, type, created_at, updated_at, serialized) '
+          "VALUES ('link-1', 'agent-1', 'sha256-v1:abc', "
+          "'message_payload', 1, 1, '{}')",
+        );
+        await db.customStatement(
+          'INSERT INTO agent_links '
+          '(id, from_id, to_id, type, created_at, updated_at, serialized) '
+          "VALUES ('link-2', 'agent-1', 'sha256-v1:abc', "
+          "'message_payload', 2, 2, '{}')",
+        );
+
+        await db.customStatement(
+          'INSERT INTO agent_links '
+          '(id, from_id, to_id, type, created_at, updated_at, serialized) '
+          "VALUES ('link-3', 'agent-1', 'task-1', "
+          "'agent_task', 1, 1, '{}')",
+        );
+        await expectLater(
+          db.customStatement(
+            'INSERT INTO agent_links '
+            '(id, from_id, to_id, type, created_at, updated_at, serialized) '
+            "VALUES ('link-4', 'agent-1', 'task-1', "
+            "'agent_task', 2, 2, '{}')",
+          ),
+          throwsA(isA<SqliteException>()),
+        );
+
+        await db.close();
+      },
+    );
+
     test(
       'idx_wake_run_log_created_at exists so getWakeRunsInWindow can '
       'walk the range in `created_at` order instead of `SCAN '

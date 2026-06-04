@@ -814,10 +814,6 @@ class AgentLinks extends Table with TableInfo<AgentLinks, AgentLink> {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  List<Set<GeneratedColumn>> get uniqueKeys => [
-    {fromId, toId, type},
-  ];
-  @override
   AgentLink map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return AgentLink(
@@ -865,8 +861,6 @@ class AgentLinks extends Table with TableInfo<AgentLinks, AgentLink> {
     return AgentLinks(attachedDatabase, alias);
   }
 
-  @override
-  List<String> get customConstraints => const ['UNIQUE(from_id, to_id, type)'];
   @override
   bool get dontWriteConstraints => true;
 }
@@ -2858,6 +2852,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_agent_links_type',
     'CREATE INDEX idx_agent_links_type ON agent_links (type)',
   );
+  late final Index idxAgentLinksUniqueFromToType = Index(
+    'idx_agent_links_unique_from_to_type',
+    'CREATE UNIQUE INDEX idx_agent_links_unique_from_to_type ON agent_links (from_id, to_id, type) WHERE type != \'message_payload\'',
+  );
   late final Index idxUniqueImproverPerTemplate = Index(
     'idx_unique_improver_per_template',
     'CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links (to_id) WHERE type = \'improver_target\' AND deleted_at IS NULL',
@@ -3511,6 +3509,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentLinksFrom,
     idxAgentLinksTo,
     idxAgentLinksType,
+    idxAgentLinksUniqueFromToType,
     idxUniqueImproverPerTemplate,
     idxUniqueSoulPerTemplate,
     idxAgentLinksActiveFromTypeTo,

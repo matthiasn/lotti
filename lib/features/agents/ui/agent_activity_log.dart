@@ -415,7 +415,7 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
             children: [
               Row(
                 children: [
-                  _KindBadge(kind: message.kind),
+                  _KindBadge(message: message),
                   const SizedBox(width: AppTheme.spacingSmall),
                   Expanded(
                     child: Text(
@@ -435,6 +435,17 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                     ),
                 ],
               ),
+              if (message.metadata.milestone != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
+                  child: Text(
+                    message.metadata.milestone!.name,
+                    style: monoTabularStyle(
+                      fontSize: fontSizeSmall,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
               if (toolName != null && toolName.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
@@ -538,13 +549,13 @@ class _ExpandedPayload extends ConsumerWidget {
 }
 
 class _KindBadge extends StatelessWidget {
-  const _KindBadge({required this.kind});
+  const _KindBadge({required this.message});
 
-  final AgentMessageKind kind;
+  final AgentMessageEntity message;
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = _kindStyle(context, kind);
+    final (label, color) = _kindStyle(context, message);
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -566,10 +577,10 @@ class _KindBadge extends StatelessWidget {
     );
   }
 
-  (String, Color) _kindStyle(BuildContext context, AgentMessageKind kind) {
+  (String, Color) _kindStyle(BuildContext context, AgentMessageEntity message) {
     final scheme = context.colorScheme;
     final l10n = context.messages;
-    return switch (kind) {
+    return switch (message.kind) {
       AgentMessageKind.observation => (
         l10n.agentMessageKindObservation,
         scheme.primary,
@@ -587,6 +598,20 @@ class _KindBadge extends StatelessWidget {
       AgentMessageKind.summary => (
         l10n.agentMessageKindSummary,
         scheme.outline,
+      ),
+      // `system` is the log's bookkeeping kind — disambiguate what this row
+      // actually is so "System" cannot be mistaken for the LLM system prompt
+      // (which is the row carrying a payload).
+      AgentMessageKind.system when message.metadata.milestone != null => (
+        l10n.agentMessageKindMilestone,
+        scheme.outline,
+      ),
+      AgentMessageKind.system
+          when message.metadata.retractsContentEntryId != null =>
+        (l10n.agentMessageKindRetraction, scheme.outline),
+      AgentMessageKind.system when message.contentEntryId != null => (
+        l10n.agentMessageKindSystemPrompt,
+        scheme.tertiary,
       ),
       AgentMessageKind.system => (l10n.agentMessageKindSystem, scheme.outline),
     };

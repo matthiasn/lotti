@@ -180,6 +180,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Show the inline Wake Queue in the sidebar.',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableAgentCompactionFlag,
+    description: 'Enable agent memory compaction?',
+    status: false,
+  ),
 };
 
 enum _ConflictClockRelation {
