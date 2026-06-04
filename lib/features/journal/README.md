@@ -291,7 +291,7 @@ That includes:
 
 - outgoing link lookup via [`LinkedEntriesController`](state/linked_entries_controller.dart)
 - reverse-link lookup via [`LinkedFromEntriesController`](state/linked_from_entries_controller.dart)
-- hidden-link, AI-entry, and flagged-only visibility toggles
+- hidden-link and AI-entry visibility toggles
 - timer-aware highlighting of active linked entries
 - scroll-to-entry focus intents and temporary highlight pulses
 
@@ -311,7 +311,6 @@ The important runtime details are:
 
 - outgoing links are fetched from `JournalRepository.getLinksFromId(...)`
 - hidden links can be included or excluded without changing the rest of the page
-- the Filter & Sort modal can narrow the outgoing list to flagged entries only (`meta.flag == EntryFlag.import`); the check runs per row in `LinkedEntriesWidget` against the watched entry, so flagging or unflagging an entry updates the filtered list reactively
 - outgoing links are ordered by the linked entity's editable `dateFrom`, not by link creation time
 - `LinkedEntriesWithTimer` only reacts to active timer entry ID changes, not every timer tick
 - `HighlightScrollMixin` retries scroll-to-entry until the target widget is actually mounted, then applies a temporary highlight pulse

@@ -422,64 +422,6 @@ void main() {
     });
   });
 
-  group('ShowFlaggedOnlyController', () {
-    const testId = 'test-entry-id';
-
-    test('initializes with default value of false', () {
-      // Act
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      final result = container.read(
-        showFlaggedOnlyControllerProvider(id: testId),
-      );
-
-      // Assert
-      expect(result, isFalse);
-    });
-
-    test('can update value', () {
-      // Act
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      final controller = container.read(
-        showFlaggedOnlyControllerProvider(id: testId).notifier,
-      );
-
-      // Initial state should be false
-      expect(controller.showFlaggedOnly, isFalse);
-
-      // Update the value
-      controller.showFlaggedOnly = true;
-
-      // Assert
-      expect(controller.showFlaggedOnly, isTrue);
-      expect(
-        container.read(showFlaggedOnlyControllerProvider(id: testId)),
-        isTrue,
-      );
-    });
-
-    test('state is scoped per entry id', () {
-      // Act
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      container
-              .read(showFlaggedOnlyControllerProvider(id: testId).notifier)
-              .showFlaggedOnly =
-          true;
-
-      // Assert: another entry id keeps its own independent default
-      expect(
-        container.read(showFlaggedOnlyControllerProvider(id: testId)),
-        isTrue,
-      );
-      expect(
-        container.read(showFlaggedOnlyControllerProvider(id: 'other-id')),
-        isFalse,
-      );
-    });
-  });
-
   group('NewestLinkedIdController', () {
     const testId = 'test-entry-id';
     final baseDate = DateTime(2024, 3, 15, 10, 30);

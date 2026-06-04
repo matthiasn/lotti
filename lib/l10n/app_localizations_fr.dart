@@ -4867,10 +4867,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalLinkedEntriesFilterModalTitle => 'Filtrer et trier';
 
   @override
-  String get journalLinkedEntriesShowFlaggedOnly =>
-      'Afficher uniquement les entrées suivies';
-
-  @override
   String get journalLinkedEntriesShowHidden => 'Afficher les entrées masquées';
 
   @override

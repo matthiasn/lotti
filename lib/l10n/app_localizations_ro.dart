@@ -4867,10 +4867,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalLinkedEntriesFilterModalTitle => 'Filtrare și sortare';
 
   @override
-  String get journalLinkedEntriesShowFlaggedOnly =>
-      'Afișați doar intrările marcate';
-
-  @override
   String get journalLinkedEntriesShowHidden => 'Afișați intrările ascunse';
 
   @override
