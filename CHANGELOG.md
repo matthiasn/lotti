@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   memory using their own model, keeping the wake context compact while recent
   entries stay verbatim.
 
+### Changed
+- Task agents now update their report only when its content would materially
+  change, instead of re-publishing it on every wake — reports churn less and
+  wakes finish faster when nothing report-worthy happened.
+- Task agents can now propose archiving a duplicate or obsolete checklist
+  item; the proposal appears in the usual confirmation flow as
+  "Archive: …" and archiving stays reversible.
+- The agent conversation view now shows the exact system prompt each wake ran
+  with as an expandable "System Prompt" row (stored once per distinct prompt),
+  orders each wake's rows in conversation order, and labels bookkeeping rows
+  as "Milestone"/"Retraction" instead of a generic "System".
+
 ### Fixed
 - Task agents now fall back to a pending title-change proposal when the
   immediate initial-title write is blocked by category policy, instead of

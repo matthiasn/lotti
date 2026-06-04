@@ -469,13 +469,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentMessageKindAction => 'Akce';
 
   @override
+  String get agentMessageKindMilestone => 'Milník';
+
+  @override
   String get agentMessageKindObservation => 'Pozorování';
+
+  @override
+  String get agentMessageKindRetraction => 'Stažení';
 
   @override
   String get agentMessageKindSummary => 'Shrnutí';
 
   @override
   String get agentMessageKindSystem => 'Systém';
+
+  @override
+  String get agentMessageKindSystemPrompt => 'Systémový prompt';
 
   @override
   String get agentMessageKindThought => 'Myšlenka';

@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/workflow/task_state_markdown.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -235,6 +236,38 @@ class AiInputRepository {
     const encoder = JsonEncoder.withIndent('    ');
     final jsonString = encoder.convert(base);
     return jsonString;
+  }
+
+  /// Builds the compact markdown task-**state** block agent wakes use instead
+  /// of [buildTaskDetailsJson] when compaction is on (ADR 0017/0020): the log
+  /// is supplied separately from the captured event log, so this carries only
+  /// the mutable task facts (status, time, due, labels, checklist with item
+  /// ids). Returns null when [id] does not resolve to a task.
+  Future<String?> buildTaskStateMarkdown(String id) async {
+    final aiInput = await generate(id);
+    if (aiInput == null) return null;
+
+    var labels = const <Map<String, String>>[];
+    var suppressedLabelIds = const <String>[];
+    try {
+      final entity = await _db.journalEntityById(id);
+      if (entity is Task) {
+        final ids = entity.meta.labelIds ?? const <String>[];
+        if (ids.isNotEmpty) {
+          labels = await buildAssignedLabelTuples(db: _db, ids: ids);
+        }
+        suppressedLabelIds =
+            entity.data.aiSuppressedLabelIds?.toList() ?? const <String>[];
+      }
+    } catch (_) {
+      // On lookup failure, omit the labels extension silently (the same
+      // contract as buildTaskDetailsJson).
+    }
+    return renderTaskStateMarkdown(
+      aiInput,
+      labels: labels,
+      suppressedLabelIds: suppressedLabelIds,
+    );
   }
 
   /// Build parent project context for a task-agent wake.

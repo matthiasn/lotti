@@ -227,8 +227,8 @@ TaskAgentWorkflow createTestWorkflow({
   // flag at wake time (the production path). Defaults to false so the bulk of
   // the suite never touches the journal-DB flag read.
   bool? compactionEnabled = false,
-  int compactionTailBudgetTokens = 12000,
-  int compactionTailRetainTokens = 4000,
+  int compactionTailBudgetTokens = 50000,
+  int compactionTailRetainTokens = 20000,
 }) {
   return TaskAgentWorkflow(
     agentRepository: agentRepository,

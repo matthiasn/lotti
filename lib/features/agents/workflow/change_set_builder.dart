@@ -19,7 +19,9 @@ import 'package:uuid/uuid.dart';
 ///
 /// Returns `null` if the item cannot be found.
 typedef ChecklistItemStateResolver =
-    Future<({String? title, bool? isChecked})?> Function(String itemId);
+    Future<({String? title, bool? isChecked, bool? isArchived})?> Function(
+      String itemId,
+    );
 
 /// Resolves the set of existing checklist item titles for the target task.
 ///
@@ -757,8 +759,12 @@ class ChangeSetBuilder {
     String singularToolName,
     Map<String, dynamic> args,
     String prefix, {
-    ({String? title, bool? isChecked})? resolvedState,
+    ({String? title, bool? isChecked, bool? isArchived})? resolvedState,
   }) {
+    // Archival reads clearest as its own verb, regardless of whether the
+    // title travels in the args or is resolved from the item id.
+    final isArchived = args['isArchived'];
+
     // For checklist items, use the title.
     final title = args['title'];
     if (title is String && title.isNotEmpty) {
@@ -766,6 +772,10 @@ class ChangeSetBuilder {
         return 'Add: "$title"';
       }
       if (singularToolName.startsWith('update_')) {
+        if (isArchived is bool) {
+          final action = isArchived ? 'Archive' : 'Restore';
+          return '$action: "$title"';
+        }
         final isChecked = args['isChecked'];
         if (isChecked is bool) {
           final action = isChecked ? 'Check' : 'Uncheck';
@@ -779,6 +789,13 @@ class ChangeSetBuilder {
     final id = args['id'];
     if (id is String) {
       final resolvedTitle = resolvedState?.title;
+      if (isArchived is bool) {
+        final action = isArchived ? 'Archive' : 'Restore';
+        if (resolvedTitle != null) {
+          return '$action: "$resolvedTitle"';
+        }
+        return '$action item ${_truncateId(id)}';
+      }
       final isChecked = args['isChecked'];
       if (isChecked is bool) {
         final action = isChecked ? 'Check off' : 'Uncheck';
@@ -799,7 +816,7 @@ class ChangeSetBuilder {
   /// Resolve a checklist item's current state via the injected resolver.
   ///
   /// Returns `null` if no resolver is set or the item cannot be found.
-  Future<({String? title, bool? isChecked})?> _resolveState(
+  Future<({String? title, bool? isChecked, bool? isArchived})?> _resolveState(
     String itemId,
   ) async {
     final resolver = checklistItemStateResolver;
@@ -894,7 +911,7 @@ class ChangeSetBuilder {
   static String? _checkRedundancy(
     String singularToolName,
     Map<String, dynamic> args,
-    ({String? title, bool? isChecked})? currentState,
+    ({String? title, bool? isChecked, bool? isArchived})? currentState,
   ) {
     if (singularToolName != TaskAgentToolNames.updateChecklistItem) {
       return null;
@@ -906,6 +923,7 @@ class ChangeSetBuilder {
 
     final proposedIsChecked = args['isChecked'];
     final proposedTitle = args['title'];
+    final proposedIsArchived = args['isArchived'];
 
     // Determine whether each field represents an actual change.
     final isCheckedChanging =
@@ -918,14 +936,20 @@ class ChangeSetBuilder {
         proposedTitle.isNotEmpty &&
         proposedTitle != currentState.title;
 
-    // If either field is changing, the proposal is not redundant.
-    if (isCheckedChanging || isTitleChanging) {
+    final isArchivedChanging =
+        proposedIsArchived is bool &&
+        (currentState.isArchived == null ||
+            proposedIsArchived != currentState.isArchived);
+
+    // If any field is changing, the proposal is not redundant.
+    if (isCheckedChanging || isTitleChanging || isArchivedChanging) {
       return null;
     }
 
     // Only suppress if the proposal contains at least one valid field.
     final hasValidProposal =
         proposedIsChecked is bool ||
+        proposedIsArchived is bool ||
         (proposedTitle is String && proposedTitle.isNotEmpty);
     if (!hasValidProposal) {
       return null; // Malformed — keep it defensively.
@@ -933,6 +957,12 @@ class ChangeSetBuilder {
 
     // At this point the update is redundant.
     final displayTitle = currentState.title ?? _truncateId(itemId);
+    if (proposedIsArchived is bool && proposedIsChecked is! bool) {
+      final archivedLabel = currentState.isArchived == true
+          ? 'archived'
+          : 'not archived';
+      return '"$displayTitle" is already $archivedLabel';
+    }
     final checkedLabel = currentState.isChecked == true
         ? 'checked'
         : 'unchecked';

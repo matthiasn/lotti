@@ -15,7 +15,17 @@ import 'package:lotti/widgets/charts/utils.dart';
 ///
 /// Non-log linked entities (the task itself, checklists, quantitative entries,
 /// …) are skipped: they are not part of the verbatim task log the agent reads.
-List<RenderedSource> renderTaskSources(Iterable<JournalEntity> linkedEntities) {
+///
+/// [runningEntryId] names the entry whose timer is currently running, if any.
+/// Its `loggedDuration` is still ticking, so it is omitted from the captured
+/// content until the timer stops: capturing a moving duration would mint a new
+/// content version (and mutate the entry's rendered line mid-log, voiding the
+/// provider prefix cache) on every wake of a work session. The duration is
+/// captured once, when it is final.
+List<RenderedSource> renderTaskSources(
+  Iterable<JournalEntity> linkedEntities, {
+  String? runningEntryId,
+}) {
   final sources = <RenderedSource>[];
   for (final linked in linkedEntities) {
     if (linked is! JournalEntry &&
@@ -55,8 +65,10 @@ List<RenderedSource> renderTaskSources(Iterable<JournalEntity> linkedEntities) {
         content: <String, Object?>{
           'entryType': entryType,
           // Preserve the per-entry logged duration that `generate`'s logEntries
-          // carry, so the compacted read-flip keeps the same time evidence.
-          'loggedDuration': formatHhMm(entryDuration(linked)),
+          // carry, so the compacted read-flip keeps the same time evidence —
+          // except while this entry's timer is still running (see doc comment).
+          if (linked.meta.id != runningEntryId)
+            'loggedDuration': formatHhMm(entryDuration(linked)),
           'text': editedText ?? '',
           'audioTranscript': ?audioTranscript,
           'transcriptLanguage': ?transcriptLanguage,

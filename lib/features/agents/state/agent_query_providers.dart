@@ -97,10 +97,25 @@ Future<List<AgentDomainEntity>> agentRecentMessages(
   return entities.whereType<AgentMessageEntity>().toList();
 }
 
+/// Conversation-order rank for messages sharing a wake's timestamp: the
+/// system prompt leads, the user message follows, agent output comes next,
+/// and bookkeeping rows (milestones, retractions) trail.
+int _displayRank(AgentMessageEntity message) => switch (message.kind) {
+  AgentMessageKind.system when message.contentEntryId != null => 0,
+  AgentMessageKind.user => 1,
+  AgentMessageKind.thought => 2,
+  AgentMessageKind.action => 3,
+  AgentMessageKind.toolResult => 4,
+  AgentMessageKind.observation => 5,
+  AgentMessageKind.summary => 6,
+  AgentMessageKind.system => 7,
+};
+
 /// Fetch recent messages grouped by thread ID for an agent.
 ///
 /// Returns a map of threadId → list of [AgentMessageEntity] sorted
-/// chronologically within each thread. Threads are sorted most-recent-first
+/// chronologically within each thread (conversation-order tiebreak for rows
+/// sharing the wake timestamp). Threads are sorted most-recent-first
 /// (by the latest message in each thread).
 @riverpod
 Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
@@ -119,12 +134,20 @@ Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
   for (final msg in messages) {
     grouped.putIfAbsent(msg.threadId, () => []).add(msg);
   }
-  // Sort each thread chronologically (oldest first within thread).
+  // Sort each thread chronologically (oldest first within thread). A wake
+  // persists several rows with one shared timestamp (causality), so ties
+  // break by conversation order — the system prompt before the user message,
+  // bookkeeping rows (milestones, retractions) last — then by id for
+  // determinism.
   for (final thread in grouped.values) {
     thread.sort((a, b) {
       final aMsg = a as AgentMessageEntity;
       final bMsg = b as AgentMessageEntity;
-      return aMsg.createdAt.compareTo(bMsg.createdAt);
+      final byTime = aMsg.createdAt.compareTo(bMsg.createdAt);
+      if (byTime != 0) return byTime;
+      final byRank = _displayRank(aMsg).compareTo(_displayRank(bMsg));
+      if (byRank != 0) return byRank;
+      return aMsg.id.compareTo(bMsg.id);
     });
   }
 

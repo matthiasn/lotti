@@ -516,7 +516,7 @@ final class WakeOrchestratorProvider
   }
 }
 
-String _$wakeOrchestratorHash() => r'1ed2401446f7f0631d79528e28b77392ceb6af6c';
+String _$wakeOrchestratorHash() => r'64788c96b1b97cc3ec2cecfa1f0a8bb1702d30d2';
 
 /// The scheduled wake manager for time-based agent wakes.
 

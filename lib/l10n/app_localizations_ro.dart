@@ -473,13 +473,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentMessageKindAction => 'Acțiune';
 
   @override
+  String get agentMessageKindMilestone => 'Reper';
+
+  @override
   String get agentMessageKindObservation => 'Observație';
+
+  @override
+  String get agentMessageKindRetraction => 'Retractare';
 
   @override
   String get agentMessageKindSummary => 'Rezumat';
 
   @override
   String get agentMessageKindSystem => 'Sistem';
+
+  @override
+  String get agentMessageKindSystemPrompt => 'Prompt de sistem';
 
   @override
   String get agentMessageKindThought => 'Gând';

@@ -897,11 +897,23 @@ abstract class AppLocalizations {
   /// **'Action'**
   String get agentMessageKindAction;
 
+  /// No description provided for @agentMessageKindMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone'**
+  String get agentMessageKindMilestone;
+
   /// No description provided for @agentMessageKindObservation.
   ///
   /// In en, this message translates to:
   /// **'Observation'**
   String get agentMessageKindObservation;
+
+  /// No description provided for @agentMessageKindRetraction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retraction'**
+  String get agentMessageKindRetraction;
 
   /// No description provided for @agentMessageKindSummary.
   ///
@@ -914,6 +926,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System'**
   String get agentMessageKindSystem;
+
+  /// No description provided for @agentMessageKindSystemPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'System Prompt'**
+  String get agentMessageKindSystemPrompt;
 
   /// No description provided for @agentMessageKindThought.
   ///

@@ -6,19 +6,23 @@ import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 
 import '../../../helpers/entity_factories.dart';
 
-Metadata _meta(String id, DateTime dateFrom) => Metadata(
+Metadata _meta(String id, DateTime dateFrom, {DateTime? dateTo}) => Metadata(
   id: id,
   createdAt: dateFrom,
   dateFrom: dateFrom,
-  dateTo: dateFrom,
+  dateTo: dateTo ?? dateFrom,
   updatedAt: dateFrom,
 );
 
-JournalEntry _text(String id, String text, {DateTime? dateFrom}) =>
-    JournalEntry(
-      meta: _meta(id, dateFrom ?? DateTime(2024, 3, 10)),
-      entryText: EntryText(plainText: text),
-    );
+JournalEntry _text(
+  String id,
+  String text, {
+  DateTime? dateFrom,
+  DateTime? dateTo,
+}) => JournalEntry(
+  meta: _meta(id, dateFrom ?? DateTime(2024, 3, 10), dateTo: dateTo),
+  entryText: EntryText(plainText: text),
+);
 
 JournalAudio _audio(
   String id, {
@@ -125,6 +129,79 @@ void main() {
       ]);
 
       expect(sources.map((s) => s.contentEntryId), ['e1']);
+    });
+
+    test('omits loggedDuration for the running entry only', () {
+      final start = DateTime(2024, 3, 10, 9);
+      final sources = renderTaskSources([
+        _text(
+          'running',
+          'in progress',
+          dateFrom: start,
+          dateTo: DateTime(2024, 3, 10, 9, 17),
+        ),
+        _text(
+          'done',
+          'finished',
+          dateFrom: start,
+          dateTo: DateTime(2024, 3, 10, 10),
+        ),
+      ], runningEntryId: 'running');
+
+      final byId = {for (final s in sources) s.contentEntryId: s.content};
+      // The ticking duration is excluded from captured content entirely…
+      expect(byId['running'], {'entryType': 'text', 'text': 'in progress'});
+      // …while completed entries keep their final duration.
+      expect(byId['done'], {
+        'entryType': 'text',
+        'loggedDuration': '01:00',
+        'text': 'finished',
+      });
+    });
+
+    test('a ticking timer does not mint new content versions across wakes', () {
+      final start = DateTime(2024, 3, 10, 9);
+      // Same entry re-captured on two consecutive wakes while its timer runs:
+      // dateTo has advanced, but the captured content — and therefore the
+      // content digest — must be identical, or every wake of a work session
+      // would append a new version and mutate the entry's line mid-log.
+      final wake1 = renderTaskSources([
+        _text(
+          'e1',
+          'note',
+          dateFrom: start,
+          dateTo: DateTime(2024, 3, 10, 9, 5),
+        ),
+      ], runningEntryId: 'e1');
+      final wake2 = renderTaskSources([
+        _text(
+          'e1',
+          'note',
+          dateFrom: start,
+          dateTo: DateTime(2024, 3, 10, 9, 25),
+        ),
+      ], runningEntryId: 'e1');
+
+      expect(
+        ContentDigest.of(wake1.single.content),
+        ContentDigest.of(wake2.single.content),
+      );
+
+      // Once the timer stops, the final duration is captured — one deliberate
+      // content change, not one per wake.
+      final stopped = renderTaskSources([
+        _text(
+          'e1',
+          'note',
+          dateFrom: start,
+          dateTo: DateTime(2024, 3, 10, 9, 30),
+        ),
+      ]);
+      expect(stopped.single.content['loggedDuration'], '00:30');
+      expect(
+        ContentDigest.of(stopped.single.content),
+        isNot(ContentDigest.of(wake1.single.content)),
+      );
     });
 
     test(

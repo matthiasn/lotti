@@ -473,13 +473,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentMessageKindAction => 'Action';
 
   @override
+  String get agentMessageKindMilestone => 'Jalon';
+
+  @override
   String get agentMessageKindObservation => 'Observation';
+
+  @override
+  String get agentMessageKindRetraction => 'Rétractation';
 
   @override
   String get agentMessageKindSummary => 'Résumé';
 
   @override
   String get agentMessageKindSystem => 'Système';
+
+  @override
+  String get agentMessageKindSystemPrompt => 'Prompt système';
 
   @override
   String get agentMessageKindThought => 'Pensée';

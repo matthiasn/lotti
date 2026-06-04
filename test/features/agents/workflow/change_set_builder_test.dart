@@ -269,7 +269,11 @@ extension _AnyGeneratedChecklistBatchScenario on glados.Any {
   );
 }
 
-typedef _GeneratedChecklistItemState = ({String? title, bool? isChecked});
+typedef _GeneratedChecklistItemState = ({
+  String? title,
+  bool? isChecked,
+  bool? isArchived,
+});
 
 enum _GeneratedChecklistUpdateElementShape {
   nonMap,
@@ -394,12 +398,14 @@ class _GeneratedChecklistUpdateElement {
       _GeneratedChecklistUpdateElementShape.checkedSameTitleDifferent => (
         title: _currentTitle,
         isChecked: true,
+        isArchived: null,
       ),
       _GeneratedChecklistUpdateElementShape.checkUnchecked ||
       _GeneratedChecklistUpdateElementShape.uncheckAlreadyUnchecked ||
       _GeneratedChecklistUpdateElementShape.checkedDifferentTitleSame => (
         title: _currentTitle,
         isChecked: false,
+        isArchived: null,
       ),
       _GeneratedChecklistUpdateElementShape.titleSame ||
       _GeneratedChecklistUpdateElementShape.titleDifferent ||
@@ -407,10 +413,12 @@ class _GeneratedChecklistUpdateElement {
       _GeneratedChecklistUpdateElementShape.emptyTitle => (
         title: _currentTitle,
         isChecked: null,
+        isArchived: null,
       ),
       _GeneratedChecklistUpdateElementShape.duplicateExact => (
         title: 'Duplicate current',
         isChecked: false,
+        isArchived: null,
       ),
     };
   }
@@ -1278,7 +1286,7 @@ void main() {
         runKey: 'run-key-001',
         checklistItemStateResolver: (id) async {
           if (id == 'item-42') {
-            return (title: 'Buy groceries', isChecked: false);
+            return (title: 'Buy groceries', isChecked: false, isArchived: null);
           }
           return null;
         },
@@ -1298,6 +1306,97 @@ void main() {
       expect(
         resolverBuilder.items.first.humanSummary,
         'Check off: "Buy groceries"',
+      );
+    });
+
+    test('summarizes an archival as Archive with the resolved title', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async {
+          if (id == 'item-42') {
+            return (
+              title: 'Duplicate groceries item',
+              isChecked: false,
+              isArchived: false,
+            );
+          }
+          return null;
+        },
+      );
+
+      await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-42', 'isArchived': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(
+        resolverBuilder.items.first.humanSummary,
+        'Archive: "Duplicate groceries item"',
+      );
+    });
+
+    test('summarizes an unarchival as Restore', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Shelved item', isChecked: false, isArchived: true),
+      );
+
+      await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-9', 'isArchived': false},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(
+        resolverBuilder.items.first.humanSummary,
+        'Restore: "Shelved item"',
+      );
+    });
+
+    test('suppresses a redundant archival when the item is already '
+        'archived', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Old duplicate', isChecked: false, isArchived: true),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-9', 'isArchived': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, isEmpty);
+      expect(result.redundant, 1);
+      expect(
+        result.redundantDetails.single,
+        '"Old duplicate" is already archived',
       );
     });
 
@@ -3119,7 +3218,7 @@ void main() {
         threadId: 'thread-001',
         runKey: 'run-key-001',
         checklistItemStateResolver: (id) async =>
-            (title: 'Buy groceries', isChecked: true),
+            (title: 'Buy groceries', isChecked: true, isArchived: null),
       );
 
       final result = await resolverBuilder.addBatchItem(
@@ -3151,7 +3250,7 @@ void main() {
           threadId: 'thread-001',
           runKey: 'run-key-001',
           checklistItemStateResolver: (id) async =>
-              (title: 'Write tests', isChecked: false),
+              (title: 'Write tests', isChecked: false, isArchived: null),
         );
 
         final result = await resolverBuilder.addBatchItem(
@@ -3184,7 +3283,7 @@ void main() {
           threadId: 'thread-001',
           runKey: 'run-key-001',
           checklistItemStateResolver: (id) async =>
-              (title: null, isChecked: true),
+              (title: null, isChecked: true, isArchived: null),
         );
 
         final result = await resolverBuilder.addBatchItem(
@@ -3215,7 +3314,7 @@ void main() {
         threadId: 'thread-001',
         runKey: 'run-key-001',
         checklistItemStateResolver: (id) async =>
-            (title: 'Deploy app', isChecked: false),
+            (title: 'Deploy app', isChecked: false, isArchived: null),
       );
 
       final result = await resolverBuilder.addBatchItem(
@@ -3240,8 +3339,12 @@ void main() {
         threadId: 'thread-001',
         runKey: 'run-key-001',
         checklistItemStateResolver: (id) async {
-          if (id == 'item-a') return (title: 'Already done', isChecked: true);
-          if (id == 'item-b') return (title: 'Not done', isChecked: false);
+          if (id == 'item-a') {
+            return (title: 'Already done', isChecked: true, isArchived: null);
+          }
+          if (id == 'item-b') {
+            return (title: 'Not done', isChecked: false, isArchived: null);
+          }
           return null;
         },
       );
@@ -3272,7 +3375,7 @@ void main() {
           threadId: 'thread-001',
           runKey: 'run-key-001',
           checklistItemStateResolver: (id) async =>
-              (title: 'Old title', isChecked: true),
+              (title: 'Old title', isChecked: true, isArchived: null),
         );
 
         final result = await resolverBuilder.addBatchItem(
@@ -3298,7 +3401,7 @@ void main() {
         threadId: 'thread-001',
         runKey: 'run-key-001',
         checklistItemStateResolver: (id) async =>
-            (title: 'Old title', isChecked: true),
+            (title: 'Old title', isChecked: true, isArchived: null),
       );
 
       final result = await resolverBuilder.addBatchItem(
@@ -3373,7 +3476,7 @@ void main() {
           threadId: 'thread-001',
           runKey: 'run-key-001',
           checklistItemStateResolver: (id) async =>
-              (title: 'Ambiguous item', isChecked: null),
+              (title: 'Ambiguous item', isChecked: null, isArchived: null),
         );
 
         final result = await resolverBuilder.addBatchItem(
@@ -3401,7 +3504,7 @@ void main() {
           threadId: 'thread-001',
           runKey: 'run-key-001',
           checklistItemStateResolver: (id) async =>
-              (title: 'Same title', isChecked: true),
+              (title: 'Same title', isChecked: true, isArchived: null),
         );
 
         final result = await resolverBuilder.addBatchItem(
@@ -3433,7 +3536,7 @@ void main() {
           threadId: 'thread-001',
           runKey: 'run-key-001',
           checklistItemStateResolver: (id) async =>
-              (title: 'Some item', isChecked: true),
+              (title: 'Some item', isChecked: true, isArchived: null),
         );
 
         final result = await resolverBuilder.addBatchItem(
@@ -3462,7 +3565,7 @@ void main() {
           threadId: 'thread-001',
           runKey: 'run-key-001',
           checklistItemStateResolver: (id) async =>
-              (title: 'Some item', isChecked: true),
+              (title: 'Some item', isChecked: true, isArchived: null),
         );
 
         final result = await resolverBuilder.addBatchItem(
@@ -3489,7 +3592,7 @@ void main() {
         threadId: 'thread-001',
         runKey: 'run-key-001',
         checklistItemStateResolver: (id) async =>
-            (title: 'Existing item', isChecked: true),
+            (title: 'Existing item', isChecked: true, isArchived: null),
       );
 
       final result = await resolverBuilder.addBatchItem(

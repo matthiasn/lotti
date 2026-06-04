@@ -50,13 +50,21 @@ CREATE TABLE agent_links (
   updated_at DATETIME NOT NULL,
   deleted_at DATETIME,
   serialized TEXT NOT NULL,
-  schema_version INTEGER NOT NULL DEFAULT 1,
-  UNIQUE(from_id, to_id, type)
+  schema_version INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE INDEX idx_agent_links_from ON agent_links(from_id, type);
 CREATE INDEX idx_agent_links_to ON agent_links(to_id, type);
 CREATE INDEX idx_agent_links_type ON agent_links(type);
+-- (from_id, to_id, type) stays unique for assignment-style links and DAG
+-- edges, but NOT for `message_payload` capture events (ADR 0020): content
+-- addressing dedupes identical content into one shared payload, so two
+-- sources rendering the same bytes each keep their own link (provenance +
+-- event position) to the SAME digest — and an entry edited back to earlier
+-- content appends a new event for an already-linked digest. The previous
+-- table-level UNIQUE made both cases fail capture with SqliteException 2067.
+CREATE UNIQUE INDEX idx_agent_links_unique_from_to_type
+  ON agent_links(from_id, to_id, type) WHERE type != 'message_payload';
 CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links(to_id) WHERE type = 'improver_target' AND deleted_at IS NULL;
 CREATE UNIQUE INDEX idx_unique_soul_per_template ON agent_links(from_id) WHERE type = 'soul_assignment' AND deleted_at IS NULL;
 CREATE INDEX idx_agent_links_active_from_type_to ON agent_links(from_id, type, to_id) WHERE deleted_at IS NULL;

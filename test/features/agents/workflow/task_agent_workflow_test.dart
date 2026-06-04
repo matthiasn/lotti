@@ -157,6 +157,12 @@ void main() {
     when(
       () => mockJournalDb.getConfigFlag(any()),
     ).thenAnswer((_) async => false);
+    // System-prompt persistence checks payload existence by content digest;
+    // default to "not present" so the content-addressed write path runs
+    // (individual tests re-stub specific ids).
+    when(
+      () => mockAgentRepository.getEntity(any()),
+    ).thenAnswer((_) async => null);
 
     // The workflow's `_collectObservationPayloads` switched from a per-id
     // `Future.wait(getEntity)` fan-out to the bulk
@@ -752,8 +758,9 @@ void main() {
 
         expect(result.success, isTrue);
 
-        // User message (payload + message) + state update = 3 upsert calls.
-        verify(() => mockSyncService.upsertEntity(any())).called(3);
+        // System prompt (payload + message) + user message (payload +
+        // message) + state update = 5 upsert calls.
+        verify(() => mockSyncService.upsertEntity(any())).called(5);
 
         // A completed wake event-sources lastWakeAt (PR 4, B2).
         expect(capturedMilestones(mockSyncService), [
@@ -766,6 +773,89 @@ void main() {
           contains('test-conv-id'),
         );
       });
+
+      test('persists the system prompt content-addressed and references it '
+          'from a system message', () async {
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+        expect(result.success, isTrue);
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+
+        // The payload is content-addressed: its id IS the digest of its
+        // content, so re-running with the same template never re-stores it.
+        final promptPayload = capturedPayloadEntities(captured).singleWhere(
+          (p) => p.content['role'] == 'system',
+        );
+        expect(promptPayload.id, ContentDigest.of(promptPayload.content));
+        expect(
+          promptPayload.content['text'],
+          contains('You are a Task Agent'),
+        );
+
+        // The wake references it via a system message so the conversation
+        // view can expand and inspect the exact prompt this wake ran with.
+        final promptMessage = captured
+            .whereType<AgentMessageEntity>()
+            .singleWhere(
+              (m) =>
+                  m.kind == AgentMessageKind.system && m.contentEntryId != null,
+            );
+        expect(promptMessage.contentEntryId, promptPayload.id);
+        expect(promptMessage.threadId, threadId);
+      });
+
+      test(
+        'does not re-store an already-known system prompt payload',
+        () async {
+          // The digest already exists (same template ran before, on any agent):
+          // only the per-wake reference message is written, not the payload.
+          when(
+            () => mockAgentRepository.getEntity(
+              any(that: startsWith('sha256-v1:')),
+            ),
+          ).thenAnswer(
+            (_) async => AgentDomainEntity.agentMessagePayload(
+              id: 'sha256-v1:existing',
+              agentId: 'shared-input-content',
+              createdAt: DateTime(2024),
+              vectorClock: null,
+              content: const {'role': 'system', 'text': 'cached'},
+            ),
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {},
+            threadId: threadId,
+          );
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(
+            capturedPayloadEntities(
+              captured,
+            ).where((p) => p.content['role'] == 'system'),
+            isEmpty,
+          );
+          expect(
+            captured.whereType<AgentMessageEntity>().where(
+              (m) =>
+                  m.kind == AgentMessageKind.system && m.contentEntryId != null,
+            ),
+            hasLength(1),
+          );
+        },
+      );
 
       test(
         'propagates the resolved model geminiThinkingMode to the wrapper',
@@ -858,6 +948,7 @@ void main() {
           () => mockAgentRepository.getProposalLedger(
             agentId,
             taskId: taskId,
+            resolvedLimit: 200,
           ),
         ).called(1);
       });
@@ -2852,25 +2943,34 @@ void main() {
         },
       );
 
-      test('includes existing report in user message', () async {
-        final report =
-            AgentDomainEntity.agentReport(
-                  id: 'rpt-1',
-                  agentId: agentId,
-                  scope: 'current',
-                  createdAt: testDate,
-                  vectorClock: null,
-                  content: '# My Report\nAll good.',
-                )
-                as AgentReportEntity;
+      test(
+        'never injects the prior report prose into the user message',
+        () async {
+          // The report is a projection of the log, not agent memory: re-reading
+          // its own stale conclusions creates a feedback loop (a wrong
+          // "learning" re-published verbatim every wake). With a report present,
+          // neither the prose nor the first-wake bootstrap section appears.
+          final report =
+              AgentDomainEntity.agentReport(
+                    id: 'rpt-1',
+                    agentId: agentId,
+                    scope: 'current',
+                    createdAt: testDate,
+                    vectorClock: null,
+                    content: '# My Report\nAll good.',
+                  )
+                  as AgentReportEntity;
 
-        final message = await executeAndCaptureMessage(lastReport: report);
+          final message = await executeAndCaptureMessage(lastReport: report);
 
-        expect(message, isNotNull);
-        expect(message, contains('## Current Report'));
-        expect(message, contains('# My Report'));
-        expect(message, contains('All good.'));
-      });
+          expect(message, isNotNull);
+          expect(message, isNot(contains('## Current Report')));
+          expect(message, isNot(contains('# My Report')));
+          expect(message, isNot(contains('## First Wake')));
+          // The closing instruction states the conditional-report contract.
+          expect(message, contains('If the report would materially change'));
+        },
+      );
 
       test(
         'includes parent project context with project report tldr and full content',
@@ -5200,15 +5300,18 @@ void main() {
 
         expect(result.success, isTrue);
 
-        // Only user message payload (no thought payload since manager null).
+        // Only the prompt payloads (system + user) persist — no thought
+        // payload since the manager is null.
         final captured = verify(
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
         final payloads = capturedPayloadEntities(captured);
-        // User message payload exists, but no thought payload.
-        expect(payloads, hasLength(1));
-        // Verify it's the user message, not a thought.
-        final text = payloads.first.content['text'] as String?;
+        expect(payloads, hasLength(2));
+        // Verify the non-system one is the user message, not a thought.
+        final userPayload = payloads.singleWhere(
+          (p) => p.content['role'] != 'system',
+        );
+        final text = userPayload.content['text'] as String?;
         expect(text, contains('Current Task Context'));
       });
 
@@ -5231,9 +5334,12 @@ void main() {
         ).captured;
 
         final payloads = capturedPayloadEntities(captured);
-        // Only user message payload, no thought payload.
-        expect(payloads, hasLength(1));
-        final text = payloads.first.content['text'] as String?;
+        // Only the prompt payloads (system + user), no thought payload.
+        expect(payloads, hasLength(2));
+        final userPayload = payloads.singleWhere(
+          (p) => p.content['role'] != 'system',
+        );
+        final text = userPayload.content['text'] as String?;
         expect(text, contains('Current Task Context'));
       });
 
@@ -5604,11 +5710,8 @@ void main() {
             ),
           );
           when(
-            () => mockAiInputRepository.buildTaskDetailsJson(
-              id: taskId,
-              includeLogEntries: false,
-            ),
-          ).thenAnswer((_) async => '{"title":"Slim header"}');
+            () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
+          ).thenAnswer((_) async => '- Title: Slim header');
           stubFullExecutePath(
             mockAgentRepository: mockAgentRepository,
             mockAiInputRepository: mockAiInputRepository,
@@ -5648,10 +5751,7 @@ void main() {
 
           expect(result.success, isTrue);
           verify(
-            () => mockAiInputRepository.buildTaskDetailsJson(
-              id: taskId,
-              includeLogEntries: false,
-            ),
+            () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
           ).called(1);
 
           // The persisted prompt carries the slim header + the assembled task
@@ -5665,6 +5765,13 @@ void main() {
           expect(userText, contains('Slim header'));
           expect(userText, contains('## Task Log'));
           expect(userText, contains('captured tail content'));
+          // Prefix-cache layout: the append-only task log must precede the
+          // task-state JSON, whose timeSpent ticks on every working wake — a
+          // single mutated byte upstream voids the cache for the whole log.
+          expect(
+            userText.indexOf('## Task Log'),
+            lessThan(userText.indexOf('## Current Task Context')),
+          );
         },
       );
 
@@ -5725,16 +5832,13 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        // Full inline log requested; the slim (includeLogEntries: false) variant
-        // is NOT used when there's nothing to replace it with.
+        // Full inline log requested; the markdown task-state variant is NOT
+        // used when there's nothing to replace the inline log with.
         verify(
           () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
         ).called(1);
         verifyNever(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: taskId,
-            includeLogEntries: false,
-          ),
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
         );
         final captured = verify(
           () => mockSyncService.upsertEntity(captureAny()),
@@ -5834,10 +5938,7 @@ void main() {
           () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
         ).called(1);
         verifyNever(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: taskId,
-            includeLogEntries: false,
-          ),
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
         );
         final captured = verify(
           () => mockSyncService.upsertEntity(captureAny()),
@@ -5917,11 +6018,8 @@ void main() {
           ),
         );
         when(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: taskId,
-            includeLogEntries: false,
-          ),
-        ).thenAnswer((_) async => '{"title":"Slim header"}');
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
+        ).thenAnswer((_) async => '- Title: Slim header');
         stubFullExecutePath(
           mockAgentRepository: mockAgentRepository,
           mockAiInputRepository: mockAiInputRepository,
@@ -6038,11 +6136,8 @@ void main() {
           ),
         );
         when(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: taskId,
-            includeLogEntries: false,
-          ),
-        ).thenAnswer((_) async => '{"title":"Slim header"}');
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
+        ).thenAnswer((_) async => '- Title: Slim header');
         when(
           () => mockJournalDb.getConfigFlag(enableAgentCompactionFlag),
         ).thenAnswer((_) async => true);
@@ -6086,12 +6181,9 @@ void main() {
         verify(
           () => mockJournalDb.getConfigFlag(enableAgentCompactionFlag),
         ).called(1);
-        // The read-flip happened: slim task header requested.
+        // The read-flip happened: markdown task state requested.
         verify(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: taskId,
-            includeLogEntries: false,
-          ),
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
         ).called(1);
       });
 
@@ -6142,13 +6234,306 @@ void main() {
             () => mockJournalDb.getConfigFlag(enableAgentCompactionFlag),
           ).called(1);
           verifyNever(
-            () => mockAiInputRepository.buildTaskDetailsJson(
-              id: taskId,
-              includeLogEntries: false,
-            ),
+            () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
           );
         },
       );
+
+      test('resolved verdicts render as (decision) events in the task log; '
+          'the ledger section keeps only open proposals', () async {
+        const tailContent = {'entryType': 'text', 'text': 'captured note'};
+        final tailDigest = ContentDigest.of(tailContent);
+        when(
+          () => mockSyncService.repository,
+        ).thenReturn(mockAgentRepository);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.system,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.summary,
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => mockAgentRepository.getLinksFrom(agentId)).thenAnswer(
+          (_) async => [
+            AgentLink.messagePayload(
+              id: 'pl-1',
+              fromId: agentId,
+              toId: tailDigest,
+              createdAt: DateTime(2024, 6, 2),
+              updatedAt: DateTime(2024, 6, 2),
+              vectorClock: null,
+              contentEntryId: 'e1',
+              sourceCreatedAt: DateTime(2024, 6),
+            ),
+          ],
+        );
+        when(() => mockAgentRepository.getEntity(tailDigest)).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: tailDigest,
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 2),
+            vectorClock: null,
+            content: tailContent,
+          ),
+        );
+        when(
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
+        ).thenAnswer((_) async => '- Title: Slim header');
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        // One open proposal (state — must stay in the ledger section) and one
+        // resolved verdict (event — must move into the task log).
+        when(
+          () => mockAgentRepository.getProposalLedger(
+            any(),
+            taskId: any(named: 'taskId'),
+            changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+            resolvedLimit: any(named: 'resolvedLimit'),
+          ),
+        ).thenAnswer(
+          (_) async => ProposalLedger(
+            open: [
+              LedgerEntry(
+                changeSetId: 'cs-2',
+                itemIndex: 0,
+                toolName: 'update_task_estimate',
+                args: const {},
+                humanSummary: 'Estimate 2h',
+                fingerprint: 'update_task_estimate:7',
+                status: ChangeItemStatus.pending,
+                createdAt: DateTime(2024, 6, 3),
+              ),
+            ],
+            resolved: [
+              LedgerEntry(
+                changeSetId: 'cs-1',
+                itemIndex: 0,
+                toolName: 'set_task_title',
+                args: const {},
+                humanSummary: 'Set title to "X"',
+                fingerprint: 'set_task_title:42',
+                status: ChangeItemStatus.confirmed,
+                createdAt: DateTime(2024, 6),
+                resolvedAt: DateTime(2024, 6, 1, 12),
+                resolvedBy: DecisionActor.user,
+                verdict: ChangeDecisionVerdict.confirmed,
+              ),
+            ],
+          ),
+        );
+
+        final workflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          inputCaptureService: _RecordingCaptureService(),
+          compactionEnabled: true,
+          logSummarizer: stubLogSummarizer(),
+        );
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+        expect(result.success, isTrue);
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final userText = capturedPayloadEntities(captured)
+            .map((p) => p.content['text'] as String? ?? '')
+            .firstWhere((t) => t.contains('Current Task Context'));
+
+        // The verdict is an event in the task log…
+        expect(userText, contains('## Task Log'));
+        expect(
+          userText,
+          contains(
+            '(decision) [fp=set_task_title:42] ✓ `set_task_title`: '
+            'Set title to "X" — confirmed by user',
+          ),
+        );
+        // …interleaved chronologically: verdict (June 1) before note (June 2).
+        expect(
+          userText.indexOf('(decision)'),
+          lessThan(userText.indexOf('captured note')),
+        );
+        // The ledger section keeps only the open (actionable) state.
+        expect(userText, contains('### Open (1)'));
+        expect(userText, contains('[fp=update_task_estimate:7]'));
+        expect(userText, isNot(contains('### Resolved')));
+      });
+
+      test('the full prompt is append-only across wakes: identical bytes '
+          'before the task log, appends inside it', () async {
+        // The provider prefix-cache invariant at the PROMPT level: when a new
+        // event lands between two wakes, everything upstream of the task log
+        // is byte-identical and the log block itself only grows at the end.
+        // The volatile tail (task state, timer, ledger…) follows the log.
+        const firstContent = {'entryType': 'text', 'text': 'first note'};
+        const secondContent = {'entryType': 'text', 'text': 'second note'};
+        final firstDigest = ContentDigest.of(firstContent);
+        final secondDigest = ContentDigest.of(secondContent);
+
+        when(
+          () => mockSyncService.repository,
+        ).thenReturn(mockAgentRepository);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.system,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.summary,
+          ),
+        ).thenAnswer((_) async => []);
+        final links = <AgentLink>[
+          AgentLink.messagePayload(
+            id: 'pl-1',
+            fromId: agentId,
+            toId: firstDigest,
+            createdAt: DateTime(2024, 6, 2),
+            updatedAt: DateTime(2024, 6, 2),
+            vectorClock: null,
+            contentEntryId: 'e1',
+            sourceCreatedAt: DateTime(2024, 6),
+          ),
+        ];
+        when(
+          () => mockAgentRepository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => List.of(links));
+        when(() => mockAgentRepository.getEntity(firstDigest)).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: firstDigest,
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 2),
+            vectorClock: null,
+            content: firstContent,
+          ),
+        );
+        when(() => mockAgentRepository.getEntity(secondDigest)).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: secondDigest,
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 3),
+            vectorClock: null,
+            content: secondContent,
+          ),
+        );
+        when(
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
+        ).thenAnswer((_) async => '- Title: Slim header');
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+
+        final workflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          inputCaptureService: _RecordingCaptureService(),
+          compactionEnabled: true,
+          logSummarizer: stubLogSummarizer(),
+        );
+
+        String promptOf(List<Object?> captured) =>
+            capturedPayloadEntities(captured)
+                .map((p) => p.content['text'] as String? ?? '')
+                .firstWhere((t) => t.contains('Current Task Context'));
+
+        final firstResult = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+        expect(firstResult.success, isTrue);
+        final firstPrompt = promptOf(
+          verify(() => mockSyncService.upsertEntity(captureAny())).captured,
+        );
+
+        // A new event lands between the wakes.
+        links.add(
+          AgentLink.messagePayload(
+            id: 'pl-2',
+            fromId: agentId,
+            toId: secondDigest,
+            createdAt: DateTime(2024, 6, 3),
+            updatedAt: DateTime(2024, 6, 3),
+            vectorClock: null,
+            contentEntryId: 'e2',
+            sourceCreatedAt: DateTime(2024, 6, 3),
+          ),
+        );
+
+        final secondResult = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: 'run-key-2',
+          triggerTokens: {},
+          threadId: threadId,
+        );
+        expect(secondResult.success, isTrue);
+        final secondPrompt = promptOf(
+          verify(() => mockSyncService.upsertEntity(captureAny())).captured,
+        );
+
+        // Everything before the task log is byte-identical across the wakes…
+        String head(String s) => s.substring(0, s.indexOf('## Task Log'));
+        expect(head(secondPrompt), head(firstPrompt));
+        // …and the log block itself only appends (modulo the trailing section
+        // separator).
+        String logBlock(String s) => s
+            .substring(
+              s.indexOf('## Task Log'),
+              s.indexOf('## Current Task Context'),
+            )
+            .trimRight();
+        expect(logBlock(secondPrompt), startsWith(logBlock(firstPrompt)));
+        expect(logBlock(secondPrompt), contains('second note'));
+      });
     });
   });
 }

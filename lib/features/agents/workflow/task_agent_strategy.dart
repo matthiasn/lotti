@@ -320,7 +320,8 @@ class TaskAgentStrategy extends ConversationStrategy {
           final errorResponse =
               'ERROR: $toolName was already called this session. '
               'You MUST NOT call the same tool twice. '
-              'Use a DIFFERENT tool or call update_report to finish.';
+              'Use a DIFFERENT tool, call update_report if the report needs '
+              'updating, or finish with a brief plain-text note.';
           manager.addToolResponse(
             toolCallId: call.id,
             response: errorResponse,
@@ -384,8 +385,13 @@ class TaskAgentStrategy extends ConversationStrategy {
       // Report already submitted — no further turns needed.
       return null;
     }
-    return 'Continue. If you have finished your analysis, call `update_report` '
-        'with the full updated report.';
+    // The report is conditional (a projection of the log, not per-wake
+    // ceremony): updating it is only warranted on material change. A
+    // plain-text reply ends the wake naturally.
+    return 'Continue. If you have finished your analysis, call '
+        '`update_report` with the full updated report if it would '
+        'materially change; otherwise finish with a brief plain-text note '
+        'of what you did.';
   }
 
   /// Called by the workflow after the conversation loop finishes to capture
@@ -1124,12 +1130,15 @@ class TaskAgentStrategy extends ConversationStrategy {
     });
 
     if (remaining.isEmpty) {
-      return ' Call update_report when your analysis is complete.';
+      return ' When your analysis is complete, call update_report if the '
+          'report would materially change; otherwise finish with a brief '
+          'plain-text note.';
     }
 
     final toolList = remaining.toList()..sort();
-    return ' Consider using: ${toolList.join(', ')} — '
-        'or call update_report when done.';
+    return ' Consider using: ${toolList.join(', ')} — then call '
+        'update_report if the report would materially change, or finish '
+        'with a brief plain-text note.';
   }
 
   // ── Persistence helpers ──────────────────────────────────────────────────

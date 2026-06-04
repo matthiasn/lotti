@@ -1,11 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/compaction_summary.dart';
+import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
-import 'package:lotti/features/agents/projection/input_frontier.dart';
+import 'package:lotti/features/agents/projection/input_events.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -24,6 +27,7 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   late InMemoryAgentRepository repo;
+  late AgentSyncService sync;
   late AgentInputCaptureService capture;
   late AgentLogCompactor compactor;
   late List<({int count, String? prior})> summarizeCalls;
@@ -45,7 +49,7 @@ void main() {
     ).thenAnswer((_) async => VectorClock({'h1': ++counter}));
     final outbox = MockOutboxService();
     when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
-    final sync = AgentSyncService(
+    sync = AgentSyncService(
       repository: repo,
       outboxService: outbox,
       vectorClockService: vc,
@@ -86,13 +90,24 @@ void main() {
   List<AgentMessageEntity> summaryMessages() =>
       repo.messages.where((m) => m.kind == AgentMessageKind.summary).toList();
 
-  ActiveSummary activeNow(List<SummaryCheckpoint> checkpoints) =>
-      selectActiveSummary(
-        frontier: inputFrontierDigests(
-          projectInputFrontier(messages: repo.messages, links: repo.links),
-        ),
-        summaries: checkpoints,
-      );
+  /// The read-side view the prompt assembly derives: the active checkpoint
+  /// (if any) and the entry ids of the visible event tail after its cutoff.
+  Future<({SummaryCheckpoint? checkpoint, List<String> tailEntryIds})>
+  activeView() async {
+    final log = projectInputEvents(
+      messages: repo.messages,
+      links: repo.links,
+    );
+    final checkpoint = selectActiveSummary(
+      summaries: await compactor.loadSummaries(_agentId),
+      retractions: log.retractions,
+    );
+    final tail = visibleTailEvents(log: log, cutoff: checkpoint?.cutoff);
+    return (
+      checkpoint: checkpoint,
+      tailEntryIds: [for (final event in tail) event.contentEntryId],
+    );
+  }
 
   test('returns null when nothing is captured', () async {
     expect(await compact(budget: 0), isNull);
@@ -171,9 +186,9 @@ void main() {
       expect(await compact(budget: budget, retain: 0), isNotNull);
       expect(summarizeCalls.single.count, 2); // e1 + e2 folded, not just e1
 
-      final active = activeNow(await compactor.loadSummaries(_agentId));
-      expect(active.checkpoint!.coveredSources.keys.toSet(), {'e1', 'e2'});
-      expect(active.uncoveredEntryIds, ['e3']);
+      final view = await activeView();
+      expect(view.checkpoint!.coveredSources.keys.toSet(), {'e1', 'e2'});
+      expect(view.tailEntryIds, ['e3']);
     },
   );
 
@@ -188,9 +203,9 @@ void main() {
     expect(await compact(budget: budget, retain: budget), isNotNull);
     expect(summarizeCalls.single.count, 1); // only e1
 
-    final active = activeNow(await compactor.loadSummaries(_agentId));
-    expect(active.checkpoint!.coveredSources.keys.toSet(), {'e1'});
-    expect(active.uncoveredEntryIds, ['e2', 'e3']);
+    final view = await activeView();
+    expect(view.checkpoint!.coveredSources.keys.toSet(), {'e1'});
+    expect(view.tailEntryIds, ['e2', 'e3']);
   });
 
   test(
@@ -214,9 +229,9 @@ void main() {
       final checkpoints = await compactor.loadSummaries(_agentId);
       expect(checkpoints.single.coveredSources.keys.toSet(), {'e1', 'e2'});
 
-      final active = activeNow(checkpoints);
-      expect(active.checkpoint!.summaryText, 'SUMMARY(2)');
-      expect(active.uncoveredEntryIds, ['e3']); // newest stays verbatim
+      final view = await activeView();
+      expect(view.checkpoint!.summaryText, 'SUMMARY(2)');
+      expect(view.tailEntryIds, ['e3']); // newest stays verbatim
     },
   );
 
@@ -249,14 +264,265 @@ void main() {
       // The second summarization received the prior summary text.
       expect(summarizeCalls.last.prior, 'SUMMARY(2)');
 
-      final active = activeNow(await compactor.loadSummaries(_agentId));
-      expect(active.checkpoint!.coveredSources.keys.toSet(), {
+      final view = await activeView();
+      expect(view.checkpoint!.coveredSources.keys.toSet(), {
         'e1',
         'e2',
         'e3',
         'e4',
       });
-      expect(active.uncoveredEntryIds, ['e5']);
+      expect(view.tailEntryIds, ['e5']);
     },
   );
+
+  test('an edit of folded content keeps the checkpoint and appends an '
+      'edited line to the tail', () async {
+    await captureAll([
+      src('e1', 'alpha', day: 1),
+      src('e2', 'beta', day: 2),
+      src('e3', 'gamma', day: 3),
+    ], 10);
+    await compact(budget: 0); // covers {e1,e2}, tail [e3]
+
+    // e1 is edited after the fold: a NEW event appends; the checkpoint stays
+    // active (no full-tail re-expansion as under state-shaped coverage).
+    await captureAll([
+      src('e1', 'alpha REVISED', day: 1),
+      src('e2', 'beta', day: 2),
+      src('e3', 'gamma', day: 3),
+    ], 11);
+
+    final view = await activeView();
+    expect(view.checkpoint, isNotNull);
+    expect(view.tailEntryIds, ['e3', 'e1']); // edit appended after the tail
+
+    final context = await compactor.assembleContext(_agentId);
+    expect(context, contains('SUMMARY(2)'));
+    expect(context, contains('(entry, edited) alpha REVISED'));
+    // The folded original does not resurface verbatim.
+    expect(context.indexOf('gamma'), lessThan(context.indexOf('alpha')));
+  });
+
+  test('an edit within the tail appends; the original line stays', () async {
+    await captureAll([src('e1', 'first wording', day: 1)], 10);
+    await captureAll([src('e1', 'second wording', day: 1)], 11);
+
+    final context = await compactor.assembleContext(_agentId);
+    expect(context, contains('(entry) first wording'));
+    expect(context, contains('(entry, edited) second wording'));
+    expect(
+      context.indexOf('first wording'),
+      lessThan(context.indexOf('second wording')),
+    );
+  });
+
+  test('a retraction of covered content invalidates the checkpoint '
+      '(privacy beats cache) and strips the source from the tail', () async {
+    await captureAll([
+      src('e1', 'alpha', day: 1),
+      src('e2', 'beta', day: 2),
+      src('e3', 'gamma', day: 3),
+    ], 10);
+    await compact(budget: 0); // covers {e1,e2}, tail [e3]
+
+    // e1 is deleted: the wake re-captures without it → retraction event.
+    await captureAll([
+      src('e2', 'beta', day: 2),
+      src('e3', 'gamma', day: 3),
+    ], 11);
+
+    final view = await activeView();
+    expect(view.checkpoint, isNull); // summary prose may mention e1 → dead
+    expect(view.tailEntryIds, ['e2', 'e3']); // full re-expansion, minus e1
+
+    final context = await compactor.assembleContext(_agentId);
+    expect(context, isNot(contains('SUMMARY')));
+    expect(context, isNot(contains('alpha')));
+    expect(context, contains('beta'));
+    expect(context, contains('gamma'));
+  });
+
+  /// Seeds an observation (payload + message) directly into the repo, the
+  /// shape `record_observations` persists.
+  Future<void> seedObservation(String id, String text, {required int day}) {
+    repo.seed([
+      AgentDomainEntity.agentMessagePayload(
+        id: 'pl-$id',
+        agentId: _agentId,
+        createdAt: DateTime.utc(2024, 3, day),
+        vectorClock: null,
+        content: <String, Object?>{'text': text},
+      ),
+      AgentDomainEntity.agentMessage(
+        id: id,
+        agentId: _agentId,
+        threadId: id,
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime.utc(2024, 3, day),
+        vectorClock: null,
+        contentEntryId: 'pl-$id',
+        metadata: const AgentMessageMetadata(),
+      ),
+    ]);
+    return Future.value();
+  }
+
+  test('the assembled context is append-only across wakes: each earlier '
+      'context is a byte prefix of the next', () async {
+    // The provider prefix-cache invariant, end to end: between folds, new
+    // events (captures, edits, observations) may only APPEND bytes to the
+    // assembled task log — never change existing ones.
+    await captureAll([src('e1', 'first note', day: 1)], 10);
+    final first = await compactor.assembleContext(_agentId);
+
+    await seedObservation('obs-1', 'a private note', day: 11);
+    await captureAll([
+      src('e1', 'first note', day: 1),
+      src('e2', 'second note', day: 12),
+    ], 12);
+    final second = await compactor.assembleContext(_agentId);
+
+    // An EDIT also only appends (the original line is frozen).
+    await captureAll([
+      src('e1', 'first note REVISED', day: 1),
+      src('e2', 'second note', day: 12),
+    ], 13);
+    final third = await compactor.assembleContext(_agentId);
+
+    expect(second, startsWith(first));
+    expect(third, startsWith(second));
+    expect(third, contains('(entry, edited) first note REVISED'));
+  });
+
+  test('decision events share the substrate: they interleave, render as '
+      '(decision) lines, and fold', () async {
+    await captureAll([src('e1', 'user note', day: 9)], 9);
+    await captureAll([
+      src('e1', 'user note', day: 9),
+      src('e2', 'newest note', day: 12),
+    ], 12);
+
+    final decisionCompactor = AgentLogCompactor(
+      syncService: sync,
+      inlineEvents: decisionEventsFromLedger([
+        LedgerEntry(
+          changeSetId: 'cs-1',
+          itemIndex: 0,
+          toolName: 'set_task_title',
+          args: const {},
+          humanSummary: 'Set title to "X"',
+          fingerprint: 'set_task_title:42',
+          status: ChangeItemStatus.confirmed,
+          createdAt: DateTime.utc(2024, 3, 10),
+          resolvedAt: DateTime.utc(2024, 3, 11),
+          resolvedBy: DecisionActor.user,
+          verdict: ChangeDecisionVerdict.confirmed,
+        ),
+      ]),
+    );
+
+    final context = await decisionCompactor.assembleContext(_agentId);
+    expect(
+      context,
+      contains(
+        '(decision) [fp=set_task_title:42] ✓ `set_task_title`: '
+        'Set title to "X" — confirmed by user',
+      ),
+    );
+    // Event order: capture(day 9) < decision(day 11) < capture(day 12).
+    expect(
+      context.indexOf('user note'),
+      lessThan(context.indexOf('(decision)')),
+    );
+    expect(
+      context.indexOf('(decision)'),
+      lessThan(context.indexOf('newest note')),
+    );
+
+    // budget 0 ⇒ fold everything but the newest event: the capture AND the
+    // decision fold into the summary by the same watermarks.
+    expect(
+      await decisionCompactor.maybeCompact(
+        agentId: _agentId,
+        budget: 0,
+        summarize: stubSummarize,
+        at: DateTime.utc(2024, 3, 13),
+      ),
+      isNotNull,
+    );
+    expect(summarizeCalls.single.count, 2);
+
+    final folded = await decisionCompactor.assembleContext(_agentId);
+    expect(folded, contains('SUMMARY(2)'));
+    expect(folded, isNot(contains('(decision)')));
+    expect(folded, contains('newest note'));
+  });
+
+  test(
+    'observations interleave with captured content as (observation) lines',
+    () async {
+      await captureAll([src('e1', 'user note', day: 9)], 9);
+      await seedObservation('obs-1', 'I noticed the scope changed.', day: 11);
+      await captureAll([
+        src('e1', 'user note', day: 9),
+        src('e2', 'later user note', day: 12),
+      ], 12);
+
+      final context = await compactor.assembleContext(_agentId);
+      expect(context, contains('(observation) I noticed the scope changed.'));
+      // Single substrate, event order: capture(day 9) < observation(day 11)
+      // < capture(day 12).
+      expect(
+        context.indexOf('user note'),
+        lessThan(context.indexOf('I noticed')),
+      );
+      expect(
+        context.indexOf('I noticed'),
+        lessThan(context.indexOf('later user note')),
+      );
+    },
+  );
+
+  test('observations fold into summaries by the same watermarks', () async {
+    await captureAll([src('e1', 'alpha', day: 1)], 10);
+    await seedObservation('obs-1', 'an old private note', day: 11);
+    await captureAll([
+      src('e1', 'alpha', day: 1),
+      src('e2', 'omega', day: 12),
+    ], 12);
+
+    // budget 0 ⇒ fold everything but the newest event (e2's capture).
+    expect(await compact(budget: 0, day: 13), isNotNull);
+    // The summarizer folded the capture AND the observation.
+    expect(summarizeCalls.single.count, 2);
+
+    final context = await compactor.assembleContext(_agentId);
+    expect(context, contains('SUMMARY(2)'));
+    expect(context, isNot(contains('an old private note')));
+    expect(context, contains('omega'));
+  });
+
+  test('a retraction of tail-only content strips its lines but keeps the '
+      'checkpoint', () async {
+    await captureAll([
+      src('e1', 'alpha', day: 1),
+      src('e2', 'beta', day: 2),
+      src('e3', 'gamma', day: 3),
+    ], 10);
+    await compact(budget: 0); // covers {e1,e2}, tail [e3]
+
+    // e3 (uncovered) is deleted.
+    await captureAll([
+      src('e1', 'alpha', day: 1),
+      src('e2', 'beta', day: 2),
+    ], 11);
+
+    final view = await activeView();
+    expect(view.checkpoint, isNotNull);
+    expect(view.tailEntryIds, isEmpty);
+
+    final context = await compactor.assembleContext(_agentId);
+    expect(context, contains('SUMMARY(2)'));
+    expect(context, isNot(contains('gamma')));
+  });
 }

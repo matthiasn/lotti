@@ -56,6 +56,7 @@ class TestDataFactory {
     String? id,
     String? title,
     bool isChecked = false,
+    bool isArchived = false,
     List<String>? linkedChecklists,
     ChangeSource checkedBy = ChangeSource.user,
     DateTime? checkedAt,
@@ -73,6 +74,7 @@ class TestDataFactory {
       data: ChecklistItemData(
         title: title ?? 'Test Item',
         isChecked: isChecked,
+        isArchived: isArchived,
         linkedChecklists: linkedChecklists ?? ['checklist-1'],
         checkedBy: checkedBy,
         checkedAt: checkedAt,
@@ -424,6 +426,30 @@ void main() {
         expect(result.error, contains('Function name mismatch'));
       });
 
+      test('should accept isArchived as the only update field', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": [{"id": "item-1", "isArchived": true}]}',
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+
+        expect(result.success, true);
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
+        expect(items.single['isArchived'], true);
+      });
+
+      test('should reject invalid isArchived type', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: '{"items": [{"id": "item-1", "isArchived": "yes"}]}',
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+
+        expect(result.success, false);
+        expect(result.error, contains('invalid isArchived'));
+      });
+
       test('should process multiple items', () {
         final toolCall = TestDataFactory.createToolCall(
           arguments: '''
@@ -493,6 +519,166 @@ void main() {
             taskId: testTask.id,
           ),
         ).called(1);
+      });
+
+      test(
+        'archives an item without touching its checked provenance',
+        () async {
+          final item = TestDataFactory.createChecklistItem(
+            id: 'item-1',
+            title: 'Duplicate entry',
+            checkedAt: DateTime(2024, 1, 10),
+          );
+
+          final mockSelectable = MockSelectable<JournalDbEntity>();
+          when(
+            () => mockJournalDb.entriesForIds(['item-1']),
+          ).thenReturn(mockSelectable);
+          when(mockSelectable.get).thenAnswer(
+            (_) async => [_createDbEntity(item)],
+          );
+          when(
+            () => mockJournalDb.journalEntityById(testTask.id),
+          ).thenAnswer((_) async => testTask);
+          when(
+            () => mockChecklistRepository.updateChecklistItem(
+              checklistItemId: 'item-1',
+              data: any(named: 'data'),
+              taskId: testTask.id,
+            ),
+          ).thenAnswer((_) async => true);
+
+          final result = FunctionCallResult(
+            success: true,
+            functionName: 'update_checklist_items',
+            arguments: '',
+            data: {
+              'items': [
+                {'id': 'item-1', 'isArchived': true},
+              ],
+              'taskId': testTask.id,
+            },
+          );
+
+          final count = await handler.executeUpdates(result);
+
+          expect(count, 1);
+          final written =
+              verify(
+                    () => mockChecklistRepository.updateChecklistItem(
+                      checklistItemId: 'item-1',
+                      data: captureAny(named: 'data'),
+                      taskId: testTask.id,
+                    ),
+                  ).captured.single
+                  as ChecklistItemData;
+          expect(written.isArchived, true);
+          // Archival must not flip checked state or re-stamp provenance.
+          expect(written.isChecked, item.data.isChecked);
+          expect(written.checkedBy, ChangeSource.user);
+          expect(written.checkedAt, DateTime(2024, 1, 10));
+        },
+      );
+
+      test('skips an archival that matches the current state', () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'Already archived',
+          isArchived: true,
+        );
+
+        final mockSelectable = MockSelectable<JournalDbEntity>();
+        when(
+          () => mockJournalDb.entriesForIds(['item-1']),
+        ).thenReturn(mockSelectable);
+        when(mockSelectable.get).thenAnswer(
+          (_) async => [_createDbEntity(item)],
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'isArchived': true},
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 0);
+        expect(handler.skippedItems.single.reason, 'No changes detected');
+        verifyNever(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
+      });
+
+      test('a sovereignty-blocked isChecked change still applies the '
+          'archival', () async {
+        // User checked this item; the agent tries to uncheck it without a
+        // reason AND archive it. The uncheck is blocked, the archive lands.
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'User-checked duplicate',
+          isChecked: true,
+          checkedAt: DateTime(2024, 1, 12),
+        );
+
+        final mockSelectable = MockSelectable<JournalDbEntity>();
+        when(
+          () => mockJournalDb.entriesForIds(['item-1']),
+        ).thenReturn(mockSelectable);
+        when(mockSelectable.get).thenAnswer(
+          (_) async => [_createDbEntity(item)],
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: any(named: 'data'),
+            taskId: testTask.id,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'isChecked': false, 'isArchived': true},
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 1);
+        expect(
+          handler.skippedItems.single.reason,
+          contains('User set this item'),
+        );
+        final written =
+            verify(
+                  () => mockChecklistRepository.updateChecklistItem(
+                    checklistItemId: 'item-1',
+                    data: captureAny(named: 'data'),
+                    taskId: testTask.id,
+                  ),
+                ).captured.single
+                as ChecklistItemData;
+        expect(written.isArchived, true);
+        expect(written.isChecked, true); // the blocked uncheck did NOT land
       });
 
       test('should update item title', () async {
@@ -1570,6 +1756,7 @@ JournalDbEntity _createDbEntity(ChecklistItem item) {
       'data': {
         'title': item.data.title,
         'isChecked': item.data.isChecked,
+        'isArchived': item.data.isArchived,
         'linkedChecklists': item.data.linkedChecklists,
         'checkedBy': item.data.checkedBy.name,
         if (item.data.checkedAt != null)

@@ -471,13 +471,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentMessageKindAction => 'Aktion';
 
   @override
+  String get agentMessageKindMilestone => 'Meilenstein';
+
+  @override
   String get agentMessageKindObservation => 'Beobachtung';
+
+  @override
+  String get agentMessageKindRetraction => 'Zurücknahme';
 
   @override
   String get agentMessageKindSummary => 'Zusammenfassung';
 
   @override
   String get agentMessageKindSystem => 'System';
+
+  @override
+  String get agentMessageKindSystemPrompt => 'System-Prompt';
 
   @override
   String get agentMessageKindThought => 'Gedanke';

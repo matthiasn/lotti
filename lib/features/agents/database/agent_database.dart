@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
@@ -202,6 +202,75 @@ class AgentDatabase extends _$AgentDatabase {
           );
           await customStatement(
             'DROP INDEX IF EXISTS idx_agent_entities_active_agent_type_created',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 11) {
+          // Drop the table-level UNIQUE(from_id, to_id, type): it is correct
+          // for assignment-style links and DAG edges but WRONG for
+          // `message_payload` capture events (ADR 0020) — content addressing
+          // dedupes identical content into one shared payload, so two sources
+          // rendering the same bytes each need their own link to the SAME
+          // digest (first hit in production: two empty text entries on one
+          // task → SqliteException 2067 → every capture failing). SQLite
+          // cannot drop a table constraint in place, so rebuild the table and
+          // recreate every index, replacing the constraint with a partial
+          // unique index that exempts `message_payload`.
+          await customStatement('''
+            CREATE TABLE agent_links_v11 (
+              id TEXT NOT NULL PRIMARY KEY,
+              from_id TEXT NOT NULL,
+              to_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''');
+          await customStatement(
+            'INSERT INTO agent_links_v11 '
+            'SELECT id, from_id, to_id, type, created_at, updated_at, '
+            'deleted_at, serialized, schema_version FROM agent_links',
+          );
+          await customStatement('DROP TABLE agent_links');
+          await customStatement(
+            'ALTER TABLE agent_links_v11 RENAME TO agent_links',
+          );
+          // Recreate every agent_links index (dropped with the old table) —
+          // keep in sync with agent_database.drift.
+          await customStatement(
+            'CREATE INDEX idx_agent_links_from ON agent_links(from_id, type)',
+          );
+          await customStatement(
+            'CREATE INDEX idx_agent_links_to ON agent_links(to_id, type)',
+          );
+          await customStatement(
+            'CREATE INDEX idx_agent_links_type ON agent_links(type)',
+          );
+          await customStatement(
+            'CREATE UNIQUE INDEX idx_unique_improver_per_template '
+            "ON agent_links(to_id) WHERE type = 'improver_target' "
+            'AND deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE UNIQUE INDEX idx_unique_soul_per_template '
+            "ON agent_links(from_id) WHERE type = 'soul_assignment' "
+            'AND deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE INDEX idx_agent_links_active_from_type_to '
+            'ON agent_links(from_id, type, to_id) WHERE deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE INDEX idx_agent_links_active_to_type '
+            'ON agent_links(to_id, type) WHERE deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE UNIQUE INDEX idx_agent_links_unique_from_to_type '
+            'ON agent_links(from_id, to_id, type) '
+            "WHERE type != 'message_payload'",
           );
           await customStatement('ANALYZE');
         }

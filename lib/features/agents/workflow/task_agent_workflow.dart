@@ -12,6 +12,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/projection/content_digest.dart';
+import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
@@ -100,8 +102,8 @@ class TaskAgentWorkflow {
     this.inputCaptureService,
     this.logSummarizer,
     this.compactionEnabled,
-    this.compactionTailBudgetTokens = 12000,
-    this.compactionTailRetainTokens = 4000,
+    this.compactionTailBudgetTokens = 50000,
+    this.compactionTailRetainTokens = 20000,
   });
 
   final AgentRepository agentRepository;
@@ -168,14 +170,23 @@ class TaskAgentWorkflow {
   /// oldest entries (ADR 0017). This is the *trigger* (high watermark): no
   /// summarization happens while the tail fits it. Used only when
   /// [compactionEnabled].
+  ///
+  /// Sized generously (50k) because the tail is append-only and therefore
+  /// prefix-cached: warm wakes pay cache-read rates (or, on local inference
+  /// with a persistent KV cache, nothing) for the history. The remaining real
+  /// costs are the cold prefill on the first wake of a session and attention
+  /// quality on very long raw logs — which is why the fold still exists at
+  /// all rather than the tail growing without bound. Deployments on
+  /// small-context/local models can pass tighter values here.
   final int compactionTailBudgetTokens;
 
   /// Low watermark for the fold (hysteresis): once
   /// [compactionTailBudgetTokens] is exceeded, the tail is folded down so only
   /// this many tokens of the most recent verbatim entries remain — leaving
   /// `budget - retain` tokens of headroom before the next summarization. Keeps
-  /// the summarizer infrequent and the prompt's summary block stable between
-  /// folds (prefix-cache friendly). Used only when [compactionEnabled].
+  /// the summarizer infrequent (one fold per ~30k tokens of NEW activity at
+  /// the defaults) and the prompt's summary block stable between folds
+  /// (prefix-cache friendly). Used only when [compactionEnabled].
   final int compactionTailRetainTokens;
 
   static const _uuid = Uuid();
@@ -266,7 +277,12 @@ class TaskAgentWorkflow {
         final linked = await journalDb.getLinkedEntities(taskId);
         await captureService.captureWakeInputs(
           agentId: agentId,
-          sources: renderTaskSources(linked),
+          sources: renderTaskSources(
+            linked,
+            // A running timer's duration is still ticking; capturing it would
+            // mint a new content version every wake (see renderTaskSources).
+            runningEntryId: getIt<TimeService>().getCurrent()?.meta.id,
+          ),
           at: now,
           threadId: threadId,
           runKey: runKey,
@@ -319,6 +335,15 @@ class TaskAgentWorkflow {
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
 
+    // One ledger fetch feeds the compactor's decision events (below), the
+    // LLM prompt (open proposals + legacy resolved view) and the
+    // ChangeSetBuilder (open pending sets for cross-wake dedup).
+    final ledger = await agentRepository.getProposalLedger(
+      agentId,
+      taskId: taskId,
+      resolvedLimit: 200,
+    );
+
     // 1b. Compaction (ADR 0017) — gated behind the `enable_agent_compaction`
     // config flag (read fresh each wake, so a Settings toggle applies on the
     // next wake; an explicit [compactionEnabled] overrides it in tests) plus
@@ -327,11 +352,19 @@ class TaskAgentWorkflow {
     // the assembled context stays bounded. The fold is distilled with the
     // wake's resolved model — the agent summarizes its own memory with the
     // brain it thinks with. Non-fatal.
+    //
+    // Resolved proposal verdicts join the event substrate as inline events:
+    // they interleave chronologically with the content that motivated them
+    // and fold into summaries — instead of being re-rendered (and eventually
+    // capped away) in a separate prompt section every wake.
     final compactionOn =
         compactionEnabled ??
         await journalDb.getConfigFlag(enableAgentCompactionFlag);
     final compactor = compactionOn
-        ? AgentLogCompactor(syncService: syncService)
+        ? AgentLogCompactor(
+            syncService: syncService,
+            inlineEvents: decisionEventsFromLedger(ledger.resolved),
+          )
         : null;
     final summarizerService = logSummarizer;
     if (compactor != null && summarizerService != null) {
@@ -377,9 +410,17 @@ class TaskAgentWorkflow {
     // exists: capture/compaction are optional and non-fatal, so if nothing was
     // captured (`assembleContext` empty), fall back to the full inline log
     // rather than leaving the wake with no task log at all.
-    final compactedTaskLog = compactor != null
-        ? await compactor.assembleContext(agentId)
-        : null;
+    String? compactedTaskLog;
+    if (compactor != null) {
+      try {
+        compactedTaskLog = await compactor.assembleContext(agentId);
+      } catch (e) {
+        // Non-fatal like the rest of the compaction chain: a read-side bug
+        // degrades to the legacy inline log (and logs loudly) instead of
+        // killing the wake.
+        _logError('failed to assemble compacted task log', error: e);
+      }
+    }
     // Only trust the captured frontier when this wake's capture succeeded;
     // otherwise it may be stale relative to the journal, so keep the full log.
     final useCompactedLog =
@@ -396,41 +437,35 @@ class TaskAgentWorkflow {
       );
     }
     final (
-      taskDetailsJson,
+      taskDetails,
       projectContextJson,
       linkedTasksJson,
     ) = await (
+      // Compacted wakes get the task STATE as compact markdown (the log is
+      // event material supplied separately); legacy wakes keep the full JSON
+      // header with the inline log entries.
       useCompactedLog
-          ? aiInputRepository.buildTaskDetailsJson(
-              id: taskId,
-              includeLogEntries: false,
-            )
+          ? aiInputRepository.buildTaskStateMarkdown(taskId)
           : aiInputRepository.buildTaskDetailsJson(id: taskId),
       aiInputRepository.buildProjectContextJsonForTask(taskId),
       _buildLinkedTasksContextJson(taskId),
     ).wait;
 
-    if (taskDetailsJson == null) {
+    if (taskDetails == null) {
       _log('task not found in journal — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'Task not found');
     }
 
-    // 5. Assemble conversation context.
-    // One ledger fetch feeds both the LLM prompt (status-sorted view of
-    // the agent's own history) and the ChangeSetBuilder (open pending
-    // sets for cross-wake dedup).
-    final ledger = await agentRepository.getProposalLedger(
-      agentId,
-      taskId: taskId,
-    );
+    // 5. Assemble conversation context (the ledger was fetched before
+    // compaction, which consumes its resolved entries as decision events).
     final pendingSets = ledger.pendingSets;
 
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = await _buildUserMessage(
       agentId: agentId,
-      lastReport: lastReport,
+      hasReport: lastReport != null,
       journalObservations: journalObservations,
-      taskDetailsJson: taskDetailsJson,
+      taskDetails: taskDetails,
       projectContextJson: projectContextJson,
       linkedTasksJson: linkedTasksJson,
       triggerTokens: triggerTokens,
@@ -448,7 +483,46 @@ class TaskAgentWorkflow {
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
 
-    // 6a. Persist the user message for inspectability before sending to LLM.
+    // 6a. Persist the prompts for inspectability before sending to the LLM.
+    // The system prompt is content-addressed: one payload per DISTINCT prompt
+    // text (it only changes when the template/soul/scaffold change, so storage
+    // does not grow per wake), referenced from each wake by a `system` message
+    // with a `contentEntryId` so the conversation view can expand it. In the
+    // actual LLM request the system prompt is always messages[0] — this row is
+    // audit/inspection only.
+    try {
+      final systemPromptContent = <String, Object?>{
+        'role': 'system',
+        'text': systemPrompt,
+      };
+      final systemPromptPayloadId = ContentDigest.of(systemPromptContent);
+      if (await agentRepository.getEntity(systemPromptPayloadId) == null) {
+        await syncService.upsertEntity(
+          AgentDomainEntity.agentMessagePayload(
+            id: systemPromptPayloadId,
+            agentId: AgentInputCaptureService.sharedContentAgentId,
+            createdAt: now,
+            vectorClock: null,
+            content: systemPromptContent,
+          ),
+        );
+      }
+      await syncService.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: _uuid.v4(),
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.system,
+          createdAt: now,
+          vectorClock: null,
+          contentEntryId: systemPromptPayloadId,
+          metadata: AgentMessageMetadata(runKey: runKey),
+        ),
+      );
+    } catch (e) {
+      _logError('failed to persist system prompt', error: e);
+      // Non-fatal: continue with execution even if audit fails.
+    }
     try {
       final userPayloadId = _uuid.v4();
       await syncService.upsertEntity(
@@ -509,6 +583,7 @@ class TaskAgentWorkflow {
             return (
               title: entity.data.title,
               isChecked: entity.data.isChecked,
+              isArchived: entity.data.isArchived,
             );
           }
           return null;
@@ -604,8 +679,10 @@ class TaskAgentWorkflow {
         strategy: strategy,
       );
 
-      // 7b. Forced-report retry (see [_forceUpdateReportIfMissing]).
-      if (strategy.extractReportContent().isEmpty) {
+      // 7b. Forced-report retry — only to bootstrap the FIRST report. Once a
+      // report exists, skipping `update_report` is a legitimate "nothing
+      // materially changed" outcome, not a contract violation.
+      if (lastReport == null && strategy.extractReportContent().isEmpty) {
         final retryUsage = await _forceUpdateReportIfMissing(
           conversationId: conversationId,
           modelId: modelId,
@@ -641,9 +718,11 @@ class TaskAgentWorkflow {
       final reportContent = strategy.extractReportContent();
       final reportTldr = strategy.extractReportTldr();
       final reportOneLiner = strategy.extractReportOneLiner();
-      if (reportContent.isEmpty) {
+      if (reportContent.isEmpty && lastReport == null) {
+        // Only the FIRST report is mandatory; afterwards an empty report
+        // means "nothing materially changed" and the prior one stands.
         _log(
-          'no report published (violates update_report contract)',
+          'no initial report published despite forced retry',
           subDomain: 'execute',
         );
       }
@@ -1194,15 +1273,18 @@ class TaskAgentWorkflow {
 You are a Task Agent — a persistent assistant that maintains a summary report
 for a single task.
 
-## Non-Negotiable Final Step
+## Finishing a Wake
 
-EVERY wake MUST end with a single `update_report` tool call. This is mandatory,
-not optional. No other tool replaces it. If you have nothing new to say, still
-call `update_report` — reuse the prior report's content and refresh the
-one-liner and tldr as needed. Do NOT end your turn with a plain text message.
-Do NOT stop after calling metadata or checklist tools. The wake is only
-complete when `update_report` has been called with `oneLiner`, `tldr`, and
-`content`.
+A wake ends in exactly one of two ways:
+- the task changed materially since the last published report → end with a
+  single `update_report` tool call carrying the full updated report
+  (`oneLiner`, `tldr`, and `content`); or
+- nothing report-worthy changed → end with a brief plain-text note of what
+  you checked or did. Do NOT call `update_report` just to re-publish
+  unchanged content — the report is derived from the task log, not per-wake
+  ceremony, and re-publishing identical content wastes the user's attention.
+
+If no report has ever been published for this task, publish the first one.
 
 Your job each wake is to:
 
@@ -1216,8 +1298,9 @@ Your job each wake is to:
    starts with "I noticed...", "I tried...", "I decided...", or describes a
    tool failure — it is an observation, not report content. Skipping this
    tool means that context is lost forever on the next wake.
-4. FINAL STEP — publish an updated report via the `update_report` tool. Always
-   do this last; never skip it.''';
+4. FINAL STEP — publish the full updated report via `update_report` when it
+   would materially change (always last), or finish with a brief plain-text
+   note when it would not.''';
 
   /// Default report section of the scaffold, used when the template version
   /// does not provide its own `reportDirective`.
@@ -1226,10 +1309,10 @@ Your job each wake is to:
 
 ## Report
 
-You MUST call `update_report` exactly once at the end of every wake with the
-full updated report as markdown. Provide `oneLiner`, `tldr`, and `content`.
-The report must follow this standardized structure with emojis for visual
-consistency:
+When the report would materially change (and always when none exists yet),
+call `update_report` exactly once, last, with the full updated report as
+markdown. Provide `oneLiner`, `tldr`, and `content`. The report must follow
+this standardized structure with emojis for visual consistency:
 
 ### Required Sections
 
@@ -1335,6 +1418,11 @@ Use this as high-level planning context:
   estimate, language, labels), check the current value in the task context. If
   the value is already what you would set, do NOT call the tool. Every
   unnecessary tool call wastes a turn and clutters the audit log.
+- **Duplicate checklist items**: when the checklist contains two items that
+  mean the same thing, propose archiving the redundant one via
+  `update_checklist_items` with `isArchived: true` (keep the better-phrased
+  or user-created one). Never "fix" a duplicate by re-titling it, and never
+  add an item that already exists.
 - Only call tools when you have sufficient confidence in the change.
 - Do not call tools speculatively or redundantly.
 - **Batch independent calls**: when a wake warrants several updates that do not
@@ -1482,12 +1570,15 @@ to keep the user-facing suggestion list clean and trustworthy:
 - Be concise. Focus on what changed and what matters.
 ''';
 
-  /// Builds the user message for a wake cycle.
+  /// Builds the user message for a wake cycle. [taskDetails] is the compact
+  /// markdown task state in compacted mode, or the full JSON header (inline
+  /// log included) in legacy mode. [hasReport] gates the first-wake report
+  /// bootstrap section; the prior report's prose is never injected.
   Future<String> _buildUserMessage({
     required String agentId,
-    required AgentReportEntity? lastReport,
+    required bool hasReport,
     required List<AgentMessageEntity> journalObservations,
-    required String taskDetailsJson,
+    required String taskDetails,
     required String projectContextJson,
     required String linkedTasksJson,
     required Set<String> triggerTokens,
@@ -1498,10 +1589,13 @@ to keep the user-facing suggestion list clean and trustworthy:
   }) async {
     final buffer = StringBuffer();
 
-    // Ordering is by volatility, least-volatile first: a stable header (label /
-    // correction context, parent-project + linked-task summaries, current task
-    // context) leads so oMLX's cross-wake prefix cache can restore it, and the
-    // volatile tail (report, journal, ledger, trigger tokens) follows.
+    // Ordering is by volatility, least-volatile first, so provider prefix
+    // caches survive consecutive wakes: label / correction context,
+    // parent-project + linked-task summaries (all rare-change), then the
+    // compacted task log (append-only between folds), then the volatile tail
+    // (task-state JSON with its ticking timeSpent, timer, report, journal,
+    // ledger, trigger tokens). One flipped byte voids the cache for every
+    // byte after it, so nothing per-wake-mutable may precede the log.
 
     // Inject label context and correction examples.
     try {
@@ -1552,25 +1646,39 @@ to keep the user-facing suggestion list clean and trustworthy:
         ..writeln();
     }
 
-    buffer
-      ..writeln('## Current Task Context')
-      ..writeln('```json')
-      ..writeln(taskDetailsJson)
-      ..writeln('```')
-      ..writeln();
+    final useCompactedLog =
+        compactedTaskLog != null && compactedTaskLog.trim().isNotEmpty;
 
-    // With compaction on (ADR 0017/0020), the task log is supplied here as the
-    // active summary + uncovered verbatim tail from the captured log, replacing
-    // the inline `logEntries` dropped from the task header above.
-    if (compactedTaskLog != null && compactedTaskLog.trim().isNotEmpty) {
+    if (useCompactedLog) {
+      // With compaction on (ADR 0017/0020), the task log is supplied as the
+      // active summary + uncovered verbatim event tail from the captured log.
+      // It is the largest stable block — the summary changes only at folds and
+      // the tail is append-only between them — so it ends the stable prefix.
+      // The task STATE moves BELOW it into the volatile tail: its time fields
+      // tick on every working wake, and a single byte flipped upstream voids
+      // the provider prefix cache for everything after it.
       buffer
         ..writeln('## Task Log')
         ..writeln(compactedTaskLog)
+        ..writeln();
+    } else {
+      buffer
+        ..writeln('## Current Task Context')
+        ..writeln('```json')
+        ..writeln(taskDetails)
+        ..writeln('```')
         ..writeln();
     }
 
     // --- Volatile tail: changes most across wakes, so it follows the stable
     // header above to keep that header byte-identical and prefix-cacheable. ---
+
+    if (useCompactedLog) {
+      buffer
+        ..writeln('## Current Task Context')
+        ..writeln(taskDetails)
+        ..writeln();
+    }
 
     final activeTimerSection = _buildActiveTimerSection(timeService, taskId);
     if (activeTimerSection.isNotEmpty) {
@@ -1585,13 +1693,15 @@ to keep the user-facing suggestion list clean and trustworthy:
       buffer.write(editableTimeEntriesSection);
     }
 
-    // Proposal ledger — a single status-sorted view of every suggestion the
-    // agent has ever produced for this task. Supersedes the older split
-    // between "recent user decisions" and "pending proposals": both are now
-    // different status slices of the same ledger, so the agent can reason
-    // about its own history without duplicated or conflicting sections.
+    // Proposal ledger. In compacted mode only the OPEN proposals render here
+    // — they are current state (fingerprints for `retract_suggestions`,
+    // same-wake dedup) — while resolved verdicts live in the `## Task Log`
+    // as `(decision)` events that fold into summaries. Legacy mode keeps the
+    // full status-sorted view including resolved history.
     if (!ledger.isEmpty) {
-      buffer.writeln(_formatProposalLedger(ledger));
+      buffer.writeln(
+        _formatProposalLedger(ledger, includeResolved: !useCompactedLog),
+      );
     }
 
     if (journalObservations.isNotEmpty) {
@@ -1615,28 +1725,33 @@ to keep the user-facing suggestion list clean and trustworthy:
         allPayloads,
       );
 
-      buffer.writeln('## Agent Journal');
-      // Reverse so the LLM sees them in chronological order.
-      final recentObs = boundedObservations.reversed.toList();
+      // With compaction on, observations live in the `## Task Log` event tail
+      // (interleaved as `(observation)` lines, folded into summaries by the
+      // same watermarks) — a separate journal section would duplicate them.
+      if (!useCompactedLog) {
+        buffer.writeln('## Agent Journal');
+        // Reverse so the LLM sees them in chronological order.
+        final recentObs = boundedObservations.reversed.toList();
 
-      for (var i = 0; i < recentObs.length; i++) {
-        final payload = recentObs[i].contentEntryId != null
-            ? allPayloads[recentObs[i].contentEntryId]
-            : null;
-        final text = _extractPayloadText(payload);
-        buffer.writeln(
-          '- [${recentObs[i].createdAt.toIso8601String()}] $text',
-        );
+        for (var i = 0; i < recentObs.length; i++) {
+          final payload = recentObs[i].contentEntryId != null
+              ? allPayloads[recentObs[i].contentEntryId]
+              : null;
+          final text = _extractPayloadText(payload);
+          buffer.writeln(
+            '- [${recentObs[i].createdAt.toIso8601String()}] $text',
+          );
+        }
+        buffer.writeln();
       }
-      buffer.writeln();
     }
 
-    if (lastReport != null && lastReport.content.isNotEmpty) {
-      buffer
-        ..writeln('## Current Report')
-        ..writeln(lastReport.content)
-        ..writeln();
-    } else {
+    // The prior report's PROSE is deliberately NOT injected: the report is a
+    // projection of the task log, not agent memory. Re-reading its own stale
+    // conclusions as ground truth creates a feedback loop (a wrong "learning"
+    // re-published verbatim every wake), and everything report-worthy is
+    // already in the log, the observations, and the task state.
+    if (!hasReport) {
       buffer
         ..writeln(
           '## First Wake — No prior report exists. '
@@ -1655,8 +1770,9 @@ to keep the user-facing suggestion list clean and trustworthy:
     }
 
     buffer.writeln(
-      'Analyze the current state, call tools if needed, then call '
-      '`update_report` with the full updated report. '
+      'Analyze the current state and call tools if needed. If the report '
+      'would materially change, call `update_report` with the full updated '
+      'report; otherwise finish with a brief plain-text note. '
       'Add observations if warranted.',
     );
 
@@ -1669,23 +1785,40 @@ to keep the user-facing suggestion list clean and trustworthy:
   /// The ledger is the agent's memory of its own suggestions for this task.
   /// Open entries carry fingerprints so the agent can call
   /// `retract_suggestions` with those fingerprints when a proposal is no
-  /// longer relevant. Resolved entries show user verdicts (confirmed /
-  /// rejected / deferred) and the agent's own retractions so the agent
-  /// avoids repeating patterns the user has already rejected.
-  String _formatProposalLedger(ProposalLedger ledger) {
+  /// longer relevant.
+  ///
+  /// [includeResolved] selects the legacy full view (resolved verdicts
+  /// rendered here); with compaction on, resolved verdicts are `(decision)`
+  /// events in the task log instead, so this section carries only the open
+  /// (actionable) state.
+  String _formatProposalLedger(
+    ProposalLedger ledger, {
+    required bool includeResolved,
+  }) {
     if (ledger.isEmpty) return '';
+    if (!includeResolved && ledger.open.isEmpty) return '';
 
     final buffer = StringBuffer()
       ..writeln('## Proposal Ledger')
       ..writeln()
       ..writeln(
-        'This is a complete record of suggestions you have produced for this '
-        'task. Do not re-propose an identical OPEN item. If an OPEN item is '
-        'no longer relevant (the current task state already matches it, or '
-        'it duplicates another open proposal), call `retract_suggestions` '
-        'with its fingerprint. For RESOLVED items, learn from the verdict: '
-        'do not re-propose rejected items unless the task context has '
-        'materially changed.',
+        includeResolved
+            ? 'This is a complete record of suggestions you have produced '
+                  'for this task. Do not re-propose an identical OPEN item. '
+                  'If an OPEN item is no longer relevant (the current task '
+                  'state already matches it, or it duplicates another open '
+                  'proposal), call `retract_suggestions` with its '
+                  'fingerprint. For RESOLVED items, learn from the verdict: '
+                  'do not re-propose rejected items unless the task context '
+                  'has materially changed.'
+            : 'These are your OPEN suggestions for this task. Do not '
+                  're-propose an identical item. If one is no longer '
+                  'relevant (the current task state already matches it, or '
+                  'it duplicates another open proposal), call '
+                  '`retract_suggestions` with its fingerprint. Past '
+                  'verdicts appear as (decision) events in the Task Log: '
+                  'learn from them and do not re-propose rejected items '
+                  'unless the task context has materially changed.',
       )
       ..writeln()
       ..writeln('### Open (${ledger.open.length})')
@@ -1702,31 +1835,10 @@ to keep the user-facing suggestion list clean and trustworthy:
       )
       ..writeln();
 
-    if (ledger.resolved.isNotEmpty) {
+    if (includeResolved && ledger.resolved.isNotEmpty) {
       buffer.writeln('### Resolved (${ledger.resolved.length}, most recent)');
       for (final e in ledger.resolved) {
-        final icon = switch (e.verdict) {
-          ChangeDecisionVerdict.confirmed => '\u2713',
-          ChangeDecisionVerdict.rejected => '\u2717',
-          ChangeDecisionVerdict.deferred => '\u23f8',
-          ChangeDecisionVerdict.retracted => '\u21ba',
-          null => '\u25cb',
-        };
-        final verdictLabel = e.verdict?.name ?? e.status.name;
-        final actorLabel = switch (e.resolvedBy) {
-          DecisionActor.user => ' by user',
-          DecisionActor.agent => ' by agent',
-          null => '',
-        };
-        final summary = e.humanSummary.trim();
-        final trimmedReason = e.reason?.trim();
-        final reasonSuffix = (trimmedReason != null && trimmedReason.isNotEmpty)
-            ? ' (reason: "$trimmedReason")'
-            : '';
-        buffer.writeln(
-          '- [fp=${e.fingerprint}] $icon `${e.toolName}`: $summary '
-          '— $verdictLabel$actorLabel$reasonSuffix',
-        );
+        buffer.writeln('- ${formatResolvedLedgerLine(e)}');
       }
       buffer.writeln();
     }

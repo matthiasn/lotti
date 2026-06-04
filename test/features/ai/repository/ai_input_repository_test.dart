@@ -1720,6 +1720,91 @@ void main() {
         expect(slim, contains('"title": "Compacted Task"'));
       });
 
+      test('buildTaskStateMarkdown renders the compact state block without '
+          'log entries', () async {
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: taskId),
+        ).thenAnswer(
+          (_) async => (
+            const Duration(minutes: 30),
+            <String, TimeRange>{
+              'entry1': TimeRange(
+                start: DateTime(2022, 7, 7, 9),
+                end: DateTime(2022, 7, 7, 9, 15),
+              ),
+            },
+          ),
+        );
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: 'Markdown Task',
+            status: TaskStatus.inProgress(
+              id: 'status-m',
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            estimate: const Duration(minutes: 30),
+          ),
+        );
+        final linkedEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'le-1',
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          entryText: const EntryText(plainText: 'a log entry'),
+        );
+        when(
+          () => mockDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [linkedEntry]);
+
+        final markdown = await repository.buildTaskStateMarkdown(taskId);
+
+        expect(markdown, isNotNull);
+        expect(markdown, contains('- Title: Markdown Task'));
+        expect(markdown, contains('- Status: IN PROGRESS'));
+        expect(markdown, contains('Estimate: 00:30'));
+        expect(markdown, contains('Time spent: 00:15'));
+        // State, not log: the linked entry never leaks into the state block.
+        expect(markdown, isNot(contains('a log entry')));
+        expect(markdown, isNot(contains('logEntries')));
+        expect(markdown, isNot(contains('{')));
+      });
+
+      test(
+        'buildTaskStateMarkdown returns null for a non-task entity',
+        () async {
+          when(() => mockDb.journalEntityById(taskId)).thenAnswer(
+            (_) async => JournalEntity.journalEntry(
+              meta: Metadata(
+                id: taskId,
+                dateFrom: creationDate,
+                dateTo: creationDate,
+                createdAt: creationDate,
+                updatedAt: creationDate,
+              ),
+            ),
+          );
+
+          expect(await repository.buildTaskStateMarkdown(taskId), isNull);
+        },
+      );
+
       test('returns null for non-task entity', () async {
         // Arrange
         when(() => mockDb.journalEntityById(taskId)).thenAnswer(
