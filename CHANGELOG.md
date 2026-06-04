@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1015]
+### Added
+- The linked entries "Filter & Sort" modal now has a "Show flagged entries
+  only" toggle that narrows the list below a task to flagged entries; the
+  list updates immediately when the toggle or an entry's flag changes.
+
 ## [0.9.1014]
 ### Added
 - New "Agent memory compaction" flag in Settings → Flags (off by default):

@@ -618,7 +618,8 @@ final class AgentRecentMessagesFamily extends $Family
 /// Fetch recent messages grouped by thread ID for an agent.
 ///
 /// Returns a map of threadId → list of [AgentMessageEntity] sorted
-/// chronologically within each thread. Threads are sorted most-recent-first
+/// chronologically within each thread (conversation-order tiebreak for rows
+/// sharing the wake timestamp). Threads are sorted most-recent-first
 /// (by the latest message in each thread).
 
 @ProviderFor(agentMessagesByThread)
@@ -627,7 +628,8 @@ final agentMessagesByThreadProvider = AgentMessagesByThreadFamily._();
 /// Fetch recent messages grouped by thread ID for an agent.
 ///
 /// Returns a map of threadId → list of [AgentMessageEntity] sorted
-/// chronologically within each thread. Threads are sorted most-recent-first
+/// chronologically within each thread (conversation-order tiebreak for rows
+/// sharing the wake timestamp). Threads are sorted most-recent-first
 /// (by the latest message in each thread).
 
 final class AgentMessagesByThreadProvider
@@ -643,7 +645,8 @@ final class AgentMessagesByThreadProvider
   /// Fetch recent messages grouped by thread ID for an agent.
   ///
   /// Returns a map of threadId → list of [AgentMessageEntity] sorted
-  /// chronologically within each thread. Threads are sorted most-recent-first
+  /// chronologically within each thread (conversation-order tiebreak for rows
+  /// sharing the wake timestamp). Threads are sorted most-recent-first
   /// (by the latest message in each thread).
   AgentMessagesByThreadProvider._({
     required AgentMessagesByThreadFamily super.from,
@@ -690,12 +693,13 @@ final class AgentMessagesByThreadProvider
 }
 
 String _$agentMessagesByThreadHash() =>
-    r'61afa9ccae181277496e1c17a9e3af536d49a3ef';
+    r'8c6eaa8385fad36e4a1af79ddf103f067ad651d0';
 
 /// Fetch recent messages grouped by thread ID for an agent.
 ///
 /// Returns a map of threadId → list of [AgentMessageEntity] sorted
-/// chronologically within each thread. Threads are sorted most-recent-first
+/// chronologically within each thread (conversation-order tiebreak for rows
+/// sharing the wake timestamp). Threads are sorted most-recent-first
 /// (by the latest message in each thread).
 
 final class AgentMessagesByThreadFamily extends $Family
@@ -716,7 +720,8 @@ final class AgentMessagesByThreadFamily extends $Family
   /// Fetch recent messages grouped by thread ID for an agent.
   ///
   /// Returns a map of threadId → list of [AgentMessageEntity] sorted
-  /// chronologically within each thread. Threads are sorted most-recent-first
+  /// chronologically within each thread (conversation-order tiebreak for rows
+  /// sharing the wake timestamp). Threads are sorted most-recent-first
   /// (by the latest message in each thread).
 
   AgentMessagesByThreadProvider call(String agentId) =>

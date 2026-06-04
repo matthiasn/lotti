@@ -2224,6 +2224,7 @@
   "journalLinkedEntriesActivityFilterImages": "Bilder",
   "journalLinkedEntriesActivityFilterTimer": "Timer",
   "journalLinkedEntriesFilterModalTitle": "Filtern & Sortieren",
+  "journalLinkedEntriesShowFlaggedOnly": "Nur markierte Einträge anzeigen",
   "journalLinkedEntriesShowHidden": "Versteckte Einträge anzeigen",
   "journalLinkedEntriesSortLabel": "Sortieren nach",
   "journalLinkedEntriesSortNewestFirst": "Neueste zuerst",

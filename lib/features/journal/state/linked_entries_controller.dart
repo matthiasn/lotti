@@ -107,6 +107,24 @@ class IncludeAiEntriesController extends _$IncludeAiEntriesController {
   bool get includeAiEntries => state;
 }
 
+/// Per-entry toggle that narrows the linked entries list to flagged
+/// entries only (`meta.flag == EntryFlag.import`, the flag toggled via
+/// the entry header's flag icon). Defaults to off so all linked entries
+/// stay visible until the user opts in.
+@riverpod
+class ShowFlaggedOnlyController extends _$ShowFlaggedOnlyController {
+  @override
+  bool build({required String id}) {
+    return false;
+  }
+
+  set showFlaggedOnly(bool value) {
+    state = value;
+  }
+
+  bool get showFlaggedOnly => state;
+}
+
 /// Per-entry toggle state for the activity filter pills shown above the
 /// linked entries list (Timer / Audio / Images). Defaults to all kinds
 /// active so existing behavior is preserved when the bar mounts.
