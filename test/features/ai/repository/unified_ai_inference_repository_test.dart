@@ -1416,6 +1416,134 @@ void main() {
         }
       });
 
+      test('rethrows when the image file is missing on disk', () async {
+        // Point the documents directory at an empty temp dir WITHOUT creating
+        // the image file, so _prepareImages' readAsBytes fails.
+        final tempDir = Directory.systemTemp.createTempSync('image_missing');
+        overrideTempDirs.add(tempDir);
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        final imageEntity = JournalImage(
+          meta: _createMetadata(),
+          data: ImageData(
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
+            imageId: 'test-image',
+            imageFile: 'missing.jpg',
+            imageDirectory: '/images/',
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Image Analysis',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: imageEntity,
+          model: _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4-vision',
+          ),
+          provider: _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          ),
+          taskDetailsJson: '{"image": "missing.jpg"}',
+        );
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
+
+        final statusChanges = <InferenceStatus>[];
+
+        // runInference logs and rethrows; the file read failure surfaces as
+        // a FileSystemException and no idle status is ever emitted.
+        await expectLater(
+          repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+
+        expect(statusChanges, [InferenceStatus.running]);
+        verifyNever(
+          () => mockCloudInferenceRepo.generateWithImages(
+            any(),
+            provider: any(named: 'provider'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+          ),
+        );
+      });
+
+      test('rethrows when the audio file is missing on disk', () async {
+        final tempDir = Directory.systemTemp.createTempSync('audio_missing');
+        overrideTempDirs.add(tempDir);
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        final audioEntity = JournalAudio(
+          meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+            audioFile: 'missing.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Audio Transcription',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: audioEntity,
+          model: _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'whisper-1',
+          ),
+          provider: _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          ),
+          taskDetailsJson: '{"audio": "missing.mp3"}',
+        );
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
+
+        final statusChanges = <InferenceStatus>[];
+
+        await expectLater(
+          repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+
+        expect(statusChanges, [InferenceStatus.running]);
+      });
+
       test('successfully runs inference with audio', () async {
         // Create a temporary directory for the test
         final tempDir = Directory.systemTemp.createTempSync('audio_test');
@@ -6315,6 +6443,125 @@ Take into account the following task context:
 
           // Both runs completed → language was set and rerun happened
           expect(callCount, 2);
+          expect(statusChanges, contains(InferenceStatus.idle));
+        },
+      );
+
+      test(
+        'skips re-run when language is detected but response is non-empty',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15, 10, 30),
+                utcOffset: 0,
+              ),
+              title: 'Language Detection Test',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+            ),
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          var callCount = 0;
+          when(
+            () => mockAiInputRepo.getEntity(taskEntity.id),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+          ).thenAnswer((_) async => '{"task":"details"}');
+
+          when(
+            () => mockJournalRepo.getJournalEntityById(taskEntity.id),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          // Single run: BOTH a language tool call AND text content, so the
+          // `response.trim().isEmpty` half of the re-run gate is false and
+          // no second inference must be started.
+          when(
+            () => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).thenAnswer((_) {
+            callCount++;
+            return Stream.fromIterable([
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'lang-1',
+                  functionName: TaskFunctions.setTaskLanguage,
+                  arguments:
+                      '{"languageCode":"de","confidence":"high","reason":"German text"}',
+                ),
+              ]),
+              CreateChatCompletionStreamResponse(
+                id: 'response-text',
+                choices: const [
+                  ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      content: 'Zusammenfassung der Aufgabe',
+                    ),
+                    finishReason: ChatCompletionFinishReason.stop,
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+              ),
+            ]);
+          });
+
+          _stubCreateAiResponseEntry(mockAiInputRepo);
+
+          final statusChanges = <InferenceStatus>[];
+          await repository!.runInference(
+            entityId: taskEntity.id,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          );
+
+          // Language was set, but the non-empty response suppresses the
+          // automatic re-run: exactly one inference call.
+          expect(callCount, 1);
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
           expect(statusChanges, contains(InferenceStatus.idle));
         },
       );
