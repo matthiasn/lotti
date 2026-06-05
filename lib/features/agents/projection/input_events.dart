@@ -49,12 +49,12 @@ class EventPosition extends Equatable implements Comparable<EventPosition> {
   List<Object?> get props => [at, sourceAt, key];
 }
 
-/// One content capture **event** — a `messagePayload` link (user content), an
+/// One input-log **event** — a `messagePayload` link (user content), an
 /// `observation` message (the agent's own note), or an inline event derived
-/// from other synced log entities (e.g. a proposal verdict) — as appended,
-/// never folded into per-source state. The event stream is append-only by
-/// construction: an edit of a source appends a new event (new digest) and the
-/// earlier event keeps its position and content forever.
+/// from other synced log entities (e.g. a retraction or proposal verdict) —
+/// as appended, never folded into per-source state. The event stream is
+/// append-only by construction: an edit of a source appends a new event (new
+/// digest) and the earlier event keeps its position and content forever.
 class InputEvent extends Equatable {
   /// Creates a payload-backed event. [isEdit] is true when an earlier content
   /// event exists for the same [contentEntryId] (computed by
@@ -122,49 +122,30 @@ class InputEvent extends Equatable {
   ];
 }
 
-/// One retraction event — a system message tagged `retractsContentEntryId`.
-/// Deletions are the **single deliberate exception** to append-only rendering:
-/// a retraction suppresses every earlier event of that source from the tail
-/// (privacy beats cache) and invalidates checkpoints covering the source.
-class RetractionEvent extends Equatable {
-  /// Creates a retraction event.
-  const RetractionEvent({required this.position, required this.contentEntryId});
-
-  /// The retraction's position in the log.
-  final EventPosition position;
-
-  /// The source whose earlier events this retraction suppresses.
-  final String contentEntryId;
-
-  @override
-  List<Object?> get props => [position, contentEntryId];
-}
-
-/// The event-log view of an agent's captured inputs: content [events] and
-/// [retractions], each sorted by position. Produced by [projectInputEvents].
+/// The event-log view of an agent's captured inputs: [events] in position
+/// order. Retractions are not a separate channel — each appears as an inline
+/// retraction [InputEvent] in this same stream. Produced by
+/// [projectInputEvents].
 class InputEventLog extends Equatable {
   /// Wraps a projection result.
-  const InputEventLog({required this.events, required this.retractions});
+  const InputEventLog({required this.events});
 
-  /// Content capture events in position order.
+  /// Input-log events in position order.
   final List<InputEvent> events;
 
-  /// Retraction events in position order.
-  final List<RetractionEvent> retractions;
-
   /// True when nothing was ever captured.
-  bool get isEmpty => events.isEmpty && retractions.isEmpty;
+  bool get isEmpty => events.isEmpty;
 
   @override
-  List<Object?> get props => [events, retractions];
+  List<Object?> get props => [events];
 }
 
 /// Projects the agent's captured input **event log** (ADR 0016/0020): every
 /// non-deleted `messagePayload` link becomes a content event at its capture
 /// position, every observation in [observationMessages] an agent-note event,
-/// and every retraction message a [RetractionEvent] — nothing is folded into
-/// per-source state, so the projection is append-only: appending to the log
-/// never changes an existing event's position or content.
+/// and every retraction message an inline retraction [InputEvent] — nothing is
+/// folded into per-source state, so the projection is append-only: appending to
+/// the log never changes an existing event's position or content.
 ///
 /// Pure function of the message/link *set* for one agent (input order is
 /// irrelevant); two devices holding the same log derive the same event stream.
@@ -221,11 +202,34 @@ InputEventLog projectInputEvents({
     );
   }
 
+  for (final message in messages) {
+    if (message.deletedAt != null) continue;
+    final retracted = message.metadata.retractsContentEntryId;
+    if (retracted == null) continue;
+    final eventKey = _retractionEventKey(retracted, message.id);
+    events.add(
+      InputEvent.inline(
+        position: EventPosition(
+          at: message.createdAt,
+          sourceAt: message.createdAt,
+          key: eventKey,
+        ),
+        contentEntryId: eventKey,
+        sourceCreatedAt: message.createdAt,
+        inlineContent: <String, Object?>{
+          'entryType': 'retraction',
+          'sourceEntryId': retracted,
+          'text': 'no longer appears in the current task context',
+        },
+      ),
+    );
+  }
+
   events.sort((a, b) => a.position.compareTo(b.position));
 
   // An event is an edit when any earlier content event exists for its source.
-  // Observation ids are unique messages and inline events carry their own
-  // identity, so neither trips this.
+  // Observation ids and retraction event ids are unique messages, and other
+  // inline events carry their own identity, so none of them trip this.
   final seen = <String>{};
   for (var i = 0; i < events.length; i++) {
     final digest = events[i].contentDigest;
@@ -242,61 +246,25 @@ InputEventLog projectInputEvents({
     }
   }
 
-  final retractions = <RetractionEvent>[];
-  for (final message in messages) {
-    if (message.deletedAt != null) continue;
-    final retracted = message.metadata.retractsContentEntryId;
-    if (retracted == null) continue;
-    retractions.add(
-      RetractionEvent(
-        position: EventPosition(
-          at: message.createdAt,
-          sourceAt: message.createdAt,
-          key: message.id,
-        ),
-        contentEntryId: retracted,
-      ),
-    );
-  }
-  retractions.sort((a, b) => a.position.compareTo(b.position));
-
-  return InputEventLog(events: events, retractions: retractions);
+  return InputEventLog(events: events);
 }
 
-/// The events a wake renders verbatim: every content event positioned strictly
-/// after [cutoff] (the active checkpoint's covered log prefix; null means no
-/// checkpoint — render from the beginning), minus events suppressed by a later
-/// retraction of their source.
+/// The events a wake renders verbatim: every event positioned strictly after
+/// [cutoff] (the active checkpoint's covered log prefix; null means no
+/// checkpoint — render from the beginning).
 ///
-/// Append-only guarantee: absent retractions, the visible tail for a log `L`
-/// is a strict prefix of the visible tail for `L` plus later-appended events —
-/// existing lines never change, new lines only append. A retraction is the one
-/// deliberate mutation (it removes that source's earlier lines); a source
-/// re-captured after its retraction is visible again (the new event post-dates
-/// the retraction).
+/// Append-only guarantee: the visible tail for a log `L` is a strict prefix of
+/// the visible tail for `L` plus later-appended events. Retractions append
+/// their own line, documenting the change without removing earlier captures.
 List<InputEvent> visibleTailEvents({
   required InputEventLog log,
   EventPosition? cutoff,
 }) {
-  // Latest retraction position per source.
-  final latestRetraction = <String, EventPosition>{};
-  for (final retraction in log.retractions) {
-    // Retractions are position-sorted, so the last write wins correctly.
-    latestRetraction[retraction.contentEntryId] = retraction.position;
-  }
-
   return [
     for (final event in log.events)
-      if ((cutoff == null || event.position.isAfter(cutoff)) &&
-          !_isSuppressed(event, latestRetraction))
-        event,
+      if (cutoff == null || event.position.isAfter(cutoff)) event,
   ];
 }
 
-bool _isSuppressed(
-  InputEvent event,
-  Map<String, EventPosition> latestRetraction,
-) {
-  final retractedAt = latestRetraction[event.contentEntryId];
-  return retractedAt != null && retractedAt.isAfter(event.position);
-}
+String _retractionEventKey(String contentEntryId, String messageId) =>
+    'retraction|$contentEntryId|$messageId';

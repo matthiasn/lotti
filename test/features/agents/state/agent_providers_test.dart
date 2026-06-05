@@ -718,7 +718,7 @@ void main() {
 
       // head + re-derived log + tail.
       expect(result, startsWith('HEAD\n## Task Log\n### Recent entries'));
-      expect(result, contains('(text) captured note'));
+      expect(result, contains('(id: e1, text) captured note'));
       expect(result, endsWith('\n\nTAIL'));
     });
 

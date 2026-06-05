@@ -624,7 +624,7 @@ void main() {
           // Observations ride the event tail, not a separate section.
           expect(
             userText,
-            contains('(observation) a private project observation'),
+            contains('(id: obs-1, observation) a private project observation'),
           );
           expect(userText, isNot(contains('## Recent Observations')));
           // Prefix-cache ordering: the append-only log precedes mutable state.

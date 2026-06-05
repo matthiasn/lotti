@@ -8,12 +8,10 @@ import 'package:lotti/utils/string_utils.dart';
 /// to and including [cutoff] into [summaryText], and is itself identified by
 /// [contentDigest].
 ///
-/// Coverage is a log *prefix*, not a state snapshot: a later **edit** of a
-/// folded source appends a post-cutoff event that renders verbatim in the
-/// tail, superseding the summary's stale prose without invalidating the
-/// checkpoint (the prompt prefix stays byte-stable). A **retraction** of a
-/// covered source is the one event that does invalidate it — the prose may
-/// mention deleted content, and privacy beats cache.
+/// Coverage is a log *prefix*, not a state snapshot: later edits and
+/// retractions append post-cutoff events that render verbatim in the tail,
+/// superseding or qualifying the summary's stale prose without invalidating
+/// the checkpoint (the prompt prefix stays byte-stable).
 class SummaryCheckpoint extends Equatable {
   /// Creates a checkpoint. [id] is the summary event id.
   const SummaryCheckpoint({
@@ -30,9 +28,9 @@ class SummaryCheckpoint extends Equatable {
   /// Content-addressed digest of the summary artifact (text + folded prior).
   final String contentDigest;
 
-  /// The sources this checkpoint's prose may mention: `contentEntryId` → the
-  /// digest folded for it. Used to detect retractions of covered content; the
-  /// tail boundary itself is [cutoff].
+  /// The event coverage this checkpoint's prose may mention:
+  /// `contentEntryId` → digest folded for it. The tail boundary itself is
+  /// [cutoff].
   final Map<String, String> coveredSources;
 
   /// The distilled summary prose.
@@ -59,12 +57,7 @@ class SummaryCheckpoint extends Equatable {
 /// A summary is a *candidate* only if it has a [SummaryCheckpoint.cutoff] and
 /// is **valid against the current log**:
 ///
-/// - no covered source was retracted **after** the cutoff (a pre-cutoff
-///   retraction was already visible at fold time and its content excluded; a
-///   post-cutoff retraction means the prose may still mention deleted content
-///   — the checkpoint is discarded and the tail re-expands until the next
-///   fold);
-/// - **complete**: every non-suppressed event at or before the cutoff is
+/// - **complete**: every event at or before the cutoff is
 ///   provably covered (`contentEntryId` ∈ [SummaryCheckpoint.coveredSources]).
 ///   Sync can deliver an event whose position sorts before an existing
 ///   cutoff (a concurrent capture/observation/verdict from another device,
@@ -82,31 +75,18 @@ SummaryCheckpoint? selectActiveSummary({
   required List<SummaryCheckpoint> summaries,
   required InputEventLog log,
 }) {
-  // Latest retraction position per source (for the suppression carve-out of
-  // the completeness check).
-  final latestRetraction = <String, EventPosition>{};
-  for (final retraction in log.retractions) {
-    latestRetraction[retraction.contentEntryId] = retraction.position;
-  }
-
   SummaryCheckpoint? active;
   for (final summary in summaries) {
     final cutoff = summary.cutoff;
     if (cutoff == null) continue;
-    final invalidated = log.retractions.any(
-      (r) =>
-          r.position.isAfter(cutoff) &&
-          summary.coveredSources.containsKey(r.contentEntryId),
-    );
-    if (invalidated) continue;
-    final incomplete = log.events.any((event) {
-      if (event.position.isAfter(cutoff)) return false;
-      final retractedAt = latestRetraction[event.contentEntryId];
-      final suppressed =
-          retractedAt != null && retractedAt.isAfter(event.position);
-      if (suppressed) return false;
-      return !summary.coveredSources.containsKey(event.contentEntryId);
-    });
+    var incomplete = false;
+    for (final event in log.events) {
+      if (event.position.isAfter(cutoff)) break;
+      if (!summary.coveredSources.containsKey(event.contentEntryId)) {
+        incomplete = true;
+        break;
+      }
+    }
     if (incomplete) continue;
     if (active == null ||
         cutoff.compareTo(active.cutoff!) > 0 ||
@@ -171,10 +151,11 @@ String assembleCompactedTaskLog({
 }
 
 /// Renders one captured source as the single line the compacted task log uses:
-/// `- [iso8601] (entryType[, edited][ · loggedDuration]) body`, where the body
-/// falls back to the audio transcript when the text is empty and the duration
-/// tag is omitted when it carries no information (`00:00`/absent). [edited]
-/// marks an event that supersedes an earlier capture of the same source.
+/// `- [iso8601] (id: sourceId, entryType[, edited][ · loggedDuration]) body`,
+/// where the body falls back to the audio transcript when the text is empty
+/// and the duration tag is omitted when it carries no information
+/// (`00:00`/absent). [edited] marks an event that supersedes an earlier
+/// capture of the same source.
 /// Whitespace runs (including embedded newlines) collapse to single spaces so
 /// one event is always exactly one line — the line-oriented contract the
 /// append-only tail and its token accounting rely on.
@@ -184,6 +165,10 @@ String assembleCompactedTaskLog({
 /// prompt shows.
 String renderCompactedSourceLine(RenderedSource source, {bool edited = false}) {
   final type = source.content['entryType'] ?? 'entry';
+  final provenanceId = source.content['sourceEntryId'];
+  final sourceId = provenanceId is String && provenanceId.isNotEmpty
+      ? provenanceId
+      : source.contentEntryId;
   final text = source.content['text'] ?? '';
   final transcript = source.content['audioTranscript'];
   final rawBody = (text is String && text.isNotEmpty)
@@ -198,5 +183,5 @@ String renderCompactedSourceLine(RenderedSource source, {bool edited = false}) {
       ? ' · $duration'
       : '';
   return '- [${source.sourceCreatedAt.toIso8601String()}] '
-      '($type$editedTag$durationTag) $body';
+      '(id: $sourceId, $type$editedTag$durationTag) $body';
 }

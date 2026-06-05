@@ -19,8 +19,10 @@ import 'package:lotti/services/domain_logging.dart';
 ///
 /// Inline events are re-derived generically: resolved proposal verdicts (when
 /// the agent has a task link) and submitted day captures — agents that lack
-/// one kind simply contribute none. Later retractions still suppress, so
-/// deleted content does not resurface in reconstructions. A reconstruction
+/// one kind simply contribute none. Retractions are append-only, not
+/// suppressing: a later retraction does not redact earlier content from a
+/// reconstruction (it renders as its own marker line when inside the
+/// boundary). A reconstruction
 /// reflects the CONVERGED log: a late-synced event with a position inside the
 /// boundary appears even though the original device had not seen it —
 /// semantically auditable rather than forensically byte-exact.
