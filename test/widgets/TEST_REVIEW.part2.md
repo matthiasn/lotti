@@ -85,7 +85,7 @@
 
 - [ ] **[HIGH]** `test/widgets/modal/modal_utils_test.dart` — 1037 lines for a 333-line impl. Extract a `_pumpModalPage(tester, {Widget? child, ...})` helper. The `modalSheetPage` group (lines 168–358) and the `sliverModalSheetPage` group (lines 650–825) are nearly structurally identical — consider a shared table-driven approach. **Split seam:** separate `showSinglePageModal` / `showBottomSheet` / `showMultiPageModal` / `sliverModalSheetPage` into distinct `group` blocks with a shared `_launcher` helper.
 
-- [ ] **[HIGH]** `test/widgets/search/entry_type_filter_test.dart` — 1003 lines for a 154-line impl. The `EntryTypeFilter Tests` group repeats `when(mockDb.watchConfigFlags)` + `GetIt.I.registerSingleton<JournalDb>(mockDb)` + `makeTestableWidgetWithScaffold` + same 3-provider `overrides` block in every one of ~14 tests. Extract a `_pumpFilter(tester, {Set<ConfigFlag> flags, JournalPageController? controller})` helper.
+- [x] **[HIGH]** `test/widgets/search/entry_type_filter_test.dart` — 1003 lines for a 154-line impl. The `EntryTypeFilter Tests` group repeats `when(mockDb.watchConfigFlags)` + `GetIt.I.registerSingleton<JournalDb>(mockDb)` + `makeTestableWidgetWithScaffold` + same 3-provider `overrides` block in every one of ~14 tests. Extract a `_pumpFilter(tester, {Set<ConfigFlag> flags, JournalPageController? controller})` helper.
 
 - [ ] **[MED]** `lib/widgets/selection/unified_toggle.dart` — 406 lines for two widgets (`UnifiedToggle` + `UnifiedToggleField`). Split into `unified_toggle.dart` + `unified_toggle_field.dart` with matching test files to respect one-source-one-test policy and reduce scroll distance.
 
@@ -105,7 +105,7 @@
 
 - [x] **[HIGH]** `test/widgets/misc/time_recording_indicator_navigation_test.dart` lines 53–66 and `test/widgets/misc/time_recording_indicator_timer_text_test.dart` lines 13–19: Both files use non-standard GetIt scope management (`getIt.pushNewScope` / `getIt.popScope` / inline `getIt.registerSingleton`) instead of `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. This risks suite contamination.
 
-- [ ] **[HIGH]** `test/widgets/search/entry_type_filter_test.dart` lines 22–38: Defines `MockJournalPageController extends JournalPageController` inline. This should either use the existing Riverpod controller override mechanism or move to a shared test utility. Repeated `GetIt.I.registerSingleton<JournalDb>(mockDb)` without cleanup in `setUp` (only `tearDown` calls `GetIt.I.reset()`) is fragile if a test throws before `tearDown`.
+- [x] **[HIGH]** `test/widgets/search/entry_type_filter_test.dart` lines 22–38: Defines `MockJournalPageController extends JournalPageController` inline. This should either use the existing Riverpod controller override mechanism or move to a shared test utility. Repeated `GetIt.I.registerSingleton<JournalDb>(mockDb)` without cleanup in `setUp` (only `tearDown` calls `GetIt.I.reset()`) is fragile if a test throws before `tearDown`.
 
 - [ ] **[MED]** `test/widgets/selection/selection_save_button_test.dart` lines 142–165: `applies correct colors when enabled` and `applies correct colors when disabled` both assert only `findsOneWidget` on the button and its text/icon — this is identical to the Rendering tests above them. Zero incremental assertion value.
 

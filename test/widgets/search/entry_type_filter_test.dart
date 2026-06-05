@@ -18,23 +18,51 @@ import '../../mocks/mocks.dart';
 import '../../test_utils/fake_journal_page_controller.dart';
 import '../../widget_test_utils.dart';
 
-/// Simple mock controller for config flag tests (no tracking needed)
-class MockJournalPageController extends JournalPageController {
-  @override
-  JournalPageState build(bool showTasks) {
-    return const JournalPageState(
-      selectedEntryTypes: [],
-      match: '',
-      filters: {},
-      showPrivateEntries: true,
-      showTasks: false,
-      fullTextMatches: {},
-      pagingController: null,
-      taskStatuses: [],
-      selectedTaskStatuses: {},
-      selectedCategoryIds: {},
-      selectedLabelIds: {},
-    );
+/// Default state for config-flag tests where no call tracking is needed.
+const _defaultState = JournalPageState(
+  selectedEntryTypes: [],
+  match: '',
+  filters: {},
+  showPrivateEntries: true,
+  showTasks: false,
+  fullTextMatches: {},
+  pagingController: null,
+  taskStatuses: [],
+  selectedTaskStatuses: {},
+  selectedCategoryIds: {},
+  selectedLabelIds: {},
+);
+
+/// Mounts [EntryTypeFilter] with the shared GetIt registration and the
+/// 3-provider override block that every test in this file needs.
+///
+/// [controllerFactory] defaults to a tracking-free fake; pass a closure
+/// returning a shared [FakeJournalPageController] for interaction tests.
+/// [pumpAfterMount] pumps one frame after mounting (disable for tests that
+/// assert on the pre-first-event loading state).
+Future<void> _pumpFilter(
+  WidgetTester tester,
+  MockJournalDb mockDb, {
+  JournalPageController Function()? controllerFactory,
+  bool pumpAfterMount = true,
+}) async {
+  if (!GetIt.I.isRegistered<JournalDb>()) {
+    GetIt.I.registerSingleton<JournalDb>(mockDb);
+  }
+  await tester.pumpWidget(
+    makeTestableWidgetWithScaffold(
+      const EntryTypeFilter(),
+      overrides: [
+        journalDbProvider.overrideWithValue(mockDb),
+        journalPageScopeProvider.overrideWithValue(false),
+        journalPageControllerProvider(false).overrideWith(
+          controllerFactory ?? () => FakeJournalPageController(_defaultState),
+        ),
+      ],
+    ),
+  );
+  if (pumpAfterMount) {
+    await tester.pump();
   }
 }
 
@@ -66,23 +94,7 @@ void main() {
           },
         ]),
       );
-
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
-
-      await tester.pump();
+      await _pumpFilter(tester, mockDb);
 
       // Assert: 'Event' chip text is NOT found
       expect(find.text('Event'), findsNothing);
@@ -107,23 +119,7 @@ void main() {
           },
         ]),
       );
-
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
-
-      await tester.pump();
+      await _pumpFilter(tester, mockDb);
 
       // Assert: 'Event' chip text IS found
       expect(find.text('Event'), findsOneWidget);
@@ -140,23 +136,7 @@ void main() {
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
       );
-
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
-
-      await tester.pump();
+      await _pumpFilter(tester, mockDb);
 
       // Assert: JournalEvent is filtered out (default false behavior)
       expect(find.text('Event'), findsNothing);
@@ -171,20 +151,7 @@ void main() {
         (_) => flagController.stream,
       );
 
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
+      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Initial: flag OFF, verify Event chip hidden
       flagController.add({
@@ -228,23 +195,7 @@ void main() {
           },
         ]),
       );
-
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
-
-      await tester.pump();
+      await _pumpFilter(tester, mockDb);
 
       // Assert: Habit chip is hidden
       expect(find.text('Habit'), findsNothing);
@@ -265,23 +216,7 @@ void main() {
           },
         ]),
       );
-
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
-
-      await tester.pump();
+      await _pumpFilter(tester, mockDb);
 
       // Assert: Habit chip is visible
       expect(find.text('Habit'), findsOneWidget);
@@ -302,23 +237,7 @@ void main() {
             },
           ]),
         );
-
-        GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const EntryTypeFilter(),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-              journalPageScopeProvider.overrideWithValue(false),
-              journalPageControllerProvider(
-                false,
-              ).overrideWith(MockJournalPageController.new),
-            ],
-          ),
-        );
-
-        await tester.pump();
+        await _pumpFilter(tester, mockDb);
 
         // Assert: Measured and Health chips are hidden
         expect(find.text('Measured'), findsNothing);
@@ -341,23 +260,7 @@ void main() {
           },
         ]),
       );
-
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
-
-      await tester.pump();
+      await _pumpFilter(tester, mockDb);
 
       // Assert: Measured and Health chips are visible
       expect(find.text('Measured'), findsOneWidget);
@@ -371,20 +274,7 @@ void main() {
         (_) => flagController.stream,
       );
 
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
+      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Emit initial value: Events enabled
       flagController.add({
@@ -421,20 +311,7 @@ void main() {
         (_) => flagController.stream,
       );
 
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
+      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Emit initial value (empty = flags disabled)
       flagController.add(<ConfigFlag>{});
@@ -464,20 +341,7 @@ void main() {
         (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
       );
 
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
+      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Initial state: all flags loading (empty set means no flags active)
       await tester.pumpAndSettle();
@@ -506,23 +370,7 @@ void main() {
           },
         ]),
       );
-
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
-
-      await tester.pump();
+      await _pumpFilter(tester, mockDb);
 
       // Assert: Event chip visible (flag loaded and true)
       expect(find.text('Event'), findsOneWidget);
@@ -541,20 +389,7 @@ void main() {
         (_) => flagController.stream,
       );
 
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
+      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Initial: Events enabled
       flagController.add({
@@ -626,8 +461,6 @@ void main() {
           },
         ]),
       );
-
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
     });
 
     tearDown(() async {
@@ -644,17 +477,11 @@ void main() {
       );
       fakeController = FakeJournalPageController(state);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(() => fakeController),
-          ],
-        ),
+      await _pumpFilter(
+        tester,
+        mockDb,
+        controllerFactory: () => fakeController,
+        pumpAfterMount: false,
       );
 
       await tester.pump();
@@ -677,17 +504,11 @@ void main() {
       );
       fakeController = FakeJournalPageController(state);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(() => fakeController),
-          ],
-        ),
+      await _pumpFilter(
+        tester,
+        mockDb,
+        controllerFactory: () => fakeController,
+        pumpAfterMount: false,
       );
 
       await tester.pump();
@@ -710,17 +531,11 @@ void main() {
       );
       fakeController = FakeJournalPageController(state);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(() => fakeController),
-          ],
-        ),
+      await _pumpFilter(
+        tester,
+        mockDb,
+        controllerFactory: () => fakeController,
+        pumpAfterMount: false,
       );
 
       await tester.pump();
@@ -754,17 +569,11 @@ void main() {
       );
       fakeController = FakeJournalPageController(state);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(() => fakeController),
-          ],
-        ),
+      await _pumpFilter(
+        tester,
+        mockDb,
+        controllerFactory: () => fakeController,
+        pumpAfterMount: false,
       );
 
       await tester.pump();
@@ -817,8 +626,6 @@ void main() {
           },
         ]),
       );
-
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
     });
 
     tearDown(() async {
@@ -835,17 +642,11 @@ void main() {
         );
         fakeController = FakeJournalPageController(state);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const EntryTypeFilter(),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-              journalPageScopeProvider.overrideWithValue(false),
-              journalPageControllerProvider(
-                false,
-              ).overrideWith(() => fakeController),
-            ],
-          ),
+        await _pumpFilter(
+          tester,
+          mockDb,
+          controllerFactory: () => fakeController,
+          pumpAfterMount: false,
         );
 
         await tester.pump();
@@ -886,17 +687,11 @@ void main() {
         );
         fakeController = FakeJournalPageController(state);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const EntryTypeFilter(),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-              journalPageScopeProvider.overrideWithValue(false),
-              journalPageControllerProvider(
-                false,
-              ).overrideWith(() => fakeController),
-            ],
-          ),
+        await _pumpFilter(
+          tester,
+          mockDb,
+          controllerFactory: () => fakeController,
+          pumpAfterMount: false,
         );
 
         await tester.pump();
@@ -937,17 +732,11 @@ void main() {
       );
       fakeController = FakeJournalPageController(state);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(
-              false,
-            ).overrideWith(() => fakeController),
-          ],
-        ),
+      await _pumpFilter(
+        tester,
+        mockDb,
+        controllerFactory: () => fakeController,
+        pumpAfterMount: false,
       );
 
       await tester.pump();
@@ -973,17 +762,11 @@ void main() {
         );
         fakeController = FakeJournalPageController(state);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const EntryTypeFilter(),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-              journalPageScopeProvider.overrideWithValue(false),
-              journalPageControllerProvider(
-                false,
-              ).overrideWith(() => fakeController),
-            ],
-          ),
+        await _pumpFilter(
+          tester,
+          mockDb,
+          controllerFactory: () => fakeController,
+          pumpAfterMount: false,
         );
 
         await tester.pump();
