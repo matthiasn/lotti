@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -82,6 +83,9 @@ void setUpProcessorMocks() {
   ).thenAnswer((_) async => 1);
   when(
     () => journalDb.upsertEntityDefinition(any<EntityDefinition>()),
+  ).thenAnswer((_) async => 1);
+  when(
+    () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
   ).thenAnswer((_) async => 1);
   when(
     () => updateNotifications.notify(

@@ -104,6 +104,16 @@ class MatrixMessageSender {
       return message.copyWith(originatingHostId: host);
     }
 
+    if (message is SyncConfigFlag && message.originatingHostId == null) {
+      _loggingService.log(
+        LogDomain.sync,
+        'originatingHostId filled for configFlag '
+        'name=${message.name} host=$host',
+        subDomain: 'sendMatrixMsg.originatingHostId',
+      );
+      return message.copyWith(originatingHostId: host);
+    }
+
     if (message is SyncOutboxBundle && message.originatingHostId == null) {
       // Stamp the dequeue-time outbox bundle so receivers can identify
       // self-echoes by host id and skip the manifest download/decode
@@ -1019,6 +1029,12 @@ class MatrixMessageSender {
 
     if (child is SyncNotificationStateUpdate &&
         child.originatingHostId.isEmpty &&
+        host != null) {
+      return child.copyWith(originatingHostId: host);
+    }
+
+    if (child is SyncConfigFlag &&
+        child.originatingHostId == null &&
         host != null) {
       return child.copyWith(originatingHostId: host);
     }

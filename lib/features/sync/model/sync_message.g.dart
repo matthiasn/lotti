@@ -127,6 +127,24 @@ SyncAiConfigDelete _$SyncAiConfigDeleteFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$SyncAiConfigDeleteToJson(SyncAiConfigDelete instance) =>
     <String, dynamic>{'id': instance.id, 'runtimeType': instance.$type};
 
+SyncConfigFlag _$SyncConfigFlagFromJson(Map<String, dynamic> json) =>
+    SyncConfigFlag(
+      name: json['name'] as String,
+      description: json['description'] as String,
+      status: json['status'] as bool,
+      originatingHostId: json['originatingHostId'] as String?,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncConfigFlagToJson(SyncConfigFlag instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'description': instance.description,
+      'status': instance.status,
+      'originatingHostId': instance.originatingHostId,
+      'runtimeType': instance.$type,
+    };
+
 SyncThemingSelection _$SyncThemingSelectionFromJson(
   Map<String, dynamic> json,
 ) => SyncThemingSelection(

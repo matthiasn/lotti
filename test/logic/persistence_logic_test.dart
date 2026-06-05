@@ -2588,6 +2588,9 @@ void main() {
       'setConfigFlag notifies privateToggleNotification when flag name is private',
       () async {
         when(
+          () => journalDb.getConfigFlagByName('private'),
+        ).thenAnswer((_) async => null);
+        when(
           () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
         ).thenAnswer((_) async => 1);
 
@@ -2612,6 +2615,15 @@ void main() {
       'setConfigFlag does not notify privateToggleNotification for other flags',
       () async {
         when(
+          () => journalDb.getConfigFlagByName('enableLogging'),
+        ).thenAnswer(
+          (_) async => const ConfigFlag(
+            name: 'enableLogging',
+            description: 'Enable logging',
+            status: true,
+          ),
+        );
+        when(
           () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
         ).thenAnswer((_) async => 1);
 
@@ -2626,6 +2638,72 @@ void main() {
         // No notify call expected for non-private flags
         verifyNever(
           () => updateNotifications.notify(any<Set<String>>()),
+        );
+      },
+    );
+
+    test(
+      'setConfigFlag enqueues config flag sync when the status changes',
+      () async {
+        when(
+          () => journalDb.getConfigFlagByName('enableDailyOs'),
+        ).thenAnswer(
+          (_) async => const ConfigFlag(
+            name: 'enableDailyOs',
+            description: 'Enable DailyOS Page?',
+            status: false,
+          ),
+        );
+        when(
+          () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
+        ).thenAnswer((_) async => 1);
+
+        const flag = ConfigFlag(
+          name: 'enableDailyOs',
+          description: 'Enable DailyOS Page?',
+          status: true,
+        );
+
+        await logic.setConfigFlag(flag);
+
+        final captured =
+            verify(
+                  () => outboxService.enqueueMessage(captureAny<SyncMessage>()),
+                ).captured.single
+                as SyncMessage;
+        final message = captured as SyncConfigFlag;
+        expect(message.name, flag.name);
+        expect(message.description, flag.description);
+        expect(message.status, flag.status);
+      },
+    );
+
+    test(
+      'setConfigFlag skips sync when the status is unchanged',
+      () async {
+        when(
+          () => journalDb.getConfigFlagByName('enableDailyOs'),
+        ).thenAnswer(
+          (_) async => const ConfigFlag(
+            name: 'enableDailyOs',
+            description: 'Enable DailyOS Page?',
+            status: true,
+          ),
+        );
+        when(
+          () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
+        ).thenAnswer((_) async => 1);
+
+        await logic.setConfigFlag(
+          const ConfigFlag(
+            name: 'enableDailyOs',
+            description: 'Use DailyOS',
+            status: true,
+          ),
+        );
+
+        verifyNever(
+          () => outboxService.enqueueMessage(any<SyncMessage>()),
         );
       },
     );

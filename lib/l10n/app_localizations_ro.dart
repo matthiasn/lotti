@@ -6882,6 +6882,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Răspuns de completare';
 
   @override
+  String get syncPayloadConfigFlag => 'Indicator de configurare';
+
+  @override
   String get syncPayloadEntityDefinition => 'Definiție entitate';
 
   @override

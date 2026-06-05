@@ -329,6 +329,8 @@ class QueueApplyAdapter {
       // ai_config_db.
       aiConfig: (_) => false,
       aiConfigDelete: (_) => false,
+      // config_flags table in JournalDb.
+      configFlag: (_) => true,
       // settings_db.
       themingSelection: (_) => false,
       // notifications_db.

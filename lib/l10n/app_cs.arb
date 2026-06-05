@@ -2816,6 +2816,7 @@
   "syncPayloadAiConfigDelete": "Smazání nastavení AI",
   "syncPayloadBackfillRequest": "Žádost o doplnění",
   "syncPayloadBackfillResponse": "Odpověď na doplnění",
+  "syncPayloadConfigFlag": "Konfigurační příznak",
   "syncPayloadEntityDefinition": "Definice entity",
   "syncPayloadEntryLink": "Odkaz na položku",
   "syncPayloadJournalEntity": "Položka deníku",

@@ -3328,6 +3328,7 @@
   "syncPayloadAiConfigDelete": "AI configuration delete",
   "syncPayloadBackfillRequest": "Backfill request",
   "syncPayloadBackfillResponse": "Backfill response",
+  "syncPayloadConfigFlag": "Config flag",
   "syncPayloadEntityDefinition": "Entity definition",
   "syncPayloadEntryLink": "Entry link",
   "syncPayloadJournalEntity": "Journal entry",

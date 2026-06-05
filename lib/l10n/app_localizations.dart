@@ -11659,6 +11659,12 @@ abstract class AppLocalizations {
   /// **'Backfill response'**
   String get syncPayloadBackfillResponse;
 
+  /// No description provided for @syncPayloadConfigFlag.
+  ///
+  /// In en, this message translates to:
+  /// **'Config flag'**
+  String get syncPayloadConfigFlag;
+
   /// No description provided for @syncPayloadEntityDefinition.
   ///
   /// In en, this message translates to:

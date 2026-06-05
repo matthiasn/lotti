@@ -6732,6 +6732,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Backfill response';
 
   @override
+  String get syncPayloadConfigFlag => 'Config flag';
+
+  @override
   String get syncPayloadEntityDefinition => 'Entity definition';
 
   @override

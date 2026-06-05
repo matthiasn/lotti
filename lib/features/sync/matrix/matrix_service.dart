@@ -349,7 +349,7 @@ class MatrixService {
   ///
   /// Every [`SyncMessage`] variant is mapped to a coarse message-type bucket
   /// (`journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
-  /// `aiConfigDelete`, `themingSelection`, `notification`,
+  /// `aiConfigDelete`, `configFlag`, `themingSelection`, `notification`,
   /// `notificationStateUpdate`, `backfillRequest`, `backfillResponse`,
   /// `agentEntity`, `agentLink`, `agentBundle`, `outboxBundle`). When the SDK
   /// reports a successful send, the corresponding counter is incremented and
@@ -373,6 +373,7 @@ class MatrixService {
       entryLink: (_) => 'entryLink',
       aiConfig: (_) => 'aiConfig',
       aiConfigDelete: (_) => 'aiConfigDelete',
+      configFlag: (_) => 'configFlag',
       themingSelection: (_) => 'themingSelection',
       notification: (_) => 'notification',
       notificationStateUpdate: (_) => 'notificationStateUpdate',

@@ -1067,7 +1067,17 @@ class PersistenceLogic {
   }
 
   Future<void> setConfigFlag(ConfigFlag configFlag) async {
+    final previous = await _journalDb.getConfigFlagByName(configFlag.name);
     await _journalDb.upsertConfigFlag(configFlag);
+    if (previous?.status != configFlag.status) {
+      await outboxService.enqueueMessage(
+        SyncMessage.configFlag(
+          name: configFlag.name,
+          description: configFlag.description,
+          status: configFlag.status,
+        ),
+      );
+    }
     if (configFlag.name == 'private') {
       _updateNotifications.notify({privateToggleNotification});
     }

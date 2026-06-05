@@ -457,6 +457,10 @@ class OutboxService {
           msg: msg,
           commonFields: commonFields,
         ),
+        final SyncConfigFlag msg => _enqueueConfigFlag(
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncThemingSelection msg => _enqueueThemingSelection(
           msg: msg,
           commonFields: commonFields,
@@ -540,6 +544,7 @@ class OutboxService {
       SyncEntityDefinition() => OutboxPriority.low.index,
       SyncAiConfig() => OutboxPriority.low.index,
       SyncAiConfigDelete() => OutboxPriority.low.index,
+      SyncConfigFlag() => OutboxPriority.normal.index,
       // SyncOutboxBundle has no row-level priority — bundles are built at
       // dequeue time and never enqueued. The dispatch switch in
       // [enqueueMessage] is the single defensive guard for that invariant
@@ -959,6 +964,10 @@ class OutboxService {
       final SyncEntryLink msg => await _prepareEntryLink(msg, host),
       final SyncAgentEntity msg => _prepareAgentEntity(msg, host),
       final SyncAgentLink msg => _prepareAgentLink(msg, host),
+      final SyncConfigFlag msg =>
+        msg.originatingHostId == null && host != null
+            ? msg.copyWith(originatingHostId: host)
+            : msg,
       _ => message,
     };
   }
@@ -1466,6 +1475,50 @@ class OutboxService {
         'enqueue type=SyncAiConfigDelete subject=aiConfigDelete '
         'id=${msg.id}',
   );
+
+  Future<bool> _enqueueConfigFlag({
+    required SyncConfigFlag msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    final key = 'configFlag:${msg.name}';
+    final existingItem = await _syncDatabase.findPendingByEntryId(key);
+    if (existingItem != null) {
+      final affectedRows = await _syncDatabase.updateOutboxMessage(
+        itemId: existingItem.id,
+        newMessage: commonFields.message.value,
+        newSubject: key,
+        payloadSize: commonFields.payloadSize.value,
+        priority: math.min(
+          existingItem.priority,
+          commonFields.priority.value,
+        ),
+      );
+      if (affectedRows > 0) {
+        _loggingService.log(
+          LogDomain.sync,
+          'enqueue MERGED type=SyncConfigFlag subject=$key '
+          'status=${msg.status}',
+          subDomain: 'enqueueMessage',
+        );
+        unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
+        return true;
+      }
+    }
+
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(
+        subject: Value(key),
+        outboxEntryId: Value(key),
+      ),
+    );
+    _loggingService.log(
+      LogDomain.sync,
+      'enqueue type=SyncConfigFlag subject=$key '
+      'status=${msg.status}',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
+  }
 
   Future<bool> _enqueueThemingSelection({
     required SyncThemingSelection msg,

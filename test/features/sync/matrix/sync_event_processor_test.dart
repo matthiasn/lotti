@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -447,6 +448,52 @@ void main() {
 
     verify(() => aiConfigRepository.deleteConfig(id, fromSync: true)).called(1);
   });
+
+  test('processes config flag messages', () async {
+    const flag = ConfigFlag(
+      name: 'enableDailyOs',
+      description: 'Enable DailyOS Page?',
+      status: true,
+    );
+    final message = SyncMessage.configFlag(
+      name: flag.name,
+      description: flag.description,
+      status: flag.status,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(() => journalDb.upsertConfigFlag(flag)).called(1);
+  });
+
+  test(
+    'processes synced private flag with private toggle notification',
+    () async {
+      const flag = ConfigFlag(
+        name: 'private',
+        description: 'Show private entries?',
+        status: false,
+      );
+      final message = SyncMessage.configFlag(
+        name: flag.name,
+        description: flag.description,
+        status: flag.status,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => journalDb.upsertConfigFlag(flag)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {privateToggleNotification},
+          fromSync: true,
+        ),
+      ).called(1);
+    },
+  );
+
   group('SyncEventProcessor listener -', () {
     test('cachePurgeListener with non-smart loader does not crash', () {
       final processorWithFileLoader = SyncEventProcessor(

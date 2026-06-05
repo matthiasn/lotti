@@ -6896,6 +6896,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Respuesta de relleno';
 
   @override
+  String get syncPayloadConfigFlag => 'Indicador de configuración';
+
+  @override
   String get syncPayloadEntityDefinition => 'Definición de entidad';
 
   @override

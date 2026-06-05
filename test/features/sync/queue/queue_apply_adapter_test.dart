@@ -50,6 +50,7 @@ enum _GeneratedAdapterApplyOutcome {
 enum _GeneratedAdapterMessageKind {
   journalEntity,
   entryLink,
+  configFlag,
   themingSelection,
   backfillRequest,
 }
@@ -158,6 +159,12 @@ class _GeneratedAdapterScenario {
             vectorClock: null,
           ),
           status: SyncEntryStatus.initial,
+        );
+      case _GeneratedAdapterMessageKind.configFlag:
+        return SyncMessage.configFlag(
+          name: 'generated-flag-$slot',
+          description: 'Generated flag',
+          status: slot.isEven,
         );
       case _GeneratedAdapterMessageKind.themingSelection:
         return SyncMessage.themingSelection(
@@ -833,6 +840,15 @@ void main() {
     test('SyncAiConfigDelete bypasses outer wrap (ai_config_db)', () {
       const message = SyncMessage.aiConfigDelete(id: 'cfg-id');
       expect(wraps(message), isFalse);
+    });
+
+    test('SyncConfigFlag wraps — writes to config_flags (JournalDb)', () {
+      const message = SyncMessage.configFlag(
+        name: 'enableDailyOs',
+        description: 'Enable DailyOS Page?',
+        status: true,
+      );
+      expect(wraps(message), isTrue);
     });
 
     test('SyncThemingSelection bypasses outer wrap (settings_db)', () {
