@@ -38,7 +38,8 @@ class MatrixMessageSender {
     required this._sentEventRegistry,
     this._vectorClockService,
     this._domainLogger,
-  });
+    Future<Uint8List> Function(Object? jsonValue)? gzipEncode,
+  }) : _gzipEncode = gzipEncode ?? gzipEncodeJson;
 
   final DomainLogger _loggingService;
   final JournalDb _journalDb;
@@ -46,6 +47,10 @@ class MatrixMessageSender {
   final SentEventRegistry _sentEventRegistry;
   final VectorClockService? _vectorClockService;
   final DomainLogger? _domainLogger;
+
+  /// Gzip+JSON encoder for outbox bundle manifests. Injectable so tests can
+  /// exercise the encode-failure path; defaults to [gzipEncodeJson].
+  final Future<Uint8List> Function(Object? jsonValue) _gzipEncode;
 
   SentEventRegistry get sentEventRegistry => _sentEventRegistry;
 
@@ -813,7 +818,7 @@ class MatrixMessageSender {
       // Run json.encode + utf8.encode + gzip on a worker isolate so a
       // bundle of up to [SyncTuning.outboxBundleMaxSize] entities does not
       // stall the UI thread for the duration of the encode pipeline.
-      gzipped = await gzipEncodeJson(manifest);
+      gzipped = await _gzipEncode(manifest);
     } catch (error, stackTrace) {
       _loggingService.error(
         LogDomain.sync,
