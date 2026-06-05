@@ -79,10 +79,14 @@ SummaryCheckpoint? selectActiveSummary({
   for (final summary in summaries) {
     final cutoff = summary.cutoff;
     if (cutoff == null) continue;
-    final incomplete = log.events.any((event) {
-      if (event.position.isAfter(cutoff)) return false;
-      return !summary.coveredSources.containsKey(event.contentEntryId);
-    });
+    var incomplete = false;
+    for (final event in log.events) {
+      if (event.position.isAfter(cutoff)) break;
+      if (!summary.coveredSources.containsKey(event.contentEntryId)) {
+        incomplete = true;
+        break;
+      }
+    }
     if (incomplete) continue;
     if (active == null ||
         cutoff.compareTo(active.cutoff!) > 0 ||

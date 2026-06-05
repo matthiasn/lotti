@@ -160,7 +160,12 @@ void main() {
         for (final spec in captures) spec.posKey: !seen.add(spec.entryId),
       };
       expect(log.events, hasLength(specs.length));
-      expect(log.retractions, hasLength(specs.where((s) => s.retract).length));
+      expect(
+        log.events.where(
+          (e) => e.inlineContent?['entryType'] == 'retraction',
+        ),
+        hasLength(specs.where((s) => s.retract).length),
+      );
       for (final event in log.events) {
         final expected = expectedEdit[event.position.key];
         if (expected == null) {
@@ -188,7 +193,11 @@ void main() {
           [for (final spec in orderedSpecs) spec.posKey],
         );
         expect(
-          [for (final event in log.retractions) event.position.key],
+          [
+            for (final event in log.events)
+              if (event.inlineContent?['entryType'] == 'retraction')
+                event.position.key,
+          ],
           [
             for (final spec in orderedSpecs.where((s) => s.retract))
               spec.posKey,

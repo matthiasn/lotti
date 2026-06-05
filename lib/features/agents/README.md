@@ -459,9 +459,11 @@ view's expandable User row rebuilds the full prompt on demand via
 `WakePromptReconstructor` → `AgentLogCompactor.assembleContextAsOf`: the
 pinned checkpoint (even if since invalidated — the wake really rendered its
 prose) plus the visible events up to the boundary, with inline events
-(verdicts, day captures) re-derived from their synced entities. Later
-retractions still suppress, so deleted content never resurfaces in a
-reconstruction; a late-synced event inside the boundary makes the
+(verdicts, day captures) re-derived from their synced entities. Retractions
+are append-only, not suppressing: a retraction past the boundary never reaches
+back into the reconstruction, and one inside it renders as its own marker line
+beside the content it concerns — the past render stays faithful rather than
+retroactively redacted; a late-synced event inside the boundary makes the
 reconstruction reflect the CONVERGED log — semantically auditable rather
 than forensically byte-exact. The day agent splices its log back as the
 JSON `"dayLog"` line (`json-day-log-line` wrap). Legacy (flag-off) wakes

@@ -122,50 +122,30 @@ class InputEvent extends Equatable {
   ];
 }
 
-/// One retraction event — a system message tagged `retractsContentEntryId`.
-/// Retractions are audit facts in the log: they document that a source no
-/// longer appears in the current capture, without deleting the earlier capture
-/// events from the agent's historical context.
-class RetractionEvent extends Equatable {
-  /// Creates a retraction event.
-  const RetractionEvent({required this.position, required this.contentEntryId});
-
-  /// The retraction's position in the log.
-  final EventPosition position;
-
-  /// The source whose current absence this retraction documents.
-  final String contentEntryId;
-
-  @override
-  List<Object?> get props => [position, contentEntryId];
-}
-
-/// The event-log view of an agent's captured inputs: content [events] and
-/// [retractions], each sorted by position. Produced by [projectInputEvents].
+/// The event-log view of an agent's captured inputs: [events] in position
+/// order. Retractions are not a separate channel — each appears as an inline
+/// retraction [InputEvent] in this same stream. Produced by
+/// [projectInputEvents].
 class InputEventLog extends Equatable {
   /// Wraps a projection result.
-  const InputEventLog({required this.events, required this.retractions});
+  const InputEventLog({required this.events});
 
   /// Input-log events in position order.
   final List<InputEvent> events;
 
-  /// Retraction events in position order.
-  final List<RetractionEvent> retractions;
-
   /// True when nothing was ever captured.
-  bool get isEmpty => events.isEmpty && retractions.isEmpty;
+  bool get isEmpty => events.isEmpty;
 
   @override
-  List<Object?> get props => [events, retractions];
+  List<Object?> get props => [events];
 }
 
 /// Projects the agent's captured input **event log** (ADR 0016/0020): every
 /// non-deleted `messagePayload` link becomes a content event at its capture
 /// position, every observation in [observationMessages] an agent-note event,
-/// and every retraction message both a [RetractionEvent] audit record and an
-/// inline retraction [InputEvent] — nothing is folded into per-source state,
-/// so the projection is append-only: appending to the log never changes an
-/// existing event's position or content.
+/// and every retraction message an inline retraction [InputEvent] — nothing is
+/// folded into per-source state, so the projection is append-only: appending to
+/// the log never changes an existing event's position or content.
 ///
 /// Pure function of the message/link *set* for one agent (input order is
 /// irrelevant); two devices holding the same log derive the same event stream.
@@ -266,25 +246,7 @@ InputEventLog projectInputEvents({
     }
   }
 
-  final retractions = <RetractionEvent>[];
-  for (final message in messages) {
-    if (message.deletedAt != null) continue;
-    final retracted = message.metadata.retractsContentEntryId;
-    if (retracted == null) continue;
-    retractions.add(
-      RetractionEvent(
-        position: EventPosition(
-          at: message.createdAt,
-          sourceAt: message.createdAt,
-          key: _retractionEventKey(retracted, message.id),
-        ),
-        contentEntryId: retracted,
-      ),
-    );
-  }
-  retractions.sort((a, b) => a.position.compareTo(b.position));
-
-  return InputEventLog(events: events, retractions: retractions);
+  return InputEventLog(events: events);
 }
 
 /// The events a wake renders verbatim: every event positioned strictly after

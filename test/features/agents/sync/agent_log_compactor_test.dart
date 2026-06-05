@@ -498,8 +498,8 @@ void main() {
     expect(reconstructed, wake1.text);
   });
 
-  test('assembleContextAsOf suppresses content retracted AFTER the wake — '
-      'deletions hold retroactively', () async {
+  test('assembleContextAsOf preserves content retracted AFTER the wake — the '
+      'append-only log keeps the past render intact', () async {
     await captureAll([
       src('e1', 'sensitive note', day: 1),
       src('e2', 'other note', day: 2),
@@ -507,15 +507,25 @@ void main() {
     final wake1 = await compactor.assembleContextDetailed(_agentId);
     expect(wake1.text, contains('sensitive note'));
 
-    // The user deletes e1 after the wake (re-capture without it).
+    // The user deletes e1 after the wake (re-capture without it). The
+    // retraction is appended past wake 1's boundary, so it never reaches back
+    // into the pinned reconstruction — retractions document later state, they
+    // do not retroactively redact what an earlier wake saw.
     await captureAll([src('e2', 'other note', day: 2)], 11);
+
+    // The retraction really landed: the current view carries a retraction
+    // marker for e1, so the historical check below proves the append-only
+    // boundary, not a missing delete.
+    final view = await activeView();
+    expect(view.tailEntryIds, contains('retraction:e1'));
 
     final reconstructed = await compactor.assembleContextAsOf(
       _agentId,
       summaryId: wake1.activeSummaryId,
       until: wake1.lastEventPosition,
     );
-    expect(reconstructed, isNot(contains('sensitive note')));
+    expect(reconstructed, wake1.text);
+    expect(reconstructed, contains('sensitive note'));
     expect(reconstructed, contains('other note'));
   });
 

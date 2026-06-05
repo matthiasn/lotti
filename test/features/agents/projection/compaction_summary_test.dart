@@ -26,15 +26,12 @@ SummaryCheckpoint _summary(
   cutoff: cutoff == null ? null : _pos(cutoff),
 );
 
-RetractionEvent _retraction(String entryId, int p) =>
-    RetractionEvent(position: _pos(p), contentEntryId: entryId);
-
-/// An event log with the given [retractions] and (optionally) content
-/// [events] — the selection's completeness check runs against `events`.
-InputEventLog _log({
-  List<InputEvent> events = const [],
-  List<RetractionEvent> retractions = const [],
-}) => InputEventLog(events: events, retractions: retractions);
+/// An event log with the given content [events] in position order. The
+/// selection's completeness check runs against `events`; retractions live in
+/// this same list as inline retraction events (see [_inlineRetraction]).
+InputEventLog _log({List<InputEvent> events = const []}) => InputEventLog(
+  events: [...events]..sort((a, b) => a.position.compareTo(b.position)),
+);
 
 /// A payload-backed content event for entry [entryId] at position [p].
 InputEvent _event(String entryId, int p, {String digest = 'd'}) => InputEvent(
@@ -79,32 +76,27 @@ class _SelectionScenario {
   const _SelectionScenario({
     required this.summarySpecs,
     required this.eventSpecs,
-    required this.retractionSpecs,
   });
 
   final List<(int, int)> summarySpecs;
   final List<(int, int)> eventSpecs;
-  final List<(int, int)> retractionSpecs;
 
   @override
   String toString() =>
       '_SelectionScenario('
       'summarySpecs: $summarySpecs, '
-      'eventSpecs: $eventSpecs, '
-      'retractionSpecs: $retractionSpecs'
+      'eventSpecs: $eventSpecs'
       ')';
 }
 
 extension _AnySummaries on glados.Any {
   glados.Generator<_SelectionScenario> get selectionScenario =>
-      glados.CombinableAny(this).combine3(
+      glados.CombinableAny(this).combine2(
         summarySpecs,
         eventSpecs,
-        retractionSpecs,
-        (summarySpecs, eventSpecs, retractionSpecs) => _SelectionScenario(
+        (summarySpecs, eventSpecs) => _SelectionScenario(
           summarySpecs: summarySpecs,
           eventSpecs: eventSpecs,
-          retractionSpecs: retractionSpecs,
         ),
       );
 
@@ -126,18 +118,6 @@ extension _AnySummaries on glados.Any {
       glados.ListAnys(this).listWithLengthInRange(
         0,
         8,
-        glados.CombinableAny(this).combine2(
-          glados.IntAnys(this).intInRange(0, 4),
-          glados.IntAnys(this).intInRange(0, 12),
-          (entry, pos) => (entry, pos),
-        ),
-      );
-
-  /// 0..4 retractions (source index, position).
-  glados.Generator<List<(int, int)>> get retractionSpecs =>
-      glados.ListAnys(this).listWithLengthInRange(
-        0,
-        4,
         glados.CombinableAny(this).combine2(
           glados.IntAnys(this).intInRange(0, 4),
           glados.IntAnys(this).intInRange(0, 12),
@@ -172,11 +152,7 @@ void main() {
           for (final (entry, pos) in scenario.eventSpecs)
             _event('e$entry', pos),
         ];
-        final retractions = [
-          for (final (entry, pos) in scenario.retractionSpecs)
-            _retraction('e$entry', pos),
-        ]..sort((a, b) => a.position.compareTo(b.position));
-        final log = _log(events: events, retractions: retractions);
+        final log = _log(events: events);
 
         final ordered = selectActiveSummary(
           summaries: summaries,
@@ -189,7 +165,7 @@ void main() {
         expect(shuffled, ordered);
 
         // Oracle: valid ⇔ every event at or before the cutoff is covered by
-        // event id. Retraction audit records alone are only noise here.
+        // event id.
         bool isValid(SummaryCheckpoint s) => events
             .where((event) => !event.position.isAfter(s.cutoff!))
             .every(
@@ -260,27 +236,7 @@ void main() {
         summaries: [
           _summary('s1', cutoff: 5, covers: {'e0': 'd'}),
         ],
-        log: _log(retractions: [_retraction('e0', 6)]),
-      );
-      expect(active!.id, 's1');
-    });
-
-    test('a pre-cutoff retraction audit record alone does not invalidate', () {
-      final active = selectActiveSummary(
-        summaries: [
-          _summary('s1', cutoff: 5, covers: {'e0': 'd'}),
-        ],
-        log: _log(retractions: [_retraction('e0', 2)]),
-      );
-      expect(active!.id, 's1');
-    });
-
-    test('a retraction of an uncovered source does not invalidate', () {
-      final active = selectActiveSummary(
-        summaries: [
-          _summary('s1', cutoff: 5, covers: {'e0': 'd'}),
-        ],
-        log: _log(retractions: [_retraction('e9', 6)]),
+        log: _log(events: [_inlineRetraction('e0', 6, 'm1')]),
       );
       expect(active!.id, 's1');
     });
@@ -294,7 +250,7 @@ void main() {
         ],
         // e1 retracted at 8: s2 stays active and the retraction renders in
         // the tail after its cutoff.
-        log: _log(retractions: [_retraction('e1', 8)]),
+        log: _log(events: [_inlineRetraction('e1', 8, 'm1')]),
       );
       expect(active!.id, 's2');
     });
@@ -333,11 +289,14 @@ void main() {
         summaries: [
           _summary('s1', cutoff: 5, covers: {'e0': 'd'}),
         ],
-        // Retractions document later state, but they do not erase the earlier
-        // event from the prefix completeness proof.
+        // A later retraction documents the change but does not erase the
+        // earlier uncovered event from the prefix completeness proof.
         log: _log(
-          events: [_event('e0', 1), _event('e-gone', 2)],
-          retractions: [_retraction('e-gone', 3)],
+          events: [
+            _event('e0', 1),
+            _event('e-gone', 2),
+            _inlineRetraction('e-gone', 6, 'm1'),
+          ],
         ),
       );
       expect(active, isNull);

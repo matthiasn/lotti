@@ -219,12 +219,13 @@ class AgentLogCompactor {
   /// tail was empty.
   ///
   /// Inline events (decisions, day captures) must be re-derived by the
-  /// caller and supplied via the constructor's `inlineEvents`. Later
-  /// retractions still suppress: deleted content does not resurface in a
-  /// reconstruction. Late-arriving synced events with positions ≤ [until]
-  /// make the reconstruction reflect the CONVERGED log rather than the
-  /// device-local render — semantically auditable, not forensically
-  /// byte-exact.
+  /// caller and supplied via the constructor's `inlineEvents`. Retractions
+  /// are append-only, not suppressing: one past [until] never reaches back
+  /// into the reconstruction, and one inside `(cutoff, until]` renders as its
+  /// own marker line beside the content it concerns. Late-arriving synced
+  /// events with positions ≤ [until] make the reconstruction reflect the
+  /// CONVERGED log rather than the device-local render — semantically
+  /// auditable, not forensically byte-exact.
   Future<String> assembleContextAsOf(
     String agentId, {
     String? summaryId,

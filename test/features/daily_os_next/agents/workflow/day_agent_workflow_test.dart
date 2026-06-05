@@ -353,8 +353,8 @@ void main() {
       // observation 08:00), superseding the recentObservations listing.
       final sent = conversationRepository.lastUserMessage!;
       expect(sent, contains('"dayLog"'));
-      expect(sent, contains('(capture) morning planning capture'));
-      expect(sent, contains('(observation) a day observation'));
+      expect(sent, contains('(id: cap-1, capture) morning planning capture'));
+      expect(sent, contains('(id: obs-1, observation) a day observation'));
       expect(sent, isNot(contains('"recentObservations"')));
       expect(
         sent.indexOf('morning planning capture'),
