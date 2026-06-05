@@ -5,6 +5,7 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Mistral-specific inference operations
@@ -90,7 +91,7 @@ class MistralInferenceRepository {
     List<ChatCompletionTool>? tools,
   }) async* {
     yield* _generate(
-      messages: _convertMessages(messages),
+      messages: convertMessages(messages),
       model: model,
       baseUrl: baseUrl,
       apiKey: apiKey,
@@ -101,7 +102,8 @@ class MistralInferenceRepository {
   }
 
   /// Convert openai_dart messages to plain maps for manual serialization.
-  List<Map<String, dynamic>> _convertMessages(
+  @visibleForTesting
+  List<Map<String, dynamic>> convertMessages(
     List<ChatCompletionMessage> messages,
   ) {
     return messages.map((message) {
