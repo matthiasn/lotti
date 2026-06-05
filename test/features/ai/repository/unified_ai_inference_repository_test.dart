@@ -1,6 +1,7 @@
 // ignore_for_file: unawaited_futures, avoid_redundant_argument_values
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -8,6 +9,7 @@ import 'package:drift/drift.dart' show Selectable;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -7277,6 +7279,94 @@ Take into account the following task context:
         },
       );
     },
+  );
+
+  group('extractJsonObjects', () {
+    test('returns empty list for empty and brace-free input', () {
+      expect(extractJsonObjects(''), isEmpty);
+      expect(extractJsonObjects('no json here, just text'), isEmpty);
+    });
+
+    test('ignores stray closing braces before an object', () {
+      expect(extractJsonObjects('}{"a":1}'), ['{"a":1}']);
+    });
+
+    test('keeps nested objects as a single result', () {
+      expect(
+        extractJsonObjects('{"a": {"b": 2}}'),
+        ['{"a": {"b": 2}}'],
+      );
+    });
+
+    glados.Glados(
+      glados.any.jsonObjectsScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'N concatenated well-formed JSON objects round-trip in order',
+      (scenario) {
+        final extracted = extractJsonObjects(scenario.concatenated);
+
+        expect(
+          extracted.length,
+          scenario.objects.length,
+          reason: 'input: ${scenario.concatenated}',
+        );
+        for (var i = 0; i < extracted.length; i++) {
+          expect(
+            jsonDecode(extracted[i]),
+            scenario.objects[i],
+            reason: 'object $i of input: ${scenario.concatenated}',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+/// A generated list of well-formed JSON objects plus their concatenation
+/// with brace-free separator noise — the exact shape AI providers produce
+/// when they glue several tool-call argument objects together.
+class _JsonObjectsScenario {
+  _JsonObjectsScenario({
+    required int count,
+    required int seed,
+    required this.separator,
+  }) : objects = List.generate(count, (i) => _buildObject(seed, i));
+
+  final List<Map<String, Object?>> objects;
+  final String separator;
+
+  static Map<String, Object?> _buildObject(int seed, int i) {
+    return switch ((seed + i) % 4) {
+      0 => {'key$i': 'text value $i'},
+      1 => {'key$i': seed + i},
+      2 => {'key$i': i.isEven},
+      // Nested braces are balanced, so they must survive extraction.
+      _ => {
+        'key$i': {'inner': i},
+      },
+    };
+  }
+
+  String get concatenated =>
+      separator + objects.map(jsonEncode).join(separator) + separator;
+
+  @override
+  String toString() =>
+      '_JsonObjectsScenario(objects: $objects, separator: "$separator")';
+}
+
+extension _AnyJsonObjectsScenario on glados.Any {
+  glados.Generator<_JsonObjectsScenario> get jsonObjectsScenario => combine3(
+    intInRange(0, 7),
+    intInRange(0, 1000),
+    choose(const ['', ' ', '\n', ', ', ' noise without braces ']),
+    (int count, int seed, String separator) => _JsonObjectsScenario(
+      count: count,
+      seed: seed,
+      separator: separator,
+    ),
   );
 }
 
