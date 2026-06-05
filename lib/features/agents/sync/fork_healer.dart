@@ -1,5 +1,8 @@
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/agent_event_adapter.dart';
 import 'package:lotti/features/agents/projection/agent_projection.dart';
 import 'package:lotti/features/agents/projection/canonical_order.dart';
@@ -35,13 +38,13 @@ class ForkHealer {
 
   /// Heals [agentId]'s fork if one survives at wake start, returning the emitted
   /// join id, or null when there was nothing to heal (no fork, an unsettled
-  /// view with dangling parents, or a corrupt log). [at] timestamps the join;
-  /// [threadId]/[runKey] carry the wake's provenance.
+  /// view with dangling parents, a partially-synced join, or a corrupt log).
+  /// [at] timestamps the local join envelope; wake provenance is deliberately
+  /// not persisted on the join so content-addressed duplicate rows stay
+  /// structurally identical across devices.
   Future<String?> maybeHealFork({
     required String agentId,
     required DateTime at,
-    String? threadId,
-    String? runKey,
   }) async {
     final messages = await _repository.getAgentMessages(agentId);
     // A fork needs ≥2 messages; skip the edge load entirely otherwise.
@@ -60,6 +63,13 @@ class ForkHealer {
       final projection = project(
         canonicalOrder(agentEventsFromLog(messages, links)),
       );
+      if (_hasPendingJoinHead(
+        projection: projection,
+        messages: messages,
+        links: links,
+      )) {
+        return null;
+      }
       plan = planJoin(
         headIds: projection.headIds,
         viewComplete: projection.danglingParentIds.isEmpty,
@@ -84,9 +94,77 @@ class ForkHealer {
       joinId: plan.joinId,
       parentIds: plan.parentIds,
       at: at,
-      threadId: threadId,
-      runKey: runKey,
     );
     return plan.joinId;
   }
+}
+
+/// True while a join node has synced before all of its `messagePrev` edges.
+///
+/// A parentless or partially-parented join is itself a projected head. Without
+/// this guard, the healer would treat `{old heads + pending join}` as a fresh
+/// fork and mint a second-order join. If the join's already-arrived parents plus
+/// any subset of the other current heads reproduce the join's content-addressed
+/// id, the correct action is to wait for the missing edges to arrive.
+bool _hasPendingJoinHead({
+  required AgentProjection projection,
+  required List<AgentMessageEntity> messages,
+  required List<AgentLink> links,
+}) {
+  if (projection.headIds.length < 2) return false;
+
+  final messagesById = {
+    for (final message in messages) message.id: message,
+  };
+  final parentsByChild = <String, Set<String>>{};
+  for (final link in links) {
+    if (link is MessagePrevLink && link.deletedAt == null) {
+      (parentsByChild[link.fromId] ??= <String>{}).add(link.toId);
+    }
+  }
+
+  final headIds = projection.headIds.toSet();
+  for (final headId in projection.headIds) {
+    final message = messagesById[headId];
+    if (message == null || message.kind != AgentMessageKind.system) continue;
+
+    final arrivedParents = parentsByChild[headId] ?? const <String>{};
+    if (arrivedParents.length >= 2) continue;
+
+    final otherHeads = [
+      for (final otherHeadId in headIds)
+        if (otherHeadId != headId) otherHeadId,
+    ];
+    if (_hasJoinParentSubset(
+      arrivedParents: arrivedParents,
+      otherHeads: otherHeads,
+      joinId: headId,
+    )) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool _hasJoinParentSubset({
+  required Set<String> arrivedParents,
+  required List<String> otherHeads,
+  required String joinId,
+}) {
+  final subsetCount = 1 << otherHeads.length;
+  for (var mask = 0; mask < subsetCount; mask++) {
+    final candidateParents = <String>{...arrivedParents};
+    for (var i = 0; i < otherHeads.length; i++) {
+      if ((mask & (1 << i)) != 0) {
+        candidateParents.add(otherHeads[i]);
+      }
+    }
+    if (candidateParents.length >= 2 &&
+        computeJoinId(candidateParents) == joinId) {
+      return true;
+    }
+  }
+
+  return false;
 }

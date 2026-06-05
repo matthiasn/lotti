@@ -1,6 +1,6 @@
 # ADR 0018: Convergent Multi-Device Execution — Lease, Fencing, and Fork Reconciliation
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-05-30
 
 ## Context
@@ -15,9 +15,8 @@ shared graph unresolved.
 
 Today there is **no cross-device coordinator**: `WakeRunner` enforces
 single-flight only *in-process* (an in-memory lock map), and
-`sync_event_processor_agent_handlers` applies an incoming agent entity/link
-unless the *local* vector clock dominates — so `concurrent` writes are applied
-by arrival order. Matrix provides causal/eventual delivery, **not** a
+`sync_event_processor_agent_handlers` applies a deterministic concurrent-branch
+tiebreak for agent rows. Matrix provides causal/eventual delivery, **not** a
 linearizable primitive, so a hard lease cannot be assumed for free.
 
 **The lease is secondary to convergence.** Correctness comes from the convergent
@@ -99,15 +98,16 @@ tiebreak.
    confused or collide — so two devices emitting the join concurrently write the
    *same* log entry, which set-union merges into one
    node; concurrent joins therefore can't form a new fork (no join storm). For that
-   shared id to truly merge, the join's **payload must be fully deterministic** —
-   the sorted set of parent-head ids plus a fixed kind, with **no wall-clock,
-   `hostId`, or vector clock in the content** — so both writes are byte-identical
-   under the id. Per-device **envelope metadata** (`hostId`, VC, `createdAt`) is
-   canonicalized by the projection (content-addressed events merge by id; the
-   envelope is reconciled deterministically, e.g. min-VC-merge / lowest `hostId`),
-   so LWW cannot overwrite or diverge them — separate the deterministic event
-   *identity/payload* from the per-device *envelope*. This bounds context and
-   re-warms the on-device prefix; it is *not* required for correctness.
+   shared id to truly merge, the join's **structural payload must be fully
+   deterministic** — the sorted set of parent-head ids, fixed `system` kind,
+   `threadId == joinId`, empty metadata, and no wall-clock, `hostId`, or vector
+   clock in the content-addressed identity. The current implementation still
+   carries per-device sync envelope fields (`createdAt`, vector clock) because
+   the existing sync sequence/backfill path relies on them; projection ignores
+   those fields (`hostIdOf` is not populated), so they do not affect ordering,
+   head detection, or convergence. A replica-independent envelope canonicalizer
+   remains planned for the same change that starts projecting persisted
+   authoring host ids.
 9. **Side effects carry an idempotency key** `agentId + behaviorKind +
    frontierDigest + triggerId + toolName`, where `triggerId` is a **stable,
    source-derived** identity — the source event id, the scheduled-wake *entity*

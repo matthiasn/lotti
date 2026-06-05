@@ -1,15 +1,15 @@
 # ADR 0017: Deterministic, Content-Addressed Log Compaction
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-05-30
 
 ## Context
 
-The model already carries dormant compaction scaffolding —
+The model originally carried dormant compaction scaffolding —
 `AgentMessageKind.summary`, `summaryStartMessageId`, `summaryEndMessageId`,
 `summaryDepth`, `AgentStateEntity.recentHeadMessageId`, and
-`latestSummaryMessageId` — that production code never writes (see the agents
-README, "Memory compaction: prepared, not active").
+`latestSummaryMessageId`. Foundation A now uses that substrate for
+content-addressed input capture and append-only summary checkpoints.
 
 Logs grow unbounded; long-lived agents need distilled history, and on-device
 inference needs a stable summary "prefix" to keep the KV/prefix cache warm. The
@@ -110,8 +110,16 @@ stateDiagram-v2
   by stored provenance + replay hash + regeneration; on-device window thresholds
   (MemGPT's 70/100/50% are cloud-tuned) need tuning for small contexts.
 
+## Implementation Notes
+
+- Implemented: `ContentDigest.of`, input capture/frontier projection,
+  compaction planning, summary selection, and the task/project/day wake memory
+  path that captures inputs and assembles summary + tail context.
+- Still planned: merge-summary tuning for deeply diverged branches and any
+  later planner-specific memory policies.
+
 ## Related
 
 - `docs/daily_os_ai_runtime_architecture.md` (§6, Threads B/C)
-- `lib/features/agents/README.md` (Memory compaction: prepared, not active)
+- `lib/features/agents/README.md` (Memory compaction & input capture)
 - ADR 0016, ADR 0018

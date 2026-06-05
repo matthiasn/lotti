@@ -8,10 +8,10 @@ derived state. The thesis it proves is
 > branching.
 
 If that permutation-invariance holds, the "log is the agent / convergent DAG"
-design is real. The kernel (PR 1) still **drives no production read**: PR 3
-added the storage adapter and a shadow comparison that run the projection
-*alongside* the live mutable rows, but the only importers remain tests and the
-diagnostic compare — reads do not flip to the projection until PR 4.
+design is real. Foundation A is implemented: PR 3 added the storage adapter and
+shadow comparison, PR 4 uses `reconciledAgentState` as the wake-start read, PR 5
+uses the content-addressed capture/compaction helpers for wake memory, and PR 6
+uses `join_plan.dart` for flag-gated lazy fork healing.
 
 ## Files
 
@@ -124,8 +124,8 @@ stateDiagram-v2
 `forked` is *expected* divergence under concurrent multi-device appends, not a
 defect — the projection is the more-correct multi-head view while the live
 pointer names a single tip. The compare is pure and **never throws**: structural
-failures surface as `error`. It drives no production read — only tests and an
-optional debug-mode assert.
+failures surface as `error`. The compare itself remains diagnostic; production
+reads use the reconciliation and fork-healing paths described below.
 
 ## Full derived state (PR 4 B5)
 

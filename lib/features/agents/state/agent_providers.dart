@@ -180,8 +180,6 @@ WakeStartHook forkHealingHook(
     await forkHealer.maybeHealFork(
       agentId: agentId,
       at: now(),
-      threadId: threadId,
-      runKey: runKey,
     );
   };
 }

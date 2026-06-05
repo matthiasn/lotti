@@ -1,6 +1,6 @@
 # ADR 0019: Attention-Negotiation Protocol and Bid Schema
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-05-30
 
 ## Context
@@ -98,6 +98,12 @@ sequenceDiagram
 - Open: whether the primary abstraction is bidding vs blackboard-posting
   (determines whether bid/award edge types are required); concrete VOI weighting;
   calibration of the receptivity model.
+
+## Implementation Notes
+
+- Planned: attention requests, standing agreements, outcome tracking, and
+  planner auto-commit. The convergent log/projection substrate exists, but this
+  protocol is not implemented yet.
 
 ## Related
 

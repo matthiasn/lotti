@@ -1,5 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/projection/agent_event_adapter.dart';
+import 'package:lotti/features/agents/projection/agent_projection.dart';
+import 'package:lotti/features/agents/projection/canonical_order.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/sync/fork_healer.dart';
 import 'package:lotti/get_it.dart';
@@ -30,18 +36,29 @@ void main() {
 
   List<String> headsOf() => headsOfLog(repo.messages, repo.links);
 
+  AgentProjection projectionOf(
+    Iterable<AgentMessageEntity> messages,
+    Iterable<AgentLink> links,
+  ) => project(canonicalOrder(agentEventsFromLog(messages, links)));
+
   void seedAgent({String? head}) {
     repo.seed([
       makeTestState(agentId: _agentId).copyWith(recentHeadMessageId: head),
     ]);
   }
 
-  void seedMessage(String id, {DateTime? at}) {
+  void seedMessage(
+    String id, {
+    DateTime? at,
+    AgentMessageKind kind = AgentMessageKind.thought,
+  }) {
     repo.seed([
       makeTestMessage(
         id: id,
         agentId: _agentId,
+        kind: kind,
         createdAt: at ?? DateTime(2024),
+        metadata: const AgentMessageMetadata(),
       ),
     ]);
   }
@@ -60,7 +77,6 @@ void main() {
   Future<String?> heal() => healer.maybeHealFork(
     agentId: _agentId,
     at: DateTime(2024, 2),
-    runKey: 'rk',
   );
 
   test('heals a surviving fork into a single head', () async {
@@ -116,6 +132,183 @@ void main() {
     expect(repo.messages.where((m) => m.id == joinId).length, 1);
     expect(headsOf(), [joinId]);
   });
+
+  test('leaves an already-joined log untouched', () async {
+    await seedForkInto(repo, head: 'b');
+    final joinId = computeJoinId(['a', 'b']);
+    seedMessage(joinId, kind: AgentMessageKind.system);
+    await edge(joinId, 'a');
+    await edge(joinId, 'b');
+    expect(headsOf(), [joinId]);
+
+    final messageIdsBefore = repo.messages.map((m) => m.id).toList();
+    final linkIdsBefore = repo.links.map((l) => l.id).toSet();
+
+    expect(await heal(), isNull);
+    expect(repo.messages.map((m) => m.id), messageIdsBefore);
+    expect(repo.links.map((l) => l.id).toSet(), linkIdsBefore);
+    expect(headsOf(), [joinId]);
+  });
+
+  test('defers while a synced join node is missing its parent edges', () async {
+    for (final arrivedParents in [
+      <String>[],
+      <String>['a'],
+    ]) {
+      final bench = makeForkBench();
+      final pendingRepo = bench.repo;
+      await seedForkInto(pendingRepo, head: 'b');
+      final joinId = computeJoinId(['a', 'b']);
+      pendingRepo.seed([
+        makeTestMessage(
+          id: joinId,
+          agentId: _agentId,
+          kind: AgentMessageKind.system,
+          metadata: const AgentMessageMetadata(),
+        ),
+      ]);
+      for (final parentId in arrivedParents) {
+        await pendingRepo.upsertLink(
+          AgentLink.messagePrev(
+            id: 'msgprev-$joinId-$parentId',
+            fromId: joinId,
+            toId: parentId,
+            createdAt: DateTime(2024, 1, 3),
+            updatedAt: DateTime(2024, 1, 3),
+            vectorClock: null,
+          ),
+        );
+      }
+
+      final headsBefore = headsOfLog(pendingRepo.messages, pendingRepo.links);
+      expect(headsBefore, contains(joinId));
+      expect(headsBefore.length, greaterThan(1));
+
+      final result = await bench.healer.maybeHealFork(
+        agentId: _agentId,
+        at: DateTime(2024, 2),
+      );
+
+      expect(result, isNull);
+      expect(
+        pendingRepo.messages
+            .where((m) => m.id == joinId)
+            .map((m) => m.id)
+            .toList(),
+        [joinId],
+      );
+      expect(
+        pendingRepo.messages.length,
+        4,
+        reason: 'no second-order join for arrived parents $arrivedParents',
+      );
+    }
+  });
+
+  test(
+    'defers a pending join even with an unrelated concurrent head',
+    () async {
+      await seedForkInto(repo, head: 'b');
+      seedMessage('c', at: DateTime(2024, 1, 4));
+      await edge('c', 'p');
+      final joinId = computeJoinId(['a', 'b']);
+      seedMessage(joinId, kind: AgentMessageKind.system);
+      await edge(joinId, 'a');
+      expect(headsOf().toSet(), {'b', 'c', joinId});
+
+      expect(await heal(), isNull);
+
+      expect(repo.messages.where((m) => m.id == joinId).length, 1);
+      expect(repo.messages.length, 5);
+      expect(headsOf().toSet(), {'b', 'c', joinId});
+    },
+  );
+
+  test('different local arrival orders produce the same join id', () async {
+    Future<void> seedForkInOrder(
+      InMemoryAgentRepository target, {
+      required List<String> messageOrder,
+      required List<(String, String)> edgeOrder,
+      required String head,
+    }) async {
+      target.seed([
+        makeTestState(agentId: _agentId).copyWith(recentHeadMessageId: head),
+        for (final id in messageOrder)
+          makeTestMessage(
+            id: id,
+            agentId: _agentId,
+            createdAt: id == 'p' ? DateTime(2024) : DateTime(2024, 1, 2),
+          ),
+      ]);
+      for (final (child, parent) in edgeOrder) {
+        await target.upsertLink(
+          AgentLink.messagePrev(
+            id: 'mp-$child-$parent',
+            fromId: child,
+            toId: parent,
+            createdAt: DateTime(2024, 1, 2),
+            updatedAt: DateTime(2024, 1, 2),
+            vectorClock: null,
+          ),
+        );
+      }
+    }
+
+    final first = makeForkBench();
+    final second = makeForkBench();
+    await seedForkInOrder(
+      first.repo,
+      messageOrder: ['p', 'a', 'b'],
+      edgeOrder: [('a', 'p'), ('b', 'p')],
+      head: 'a',
+    );
+    await seedForkInOrder(
+      second.repo,
+      messageOrder: ['b', 'p', 'a'],
+      edgeOrder: [('b', 'p'), ('a', 'p')],
+      head: 'b',
+    );
+
+    final firstJoin = await first.healer.maybeHealFork(
+      agentId: _agentId,
+      at: DateTime(2024, 2),
+    );
+    final secondJoin = await second.healer.maybeHealFork(
+      agentId: _agentId,
+      at: DateTime(2024, 2),
+    );
+
+    expect(firstJoin, computeJoinId(['a', 'b']));
+    expect(secondJoin, firstJoin);
+    expect(headsOfLog(first.repo.messages, first.repo.links), [firstJoin]);
+    expect(headsOfLog(second.repo.messages, second.repo.links), [secondJoin]);
+  });
+
+  test(
+    'projection after healing is the fork plus the explicit join marker',
+    () async {
+      await seedForkInto(repo, head: 'b');
+      final messagesBefore = repo.messages.toList();
+      final linksBefore = repo.links.toList();
+      final before = projectionOf(messagesBefore, linksBefore);
+      expect(before.headIds.toSet(), {'a', 'b'});
+
+      final joinId = await heal();
+      final joinMessage = repo.messages.singleWhere((m) => m.id == joinId);
+      final joinLinks = repo.links
+          .whereType<MessagePrevLink>()
+          .where((l) => l.fromId == joinId)
+          .toList();
+      final explicit = projectionOf(
+        [...messagesBefore, joinMessage],
+        [...linksBefore, ...joinLinks],
+      );
+
+      expect(projectionOf(repo.messages, repo.links), explicit);
+      expect(explicit.headIds, [joinId]);
+      expect(explicit.danglingParentIds, before.danglingParentIds);
+    },
+  );
 
   test(
     'is non-fatal on a corrupt log (a cycle) — skips without throwing',
