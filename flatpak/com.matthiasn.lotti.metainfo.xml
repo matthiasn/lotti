@@ -40,6 +40,9 @@
           <p>Config flag changes from Settings now sync to your other devices when a flag is flipped, without broadcasting default startup flag seeding.</p>
           <p>Label usage counts in the labels list no longer include deleted journal entries, and entries marked private only count while the "Show private entries" flag is enabled.</p>
           <p>Task-agent suggestions now suppress verbatim duplicate proposals even when their underlying tool arguments differ, so identical checklist suggestions appear only once.</p>
+          <p>The "Agent memory compaction" flag now also covers project and day agents: all three read their context from an append-only memory log and summarize its oldest entries into a rolling memory using their own model.</p>
+          <p>Saving an event now clears the unsaved-changes state, so the save button no longer stays visible after a successful save.</p>
+          <p>Buttons that customize the primary button style now apply their custom disabled color instead of silently falling back to the default.</p>
       </description>
     </release>
     <release version="0.9.1014" date="2026-06-04">
