@@ -28,11 +28,10 @@ typedef AgentSummarizer =
 ///
 /// The checkpoint is an append-only `summary` message pointing at a
 /// content-addressed payload that records the covered log prefix (the cutoff
-/// position), the covered source set (`contentEntryId` → digest, for
-/// retraction invalidation) and the distilled text — so two devices that
-/// summarize the same region dedupe, and the read side (`selectActiveSummary`)
-/// picks the active checkpoint as a pure projection. The persisted pointers
-/// are a cache; the log is authoritative.
+/// position), the covered event set (`contentEntryId` → digest) and the
+/// distilled text — so two devices that summarize the same region dedupe, and
+/// the read side (`selectActiveSummary`) picks the active checkpoint as a pure
+/// projection. The persisted pointers are a cache; the log is authoritative.
 class AgentLogCompactor {
   /// Creates the compactor over an [AgentSyncService] (used for both its
   /// sync-aware writes and its repository reads). [inlineEvents] are
@@ -161,8 +160,8 @@ class AgentLogCompactor {
 
   /// The [RenderedSource] view of one resolved event — observation events are
   /// tagged with their type so both the prompt tail and the summarizer's fold
-  /// input render them as `(observation)` lines (inline events already carry
-  /// their type).
+  /// input render them as observation-tagged lines (inline events already
+  /// carry their type).
   static RenderedSource _toRenderedSource(
     InputEvent event,
     Map<String, Object?> content,

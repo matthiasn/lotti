@@ -6287,7 +6287,7 @@ void main() {
         },
       );
 
-      test('resolved verdicts render as (decision) events in the task log; '
+      test('resolved verdicts render as decision events in the task log; '
           'the ledger section keeps only open proposals', () async {
         const tailContent = {'entryType': 'text', 'text': 'captured note'};
         final tailDigest = ContentDigest.of(tailContent);
@@ -6433,13 +6433,14 @@ void main() {
         expect(
           userText,
           contains(
-            '(decision) [fp=set_task_title:42] ✓ `set_task_title`: '
+            '(id: cs-1:0, decision) [fp=set_task_title:42] '
+            '✓ `set_task_title`: '
             'Set title to "X" — confirmed by user',
           ),
         );
         // …interleaved chronologically: verdict (June 1) before note (June 2).
         expect(
-          userText.indexOf('(decision)'),
+          userText.indexOf('(id: cs-1:0, decision)'),
           lessThan(userText.indexOf('captured note')),
         );
         // The ledger section keeps only the open (actionable) state.

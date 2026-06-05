@@ -366,41 +366,45 @@ event at position `(captureTime, sourceCreatedAt, key)` — a strict total order
 over synced metadata, so all devices agree (`sourceCreatedAt` orders a
 same-instant batch chronologically instead of by random ids). The rendered
 `## Task Log` tail is `visibleTailEvents`: events after the active
-checkpoint's cutoff, one line each, **rendered once and frozen forever**:
+checkpoint's cutoff, one line each, **rendered once and frozen forever**.
+Every compacted line carries provenance as `id: <sourceId>` so later context
+can refer back to the exact source:
 
-- an **edit** appends a new `(text, edited)` line at the end — the original
-  line never changes (a ticking running-timer duration is excluded from
-  capture until final for the same reason);
-- the agent's own **observations** interleave as `(observation)` lines —
+- an **edit** appends a new `(id: e1, text, edited)` line at the end — the
+  original line never changes (a ticking running-timer duration is excluded
+  from capture until final for the same reason);
+- the agent's own **observations** interleave as `(id: obs-1, observation)`
+  lines —
   single memory substrate, same ordering, same folds (the separate
   `## Agent Journal` section exists only in legacy mode);
-- resolved **proposal verdicts** interleave as `(decision)` lines (inline
-  events via `decisionEventsFromLedger` — no payload row; their content
-  derives from the synced ChangeSet/ChangeDecision entities), positioned at
-  resolution time so the narrative reads *user said X → agent proposed Y →
-  user rejected it*. The `## Proposal Ledger` section then carries only the
-  OPEN proposals (current state: fingerprints for `retract_suggestions`,
-  same-wake dedup) — the `### Resolved` listing, previously re-rendered and
-  capped every wake, exists only in legacy mode;
-- a **deletion** (retraction) is the one deliberate mutation: it strips that
-  source's lines (privacy beats cache) and invalidates any checkpoint whose
-  prose may mention it.
+- resolved **proposal verdicts** interleave as `(id: cs-1:0, decision)` lines
+  (inline events via `decisionEventsFromLedger` — no payload row; their
+  content derives from the synced ChangeSet/ChangeDecision entities),
+  positioned at resolution time so the narrative reads *user said X → agent
+  proposed Y → user rejected it*. The `## Proposal Ledger` section then
+  carries only the OPEN proposals (current state: fingerprints for
+  `retract_suggestions`, same-wake dedup) — the `### Resolved` listing,
+  previously re-rendered and capped every wake, exists only in legacy mode;
+- a **retraction** appends `(id: e1, retraction) no longer appears in the
+  current task context`. It documents the current absence without stripping
+  earlier captured reality or invalidating summaries; a later capture can
+  re-add the source as another event.
 
 **Compaction folds a log prefix.** `summary` checkpoint events cover
 everything up to a **cutoff position** (persisted as `coverageCutoff` in the
 checkpoint payload), not a state snapshot:
 
 - `selectActiveSummary` picks the valid checkpoint with the greatest cutoff.
-  A checkpoint dies when a covered source is retracted *after* its cutoff,
-  or when it is **incomplete against the current log**: sync can deliver an
-  event positioned *before* an existing cutoff (a concurrent capture/
-  observation/verdict from another device), which would otherwise be in
-  neither the prose nor the post-cutoff tail — the checkpoint is discarded,
-  the tail re-expands, and the same wake's fold re-covers everything
-  including the late arrival. Completeness is checked by entry id, so a
-  late-arriving *superseded* version of a covered source does not
-  invalidate. An edit of folded content just appends a tail event that
-  supersedes the stale prose, keeping the prompt prefix byte-stable;
+  A checkpoint dies only when it is **incomplete against the current log**:
+  sync can deliver an event positioned *before* an existing cutoff (a
+  concurrent capture/observation/verdict/retraction from another device),
+  which would otherwise be in neither the prose nor the post-cutoff tail —
+  the checkpoint is discarded, the tail re-expands, and the same wake's fold
+  re-covers everything including the late arrival. Completeness is checked by
+  event id, so a late-arriving *superseded* version of a covered source does
+  not invalidate. Edits and retractions after the cutoff just append tail
+  events that supersede or qualify the stale prose, keeping the prompt prefix
+  byte-stable;
 - `planCompaction` decides, against a token budget, which oldest event prefix
   to fold so the most-recent suffix fits;
 - `AgentLogLlmSummarizer` (the LLM edge) distills the folded events into

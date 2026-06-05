@@ -1693,8 +1693,8 @@ to keep the user-facing suggestion list clean and trustworthy:
     // Proposal ledger. In compacted mode only the OPEN proposals render here
     // — they are current state (fingerprints for `retract_suggestions`,
     // same-wake dedup) — while resolved verdicts live in the `## Task Log`
-    // as `(decision)` events that fold into summaries. Legacy mode keeps the
-    // full status-sorted view including resolved history.
+    // as decision-tagged events that fold into summaries. Legacy mode keeps
+    // the full status-sorted view including resolved history.
     if (!ledger.isEmpty) {
       buffer.writeln(
         _formatProposalLedger(ledger, includeResolved: !useCompactedLog),
@@ -1723,8 +1723,9 @@ to keep the user-facing suggestion list clean and trustworthy:
       );
 
       // With compaction on, observations live in the `## Task Log` event tail
-      // (interleaved as `(observation)` lines, folded into summaries by the
-      // same watermarks) — a separate journal section would duplicate them.
+      // (interleaved as observation-tagged lines, folded into summaries by
+      // the same watermarks) — a separate journal section would duplicate
+      // them.
       if (!useCompactedLog) {
         buffer.writeln('## Agent Journal');
         // Reverse so the LLM sees them in chronological order.
@@ -1785,9 +1786,9 @@ to keep the user-facing suggestion list clean and trustworthy:
   /// longer relevant.
   ///
   /// [includeResolved] selects the legacy full view (resolved verdicts
-  /// rendered here); with compaction on, resolved verdicts are `(decision)`
-  /// events in the task log instead, so this section carries only the open
-  /// (actionable) state.
+  /// rendered here); with compaction on, resolved verdicts are
+  /// decision-tagged events in the task log instead, so this section carries
+  /// only the open (actionable) state.
   String _formatProposalLedger(
     ProposalLedger ledger, {
     required bool includeResolved,
@@ -1813,7 +1814,7 @@ to keep the user-facing suggestion list clean and trustworthy:
                   'relevant (the current task state already matches it, or '
                   'it duplicates another open proposal), call '
                   '`retract_suggestions` with its fingerprint. Past '
-                  'verdicts appear as (decision) events in the Task Log: '
+                  'verdicts appear as decision-tagged events in the Task Log: '
                   'learn from them and do not re-propose rejected items '
                   'unless the task context has materially changed.',
       )

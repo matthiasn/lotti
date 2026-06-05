@@ -4,7 +4,7 @@ import 'package:lotti/features/agents/projection/input_events.dart';
 import 'package:lotti/utils/string_utils.dart';
 
 /// Renders one resolved [LedgerEntry] as the single line both the prompt's
-/// proposal ledger (legacy mode) and the event tail's `(decision)` events
+/// proposal ledger (legacy mode) and the event tail's decision-tagged events
 /// use, e.g.:
 ///
 /// `[fp=set_task_title:179…] ✓ \`set_task_title\`: Set title to "X" —

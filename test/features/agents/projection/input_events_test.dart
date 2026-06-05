@@ -32,8 +32,8 @@ class _OpSpec {
   String get digest => ContentDigest.of({'text': content});
 
   /// Mirrors the projection's position key for [_realize]d ops (content links
-  /// carry an entry-id-prefixed composite key; retraction messages their id).
-  String get posKey => retract ? id : '$entryId|$id';
+  /// and retractions both carry deterministic composite keys).
+  String get posKey => retract ? 'retraction|$entryId|$id' : '$entryId|$id';
 }
 
 extension _AnyEvents on glados.Any {
@@ -54,18 +54,18 @@ extension _AnyEvents on glados.Any {
         ],
       );
 
-  /// Like [eventOps], but strictly time-ordered (each op later than the last)
-  /// and capture-only — the single-device append path, where the append-only
-  /// rendering guarantee must hold exactly.
-  glados.Generator<List<_OpSpec>> get appendedCaptures => glados.ListAnys(this)
-      .listWithLengthInRange(0, 10, _captureTuple)
+  /// Like [eventOps], but strictly time-ordered (each op later than the last):
+  /// the single-device append path, where append-only rendering must hold
+  /// exactly for captures and retractions alike.
+  glados.Generator<List<_OpSpec>> get appendedOps => glados.ListAnys(this)
+      .listWithLengthInRange(0, 10, _opTuple)
       .map(
         (tuples) => [
           for (var i = 0; i < tuples.length; i++)
             _OpSpec(
               entryId: tuples[i].$1,
-              retract: false,
-              content: tuples[i].$2,
+              retract: tuples[i].$2,
+              content: tuples[i].$3,
               timeBucket: i,
               seq: i,
             ),
@@ -80,13 +80,6 @@ extension _AnyEvents on glados.Any {
         glados.IntAnys(this).intInRange(0, 5),
         (entryId, retract, content, timeBucket) =>
             (entryId, retract, content, timeBucket),
-      );
-
-  glados.Generator<(String, String)> get _captureTuple =>
-      glados.CombinableAny(this).combine2(
-        glados.AnyUtils(this).choose(<String>['a', 'b', 'c']),
-        glados.AnyUtils(this).choose(<String>['x', 'y', 'z']),
-        (entryId, content) => (entryId, content),
       );
 }
 
@@ -166,35 +159,60 @@ void main() {
       final expectedEdit = <String, bool>{
         for (final spec in captures) spec.posKey: !seen.add(spec.entryId),
       };
-      expect(log.events, hasLength(captures.length));
+      expect(log.events, hasLength(specs.length));
+      expect(log.retractions, hasLength(specs.where((s) => s.retract).length));
       for (final event in log.events) {
-        expect(event.isEdit, expectedEdit[event.position.key]);
+        final expected = expectedEdit[event.position.key];
+        if (expected == null) {
+          expect(event.isEdit, isFalse, reason: event.position.key);
+        } else {
+          expect(event.isEdit, expected, reason: event.position.key);
+        }
       }
     }, tags: 'glados');
 
     glados.Glados(
       glados.any.eventOps,
       glados.ExploreConfig(numRuns: 250),
-    ).test('visibleTailEvents suppresses exactly events with a later '
-        'retraction of their source', (specs) {
-      final log = _project(specs);
-      final visible = visibleTailEvents(log: log);
-      final visibleKeys = {for (final e in visible) e.position.key};
+    ).test(
+      'visibleTailEvents is exactly the ordered append-only op stream',
+      (
+        specs,
+      ) {
+        final log = _project(specs);
+        final visible = visibleTailEvents(log: log);
+        final orderedSpecs = [...specs]..sort(_bySpecPosition);
 
-      for (final spec in specs.where((s) => !s.retract)) {
-        final suppressed = specs.any(
-          (r) =>
-              r.retract &&
-              r.entryId == spec.entryId &&
-              _bySpecPosition(spec, r) < 0,
+        expect(
+          [for (final event in visible) event.position.key],
+          [for (final spec in orderedSpecs) spec.posKey],
         );
         expect(
-          visibleKeys.contains(spec.posKey),
-          !suppressed,
-          reason: 'event ${spec.id} of entry ${spec.entryId}',
+          [for (final event in log.retractions) event.position.key],
+          [
+            for (final spec in orderedSpecs.where((s) => s.retract))
+              spec.posKey,
+          ],
         );
-      }
-    }, tags: 'glados');
+
+        for (final spec in orderedSpecs.where((s) => s.retract)) {
+          final event = visible.singleWhere(
+            (e) => e.position.key == spec.posKey,
+          );
+          expect(
+            event.inlineContent,
+            containsPair('entryType', 'retraction'),
+            reason: spec.posKey,
+          );
+          expect(
+            event.inlineContent,
+            containsPair('sourceEntryId', spec.entryId),
+            reason: spec.posKey,
+          );
+        }
+      },
+      tags: 'glados',
+    );
 
     glados.Glados2(
       glados.any.eventOps,
@@ -213,7 +231,7 @@ void main() {
     }, tags: 'glados');
 
     glados.Glados2(
-      glados.any.appendedCaptures,
+      glados.any.appendedOps,
       glados.any.shuffleSeed,
       glados.ExploreConfig(numRuns: 250),
     ).test(
@@ -283,8 +301,14 @@ void main() {
         ),
       ]);
       final visible = visibleTailEvents(log: log);
-      expect(visible, hasLength(1));
-      expect(visible.single.contentDigest, ContentDigest.of({'text': 'y'}));
+      expect(
+        [for (final event in visible) event.position.key],
+        ['a|op0', 'retraction|a|op1', 'a|op2'],
+      );
+      expect(visible[1].inlineContent, containsPair('entryType', 'retraction'));
+      expect(visible[1].inlineContent, containsPair('sourceEntryId', 'a'));
+      expect(visible[2].contentDigest, ContentDigest.of({'text': 'y'}));
+      expect(visible[2].isEdit, isTrue);
     });
 
     test('skips soft-deleted links and pre-ADR-0020 references', () {

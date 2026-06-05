@@ -91,7 +91,7 @@ void main() {
       repo.messages.where((m) => m.kind == AgentMessageKind.summary).toList();
 
   /// The read-side view the prompt assembly derives: the active checkpoint
-  /// (if any) and the entry ids of the visible event tail after its cutoff.
+  /// (if any) and stable labels for the visible event tail after its cutoff.
   Future<({SummaryCheckpoint? checkpoint, List<String> tailEntryIds})>
   activeView() async {
     final log = projectInputEvents(
@@ -105,7 +105,13 @@ void main() {
     final tail = visibleTailEvents(log: log, cutoff: checkpoint?.cutoff);
     return (
       checkpoint: checkpoint,
-      tailEntryIds: [for (final event in tail) event.contentEntryId],
+      tailEntryIds: [
+        for (final event in tail)
+          if (event.inlineContent?['entryType'] == 'retraction')
+            'retraction:${event.inlineContent?['sourceEntryId']}'
+          else
+            event.contentEntryId,
+      ],
     );
   }
 
@@ -298,7 +304,7 @@ void main() {
 
     final context = await compactor.assembleContext(_agentId);
     expect(context, contains('SUMMARY(2)'));
-    expect(context, contains('(entry, edited) alpha REVISED'));
+    expect(context, contains('(id: e1, entry, edited) alpha REVISED'));
     // The folded original does not resurface verbatim.
     expect(context.indexOf('gamma'), lessThan(context.indexOf('alpha')));
   });
@@ -308,16 +314,16 @@ void main() {
     await captureAll([src('e1', 'second wording', day: 1)], 11);
 
     final context = await compactor.assembleContext(_agentId);
-    expect(context, contains('(entry) first wording'));
-    expect(context, contains('(entry, edited) second wording'));
+    expect(context, contains('(id: e1, entry) first wording'));
+    expect(context, contains('(id: e1, entry, edited) second wording'));
     expect(
       context.indexOf('first wording'),
       lessThan(context.indexOf('second wording')),
     );
   });
 
-  test('a retraction of covered content invalidates the checkpoint '
-      '(privacy beats cache) and strips the source from the tail', () async {
+  test('a retraction of covered content keeps the checkpoint and appends a '
+      'retraction line', () async {
     await captureAll([
       src('e1', 'alpha', day: 1),
       src('e2', 'beta', day: 2),
@@ -332,14 +338,20 @@ void main() {
     ], 11);
 
     final view = await activeView();
-    expect(view.checkpoint, isNull); // summary prose may mention e1 → dead
-    expect(view.tailEntryIds, ['e2', 'e3']); // full re-expansion, minus e1
+    expect(view.checkpoint, isNotNull);
+    expect(view.tailEntryIds, ['e3', 'retraction:e1']);
 
     final context = await compactor.assembleContext(_agentId);
-    expect(context, isNot(contains('SUMMARY')));
+    expect(context, contains('SUMMARY(2)'));
     expect(context, isNot(contains('alpha')));
-    expect(context, contains('beta'));
     expect(context, contains('gamma'));
+    expect(
+      context,
+      contains(
+        '(id: e1, retraction) '
+        'no longer appears in the current task context',
+      ),
+    );
   });
 
   /// Seeds an observation (payload + message) directly into the repo, the
@@ -370,8 +382,8 @@ void main() {
   test('the assembled context is append-only across wakes: each earlier '
       'context is a byte prefix of the next', () async {
     // The provider prefix-cache invariant, end to end: between folds, new
-    // events (captures, edits, observations) may only APPEND bytes to the
-    // assembled task log — never change existing ones.
+    // events (captures, edits, observations, retractions) may only APPEND
+    // bytes to the assembled task log — never change existing ones.
     await captureAll([src('e1', 'first note', day: 1)], 10);
     final first = await compactor.assembleContext(_agentId);
 
@@ -389,9 +401,22 @@ void main() {
     ], 13);
     final third = await compactor.assembleContext(_agentId);
 
+    // A RETRACTION also only appends; the prior captured line is retained as
+    // historical evidence, followed by the explicit correction signal.
+    await captureAll([src('e1', 'first note REVISED', day: 1)], 14);
+    final fourth = await compactor.assembleContext(_agentId);
+
     expect(second, startsWith(first));
     expect(third, startsWith(second));
-    expect(third, contains('(entry, edited) first note REVISED'));
+    expect(fourth, startsWith(third));
+    expect(third, contains('(id: e1, entry, edited) first note REVISED'));
+    expect(
+      fourth,
+      contains(
+        '(id: e2, retraction) '
+        'no longer appears in the current task context',
+      ),
+    );
   });
 
   test('a late-arriving pre-cutoff event (sync) re-expands the tail and the '
@@ -494,8 +519,8 @@ void main() {
     expect(reconstructed, contains('other note'));
   });
 
-  test('decision events share the substrate: they interleave, render as '
-      '(decision) lines, and fold', () async {
+  test('decision events share the substrate: they interleave, render with '
+      'IDs, and fold', () async {
     await captureAll([src('e1', 'user note', day: 9)], 9);
     await captureAll([
       src('e1', 'user note', day: 9),
@@ -525,17 +550,17 @@ void main() {
     expect(
       context,
       contains(
-        '(decision) [fp=set_task_title:42] ✓ `set_task_title`: '
+        '(id: cs-1:0, decision) [fp=set_task_title:42] ✓ `set_task_title`: '
         'Set title to "X" — confirmed by user',
       ),
     );
     // Event order: capture(day 9) < decision(day 11) < capture(day 12).
     expect(
       context.indexOf('user note'),
-      lessThan(context.indexOf('(decision)')),
+      lessThan(context.indexOf('(id: cs-1:0, decision)')),
     );
     expect(
-      context.indexOf('(decision)'),
+      context.indexOf('(id: cs-1:0, decision)'),
       lessThan(context.indexOf('newest note')),
     );
 
@@ -554,12 +579,12 @@ void main() {
 
     final folded = await decisionCompactor.assembleContext(_agentId);
     expect(folded, contains('SUMMARY(2)'));
-    expect(folded, isNot(contains('(decision)')));
+    expect(folded, isNot(contains('(id: cs-1:0, decision)')));
     expect(folded, contains('newest note'));
   });
 
   test(
-    'observations interleave with captured content as (observation) lines',
+    'observations interleave with captured content and expose IDs',
     () async {
       await captureAll([src('e1', 'user note', day: 9)], 9);
       await seedObservation('obs-1', 'I noticed the scope changed.', day: 11);
@@ -569,7 +594,12 @@ void main() {
       ], 12);
 
       final context = await compactor.assembleContext(_agentId);
-      expect(context, contains('(observation) I noticed the scope changed.'));
+      expect(
+        context,
+        contains(
+          '(id: obs-1, observation) I noticed the scope changed.',
+        ),
+      );
       // Single substrate, event order: capture(day 9) < observation(day 11)
       // < capture(day 12).
       expect(
@@ -602,8 +632,8 @@ void main() {
     expect(context, contains('omega'));
   });
 
-  test('a retraction of tail-only content strips its lines but keeps the '
-      'checkpoint', () async {
+  test('a retraction of tail-only content keeps its line and appends the '
+      'retraction', () async {
     await captureAll([
       src('e1', 'alpha', day: 1),
       src('e2', 'beta', day: 2),
@@ -619,10 +649,17 @@ void main() {
 
     final view = await activeView();
     expect(view.checkpoint, isNotNull);
-    expect(view.tailEntryIds, isEmpty);
+    expect(view.tailEntryIds, ['e3', 'retraction:e3']);
 
     final context = await compactor.assembleContext(_agentId);
     expect(context, contains('SUMMARY(2)'));
-    expect(context, isNot(contains('gamma')));
+    expect(context, contains('gamma'));
+    expect(
+      context,
+      contains(
+        '(id: e3, retraction) '
+        'no longer appears in the current task context',
+      ),
+    );
   });
 }
