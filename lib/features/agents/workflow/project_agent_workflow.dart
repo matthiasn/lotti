@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -295,7 +296,7 @@ class ProjectAgentWorkflow {
 
     // 7. Assemble system prompt and user message.
     final systemPrompt = _buildSystemPrompt(templateCtx);
-    final userMessage = _buildUserMessage(
+    final builtMessage = _buildUserMessage(
       projectEntity: projectEntity,
       lastReport: lastReport,
       observations: journalObservations,
@@ -306,6 +307,7 @@ class ProjectAgentWorkflow {
       // legacy sections render otherwise.
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
     );
+    final userMessage = builtMessage.text;
 
     // 8. Create conversation and run with strategy.
     final conversationId = conversationRepository.createConversation(
@@ -313,16 +315,28 @@ class ProjectAgentWorkflow {
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
 
-    // 8a. Persist user message for inspectability.
+    // 8a. Persist user message for inspectability — as a v2 prompt record
+    // when the read flipped (the log block is derivable from the synced
+    // event log; ADR 0020), or the legacy full blob otherwise.
     try {
       final userPayloadId = _uuid.v4();
+      final logStart = builtMessage.logStart;
+      final logEnd = builtMessage.logEnd;
+      final userPayloadContent = (logStart != null && logEnd != null)
+          ? encodePromptRecord(
+              head: userMessage.substring(0, logStart),
+              tail: userMessage.substring(logEnd),
+              summaryId: memoryView.activeSummaryId,
+              until: memoryView.lastEventPosition,
+            )
+          : <String, Object?>{'text': userMessage};
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessagePayload(
           id: userPayloadId,
           agentId: agentId,
           createdAt: now,
           vectorClock: null,
-          content: <String, Object?>{'text': userMessage},
+          content: userPayloadContent,
         ),
       );
       await syncService.upsertEntity(
@@ -891,7 +905,7 @@ immediately.''';
     }
   }
 
-  String _buildUserMessage({
+  ({String text, int? logStart, int? logEnd}) _buildUserMessage({
     required JournalEntity projectEntity,
     required AgentReportEntity? lastReport,
     required List<AgentMessageEntity> observations,
@@ -906,11 +920,17 @@ immediately.''';
     // project's captured journal entries interleaved with the agent's own
     // observations — leads as the largest stable block (summary changes only
     // at folds, the tail only appends), so the provider prefix cache survives
-    // consecutive wakes. The mutable blocks follow.
+    // consecutive wakes. The mutable blocks follow. The block's offsets are
+    // recorded so the persisted prompt record can omit it (ADR 0020 v2).
+    int? logStart;
+    int? logEnd;
     if (compactedLog != null) {
+      buf.writeln('## Project Log');
+      logStart = buf.length;
+      buf.write(compactedLog);
+      logEnd = buf.length;
       buf
-        ..writeln('## Project Log')
-        ..writeln(compactedLog)
+        ..writeln()
         ..writeln();
     }
 
@@ -963,7 +983,7 @@ immediately.''';
         ..writeln(triggerTokens.join(', '));
     }
 
-    return buf.toString();
+    return (text: buf.toString(), logStart: logStart, logEnd: logEnd);
   }
 
   void _writeProjectContext(StringBuffer buf, JournalEntity entity) {

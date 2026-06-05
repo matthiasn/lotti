@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -624,6 +626,99 @@ void main() {
 
       expect(result, 'hello world');
       verify(() => mockRepository.getEntity(payloadId)).called(1);
+    });
+
+    test('reconstructs a v2 prompt record from the event log', () async {
+      const payloadId = 'payload-v2';
+      const tailContent = {'entryType': 'text', 'text': 'captured note'};
+      final tailDigest = ContentDigest.of(tailContent);
+      final link = makeTestMessagePayloadLink(
+        id: 'pl-1',
+        createdAt: DateTime(2024, 3, 10),
+        toId: tailDigest,
+        contentEntryId: 'e1',
+        sourceCreatedAt: DateTime(2024, 3, 9),
+      );
+      final payloadEntity = AgentDomainEntity.agentMessagePayload(
+        id: payloadId,
+        agentId: kTestAgentId,
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        content: <String, Object?>{
+          'promptFormat': 'v2',
+          'head': 'HEAD\n## Task Log\n',
+          'tail': '\n\nTAIL',
+          'log': <String, Object?>{
+            'until': <String, Object?>{
+              'at': link.createdAt.toIso8601String(),
+              'sourceAt': DateTime(2024, 3, 9).toIso8601String(),
+              'key': 'e1|pl-1',
+            },
+          },
+        },
+      );
+
+      when(
+        () => mockRepository.getEntity(payloadId),
+      ).thenAnswer((_) async => payloadEntity);
+      when(
+        () => mockRepository.getMessagesByKind(kTestAgentId, any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getLinksFrom(
+          kTestAgentId,
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getLinksFrom(kTestAgentId),
+      ).thenAnswer((_) async => [link]);
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(() => mockRepository.getEntity(tailDigest)).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: tailDigest,
+          agentId: 'shared-input-content',
+          createdAt: DateTime(2024, 3, 10),
+          vectorClock: null,
+          content: tailContent,
+        ),
+      );
+
+      // The reconstructor reads through the sync service's repository.
+      final outbox = MockOutboxService();
+      when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+      final vc = MockVectorClockService();
+      final container = ProviderContainer(
+        overrides: [
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+          agentSyncServiceProvider.overrideWithValue(
+            AgentSyncService(
+              repository: mockRepository,
+              outboxService: outbox,
+              vectorClockService: vc,
+            ),
+          ),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final result = await container.read(
+        agentMessagePayloadTextProvider(payloadId).future,
+      );
+
+      // head + re-derived log + tail.
+      expect(result, startsWith('HEAD\n## Task Log\n### Recent entries'));
+      expect(result, contains('(text) captured note'));
+      expect(result, endsWith('\n\nTAIL'));
     });
 
     test('returns null when entity is not found', () async {

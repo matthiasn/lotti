@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
+import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -264,6 +265,7 @@ class DayAgentWorkflow {
       runKey: runKey,
       userMessage: userMessage,
       now: now,
+      memoryView: memoryView,
     );
 
     try {
@@ -843,22 +845,48 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     return _RefineContext(baselinePlan: baselinePlan);
   }
 
+  /// The JSON line carrying the derivable day log in the encoded payload.
+  /// Used to split the persisted v2 prompt record around it (ADR 0020).
+  static const _dayLogLineAnchor = '\n  "dayLog": ';
+
   Future<void> _persistUserMessage({
     required String agentId,
     required String threadId,
     required String runKey,
     required String userMessage,
     required DateTime now,
+    WakeMemoryView? memoryView,
   }) async {
     try {
       final payloadId = _uuid.v4();
+      // ADR 0020 v2 prompt records: when the read flipped, the `dayLog`
+      // JSON field is a pure function of the synced event log — store the
+      // payload WITHOUT that line plus the reconstruction marker. The line
+      // is re-encoded on reconstruction (`json-day-log-line` wrap).
+      var content = <String, Object?>{'text': userMessage};
+      if (memoryView != null && memoryView.useCompactedLog) {
+        final anchor = userMessage.indexOf(_dayLogLineAnchor);
+        if (anchor >= 0) {
+          final lineStart = anchor + 1;
+          final lineEnd = userMessage.indexOf('\n', lineStart);
+          if (lineEnd > lineStart) {
+            content = encodePromptRecord(
+              head: userMessage.substring(0, lineStart),
+              tail: userMessage.substring(lineEnd + 1),
+              summaryId: memoryView.activeSummaryId,
+              until: memoryView.lastEventPosition,
+              wrap: promptRecordWrapDayLogJsonLine,
+            );
+          }
+        }
+      }
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessagePayload(
           id: payloadId,
           agentId: agentId,
           createdAt: now,
           vectorClock: null,
-          content: <String, Object?>{'text': userMessage},
+          content: content,
         ),
       );
       await syncService.upsertEntity(

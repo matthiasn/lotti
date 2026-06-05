@@ -29,6 +29,7 @@ import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -429,7 +430,7 @@ class TaskAgentWorkflow {
     final pendingSets = ledger.pendingSets;
 
     final systemPrompt = _buildSystemPrompt(templateCtx);
-    final userMessage = await _buildUserMessage(
+    final builtMessage = await _buildUserMessage(
       agentId: agentId,
       hasReport: lastReport != null,
       journalObservations: journalObservations,
@@ -444,6 +445,7 @@ class TaskAgentWorkflow {
       // log was dropped); otherwise the full inline log already carries it.
       compactedTaskLog: useCompactedLog ? compactedTaskLog : null,
     );
+    final userMessage = builtMessage.text;
 
     // 6. Create conversation and run with strategy.
     final conversationId = conversationRepository.createConversation(
@@ -497,13 +499,27 @@ class TaskAgentWorkflow {
     }
     try {
       final userPayloadId = _uuid.v4();
+      // ADR 0020 v2 prompt records: when the read flipped, the embedded log
+      // block is a pure function of the synced event log — store only the
+      // non-derivable halves plus the reconstruction marker, instead of the
+      // whole prompt. Legacy wakes (live journal render) keep the full blob.
+      final logStart = builtMessage.logStart;
+      final logEnd = builtMessage.logEnd;
+      final userPayloadContent = (logStart != null && logEnd != null)
+          ? encodePromptRecord(
+              head: userMessage.substring(0, logStart),
+              tail: userMessage.substring(logEnd),
+              summaryId: memoryView.activeSummaryId,
+              until: memoryView.lastEventPosition,
+            )
+          : <String, Object?>{'text': userMessage};
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessagePayload(
           id: userPayloadId,
           agentId: agentId,
           createdAt: now,
           vectorClock: null,
-          content: <String, Object?>{'text': userMessage},
+          content: userPayloadContent,
         ),
       );
       await syncService.upsertEntity(
@@ -1546,7 +1562,11 @@ to keep the user-facing suggestion list clean and trustworthy:
   /// markdown task state in compacted mode, or the full JSON header (inline
   /// log included) in legacy mode. [hasReport] gates the first-wake report
   /// bootstrap section; the prior report's prose is never injected.
-  Future<String> _buildUserMessage({
+  ///
+  /// Returns the full text plus the offsets of the embedded (derivable) log
+  /// block, so the persisted prompt record can store only the non-derivable
+  /// halves (ADR 0020 v2 prompt records).
+  Future<({String text, int? logStart, int? logEnd})> _buildUserMessage({
     required String agentId,
     required bool hasReport,
     required List<AgentMessageEntity> journalObservations,
@@ -1621,6 +1641,8 @@ to keep the user-facing suggestion list clean and trustworthy:
     final useCompactedLog =
         compactedTaskLog != null && compactedTaskLog.trim().isNotEmpty;
 
+    int? logStart;
+    int? logEnd;
     if (useCompactedLog) {
       // With compaction on (ADR 0017/0020), the task log is supplied as the
       // active summary + uncovered verbatim event tail from the captured log.
@@ -1629,9 +1651,12 @@ to keep the user-facing suggestion list clean and trustworthy:
       // The task STATE moves BELOW it into the volatile tail: its time fields
       // tick on every working wake, and a single byte flipped upstream voids
       // the provider prefix cache for everything after it.
+      buffer.writeln('## Task Log');
+      logStart = buffer.length;
+      buffer.write(compactedTaskLog);
+      logEnd = buffer.length;
       buffer
-        ..writeln('## Task Log')
-        ..writeln(compactedTaskLog)
+        ..writeln()
         ..writeln();
     } else {
       buffer
@@ -1748,7 +1773,7 @@ to keep the user-facing suggestion list clean and trustworthy:
       'Add observations if warranted.',
     );
 
-    return buffer.toString();
+    return (text: buffer.toString(), logStart: logStart, logEnd: logEnd);
   }
 
   /// Formats the [ProposalLedger] into a single markdown section the agent

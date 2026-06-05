@@ -542,9 +542,30 @@ void main() {
             ),
           );
 
+          final sentMessages = <String>[];
+          final sendCapturingRepo =
+              _MockConversationRepository(
+                  mockConversationManager,
+                )
+                ..sendMessageDelegate =
+                    ({
+                      required conversationId,
+                      required message,
+                      required model,
+                      required provider,
+                      required inferenceRepo,
+                      tools,
+                      toolChoice,
+                      temperature = 0.7,
+                      strategy,
+                    }) async {
+                      sentMessages.add(message);
+                      return null;
+                    };
+
           final compactedWorkflow = ProjectAgentWorkflow(
             agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
+            conversationRepository: sendCapturingRepo,
             aiConfigRepository: mockAiConfigRepository,
             cloudInferenceRepository: mockCloudInferenceRepository,
             journalRepository: mockJournalRepository,
@@ -562,13 +583,7 @@ void main() {
           );
           expect(result.success, isTrue);
 
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          final userText = captured
-              .whereType<AgentMessagePayloadEntity>()
-              .map((p) => p.content['text'] as String? ?? '')
-              .firstWhere((t) => t.contains('## Project Context'));
+          final userText = sentMessages.first;
 
           expect(userText, contains('## Project Log'));
           expect(userText, contains('captured project note'));
@@ -583,6 +598,20 @@ void main() {
             userText.indexOf('## Project Log'),
             lessThan(userText.indexOf('## Project Context')),
           );
+
+          // The PERSISTED prompt is a v2 record: the derivable log block is
+          // omitted; only the non-derivable halves plus the marker survive.
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final record = captured
+              .whereType<AgentMessagePayloadEntity>()
+              .map((p) => p.content)
+              .firstWhere((c) => c['promptFormat'] == 'v2');
+          expect(record['head'], endsWith('## Project Log\n'));
+          expect(record['tail']! as String, contains('## Project Context'));
+          expect(record['head'], isNot(contains('captured project note')));
+          expect(record['tail'], isNot(contains('captured project note')));
         },
       );
 

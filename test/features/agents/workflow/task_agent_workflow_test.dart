@@ -5742,6 +5742,23 @@ void main() {
             logSummarizer: stubLogSummarizer(),
           );
 
+          final sentMessages = <String>[];
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                sentMessages.add(message);
+                return null;
+              };
+
           final result = await workflow.execute(
             agentIdentity: testAgentIdentity,
             runKey: runKey,
@@ -5754,14 +5771,9 @@ void main() {
             () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
           ).called(1);
 
-          // The persisted prompt carries the slim header + the assembled task
-          // log (the captured tail) — proving the read-flip.
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          final userText = capturedPayloadEntities(captured)
-              .map((p) => p.content['text'] as String? ?? '')
-              .firstWhere((t) => t.contains('Current Task Context'));
+          // The SENT prompt carries the slim header + the assembled task log
+          // (the captured tail) — proving the read-flip.
+          final userText = sentMessages.first;
           expect(userText, contains('Slim header'));
           expect(userText, contains('## Task Log'));
           expect(userText, contains('captured tail content'));
@@ -5772,6 +5784,25 @@ void main() {
             userText.indexOf('## Task Log'),
             lessThan(userText.indexOf('## Current Task Context')),
           );
+
+          // The PERSISTED prompt is a v2 record: only the non-derivable
+          // halves are stored — the log block itself is reconstructed from
+          // the synced event log via the marker (ADR 0020).
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final record = capturedPayloadEntities(
+            captured,
+          ).map((p) => p.content).firstWhere((c) => c['promptFormat'] == 'v2');
+          expect(record['head'], endsWith('## Task Log\n'));
+          expect(
+            record['tail']! as String,
+            contains('## Current Task Context'),
+          );
+          expect(record['head'], isNot(contains('captured tail content')));
+          expect(record['tail'], isNot(contains('captured tail content')));
+          final marker = record['log']! as Map<String, Object?>;
+          expect(marker['until'], isNotNull);
         },
       );
 
@@ -6053,6 +6084,23 @@ void main() {
           logSummarizer: boomSummarizer,
         );
 
+        final sentMessages = <String>[];
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              sentMessages.add(message);
+              return null;
+            };
+
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
           runKey: runKey,
@@ -6082,12 +6130,12 @@ void main() {
           ),
           isEmpty,
         );
-        final userText = capturedPayloadEntities(captured)
-            .map((p) => p.content['text'] as String? ?? '')
-            .firstWhere((t) => t.contains('Current Task Context'));
-        expect(userText, contains('older entry'));
-        expect(userText, contains('newer entry'));
-        expect(userText, isNot(contains('Summary of earlier activity')));
+        expect(sentMessages.first, contains('older entry'));
+        expect(sentMessages.first, contains('newer entry'));
+        expect(
+          sentMessages.first,
+          isNot(contains('Summary of earlier activity')),
+        );
       });
 
       test('the runtime config flag enables compaction when no override is '
@@ -6353,6 +6401,23 @@ void main() {
           logSummarizer: stubLogSummarizer(),
         );
 
+        final sentMessages = <String>[];
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              sentMessages.add(message);
+              return null;
+            };
+
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
           runKey: runKey,
@@ -6361,12 +6426,7 @@ void main() {
         );
         expect(result.success, isTrue);
 
-        final captured = verify(
-          () => mockSyncService.upsertEntity(captureAny()),
-        ).captured;
-        final userText = capturedPayloadEntities(captured)
-            .map((p) => p.content['text'] as String? ?? '')
-            .firstWhere((t) => t.contains('Current Task Context'));
+        final userText = sentMessages.first;
 
         // The verdict is an event in the task log…
         expect(userText, contains('## Task Log'));
@@ -6658,10 +6718,25 @@ void main() {
           logSummarizer: stubLogSummarizer(),
         );
 
-        String promptOf(List<Object?> captured) =>
-            capturedPayloadEntities(captured)
-                .map((p) => p.content['text'] as String? ?? '')
-                .firstWhere((t) => t.contains('Current Task Context'));
+        final sentMessages = <String>[];
+        // Each wake sends the prompt plus a forced-report retry.
+        mockConversationRepository
+          ..maxDelegateCalls = 4
+          ..sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                sentMessages.add(message);
+                return null;
+              };
 
         final firstResult = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -6670,9 +6745,10 @@ void main() {
           threadId: threadId,
         );
         expect(firstResult.success, isTrue);
-        final firstPrompt = promptOf(
-          verify(() => mockSyncService.upsertEntity(captureAny())).captured,
-        );
+        // Filter out forced-report retry messages — only wake prompts.
+        String lastPrompt() =>
+            sentMessages.lastWhere((m) => m.contains('## Task Log'));
+        final firstPrompt = lastPrompt();
 
         // A new event lands between the wakes.
         links.add(
@@ -6695,9 +6771,7 @@ void main() {
           threadId: threadId,
         );
         expect(secondResult.success, isTrue);
-        final secondPrompt = promptOf(
-          verify(() => mockSyncService.upsertEntity(captureAny())).captured,
-        );
+        final secondPrompt = lastPrompt();
 
         // Everything before the task log is byte-identical across the wakes…
         String head(String s) => s.substring(0, s.indexOf('## Task Log'));

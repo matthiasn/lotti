@@ -348,21 +348,38 @@ void main() {
       final result = await execute(sut, triggerTokens: {dayId});
       expect(result.success, isTrue);
 
-      final userText = upsertedEntities
-          .whereType<AgentMessagePayloadEntity>()
-          .map((p) => p.content['text'] as String? ?? '')
-          .firstWhere((t) => t.contains('"dayId"'));
-
-      expect(userText, contains('"dayLog"'));
-      expect(userText, contains('(capture) morning planning capture'));
-      expect(userText, contains('(observation) a day observation'));
-      // The substrate supersedes the separate listing.
-      expect(userText, isNot(contains('"recentObservations"')));
-      // Event order inside the log: capture (07:01) before observation (08:00).
+      // The SENT prompt carries the dayLog with capture transcripts and
+      // observations interleaved in event order (capture 07:01 before
+      // observation 08:00), superseding the recentObservations listing.
+      final sent = conversationRepository.lastUserMessage!;
+      expect(sent, contains('"dayLog"'));
+      expect(sent, contains('(capture) morning planning capture'));
+      expect(sent, contains('(observation) a day observation'));
+      expect(sent, isNot(contains('"recentObservations"')));
       expect(
-        userText.indexOf('morning planning capture'),
-        lessThan(userText.indexOf('a day observation')),
+        sent.indexOf('morning planning capture'),
+        lessThan(sent.indexOf('a day observation')),
       );
+
+      // The PERSISTED payload is a v2 record with the derivable line
+      // stripped and the marker stored.
+      final record = upsertedEntities
+          .whereType<AgentMessagePayloadEntity>()
+          .map((p) => p.content)
+          .firstWhere((c) => c['promptFormat'] == 'v2');
+      final head = record['head']! as String;
+      final tail = record['tail']! as String;
+      expect(record['wrap'], 'json-day-log-line');
+      expect(head, contains('"dayId"'));
+      expect(head, isNot(contains('"dayLog"')));
+      expect(tail, isNot(contains('"dayLog"')));
+      expect(tail, contains('"triggerTokens"'));
+      // The derivable log content is gone from storage…
+      expect(head + tail, isNot(contains('morning planning capture')));
+      // …and the substrate supersedes the separate listing.
+      expect(head + tail, isNot(contains('"recentObservations"')));
+      final marker = record['log']! as Map<String, Object?>;
+      expect(marker['until'], isNotNull);
     });
 
     test(

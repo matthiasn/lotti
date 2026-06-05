@@ -445,6 +445,25 @@ feedback loop), and `update_report` is conditional: the agent publishes only
 when the report would materially change (the first report is still forced via
 a retry). A wake with nothing report-worthy ends with a plain-text note.
 
+**Prompt persistence stores only what isn't derivable (v2 prompt records).**
+A compacted wake no longer persists its full rendered prompt: the embedded
+log block is a pure function of the synced event log, so the payload stores
+just the non-derivable halves (the live-state head and volatile tail) plus a
+reconstruction marker — the active checkpoint's summary id and the position
+of the last rendered tail event (`prompt_record.dart`). The conversation
+view's expandable User row rebuilds the full prompt on demand via
+`WakePromptReconstructor` → `AgentLogCompactor.assembleContextAsOf`: the
+pinned checkpoint (even if since invalidated — the wake really rendered its
+prose) plus the visible events up to the boundary, with inline events
+(verdicts, day captures) re-derived from their synced entities. Later
+retractions still suppress, so deleted content never resurfaces in a
+reconstruction; a late-synced event inside the boundary makes the
+reconstruction reflect the CONVERGED log — semantically auditable rather
+than forensically byte-exact. The day agent splices its log back as the
+JSON `"dayLog"` line (`json-day-log-line` wrap). Legacy (flag-off) wakes
+keep full blobs — their prompts are live journal renders with nothing to
+re-derive.
+
 The dormant model fields now earn their keep: `AgentMessageKind.summary`,
 `summaryStartMessageId`/`summaryEndMessageId`/`summaryDepth`,
 `AgentStateEntity.recentHeadMessageId`/`latestSummaryMessageId`.
@@ -1303,13 +1322,9 @@ the default-off `enable_agent_compaction` flag — see *Memory compaction &
 input capture* above for the live behavior (event-log read, LLM-distilled
 summary checkpoints, decision/observation events). Remaining work:
 
-- drop the per-wake **user-prompt blob** persistence (the system prompt is
-  already content-addressed; the user message is still stored once per wake);
-- extend capture + compaction to the **project/day/improver** workflows
-  (task agents only today);
 - **profile-aware watermarks** — derive trigger/retain from the resolved
   model's context window and local-vs-hosted inference instead of the global
-  50k/20k constructor defaults.
+  50k/20k defaults (`AgentWakeMemory` params are the seam).
 
 ## User-Facing UI Surfaces
 

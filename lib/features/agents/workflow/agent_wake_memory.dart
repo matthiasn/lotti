@@ -18,6 +18,8 @@ class WakeMemoryView {
     required this.compactionOn,
     required this.compactedLog,
     required this.useCompactedLog,
+    this.activeSummaryId,
+    this.lastEventPosition,
   });
 
   /// Whether THIS wake's capture refreshed the input frontier. The read-flip
@@ -36,6 +38,14 @@ class WakeMemoryView {
   /// inline context: compaction on, capture succeeded, and a non-empty
   /// replacement exists.
   final bool useCompactedLog;
+
+  /// Reconstruction marker (ADR 0020 v2 prompt records): the active
+  /// checkpoint's summary-message id at assembly time, or null.
+  final String? activeSummaryId;
+
+  /// Reconstruction marker: position of the last rendered tail event, or
+  /// null when the tail was empty.
+  final EventPosition? lastEventPosition;
 }
 
 /// The shared per-wake memory pipeline (ADR 0016/0017/0020), one instance per
@@ -202,14 +212,15 @@ class AgentWakeMemory {
     // compaction are optional and non-fatal, so if nothing was captured
     // (empty assembly) the wake falls back to the full inline context rather
     // than losing its log.
-    String? compactedLog;
+    AssembledLog? assembled;
     try {
-      compactedLog = await compactor.assembleContext(agentId);
+      assembled = await compactor.assembleContextDetailed(agentId);
     } catch (e) {
       // Non-fatal: a read-side bug degrades to the legacy inline context
       // (and logs loudly) instead of killing the wake.
       _logError('failed to assemble compacted task log', error: e);
     }
+    final compactedLog = assembled?.text;
     final useCompactedLog =
         captureSucceeded &&
         compactedLog != null &&
@@ -225,6 +236,8 @@ class AgentWakeMemory {
       compactionOn: true,
       compactedLog: compactedLog,
       useCompactedLog: useCompactedLog,
+      activeSummaryId: assembled?.activeSummaryId,
+      lastEventPosition: assembled?.lastEventPosition,
     );
   }
 }
