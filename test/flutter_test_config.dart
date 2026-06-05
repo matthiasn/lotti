@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'test_utils/clipboard_test_context.dart';
 
@@ -29,6 +31,21 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // handler-less context from whichever test happens to write first. See
   // installSharedClipboardTestContext for the full rationale.
   installSharedClipboardTestContext();
+
+  // Mocktail keeps argument matchers (`any`, `captureAny`) in PROCESS-GLOBAL
+  // state between `when`/`verify` registration and the mock invocation that
+  // consumes them. A matcher that is registered but never consumed (e.g. a
+  // `when` whose inner call throws before reaching `noSuchMethod`) silently
+  // poisons the next mock interaction — anywhere in the isolate. Under plain
+  // `flutter test` each file gets a fresh isolate, so the damage is
+  // contained; under very_good's test optimizer (one isolate for the whole
+  // suite/shard) it can corrupt an unrelated test in a different file, with
+  // the victim depending on the platform-specific bundle order. Resetting
+  // between tests confines any such leak to the test that caused it.
+  // Registered fallback values survive the reset by design, and per-mock
+  // stubs live on the mock instances, so setUpAll-created stubs keep
+  // working.
+  tearDown(resetMocktailState);
 
   await testMain();
 }

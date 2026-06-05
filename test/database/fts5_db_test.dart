@@ -10,15 +10,10 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:research_package/model.dart';
 
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
-
-class _MockPathProviderPlatform extends Mock
-    with MockPlatformInterfaceMixin
-    implements PathProviderPlatform {}
 
 Metadata _buildMetadata(String id) {
   final timestamp = DateTime(2024, 1, 1, 12);
@@ -61,7 +56,7 @@ void main() {
       () async {
         final tempDir = Directory.systemTemp.createTempSync('fts5_db_test_');
         final originalPathProvider = PathProviderPlatform.instance;
-        final mockPathProvider = _MockPathProviderPlatform();
+        final mockPathProvider = MockPathProviderPlatform();
 
         PathProviderPlatform.instance = mockPathProvider;
         addTearDown(

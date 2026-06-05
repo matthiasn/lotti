@@ -38,6 +38,7 @@
           <p>New "Agent fork healing" flag in Settings (off by default): agents whose histories diverged through multi-device use merge them back together at the next wake.</p>
           <p>Agent memory compaction now runs by default for task, project, and day agents, and the Settings flag that controlled it has been removed.</p>
           <p>Config flag changes from Settings now sync to your other devices when a flag is flipped, without broadcasting default startup flag seeding.</p>
+          <p>Label usage counts in the labels list no longer include deleted journal entries, and entries marked private only count while the "Show private entries" flag is enabled.</p>
       </description>
     </release>
     <release version="0.9.1014" date="2026-06-04">

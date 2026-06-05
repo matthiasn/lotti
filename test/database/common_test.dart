@@ -236,36 +236,9 @@ void main() {
   });
 
   group('openDbConnection Tests', () {
-    test('creates in-memory database when inMemoryDatabase=true', () {
-      final db = openDbConnection('test.db', inMemoryDatabase: true);
-      expect(db, isNotNull);
-    });
-
-    test('returns LazyDatabase instance', () {
-      final db = openDbConnection('test.db', inMemoryDatabase: true);
-      expect(db.toString(), contains('LazyDatabase'));
-    });
-
-    test('lazy initialization behavior with in-memory database', () async {
-      final db = openDbConnection('test.db', inMemoryDatabase: true);
-
-      // LazyDatabase should not throw on creation
-      expect(db, isNotNull);
-
-      // The actual database connection is created lazily when first used
-      // We can verify this doesn't throw
-      expect(() => db, returnsNormally);
-    });
-
-    test('different file names create separate connections', () {
-      final db1 = openDbConnection('db1.sqlite', inMemoryDatabase: true);
-      final db2 = openDbConnection('db2.sqlite', inMemoryDatabase: true);
-
-      expect(db1, isNotNull);
-      expect(db2, isNotNull);
-      // Note: Can't easily verify they're different without opening them
-    });
-
+    // Constructor smoke tests were removed: behavioral coverage for
+    // openDbConnection (WAL mode, pragmas, directory creation) lives in
+    // open_db_connection_test.dart.
     test('in-memory database does not create file', () async {
       final testDir = setupTestDirectory();
 
@@ -284,53 +257,6 @@ void main() {
         }
       }
     });
-
-    test('handles special characters in filename', () {
-      final specialNames = [
-        'test-db.sqlite',
-        'test_db.sqlite',
-        'test.db.sqlite',
-      ];
-
-      for (final name in specialNames) {
-        final db = openDbConnection(name, inMemoryDatabase: true);
-        expect(db, isNotNull);
-      }
-    });
-
-    test('multiple calls with same filename return new instances', () {
-      const fileName = 'test.db';
-
-      final db1 = openDbConnection(fileName, inMemoryDatabase: true);
-      final db2 = openDbConnection(fileName, inMemoryDatabase: true);
-
-      expect(db1, isNotNull);
-      expect(db2, isNotNull);
-      // Each call creates a new LazyDatabase instance
-    });
-  });
-
-  group('openDbConnection Integration Tests', () {
-    late Directory testDir;
-
-    setUp(() {
-      testDir = setupTestDirectory();
-    });
-
-    tearDown(() async {
-      if (testDir.existsSync()) {
-        await testDir.delete(recursive: true);
-      }
-    });
-
-    test('creates database file when inMemoryDatabase=false', () async {
-      const fileName = 'test_real_db.sqlite';
-
-      // Note: This test verifies the structure but doesn't actually
-      // open the database since that requires the full app context
-      final db = openDbConnection(fileName);
-      expect(db, isNotNull);
-    });
   });
 
   group('openDbConnection File-based Tests', () {
@@ -345,20 +271,6 @@ void main() {
         await testDir.delete(recursive: true);
       }
     });
-
-    test(
-      'creates file-based database connection with custom directory',
-      () async {
-        final db = openDbConnection(
-          'test_file.db',
-          documentsDirectoryProvider: () async => testDir,
-          tempDirectoryProvider: () async => testDir,
-        );
-
-        expect(db, isNotNull);
-        expect(db.toString(), contains('LazyDatabase'));
-      },
-    );
 
     test('initializes database file on first use', () async {
       final db = EditorDb(

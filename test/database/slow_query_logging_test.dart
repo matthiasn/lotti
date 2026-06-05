@@ -7,7 +7,7 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
-class MockQueryExecutor extends Mock implements QueryExecutor {}
+import '../mocks/mocks.dart';
 
 void main() {
   setUpAll(() {

@@ -131,6 +131,7 @@ import 'package:lotti/utils/location.dart';
 import 'package:matrix/matrix.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -896,3 +897,9 @@ class MockPlayer extends Mock implements Player {}
 /// Mock for the MediaKit [PlayerStream] exposing event streams such as
 /// `duration`.
 class MockPlayerStream extends Mock implements PlayerStream {}
+
+class MockQueryExecutor extends Mock implements drift.QueryExecutor {}
+
+class MockPathProviderPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements PathProviderPlatform {}

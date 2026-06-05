@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Config flag changes from Settings now sync to the user's other devices when
   the flag is flipped, without broadcasting default startup flag seeding.
 
+### Fixed
+- Label usage counts in the labels list no longer include deleted journal
+  entries, and entries marked private only count while the "Show private
+  entries" flag is enabled.
+
 ## [0.9.1014]
 ### Added
 - New "Agent memory compaction" flag in Settings → Flags (off by default):

@@ -3189,11 +3189,18 @@ void main() {
   });
 
   group('getMissingEntries', () {
+    // Stubs and verifies must mirror the exact parameter shape of the
+    // service's call site (which passes limit/maxRequestCount/offset/minAge
+    // explicitly and omits `now`): noSuchMethod forwarders for mixin-declared
+    // methods do not reliably fill in omitted optional parameters, so a stub
+    // that omits a parameter the production call passes never matches.
     test('delegates to database with default parameters', () async {
       when(
         () => mockDb.getMissingEntries(
           limit: any(named: 'limit'),
           maxRequestCount: any(named: 'maxRequestCount'),
+          offset: any(named: 'offset'),
+          minAge: any(named: 'minAge'),
         ),
       ).thenAnswer((_) async => []);
 
@@ -3203,6 +3210,8 @@ void main() {
         () => mockDb.getMissingEntries(
           limit: 50,
           maxRequestCount: 10,
+          offset: 0,
+          minAge: Duration.zero,
         ),
       ).called(1);
     });
@@ -3212,6 +3221,8 @@ void main() {
         () => mockDb.getMissingEntries(
           limit: any(named: 'limit'),
           maxRequestCount: any(named: 'maxRequestCount'),
+          offset: any(named: 'offset'),
+          minAge: any(named: 'minAge'),
         ),
       ).thenAnswer((_) async => []);
 
@@ -3221,6 +3232,8 @@ void main() {
         () => mockDb.getMissingEntries(
           limit: 25,
           maxRequestCount: 8,
+          offset: 0,
+          minAge: Duration.zero,
         ),
       ).called(1);
     });
@@ -3750,12 +3763,18 @@ void main() {
   });
 
   group('getMissingEntriesWithLimits', () {
+    // Stubs and verifies must mirror the exact parameter shape of the
+    // service's call site (which passes everything except `now` explicitly):
+    // noSuchMethod forwarders for mixin-declared methods do not reliably fill
+    // in omitted optional parameters, so a stub that omits a parameter the
+    // production call passes never matches.
     test('delegates to database with default parameters', () async {
       when(
         () => mockDb.getMissingEntriesWithLimits(
           limit: any(named: 'limit'),
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
+          minAge: any(named: 'minAge'),
           maxPerHost: any(named: 'maxPerHost'),
           offset: any(named: 'offset'),
         ),
@@ -3768,6 +3787,7 @@ void main() {
           limit: 50,
           maxRequestCount: 10,
           maxAge: null,
+          minAge: Duration.zero,
           maxPerHost: null,
           offset: 0,
         ),
@@ -3780,6 +3800,7 @@ void main() {
           limit: any(named: 'limit'),
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
+          minAge: any(named: 'minAge'),
           maxPerHost: any(named: 'maxPerHost'),
           offset: any(named: 'offset'),
         ),
@@ -3789,6 +3810,7 @@ void main() {
         limit: 25,
         maxRequestCount: 5,
         maxAge: const Duration(hours: 12),
+        minAge: const Duration(minutes: 3),
         maxPerHost: 100,
         offset: 9,
       );
@@ -3798,6 +3820,7 @@ void main() {
           limit: 25,
           maxRequestCount: 5,
           maxAge: const Duration(hours: 12),
+          minAge: const Duration(minutes: 3),
           maxPerHost: 100,
           offset: 9,
         ),
@@ -3815,6 +3838,7 @@ void main() {
           limit: any(named: 'limit'),
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
+          minAge: any(named: 'minAge'),
           maxPerHost: any(named: 'maxPerHost'),
           offset: any(named: 'offset'),
         ),

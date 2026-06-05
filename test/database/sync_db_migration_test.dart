@@ -46,6 +46,13 @@ void main() {
   });
 
   tearDown(() async {
+    // Reset the mocked channel so later suites in the same run see real
+    // path_provider behavior again.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          null,
+        );
     getIt.unregister<Directory>();
     if (previousDirectory != null) {
       getIt.registerSingleton<Directory>(previousDirectory!);
@@ -630,8 +637,249 @@ void main() {
     });
 
     test(
-      'v10 migration adds host_entry_status index when stepping v9 → v10 '
-      'before the v11 swap',
+      'v4–v6 migrations add dedup, payload-size, and priority columns when '
+      'upgrading from v3',
+      () async {
+        final dbFile = File(path.join(testDirectory!.path, 'test_sync_v4.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+        _createOutboxV1(sqlite);
+        _createSyncSequenceLogV3(sqlite);
+        _createHostActivity(sqlite);
+        sqlite.execute('PRAGMA user_version = 3');
+        sqlite.dispose();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v4.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 24);
+
+        final columns = await db
+            .customSelect('PRAGMA table_info(outbox)')
+            .get();
+        final columnNames = columns
+            .map((row) => row.read<String>('name'))
+            .toSet();
+        expect(
+          columnNames,
+          containsAll(<String>{'outbox_entry_id', 'payload_size', 'priority'}),
+        );
+
+        // The v4 dedup column is functional after migration: a row written
+        // with an entry id resolves through findPendingByEntryId.
+        await db.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('subject'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 3, 15)),
+            updatedAt: Value(DateTime(2024, 3, 15)),
+            outboxEntryId: const Value('entry-after-v4'),
+          ),
+        );
+        final pending = await db.findPendingByEntryId('entry-after-v4');
+        expect(pending, isNotNull);
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v7 migration backfills json_path for agent entity/link rows and '
+      'leaves other payload types untouched',
+      () async {
+        final dbFile = File(path.join(testDirectory!.path, 'test_sync_v7.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+        _createOutboxV6(sqlite);
+        _createSyncSequenceLogV3(sqlite);
+        _createHostActivity(sqlite);
+
+        final agentEntity = SyncSequencePayloadType.agentEntity.index;
+        final agentLink = SyncSequencePayloadType.agentLink.index;
+        final journalEntity = SyncSequencePayloadType.journalEntity.index;
+        sqlite.execute('''
+          INSERT INTO sync_sequence_log
+            (host_id, counter, entry_id, payload_type, status,
+             created_at, updated_at)
+          VALUES
+            ('host-1', 1, 'agent-1', $agentEntity, 2, 1704067200, 1704067200),
+            ('host-1', 2, 'link-1', $agentLink, 2, 1704067200, 1704067200),
+            ('host-1', 3, 'journal-1', $journalEntity, 0,
+             1704067200, 1704067200),
+            ('host-1', 4, NULL, $agentEntity, 1, 1704067200, 1704067200)
+        ''');
+        sqlite.execute('PRAGMA user_version = 6');
+        sqlite.dispose();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v7.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 24);
+
+        final rows = await db
+            .customSelect(
+              'SELECT counter, json_path FROM sync_sequence_log '
+              'ORDER BY counter',
+            )
+            .get();
+        expect(rows, hasLength(4));
+        final byCounter = {
+          for (final row in rows)
+            row.read<int>('counter'): row.readNullable<String>('json_path'),
+        };
+        // Agent payload paths are derivable from entry_id — the backfill
+        // UPDATE must populate them so the zombie-file sweep can delete
+        // stale files for rows stuck in `requested` before v7.
+        expect(byCounter[1], '/agent_entities/agent-1.json');
+        expect(byCounter[2], '/agent_links/link-1.json');
+        // Non-agent payloads and rows without an entry_id stay NULL.
+        expect(byCounter[3], isNull);
+        expect(byCounter[4], isNull);
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v12 migration creates the inbound queue tables when upgrading from '
+      'exactly v11',
+      () async {
+        final dbFile = File(
+          path.join(testDirectory!.path, 'test_sync_v12.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+        _createOutboxV6(sqlite);
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
+        _createHostActivity(sqlite);
+        sqlite.execute('PRAGMA user_version = 11');
+        sqlite.dispose();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v12.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 24);
+
+        // v12's createTable uses the CURRENT schema, so the queue table
+        // must come up with the Phase-3 ledger columns already present and
+        // the v13 ALTERs must have been skipped (guarded on from >= 12).
+        final queueColumns = await db
+            .customSelect('PRAGMA table_info(inbound_event_queue)')
+            .get();
+        final names = queueColumns
+            .map((row) => row.read<String>('name'))
+            .toSet();
+        expect(
+          names,
+          containsAll(<String>{
+            'queue_id',
+            'event_id',
+            'status',
+            'committed_at',
+            'abandoned_at',
+            'last_error_reason',
+            'resurrection_count',
+            'json_path',
+          }),
+        );
+
+        final markers = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='table' "
+              "AND name='queue_markers'",
+            )
+            .get();
+        expect(markers, hasLength(1));
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v15–v20 migrations add the sweep and inbound-queue indexes when '
+      'upgrading from v14',
+      () async {
+        final dbFile = File(
+          path.join(testDirectory!.path, 'test_sync_v15_20.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+        _createOutboxV6(sqlite);
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
+        _createHostActivity(sqlite);
+        _createInboundEventQueueV13(sqlite);
+        _createQueueMarkers(sqlite);
+        sqlite.execute('PRAGMA user_version = 14');
+        sqlite.dispose();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v15_20.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 24);
+
+        const expectedIndexes = <String>{
+          // v15: retire/stats/claim hotspots from the production slow log.
+          'idx_inbound_event_queue_abandoned_reason',
+          'idx_sync_sequence_log_actionable_status_updated_at',
+          'idx_sync_sequence_log_host_status',
+          'idx_outbox_actionable_priority_created_at',
+          // v16: retireExhausted partial keyed on last_requested_at.
+          'idx_sync_sequence_log_actionable_status_last_requested_at',
+          // v17: outbox merge-dedup + resurrection partials.
+          'idx_outbox_pending_entry_id_created_at',
+          'idx_inbound_event_queue_abandoned_reason_resurrection',
+          // v18–v20: QueueStats probes.
+          'idx_inbound_event_queue_status_due_lease',
+          'idx_inbound_event_queue_status_enqueued',
+          'idx_inbound_event_queue_status_producer_enqueued',
+        };
+        final indexRows = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='index'",
+            )
+            .get();
+        final indexNames = indexRows
+            .map((row) => row.read<String>('name'))
+            .toSet();
+        expect(indexNames, containsAll(expectedIndexes));
+
+        // v16 also rebuilds the drain partial so crash-recovered leases are
+        // peekable: its WHERE must include the 'leased' status.
+        final ready = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_inbound_event_queue_ready'",
+            )
+            .get();
+        expect(ready, hasLength(1));
+        expect(ready.first.readNullable<String>('sql'), contains('leased'));
+
+        // The v16 retire partial keeps the index dense via the NOT NULL
+        // guard matching retireExhaustedRequestedEntries' predicate.
+        final retire = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='index' AND name = "
+              "'idx_sync_sequence_log_actionable_status_last_requested_at'",
+            )
+            .get();
+        expect(retire, hasLength(1));
+        expect(
+          retire.first.readNullable<String>('sql'),
+          contains('last_requested_at IS NOT NULL'),
+        );
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v9→v24 migration: the v10 prefix index is replaced by the v11 '
+      'covering counter index',
       () async {
         final dbFile = File(path.join(testDirectory!.path, 'test_sync_v10.db'));
         final sqlite = sqlite3.open(dbFile.path);
@@ -1547,4 +1795,109 @@ void main() {
       },
     );
   });
+}
+
+/// Seeds the v1 `outbox` table (before the v4–v6 column additions).
+void _createOutboxV1(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS outbox (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      status INTEGER NOT NULL DEFAULT 0,
+      retries INTEGER NOT NULL DEFAULT 0,
+      message TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      file_path TEXT
+    )
+  ''');
+}
+
+/// Seeds the `outbox` table as of v6 (dedup, payload-size, and priority
+/// columns present).
+void _createOutboxV6(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS outbox (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      status INTEGER NOT NULL DEFAULT 0,
+      retries INTEGER NOT NULL DEFAULT 0,
+      message TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      file_path TEXT,
+      outbox_entry_id TEXT,
+      payload_size INTEGER,
+      priority INTEGER NOT NULL DEFAULT 2
+    )
+  ''');
+}
+
+/// Seeds the `sync_sequence_log` table as of v3 (payload_type present).
+/// Pass [withJsonPath] for baselines at or past v7.
+void _createSyncSequenceLogV3(Database sqlite, {bool withJsonPath = false}) {
+  final jsonPathColumn = withJsonPath ? 'json_path TEXT,' : '';
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS sync_sequence_log (
+      host_id TEXT NOT NULL,
+      counter INTEGER NOT NULL,
+      entry_id TEXT,
+      payload_type INTEGER NOT NULL DEFAULT 0,
+      originating_host_id TEXT,
+      status INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      request_count INTEGER NOT NULL DEFAULT 0,
+      last_requested_at INTEGER,
+      $jsonPathColumn
+      PRIMARY KEY (host_id, counter)
+    )
+  ''');
+}
+
+/// Seeds the `host_activity` table (unchanged since v2).
+void _createHostActivity(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS host_activity (
+      host_id TEXT NOT NULL PRIMARY KEY,
+      last_seen_at INTEGER NOT NULL
+    )
+  ''');
+}
+
+/// Seeds the `inbound_event_queue` table as of v13 (Phase-3 ledger columns
+/// present).
+void _createInboundEventQueueV13(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS inbound_event_queue (
+      queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id TEXT NOT NULL UNIQUE,
+      room_id TEXT NOT NULL,
+      origin_ts INTEGER NOT NULL,
+      producer TEXT NOT NULL,
+      raw_json TEXT NOT NULL,
+      enqueued_at INTEGER NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      next_due_at INTEGER NOT NULL DEFAULT 0,
+      lease_until INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'enqueued',
+      committed_at INTEGER,
+      abandoned_at INTEGER,
+      last_error_reason TEXT,
+      resurrection_count INTEGER NOT NULL DEFAULT 0,
+      json_path TEXT
+    )
+  ''');
+}
+
+/// Seeds the `queue_markers` table (added in v12, unchanged since).
+void _createQueueMarkers(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS queue_markers (
+      room_id TEXT NOT NULL PRIMARY KEY,
+      last_applied_event_id TEXT,
+      last_applied_ts INTEGER NOT NULL DEFAULT 0,
+      last_applied_commit_seq INTEGER NOT NULL DEFAULT 0
+    )
+  ''');
 }
