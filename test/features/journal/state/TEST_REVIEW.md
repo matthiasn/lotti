@@ -187,7 +187,7 @@ _Date: 2026-06-02_
 No Glados tests currently exist anywhere in `test/features/journal/state/`. The following are
 genuine candidates with algebraic invariants over pure logic:
 
-- [ ] **[HIGH]** `lib/features/journal/state/journal_query_runner.dart` —
+- [x] **[HIGH]** `lib/features/journal/state/journal_query_runner.dart` —
   `JournalQueryRunner.sortByDueDate` (lines 393–414): This is a pure, deterministic comparator
   over a list of `JournalEntity`. Its invariants are:
   1. **Total order**: output is always a permutation of the input.

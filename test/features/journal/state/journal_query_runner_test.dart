@@ -2,6 +2,7 @@
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -310,6 +311,55 @@ void main() {
         expect(sorted[2].meta.id, equals('oldest'));
       },
     );
+
+    glados.Glados(
+      glados.any.dueDateSortScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('generated task lists satisfy all sort invariants', (scenario) {
+      final input = scenario.tasks;
+      final sorted = JournalQueryRunner.sortByDueDate(input);
+
+      // 1. Total order: the output is a permutation of the input.
+      expect(
+        sorted.map((e) => e.meta.id).toSet(),
+        input.map((e) => e.meta.id).toSet(),
+      );
+      expect(sorted.length, input.length);
+
+      final dues = sorted.map((e) => e is Task ? e.data.due : null).toList();
+
+      // 2. Tasks with due dates always precede tasks without.
+      final firstWithoutDue = dues.indexWhere((d) => d == null);
+      if (firstWithoutDue != -1) {
+        expect(
+          dues.sublist(firstWithoutDue).every((d) => d == null),
+          isTrue,
+          reason: 'due-less task before a task with a due date: $dues',
+        );
+      }
+
+      for (var i = 1; i < sorted.length; i++) {
+        final prevDue = dues[i - 1];
+        final currDue = dues[i];
+        if (prevDue != null && currDue != null) {
+          // 3. Due dates are non-decreasing.
+          expect(prevDue.isAfter(currDue), isFalse);
+          if (prevDue == currDue) {
+            // 4. Same due date -> dateFrom non-increasing (newest first).
+            expect(
+              sorted[i - 1].meta.dateFrom.isBefore(sorted[i].meta.dateFrom),
+              isFalse,
+            );
+          }
+        } else if (prevDue == null && currDue == null) {
+          // 5. Among due-less tasks, dateFrom non-increasing.
+          expect(
+            sorted[i - 1].meta.dateFrom.isBefore(sorted[i].meta.dateFrom),
+            isFalse,
+          );
+        }
+      }
+    }, tags: 'glados');
   });
 
   group('runQuery - journal entries', () {
@@ -948,4 +998,53 @@ void main() {
       });
     });
   });
+}
+
+/// A generated mix of tasks with and without due dates, with deliberately
+/// colliding due dates and varied dateFrom values so every branch of the
+/// sortByDueDate comparator (due vs due, due vs none, tie-breaks) is hit.
+class _DueDateSortScenario {
+  _DueDateSortScenario({
+    required int withDueCount,
+    required int withoutDueCount,
+    required int seed,
+  }) : tasks = [
+         for (var i = 0; i < withDueCount; i++)
+           _makeTask(
+             id: 'due-$i',
+             createdAt: DateTime(2024, 3, 1 + (seed * 7 + i) % 28),
+             // % 5 keeps the due-date pool small so ties are frequent.
+             due: DateTime(2024, 6, 1 + (seed + i * 3) % 5),
+           ),
+         for (var i = 0; i < withoutDueCount; i++)
+           _makeTask(
+             id: 'free-$i',
+             createdAt: DateTime(2024, 4, 1 + (seed * 5 + i) % 28),
+           ),
+       ] {
+    // Deterministic interleave so the input order is not pre-sorted.
+    if (seed.isOdd) {
+      tasks = tasks.reversed.toList();
+    }
+  }
+
+  List<Task> tasks;
+
+  @override
+  String toString() =>
+      '_DueDateSortScenario(${tasks.map((t) => '${t.meta.id}@'
+          '${t.data.due}').join(', ')})';
+}
+
+extension _AnyDueDateSortScenario on glados.Any {
+  glados.Generator<_DueDateSortScenario> get dueDateSortScenario => combine3(
+    intInRange(0, 7),
+    intInRange(0, 7),
+    intInRange(0, 1000),
+    (int withDue, int withoutDue, int seed) => _DueDateSortScenario(
+      withDueCount: withDue,
+      withoutDueCount: withoutDue,
+      seed: seed,
+    ),
+  );
 }
