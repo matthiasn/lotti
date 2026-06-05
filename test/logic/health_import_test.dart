@@ -515,194 +515,81 @@ void main() {
       expect(data.dataType, 'HealthDataType.HEART_RATE');
     });
 
-    test('should duplicate sleep subtypes as SLEEP_ASLEEP', () async {
-      final mobileImport = createMobileHealthImport();
-      final dateFrom = DateTime(2024, 3);
-      final dateTo = DateTime(2024, 3, 1, 8);
+    // Sleep-duplication invariant, parameterized over the full contract:
+    // only SLEEP_DEEP and SLEEP_REM get an additional generic SLEEP_ASLEEP
+    // copy (for comparability with pre-iOS-16 data). All other sleep stages
+    // and non-sleep types must persist exactly one entry.
+    //
+    // Note: the impl's duplication set also lists SLEEP_ASLEEP_CORE and
+    // SLEEP_ASLEEP_UNSPECIFIED, but those names do not exist in the current
+    // health-package enum, so they are unreachable via dataPoint.type.
+    const sleepDuplicationExpectations = <HealthDataType, bool>{
+      HealthDataType.SLEEP_DEEP: true,
+      HealthDataType.SLEEP_REM: true,
+      HealthDataType.SLEEP_LIGHT: false,
+      HealthDataType.SLEEP_IN_BED: false,
+      HealthDataType.SLEEP_AWAKE: false,
+      HealthDataType.SLEEP_ASLEEP: false,
+      HealthDataType.WEIGHT: false,
+    };
 
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
+    for (final MapEntry(key: type, value: duplicates)
+        in sleepDuplicationExpectations.entries) {
+      test(
+        duplicates
+            ? 'duplicates $type as generic SLEEP_ASLEEP'
+            : 'does NOT duplicate $type',
+        () async {
+          final mobileImport = createMobileHealthImport();
+          final dateFrom = DateTime(2024, 3);
+          final dateTo = DateTime(2024, 3, 1, 8);
 
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          makeNumericDataPoint(
-            type: HealthDataType.SLEEP_DEEP,
-            value: 90,
+          when(
+            () => mockHealthService.requestAuthorization(any()),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockHealthService.getHealthDataFromTypes(
+              types: any(named: 'types'),
+              startTime: any(named: 'startTime'),
+              endTime: any(named: 'endTime'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              makeNumericDataPoint(
+                type: type,
+                value: 90,
+                dateFrom: dateFrom,
+                dateTo: dateTo,
+                unit: HealthDataUnit.MINUTE,
+              ),
+            ],
+          );
+          when(
+            () => mockPersistenceLogic.createQuantitativeEntry(any()),
+          ).thenAnswer((_) async => null);
+
+          await mobileImport.fetchHealthData(
+            types: [type],
             dateFrom: dateFrom,
             dateTo: dateTo,
-            unit: HealthDataUnit.MINUTE,
-          ),
-        ],
+          );
+
+          final captured = verify(
+            () => mockPersistenceLogic.createQuantitativeEntry(captureAny()),
+          ).captured.cast<DiscreteQuantityData>();
+
+          expect(captured.first.dataType, type.toString());
+          if (duplicates) {
+            expect(captured.length, 2);
+            expect(captured.last.dataType, 'HealthDataType.SLEEP_ASLEEP');
+            // The duplicated entry preserves the original value.
+            expect(captured.last.value, captured.first.value);
+          } else {
+            expect(captured.length, 1);
+          }
+        },
       );
-
-      when(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).thenAnswer((_) async => null);
-
-      await mobileImport.fetchHealthData(
-        types: [HealthDataType.SLEEP_DEEP],
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-
-      final captured = verify(
-        () => mockPersistenceLogic.createQuantitativeEntry(
-          captureAny(),
-        ),
-      ).captured;
-
-      // Should create 2 entries: original SLEEP_DEEP + duplicated SLEEP_ASLEEP
-      expect(captured.length, 2);
-      final originalData = captured.first as DiscreteQuantityData;
-      final duplicatedData = captured.last as DiscreteQuantityData;
-      expect(originalData.dataType, 'HealthDataType.SLEEP_DEEP');
-      expect(duplicatedData.dataType, 'HealthDataType.SLEEP_ASLEEP');
-      // Duplicated entry preserves the same value as the original
-      expect(duplicatedData.value, originalData.value);
-    });
-
-    test('should duplicate SLEEP_REM as SLEEP_ASLEEP', () async {
-      final mobileImport = createMobileHealthImport();
-      final dateFrom = DateTime(2024, 3);
-      final dateTo = DateTime(2024, 3, 1, 8);
-
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          makeNumericDataPoint(
-            type: HealthDataType.SLEEP_REM,
-            value: 45,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-            unit: HealthDataUnit.MINUTE,
-          ),
-        ],
-      );
-
-      when(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).thenAnswer((_) async => null);
-
-      await mobileImport.fetchHealthData(
-        types: [HealthDataType.SLEEP_REM],
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-
-      final captured = verify(
-        () => mockPersistenceLogic.createQuantitativeEntry(
-          captureAny(),
-        ),
-      ).captured;
-
-      expect(captured.length, 2);
-      expect(
-        (captured.last as DiscreteQuantityData).dataType,
-        'HealthDataType.SLEEP_ASLEEP',
-      );
-    });
-
-    test('should NOT duplicate non-sleep types', () async {
-      final mobileImport = createMobileHealthImport();
-      final dateFrom = DateTime(2024, 3);
-      final dateTo = DateTime(2024, 3, 1, 12);
-
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          makeNumericDataPoint(
-            type: HealthDataType.WEIGHT,
-            value: 75,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-            unit: HealthDataUnit.KILOGRAM,
-          ),
-        ],
-      );
-
-      when(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).thenAnswer((_) async => null);
-
-      await mobileImport.fetchHealthData(
-        types: [HealthDataType.WEIGHT],
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-
-      // Only 1 entry created (no sleep duplication)
-      verify(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).called(1);
-    });
-
-    test('should NOT duplicate SLEEP_IN_BED as SLEEP_ASLEEP', () async {
-      final mobileImport = createMobileHealthImport();
-      final dateFrom = DateTime(2024, 3);
-      final dateTo = DateTime(2024, 3, 1, 8);
-
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          makeNumericDataPoint(
-            type: HealthDataType.SLEEP_IN_BED,
-            value: 480,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-            unit: HealthDataUnit.MINUTE,
-          ),
-        ],
-      );
-
-      when(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).thenAnswer((_) async => null);
-
-      await mobileImport.fetchHealthData(
-        types: [HealthDataType.SLEEP_IN_BED],
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-
-      // SLEEP_IN_BED is NOT in the duplication set
-      verify(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).called(1);
-    });
+    }
 
     test('should skip non-numeric health values', () async {
       final mobileImport = createMobileHealthImport();
@@ -1858,5 +1745,40 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('health type list invariants', () {
+    test('the five type lists are pairwise disjoint', () {
+      final lists = <String, List<HealthDataType>>{
+        'sleepTypes': sleepTypes,
+        'bpTypes': bpTypes,
+        'heartRateTypes': heartRateTypes,
+        'bodyMeasurementTypes': bodyMeasurementTypes,
+        'activityTypes': activityTypes,
+      };
+
+      // No list may contain duplicates...
+      for (final MapEntry(key: name, value: list) in lists.entries) {
+        expect(list.toSet().length, list.length, reason: '$name has dupes');
+      }
+
+      // ...and no type may appear in two different lists (a type present in
+      // two lists would be imported twice by the per-category fetchers).
+      final entries = lists.entries.toList();
+      for (var i = 0; i < entries.length; i++) {
+        for (var j = i + 1; j < entries.length; j++) {
+          final overlap = entries[i].value.toSet().intersection(
+            entries[j].value.toSet(),
+          );
+          expect(
+            overlap,
+            isEmpty,
+            reason:
+                '${entries[i].key} and ${entries[j].key} share '
+                '$overlap',
+          );
+        }
+      }
+    });
   });
 }
