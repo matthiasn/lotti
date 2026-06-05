@@ -102,7 +102,7 @@ _Date: 2026-06-02_
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Inline GetIt
+- [x] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Inline GetIt
   registration**: The file uses `setUpAll` (lines 233–347) to call
   `getIt.registerSingleton<T>()` directly for 10+ services, bypassing
   `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. It also
@@ -112,18 +112,18 @@ _Date: 2026-06-02_
   own `setUp` that calls `reset(mockJournalDb)` followed by re-stubbing — repeating mock setup
   that belongs in a shared helper.
 
-- [ ] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Inline mock class**:
+- [x] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Inline mock class**:
   `class Listener<T> extends Mock` (line 43) and `class FakeEventData extends Fake` (line 48)
   are defined inline. `FakeEventData` should go in `test/helpers/fallbacks.dart`; `Listener<T>`
   is a generic test helper that, if needed elsewhere, belongs in a shared utilities file.
 
-- [ ] **[HIGH]** `test/features/journal/state/linked_entries_controller_test.dart` — **Inline
+- [x] **[HIGH]** `test/features/journal/state/linked_entries_controller_test.dart` — **Inline
   mock classes**: `MockIncludeHiddenController` (line 25) and `_StaticLinksController` (line
   36) are defined inline. `MockIncludeHiddenController` particularly wraps a real Riverpod
   notifier override — a pattern that should be documented and possibly centralised if used in
   other test files.
 
-- [ ] **[HIGH]** `test/features/journal/state/linked_entries_controller_test.dart` — **Inline
+- [x] **[HIGH]** `test/features/journal/state/linked_entries_controller_test.dart` — **Inline
   GetIt registration**: lines 65–70 call `getIt.registerSingleton` for `UpdateNotifications`,
   `JournalDb`, `EditorStateService`, and `PersistenceLogic` directly, bypassing
   `setUpTestGetIt()`.
@@ -289,7 +289,7 @@ genuine candidates with algebraic invariants over pure logic:
   injected interface or skipping the file-write if the assertion is purely about the clipboard
   branch guard. **Estimated impact**: adds ~50–100 ms per test run on a cold filesystem.
 
-- [ ] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **`setUpAll` registers
+- [x] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **`setUpAll` registers
   all GetIt singletons before any test runs, but `tearDownAll(getIt.reset)` is the only
   cleanup** (line 349). Any test failure that prevents tearDownAll from running contaminates
   subsequent test files in the same shard. Using `setUp`/`tearDown` (or `setUpTestGetIt()`)

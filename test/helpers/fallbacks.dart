@@ -129,6 +129,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeHabitDefinition());
   registerFallbackValue(FakeCategoryDefinition());
   registerFallbackValue(FakeEntryText());
+  registerFallbackValue(FakeEventData());
   registerFallbackValue(FakeTaskData());
   registerFallbackValue(FakeJournalAudio());
   registerFallbackValue(FakePlayable());

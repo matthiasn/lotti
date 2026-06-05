@@ -22,8 +22,10 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
 
-class MockIncludeHiddenController extends IncludeHiddenController {
-  MockIncludeHiddenController(this._value);
+/// Riverpod notifier override pinning the include-hidden toggle to a fixed
+/// value (a fake, not a mocktail Mock — it overrides the real notifier).
+class _FakeIncludeHiddenController extends IncludeHiddenController {
+  _FakeIncludeHiddenController(this._value);
   final bool _value;
 
   @override
@@ -59,11 +61,12 @@ void main() {
       () => mockUpdateNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
 
-    // Register mocks in GetIt. EntryController is constructed by the
-    // sortedLinkedEntriesProvider tests via FakeEntryController, which
-    // resolves these services in field initializers.
-    getIt.allowReassignment = true;
+    // Per-test GetIt scope (popped in tearDown). EntryController is
+    // constructed by the sortedLinkedEntriesProvider tests via
+    // FakeEntryController, which resolves these services in field
+    // initializers.
     getIt
+      ..pushNewScope()
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<JournalDb>(MockJournalDb())
       ..registerSingleton<EditorStateService>(MockEditorStateService())
@@ -72,7 +75,7 @@ void main() {
 
   tearDown(() async {
     await updateStreamController.close();
-    await getIt.reset();
+    await getIt.popScope();
   });
 
   group('LinkedEntriesController', () {
@@ -110,7 +113,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
         ],
       );
@@ -173,7 +176,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
         ],
       );
@@ -224,7 +227,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
         ],
       );
@@ -272,7 +275,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
         ],
       );
@@ -302,7 +305,7 @@ void main() {
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
             () =>
-                MockIncludeHiddenController(true), // Set includeHidden to true
+                _FakeIncludeHiddenController(true), // Set includeHidden to true
           ),
         ],
       );
@@ -327,7 +330,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
         ],
       );
@@ -535,7 +538,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
         ],
       );
@@ -563,7 +566,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
         ],
       );
@@ -797,7 +800,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
           createEntryControllerOverride(earliest),
           createEntryControllerOverride(latest),
@@ -833,7 +836,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
           createEntryControllerOverride(earliest),
           createEntryControllerOverride(latest),
@@ -893,7 +896,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
           createEntryControllerOverride(earliest),
           createEntryControllerOverride(latest),
@@ -939,7 +942,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
           linkedEntriesControllerProvider(id: testId).overrideWith(
             () => _StaticLinksController([unresolvedLink, newerLink]),
@@ -1028,7 +1031,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
           createEntryControllerOverride(entryA),
           createEntryControllerOverride(entryB),
@@ -1079,7 +1082,7 @@ void main() {
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
           includeHiddenControllerProvider(id: testId).overrideWith(
-            () => MockIncludeHiddenController(false),
+            () => _FakeIncludeHiddenController(false),
           ),
         ],
       );

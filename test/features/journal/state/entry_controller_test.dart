@@ -44,9 +44,6 @@ class Listener<T> extends Mock {
   void call(T? previous, T next);
 }
 
-// Added FakeEventData
-class FakeEventData extends Fake implements EventData {}
-
 // Definitions for sample JournalImage for testing addTextToImage
 const _testImageEntryId = 'image_id_001';
 final _testImageDateFrom = DateTime(2023, 10, 26, 10);
@@ -231,6 +228,9 @@ void main() {
 
   // setUpAll at main scope
   setUpAll(() {
+    // File-level GetIt scope: popped in tearDownAll so registrations never
+    // leak into other files in the same very_good batch isolate.
+    getIt.pushNewScope();
     stopRecordingDelay = Duration.zero;
 
     registerFallbackValue(fallbackJournalEntity);
@@ -346,7 +346,10 @@ void main() {
     ).thenAnswer((_) async => true);
   });
 
-  tearDownAll(getIt.reset);
+  tearDownAll(() async {
+    await getIt.resetScope();
+    await getIt.popScope();
+  });
 
   group('EntryController Tests - ', () {
     // Specific setUp for this group if needed (e.g., vcMockNext reset)

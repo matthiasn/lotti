@@ -14,6 +14,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -540,6 +541,8 @@ class FakeHabitDefinition extends Fake implements HabitDefinition {}
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
 
 class FakeEntryText extends Fake implements EntryText {}
+
+class FakeEventData extends Fake implements EventData {}
 
 class FakeTaskData extends Fake implements TaskData {}
 
