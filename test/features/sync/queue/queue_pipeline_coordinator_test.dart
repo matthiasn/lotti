@@ -467,6 +467,34 @@ extension _AnyGeneratedDrainScenario on glados.Any {
 /// constructor requires (never written by these properties). Property
 /// bodies re-stub only the members their model drives (queue.stats,
 /// pen.flushInto, earliestReadyAt, ...) — a later `when(...)` wins.
+/// [AttachmentIndex] with a synchronous controller so a test can land a
+/// path in the coordinator's pending-resurrection set at an exact point
+/// in the start() sequence (the real index delivers asynchronously).
+class _SyncPathAttachmentIndex extends AttachmentIndex {
+  _SyncPathAttachmentIndex() : super(logging: null);
+
+  final StreamController<String> ctl = StreamController<String>.broadcast(
+    sync: true,
+  );
+
+  @override
+  Stream<String> get pathRecorded => ctl.stream;
+}
+
+/// Stream whose [listen] throws — fails the journal-updates subscription
+/// inside coordinator.start(). The central MockUpdateNotifications getter
+/// swallows exceptions thrown by stubbed answers (it falls back to an
+/// empty stream), so a throwing `listen` is the reliable injection point.
+class _ThrowingSubscribeStream extends Stream<Set<String>> {
+  @override
+  StreamSubscription<Set<String>> listen(
+    void Function(Set<String> event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => throw StateError('updateStream wiring failed');
+}
+
 class _GladosBench {
   _GladosBench() {
     when(
@@ -541,6 +569,8 @@ class _GladosBench {
   QueuePipelineCoordinator buildCoordinator({
     AttachmentIngestor? attachmentIngestor,
     SentEventRegistry? sentEventRegistry,
+    AttachmentIndex? attachmentIndex,
+    UpdateNotifications? updateNotifications,
   }) {
     return QueuePipelineCoordinator(
       syncDb: syncDb,
@@ -552,6 +582,8 @@ class _GladosBench {
       sequenceLogService: sequenceLog,
       activityGate: null,
       logging: logging,
+      attachmentIndex: attachmentIndex,
+      updateNotifications: updateNotifications,
       attachmentIngestor: attachmentIngestor,
       sentEventRegistry: sentEventRegistry,
       queueOverride: queue,
@@ -807,6 +839,69 @@ void main() {
 
         await coordinator.stop();
       });
+      await bench.dispose();
+    },
+  );
+
+  test(
+    'start() unwind awaits an in-flight attachment-path flush before '
+    'tearing down and leaves the coordinator retryable',
+    () async {
+      final bench = _GladosBench();
+      final attachmentIndex = _SyncPathAttachmentIndex();
+      final updateNotifications = MockUpdateNotifications();
+      final flushGate = Completer<void>();
+
+      when(
+        () => bench.queue.resurrectByPaths(any()),
+      ).thenAnswer((_) => flushGate.future.then((_) => 0));
+
+      late QueuePipelineCoordinator coordinator;
+      var updateStreamAccesses = 0;
+      when(() => updateNotifications.updateStream).thenAnswer((_) {
+        updateStreamAccesses++;
+        if (updateStreamAccesses == 1) {
+          // _attachmentPathSub is live at this point in start(). Land a
+          // path synchronously and force the debounced flush to start (it
+          // parks on flushGate); the returned stream then fails start()'s
+          // listen() so the unwind runs with _attachmentPathFlushInFlight
+          // non-null.
+          attachmentIndex.ctl.add('/attachments/a.json');
+          unawaited(coordinator.flushPendingPathResurrectionsForTest());
+          return _ThrowingSubscribeStream();
+        }
+        return const Stream<Set<String>>.empty();
+      });
+
+      coordinator = bench.buildCoordinator(
+        attachmentIndex: attachmentIndex,
+        updateNotifications: updateNotifications,
+      );
+
+      final startFuture = coordinator.start();
+      // Let start() reach the unwind's `await pendingFlush`.
+      await pumpEventQueue();
+      // The unwind is parked on the flush; the failure has not
+      // propagated yet and the worker has not been torn down.
+      verifyNever(bench.worker.stop);
+
+      flushGate.complete();
+      await expectLater(startFuture, throwsStateError);
+
+      // The flush completed before teardown and teardown ran fully.
+      verify(
+        () => bench.queue.resurrectByPaths(['/attachments/a.json']),
+      ).called(1);
+      verify(bench.bridge.stop).called(1);
+      verify(bench.worker.stop).called(1);
+      expect(coordinator.isRunning, isFalse);
+
+      // The unwind left a retryable coordinator: a second start()
+      // (with updateStream now healthy) succeeds.
+      await coordinator.start();
+      expect(coordinator.isRunning, isTrue);
+      await coordinator.stop();
+      await attachmentIndex.ctl.close();
       await bench.dispose();
     },
   );
