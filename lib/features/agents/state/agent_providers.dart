@@ -166,10 +166,9 @@ WakeRunner wakeRunner(Ref ref) {
 /// [isEnabled] is consulted **per invocation** (the `enable_fork_healing`
 /// config flag in production): the orchestrator captures this hook at
 /// initialization, so a provider-rebuild-based flag would never reach the
-/// executing instance — the same captured-instance topology as the
-/// compaction flag. A throwing [isEnabled] propagates into the
-/// orchestrator's existing hook guard (logged, wake proceeds — healing is
-/// an optimization, never required).
+/// executing instance. A throwing [isEnabled] propagates into the
+/// orchestrator's existing hook guard (logged, wake proceeds — healing is an
+/// optimization, never required).
 WakeStartHook forkHealingHook(
   AgentSyncService Function() syncService,
   DateTime Function() now, {

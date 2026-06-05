@@ -3218,8 +3218,6 @@ void main() {
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           domainLoggerProvider.overrideWithValue(domainLogger),
-          // The workflow reads the compaction flag from the journal DB at
-          // each wake.
           journalDbProvider.overrideWithValue(MockJournalDb()),
         ],
       );

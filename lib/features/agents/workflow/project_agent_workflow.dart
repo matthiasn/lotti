@@ -5,7 +5,6 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -57,10 +56,8 @@ class ProjectAgentWorkflow {
     this.soulDocumentService,
     this.domainLogger,
     this.onPersistedStateChanged,
-    this.journalDb,
     this.inputCaptureService,
     this.logSummarizer,
-    this.compactionEnabled,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
   });
@@ -76,19 +73,12 @@ class ProjectAgentWorkflow {
   final DomainLogger? domainLogger;
   final void Function(String agentId)? onPersistedStateChanged;
 
-  /// Journal DB for the per-wake `enable_agent_compaction` flag read (see
-  /// [AgentWakeMemory]); null in legacy constructions keeps compaction off.
-  final JournalDb? journalDb;
-
   /// Captures the wake's project-linked journal entries into the agent's
   /// append-only log (ADR 0020).
   final AgentInputCaptureService? inputCaptureService;
 
   /// LLM edge for compaction folds (ADR 0017).
   final AgentLogLlmSummarizer? logSummarizer;
-
-  /// Test override for the compaction flag; null = consult it per wake.
-  final bool? compactionEnabled;
 
   /// Compaction watermarks — see `TaskAgentWorkflow` for the rationale.
   final int compactionTailBudgetTokens;
@@ -200,11 +190,9 @@ class ProjectAgentWorkflow {
     // skip so no-activity scheduled wakes stay cheap (a dormant wake has
     // nothing new to capture). Non-fatal.
     final memory = AgentWakeMemory(
-      journalDb: journalDb,
       syncService: syncService,
       inputCaptureService: inputCaptureService,
       logSummarizer: logSummarizer,
-      compactionEnabled: compactionEnabled,
       domainLogger: domainLogger,
     );
     var captureSucceeded = false;

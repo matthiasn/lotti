@@ -14,10 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   them back together at the next wake.
 
 ### Changed
-- The "Agent memory compaction" flag now also covers project and day agents:
-  when enabled, all three read their context from an append-only memory log
-  and summarize its oldest entries into a rolling memory using their own
-  model, keeping the wake context compact while recent entries stay verbatim.
+- Agent memory compaction now runs by default for task, project, and day
+  agents, and the Settings flag that controlled it has been removed.
 
 ## [0.9.1014]
 ### Added

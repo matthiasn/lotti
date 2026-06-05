@@ -30,7 +30,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -151,12 +150,6 @@ void main() {
     stubAppendMilestone(mockSyncService);
     stubReconciledAgentState(mockSyncService, mockAgentRepository);
 
-    // Workflows built without an explicit compactionEnabled override consult
-    // the `enable_agent_compaction` config flag at wake time; default it off
-    // (individual tests re-stub to exercise the flag path).
-    when(
-      () => mockJournalDb.getConfigFlag(any()),
-    ).thenAnswer((_) async => false);
     // System-prompt persistence checks payload existence by content digest;
     // default to "not present" so the content-addressed write path runs
     // (individual tests re-stub specific ids).
@@ -5738,7 +5731,6 @@ void main() {
             templateService: mockTemplateService,
             // A succeeding capture service so the read-flip trusts the frontier.
             inputCaptureService: _RecordingCaptureService(),
-            compactionEnabled: true,
             logSummarizer: stubLogSummarizer(),
           );
 
@@ -5851,7 +5843,6 @@ void main() {
           labelsRepository: mockLabelsRepository,
           syncService: mockSyncService,
           templateService: mockTemplateService,
-          compactionEnabled: true,
           logSummarizer: stubLogSummarizer(),
         );
 
@@ -5953,7 +5944,6 @@ void main() {
           syncService: mockSyncService,
           templateService: mockTemplateService,
           inputCaptureService: _ThrowingCaptureService(),
-          compactionEnabled: true,
           logSummarizer: stubLogSummarizer(),
         );
 
@@ -6079,7 +6069,6 @@ void main() {
           syncService: mockSyncService,
           templateService: mockTemplateService,
           inputCaptureService: _RecordingCaptureService(),
-          compactionEnabled: true,
           compactionTailBudgetTokens: 0,
           logSummarizer: boomSummarizer,
         );
@@ -6137,155 +6126,6 @@ void main() {
           isNot(contains('Summary of earlier activity')),
         );
       });
-
-      test('the runtime config flag enables compaction when no override is '
-          'set', () async {
-        // Production passes compactionEnabled: null, so the workflow consults
-        // the `enable_agent_compaction` flag fresh at each wake — a Settings
-        // toggle must reach the next wake without any provider rebuild.
-        const tailContent = {'entryType': 'text', 'text': 'flagged tail'};
-        final tailDigest = ContentDigest.of(tailContent);
-        when(
-          () => mockSyncService.repository,
-        ).thenReturn(mockAgentRepository);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.system,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.summary,
-          ),
-        ).thenAnswer((_) async => []);
-        when(() => mockAgentRepository.getLinksFrom(agentId)).thenAnswer(
-          (_) async => [
-            AgentLink.messagePayload(
-              id: 'pl-1',
-              fromId: agentId,
-              toId: tailDigest,
-              createdAt: DateTime(2024, 6, 2),
-              updatedAt: DateTime(2024, 6, 2),
-              vectorClock: null,
-              contentEntryId: 'e1',
-              sourceCreatedAt: DateTime(2024, 6),
-            ),
-          ],
-        );
-        when(() => mockAgentRepository.getEntity(tailDigest)).thenAnswer(
-          (_) async => AgentDomainEntity.agentMessagePayload(
-            id: tailDigest,
-            agentId: agentId,
-            createdAt: DateTime(2024, 6, 2),
-            vectorClock: null,
-            content: tailContent,
-          ),
-        );
-        when(
-          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
-        ).thenAnswer((_) async => '- Title: Slim header');
-        when(
-          () => mockJournalDb.getConfigFlag(enableAgentCompactionFlag),
-        ).thenAnswer((_) async => true);
-        stubFullExecutePath(
-          mockAgentRepository: mockAgentRepository,
-          mockAiInputRepository: mockAiInputRepository,
-          mockAiConfigRepository: mockAiConfigRepository,
-          mockConversationManager: mockConversationManager,
-          testAgentState: testAgentState,
-          geminiModel: geminiModel,
-          geminiProvider: geminiProvider,
-          agentId: agentId,
-          taskId: taskId,
-        );
-
-        final workflow = createTestWorkflow(
-          agentRepository: mockAgentRepository,
-          conversationRepository: mockConversationRepository,
-          aiInputRepository: mockAiInputRepository,
-          aiConfigRepository: mockAiConfigRepository,
-          journalDb: mockJournalDb,
-          cloudInferenceRepository: mockCloudInferenceRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: mockChecklistRepository,
-          labelsRepository: mockLabelsRepository,
-          syncService: mockSyncService,
-          templateService: mockTemplateService,
-          inputCaptureService: _RecordingCaptureService(),
-          logSummarizer: stubLogSummarizer(),
-          compactionEnabled: null,
-        );
-
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {},
-          threadId: threadId,
-        );
-
-        expect(result.success, isTrue);
-        verify(
-          () => mockJournalDb.getConfigFlag(enableAgentCompactionFlag),
-        ).called(1);
-        // The read-flip happened: markdown task state requested.
-        verify(
-          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
-        ).called(1);
-      });
-
-      test(
-        'a disabled runtime config flag keeps the full inline log',
-        () async {
-          when(
-            () => mockJournalDb.getConfigFlag(enableAgentCompactionFlag),
-          ).thenAnswer((_) async => false);
-          stubFullExecutePath(
-            mockAgentRepository: mockAgentRepository,
-            mockAiInputRepository: mockAiInputRepository,
-            mockAiConfigRepository: mockAiConfigRepository,
-            mockConversationManager: mockConversationManager,
-            testAgentState: testAgentState,
-            geminiModel: geminiModel,
-            geminiProvider: geminiProvider,
-            agentId: agentId,
-            taskId: taskId,
-          );
-
-          final workflow = createTestWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiInputRepository: mockAiInputRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            journalDb: mockJournalDb,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            checklistRepository: mockChecklistRepository,
-            labelsRepository: mockLabelsRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
-            inputCaptureService: _RecordingCaptureService(),
-            logSummarizer: stubLogSummarizer(),
-            compactionEnabled: null,
-          );
-
-          final result = await workflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {},
-            threadId: threadId,
-          );
-
-          expect(result.success, isTrue);
-          verify(
-            () => mockJournalDb.getConfigFlag(enableAgentCompactionFlag),
-          ).called(1);
-          verifyNever(
-            () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
-          );
-        },
-      );
 
       test('resolved verdicts render as decision events in the task log; '
           'the ledger section keeps only open proposals', () async {
@@ -6397,7 +6237,6 @@ void main() {
           syncService: mockSyncService,
           templateService: mockTemplateService,
           inputCaptureService: _RecordingCaptureService(),
-          compactionEnabled: true,
           logSummarizer: stubLogSummarizer(),
         );
 
@@ -6449,57 +6288,6 @@ void main() {
         expect(userText, isNot(contains('### Resolved')));
       });
 
-      test('a failing config-flag read degrades to the legacy inline log '
-          'instead of aborting the wake', () async {
-        when(
-          () => mockJournalDb.getConfigFlag(enableAgentCompactionFlag),
-        ).thenAnswer((_) => Future<bool>.error(Exception('db unavailable')));
-        stubFullExecutePath(
-          mockAgentRepository: mockAgentRepository,
-          mockAiInputRepository: mockAiInputRepository,
-          mockAiConfigRepository: mockAiConfigRepository,
-          mockConversationManager: mockConversationManager,
-          testAgentState: testAgentState,
-          geminiModel: geminiModel,
-          geminiProvider: geminiProvider,
-          agentId: agentId,
-          taskId: taskId,
-        );
-
-        final workflow = createTestWorkflow(
-          agentRepository: mockAgentRepository,
-          conversationRepository: mockConversationRepository,
-          aiInputRepository: mockAiInputRepository,
-          aiConfigRepository: mockAiConfigRepository,
-          journalDb: mockJournalDb,
-          cloudInferenceRepository: mockCloudInferenceRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: mockChecklistRepository,
-          labelsRepository: mockLabelsRepository,
-          syncService: mockSyncService,
-          templateService: mockTemplateService,
-          inputCaptureService: _RecordingCaptureService(),
-          logSummarizer: stubLogSummarizer(),
-          compactionEnabled: null,
-        );
-
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {},
-          threadId: threadId,
-        );
-
-        expect(result.success, isTrue);
-        // Compaction off this wake: full inline log, no markdown state.
-        verify(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).called(1);
-        verifyNever(
-          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
-        );
-      });
-
       test('a throwing assembleContext degrades to the legacy inline log '
           'instead of killing the wake', () async {
         when(
@@ -6542,7 +6330,6 @@ void main() {
           syncService: mockSyncService,
           templateService: mockTemplateService,
           inputCaptureService: _RecordingCaptureService(),
-          compactionEnabled: true,
           logSummarizer: stubLogSummarizer(),
         );
 
@@ -6715,7 +6502,6 @@ void main() {
           syncService: mockSyncService,
           templateService: mockTemplateService,
           inputCaptureService: _RecordingCaptureService(),
-          compactionEnabled: true,
           logSummarizer: stubLogSummarizer(),
         );
 

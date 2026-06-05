@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -51,9 +50,7 @@ class DayAgentWorkflow {
     this.soulDocumentService,
     this.onPersistedStateChanged,
     this.config = const DayAgentConfig(),
-    this.journalDb,
     this.logSummarizer,
-    this.compactionEnabled,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
   });
@@ -94,15 +91,8 @@ class DayAgentWorkflow {
   /// Planning defaults included in the prompt.
   final DayAgentConfig config;
 
-  /// Journal DB for the per-wake `enable_agent_compaction` flag read (see
-  /// `AgentWakeMemory`); null keeps compaction off.
-  final JournalDb? journalDb;
-
   /// LLM edge for compaction folds (ADR 0017).
   final AgentLogLlmSummarizer? logSummarizer;
-
-  /// Test override for the compaction flag; null = consult it per wake.
-  final bool? compactionEnabled;
 
   /// Compaction watermarks — see `TaskAgentWorkflow` for the rationale.
   final int compactionTailBudgetTokens;
@@ -191,10 +181,8 @@ class DayAgentWorkflow {
     // events (no payload capture step). The pipeline folds them past the
     // trigger watermark and assembles the compacted day log.
     final memory = AgentWakeMemory(
-      journalDb: journalDb,
       syncService: syncService,
       logSummarizer: logSummarizer,
-      compactionEnabled: compactionEnabled,
       domainLogger: domainLogger,
     );
     var capturesLoaded = false;

@@ -98,11 +98,6 @@ void main() {
             status: false,
           ),
           const ConfigFlag(
-            name: enableAgentCompactionFlag,
-            description: 'Enable agent memory compaction?',
-            status: false,
-          ),
-          const ConfigFlag(
             name: enableForkHealingFlag,
             description: 'Enable agent fork healing?',
             status: false,
@@ -137,8 +132,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 13 flags in the mock data.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(13));
+      // 12 flags in the mock data.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(12));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -147,7 +142,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsIcon), findsNWidgets(13));
+      expect(find.byType(SettingsIcon), findsNWidgets(12));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -325,7 +320,7 @@ void main() {
         DesignSystemListItem,
         context.messages.configFlagEnableWhatsNew,
       );
-      // The whats-new row sits toward the bottom of the 13-row list and
+      // The whats-new row sits toward the bottom of the 12-row list and
       // is offscreen under the testable wrapper's bounded
       // SingleChildScrollView. `ensureVisible` walks the target's
       // ancestor chain to find the right scrollable and drives the
@@ -345,45 +340,6 @@ void main() {
       );
       verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
     });
-  });
-
-  group('FlagsPage — agent compaction flag', () {
-    testWidgets(
-      'renders the compaction flag with localized title, description, and '
-      'compress icon',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(FlagsPage));
-        await tester.enterText(
-          find.byType(DesignSystemSearch),
-          context.messages.configFlagEnableAgentCompaction,
-        );
-        await tester.pumpAndSettle();
-
-        final item = find.widgetWithText(
-          DesignSystemListItem,
-          context.messages.configFlagEnableAgentCompaction,
-        );
-        expect(item, findsOneWidget);
-        expect(
-          find.text(
-            context.messages.configFlagEnableAgentCompactionDescription,
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: item,
-            matching: find.byIcon(Icons.compress_rounded),
-          ),
-          findsOneWidget,
-        );
-      },
-    );
   });
 
   group('FlagsPage — fork healing flag', () {
@@ -730,7 +686,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pumpAndSettle();
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
 
@@ -751,7 +707,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pumpAndSettle();
-        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
 
@@ -768,7 +724,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
   });
@@ -930,8 +886,8 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('FlagsPage — previously uncovered flags (parameterized)', () {
-    // The setUp above already stubs watchConfigFlags() for 11 flags.
-    // We add the missing 11 flags here so the stream covers all 22 flags
+    // The setUp above already stubs watchConfigFlags() for 12 flags.
+    // We add the missing 11 flags here so the stream covers all 23 flags
     // declared in FlagsBody.displayedItems.
     setUp(() {
       when(() => mockDb.watchConfigFlags()).thenAnswer(

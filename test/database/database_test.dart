@@ -181,11 +181,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableAgentCompactionFlag,
-    description: 'Enable agent memory compaction?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableForkHealingFlag,
     description: 'Enable agent fork healing?',
     status: false,

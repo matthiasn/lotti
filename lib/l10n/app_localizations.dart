@@ -4441,18 +4441,6 @@ abstract class AppLocalizations {
   /// **'Replace the current DailyOS surface with the new voice-first, agent-led capture and reconcile flow. Early preview — backend logic is mocked.'**
   String get configFlagDailyOsNextEnabledDescription;
 
-  /// No description provided for @configFlagEnableAgentCompaction.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent memory compaction'**
-  String get configFlagEnableAgentCompaction;
-
-  /// No description provided for @configFlagEnableAgentCompactionDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Summarize older task log entries into a rolling memory so the agent\'s context stays compact. Uses the agent\'s own model.'**
-  String get configFlagEnableAgentCompactionDescription;
-
   /// No description provided for @configFlagEnableAiStreaming.
   ///
   /// In en, this message translates to:
