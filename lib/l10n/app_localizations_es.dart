@@ -2611,14 +2611,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Reemplaza la superficie actual de DailyOS por el nuevo flujo de captura y reconciliación con voz dirigido por agente. Vista previa temprana — la lógica del backend está simulada.';
 
   @override
-  String get configFlagEnableAgentCompaction =>
-      'Compactación de memoria del agente';
-
-  @override
-  String get configFlagEnableAgentCompactionDescription =>
-      'Resume las entradas antiguas del registro de la tarea en una memoria continua para que el contexto del agente se mantenga compacto. Usa el modelo del propio agente.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Habilitar streaming de IA para acciones de tareas';
 

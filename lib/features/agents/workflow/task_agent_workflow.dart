@@ -101,7 +101,6 @@ class TaskAgentWorkflow {
     this.changeSetNotificationService,
     this.inputCaptureService,
     this.logSummarizer,
-    this.compactionEnabled,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
   });
@@ -150,26 +149,13 @@ class TaskAgentWorkflow {
 
   /// Optional LLM summarizer used by compaction to distill folded input
   /// sources (ADR 0017), invoked with the wake's resolved model/provider.
-  /// Required for [compactionEnabled] to actually emit summaries; null leaves
-  /// emission inert.
+  /// Required to actually emit summaries; null leaves emission inert while
+  /// reads still assemble the captured event tail.
   final AgentLogLlmSummarizer? logSummarizer;
-
-  /// Feature flag for input-log compaction (ADR 0017/0020). When **null** (the
-  /// production wiring), the `enable_agent_compaction` config flag is read from
-  /// the journal DB **at each wake**, so a Settings toggle takes effect on the
-  /// next wake without any provider rebuild or runtime restart. An explicit
-  /// `true`/`false` (tests) overrides the flag. When on, the wake context is
-  /// assembled as `active summary + uncovered tail` from the captured log (the
-  /// inline journal log is dropped from the task header), and the oldest tail
-  /// beyond [compactionTailBudgetTokens] is folded into a `summary` checkpoint
-  /// via [logSummarizer]. Off → behaviour is unchanged (full journal task
-  /// JSON, no summaries).
-  final bool? compactionEnabled;
 
   /// Token budget for the verbatim uncovered tail before compaction folds its
   /// oldest entries (ADR 0017). This is the *trigger* (high watermark): no
-  /// summarization happens while the tail fits it. Used only when
-  /// [compactionEnabled].
+  /// summarization happens while the tail fits it.
   ///
   /// Sized generously (50k) because the tail is append-only and therefore
   /// prefix-cached: warm wakes pay cache-read rates (or, on local inference
@@ -186,7 +172,7 @@ class TaskAgentWorkflow {
   /// `budget - retain` tokens of headroom before the next summarization. Keeps
   /// the summarizer infrequent (one fold per ~30k tokens of NEW activity at
   /// the defaults) and the prompt's summary block stable between folds
-  /// (prefix-cache friendly). Used only when [compactionEnabled].
+  /// (prefix-cache friendly).
   final int compactionTailRetainTokens;
 
   /// How many resolved proposal verdicts the wake projects into the event
@@ -273,11 +259,9 @@ class TaskAgentWorkflow {
     // per-source and content-addressed, BEFORE assembly so the input frontier
     // reflects the latest content. Non-fatal: a capture failure must not abort.
     final memory = AgentWakeMemory(
-      journalDb: journalDb,
       syncService: syncService,
       inputCaptureService: inputCaptureService,
       logSummarizer: logSummarizer,
-      compactionEnabled: compactionEnabled,
       domainLogger: domainLogger,
     );
     var captureSucceeded = false;
@@ -1559,9 +1543,10 @@ to keep the user-facing suggestion list clean and trustworthy:
 ''';
 
   /// Builds the user message for a wake cycle. [taskDetails] is the compact
-  /// markdown task state in compacted mode, or the full JSON header (inline
-  /// log included) in legacy mode. [hasReport] gates the first-wake report
-  /// bootstrap section; the prior report's prose is never injected.
+  /// markdown task state when the read-flip succeeds, or the full JSON header
+  /// (inline log included) for fallback prompts. [hasReport] gates the
+  /// first-wake report bootstrap section; the prior report's prose is never
+  /// injected.
   ///
   /// Returns the full text plus the offsets of the embedded (derivable) log
   /// block, so the persisted prompt record can store only the non-derivable

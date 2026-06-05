@@ -203,14 +203,6 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableAgentCompactionFlag,
-      description: 'Enable agent memory compaction?',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableForkHealingFlag,
       description: 'Enable agent fork healing?',
       status: false,

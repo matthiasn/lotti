@@ -1056,8 +1056,6 @@
   "configFlagAttemptEmbeddingDescription": "Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.",
   "configFlagDailyOsNextEnabled": "Použít nové agentní DailyOS",
   "configFlagDailyOsNextEnabledDescription": "Nahradí stávající rozhraní DailyOS novým hlasově řízeným tokem zachycení a smíření vedeným agentem. Raná ukázka — logika backendu je simulovaná.",
-  "configFlagEnableAgentCompaction": "Komprese paměti agenta",
-  "configFlagEnableAgentCompactionDescription": "Shrnuje starší záznamy úkolu do průběžné paměti, aby kontext agenta zůstal kompaktní. Používá model agenta.",
   "configFlagEnableAiStreaming": "Povolit AI streamování pro akce úkolů",
   "configFlagEnableAiStreamingDescription": "Streamujte AI odpovědi pro akce související s úkoly. Vypněte, pokud chcete odpovědi bufferovat a udržet plynulejší rozhraní.",
   "configFlagEnableAiSummaryTts": "Přehrávání AI souhrnů",

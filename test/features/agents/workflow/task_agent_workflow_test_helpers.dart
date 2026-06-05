@@ -223,10 +223,6 @@ TaskAgentWorkflow createTestWorkflow({
   MockSoulDocumentService? soulDocumentService,
   AgentInputCaptureService? inputCaptureService,
   AgentLogLlmSummarizer? logSummarizer,
-  // Explicit override; null = consult the `enable_agent_compaction` config
-  // flag at wake time (the production path). Defaults to false so the bulk of
-  // the suite never touches the journal-DB flag read.
-  bool? compactionEnabled = false,
   int compactionTailBudgetTokens = 50000,
   int compactionTailRetainTokens = 20000,
 }) {
@@ -245,7 +241,6 @@ TaskAgentWorkflow createTestWorkflow({
     soulDocumentService: soulDocumentService,
     inputCaptureService: inputCaptureService,
     logSummarizer: logSummarizer,
-    compactionEnabled: compactionEnabled,
     compactionTailBudgetTokens: compactionTailBudgetTokens,
     compactionTailRetainTokens: compactionTailRetainTokens,
   );

@@ -110,11 +110,6 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     logSummarizer: AgentLogLlmSummarizer(
       inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     ),
-    // Compaction is gated by the `enable_agent_compaction` config flag, which
-    // the workflow reads from the journal DB at each wake (Settings → Flags
-    // toggle applies on the next wake). Not watched here on purpose: the wake
-    // executor captures this workflow instance at initialization, so a
-    // provider-rebuild-based flag would not reach the executing instance.
   );
 }
 
@@ -133,15 +128,12 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
-    journalDb: ref.watch(journalDbProvider),
     inputCaptureService: AgentInputCaptureService(
       syncService: ref.watch(agentSyncServiceProvider),
     ),
     logSummarizer: AgentLogLlmSummarizer(
       inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     ),
-    // The `enable_agent_compaction` flag is read by the workflow at each wake
-    // (the wake executor captures this instance at initialization).
   );
 }
 
@@ -161,14 +153,11 @@ DayAgentWorkflow dayAgentWorkflow(Ref ref) {
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
-    journalDb: ref.watch(journalDbProvider),
     logSummarizer: AgentLogLlmSummarizer(
       inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     ),
-    // The `enable_agent_compaction` flag is read by the workflow at each wake
-    // (the wake executor captures this instance at initialization). No input
-    // capture service: the day agent's durable inputs (capture transcripts,
-    // observations) are already synced log entities, projected as inline
-    // events.
+    // No input capture service: the day agent's durable inputs (capture
+    // transcripts, observations) are already synced log entities, projected as
+    // inline events.
   );
 }

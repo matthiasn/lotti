@@ -2605,13 +2605,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nahradí stávající rozhraní DailyOS novým hlasově řízeným tokem zachycení a smíření vedeným agentem. Raná ukázka — logika backendu je simulovaná.';
 
   @override
-  String get configFlagEnableAgentCompaction => 'Komprese paměti agenta';
-
-  @override
-  String get configFlagEnableAgentCompactionDescription =>
-      'Shrnuje starší záznamy úkolu do průběžné paměti, aby kontext agenta zůstal kompaktní. Používá model agenta.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Povolit AI streamování pro akce úkolů';
 

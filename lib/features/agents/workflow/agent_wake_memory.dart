@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
@@ -9,15 +8,13 @@ import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/utils/consts.dart';
 
-/// The read-flip outcome of one wake's memory pipeline (capture → flag →
-/// fold → assemble), as consumed by a workflow's prompt assembly.
+/// The read-flip outcome of one wake's memory pipeline
+/// (capture → fold → assemble), as consumed by a workflow's prompt assembly.
 class WakeMemoryView {
   /// Wraps a pipeline result.
   const WakeMemoryView({
     required this.captureSucceeded,
-    required this.compactionOn,
     required this.compactedLog,
     required this.useCompactedLog,
     this.activeSummaryId,
@@ -29,16 +26,12 @@ class WakeMemoryView {
   /// (or didn't run) and the frontier may predate the current journal.
   final bool captureSucceeded;
 
-  /// Whether the `enable_agent_compaction` flag (or test override) was on.
-  final bool compactionOn;
-
   /// The assembled `active summary + event tail` block, or null when
-  /// compaction is off or assembly failed.
+  /// assembly failed.
   final String? compactedLog;
 
   /// True when the prompt should use [compactedLog] instead of the legacy
-  /// inline context: compaction on, capture succeeded, and a non-empty
-  /// replacement exists.
+  /// inline context: capture succeeded and a non-empty replacement exists.
   final bool useCompactedLog;
 
   /// Reconstruction marker (ADR 0020 v2 prompt records): the active
@@ -52,33 +45,23 @@ class WakeMemoryView {
 
 /// The shared per-wake memory pipeline (ADR 0016/0017/0020), one instance per
 /// workflow: captures the wake's rendered sources into the append-only log,
-/// reads the `enable_agent_compaction` flag fresh each wake, folds the oldest
-/// events past the trigger watermark into an LLM-distilled summary checkpoint
-/// using the wake's own model, and assembles the compacted log block.
+/// folds the oldest events past the trigger watermark into an LLM-distilled
+/// summary checkpoint using the wake's own model, and assembles the compacted
+/// log block.
 ///
-/// Every step is non-fatal and degrades to the legacy inline context: capture
-/// failures, flag-read failures, summarizer failures and assembly failures
-/// are logged and absorbed — memory is an optimization, never a correctness
-/// requirement for a wake.
+/// Every step is non-fatal and degrades to the inline context when it cannot
+/// produce a trustworthy replacement: capture failures, summarizer failures
+/// and assembly failures are logged and absorbed — memory is an optimization,
+/// never a correctness requirement for a wake.
 class AgentWakeMemory {
-  /// Creates the pipeline. [compactionEnabled] non-null overrides the config
-  /// flag (tests); production passes null so the flag is consulted at each
-  /// wake (the wake executor captures workflow instances at initialization,
-  /// so a provider-rebuild-based read would never reach them).
+  /// Creates the pipeline.
   AgentWakeMemory({
-    required this.journalDb,
     required this.syncService,
     this.inputCaptureService,
     this.logSummarizer,
-    this.compactionEnabled,
     this.domainLogger,
     this.logDomain = LogDomain.agentWorkflow,
   });
-
-  /// Journal DB for the per-wake config-flag read. When null (a workflow
-  /// without DB access), the flag cannot be consulted and compaction stays
-  /// off unless [compactionEnabled] overrides it.
-  final JournalDb? journalDb;
 
   /// Sync-aware writes + repository reads for the compactor.
   final AgentSyncService syncService;
@@ -90,9 +73,6 @@ class AgentWakeMemory {
   /// The LLM edge for folds; when null, tails grow unbounded but reads still
   /// flip (no summarization).
   final AgentLogLlmSummarizer? logSummarizer;
-
-  /// Test override for the `enable_agent_compaction` flag; null = consult it.
-  final bool? compactionEnabled;
 
   /// Optional structured logger.
   final DomainLogger? domainLogger;
@@ -147,9 +127,9 @@ class AgentWakeMemory {
     }
   }
 
-  /// Step 1b — read the flag, fold past the [budget] watermark (down to
-  /// [retainTokens]) with the wake's resolved [model]/[provider], assemble
-  /// the compacted log, and evaluate the read-flip gates.
+  /// Step 1b — fold past the [budget] watermark (down to [retainTokens]) with
+  /// the wake's resolved [model]/[provider], assemble the compacted log, and
+  /// evaluate the read-flip gates.
   ///
   /// [inlineEvents] join the substrate (e.g. resolved proposal verdicts via
   /// `decisionEventsFromLedger`); [captureSucceeded] is [capture]'s result.
@@ -165,30 +145,13 @@ class AgentWakeMemory {
     int retainTokens = 20000,
     List<InputEvent> inlineEvents = const [],
   }) async {
-    var compactionOn = compactionEnabled ?? false;
-    final flagDb = journalDb;
-    if (compactionEnabled == null && flagDb != null) {
-      try {
-        compactionOn = await flagDb.getConfigFlag(
-          enableAgentCompactionFlag,
-        );
-      } catch (e) {
-        // Non-fatal: a failed flag read degrades the wake to the legacy
-        // inline context, never aborts it.
-        _logError(
-          'failed to read $enableAgentCompactionFlag — compaction off '
-          'this wake',
-          error: e,
-        );
-      }
-    }
-    if (!compactionOn) {
-      // Capture ran before the flag read (workflows capture unconditionally
-      // so the frontier stays fresh while the flag is off) — forward its
-      // actual result rather than masking it.
-      return WakeMemoryView(
-        captureSucceeded: captureSucceeded,
-        compactionOn: false,
+    if (!captureSucceeded) {
+      _log(
+        'compaction read-flip: capture=false assembledChars=-1 '
+        'useCompactedLog=false',
+      );
+      return const WakeMemoryView(
+        captureSucceeded: false,
         compactedLog: null,
         useCompactedLog: false,
       );
@@ -247,7 +210,6 @@ class AgentWakeMemory {
     );
     return WakeMemoryView(
       captureSucceeded: captureSucceeded,
-      compactionOn: true,
       compactedLog: compactedLog,
       useCompactedLog: useCompactedLog,
       activeSummaryId: assembled?.activeSummaryId,

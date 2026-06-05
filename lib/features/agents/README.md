@@ -318,9 +318,9 @@ The agent's **inputs** are captured into the append-only log so the wake context
 becomes a projection of the log rather than a live read of the mutable journal
 (ADR 0020), and that log is compacted by **summary checkpoints** over a log
 prefix (ADR 0017). The full pipeline — capture, event-log read, LLM-distilled
-folds — is live behind the default-off `enable_agent_compaction` config flag
-(see the activation section below); with the flag off, only capture runs and
-the wake reads the journal as before.
+folds, and compacted prompt assembly — is the active task/project/day agent
+read path. When a wake cannot refresh or assemble a trustworthy compacted log,
+the workflow falls back to the inline journal prompt for that wake.
 
 **Scope.** The substrate covers task agents (captured journal entries +
 observations + proposal verdicts), project agents (captured project-linked
@@ -331,8 +331,8 @@ deliberately out: its wake context is a per-ritual *windowed* snapshot
 (feedback since the last scan watermark, instance reports, version history) —
 there is no unbounded per-agent input stream to fold, and capturing it would
 duplicate other agents' synced data. All workflows share one pipeline,
-`AgentWakeMemory` (capture → per-wake flag read → fold → assemble → read-flip
-gates), so the failure isolation and diagnostics are identical everywhere.
+`AgentWakeMemory` (capture → fold → assemble → read-flip gates), so the failure
+isolation and diagnostics are identical everywhere.
 
 **Capture (always on).** Each task wake snapshots the user-content
 sources it read — one per linked journal log entry, the rendered text only (an
@@ -376,15 +376,16 @@ can refer back to the exact source:
 - the agent's own **observations** interleave as `(id: obs-1, observation)`
   lines —
   single memory substrate, same ordering, same folds (the separate
-  `## Agent Journal` section exists only in legacy mode);
+  `## Agent Journal` section is only present on inline fallback prompts);
 - resolved **proposal verdicts** interleave as `(id: cs-1:0, decision)` lines
   (inline events via `decisionEventsFromLedger` — no payload row; their
   content derives from the synced ChangeSet/ChangeDecision entities),
   positioned at resolution time so the narrative reads *user said X → agent
   proposed Y → user rejected it*. The `## Proposal Ledger` section then
   carries only the OPEN proposals (current state: fingerprints for
-  `retract_suggestions`, same-wake dedup) — the `### Resolved` listing,
-  previously re-rendered and capped every wake, exists only in legacy mode;
+  `retract_suggestions`, same-wake dedup). Inline fallback prompts still use
+  the full legacy ledger shape because they do not have a trusted event-log
+  replacement;
 - a **retraction** appends `(id: e1, retraction) no longer appears in the
   current task context`. It documents the current absence without stripping
   earlier captured reality or invalidating summaries; a later capture can
@@ -466,8 +467,8 @@ beside the content it concerns — the past render stays faithful rather than
 retroactively redacted; a late-synced event inside the boundary makes the
 reconstruction reflect the CONVERGED log — semantically auditable rather
 than forensically byte-exact. The day agent splices its log back as the
-JSON `"dayLog"` line (`json-day-log-line` wrap). Legacy (flag-off) wakes
-keep full blobs — their prompts are live journal renders with nothing to
+JSON `"dayLog"` line (`json-day-log-line` wrap). Inline fallback wakes keep
+full blobs because their prompts are live journal renders with nothing to
 re-derive.
 
 The dormant model fields now earn their keep: `AgentMessageKind.summary`,
@@ -485,30 +486,15 @@ stateDiagram-v2
   Folding --> Idle: tail within trigger
 ```
 
-**Wired behind a default-off config flag.** The full activation — including
-the real LLM summarizer, wired in DI — is gated by
-the runtime config flag `enable_agent_compaction` (Settings → Flags →
-"Agent memory compaction", default **off**), which the workflow reads from the
-journal DB **at each wake** — so a flip takes effect on the next wake without
-any restart. (Read per wake on purpose: the wake executor captures the
-workflow instance at initialization, so a provider-rebuild-based flag would
-not reach the executing instance. `TaskAgentWorkflow.compactionEnabled`
-remains an explicit override for tests.) When enabled:
-
-- when **off** (production today), the wake prompt assembles `## Current Task
-  Context` (full JSON header, inline `logEntries`) from the journal exactly as
-  before — byte-identical behaviour;
-- when **on**, each wake (after capture and profile resolution) runs
-  `AgentLogCompactor.maybeCompact` — folding the oldest event prefix past the
-  trigger watermark into a `summary` checkpoint via `AgentLogLlmSummarizer` —
-  and assembles the task log as `AgentLogCompactor.assembleContext`
-  (`active summary + append-only event tail`), with the JSON header replaced
-  by the compact markdown task state (`buildTaskStateMarkdown`) placed in the
-  volatile tail below the log.
-
-Enabling the flag changes every wake's prompt and starts emitting synced
-checkpoints, so it ships off by default. The UI already renders `summary`
-messages when they exist.
+**Always-on read path.** Each task/project/day wake (after capture and profile
+resolution) runs `AgentLogCompactor.maybeCompact` — folding the oldest event
+prefix past the trigger watermark into a `summary` checkpoint via
+`AgentLogLlmSummarizer` — and assembles the log as
+`AgentLogCompactor.assembleContext` (`active summary + append-only event
+tail`). Task-agent prompts replace the full JSON header with the compact
+markdown task state (`buildTaskStateMarkdown`) placed in the volatile tail
+below the log. Project and day agents attach the same compacted event-log block
+to their own prompt shape. The UI renders `summary` messages when they exist.
 
 ### State-as-projection: the log is the source of truth (PR 4)
 
@@ -589,8 +575,7 @@ it — so the DAG re-converges to one tip and the prefix re-warms.
   `enable_fork_healing` config flag (Settings → Flags → "Agent fork healing")
   **per invocation** — the orchestrator captures the hook at initialization, so
   the flag is read inside it at each wake and a Settings toggle applies on the
-  next wake without a restart (the same captured-instance topology as the
-  compaction flag). Off → the hook returns immediately and wakes are
+  next wake without a restart. Off → the hook returns immediately and wakes are
   byte-identical to before.
 
 ```mermaid
@@ -1323,10 +1308,10 @@ For provider selection and residency details, see [../ai/README.md](../ai/README
 
 ## Planned Improvements
 
-Input capture + log compaction (ADR 0020 + ADR 0017) is fully wired behind
-the default-off `enable_agent_compaction` flag — see *Memory compaction &
-input capture* above for the live behavior (event-log read, LLM-distilled
-summary checkpoints, decision/observation events). Remaining work:
+Input capture + log compaction (ADR 0020 + ADR 0017) is fully wired for
+task/project/day agents — see *Memory compaction & input capture* above for
+the live behavior (event-log read, LLM-distilled summary checkpoints,
+decision/observation events). Remaining work:
 
 - **profile-aware watermarks** — derive trigger/retain from the resolved
   model's context window and local-vs-hosted inference instead of the global

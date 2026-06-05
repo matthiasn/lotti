@@ -448,7 +448,6 @@ void main() {
             syncService: mockSyncService,
             templateService: mockTemplateService,
             inputCaptureService: recorder,
-            compactionEnabled: false,
           );
 
           final result = await capturingWorkflow.execute(
@@ -487,7 +486,6 @@ void main() {
             syncService: mockSyncService,
             templateService: mockTemplateService,
             inputCaptureService: recorder,
-            compactionEnabled: false,
           );
 
           final result = await capturingWorkflow.execute(
@@ -606,7 +604,6 @@ void main() {
             syncService: mockSyncService,
             templateService: mockTemplateService,
             inputCaptureService: _RecordingCaptureService(),
-            compactionEnabled: true,
           );
 
           final result = await compactedWorkflow.execute(
@@ -756,7 +753,6 @@ void main() {
             syncService: mockSyncService,
             templateService: mockTemplateService,
             inputCaptureService: recorder,
-            compactionEnabled: false,
           );
 
           await withClock(Clock.fixed(testDate), () async {

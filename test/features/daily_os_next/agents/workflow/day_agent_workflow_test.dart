@@ -343,7 +343,6 @@ void main() {
         templateService: templateService,
         domainLogger: domainLogger,
         onPersistedStateChanged: changedTokens.add,
-        compactionEnabled: true,
       );
       final result = await execute(sut, triggerTokens: {dayId});
       expect(result.success, isTrue);
@@ -410,7 +409,6 @@ void main() {
         templateService: templateService,
         domainLogger: domainLogger,
         onPersistedStateChanged: changedTokens.add,
-        compactionEnabled: true,
       );
       final result = await execute(sut, triggerTokens: {dayId});
       expect(result.success, isTrue);
