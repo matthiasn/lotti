@@ -83,7 +83,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/widgets/modal/modal_utils_test.dart` — 1037 lines for a 333-line impl. Extract a `_pumpModalPage(tester, {Widget? child, ...})` helper. The `modalSheetPage` group (lines 168–358) and the `sliverModalSheetPage` group (lines 650–825) are nearly structurally identical — consider a shared table-driven approach. **Split seam:** separate `showSinglePageModal` / `showBottomSheet` / `showMultiPageModal` / `sliverModalSheetPage` into distinct `group` blocks with a shared `_launcher` helper.
+- [x] **[HIGH]** `test/widgets/modal/modal_utils_test.dart` — 1037 lines for a 333-line impl. Extract a `_pumpModalPage(tester, {Widget? child, ...})` helper. The `modalSheetPage` group (lines 168–358) and the `sliverModalSheetPage` group (lines 650–825) are nearly structurally identical — consider a shared table-driven approach. **Split seam:** separate `showSinglePageModal` / `showBottomSheet` / `showMultiPageModal` / `sliverModalSheetPage` into distinct `group` blocks with a shared `_launcher` helper.
 
 - [x] **[HIGH]** `test/widgets/search/entry_type_filter_test.dart` — 1003 lines for a 154-line impl. The `EntryTypeFilter Tests` group repeats `when(mockDb.watchConfigFlags)` + `GetIt.I.registerSingleton<JournalDb>(mockDb)` + `makeTestableWidgetWithScaffold` + same 3-provider `overrides` block in every one of ~14 tests. Extract a `_pumpFilter(tester, {Set<ConfigFlag> flags, JournalPageController? controller})` helper.
 
