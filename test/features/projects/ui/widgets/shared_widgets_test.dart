@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -11,6 +12,20 @@ import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dar
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
+
+// ---------------------------------------------------------------------------
+// Generators for formatCountdown property tests
+// ---------------------------------------------------------------------------
+
+extension _AnyCountdown on glados.Any {
+  /// Non-negative seconds that exercise all three branches of [formatCountdown].
+  glados.Generator<int> get countdownSeconds =>
+      glados.any.intInRange(0, 360000);
+
+  /// Negative seconds to verify the clamping branch.
+  glados.Generator<int> get negativeSeconds =>
+      glados.any.intInRange(-360000, 0);
+}
 
 /// Helper to create a [ProjectStatus] variant concisely.
 ProjectStatus _activeStatus() => ProjectStatus.active(
@@ -900,6 +915,74 @@ Longer report content.
       expect(formatCountdown(-1), '0:00');
       expect(formatCountdown(-3661), '0:00');
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // formatCountdown — Glados property tests
+  // -------------------------------------------------------------------------
+
+  group('formatCountdown — properties', () {
+    glados.Glados<int>(
+      glados.any.countdownSeconds,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result is never empty for non-negative input',
+      (seconds) {
+        expect(formatCountdown(seconds), isNotEmpty);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.negativeSeconds,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'negative input always yields 0:00',
+      (seconds) {
+        expect(formatCountdown(seconds), '0:00');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.intInRange(0, 3600),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'sub-hour durations produce m:ss (no hour cell, exactly one colon)',
+      (seconds) {
+        final result = formatCountdown(seconds);
+        expect(result.split(':').length, 2,
+            reason: '"$result" should be m:ss for $seconds seconds');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.intInRange(3600, 360000),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'hour-or-more durations produce h:mm:ss (exactly two colons)',
+      (seconds) {
+        final result = formatCountdown(seconds);
+        expect(result.split(':').length, 3,
+            reason: '"$result" should be h:mm:ss for $seconds seconds');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.intInRange(0, 360000),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'seconds component (last segment) is always exactly two digits',
+      (totalSeconds) {
+        final result = formatCountdown(totalSeconds);
+        final ssSegment = result.split(':').last;
+        expect(ssSegment.length, 2,
+            reason: 'seconds segment "$ssSegment" in "$result" must be 2 digits');
+      },
+      tags: 'glados',
+    );
   });
 
   group('showcaseUpdatedLabel', () {

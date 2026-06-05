@@ -1,6 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_model_form_state.dart';
+
+/// Generators for [MaxCompletionTokens] boundary property tests.
+extension _AnyMaxTokens on glados.Any {
+  /// Strings that represent positive integers (valid token counts).
+  glados.Generator<String> get positiveIntString =>
+      glados.IntAnys(this).intInRange(1, 99999999).map((n) => n.toString());
+
+  /// Strings representing non-positive integers (zero or negative).
+  glados.Generator<String> get nonPositiveIntString =>
+      glados.IntAnys(this).intInRange(-9999, 0).map((n) => n.toString());
+}
 
 void main() {
   group('InferenceModelFormState Tests', () {
@@ -363,5 +375,47 @@ void main() {
         });
       });
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados properties for MaxCompletionTokens validator boundaries.
+  // -------------------------------------------------------------------------
+  group('MaxCompletionTokens — Glados boundary properties', () {
+    glados.Glados(
+      glados.any.positiveIntString,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'any positive-integer string is valid',
+      (s) {
+        expect(
+          MaxCompletionTokens.dirty(s).isValid,
+          isTrue,
+          reason: '"$s" should be valid',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.nonPositiveIntString,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'zero or negative integer string is invalid',
+      (s) {
+        final parsed = int.tryParse(s);
+        if (parsed != null && parsed <= 0) {
+          expect(
+            MaxCompletionTokens.dirty(s).isValid,
+            isFalse,
+            reason: '"$s" (<= 0) should be invalid',
+          );
+          expect(
+            MaxCompletionTokens.dirty(s).error,
+            ModelFormError.invalidNumber,
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

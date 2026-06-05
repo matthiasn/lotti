@@ -1,9 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_orb.dart';
 
 import '../../../../../widget_test_utils.dart';
+
+// ---------------------------------------------------------------------------
+// Generators for AudioRecordingSignalLevel property tests
+// ---------------------------------------------------------------------------
+
+extension _AnyDbfs on glados.Any {
+  /// Finite dBFS values spanning well below silence to well above clipping.
+  glados.Generator<double> get dbfsFinite =>
+      glados.DoubleAnys(this).doubleInRange(-200, 20);
+
+  /// dBFS values strictly above the −3 dBFS clipping threshold.
+  glados.Generator<double> get dbfsAboveClipping =>
+      glados.DoubleAnys(this).doubleInRange(-2.9999, 20);
+
+  /// dBFS values at or below the −3 dBFS clipping threshold.
+  glados.Generator<double> get dbfsBelowClipping =>
+      glados.DoubleAnys(this).doubleInRange(-200, -3);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -121,5 +140,77 @@ void main() {
 
     expect(painter.signalLevel.isClipping, isTrue);
     expect(painter.clippingColor, tokens.colors.alert.warning.defaultColor);
+  });
+
+  // -------------------------------------------------------------------------
+  // AudioRecordingSignalLevel.fromDbfs — Glados property tests
+  // -------------------------------------------------------------------------
+
+  group('AudioRecordingSignalLevel.fromDbfs — properties', () {
+    glados.Glados<double>(
+      glados.any.dbfsFinite,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'normalized is always in [0, 1] for any finite dBFS',
+      (dbfs) {
+        final level = AudioRecordingSignalLevel.fromDbfs(dbfs);
+        expect(level.normalized, greaterThanOrEqualTo(0.0));
+        expect(level.normalized, lessThanOrEqualTo(1.0));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<double>(
+      glados.any.dbfsAboveClipping,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'isClipping is true for every dBFS strictly above −3',
+      (dbfs) {
+        final level = AudioRecordingSignalLevel.fromDbfs(dbfs);
+        expect(level.isClipping, isTrue,
+            reason: 'dBFS=$dbfs should be clipping');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<double>(
+      glados.any.dbfsBelowClipping,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'isClipping is false for every dBFS at or below −3',
+      (dbfs) {
+        final level = AudioRecordingSignalLevel.fromDbfs(dbfs);
+        expect(level.isClipping, isFalse,
+            reason: 'dBFS=$dbfs should not be clipping');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<double>(
+      glados.any.dbfsFinite,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'two calls with same dBFS produce equal levels (value equality)',
+      (dbfs) {
+        final first = AudioRecordingSignalLevel.fromDbfs(dbfs);
+        final second = AudioRecordingSignalLevel.fromDbfs(dbfs);
+        expect(first, second);
+        expect(first.hashCode, second.hashCode);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<double>(
+      glados.DoubleAnys(glados.any).doubleInRange(-63.9, -0.1),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'within the active speech range normalized is strictly between 0 and 1',
+      (dbfs) {
+        final level = AudioRecordingSignalLevel.fromDbfs(dbfs);
+        expect(level.normalized, greaterThan(0.0));
+        expect(level.normalized, lessThan(1.0));
+      },
+      tags: 'glados',
+    );
   });
 }

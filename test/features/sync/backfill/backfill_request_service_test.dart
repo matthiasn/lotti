@@ -10,7 +10,6 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -46,9 +45,6 @@ class _UndeletableFile implements File {
   @override
   dynamic noSuchMethod(Invocation i) => _real.noSuchMethod(i);
 }
-
-class _MockQueuePipelineCoordinator extends Mock
-    implements QueuePipelineCoordinator {}
 
 class _GeneratedBackfillCandidate {
   const _GeneratedBackfillCandidate({
@@ -791,7 +787,7 @@ void main() {
       'automatic backfill requests the generated first unqueued bounded batch',
       (scenario) {
         fakeAsync((async) {
-          final coordinator = _MockQueuePipelineCoordinator();
+          final coordinator = MockQueuePipelineCoordinator();
           when(
             () => coordinator.isBridgeInFlight,
           ).thenReturn(scenario.bridgeInFlight);
@@ -2135,7 +2131,7 @@ void main() {
         () {
           fakeAsync((async) {
             stubMissingFetch();
-            final coordinator = _MockQueuePipelineCoordinator();
+            final coordinator = MockQueuePipelineCoordinator();
             when(() => coordinator.isBridgeInFlight).thenReturn(true);
 
             final service = BackfillRequestService(
@@ -2170,7 +2166,7 @@ void main() {
         () {
           fakeAsync((async) {
             stubMissingFetch();
-            final coordinator = _MockQueuePipelineCoordinator();
+            final coordinator = MockQueuePipelineCoordinator();
             when(() => coordinator.isBridgeInFlight).thenReturn(false);
 
             final service = BackfillRequestService(
@@ -2196,7 +2192,7 @@ void main() {
         'action is never silently swallowed',
         () async {
           stubMissingFetch();
-          final coordinator = _MockQueuePipelineCoordinator();
+          final coordinator = MockQueuePipelineCoordinator();
           when(() => coordinator.isBridgeInFlight).thenReturn(true);
 
           final service = BackfillRequestService(
@@ -2333,7 +2329,7 @@ void main() {
         () {
           fakeAsync((async) {
             final mockQueue = MockInboundQueue();
-            final coordinator = _MockQueuePipelineCoordinator();
+            final coordinator = MockQueuePipelineCoordinator();
             final depthController =
                 StreamController<QueueDepthSignal>.broadcast();
             addTearDown(depthController.close);
@@ -2402,7 +2398,7 @@ void main() {
         () {
           fakeAsync((async) {
             final mockQueue = MockInboundQueue();
-            final coordinator = _MockQueuePipelineCoordinator();
+            final coordinator = MockQueuePipelineCoordinator();
             final depthController =
                 StreamController<QueueDepthSignal>.broadcast();
             addTearDown(depthController.close);
@@ -2492,7 +2488,7 @@ void main() {
         () {
           fakeAsync((async) {
             final mockQueue = MockInboundQueue();
-            final coordinator = _MockQueuePipelineCoordinator();
+            final coordinator = MockQueuePipelineCoordinator();
             final depthController =
                 StreamController<QueueDepthSignal>.broadcast();
             addTearDown(depthController.close);

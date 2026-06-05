@@ -789,7 +789,7 @@ void main() {
           // Start streaming
           // ignore: unawaited_futures
           controller.sendMessage('Hello');
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           // Push content exceeding 1,000,000 characters
           const cap = 1000000;
@@ -799,7 +799,7 @@ void main() {
 
           // Close and settle
           await streamController.close();
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           final state = container.read(
             chatSessionControllerProvider('test-category'),
@@ -854,7 +854,7 @@ void main() {
         // Start first send and stay streaming (we intentionally do not await)
         // ignore: unawaited_futures
         controller.sendMessage('First');
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         // Attempt second send
         await controller.sendMessage('Second');
@@ -921,10 +921,10 @@ void main() {
         // Start streaming and emit only whitespace so assistant message should be dropped
         // ignore: unawaited_futures
         controller.sendMessage('Hi');
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         streamController.add('   ');
         await streamController.close();
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         final state = container.read(
           chatSessionControllerProvider('test-category'),
@@ -986,10 +986,10 @@ void main() {
         // Start streaming and emit only an unterminated thinking block
         // ignore: unawaited_futures
         controller.sendMessage('Hi');
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         streamController.add('<thinking>Work in progress');
         await streamController.close();
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         final state = container.read(
           chatSessionControllerProvider('test-category'),
@@ -1056,12 +1056,12 @@ void main() {
         // Start streaming: first visible text, then an unterminated thinking block
         // ignore: unawaited_futures
         controller.sendMessage('Hi');
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         streamController.add('Visible part');
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         streamController.add('<thinking>Hidden rationale');
         await streamController.close();
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         final state = container.read(
           chatSessionControllerProvider('test-category'),
@@ -1133,14 +1133,14 @@ void main() {
           // called from the finish() flush path (line 178).
           // ignore: unawaited_futures
           controller.sendMessage('Hi');
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
           // Emit a complete thinking block then visible text to exercise
           // parser.finish() flushing a VisibleAppend.
           streamController
             ..add('<thinking>Reasoning</thinking>')
             ..add('Answer text');
           await streamController.close();
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           final state = container.read(
             chatSessionControllerProvider('test-category'),
@@ -1206,16 +1206,16 @@ void main() {
 
           // ignore: unawaited_futures
           controller.sendMessage('Hi');
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           // Emit real content so a streaming message is added (non-null ID)
           streamController.add('Partial response');
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           // Now add an error to trigger the catch block with an active streaming
           // message, exercising _removeStreamingMessage lines 287-297.
           streamController.addError(Exception('mid-stream error'));
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           final state = container.read(
             chatSessionControllerProvider('test-category'),
@@ -1453,11 +1453,11 @@ void main() {
 
           // ignore: unawaited_futures
           controller.sendMessage('Hi');
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           // Emit visible content to create a streaming message
           streamController.add('Some text');
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           // Remove all messages from state while the streaming ID is still set,
           // so when _finalizeStreamingMessage runs it cannot find the message
@@ -1465,7 +1465,7 @@ void main() {
           controller.updateState((s) => s.copyWith(messages: []));
 
           await streamController.close();
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           final state = container.read(
             chatSessionControllerProvider('test-category'),

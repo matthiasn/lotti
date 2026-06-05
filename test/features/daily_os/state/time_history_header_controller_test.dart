@@ -439,11 +439,13 @@ void main() {
           timeHistoryHeaderControllerProvider.notifier,
         );
 
-        // Start two loads simultaneously
-        unawaited(notifier.loadMoreDays());
-        unawaited(notifier.loadMoreDays());
-
-        await Future<void>.delayed(Duration.zero);
+        // Start two loads simultaneously and await both deterministically —
+        // no zero-duration Timer (fake-time policy). The second call is a
+        // no-op because a load is already in flight.
+        await Future.wait([
+          notifier.loadMoreDays(),
+          notifier.loadMoreDays(),
+        ]);
 
         // Only one additional query should have been made
         // Initial (1) + loadMore (1) = 2 total

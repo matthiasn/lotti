@@ -906,9 +906,10 @@ void main() {
           // Fire a notification for the checklist ID
           updateStreamController.add({'checklist-1'});
 
-          // Pump async events
-          await Future<void>.delayed(Duration.zero);
-          await Future<void>.delayed(Duration.zero);
+          // Drain the event queue deterministically so the stream listener's
+          // async callback completes — no zero-duration Timers (fake-time
+          // policy).
+          await pumpEventQueue();
 
           final state = container.read(
             checklistControllerProvider((
@@ -949,7 +950,7 @@ void main() {
 
         // Notification for a completely unrelated ID
         updateStreamController.add({'unrelated-id'});
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         // No additional fetch should have happened
         expect(fetchCount, isZero);

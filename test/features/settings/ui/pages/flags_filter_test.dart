@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 
@@ -197,5 +198,162 @@ void main() {
         expect(id, isNotEmpty);
       }
     });
+  });
+
+  // Additive Glados property groups — appended, no existing tests modified.
+  _runFilterDisplayedFlagsGladosTests();
+}
+
+// ---------------------------------------------------------------------------
+// Generators and Glados property tests for filterDisplayedFlags.
+// ---------------------------------------------------------------------------
+
+/// A fixed pool of [ConfigFlag] values used by the generators.
+final List<ConfigFlag> _flagPool = List<ConfigFlag>.unmodifiable([
+  const ConfigFlag(name: 'alpha', description: 'Alpha subtitle', status: false),
+  const ConfigFlag(name: 'beta', description: 'Beta subtitle', status: true),
+  const ConfigFlag(name: 'gamma', description: 'Gamma subtitle', status: false),
+  const ConfigFlag(name: 'delta', description: 'Delta subtitle', status: false),
+  const ConfigFlag(name: 'epsilon', description: 'Epsilon subtitle', status: false),
+]);
+
+/// A resolver that uses each flag's `name` as its title and `description`
+/// as its subtitle — deterministic, no localisation needed.
+({String title, String subtitle}) _identityResolver(ConfigFlag flag) =>
+    (title: flag.name, subtitle: flag.description);
+
+extension _AnyFlagFilterInput on glados.Any {
+  /// Produces a non-empty sub-list of [_flagPool].  Using `choose` on a
+  /// list of pre-built lists keeps the generator simple and deterministic.
+  glados.Generator<List<ConfigFlag>> get flagSublist =>
+      glados.AnyUtils(this).choose(<List<ConfigFlag>>[
+        [_flagPool[0]],
+        [_flagPool[0], _flagPool[1]],
+        [_flagPool[1], _flagPool[2]],
+        [_flagPool[0], _flagPool[1], _flagPool[2]],
+        [_flagPool[0], _flagPool[2], _flagPool[4]],
+        List<ConfigFlag>.from(_flagPool),
+        [_flagPool[3], _flagPool[4]],
+      ]);
+
+  /// Generates query strings: empty, whitespace, partial matches, and
+  /// values that definitely do not appear in any flag name/description.
+  glados.Generator<String> get filterQuery =>
+      glados.AnyUtils(this).choose(<String>[
+        '',
+        '   ',
+        'alpha',
+        'BETA',
+        'subtitle',
+        'zzz_no_match',
+        'a',
+        'ALPHA',
+        'gamma',
+        'delta subtitle',
+      ]);
+}
+
+/// Returns true if [sub] is a subsequence of [full] (order-preserving).
+bool _isSubsequence(List<ConfigFlag> sub, List<ConfigFlag> full) {
+  var subIdx = 0;
+  for (final item in full) {
+    if (subIdx < sub.length && sub[subIdx] == item) {
+      subIdx++;
+    }
+  }
+  return subIdx == sub.length;
+}
+
+void _runFilterDisplayedFlagsGladosTests() {
+  group('filterDisplayedFlags — Glados properties', () {
+    glados.Glados2<List<ConfigFlag>, String>(
+      glados.any.flagSublist,
+      glados.any.filterQuery,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result is always a subsequence of the input (order-preserving subset)',
+      (flags, query) {
+        final result = filterDisplayedFlags(
+          query: query,
+          flags: flags,
+          resolver: _identityResolver,
+        );
+        expect(
+          _isSubsequence(result, flags),
+          isTrue,
+          reason: 'query="$query" result=$result input=$flags',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2<List<ConfigFlag>, String>(
+      glados.any.flagSublist,
+      glados.any.filterQuery,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'applying the filter twice with the same query is idempotent',
+      (flags, query) {
+        final once = filterDisplayedFlags(
+          query: query,
+          flags: flags,
+          resolver: _identityResolver,
+        );
+        final twice = filterDisplayedFlags(
+          query: query,
+          flags: once,
+          resolver: _identityResolver,
+        );
+        expect(
+          twice,
+          equals(once),
+          reason: 'query="$query"',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<List<ConfigFlag>>(
+      glados.any.flagSublist,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'empty or whitespace-only query returns the full input list unchanged',
+      (flags) {
+        for (final emptyQuery in <String>['', '   ', '\t\n']) {
+          final result = filterDisplayedFlags(
+            query: emptyQuery,
+            flags: flags,
+            resolver: _identityResolver,
+          );
+          expect(
+            result,
+            equals(flags),
+            reason: 'query="$emptyQuery"',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2<List<ConfigFlag>, String>(
+      glados.any.flagSublist,
+      glados.any.filterQuery,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result length is always ≤ input length',
+      (flags, query) {
+        final result = filterDisplayedFlags(
+          query: query,
+          flags: flags,
+          resolver: _identityResolver,
+        );
+        expect(
+          result.length,
+          lessThanOrEqualTo(flags.length),
+          reason: 'query="$query"',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

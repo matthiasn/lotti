@@ -1,6 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
+
+/// Glados generators for [BaseUrl] property tests.
+extension _AnyBaseUrl on glados.Any {
+  /// Generates syntactically valid http/https URL strings.
+  glados.Generator<String> get validHttpUrl =>
+      glados.CombinableAny(this).combine2(
+        glados.AnyUtils(this).choose(const ['http', 'https']),
+        glados.any.letterOrDigits,
+        (scheme, host) =>
+            '$scheme://${host.isEmpty ? 'a' : host}.example.com',
+      );
+
+  /// Generates non-http scheme strings that should be invalid.
+  glados.Generator<String> get nonHttpUrl =>
+      glados.CombinableAny(this).combine2(
+        glados.AnyUtils(this).choose(const ['ftp', 'ws', 'file', 'mailto']),
+        glados.any.letterOrDigits,
+        (scheme, host) =>
+            '$scheme://${host.isEmpty ? 'a' : host}.example.com',
+      );
+}
 
 void main() {
   group('ApiKeyName validator', () {
@@ -184,5 +206,42 @@ void main() {
               as AiConfigInferenceProvider;
       expect(config.id, isNotEmpty);
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados properties for BaseUrl validator.
+  // -------------------------------------------------------------------------
+  group('BaseUrl — Glados properties', () {
+    glados.Glados(
+      glados.any.validHttpUrl,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'valid http/https URL is always accepted',
+      (url) {
+        expect(
+          BaseUrl.dirty(url).isValid,
+          isTrue,
+          reason: '"$url" is a valid http/https URL and should be accepted',
+        );
+        expect(BaseUrl.dirty(url).error, isNull);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.nonHttpUrl,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'non-http/https URL scheme is always rejected',
+      (url) {
+        expect(
+          BaseUrl.dirty(url).isValid,
+          isFalse,
+          reason: '"$url" has a non-http scheme and should be invalid',
+        );
+        expect(BaseUrl.dirty(url).error, ProviderFormError.invalidUrl);
+      },
+      tags: 'glados',
+    );
   });
 }

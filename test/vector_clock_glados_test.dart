@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 import 'package:glados/glados.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -59,7 +61,7 @@ void main() {
     } else {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
     }
-  });
+  }, tags: 'glados');
 
   Glados2<VectorClock, VectorClock>(any.vc3, any.vc3).test(
     'compare two vector clocks with three nodes',
@@ -74,6 +76,7 @@ void main() {
         expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
       }
     },
+    tags: 'glados',
   );
 
   Glados2<VectorClock, VectorClock>(any.vc, any.vc3).test(
@@ -89,6 +92,7 @@ void main() {
         expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
       }
     },
+    tags: 'glados',
   );
 
   Glados2<VectorClock, VectorClock>(
@@ -107,5 +111,67 @@ void main() {
         ),
       );
     }
+  }, tags: 'glados');
+
+  group('VectorClock.merge — algebraic laws', () {
+    Glados2<VectorClock, VectorClock>(any.vc, any.vc3).test(
+      'merge is commutative (per node)',
+      (a, b) {
+        expect(
+          VectorClock.merge(a, b).vclock,
+          VectorClock.merge(b, a).vclock,
+          reason: '$a vs $b',
+        );
+      },
+      tags: 'glados',
+    );
+
+    Glados<VectorClock>(any.vc3).test(
+      'merge is idempotent',
+      (a) {
+        expect(VectorClock.merge(a, a).vclock, a.vclock, reason: '$a');
+      },
+      tags: 'glados',
+    );
+
+    Glados2<VectorClock, VectorClock>(any.vc3, any.vc3).test(
+      'merge takes the per-node maximum (least upper bound)',
+      (a, b) {
+        final merged = VectorClock.merge(a, b);
+        for (final node in {...a.vclock.keys, ...b.vclock.keys}) {
+          expect(
+            merged.get(node),
+            max(a.get(node), b.get(node)),
+            reason: 'node $node: $a ⊔ $b',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    test('treats null operands as identity, and null+null as empty', () {
+      const a = VectorClock({'a': 3, 'b': 1});
+      expect(VectorClock.merge(a, null).vclock, a.vclock);
+      expect(VectorClock.merge(null, a).vclock, a.vclock);
+      expect(VectorClock.merge(null, null).vclock, <String, int>{});
+    });
+  });
+
+  group('VectorClock.mergeUniqueClocks', () {
+    test('returns null when there are no non-null clocks', () {
+      expect(VectorClock.mergeUniqueClocks(const []), isNull);
+      expect(VectorClock.mergeUniqueClocks([null, null]), isNull);
+    });
+
+    test('deduplicates value-equal clocks and drops nulls', () {
+      const a = VectorClock({'a': 1});
+      const aCopy = VectorClock({'a': 1});
+      const b = VectorClock({'b': 2});
+      final result = VectorClock.mergeUniqueClocks([a, null, aCopy, b, null]);
+      expect(result, isNotNull);
+      expect(result!.length, 2);
+      expect(result.contains(a), isTrue);
+      expect(result.contains(b), isTrue);
+    });
   });
 }

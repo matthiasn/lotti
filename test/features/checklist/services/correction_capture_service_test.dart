@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -338,9 +339,11 @@ void main() {
       expect(pending.createdAt, equals(createdAt));
     });
 
-    test('remainingTime returns approximately correct duration', () {
-      // Create a pending correction 2 seconds ago
-      final createdAt = DateTime.now().subtract(const Duration(seconds: 2));
+    test('remainingTime returns the exact remaining duration', () {
+      // Pin the wall clock 2 s after creation so the 5 s save delay leaves
+      // exactly 3 s — deterministic, no real-clock variance
+      // (fake-time policy).
+      final createdAt = DateTime(2025, 1, 1, 12);
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
@@ -349,14 +352,16 @@ void main() {
         createdAt: createdAt,
       );
 
-      // Expected remaining: 5s - 2s = ~3s (allow for slight timing variance)
-      final remaining = pending.remainingTime;
-      expect(remaining.inSeconds, inInclusiveRange(2, 3));
+      final remaining = withClock(
+        Clock.fixed(DateTime(2025, 1, 1, 12, 0, 2)),
+        () => pending.remainingTime,
+      );
+      expect(remaining, equals(const Duration(seconds: 3)));
     });
 
     test('remainingTime returns zero when expired', () {
-      // Create a pending correction 10 seconds ago (past the 5s delay)
-      final createdAt = DateTime.now().subtract(const Duration(seconds: 10));
+      // Pin the wall clock 10 s after creation — past the 5 s save delay.
+      final createdAt = DateTime(2025, 1, 1, 12);
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
@@ -365,7 +370,11 @@ void main() {
         createdAt: createdAt,
       );
 
-      expect(pending.remainingTime, equals(Duration.zero));
+      final remaining = withClock(
+        Clock.fixed(DateTime(2025, 1, 1, 12, 0, 10)),
+        () => pending.remainingTime,
+      );
+      expect(remaining, equals(Duration.zero));
     });
   });
 
@@ -635,18 +644,28 @@ void main() {
   });
 
   group('correctionCaptureServiceProvider', () {
-    test('creates service with category repository', () {
+    test('wires the overridden category repository into the service', () async {
+      final repo = MockCategoryRepository();
+      when(() => repo.getCategoryById('missing')).thenAnswer((_) async => null);
+
       final container = ProviderContainer(
         overrides: [
-          categoryRepositoryProvider.overrideWithValue(
-            MockCategoryRepository(),
-          ),
+          categoryRepositoryProvider.overrideWithValue(repo),
         ],
       );
       addTearDown(container.dispose);
 
       final service = container.read(correctionCaptureServiceProvider);
-      expect(service, isA<CorrectionCaptureService>());
+
+      // The capture call must route through the injected repository — the
+      // null lookup result surfaces as categoryNotFound.
+      final result = await service.captureCorrection(
+        categoryId: 'missing',
+        beforeText: 'test flight',
+        afterText: 'TestFlight',
+      );
+      expect(result, CorrectionCaptureResult.categoryNotFound);
+      verify(() => repo.getCategoryById('missing')).called(1);
     });
   });
 

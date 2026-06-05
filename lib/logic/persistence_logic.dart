@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -234,9 +235,11 @@ class PersistenceLogic {
         entryText: entryTextFromPlain(comment),
       );
 
+      // clock.now() so tests can pin the "is this a live entry" gate with
+      // withClock instead of racing the wall clock.
       final shouldAddGeolocation =
-          data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
+          data.dateFrom.difference(clock.now()).inMinutes.abs() < 1 &&
+          data.dateTo.difference(clock.now()).inMinutes.abs() < 1;
 
       await createDbEntity(
         measurementEntry,
@@ -277,9 +280,11 @@ class PersistenceLogic {
         entryText: entryTextFromPlain(comment),
       );
 
+      // clock.now() so tests can pin the "is this a live entry" gate with
+      // withClock instead of racing the wall clock.
       final shouldAddGeolocation =
-          data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
+          data.dateFrom.difference(clock.now()).inMinutes.abs() < 1 &&
+          data.dateTo.difference(clock.now()).inMinutes.abs() < 1;
 
       final saved = await createDbEntity(
         habitCompletionEntry,

@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -22,6 +23,15 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:research_package/model.dart';
 
 import '../test_data/test_data.dart';
+
+// ---------------------------------------------------------------------------
+// Generators for property-based tests
+// ---------------------------------------------------------------------------
+
+extension _AnyConversionGlados on glados.Any {
+  glados.Generator<TaskPriority> get taskPriority =>
+      glados.AnyUtils(this).choose(TaskPriority.values);
+}
 
 final DateTime _baseTime = DateTime(2024, 1, 1, 12);
 
@@ -702,6 +712,308 @@ void main() {
 
       expect(results, hasLength(1));
       expect(results[0].id, 'dash-valid');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // fromDbEntity — HIGH coverage gap (previously untested direct path)
+  // -------------------------------------------------------------------------
+
+  group('fromDbEntity', () {
+    /// Builds a minimal `JournalDbEntity` whose `serialized` column holds a
+    /// freshly round-tripped JSON blob for `entity`. The `taskPriority` column
+    /// starts unset so callers can override it independently.
+    JournalDbEntity makeDbEntity(
+      JournalEntity entity, {
+      String? taskPriorityOverride,
+    }) {
+      final db = toDbEntity(entity);
+      return JournalDbEntity(
+        id: db.id,
+        createdAt: db.createdAt,
+        updatedAt: db.updatedAt,
+        dateFrom: db.dateFrom,
+        dateTo: db.dateTo,
+        deleted: db.deleted,
+        starred: db.starred,
+        private: db.private,
+        task: db.task,
+        taskStatus: db.taskStatus,
+        taskPriority: taskPriorityOverride ?? db.taskPriority,
+        taskPriorityRank: db.taskPriorityRank,
+        flag: db.flag,
+        type: db.type,
+        subtype: db.subtype,
+        serialized: db.serialized,
+        schemaVersion: db.schemaVersion,
+        plainText: db.plainText,
+        latitude: db.latitude,
+        longitude: db.longitude,
+        geohashString: db.geohashString,
+        category: db.category,
+        dueAt: db.dueAt,
+      );
+    }
+
+    test(
+      'restores a non-Task entity with id and type intact (patch path skipped)',
+      () {
+        final entry = _measurementEntry('measure-rt');
+        final db = makeDbEntity(entry);
+        final restored = fromDbEntity(db);
+
+        expect(restored.meta.id, entry.meta.id,
+            reason: 'id must survive round-trip');
+        expect(restored, isA<MeasurementEntry>(),
+            reason: 'variant must be preserved');
+        // taskPriority column is null for non-Task rows — patch branch must
+        // not execute.
+        expect(db.taskPriority, isNull,
+            reason: 'non-Task row must not have a taskPriority column value');
+      },
+    );
+
+    test(
+      'returns entity unchanged when taskPriority column matches serialized '
+      'priority (no-op patch)',
+      () {
+        const priority = TaskPriority.p1High;
+        final entry = _taskEntry(
+          id: 'task-noop',
+          status: TaskStatus.open(
+            id: 'open-noop',
+            createdAt: _baseTime,
+            utcOffset: 0,
+          ),
+        ).maybeMap(
+          task: (t) => t.copyWith(data: t.data.copyWith(priority: priority)),
+          orElse: () => throw StateError('unexpected variant'),
+        );
+
+        // Column value matches the serialized JSON — patch must be a no-op.
+        final db = makeDbEntity(entry, taskPriorityOverride: 'P1');
+        final restored = fromDbEntity(db);
+
+        expect(
+          restored.maybeMap(
+            task: (t) => t.data.priority,
+            orElse: () => throw StateError('unexpected variant'),
+          ),
+          priority,
+          reason: 'priority must be preserved when column matches JSON',
+        );
+      },
+    );
+
+    test(
+      'overrides serialized priority with taskPriority column value when they '
+      'differ (patch applies)',
+      () {
+        // Serialize a task with p2Medium, then supply a column that says P0.
+        final entry = _taskEntry(
+          id: 'task-override',
+          status: TaskStatus.open(
+            id: 'open-override',
+            createdAt: _baseTime,
+            utcOffset: 0,
+          ),
+        ).maybeMap(
+          task: (t) =>
+              t.copyWith(data: t.data.copyWith(priority: TaskPriority.p2Medium)),
+          orElse: () => throw StateError('unexpected variant'),
+        );
+
+        final db = makeDbEntity(entry, taskPriorityOverride: 'P0');
+        final restored = fromDbEntity(db);
+
+        expect(
+          restored.maybeMap(
+            task: (t) => t.data.priority,
+            orElse: () => throw StateError('unexpected variant'),
+          ),
+          TaskPriority.p0Urgent,
+          reason: 'DB column must win when it differs from serialized JSON',
+        );
+        // id must be preserved regardless.
+        expect(restored.meta.id, entry.meta.id);
+      },
+    );
+
+    test(
+      'empty taskPriority column string is treated as absent (patch skipped)',
+      () {
+        final entry = _taskEntry(
+          id: 'task-empty-prio',
+          status: TaskStatus.open(
+            id: 'open-empty',
+            createdAt: _baseTime,
+            utcOffset: 0,
+          ),
+        ).maybeMap(
+          task: (t) =>
+              t.copyWith(data: t.data.copyWith(priority: TaskPriority.p3Low)),
+          orElse: () => throw StateError('unexpected variant'),
+        );
+
+        // An empty string must NOT trigger the patch.
+        final db = makeDbEntity(entry, taskPriorityOverride: '');
+        final restored = fromDbEntity(db);
+
+        expect(
+          restored.maybeMap(
+            task: (t) => t.data.priority,
+            orElse: () => throw StateError('unexpected variant'),
+          ),
+          TaskPriority.p3Low,
+          reason: 'empty string column must not override serialized priority',
+        );
+      },
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // fromDbEntity round-trip — HIGH Glados property
+  // -------------------------------------------------------------------------
+
+  group('fromDbEntity round-trip — Glados properties', () {
+    JournalEntity taskWithPriority(String id, TaskPriority priority) {
+      return _taskEntry(
+        id: id,
+        status: TaskStatus.open(
+          id: 'open-$id',
+          createdAt: _baseTime,
+          utcOffset: 0,
+        ),
+      ).maybeMap(
+        task: (t) => t.copyWith(data: t.data.copyWith(priority: priority)),
+        orElse: () => throw StateError('unexpected variant'),
+      );
+    }
+
+    glados.Glados(
+      glados.any.taskPriority,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'toDbEntity → fromDbEntity preserves id and priority for every '
+      'TaskPriority value',
+      (priority) {
+        final entity = taskWithPriority('glados-prio-${priority.name}', priority);
+        final db = toDbEntity(entity);
+        final restored = fromDbEntity(db);
+
+        expect(
+          restored.meta.id,
+          entity.meta.id,
+          reason: 'id must survive round-trip for $priority',
+        );
+        expect(
+          restored.maybeMap(
+            task: (t) => t.data.priority,
+            orElse: () => throw StateError('unexpected variant'),
+          ),
+          priority,
+          reason: 'priority $priority must survive toDbEntity → fromDbEntity',
+        );
+      },
+      tags: 'glados',
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // labelDefinitionDbEntity / fromLabelDefinitionDbEntity — MED coverage gap
+  // -------------------------------------------------------------------------
+
+  group('labelDefinitionDbEntity and fromLabelDefinitionDbEntity', () {
+    LabelDefinition makeLabel({
+      required String id,
+      required String name,
+      DateTime? deletedAt,
+      bool? private,
+      String color = '#FF0000',
+    }) {
+      return LabelDefinition(
+        id: id,
+        createdAt: _baseTime,
+        updatedAt: _baseTime,
+        name: name,
+        color: color,
+        vectorClock: null,
+        deletedAt: deletedAt,
+        private: private,
+      );
+    }
+
+    test('round-trip preserves id, name, color, and private flag', () {
+      final label = makeLabel(
+        id: 'label-rt',
+        name: 'My Label',
+        color: '#ABC123',
+        private: true,
+      );
+
+      final dbEntity = labelDefinitionDbEntity(label);
+      final restored = fromLabelDefinitionDbEntity(dbEntity);
+
+      expect(restored.id, label.id);
+      expect(restored.name, label.name);
+      expect(restored.color, label.color);
+      expect(restored.private, label.private);
+    });
+
+    test('uses id as name when label is deleted', () {
+      final label = makeLabel(
+        id: 'deleted-label-id',
+        name: 'Original Name',
+        deletedAt: _baseTime,
+      );
+
+      final dbEntity = labelDefinitionDbEntity(label);
+
+      expect(
+        dbEntity.name,
+        label.id,
+        reason: 'deleted label must store id in the name column',
+      );
+      expect(dbEntity.deleted, isTrue);
+    });
+
+    test('uses original name when label is not deleted', () {
+      final label = makeLabel(id: 'active-label', name: 'Active Label');
+
+      final dbEntity = labelDefinitionDbEntity(label);
+
+      expect(dbEntity.name, 'Active Label');
+      expect(dbEntity.deleted, isFalse);
+    });
+
+    test('fromLabelDefinitionDbEntity restores deletedAt from serialized JSON',
+        () {
+      final label = makeLabel(
+        id: 'deleted-rt',
+        name: 'Was Deleted',
+        deletedAt: _baseTime,
+      );
+
+      final dbEntity = labelDefinitionDbEntity(label);
+      final restored = fromLabelDefinitionDbEntity(dbEntity);
+
+      expect(restored.deletedAt, _baseTime,
+          reason: 'deletedAt must round-trip through serialized JSON');
+    });
+
+    test('labelDefinitionsStreamMapper maps a list correctly', () {
+      final labels = <LabelDefinition>[
+        makeLabel(id: 'label-a', name: 'Alpha'),
+        makeLabel(id: 'label-b', name: 'Beta', deletedAt: _baseTime),
+      ];
+
+      final dbEntities = labels.map(labelDefinitionDbEntity).toList();
+      final restored = labelDefinitionsStreamMapper(dbEntities);
+
+      expect(restored, hasLength(2));
+      expect(restored[0].id, 'label-a');
+      expect(restored[1].id, 'label-b');
+      expect(restored[1].deletedAt, _baseTime);
     });
   });
 }

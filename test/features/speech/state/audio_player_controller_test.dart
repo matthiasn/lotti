@@ -16,13 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockPlayer extends Mock implements Player {}
-
 class MockPlayerState extends Mock implements PlayerState {}
-
-class MockPlayerStream extends Mock implements PlayerStream {}
-
-class FakePlayable extends Fake implements Playable {}
 
 class FakeStackTrace extends Fake implements StackTrace {}
 

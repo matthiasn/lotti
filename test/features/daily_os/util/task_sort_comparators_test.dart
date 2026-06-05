@@ -7,6 +7,8 @@ import 'package:glados/glados.dart'
         ExploreConfig,
         Generator,
         Glados,
+        Glados2,
+        Glados3,
         IntAnys,
         ListAnys,
         any;
@@ -619,6 +621,165 @@ void main() {
               'Generated specs should match the documented time-spent '
               'model: $specs',
         );
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('TaskSortComparators — comparator properties', () {
+    // Transitivity: if compare(a,b)<0 and compare(b,c)<0 then compare(a,c)<0.
+    Glados3(
+      any.taskProgressSpec,
+      any.taskProgressSpec,
+      any.taskProgressSpec,
+      ExploreConfig(numRuns: 120),
+    ).test(
+      'byPriorityUrgencyTitle is transitive',
+      (specA, specB, specC) {
+        final a = createProgress(
+          id: 'ta',
+          title: specA.titleFor(0),
+          priority: specA.priority,
+          urgency: specA.urgency,
+        );
+        final b = createProgress(
+          id: 'tb',
+          title: specB.titleFor(1),
+          priority: specB.priority,
+          urgency: specB.urgency,
+        );
+        final c = createProgress(
+          id: 'tc',
+          title: specC.titleFor(2),
+          priority: specC.priority,
+          urgency: specC.urgency,
+        );
+        final ab = TaskSortComparators.byPriorityUrgencyTitle(a, b);
+        final bc = TaskSortComparators.byPriorityUrgencyTitle(b, c);
+        final ac = TaskSortComparators.byPriorityUrgencyTitle(a, c);
+        if (ab < 0 && bc < 0) {
+          expect(
+            ac,
+            lessThan(0),
+            reason: 'transitivity: a<b and b<c implies a<c',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    // Antisymmetry: sign(compare(a,b)) == -sign(compare(b,a)) unless zero.
+    Glados2(
+      any.taskProgressSpec,
+      any.taskProgressSpec,
+      ExploreConfig(numRuns: 120),
+    ).test(
+      'byPriorityUrgencyTitle is antisymmetric',
+      (specA, specB) {
+        final a = createProgress(
+          id: 'ta',
+          title: specA.titleFor(0),
+          priority: specA.priority,
+          urgency: specA.urgency,
+        );
+        final b = createProgress(
+          id: 'tb',
+          title: specB.titleFor(1),
+          priority: specB.priority,
+          urgency: specB.urgency,
+        );
+        final ab = TaskSortComparators.byPriorityUrgencyTitle(a, b);
+        final ba = TaskSortComparators.byPriorityUrgencyTitle(b, a);
+        if (ab != 0) {
+          expect(
+            ab.sign,
+            equals(-ba.sign),
+            reason: 'antisymmetry: sign(a,b) == -sign(b,a) when non-zero',
+          );
+        } else {
+          expect(ba, isZero, reason: 'both must be zero or both non-zero');
+        }
+      },
+      tags: 'glados',
+    );
+
+    // Transitivity for byTimeSpentThenPriority.
+    Glados3(
+      any.taskProgressSpec,
+      any.taskProgressSpec,
+      any.taskProgressSpec,
+      ExploreConfig(numRuns: 120),
+    ).test(
+      'byTimeSpentThenPriority is transitive',
+      (specA, specB, specC) {
+        final a = createProgress(
+          id: 'ta',
+          title: specA.titleFor(0),
+          priority: specA.priority,
+          urgency: specA.urgency,
+          timeSpent: Duration(minutes: specA.timeSpentMinutes),
+        );
+        final b = createProgress(
+          id: 'tb',
+          title: specB.titleFor(1),
+          priority: specB.priority,
+          urgency: specB.urgency,
+          timeSpent: Duration(minutes: specB.timeSpentMinutes),
+        );
+        final c = createProgress(
+          id: 'tc',
+          title: specC.titleFor(2),
+          priority: specC.priority,
+          urgency: specC.urgency,
+          timeSpent: Duration(minutes: specC.timeSpentMinutes),
+        );
+        final ab = TaskSortComparators.byTimeSpentThenPriority(a, b);
+        final bc = TaskSortComparators.byTimeSpentThenPriority(b, c);
+        final ac = TaskSortComparators.byTimeSpentThenPriority(a, c);
+        if (ab < 0 && bc < 0) {
+          expect(
+            ac,
+            lessThan(0),
+            reason: 'transitivity: a<b and b<c implies a<c',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    // Antisymmetry for byTimeSpentThenPriority.
+    Glados2(
+      any.taskProgressSpec,
+      any.taskProgressSpec,
+      ExploreConfig(numRuns: 120),
+    ).test(
+      'byTimeSpentThenPriority is antisymmetric',
+      (specA, specB) {
+        final a = createProgress(
+          id: 'ta',
+          title: specA.titleFor(0),
+          priority: specA.priority,
+          urgency: specA.urgency,
+          timeSpent: Duration(minutes: specA.timeSpentMinutes),
+        );
+        final b = createProgress(
+          id: 'tb',
+          title: specB.titleFor(1),
+          priority: specB.priority,
+          urgency: specB.urgency,
+          timeSpent: Duration(minutes: specB.timeSpentMinutes),
+        );
+        final ab = TaskSortComparators.byTimeSpentThenPriority(a, b);
+        final ba = TaskSortComparators.byTimeSpentThenPriority(b, a);
+        if (ab != 0) {
+          expect(
+            ab.sign,
+            equals(-ba.sign),
+            reason: 'antisymmetry: sign(a,b) == -sign(b,a) when non-zero',
+          );
+        } else {
+          expect(ba, isZero, reason: 'both must be zero or both non-zero');
+        }
       },
       tags: 'glados',
     );

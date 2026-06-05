@@ -12,6 +12,8 @@ import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/labels/ui/widgets/entry_labels_display.dart';
+import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -20,6 +22,7 @@ import 'package:lotti/widgets/events/event_form.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
+import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
 
 /// Records the [EventForm] callback invocations so each form-field handler can
@@ -72,6 +75,47 @@ class _RecordingEntryController extends EntryController {
   }) async {
     saveCalls++;
   }
+}
+
+/// Minimal controller used by the labels tests — only needs to build state.
+class _TestEntryControllerSrc extends EntryController {
+  _TestEntryControllerSrc(this._entry);
+
+  final JournalEvent _entry;
+
+  @override
+  Future<EntryState?> build({required String id}) async {
+    return EntryState.saved(
+      entryId: id,
+      entry: _entry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+    );
+  }
+}
+
+JournalEvent _createTestEventSrc({
+  List<String>? labelIds,
+  String? categoryId,
+}) {
+  final now = DateTime(2023);
+  return JournalEvent(
+    meta: Metadata(
+      id: 'event-123',
+      createdAt: now,
+      updatedAt: now,
+      dateFrom: now,
+      dateTo: now.add(const Duration(hours: 1)),
+      labelIds: labelIds,
+      categoryId: categoryId,
+    ),
+    data: const EventData(
+      title: 'Test Event',
+      status: EventStatus.planned,
+      stars: 3,
+    ),
+  );
 }
 
 JournalEvent _createEvent({
@@ -251,6 +295,180 @@ void main() {
       expect(starRating().rating, 4);
       // updateRating persisted the same value.
       expect(controller.updateRatingCalls, [4.0]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Tests merged from event_form_labels_test.dart
+  // ---------------------------------------------------------------------------
+  group('EventForm labels', () {
+    late MockEntitiesCacheService cacheServiceSrc;
+    late MockEditorStateService editorStateServiceSrc;
+    late MockJournalDb journalDbSrc;
+    late MockUpdateNotifications updateNotificationsSrc;
+
+    final labelA = testLabelDefinition1.copyWith(id: 'label-a', name: 'Alpha');
+    final labelB = testLabelDefinition1.copyWith(id: 'label-b', name: 'Beta');
+
+    setUp(() async {
+      cacheServiceSrc = MockEntitiesCacheService();
+      editorStateServiceSrc = MockEditorStateService();
+      journalDbSrc = MockJournalDb();
+      updateNotificationsSrc = MockUpdateNotifications();
+
+      await getIt.reset();
+      getIt
+        ..registerSingleton<EntitiesCacheService>(cacheServiceSrc)
+        ..registerSingleton<EditorStateService>(editorStateServiceSrc)
+        ..registerSingleton<JournalDb>(journalDbSrc)
+        ..registerSingleton<UpdateNotifications>(updateNotificationsSrc);
+
+      when(() => cacheServiceSrc.showPrivateEntries).thenReturn(true);
+      when(() => cacheServiceSrc.getLabelById(any())).thenAnswer((invocation) {
+        final id = invocation.positionalArguments.first as String;
+        switch (id) {
+          case 'label-a':
+            return labelA;
+          case 'label-b':
+            return labelB;
+          default:
+            return null;
+        }
+      });
+      when(() => cacheServiceSrc.getCategoryById(any())).thenReturn(null);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    ProviderScope buildWrapperSrc(JournalEvent event) {
+      return ProviderScope(
+        overrides: [
+          entryControllerProvider(id: event.id).overrideWith(
+            () => _TestEntryControllerSrc(event),
+          ),
+          labelsStreamProvider.overrideWith(
+            (ref) => Stream<List<LabelDefinition>>.value([labelA, labelB]),
+          ),
+        ],
+        child: makeTestableWidgetWithScaffold(
+          EventForm(event),
+        ),
+      );
+    }
+
+    group('EventForm labels section', () {
+      testWidgets('renders EntryLabelsDisplay widget', (tester) async {
+        final event = _createTestEventSrc();
+
+        await tester.pumpWidget(buildWrapperSrc(event));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(EntryLabelsDisplay), findsOneWidget);
+      });
+
+      testWidgets('shows Labels header', (tester) async {
+        final event = _createTestEventSrc();
+
+        await tester.pumpWidget(buildWrapperSrc(event));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Labels'), findsOneWidget);
+      });
+
+      testWidgets('shows edit button for labels', (tester) async {
+        final event = _createTestEventSrc();
+
+        await tester.pumpWidget(buildWrapperSrc(event));
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+        expect(find.byTooltip('Edit labels'), findsOneWidget);
+      });
+
+      testWidgets('shows "No labels assigned" when event has no labels', (
+        tester,
+      ) async {
+        final event = _createTestEventSrc(labelIds: []);
+
+        await tester.pumpWidget(buildWrapperSrc(event));
+        await tester.pumpAndSettle();
+
+        expect(find.text('No labels assigned'), findsOneWidget);
+      });
+
+      testWidgets('displays assigned labels as chips', (tester) async {
+        final event = _createTestEventSrc(labelIds: ['label-a', 'label-b']);
+
+        await tester.pumpWidget(buildWrapperSrc(event));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LabelChip), findsNWidgets(2));
+        expect(find.text('Alpha'), findsOneWidget);
+        expect(find.text('Beta'), findsOneWidget);
+      });
+
+      testWidgets('shows labels below category/status/stars row', (
+        tester,
+      ) async {
+        final event = _createTestEventSrc(labelIds: ['label-a']);
+
+        await tester.pumpWidget(buildWrapperSrc(event));
+        await tester.pumpAndSettle();
+
+        final labelsHeader = find.text('Labels');
+        expect(labelsHeader, findsOneWidget);
+
+        final statusDropdown = find.text('Status:');
+        expect(statusDropdown, findsOneWidget);
+
+        final labelsPosition = tester.getTopLeft(labelsHeader);
+        final statusPosition = tester.getTopLeft(statusDropdown);
+
+        expect(labelsPosition.dy, greaterThan(statusPosition.dy));
+      });
+    });
+
+    group('EventForm labels with null labelIds', () {
+      testWidgets('handles null labelIds gracefully', (tester) async {
+        final event = _createTestEventSrc();
+
+        await tester.pumpWidget(buildWrapperSrc(event));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Labels'), findsOneWidget);
+        expect(find.text('No labels assigned'), findsOneWidget);
+        expect(find.byType(LabelChip), findsNothing);
+      });
+    });
+
+    group('EventForm labels private filtering', () {
+      testWidgets('hides private labels when showPrivate is false', (
+        tester,
+      ) async {
+        final privateLabel = testLabelDefinition1.copyWith(
+          id: 'label-private',
+          name: 'Private Label',
+          private: true,
+        );
+
+        when(() => cacheServiceSrc.showPrivateEntries).thenReturn(false);
+        when(
+          () => cacheServiceSrc.getLabelById('label-private'),
+        ).thenReturn(privateLabel);
+
+        final event = _createTestEventSrc(
+          labelIds: ['label-a', 'label-private'],
+        );
+
+        await tester.pumpWidget(buildWrapperSrc(event));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LabelChip), findsOneWidget);
+        expect(find.text('Alpha'), findsOneWidget);
+        expect(find.text('Private Label'), findsNothing);
+      });
     });
   });
 }

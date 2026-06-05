@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
-import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
@@ -11,10 +10,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockWhatsNewService extends Mock implements WhatsNewService {}
-
-class FakeWhatsNewRelease extends Fake implements WhatsNewRelease {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

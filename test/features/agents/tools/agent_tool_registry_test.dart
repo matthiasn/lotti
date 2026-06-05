@@ -540,6 +540,283 @@ void main() {
     });
   });
 
+  group('AgentToolDefinition.enabled field', () {
+    test('get_related_task_details is the only tool with enabled: false', () {
+      final disabled = AgentToolRegistry.taskAgentTools
+          .where((t) => !t.enabled)
+          .toList();
+      expect(disabled, hasLength(1));
+      expect(
+        disabled.first.name,
+        equals(TaskAgentToolNames.getRelatedTaskDetails),
+      );
+    });
+
+    test('all tools except get_related_task_details have enabled: true', () {
+      for (final tool in AgentToolRegistry.taskAgentTools) {
+        if (tool.name == TaskAgentToolNames.getRelatedTaskDetails) continue;
+        expect(
+          tool.enabled,
+          isTrue,
+          reason: '${tool.name} should be enabled',
+        );
+      }
+    });
+  });
+
+  group('AgentToolRegistry.deferredTools', () {
+    test('contains exactly 14 deferred tool names', () {
+      expect(AgentToolRegistry.deferredTools, hasLength(14));
+    });
+
+    test('includes all expected deferred tool names', () {
+      expect(
+        AgentToolRegistry.deferredTools,
+        containsAll(<String>[
+          TaskAgentToolNames.assignTaskLabels,
+          TaskAgentToolNames.setTaskTitle,
+          TaskAgentToolNames.updateTaskEstimate,
+          TaskAgentToolNames.updateTaskDueDate,
+          TaskAgentToolNames.updateTaskPriority,
+          TaskAgentToolNames.setTaskStatus,
+          TaskAgentToolNames.addMultipleChecklistItems,
+          TaskAgentToolNames.updateChecklistItems,
+          TaskAgentToolNames.setTaskLanguage,
+          TaskAgentToolNames.createFollowUpTask,
+          TaskAgentToolNames.migrateChecklistItems,
+          TaskAgentToolNames.createTimeEntry,
+          TaskAgentToolNames.updateTimeEntry,
+          TaskAgentToolNames.updateRunningTimer,
+        ]),
+      );
+    });
+
+    test('does not include immediate tools', () {
+      expect(
+        AgentToolRegistry.deferredTools,
+        isNot(contains(TaskAgentToolNames.updateReport)),
+      );
+      expect(
+        AgentToolRegistry.deferredTools,
+        isNot(contains(TaskAgentToolNames.recordObservations)),
+      );
+      expect(
+        AgentToolRegistry.deferredTools,
+        isNot(contains(TaskAgentToolNames.getRelatedTaskDetails)),
+      );
+    });
+  });
+
+  group('AgentToolRegistry.explodedBatchTools', () {
+    test('contains exactly 4 entries', () {
+      expect(AgentToolRegistry.explodedBatchTools, hasLength(4));
+    });
+
+    test('addMultipleChecklistItems maps to items key', () {
+      expect(
+        AgentToolRegistry.explodedBatchTools,
+        containsPair(TaskAgentToolNames.addMultipleChecklistItems, 'items'),
+      );
+    });
+
+    test('updateChecklistItems maps to items key', () {
+      expect(
+        AgentToolRegistry.explodedBatchTools,
+        containsPair(TaskAgentToolNames.updateChecklistItems, 'items'),
+      );
+    });
+
+    test('assignTaskLabels maps to labels key', () {
+      expect(
+        AgentToolRegistry.explodedBatchTools,
+        containsPair(TaskAgentToolNames.assignTaskLabels, 'labels'),
+      );
+    });
+
+    test('migrateChecklistItems maps to items key', () {
+      expect(
+        AgentToolRegistry.explodedBatchTools,
+        containsPair(TaskAgentToolNames.migrateChecklistItems, 'items'),
+      );
+    });
+  });
+
+  group('retract_suggestions tool', () {
+    late AgentToolDefinition tool;
+
+    setUp(() {
+      tool = AgentToolRegistry.taskAgentTools.firstWhere(
+        (t) => t.name == TaskAgentToolNames.retractSuggestions,
+      );
+    });
+
+    test('has correct name', () {
+      expect(tool.name, equals(TaskAgentToolNames.retractSuggestions));
+      expect(tool.name, equals('retract_suggestions'));
+    });
+
+    test('requires proposals array', () {
+      final required = tool.parameters['required'] as List;
+      expect(required, contains('proposals'));
+    });
+
+    test('proposals array has minItems: 1', () {
+      final properties = tool.parameters['properties'] as Map;
+      final proposalsProp = properties['proposals'] as Map;
+      expect(proposalsProp['type'], equals('array'));
+      expect(proposalsProp['minItems'], equals(1));
+    });
+
+    test('proposals items require fingerprint and reason', () {
+      final properties = tool.parameters['properties'] as Map;
+      final proposalsProp = properties['proposals'] as Map;
+      final itemSchema = proposalsProp['items'] as Map;
+      final itemRequired = itemSchema['required'] as List;
+      expect(itemRequired, containsAll(['fingerprint', 'reason']));
+    });
+
+    test('reason has minLength: 1 and maxLength: 500', () {
+      final properties = tool.parameters['properties'] as Map;
+      final proposalsProp = properties['proposals'] as Map;
+      final itemSchema = proposalsProp['items'] as Map;
+      final itemProps = itemSchema['properties'] as Map;
+      final reasonProp = itemProps['reason'] as Map;
+      expect(reasonProp['type'], equals('string'));
+      expect(reasonProp['minLength'], equals(1));
+      expect(reasonProp['maxLength'], equals(500));
+    });
+
+    test('fingerprint is a string property', () {
+      final properties = tool.parameters['properties'] as Map;
+      final proposalsProp = properties['proposals'] as Map;
+      final itemSchema = proposalsProp['items'] as Map;
+      final itemProps = itemSchema['properties'] as Map;
+      expect((itemProps['fingerprint'] as Map)['type'], equals('string'));
+    });
+
+    test('is not in deferredTools (immediate retraction)', () {
+      expect(
+        AgentToolRegistry.deferredTools,
+        isNot(contains(TaskAgentToolNames.retractSuggestions)),
+      );
+    });
+  });
+
+  group('create_follow_up_task tool', () {
+    late AgentToolDefinition tool;
+
+    setUp(() {
+      tool = AgentToolRegistry.taskAgentTools.firstWhere(
+        (t) => t.name == TaskAgentToolNames.createFollowUpTask,
+      );
+    });
+
+    test('has correct name', () {
+      expect(tool.name, equals(TaskAgentToolNames.createFollowUpTask));
+      expect(tool.name, equals('create_follow_up_task'));
+    });
+
+    test('requires only title', () {
+      final required = tool.parameters['required'] as List;
+      expect(required, contains('title'));
+      expect(required, isNot(contains('dueDate')));
+      expect(required, isNot(contains('priority')));
+      expect(required, isNot(contains('description')));
+    });
+
+    test('title property is a string', () {
+      final properties = tool.parameters['properties'] as Map;
+      expect((properties['title'] as Map)['type'], equals('string'));
+    });
+
+    test('dueDate is an optional string property', () {
+      final properties = tool.parameters['properties'] as Map;
+      expect((properties['dueDate'] as Map)['type'], equals('string'));
+    });
+
+    test('priority is an optional string property', () {
+      final properties = tool.parameters['properties'] as Map;
+      expect((properties['priority'] as Map)['type'], equals('string'));
+    });
+
+    test('description is an optional string property', () {
+      final properties = tool.parameters['properties'] as Map;
+      expect((properties['description'] as Map)['type'], equals('string'));
+    });
+
+    test('is in deferredTools', () {
+      expect(
+        AgentToolRegistry.deferredTools,
+        contains(TaskAgentToolNames.createFollowUpTask),
+      );
+    });
+
+    test('is enabled', () {
+      expect(tool.enabled, isTrue);
+    });
+  });
+
+  group('migrate_checklist_items tool', () {
+    late AgentToolDefinition tool;
+
+    setUp(() {
+      tool = AgentToolRegistry.taskAgentTools.firstWhere(
+        (t) => t.name == TaskAgentToolNames.migrateChecklistItems,
+      );
+    });
+
+    test('has correct name', () {
+      expect(tool.name, equals(TaskAgentToolNames.migrateChecklistItems));
+      expect(tool.name, equals('migrate_checklist_items'));
+    });
+
+    test('requires items and targetTaskId', () {
+      final required = tool.parameters['required'] as List;
+      expect(required, containsAll(['items', 'targetTaskId']));
+    });
+
+    test('items array items require id and title', () {
+      final properties = tool.parameters['properties'] as Map;
+      final itemsProp = properties['items'] as Map;
+      expect(itemsProp['type'], equals('array'));
+      final itemSchema = itemsProp['items'] as Map;
+      final itemRequired = itemSchema['required'] as List;
+      expect(itemRequired, containsAll(['id', 'title']));
+    });
+
+    test('item id and title are string properties', () {
+      final properties = tool.parameters['properties'] as Map;
+      final itemsProp = properties['items'] as Map;
+      final itemSchema = itemsProp['items'] as Map;
+      final itemProps = itemSchema['properties'] as Map;
+      expect((itemProps['id'] as Map)['type'], equals('string'));
+      expect((itemProps['title'] as Map)['type'], equals('string'));
+    });
+
+    test('targetTaskId is a string property', () {
+      final properties = tool.parameters['properties'] as Map;
+      expect((properties['targetTaskId'] as Map)['type'], equals('string'));
+    });
+
+    test('is in deferredTools', () {
+      expect(
+        AgentToolRegistry.deferredTools,
+        contains(TaskAgentToolNames.migrateChecklistItems),
+      );
+    });
+
+    test('is in explodedBatchTools with items key', () {
+      expect(
+        AgentToolRegistry.explodedBatchTools,
+        containsPair(TaskAgentToolNames.migrateChecklistItems, 'items'),
+      );
+    });
+
+    test('is enabled', () {
+      expect(tool.enabled, isTrue);
+    });
+  });
+
   group('soulEvolutionAgentTools', () {
     test('excludes propose_directives', () {
       final tools = AgentToolRegistry.soulEvolutionAgentTools;

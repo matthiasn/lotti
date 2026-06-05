@@ -206,7 +206,7 @@ void main() {
     test(
       'enqueues the drafting wake, awaits the persisted plan, '
       'and projects it onto DraftPlan',
-      () async {
+      () {
         const agentId = 'day-agent-001';
         final dayId = dayAgentIdForDate(_asOf);
         final freshlyDraftedAt = _asOf.add(const Duration(seconds: 5));
@@ -257,13 +257,26 @@ void main() {
           () => journalDb.getCategoryById(any()),
         ).thenAnswer((_) async => null);
 
-        final result = await withClock(Clock.fixed(_asOf), () async {
-          return adapter.draftDayPlan(
-            captureId: const CaptureId('cap_1'),
-            decidedTaskIds: const ['t_1'],
-            decidedCaptureItemIds: const ['parsed_1'],
-            dayDate: _asOf,
-          );
+        // Drive the 500 ms poll loop with fake time so the test takes
+        // microseconds instead of a real poll interval (fake-time policy).
+        late DraftPlan result;
+        fakeAsync((async) {
+          withClock(async.getClock(_asOf), () {
+            adapter
+                .draftDayPlan(
+                  captureId: const CaptureId('cap_1'),
+                  decidedTaskIds: const ['t_1'],
+                  decidedCaptureItemIds: const ['parsed_1'],
+                  dayDate: _asOf,
+                )
+                .then((plan) => result = plan);
+          });
+          // Flush up to the first poll delay, elapse it, then let the
+          // second draftPlanForDay read observe the fresh plan.
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(milliseconds: 500))
+            ..flushMicrotasks();
         });
 
         expect(result.blocks, hasLength(1));
@@ -290,7 +303,6 @@ void main() {
           ),
         ).called(1);
       },
-      timeout: const Timeout(Duration(seconds: 10)),
     );
 
     test(
@@ -1599,7 +1611,7 @@ void main() {
 
     test(
       'returns a projected PlanDiff for the first new change set after enqueue',
-      () async {
+      () {
         const agentId = 'agent-prop-2';
         when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
@@ -1667,13 +1679,26 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        final diff = await withClock(
-          Clock.fixed(_asOf),
-          () => adapter.proposePlanDiff(
-            currentPlan: buildCurrentPlan(),
-            voiceTranscript: 'reshape the morning',
-          ),
-        );
+        // Drive the 500 ms refine poll loop with fake time so the test
+        // takes microseconds instead of a real poll interval (fake-time
+        // policy).
+        late PlanDiff diff;
+        fakeAsync((async) {
+          withClock(async.getClock(_asOf), () {
+            adapter
+                .proposePlanDiff(
+                  currentPlan: buildCurrentPlan(),
+                  voiceTranscript: 'reshape the morning',
+                )
+                .then((d) => diff = d);
+          });
+          // Flush up to the first poll delay, elapse it, then let the
+          // second pendingPlanDiffsForDay read observe the fresh diff.
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(milliseconds: 500))
+            ..flushMicrotasks();
+        });
 
         expect(diff.id, newDiff.id);
         expect(diff.transcript, 'reshape the morning');
@@ -1695,7 +1720,6 @@ void main() {
         );
         expect(dropped.affectedBlockId, 'block-existing');
       },
-      timeout: const Timeout(Duration(seconds: 5)),
     );
 
     test(

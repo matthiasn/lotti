@@ -170,6 +170,29 @@ void main() {
       expect(a, isNot(equals(b)));
     });
 
+    test('cacheRate is exactly 0.0 when inputTokens is zero', () {
+      // inputTokens and cachedInputTokens both default to 0; cacheRate
+      // must return 0.0 instead of NaN or a divide-by-zero error.
+      final usage = DailyTokenUsage(
+        date: DateTime.utc(2024, 3, 15),
+        totalTokens: 500,
+        tokensByTimeOfDay: 500,
+        isToday: false,
+      );
+      expect(usage.cacheRate, equals(0.0));
+    });
+
+    test('cacheRate is 0.0 when inputTokens and cachedInputTokens are both zero',
+        () {
+      final usage = DailyTokenUsage(
+        date: DateTime.utc(2024, 3, 15),
+        totalTokens: 0,
+        tokensByTimeOfDay: 0,
+        isToday: true,
+      );
+      expect(usage.cacheRate, equals(0.0));
+    });
+
     glados.Glados(
       glados.any.dailyTokenUsageScenario,
       glados.ExploreConfig(numRuns: 160),

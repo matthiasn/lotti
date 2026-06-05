@@ -22,10 +22,6 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
-class MockJournalRepository2 extends Mock implements JournalRepository {}
-
-class MockChecklistRepository2 extends Mock implements ChecklistRepository {}
-
 void main() {
   late ProviderContainer container;
   late MockJournalDb mockDb;
@@ -58,9 +54,9 @@ void main() {
       overrides: [
         labelsRepositoryProvider.overrideWithValue(mockLabelsRepo),
         aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
-        journalRepositoryProvider.overrideWithValue(MockJournalRepository2()),
+        journalRepositoryProvider.overrideWithValue(MockJournalRepository()),
         checklistRepositoryProvider.overrideWithValue(
-          MockChecklistRepository2(),
+          MockChecklistRepository(),
         ),
       ],
     );

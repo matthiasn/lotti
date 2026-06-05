@@ -1,6 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
 
 import '../test_utils.dart';
@@ -216,5 +218,119 @@ void main() {
       expect(ghq.colorsByScoreKey.keys, hasLength(1));
       expect(ghq.colorsByScoreKey.keys, contains('GHQ12'));
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados property tests.
+  // -------------------------------------------------------------------------
+
+  const panasSurveyForProperty = DashboardSurveyItem(
+    surveyType: 'panasSurveyTask',
+    surveyName: 'PANAS',
+    colorsByScoreKey: {
+      'Positive Affect Score': '#00FF00',
+      'Negative Affect Score': '#FF0000',
+    },
+  );
+
+  group('aggregateSurvey — properties', () {
+    glados.Glados(
+      glados.any.intInRange(0, 10),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'only SurveyEntry items contribute to output',
+      (quantCount) {
+        // Mix of quantitative entries (should be ignored) and survey entries.
+        final entities = <JournalEntity>[
+          for (var i = 0; i < quantCount; i++)
+            makeQuantitativeEntry(
+              dateFrom: DateTime(2024, 3, 15 + i),
+              value: 72,
+              dataType: 'HealthDataType.WEIGHT',
+              id: 'q$i',
+            ),
+          makeSurveyEntry(
+            dateFrom: DateTime(2024, 3, 20),
+            calculatedScores: {'Positive Affect Score': 35},
+            id: 's1',
+          ),
+        ];
+        final result = aggregateSurvey(
+          entities: entities,
+          dashboardSurveyItem: panasSurveyForProperty,
+          scoreKey: 'Positive Affect Score',
+        );
+        // Exactly one SurveyEntry with the key exists → length must be 1.
+        expect(result, hasLength(1));
+        expect(result.first.value, equals(35));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.intInRange(1, 10),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'entries missing the scoreKey are excluded',
+      (n) {
+        // Build n entries that each have only the Negative score.
+        final entities = <SurveyEntry>[
+          for (var i = 0; i < n; i++)
+            makeSurveyEntry(
+              dateFrom: DateTime(2024, 3, 15 + i),
+              calculatedScores: {'Negative Affect Score': 10 + i},
+              id: 's$i',
+            ),
+        ];
+        final result = aggregateSurvey(
+          entities: entities,
+          dashboardSurveyItem: panasSurveyForProperty,
+          scoreKey: 'Positive Affect Score',
+        );
+        expect(
+          result,
+          isEmpty,
+          reason: 'no entry has the Positive Affect Score key',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.intInRange(1, 10),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'output length equals number of entries that contain the scoreKey',
+      (n) {
+        // All n entries have Positive score; only every other has Negative.
+        final entities = <SurveyEntry>[
+          for (var i = 0; i < n; i++)
+            makeSurveyEntry(
+              dateFrom: DateTime(2024, 3, 15 + i),
+              calculatedScores: {
+                'Positive Affect Score': 30 + i,
+                if (i.isEven) 'Negative Affect Score': 10 + i,
+              },
+              id: 's$i',
+            ),
+        ];
+        final positiveResult = aggregateSurvey(
+          entities: entities,
+          dashboardSurveyItem: panasSurveyForProperty,
+          scoreKey: 'Positive Affect Score',
+        );
+        expect(positiveResult.length, equals(n));
+
+        final negativeResult = aggregateSurvey(
+          entities: entities,
+          dashboardSurveyItem: panasSurveyForProperty,
+          scoreKey: 'Negative Affect Score',
+        );
+        // Only even-index entries have Negative score: 0, 2, 4, ...
+        final expectedNegCount = (n + 1) ~/ 2;
+        expect(negativeResult.length, equals(expectedNegCount));
+      },
+      tags: 'glados',
+    );
   });
 }

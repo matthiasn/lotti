@@ -1,7 +1,7 @@
 import 'package:clock/clock.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:health/health.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
@@ -9,7 +9,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/health_service.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -19,10 +18,6 @@ import 'package:permission_handler_platform_interface/permission_handler_platfor
 import 'package:uuid/uuid.dart';
 
 import '../mocks/mocks.dart';
-
-class MockHealthService extends Mock implements HealthService {}
-
-class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
 
 /// Fake [PermissionHandlerPlatform] that records every requested permission set
 /// and grants them all, so the default [HealthImport] permission request path
@@ -41,12 +36,6 @@ class _RecordingPermissionHandler extends PermissionHandlerPlatform {
     };
   }
 }
-
-class FakeQuantitativeData extends Fake implements CumulativeQuantityData {}
-
-class FakeDiscreteQuantityData extends Fake implements DiscreteQuantityData {}
-
-class FakeWorkoutData extends Fake implements WorkoutData {}
 
 void main() {
   late HealthImport healthImport;
@@ -1701,5 +1690,173 @@ void main() {
       );
       expect(activityTypes.length, 3);
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Additive Glados property groups for pure methods on HealthImport.
+  // healthImport is already initialized by setUp() above; the pure functions
+  // under test do not use any injected dependency.
+  // -------------------------------------------------------------------------
+
+  group('sumNumericHealthValues — Glados properties', () {
+    glados.Glados<List<int>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        10,
+        glados.IntAnys(glados.any).intInRange(0, 1000),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result equals the arithmetic sum of all numeric values',
+      (values) {
+        final baseDate = DateTime(2024);
+        final dataPoints = <HealthDataPoint>[
+          for (final v in values)
+            HealthDataPoint(
+              uuid: 'test-uuid-$v',
+              value: NumericHealthValue(numericValue: v),
+              type: HealthDataType.STEPS,
+              unit: HealthDataUnit.COUNT,
+              dateFrom: baseDate,
+              dateTo: baseDate,
+              sourcePlatform: HealthPlatformType.appleHealth,
+              sourceDeviceId: 'dev',
+              sourceId: 'src',
+              sourceName: 'Test',
+            ),
+        ];
+        final result = healthImport.sumNumericHealthValues(dataPoints);
+        final expected = values.fold<num>(0, (acc, v) => acc + v);
+        expect(
+          result,
+          equals(expected),
+          reason: 'values=$values',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<List<int>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        8,
+        glados.IntAnys(glados.any).intInRange(0, 500),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result is ≥ the maximum individual value',
+      (values) {
+        final baseDate = DateTime(2024);
+        final dataPoints = <HealthDataPoint>[
+          for (final v in values)
+            HealthDataPoint(
+              uuid: 'uuid-$v',
+              value: NumericHealthValue(numericValue: v),
+              type: HealthDataType.STEPS,
+              unit: HealthDataUnit.COUNT,
+              dateFrom: baseDate,
+              dateTo: baseDate,
+              sourcePlatform: HealthPlatformType.appleHealth,
+              sourceDeviceId: 'dev',
+              sourceId: 'src',
+              sourceName: 'Test',
+            ),
+        ];
+        final result = healthImport.sumNumericHealthValues(dataPoints);
+        final maxVal = values.reduce((a, b) => a > b ? a : b);
+        expect(
+          result,
+          greaterThanOrEqualTo(maxVal),
+          reason: 'values=$values',
+        );
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('getDays — Glados algebraic properties', () {
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 90),
+      glados.IntAnys(glados.any).intInRange(0, 90),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result length equals inDays + 1 for any date range',
+      (startOffsetDays, rangeLen) {
+        final base = DateTime(2024);
+        final dateFrom = base.add(Duration(days: startOffsetDays));
+        final dateTo = dateFrom.add(Duration(days: rangeLen));
+        final result = healthImport.getDays(dateFrom, dateTo);
+        expect(
+          result.length,
+          equals(rangeLen + 1),
+          reason: 'startOffset=$startOffsetDays rangeLen=$rangeLen',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 60),
+      glados.IntAnys(glados.any).intInRange(0, 60),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'every element has time-of-day normalized to midnight',
+      (startOffsetDays, rangeLen) {
+        final base = DateTime(2024, 3, 15, 14, 30, 45); // non-midnight start
+        final dateFrom = base.add(Duration(days: startOffsetDays));
+        final dateTo = dateFrom.add(Duration(days: rangeLen));
+        final result = healthImport.getDays(dateFrom, dateTo);
+        for (final day in result) {
+          expect(day.hour, equals(0), reason: 'day=$day is not midnight');
+          expect(day.minute, equals(0), reason: 'day=$day is not midnight');
+          expect(day.second, equals(0), reason: 'day=$day is not midnight');
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 60),
+      glados.IntAnys(glados.any).intInRange(1, 60),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'consecutive elements differ by exactly one day',
+      (startOffsetDays, rangeLen) {
+        final base = DateTime(2024);
+        final dateFrom = base.add(Duration(days: startOffsetDays));
+        final dateTo = dateFrom.add(Duration(days: rangeLen));
+        final result = healthImport.getDays(dateFrom, dateTo);
+        for (var i = 1; i < result.length; i++) {
+          final prev = result[i - 1];
+          // Compare by calendar day (DST-safe): the next element must be the
+          // next calendar midnight, which `inDays` can't assert across a
+          // spring-forward/fall-back boundary (23h/25h gaps).
+          expect(
+            result[i],
+            DateTime(prev.year, prev.month, prev.day + 1),
+            reason: 'gap between $prev and ${result[i]}',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.IntAnys(glados.any).intInRange(0, 365),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'single-day range always returns exactly one element equal to that day',
+      (offsetDays) {
+        final base = DateTime(2024);
+        final day = base.add(Duration(days: offsetDays));
+        final result = healthImport.getDays(day, day);
+        expect(result.length, equals(1));
+        expect(
+          result.single,
+          equals(DateTime(day.year, day.month, day.day)),
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

@@ -4,10 +4,13 @@ import 'dart:io';
 import 'package:cross_file/cross_file.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
@@ -20,6 +23,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -432,5 +436,540 @@ void main() {
         expect(find.byType(DropTarget), findsOneWidget);
       },
     );
+  });
+
+  group('EntryDetailPage Auto-Scroll Tests - ', () {
+    var mockJournalDbSat = MockJournalDb();
+    var mockPersistenceLogicSat = MockPersistenceLogic();
+    final mockUpdateNotificationsSat = MockUpdateNotifications();
+    final mockEntitiesCacheServiceSat = MockEntitiesCacheService();
+
+    setUpAll(() {
+      setFakeDocumentsPath();
+      registerFallbackValue(FakeMeasurementData());
+    });
+
+    setUp(() async {
+      mockJournalDbSat = mockJournalDbWithMeasurableTypes([
+        measurableWater,
+        measurableChocolate,
+      ]);
+      mockPersistenceLogicSat = MockPersistenceLogic();
+
+      final mockTimeService = MockTimeService();
+      final mockEditorStateService = MockEditorStateService();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotificationsSat)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheServiceSat)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDbSat)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogicSat);
+
+      when(
+        () => mockEntitiesCacheServiceSat.sortedCategories,
+      ).thenAnswer((_) => [categoryMindfulness]);
+
+      when(
+        () => mockJournalDbSat.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
+      ).thenAnswer((_) async => measurableWater);
+
+      when(() => mockUpdateNotificationsSat.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
+
+      when(() => mockJournalDbSat.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          any(),
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
+      when(
+        () => mockHealthImport.fetchHealthDataDelta(
+          testWeightEntry.data.dataType,
+        ),
+      ).thenAnswer((_) async {});
+
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+
+      when(
+        () => mockJournalDbSat.getMeasurementsByType(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+          type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
+      ).thenAnswer((_) async => []);
+
+      when(
+        () => mockJournalDbSat.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableWater);
+
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
+    });
+    tearDown(getIt.reset);
+
+    testWidgets('consumes pre-existing focus intent on first build', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDbSat.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      // Create a container with pre-existing focus intent
+      final container = ProviderContainer();
+      final focusProvider = journalFocusControllerProvider(
+        id: testTextEntry.meta.id,
+      );
+
+      // Set focus intent before building widget
+      container
+          .read(focusProvider.notifier)
+          .publishJournalFocus(
+            entryId: 'test-linked-entry-id',
+            alignment: 0.3,
+          );
+
+      // Verify intent is set
+      expect(container.read(focusProvider), isNotNull);
+
+      // Use a tree without an inner ProviderScope to ensure our container is used
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(
+            EntryDetailsPage(itemId: testTextEntry.meta.id),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      // Allow initial timer to trigger
+      await tester.pump(const Duration(milliseconds: 1));
+
+      // Allow scroll retry/backoff to reach success/terminal outcome over multiple frames
+      // In debug mode: maxScrollRetries=5, scrollRetryDelay=50ms
+      for (var i = 0; i < 10 && container.read(focusProvider) != null; i++) {
+        await tester.pump(const Duration(milliseconds: 60));
+      }
+
+      // Verify intent was cleared after consumption
+      expect(container.read(focusProvider), isNull);
+
+      container.dispose();
+    });
+
+    testWidgets('creates GlobalKeys for entries with entryKeyBuilder', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDbSat.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify widget is rendered (indirect test that key builder is used)
+      expect(find.byType(EntryDetailsPage), findsOneWidget);
+    });
+
+    testWidgets('scroll offset listener is triggered on scroll', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDbSat.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the CustomScrollView widget
+      final scrollView = find.byType(CustomScrollView);
+      expect(scrollView, findsOneWidget);
+
+      // Trigger scroll to invoke the offset listener
+      await tester.drag(scrollView, const Offset(0, -100));
+      await tester.pumpAndSettle();
+
+      // The scroll offset listener should have been called (line 48-49)
+      // We verify this indirectly by checking the widget still renders correctly
+      expect(find.byType(EntryDetailsPage), findsOneWidget);
+    });
+
+    testWidgets('successfully scrolls to entry when context exists', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDbSat.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      final container = ProviderContainer();
+      final focusProvider = journalFocusControllerProvider(
+        id: testTextEntry.meta.id,
+      );
+
+      // Set focus intent that would trigger scroll
+      container
+          .read(focusProvider.notifier)
+          .publishJournalFocus(
+            entryId: testTextEntry.meta.id,
+            alignment: 0.5,
+          );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidgetWithScaffold(
+            EntryDetailsPage(itemId: testTextEntry.meta.id),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify widget rendered successfully (scroll would have been attempted)
+      // Line 71 would be executed if context exists
+      expect(find.byType(EntryDetailsPage), findsOneWidget);
+
+      container.dispose();
+    });
+  });
+
+  group('EntryDetailsPage Edge Cases - ', () {
+    var mockJournalDbEdge = MockJournalDb();
+    var mockPersistenceLogicEdge = MockPersistenceLogic();
+    final mockUpdateNotificationsEdge = MockUpdateNotifications();
+    final mockEntitiesCacheServiceEdge = MockEntitiesCacheService();
+
+    setUpAll(() {
+      setFakeDocumentsPath();
+      registerFallbackValue(FakeMeasurementData());
+    });
+
+    setUp(() async {
+      mockJournalDbEdge = mockJournalDbWithMeasurableTypes([
+        measurableWater,
+        measurableChocolate,
+      ]);
+      mockPersistenceLogicEdge = MockPersistenceLogic();
+
+      final mockTimeService = MockTimeService();
+      final mockEditorStateService = MockEditorStateService();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotificationsEdge)
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheServiceEdge)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDbEdge)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogicEdge);
+
+      when(
+        () => mockEntitiesCacheServiceEdge.sortedCategories,
+      ).thenAnswer((_) => [categoryMindfulness]);
+
+      when(
+        () => mockJournalDbEdge.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
+      ).thenAnswer((_) async => measurableWater);
+
+      when(() => mockUpdateNotificationsEdge.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
+
+      when(() => mockJournalDbEdge.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          any(),
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
+      when(
+        () => mockHealthImport.fetchHealthDataDelta(
+          testWeightEntry.data.dataType,
+        ),
+      ).thenAnswer((_) async {});
+
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+
+      when(
+        () => mockJournalDbEdge.getMeasurementsByType(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+          type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
+      ).thenAnswer((_) async => []);
+
+      when(
+        () => mockJournalDbEdge.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableWater);
+
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
+    });
+
+    tearDown(getIt.reset);
+
+    testWidgets('scroll controller is properly disposed', (tester) async {
+      when(
+        () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify widget is rendered
+      expect(find.byType(EntryDetailsPage), findsOneWidget);
+
+      // Verify scroll controller is working by scrolling
+      final scrollView = find.byType(CustomScrollView);
+      expect(scrollView, findsOneWidget);
+
+      // Trigger scroll to verify listener is attached
+      await tester.drag(scrollView, const Offset(0, -50));
+      await tester.pumpAndSettle();
+
+      // Now pop the widget to trigger dispose
+      await tester.pumpWidget(Container());
+      await tester.pumpAndSettle();
+
+      // If we get here without errors, dispose was successful
+      expect(true, isTrue);
+    });
+
+    testWidgets('handles null item gracefully', (tester) async {
+      when(
+        () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should show empty scaffold when item is null
+      expect(find.text(''), findsWidgets);
+    });
+
+    testWidgets('scroll offset listener updates correctly', (tester) async {
+      when(
+        () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the CustomScrollView
+      final scrollView = find.byType(CustomScrollView);
+      expect(scrollView, findsOneWidget);
+
+      // Scroll down to trigger offset listener
+      await tester.drag(scrollView, const Offset(0, -100));
+      await tester.pumpAndSettle();
+
+      // Scroll up to trigger offset listener again
+      await tester.drag(scrollView, const Offset(0, 100));
+      await tester.pumpAndSettle();
+
+      // Verify widget still renders correctly after multiple scroll events
+      expect(find.byType(EntryDetailsPage), findsOneWidget);
+    });
+
+    testWidgets('creates GlobalKeys for each entry without duplicates', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify widget renders
+      expect(find.byType(EntryDetailsPage), findsOneWidget);
+
+      // The _getEntryKey method should create unique GlobalKeys for each entry
+      // This is tested implicitly by the widget rendering without errors
+    });
+
+    testWidgets('FloatingAddActionButton is present', (tester) async {
+      when(
+        () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify the design-system FAB is present (rounded-24 teal button
+      // matching the Figma spec; swapped from Flutter's default FAB).
+      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
+      expect(
+        find.byType(DesignSystemBottomNavigationFabPadding),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('scroll controller listeners are set up in initState', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify scroll controller is working by performing scroll action
+      final scrollView = find.byType(CustomScrollView);
+      await tester.drag(scrollView, const Offset(0, -200));
+      await tester.pumpAndSettle();
+
+      // If scroll worked without errors, listeners are properly set up
+      expect(find.byType(EntryDetailsPage), findsOneWidget);
+    });
+
+    testWidgets('handles scroll to non-existent entry gracefully', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      final container = ProviderContainer();
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidgetWithScaffold(
+            EntryDetailsPage(itemId: testTextEntry.meta.id),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // This test verifies that the debug print at line 83-85 is executed
+      // when entry is not found (context is null)
+      // The test passes if no exception is thrown
+      expect(find.byType(EntryDetailsPage), findsOneWidget);
+
+      container.dispose();
+    });
+
+    testWidgets('multiple scroll listeners work independently', (tester) async {
+      when(
+        () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailsPage(itemId: testTextEntry.meta.id),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final scrollView = find.byType(CustomScrollView);
+
+      // Perform multiple scrolls to verify both listeners work
+      // First listener: UserActivityService.updateActivity
+      // Second listener: taskAppBarController.updateOffset
+      await tester.drag(scrollView, const Offset(0, -50));
+      await tester.pump();
+
+      await tester.drag(scrollView, const Offset(0, -50));
+      await tester.pump();
+
+      await tester.drag(scrollView, const Offset(0, 50));
+      await tester.pumpAndSettle();
+
+      // Verify widget still works after multiple listener calls
+      expect(find.byType(EntryDetailsPage), findsOneWidget);
+    });
   });
 }

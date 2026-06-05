@@ -1,15 +1,20 @@
 import 'dart:async';
 
+import 'package:cross_file/cross_file.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:genui/genui.dart' as genui;
 import 'package:http/http.dart' as http;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:location/location.dart' as location_pkg;
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -55,6 +60,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
+import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
@@ -102,14 +108,18 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/features/whats_new/model/whats_new_release.dart';
+import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/health_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -117,6 +127,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/location.dart';
 import 'package:matrix/matrix.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
@@ -533,6 +544,10 @@ class FakeTaskData extends Fake implements TaskData {}
 
 class FakeMetadata extends Fake implements Metadata {}
 
+class FakeWhatsNewRelease extends Fake implements WhatsNewRelease {}
+
+class MockWhatsNewService extends Mock implements WhatsNewService {}
+
 class FakeQuillController extends Fake implements QuillController {
   FakeQuillController({TextSelection? selection})
     : _selection = selection ?? const TextSelection.collapsed(offset: 0);
@@ -562,6 +577,47 @@ class MockMaintenance extends Mock implements Maintenance {}
 class MockMatrixService extends Mock implements MatrixService {}
 
 class MockGeolocationService extends Mock implements GeolocationService {}
+
+/// Mock for the `location` plugin's device-location API.
+class MockLocation extends Mock implements location_pkg.Location {}
+
+/// Mock for a single `location` plugin reading.
+class MockLocationData extends Mock implements location_pkg.LocationData {}
+
+class MockMetadataService extends Mock implements MetadataService {}
+
+class MockDeviceLocation extends Mock implements DeviceLocation {}
+
+class MockHealthService extends Mock implements HealthService {}
+
+class MockDeviceInfoPlugin extends Mock implements DeviceInfoPlugin {}
+
+class MockBuildContext extends Mock implements BuildContext {}
+
+class FakeQuantitativeData extends Fake implements CumulativeQuantityData {}
+
+class FakeDiscreteQuantityData extends Fake implements DiscreteQuantityData {}
+
+class FakeWorkoutData extends Fake implements WorkoutData {}
+
+class FakeJournalImage extends Fake implements JournalImage {}
+
+/// Drop-item fake backed by an [XFile], for desktop drag-and-drop import
+/// tests.
+class FakeDropItem extends Fake implements DropItem {
+  FakeDropItem(this._xFile);
+
+  final XFile _xFile;
+
+  @override
+  String get name => _xFile.name;
+
+  @override
+  String get path => _xFile.path;
+
+  @override
+  Future<DateTime> lastModified() => _xFile.lastModified();
+}
 
 // --- Repository mocks (frequently duplicated inline) ---
 
@@ -705,6 +761,9 @@ class MockQueuePipelineCoordinator extends Mock
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
+
+class MockUnifiedAiInferenceRepository extends Mock
+    implements UnifiedAiInferenceRepository {}
 
 class MockConversationManager extends Mock implements ConversationManager {}
 

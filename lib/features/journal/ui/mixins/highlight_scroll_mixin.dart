@@ -181,5 +181,10 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
         onScrolled?.call();
       }
     });
+    // addPostFrameCallback does not schedule a frame by itself; if the app
+    // is otherwise idle the callback would never run and the retry chain
+    // would stall. Explicitly request a frame so each attempt makes
+    // progress (no-op if a frame is already scheduled).
+    SchedulerBinding.instance.scheduleFrame();
   }
 }

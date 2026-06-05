@@ -13,14 +13,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockNavService extends Mock implements NavService {
-  String? lastNavigatedPath;
-
-  @override
-  void beamToNamed(String path, {Object? data}) {
-    lastNavigatedPath = path;
-  }
-}
+import '../../mocks/mocks.dart';
 
 class FakeTimeService extends TimeService {
   final _controller = StreamController<JournalEntity?>.broadcast();
@@ -143,7 +136,12 @@ void main() {
       expect(intent.alignment, equals(0.0));
 
       // Verify navigation occurred
-      expect(mockNavService.lastNavigatedPath, equals('/tasks/$taskId'));
+      verify(
+        () => mockNavService.beamToNamed(
+          '/tasks/$taskId',
+          data: any(named: 'data'),
+        ),
+      ).called(1);
 
       container.dispose();
     });
@@ -182,10 +180,12 @@ void main() {
       // This would throw if we tried to read a non-existent provider
 
       // Verify navigation occurred to journal entry
-      expect(
-        mockNavService.lastNavigatedPath,
-        equals('/journal/$journalEntryId'),
-      );
+      verify(
+        () => mockNavService.beamToNamed(
+          '/journal/$journalEntryId',
+          data: any(named: 'data'),
+        ),
+      ).called(1);
 
       container.dispose();
     });
@@ -219,10 +219,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify navigation occurred to timer entry
-      expect(
-        mockNavService.lastNavigatedPath,
-        equals('/journal/$timerEntryId'),
-      );
+      verify(
+        () => mockNavService.beamToNamed(
+          '/journal/$timerEntryId',
+          data: any(named: 'data'),
+        ),
+      ).called(1);
 
       container.dispose();
     });
@@ -252,7 +254,9 @@ void main() {
       expect(find.byType(GestureDetector), findsNothing);
 
       // No navigation should occur
-      expect(mockNavService.lastNavigatedPath, isNull);
+      verifyNever(
+        () => mockNavService.beamToNamed(any(), data: any(named: 'data')),
+      );
 
       container.dispose();
     });

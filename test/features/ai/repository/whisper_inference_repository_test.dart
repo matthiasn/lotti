@@ -361,25 +361,21 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer((_) async {
-          // Add a small delay to simulate network latency
-          await Future<void>.delayed(const Duration(milliseconds: 1));
-          return http.Response(
+        ).thenAnswer(
+          (_) async => http.Response(
             jsonEncode({'text': transcribedText}),
             200,
-          );
-        });
+          ),
+        );
 
-        // Act
+        // Act — response IDs are UUID v4, so uniqueness holds even for
+        // back-to-back requests; no wall-clock waits (fake-time policy).
         final stream1 = repository.transcribeAudio(
           prompt: prompt,
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
         );
-
-        // Wait a bit before starting second request to ensure different timestamp
-        await Future<void>.delayed(const Duration(milliseconds: 2));
 
         final stream2 = repository.transcribeAudio(
           prompt: prompt,

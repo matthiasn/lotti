@@ -95,11 +95,10 @@ void main() {
         final container = makeContainer(agent);
         await container.read(draftingControllerProvider(params()).future);
 
-        // Drain microtasks so the fire-and-forget draftFuture listener
-        // completes and the controller pushes the ready state.
-        for (var i = 0; i < 4; i++) {
-          await Future<void>.delayed(Duration.zero);
-        }
+        // Drain the event queue deterministically so the fire-and-forget
+        // draftFuture listener completes and the controller pushes the
+        // ready state — no magic-count delay loop (fake-time policy).
+        await pumpEventQueue();
 
         final state = container
             .read(draftingControllerProvider(params()))
@@ -136,7 +135,7 @@ void main() {
         // Release the parked draft so nothing leaks; the controller is
         // already disposed so the resolution is a no-op.
         probe.gate.complete();
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
       },
     );
   });

@@ -207,15 +207,13 @@ void main() {
         },
       );
 
-      // Trigger update notification with the changed entry id
+      // Trigger update notification with the changed entry id. Completion
+      // is deterministic: the notification triggers _fetch (mocked,
+      // microtask-only) and the listener completes the completer when the
+      // updated state lands — no wall-clock timeout (fake-time policy).
       updateStreamController.add({'entry2'});
-      try {
-        await updated.future.timeout(const Duration(seconds: 1));
-      } on TimeoutException {
-        fail('Timed out waiting for updated task progress state');
-      } finally {
-        sub.close();
-      }
+      await updated.future;
+      sub.close();
 
       // Verify the data was fetched again and state updated
       verify(
@@ -415,7 +413,10 @@ void main() {
         },
       );
       timeServiceStreamController.add(livenessTick);
-      await tickerSeen.future.timeout(const Duration(seconds: 1));
+      // Deterministic: the ticker listener synchronously recomputes
+      // progress and sets state, completing the completer on a microtask —
+      // no wall-clock timeout (fake-time policy).
+      await tickerSeen.future;
       tickerSub.close();
       clearInteractions(mockRepository);
 
@@ -428,8 +429,9 @@ void main() {
       // Act: a checklist toggle puts the parent taskId into the
       // UpdateNotifications batch, which kicks the controller's _fetch.
       updateStreamController.add({testTaskId});
-      // Allow the async _fetch to complete.
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Drain the event queue deterministically so the async _fetch
+      // completes — no wall-clock delay (fake-time policy).
+      await pumpEventQueue();
 
       // Assert: the controller computed progress against the *preserved*
       // map (live range intact), not the DB-stale map. Without the fix

@@ -18,7 +18,7 @@ void main() {
       final sub = signaler.txPulses.listen(pulses.add);
 
       signaler.pulseTx();
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue(); // drain stream deliveries (fake-time policy)
 
       expect(pulses, hasLength(1));
       await sub.cancel();
@@ -36,7 +36,7 @@ void main() {
           ..pulseTx()
           ..pulseTx()
           ..pulseTx();
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue(); // drain stream deliveries (fake-time policy)
 
         expect(pulses, hasLength(3));
         await sub.cancel();
@@ -50,7 +50,7 @@ void main() {
       signaler
         ..pulseRx()
         ..pulseRx();
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue(); // drain stream deliveries (fake-time policy)
 
       expect(pulses, hasLength(2));
       await sub.cancel();
@@ -66,7 +66,7 @@ void main() {
         ..pulseTx()
         ..pulseRx()
         ..pulseTx();
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue(); // drain stream deliveries (fake-time policy)
 
       expect(tx, hasLength(2));
       expect(rx, hasLength(1));
@@ -78,12 +78,12 @@ void main() {
       'streams are broadcast — late subscriber misses earlier events',
       () async {
         signaler.pulseTx();
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue(); // drain stream deliveries (fake-time policy)
 
         final pulses = <DateTime>[];
         final sub = signaler.txPulses.listen(pulses.add);
         signaler.pulseTx();
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue(); // drain stream deliveries (fake-time policy)
 
         // Late subscriber should only see the second pulse (broadcast).
         expect(pulses, hasLength(1));

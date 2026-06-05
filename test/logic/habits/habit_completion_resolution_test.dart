@@ -358,4 +358,218 @@ void main() {
       }
     }, tags: 'glados');
   });
+
+  // Additive Glados groups for compareHabitCompletionWriteRecency — appended.
+  _runCompareHabitCompletionGladosTests();
+}
+
+// ---------------------------------------------------------------------------
+// Generators and Glados property tests for compareHabitCompletionWriteRecency.
+// Antisymmetry and transitivity are the algebraic invariants of a comparator.
+// ---------------------------------------------------------------------------
+
+/// Base date used to derive deterministic test timestamps.
+final DateTime _baseDate = DateTime(2024);
+
+/// Creates a [HabitCompletionEntry] whose metadata timestamps are derived from
+/// integer offsets relative to [_baseDate].  Every parameter is an offset in
+/// minutes from [_baseDate], which keeps the entries fully deterministic.
+HabitCompletionEntry _entryFromOffsets({
+  required String id,
+  required int updatedAtMinutes,
+  required int createdAtMinutes,
+  required int dateToMinutes,
+}) {
+  final updatedAt = _baseDate.add(Duration(minutes: updatedAtMinutes));
+  final createdAt = _baseDate.add(Duration(minutes: createdAtMinutes));
+  final dateTo = _baseDate.add(Duration(minutes: dateToMinutes));
+  return _completion(
+    id: id,
+    habitId: 'h1',
+    day: _baseDate,
+    writtenAt: updatedAt,
+    updatedAt: updatedAt,
+    createdAt: createdAt,
+    dateTo: dateTo,
+    completionType: HabitCompletionType.success,
+  );
+}
+
+/// The sign of an integer: -1, 0, or 1.
+int _sign(int x) {
+  if (x < 0) return -1;
+  if (x > 0) return 1;
+  return 0;
+}
+
+class _GeneratedComparePair {
+  const _GeneratedComparePair({
+    required this.updatedA,
+    required this.updatedB,
+    required this.createdA,
+    required this.createdB,
+    required this.dateToA,
+    required this.dateToB,
+    required this.idA,
+    required this.idB,
+  });
+
+  final int updatedA;
+  final int updatedB;
+  final int createdA;
+  final int createdB;
+  final int dateToA;
+  final int dateToB;
+  final String idA;
+  final String idB;
+
+  HabitCompletionEntry get a => _entryFromOffsets(
+    id: idA,
+    updatedAtMinutes: updatedA,
+    createdAtMinutes: createdA,
+    dateToMinutes: dateToA,
+  );
+
+  HabitCompletionEntry get b => _entryFromOffsets(
+    id: idB,
+    updatedAtMinutes: updatedB,
+    createdAtMinutes: createdB,
+    dateToMinutes: dateToB,
+  );
+
+  @override
+  String toString() =>
+      '_GeneratedComparePair('
+      'updatedA=$updatedA, updatedB=$updatedB, '
+      'createdA=$createdA, createdB=$createdB, '
+      'dateToA=$dateToA, dateToB=$dateToB, '
+      'idA=$idA, idB=$idB)';
+}
+
+class _GeneratedCompareTriple {
+  const _GeneratedCompareTriple({
+    required this.pairAb,
+    required this.pairBc,
+  });
+
+  /// Provides entries `a` and `b`.
+  final _GeneratedComparePair pairAb;
+
+  /// Provides entries `b` and `c` — shares the `b` slot with [pairAb].
+  final _GeneratedComparePair pairBc;
+
+  HabitCompletionEntry get a => pairAb.a;
+  HabitCompletionEntry get b => pairAb.b;
+  HabitCompletionEntry get c => pairBc.b;
+}
+
+extension _AnyCompareHabitCompletion on glados.Any {
+  /// Generates pairs of entries with independently varying tie-break fields.
+  glados.Generator<_GeneratedComparePair> get comparePair =>
+      glados.CombinableAny(this).combine8(
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.AnyUtils(this).choose(<String>['id-a', 'id-b', 'id-c']),
+        glados.AnyUtils(this).choose(<String>['id-b', 'id-c', 'id-d']),
+        (
+          int uA,
+          int uB,
+          int cA,
+          int cB,
+          int dtA,
+          int dtB,
+          String idA,
+          String idB,
+        ) => _GeneratedComparePair(
+          updatedA: uA,
+          updatedB: uB,
+          createdA: cA,
+          createdB: cB,
+          dateToA: dtA,
+          dateToB: dtB,
+          idA: idA,
+          idB: idB,
+        ),
+      );
+
+  glados.Generator<_GeneratedCompareTriple> get compareTriple =>
+      glados.CombinableAny(this).combine2(
+        comparePair,
+        comparePair,
+        (
+          _GeneratedComparePair pAb,
+          _GeneratedComparePair pBc,
+        ) => _GeneratedCompareTriple(pairAb: pAb, pairBc: pBc),
+      );
+}
+
+void _runCompareHabitCompletionGladosTests() {
+  group('compareHabitCompletionWriteRecency — Glados algebraic properties', () {
+    glados.Glados<_GeneratedComparePair>(
+      glados.any.comparePair,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'antisymmetry: sign(compare(a,b)) == -sign(compare(b,a))',
+      (scenario) {
+        final ab = compareHabitCompletionWriteRecency(scenario.a, scenario.b);
+        final ba = compareHabitCompletionWriteRecency(scenario.b, scenario.a);
+        expect(
+          _sign(ab),
+          equals(-_sign(ba)),
+          reason: '$scenario',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<_GeneratedComparePair>(
+      glados.any.comparePair,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'compare(a, a) == 0 for the same entry',
+      (scenario) {
+        final aa = compareHabitCompletionWriteRecency(scenario.a, scenario.a);
+        expect(
+          aa,
+          equals(0),
+          reason: '$scenario',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<_GeneratedCompareTriple>(
+      glados.any.compareTriple,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'transitivity: if a≤b and b≤c then a≤c',
+      (scenario) {
+        final ab = compareHabitCompletionWriteRecency(scenario.a, scenario.b);
+        final bc = compareHabitCompletionWriteRecency(scenario.b, scenario.c);
+        final ac = compareHabitCompletionWriteRecency(scenario.a, scenario.c);
+
+        // If a ≤ b (ab ≤ 0) AND b ≤ c (bc ≤ 0), then a ≤ c (ac ≤ 0).
+        if (ab <= 0 && bc <= 0) {
+          expect(
+            ac,
+            lessThanOrEqualTo(0),
+            reason: 'transitivity failed: ab=$ab bc=$bc ac=$ac $scenario',
+          );
+        }
+        // Conversely: if a ≥ b (ab ≥ 0) AND b ≥ c (bc ≥ 0), then a ≥ c.
+        if (ab >= 0 && bc >= 0) {
+          expect(
+            ac,
+            greaterThanOrEqualTo(0),
+            reason: 'transitivity failed: ab=$ab bc=$bc ac=$ac $scenario',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
 }

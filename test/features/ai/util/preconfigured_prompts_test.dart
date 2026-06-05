@@ -93,4 +93,130 @@ void main() {
       );
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // coverArtGenerationPrompt — previously had zero test coverage
+  // ---------------------------------------------------------------------------
+  group('Cover Art Generation Template', () {
+    test('has correct id and name', () {
+      expect(coverArtGenerationPrompt.id, 'cover_art_generation');
+      expect(coverArtGenerationPrompt.name, 'Generate Cover Art');
+    });
+
+    test('ai response type is imageGeneration', () {
+      expect(
+        coverArtGenerationPrompt.aiResponseType,
+        AiResponseType.imageGeneration,
+        reason: 'must request image generation, not prompt generation',
+      );
+    });
+
+    test('useReasoning is false', () {
+      expect(
+        coverArtGenerationPrompt.useReasoning,
+        isFalse,
+        reason: 'cover art generation must not use reasoning',
+      );
+    });
+
+    test('requires task input data only', () {
+      expect(
+        coverArtGenerationPrompt.requiredInputData,
+        [InputDataType.task],
+        reason: 'only task context is required, not audio files',
+      );
+    });
+
+    test('userMessage includes audioTranscript placeholder', () {
+      expect(
+        coverArtGenerationPrompt.userMessage,
+        contains('{{audioTranscript}}'),
+        reason: 'voice description is injected via {{audioTranscript}}',
+      );
+    });
+
+    test('userMessage includes current_task_summary placeholder', () {
+      expect(
+        coverArtGenerationPrompt.userMessage,
+        contains('{{current_task_summary}}'),
+        reason: 'task summary insights injected via {{current_task_summary}}',
+      );
+    });
+
+    test('userMessage includes task placeholder', () {
+      expect(
+        coverArtGenerationPrompt.userMessage,
+        contains('{{task}}'),
+        reason: 'full task context injected via {{task}}',
+      );
+    });
+
+    test('systemMessage specifies 16:9 aspect ratio', () {
+      expect(
+        coverArtGenerationPrompt.systemMessage,
+        contains('16:9'),
+        reason: 'composition requirement mandates 16:9 wide format',
+      );
+    });
+
+    test('systemMessage mentions Dynamic Island safe zone', () {
+      expect(
+        coverArtGenerationPrompt.systemMessage,
+        contains('Dynamic Island'),
+        reason:
+            'iOS Dynamic Island safe zone restriction must be documented in prompt',
+      );
+    });
+
+    test('systemMessage mentions center-weighted composition', () {
+      expect(
+        coverArtGenerationPrompt.systemMessage,
+        contains('Center-Weighted Safe Zone'),
+        reason: 'center-weighted composition guideline must be present',
+      );
+    });
+
+    test('is registered in preconfiguredPrompts lookup', () {
+      expect(
+        preconfiguredPrompts['cover_art_generation'],
+        coverArtGenerationPrompt,
+        reason: 'cover art prompt must be reachable by its id key',
+      );
+    });
+
+    test('description is non-empty', () {
+      expect(
+        coverArtGenerationPrompt.description,
+        isNotEmpty,
+        reason: 'description must describe the prompt purpose',
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // preconfiguredPrompts map — map-key completeness
+  // ---------------------------------------------------------------------------
+  group('preconfiguredPrompts map', () {
+    test('contains exactly the two expected keys', () {
+      expect(
+        preconfiguredPrompts.keys,
+        containsAll(['image_prompt_generation', 'cover_art_generation']),
+      );
+      expect(
+        preconfiguredPrompts.length,
+        equals(2),
+        reason: 'no unregistered prompts should silently accumulate',
+      );
+    });
+
+    test('every entry id matches its map key', () {
+      for (final entry in preconfiguredPrompts.entries) {
+        expect(
+          entry.value.id,
+          equals(entry.key),
+          reason: 'prompt id must match its key in the lookup map',
+        );
+      }
+    });
+  });
 }

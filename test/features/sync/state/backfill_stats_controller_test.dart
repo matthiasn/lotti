@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart'
     show AppLifecycleState, WidgetsBinding, WidgetsFlutterBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
@@ -14,6 +15,53 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/mocks.dart';
+
+// ---------------------------------------------------------------------------
+// Generators for BackfillStatsState property tests
+// ---------------------------------------------------------------------------
+
+extension _AnyBackfillStatsState on glados.Any {
+  glados.Generator<int?> get _optionalCount =>
+      glados.CombinableAny(this).combine2(
+        glados.any.bool,
+        glados.IntAnys(this).intInRange(0, 1000),
+        (bool hasValue, int value) => hasValue ? value : null,
+      );
+
+  glados.Generator<BackfillStatsState> get backfillStatsState =>
+      glados.CombinableAny(this).combine9(
+        glados.any.bool,
+        glados.any.bool,
+        glados.any.bool,
+        glados.any.bool,
+        glados.any.bool,
+        _optionalCount,
+        _optionalCount,
+        _optionalCount,
+        _optionalCount,
+        (
+          bool isLoading,
+          bool isProcessing,
+          bool isReRequesting,
+          bool isResetting,
+          bool isRetiringStuck,
+          int? lastProcessedCount,
+          int? lastReRequestedCount,
+          int? lastResetCount,
+          int? lastRetiredStuckCount,
+        ) => BackfillStatsState(
+          isLoading: isLoading,
+          isProcessing: isProcessing,
+          isReRequesting: isReRequesting,
+          isResetting: isResetting,
+          isRetiringStuck: isRetiringStuck,
+          lastProcessedCount: lastProcessedCount,
+          lastReRequestedCount: lastReRequestedCount,
+          lastResetCount: lastResetCount,
+          lastRetiredStuckCount: lastRetiredStuckCount,
+        ),
+      );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1257,4 +1305,59 @@ void main() {
       expect(copied.lastResetCount, isNull);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Glados property — HIGH item: copyWith() with no args is idempotent
+  // -------------------------------------------------------------------------
+
+  glados.Glados(
+    glados.any.backfillStatsState,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'copyWith() with no args preserves every field of BackfillStatsState',
+    (state) {
+      final copied = state.copyWith();
+
+      expect(copied.isLoading, state.isLoading,
+          reason: 'isLoading must be preserved by no-arg copyWith');
+      expect(copied.isProcessing, state.isProcessing,
+          reason: 'isProcessing must be preserved by no-arg copyWith');
+      expect(copied.isReRequesting, state.isReRequesting,
+          reason: 'isReRequesting must be preserved by no-arg copyWith');
+      expect(copied.isResetting, state.isResetting,
+          reason: 'isResetting must be preserved by no-arg copyWith');
+      expect(copied.isRetiringStuck, state.isRetiringStuck,
+          reason: 'isRetiringStuck must be preserved by no-arg copyWith');
+      expect(copied.lastProcessedCount, state.lastProcessedCount,
+          reason: 'lastProcessedCount must be preserved by no-arg copyWith');
+      expect(copied.lastReRequestedCount, state.lastReRequestedCount,
+          reason: 'lastReRequestedCount must be preserved by no-arg copyWith');
+      expect(copied.lastResetCount, state.lastResetCount,
+          reason: 'lastResetCount must be preserved by no-arg copyWith');
+      expect(copied.lastRetiredStuckCount, state.lastRetiredStuckCount,
+          reason: 'lastRetiredStuckCount must be preserved by no-arg copyWith');
+    },
+    tags: 'glados',
+  );
+
+  glados.Glados(
+    glados.any.backfillStatsState,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'clearError=true nulls the error field without touching other fields',
+    (state) {
+      final withError = state.copyWith(error: 'some error');
+      final cleared = withError.copyWith(clearError: true);
+
+      expect(cleared.error, isNull,
+          reason: 'clearError must null the error field');
+      // All boolean flags and counts must remain intact.
+      expect(cleared.isLoading, withError.isLoading);
+      expect(cleared.isProcessing, withError.isProcessing);
+      expect(cleared.isReRequesting, withError.isReRequesting);
+      expect(cleared.isResetting, withError.isResetting);
+      expect(cleared.lastProcessedCount, withError.lastProcessedCount);
+    },
+    tags: 'glados',
+  );
 }

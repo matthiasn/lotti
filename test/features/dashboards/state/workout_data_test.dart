@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/workout_data.dart';
 
 import '../test_utils.dart';
@@ -198,5 +200,111 @@ void main() {
       );
       expect(march14.value, 750);
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados property tests.
+  // -------------------------------------------------------------------------
+
+  group('aggregateWorkoutDailySum — properties', () {
+    // The rangeStart/rangeEnd above (March 10–15) yield 5 days.
+    const expectedDays = 5;
+
+    glados.Glados(
+      glados.any.intInRange(0, 8),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'output length always equals rangeEnd - rangeStart in days',
+      (workoutCount) {
+        // Build matching workout entries within the range.
+        final entities = <WorkoutEntry>[
+          for (var i = 0; i < workoutCount; i++)
+            makeWorkoutEntry(
+              dateFrom: DateTime(2024, 3, 11 + (i % 4), 8),
+              dateTo: DateTime(2024, 3, 11 + (i % 4), 9),
+              workoutType: 'running',
+              energy: 100 * (i + 1),
+              id: 'w$i',
+            ),
+        ];
+        final result = aggregateWorkoutDailySum(
+          entities,
+          chartConfig: runningEnergyConfig,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+        expect(result.length, equals(expectedDays));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.intInRange(1, 8),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'sum of output values equals sum of matching input energy',
+      (workoutCount) {
+        final entities = <WorkoutEntry>[
+          for (var i = 0; i < workoutCount; i++)
+            makeWorkoutEntry(
+              dateFrom: DateTime(2024, 3, 11 + (i % 4), 8),
+              dateTo: DateTime(2024, 3, 11 + (i % 4), 9),
+              workoutType: 'running',
+              energy: 100 * (i + 1),
+              id: 'w$i',
+            ),
+        ];
+        final result = aggregateWorkoutDailySum(
+          entities,
+          chartConfig: runningEnergyConfig,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+        final outputSum = result.fold<num>(0, (acc, o) => acc + o.value);
+        final inputSum = entities.fold<num>(
+          0,
+          (acc, e) => acc + (e.data.energy ?? 0),
+        );
+        expect(
+          outputSum,
+          closeTo(inputSum, 1e-9),
+          reason: 'output sum must equal total matching energy',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.intInRange(0, 8),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'all in-range days have a non-negative value',
+      (workoutCount) {
+        final entities = <WorkoutEntry>[
+          for (var i = 0; i < workoutCount; i++)
+            makeWorkoutEntry(
+              dateFrom: DateTime(2024, 3, 11 + (i % 4), 8),
+              dateTo: DateTime(2024, 3, 11 + (i % 4), 9),
+              workoutType: 'running',
+              energy: 100 * (i + 1),
+              id: 'w$i',
+            ),
+        ];
+        final result = aggregateWorkoutDailySum(
+          entities,
+          chartConfig: runningEnergyConfig,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+        for (final obs in result) {
+          expect(
+            obs.value,
+            greaterThanOrEqualTo(0),
+            reason: 'every observation must have non-negative value',
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

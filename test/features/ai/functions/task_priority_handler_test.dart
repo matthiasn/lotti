@@ -1114,4 +1114,92 @@ void main() {
       });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Dedicated Glados property tests for parsePriority (pure function)
+  // ---------------------------------------------------------------------------
+
+  group('parsePriority — Glados properties', () {
+    // Property 1: result is always within the 4-value set (or null).
+    glados.Glados(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result is always a valid TaskPriority or null',
+      (s) {
+        final result = TaskPriorityHandler.parsePriority(s);
+        if (result != null) {
+          expect(
+            TaskPriority.values,
+            contains(result),
+            reason: 'parsePriority($s) produced an unexpected value',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    // Property 2: round-trip idempotence — parse the short form of a result
+    // and get the same result back.
+    glados.Glados(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'parsePriority is idempotent on its own output short form',
+      (s) {
+        final first = TaskPriorityHandler.parsePriority(s);
+        if (first != null) {
+          final second = TaskPriorityHandler.parsePriority(first.short);
+          expect(
+            second,
+            equals(first),
+            reason:
+                'parsePriority(first.short) must equal first for input $s',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    // Static worked examples — exact canonical inputs.
+    group('parsePriority — static examples', () {
+      for (final (input, expected) in [
+        ('P0', TaskPriority.p0Urgent),
+        ('P1', TaskPriority.p1High),
+        ('P2', TaskPriority.p2Medium),
+        ('P3', TaskPriority.p3Low),
+        ('p0', TaskPriority.p0Urgent),
+        ('p1', TaskPriority.p1High),
+        ('p2', TaskPriority.p2Medium),
+        ('p3', TaskPriority.p3Low),
+        ('  P2  ', TaskPriority.p2Medium),
+      ]) {
+        test('parses "$input" to $expected', () {
+          expect(
+            TaskPriorityHandler.parsePriority(input),
+            equals(expected),
+            reason: 'input: "$input"',
+          );
+        });
+      }
+
+      for (final invalid in ['P4', 'P5', 'URGENT', '', 'high', '1']) {
+        test('returns null for invalid input "$invalid"', () {
+          expect(
+            TaskPriorityHandler.parsePriority(invalid),
+            isNull,
+            reason: '"$invalid" must not parse to a priority',
+          );
+        });
+      }
+
+      test('returns null for null input', () {
+        expect(TaskPriorityHandler.parsePriority(null), isNull);
+      });
+
+      test('returns null for non-string input (int)', () {
+        expect(TaskPriorityHandler.parsePriority(42), isNull);
+      });
+    });
+  });
 }

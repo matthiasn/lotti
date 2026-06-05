@@ -396,8 +396,9 @@ void main() {
       ),
     );
 
-    // Give the event time to propagate
-    await Future<void>.delayed(Duration.zero);
+    // Drain the event queue deterministically so the stream event
+    // propagates — no zero-duration Timers (fake-time policy).
+    await pumpEventQueue();
 
     expect(invites, isEmpty);
 
@@ -416,7 +417,7 @@ void main() {
       ),
     );
 
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
     expect(invites, hasLength(1));
     expect(invites.first.roomId, '!room:server');

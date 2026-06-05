@@ -1,7 +1,39 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/helpers/skill_prompt_builder.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+
+// ---------------------------------------------------------------------------
+// Top-level generators for SkillPromptBuilder Glados property tests.
+// ---------------------------------------------------------------------------
+
+/// Generators for the discrete input space of SkillPromptBuilder.
+extension _AnySkillPromptBuilder on glados.Any {
+  glados.Generator<SkillType> get skillType =>
+      glados.AnyUtils(this).choose(SkillType.values);
+
+  glados.Generator<ContextPolicy> get contextPolicy =>
+      glados.AnyUtils(this).choose(ContextPolicy.values);
+}
+
+/// Builds an [AiConfigSkill] with all fields set to stable test values except
+/// the two variant inputs under test.
+AiConfigSkill _makeGladosSkill({
+  required SkillType skillType,
+  required ContextPolicy contextPolicy,
+}) {
+  return AiConfigSkill(
+    id: 'glados-skill',
+    name: 'Glados Skill',
+    skillType: skillType,
+    requiredInputModalities: const [Modality.audio],
+    systemInstructions: 'System.',
+    userInstructions: 'User.',
+    contextPolicy: contextPolicy,
+    createdAt: DateTime(2026),
+  );
+}
 
 void main() {
   const builder = SkillPromptBuilder();
@@ -338,5 +370,200 @@ void main() {
         expect(result.userMessage, 'user');
       });
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados property tests — structural invariants for SkillPromptBuilder.build
+  // ---------------------------------------------------------------------------
+
+  group('SkillPromptBuilder — Glados structural invariants', () {
+    // Property 1: speaker rules appear iff skillType == transcription
+    glados.Glados2(
+      glados.any.skillType,
+      glados.any.contextPolicy,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'speaker rules appear exactly when skillType is transcription',
+      (skillType, contextPolicy) {
+        final skill = _makeGladosSkill(
+          skillType: skillType,
+          contextPolicy: contextPolicy,
+        );
+        final result = const SkillPromptBuilder().build(skill: skill);
+
+        if (skillType == SkillType.transcription) {
+          expect(
+            result.userMessage,
+            contains('SPEAKER IDENTIFICATION RULES'),
+            reason: 'transcription skill must have speaker rules',
+          );
+        } else {
+          expect(
+            result.userMessage,
+            isNot(contains('SPEAKER IDENTIFICATION RULES')),
+            reason: 'non-transcription skill must not have speaker rules',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    // Property 2: URL rules appear iff skillType == imageAnalysis
+    glados.Glados2(
+      glados.any.skillType,
+      glados.any.contextPolicy,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'URL formatting rules appear exactly when skillType is imageAnalysis',
+      (skillType, contextPolicy) {
+        final skill = _makeGladosSkill(
+          skillType: skillType,
+          contextPolicy: contextPolicy,
+        );
+        final result = const SkillPromptBuilder().build(skill: skill);
+
+        if (skillType == SkillType.imageAnalysis) {
+          expect(
+            result.userMessage,
+            contains('URL FORMATTING RULES'),
+            reason: 'imageAnalysis skill must have URL rules',
+          );
+        } else {
+          expect(
+            result.userMessage,
+            isNot(contains('URL FORMATTING RULES')),
+            reason: 'non-imageAnalysis skill must not have URL rules',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    // Property 3: RELATED TASKS CONTEXT in system message appears exactly for
+    // imageAnalysis + fullTask when taskContext is provided.
+    glados.Glados2(
+      glados.any.skillType,
+      glados.any.contextPolicy,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'RELATED TASKS CONTEXT in system message iff imageAnalysis + fullTask + taskContext',
+      (skillType, contextPolicy) {
+        final skill = _makeGladosSkill(
+          skillType: skillType,
+          contextPolicy: contextPolicy,
+        );
+        final result = const SkillPromptBuilder().build(
+          skill: skill,
+          taskContext: '{"id": "t1"}',
+        );
+
+        final expectContext = skillType == SkillType.imageAnalysis &&
+            contextPolicy == ContextPolicy.fullTask;
+
+        if (expectContext) {
+          expect(
+            result.systemMessage,
+            contains('RELATED TASKS CONTEXT'),
+            reason: 'imageAnalysis+fullTask+taskContext must have context block',
+          );
+        } else {
+          expect(
+            result.systemMessage,
+            isNot(contains('RELATED TASKS CONTEXT')),
+            reason:
+                'other skill/policy combinations must not have context block',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    // Property 4: systemMessage always starts with the skill's systemInstructions.
+    glados.Glados2(
+      glados.any.skillType,
+      glados.any.contextPolicy,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'systemMessage always begins with skill systemInstructions',
+      (skillType, contextPolicy) {
+        final skill = _makeGladosSkill(
+          skillType: skillType,
+          contextPolicy: contextPolicy,
+        );
+        final result = const SkillPromptBuilder().build(
+          skill: skill,
+          taskContext: '{"id":"t1"}',
+        );
+
+        expect(
+          result.systemMessage.startsWith('System.'),
+          isTrue,
+          reason: 'systemMessage must start with systemInstructions',
+        );
+      },
+      tags: 'glados',
+    );
+
+    // Property 5: userMessage always contains skill userInstructions.
+    glados.Glados2(
+      glados.any.skillType,
+      glados.any.contextPolicy,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'userMessage always contains the skill userInstructions verbatim',
+      (skillType, contextPolicy) {
+        final skill = _makeGladosSkill(
+          skillType: skillType,
+          contextPolicy: contextPolicy,
+        );
+        final result = const SkillPromptBuilder().build(skill: skill);
+
+        expect(
+          result.userMessage,
+          contains('User.'),
+          reason: 'userMessage must contain userInstructions',
+        );
+      },
+      tags: 'glados',
+    );
+
+    // Property 6: non-empty speechDictionary appears in userMessage only for
+    // transcription skills or dictionaryOnly policy.
+    glados.Glados2(
+      glados.any.skillType,
+      glados.any.contextPolicy,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'speechDictionary injected iff transcription or dictionaryOnly policy',
+      (skillType, contextPolicy) {
+        final skill = _makeGladosSkill(
+          skillType: skillType,
+          contextPolicy: contextPolicy,
+        );
+        const dict = 'Required spellings: ["macOS"]';
+        final result =
+            const SkillPromptBuilder().build(skill: skill, speechDictionary: dict);
+
+        final shouldInject = skillType == SkillType.transcription ||
+            contextPolicy == ContextPolicy.dictionaryOnly;
+
+        if (shouldInject) {
+          expect(
+            result.userMessage,
+            contains(dict),
+            reason: 'speech dictionary must be injected for this skill/policy',
+          );
+        } else {
+          expect(
+            result.userMessage,
+            isNot(contains(dict)),
+            reason:
+                'speech dictionary must not appear for non-transcription, '
+                'non-dictionaryOnly combinations',
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

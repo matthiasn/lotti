@@ -723,4 +723,341 @@ void main() {
       }
     }, tags: 'glados');
   });
+
+  // ---------------------------------------------------------------------------
+  // Tests from inference_model_form_controller_dirty_state_test.dart
+  // ---------------------------------------------------------------------------
+  group('InferenceModelFormController - Dirty State Tracking', () {
+    late ProviderContainer dirtyContainer;
+    late MockAiConfigRepository dirtyMockRepo;
+
+    const testDirtyConfigId = 'test-model-id';
+    final testDirtyConfig = AiConfigModel(
+      id: testDirtyConfigId,
+      name: 'Test Model',
+      providerModelId: 'test-provider-model',
+      description: 'Test Description',
+      inferenceProviderId: 'provider1',
+      inputModalities: [Modality.text],
+      outputModalities: [Modality.text],
+      isReasoningModel: true,
+      createdAt: DateTime(2024, 3, 15, 10, 30),
+      updatedAt: DateTime(2024, 3, 15, 10, 30),
+    );
+
+    setUp(() {
+      dirtyMockRepo = MockAiConfigRepository();
+      dirtyContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(dirtyMockRepo),
+        ],
+      );
+    });
+
+    tearDown(() {
+      dirtyContainer.dispose();
+    });
+
+    test(
+      'form should start with clean (non-dirty) state when loading existing config',
+      () async {
+        when(
+          () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+        ).thenAnswer((_) async => testDirtyConfig);
+
+        await dirtyContainer.read(
+          inferenceModelFormControllerProvider(
+            configId: testDirtyConfigId,
+          ).future,
+        );
+
+        final state = dirtyContainer
+            .read(
+              inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+            )
+            .value;
+
+        expect(state, isNotNull);
+        expect(
+          state!.isDirty,
+          isFalse,
+          reason: 'Form should not be dirty when initially loaded',
+        );
+      },
+    );
+
+    test('changing inferenceProviderId should make form dirty', () async {
+      when(
+        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+      ).thenAnswer((_) async => testDirtyConfig);
+
+      await dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      final controller = dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).notifier,
+      );
+
+      var state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(state!.isDirty, isFalse);
+
+      controller.inferenceProviderIdChanged('provider2');
+
+      state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing inferenceProviderId',
+      );
+    });
+
+    test('changing inputModalities should make form dirty', () async {
+      when(
+        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+      ).thenAnswer((_) async => testDirtyConfig);
+
+      await dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      final controller = dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).notifier,
+      );
+
+      var state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(state!.isDirty, isFalse);
+
+      controller.inputModalitiesChanged([Modality.text, Modality.image]);
+
+      state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing inputModalities',
+      );
+    });
+
+    test('changing outputModalities should make form dirty', () async {
+      when(
+        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+      ).thenAnswer((_) async => testDirtyConfig);
+
+      await dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      final controller = dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).notifier,
+      );
+
+      var state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(state!.isDirty, isFalse);
+
+      controller.outputModalitiesChanged([Modality.text, Modality.image]);
+
+      state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing outputModalities',
+      );
+    });
+
+    test('changing isReasoningModel should make form dirty', () async {
+      when(
+        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+      ).thenAnswer((_) async => testDirtyConfig);
+
+      await dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      final controller = dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).notifier,
+      );
+
+      var state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(state!.isDirty, isFalse);
+
+      // testDirtyConfig has isReasoningModel: true
+      controller.isReasoningModelChanged(false);
+
+      state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing isReasoningModel',
+      );
+    });
+
+    test('changing text fields should make form dirty', () async {
+      when(
+        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+      ).thenAnswer((_) async => testDirtyConfig);
+
+      await dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      final controller = dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).notifier,
+      );
+
+      var state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(state!.isDirty, isFalse);
+
+      controller.nameChanged('Modified Model Name');
+      state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing name',
+      );
+
+      // Reset for next assertion
+      dirtyContainer.dispose();
+      dirtyContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(dirtyMockRepo),
+        ],
+      );
+      await dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(
+              configId: testDirtyConfigId,
+            ).notifier,
+          )
+          .providerModelIdChanged('modified-provider-model');
+      state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing providerModelId',
+      );
+    });
+
+    test('setting same value should not make form dirty', () async {
+      when(
+        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+      ).thenAnswer((_) async => testDirtyConfig);
+
+      await dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      final controller = dirtyContainer.read(
+        inferenceModelFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).notifier,
+      );
+
+      var state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(state!.isDirty, isFalse);
+
+      // testDirtyConfig already has isReasoningModel: true
+      controller.isReasoningModelChanged(true);
+
+      state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isFalse,
+        reason: 'Form should not be dirty when setting same value',
+      );
+
+      // testDirtyConfig already has [Modality.text]
+      controller.inputModalitiesChanged([Modality.text]);
+
+      state = dirtyContainer
+          .read(
+            inferenceModelFormControllerProvider(configId: testDirtyConfigId),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isFalse,
+        reason: 'Form should not be dirty when setting same modalities',
+      );
+    });
+  });
 }

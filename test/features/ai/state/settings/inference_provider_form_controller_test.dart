@@ -1300,4 +1300,353 @@ void main() {
       expect(controller.nameController.text, equals('Same Value'));
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Tests from inference_provider_form_controller_dirty_state_test.dart
+  // ---------------------------------------------------------------------------
+  group('InferenceProviderFormController - Dirty State Tracking', () {
+    late ProviderContainer dirtyContainer;
+    late MockAiConfigRepository dirtyMockRepo;
+
+    const testDirtyConfigId = 'test-provider-id';
+    final testDirtyConfig = AiConfigInferenceProvider(
+      id: testDirtyConfigId,
+      name: 'Test Provider',
+      apiKey: 'test-api-key',
+      baseUrl: 'https://api.test.com',
+      description: 'Test Description',
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
+      createdAt: DateTime(2024, 3, 15, 10, 30),
+      updatedAt: DateTime(2024, 3, 15, 10, 30),
+    );
+
+    setUp(() {
+      dirtyMockRepo = MockAiConfigRepository();
+      dirtyContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(dirtyMockRepo),
+        ],
+      );
+    });
+
+    tearDown(() {
+      dirtyContainer.dispose();
+    });
+
+    test(
+      'form should start with clean (non-dirty) state when loading existing config',
+      () async {
+        when(
+          () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+        ).thenAnswer((_) async => testDirtyConfig);
+
+        await dirtyContainer.read(
+          inferenceProviderFormControllerProvider(
+            configId: testDirtyConfigId,
+          ).future,
+        );
+
+        final state = dirtyContainer
+            .read(
+              inferenceProviderFormControllerProvider(
+                configId: testDirtyConfigId,
+              ),
+            )
+            .value;
+
+        expect(state, isNotNull);
+        expect(
+          state!.isDirty,
+          isFalse,
+          reason: 'Form should not be dirty when initially loaded',
+        );
+      },
+    );
+
+    test('changing inferenceProviderType should make form dirty', () async {
+      when(
+        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+      ).thenAnswer((_) async => testDirtyConfig);
+
+      await dirtyContainer.read(
+        inferenceProviderFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      final controller = dirtyContainer.read(
+        inferenceProviderFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).notifier,
+      );
+
+      var state = dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ),
+          )
+          .value;
+      expect(state!.isDirty, isFalse);
+
+      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
+
+      state = dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing inferenceProviderType',
+      );
+    });
+
+    test('changing text fields should make form dirty', () async {
+      when(
+        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+      ).thenAnswer((_) async => testDirtyConfig);
+
+      await dirtyContainer.read(
+        inferenceProviderFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      final controller = dirtyContainer.read(
+        inferenceProviderFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).notifier,
+      );
+
+      var state = dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ),
+          )
+          .value;
+      expect(state!.isDirty, isFalse);
+
+      controller.nameChanged('Modified Provider Name');
+      state = dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing name',
+      );
+
+      // Reset for next assertion
+      dirtyContainer.dispose();
+      dirtyContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(dirtyMockRepo),
+        ],
+      );
+      await dirtyContainer.read(
+        inferenceProviderFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ).notifier,
+          )
+          .apiKeyChanged('modified-api-key');
+      state = dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing apiKey',
+      );
+
+      // Reset for next assertion
+      dirtyContainer.dispose();
+      dirtyContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(dirtyMockRepo),
+        ],
+      );
+      await dirtyContainer.read(
+        inferenceProviderFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ).notifier,
+          )
+          .baseUrlChanged('https://modified.test.com');
+      state = dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isTrue,
+        reason: 'Form should be dirty after changing baseUrl',
+      );
+    });
+
+    test('setting same value should not make form dirty', () async {
+      when(
+        () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+      ).thenAnswer((_) async => testDirtyConfig);
+
+      await dirtyContainer.read(
+        inferenceProviderFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).future,
+      );
+
+      final controller = dirtyContainer.read(
+        inferenceProviderFormControllerProvider(
+          configId: testDirtyConfigId,
+        ).notifier,
+      );
+
+      var state = dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ),
+          )
+          .value;
+      expect(state!.isDirty, isFalse);
+
+      // testDirtyConfig already has genericOpenAi
+      controller.inferenceProviderTypeChanged(
+        InferenceProviderType.genericOpenAi,
+      );
+
+      state = dirtyContainer
+          .read(
+            inferenceProviderFormControllerProvider(
+              configId: testDirtyConfigId,
+            ),
+          )
+          .value;
+      expect(
+        state!.isDirty,
+        isFalse,
+        reason: 'Form should not be dirty when setting same value',
+      );
+    });
+
+    test(
+      'changing provider type to predefined types should update fields and make form dirty',
+      () async {
+        when(
+          () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+        ).thenAnswer((_) async => testDirtyConfig);
+
+        await dirtyContainer.read(
+          inferenceProviderFormControllerProvider(
+            configId: testDirtyConfigId,
+          ).future,
+        );
+
+        final controller = dirtyContainer.read(
+          inferenceProviderFormControllerProvider(
+            configId: testDirtyConfigId,
+          ).notifier,
+        );
+
+        var state = dirtyContainer
+            .read(
+              inferenceProviderFormControllerProvider(
+                configId: testDirtyConfigId,
+              ),
+            )
+            .value;
+        expect(state!.isDirty, isFalse);
+
+        controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
+
+        state = dirtyContainer
+            .read(
+              inferenceProviderFormControllerProvider(
+                configId: testDirtyConfigId,
+              ),
+            )
+            .value;
+        expect(
+          state!.isDirty,
+          isTrue,
+          reason: 'Form should be dirty after changing to Gemini',
+        );
+        expect(
+          state.baseUrl.value,
+          'https://generativelanguage.googleapis.com/v1beta/openai',
+        );
+
+        // Reset
+        dirtyContainer.dispose();
+        dirtyContainer = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(dirtyMockRepo),
+          ],
+        );
+
+        // Test with empty name so it gets auto-populated
+        final emptyNameConfig = testDirtyConfig.copyWith(name: '');
+        when(
+          () => dirtyMockRepo.getConfigById(testDirtyConfigId),
+        ).thenAnswer((_) async => emptyNameConfig);
+
+        await dirtyContainer.read(
+          inferenceProviderFormControllerProvider(
+            configId: testDirtyConfigId,
+          ).future,
+        );
+
+        dirtyContainer
+            .read(
+              inferenceProviderFormControllerProvider(
+                configId: testDirtyConfigId,
+              ).notifier,
+            )
+            .inferenceProviderTypeChanged(InferenceProviderType.nebiusAiStudio);
+
+        state = dirtyContainer
+            .read(
+              inferenceProviderFormControllerProvider(
+                configId: testDirtyConfigId,
+              ),
+            )
+            .value;
+        expect(
+          state!.isDirty,
+          isTrue,
+          reason: 'Form should be dirty after changing to Nebius',
+        );
+        expect(state.baseUrl.value, 'https://api.studio.nebius.com/v1');
+        expect(state.name.value, 'Nebius AI Studio');
+      },
+    );
+  });
 }

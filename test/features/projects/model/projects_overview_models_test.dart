@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -6,6 +7,40 @@ import 'package:lotti/features/projects/model/projects_overview_models.dart';
 
 import '../../categories/test_utils.dart';
 import '../test_utils.dart';
+
+/// Generators for [ProjectsQuery] and [applyProjectsFilter] property tests.
+extension _AnyProjectsModels on glados.Any {
+  glados.Generator<String> get categoryId => glados.any.letterOrDigits;
+
+  glados.Generator<Set<String>> get categoryIdSet =>
+      glados.ListAnys(this).listWithLengthInRange(0, 4, categoryId).map(
+        Set<String>.from,
+      );
+
+  glados.Generator<String> get statusFilterId =>
+      glados.AnyUtils(this).choose(<String>[
+        ProjectStatusFilterIds.open,
+        ProjectStatusFilterIds.active,
+        ProjectStatusFilterIds.onHold,
+        ProjectStatusFilterIds.completed,
+        ProjectStatusFilterIds.archived,
+      ]);
+
+  glados.Generator<Set<String>> get statusFilterIdSet =>
+      glados.ListAnys(this).listWithLengthInRange(0, 5, statusFilterId).map(
+        Set<String>.from,
+      );
+
+  glados.Generator<ProjectsFilter> get projectsFilter =>
+      glados.CombinableAny(this).combine2(
+        statusFilterIdSet,
+        categoryIdSet,
+        (statusIds, catIds) => ProjectsFilter(
+          selectedStatusIds: statusIds,
+          selectedCategoryIds: catIds,
+        ),
+      );
+}
 
 void main() {
   group('ProjectsSearchMode', () {
@@ -854,5 +889,134 @@ void main() {
         'Icon System',
       );
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados property tests — additive HIGH/LOW/MED items from TEST_REVIEW.md
+  // -------------------------------------------------------------------------
+
+  group('ProjectsQuery.matchesCategory — properties', () {
+    // LOW item: "if categoryIds is empty, always returns true"
+    // Tested for both string and null inputs via worked examples.
+    test('empty categoryIds matches any non-null string', () {
+      const query = ProjectsQuery();
+      for (final id in <String>['cat-a', 'cat-b', 'anything', '']) {
+        expect(query.matchesCategory(id), isTrue, reason: 'id=$id');
+      }
+    });
+
+    test('empty categoryIds matches null', () {
+      const query = ProjectsQuery();
+      expect(query.matchesCategory(null), isTrue);
+    });
+
+    glados.Glados<String>(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'non-empty categoryIds only matches IDs it contains',
+      (id) {
+        final query = ProjectsQuery(categoryIds: <String>{id});
+        expect(query.matchesCategory(id), isTrue);
+        // A different string produced by appending a suffix must not match
+        // unless it happens to equal id (which cannot happen given the suffix).
+        expect(query.matchesCategory('${id}_other'), isFalse);
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('applyProjectsFilter — properties', () {
+    // Fixed snapshot used across all property runs.
+    final cat1 = CategoryTestUtils.createTestCategory(
+      id: 'p-cat-1',
+      name: 'Alpha',
+      color: '#FF0000',
+    );
+    final cat2 = CategoryTestUtils.createTestCategory(
+      id: 'p-cat-2',
+      name: 'Beta',
+      color: '#00FF00',
+    );
+    final openStatus = ProjectStatus.open(
+      id: 'prop-open',
+      createdAt: DateTime(2024, 3, 15),
+      utcOffset: 0,
+    );
+    final snapshot = ProjectsOverviewSnapshot(
+      groups: <ProjectCategoryGroup>[
+        ProjectCategoryGroup(
+          categoryId: 'p-cat-1',
+          category: cat1,
+          projects: <ProjectListItemData>[
+            makeTestProjectListItemData(
+              project: makeTestProject(
+                categoryId: 'p-cat-1',
+                status: openStatus,
+              ),
+              category: cat1,
+            ),
+          ],
+        ),
+        ProjectCategoryGroup(
+          categoryId: 'p-cat-2',
+          category: cat2,
+          projects: <ProjectListItemData>[
+            makeTestProjectListItemData(
+              project: makeTestProject(
+                categoryId: 'p-cat-2',
+                status: openStatus,
+              ),
+              category: cat2,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    // MED Glados item: result count never exceeds snapshot total.
+    glados.Glados<ProjectsFilter>(
+      glados.any.projectsFilter,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'filtered group count never exceeds the original group count',
+      (filter) {
+        final result = applyProjectsFilter(snapshot, filter);
+        expect(
+          result.length,
+          lessThanOrEqualTo(snapshot.groups.length),
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<ProjectsFilter>(
+      glados.any.projectsFilter,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'no result group is empty after filtering',
+      (filter) {
+        final result = applyProjectsFilter(snapshot, filter);
+        for (final group in result) {
+          expect(group.projects, isNotEmpty);
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<ProjectsFilter>(
+      glados.any.projectsFilter,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'empty filter is equivalent to no filtering — returns all groups',
+      (filter) {
+        // An empty filter (no status IDs, no category IDs, empty text) must
+        // return all groups from the snapshot.
+        const emptyFilter = ProjectsFilter();
+        final emptyResult = applyProjectsFilter(snapshot, emptyFilter);
+        expect(emptyResult.length, snapshot.groups.length);
+      },
+      tags: 'glados',
+    );
   });
 }

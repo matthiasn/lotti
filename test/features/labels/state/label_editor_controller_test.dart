@@ -8,20 +8,19 @@ import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/riverpod.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
-
-class _MockLabelsRepository extends Mock implements LabelsRepository {}
 
 void main() {
   late ProviderContainer container;
-  late _MockLabelsRepository repository;
+  late MockLabelsRepository repository;
 
   setUpAll(() {
     registerFallbackValue(testLabelDefinition1);
   });
 
   setUp(() {
-    repository = _MockLabelsRepository();
+    repository = MockLabelsRepository();
     container = ProviderContainer(
       overrides: [
         labelsRepositoryProvider.overrideWithValue(repository),

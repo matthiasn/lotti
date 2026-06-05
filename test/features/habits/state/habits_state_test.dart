@@ -1,6 +1,46 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+
+// ---------------------------------------------------------------------------
+// Helpers shared by the Glados property groups below.
+// ---------------------------------------------------------------------------
+
+/// Creates a minimal HabitDefinition active from [activeFrom].
+HabitDefinition _makeHabitForActiveBy(String id, DateTime activeFrom) {
+  return HabitDefinition(
+    id: id,
+    name: 'Habit $id',
+    description: '',
+    createdAt: activeFrom,
+    updatedAt: activeFrom,
+    vectorClock: null,
+    private: false,
+    active: true,
+    activeFrom: activeFrom,
+    habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+  );
+}
+
+/// Builds a [HabitsState] with [n] habits whose activeFrom precedes
+/// '2025-01-01' and whose selectedInfoYmd is '2025-01-01'.
+HabitsState _stateWithHabits(
+  int n, {
+  Map<String, Set<String>> byDay = const {},
+  Map<String, Set<String>> successfulByDay = const {},
+}) {
+  final activeDate = DateTime(2019);
+  final definitions = <HabitDefinition>[
+    for (var i = 0; i < n; i++) _makeHabitForActiveBy('h$i', activeDate),
+  ];
+  return HabitsState.initial().copyWith(
+    habitDefinitions: definitions,
+    selectedInfoYmd: '2025-01-01',
+    allByDay: byDay,
+    successfulByDay: successfulByDay,
+  );
+}
 
 void main() {
   group('HabitsState', () {
@@ -397,5 +437,165 @@ void main() {
       expect(HabitDisplayFilter.values, contains(HabitDisplayFilter.completed));
       expect(HabitDisplayFilter.values, contains(HabitDisplayFilter.all));
     });
+  });
+
+  group('completionRate — properties', () {
+    glados.Glados(
+      glados.CombinableAny(glados.any).combine2(
+        glados.any.intInRange(1, 15),
+        glados.any.intInRange(0, 15),
+        (int total, int n) => (total: total, n: n > total ? total : n),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result is always in [0, 100]',
+      (pair) {
+        final state = _stateWithHabits(
+          pair.total,
+          byDay: {
+            '2025-01-01': {for (var i = 0; i < pair.n; i++) 'h$i'},
+          },
+        );
+        final rate = completionRate(state, state.allByDay);
+        expect(rate, greaterThanOrEqualTo(0));
+        expect(rate, lessThanOrEqualTo(100));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.intInRange(1, 15),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'returns 100 when all habits completed',
+      (n) {
+        final state = _stateWithHabits(
+          n,
+          byDay: {
+            '2025-01-01': {for (var i = 0; i < n; i++) 'h$i'},
+          },
+        );
+        final rate = completionRate(state, state.allByDay);
+        expect(rate, equals(100));
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('habitMinY — properties', () {
+    glados.Glados(
+      glados.any.intInRange(0, 15),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result is always >= 0',
+      (n) {
+        final successCount = n > 0 ? n ~/ 2 : 0;
+        final state = _stateWithHabits(
+          n,
+          successfulByDay: n > 0
+              ? {
+                  '2025-01-01': {
+                    for (var i = 0; i < successCount; i++) 'h$i',
+                  },
+                }
+              : {},
+        );
+        final result = habitMinY(days: const ['2025-01-01'], state: state);
+        expect(result, greaterThanOrEqualTo(0.0));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.intInRange(1, 15),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'result is always <= 80 when all habits succeed (100% - 20 = 80)',
+      (n) {
+        final state = _stateWithHabits(
+          n,
+          successfulByDay: {
+            '2025-01-01': {for (var i = 0; i < n; i++) 'h$i'},
+          },
+        );
+        final result = habitMinY(days: const ['2025-01-01'], state: state);
+        // At 100% success rate, minY = max(100-20, 0) = 80.
+        expect(result, lessThanOrEqualTo(100.0));
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('activeBy — properties', () {
+    glados.Glados(
+      glados.any.intInRange(1, 15),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'every returned habit has activeFrom <= parsed ymd',
+      (n) {
+        const ymd = '2025-06-15';
+        final target = DateTime.parse(ymd);
+        final habits = <HabitDefinition>[
+          for (var i = 0; i < n; i++)
+            _makeHabitForActiveBy(
+              'h$i',
+              i.isEven
+                  ? target.subtract(const Duration(days: 1))
+                  : target.add(const Duration(days: 1)),
+            ),
+        ];
+        final result = activeBy(habits, ymd);
+        for (final habit in result) {
+          final from = DateTime(
+            habit.activeFrom!.year,
+            habit.activeFrom!.month,
+            habit.activeFrom!.day,
+          );
+          expect(
+            from.isAfter(target),
+            isFalse,
+            reason: 'activeFrom=$from must not be after target=$target',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.intInRange(1, 15),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'no excluded habit satisfies activeFrom on-or-before target',
+      (n) {
+        const ymd = '2025-06-15';
+        final target = DateTime.parse(ymd);
+        final habits = <HabitDefinition>[
+          for (var i = 0; i < n; i++)
+            _makeHabitForActiveBy(
+              'h$i',
+              i.isEven
+                  ? target.subtract(const Duration(days: 1))
+                  : target.add(const Duration(days: 1)),
+            ),
+        ];
+        final resultIds = activeBy(habits, ymd).map((h) => h.id).toSet();
+        for (final habit in habits) {
+          if (resultIds.contains(habit.id)) continue;
+          final from = DateTime(
+            habit.activeFrom!.year,
+            habit.activeFrom!.month,
+            habit.activeFrom!.day,
+          );
+          expect(
+            from.isAfter(target),
+            isTrue,
+            reason:
+                'excluded habit ${habit.id} activeFrom=$from '
+                'is not after target=$target',
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

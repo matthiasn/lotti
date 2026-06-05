@@ -31,21 +31,9 @@ import 'package:record/record.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockAudioRecorderRepository extends Mock
-    implements AudioRecorderRepository {}
-
 class MockAmplitude extends Mock implements Amplitude {}
 
-class MockPlayer extends Mock implements Player {}
-
 class MockPlayerState extends Mock implements PlayerState {}
-
-class MockPlayerStream extends Mock implements PlayerStream {}
-
-class FakePlayable extends Fake implements Playable {}
-
-class MockRealtimeTranscriptionService extends Mock
-    implements RealtimeTranscriptionService {}
 
 class MockRecAudioRecorder extends Mock implements rec.AudioRecorder {}
 

@@ -13,24 +13,16 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
 
-class _MockJournalDb extends Mock implements JournalDb {}
-
-class _MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class _MockNotificationService extends Mock implements NotificationService {}
-
-class _MockOutboxService extends Mock implements OutboxService {}
-
 void main() {
-  late _MockJournalDb journalDb;
+  late MockJournalDb journalDb;
   // Use the centralized MockVectorClockService so the withVcScope passthrough
   // from test/mocks/mocks.dart is in effect. A plain mocktail mock would
   // return null from withVcScope and the production code would crash on the
   // `await null` inside PersistenceLogic.updateJournalEntity.
   late MockVectorClockService vclock;
-  late _MockUpdateNotifications updates;
+  late MockUpdateNotifications updates;
   late MockLoggingService logging;
-  late _MockNotificationService notifications;
+  late MockNotificationService notifications;
 
   setUpAll(() {
     // Fallback for any<JournalEntity>() matchers
@@ -57,11 +49,11 @@ void main() {
 
   setUp(() async {
     await getIt.reset();
-    journalDb = _MockJournalDb();
+    journalDb = MockJournalDb();
     vclock = MockVectorClockService();
-    updates = _MockUpdateNotifications();
+    updates = MockUpdateNotifications();
     logging = MockLoggingService();
-    notifications = _MockNotificationService();
+    notifications = MockNotificationService();
 
     getIt
       ..registerSingleton<JournalDb>(journalDb)
@@ -69,7 +61,7 @@ void main() {
       ..registerSingleton<UpdateNotifications>(updates)
       ..registerSingleton<LoggingService>(logging)
       ..registerSingleton<NotificationService>(notifications)
-      ..registerSingleton<OutboxService>(_MockOutboxService());
+      ..registerSingleton<OutboxService>(MockOutboxService());
 
     // Not used because we override updateMetadata below
     when(() => notifications.updateBadge()).thenAnswer((_) async {});

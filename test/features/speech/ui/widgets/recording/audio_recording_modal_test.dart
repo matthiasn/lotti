@@ -12,6 +12,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -39,16 +41,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
-class MockAudioRecorderRepository extends Mock
-    implements AudioRecorderRepository {}
-
-class MockPlayer extends Mock implements Player {}
-
 class MockPlayerState extends Mock implements PlayerState {}
-
-class MockPlayerStream extends Mock implements PlayerStream {}
-
-class FakePlayable extends Fake implements Playable {}
 
 // Mock EntryController for testing
 class FakeEntryController extends EntryController {
@@ -129,6 +122,16 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
   List<ChecklistCorrectionExample>? get correctionExamples => null;
 }
 
+// Test helper controller that returns a fixed state (from coverage tests)
+class TestAudioRecorderController extends AudioRecorderController {
+  TestAudioRecorderController(this.fixedState);
+
+  final AudioRecorderState fixedState;
+
+  @override
+  AudioRecorderState build() => fixedState;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -200,7 +203,7 @@ void main() {
     );
     when(
       () => mockAudioRecorderRepository.hasPermission(),
-    ).thenAnswer((_) async => false);
+    ).thenAnswer((_) async => true);
     when(
       () => mockAudioRecorderRepository.isPaused(),
     ).thenAnswer((_) async => false);
@@ -209,7 +212,7 @@ void main() {
     ).thenAnswer((_) async => false);
     when(
       () => mockAudioRecorderRepository.stopRecording(),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) async => 'test-audio-path.m4a');
     when(
       () => mockAudioRecorderRepository.startRecording(),
     ).thenAnswer((_) async => null);
@@ -462,6 +465,611 @@ void main() {
       await tester.pump();
 
       expect(find.byType(LottiAnimatedCheckbox), findsNothing);
+    });
+  });
+
+  group('AudioRecordingModal - Coverage', () {
+    // ---------------------------------------------------------------------------
+    // Shared helpers (from coverage tests)
+    // ---------------------------------------------------------------------------
+
+    List<Override> baseOverrides() => [
+      audioRecorderRepositoryProvider.overrideWithValue(
+        mockAudioRecorderRepository,
+      ),
+      categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+      playerFactoryProvider.overrideWithValue(() => mockPlayer),
+    ];
+
+    Future<void> pumpModalContent(
+      WidgetTester tester, {
+      String categoryId = 'test-category',
+      String? linkedId,
+      List<Override> extraOverrides = const [],
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...baseOverrides(),
+            ...extraOverrides,
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: AudioRecordingModalContent(
+                categoryId: categoryId,
+                linkedId: linkedId,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Future<void> pumpShowModalTrigger(
+      WidgetTester tester, {
+      String? categoryId,
+      String? linkedId,
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: baseOverrides(),
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) {
+                return Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () {
+                      AudioRecordingModal.show(
+                        context,
+                        categoryId: categoryId,
+                        linkedId: linkedId,
+                      );
+                    },
+                    child: const Text('Show Modal'),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    void stubCategory({
+      String categoryId = 'test-category',
+      FakeCategoryDefinition? category,
+    }) {
+      when(
+        () => mockCategoryRepository.watchCategory(categoryId),
+      ).thenAnswer(
+        (_) => Stream.value(category ?? FakeCategoryDefinition()),
+      );
+    }
+
+    group('AudioRecordingModal.show() - Static Method Coverage', () {
+      testWidgets(
+        'should set modal visible and category when show() is called',
+        (tester) async {
+          stubCategory();
+
+          await pumpShowModalTrigger(
+            tester,
+            categoryId: 'test-category',
+            linkedId: 'test-linked-id',
+          );
+
+          // Initial state - modal not visible
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(ElevatedButton)),
+          );
+          var state = container.read(audioRecorderControllerProvider);
+          expect(state.modalVisible, isFalse);
+
+          // Tap button to show modal
+          await tester.tap(find.text('Show Modal'));
+          await tester.pumpAndSettle();
+
+          // Verify modal is shown and state is updated
+          state = container.read(audioRecorderControllerProvider);
+          expect(state.modalVisible, isTrue);
+
+          // Find modal content
+          expect(find.byType(AudioRecordingModalContent), findsOneWidget);
+        },
+      );
+
+      testWidgets('should set modal invisible when modal is dismissed', (
+        tester,
+      ) async {
+        stubCategory();
+
+        await pumpShowModalTrigger(
+          tester,
+          categoryId: 'test-category',
+        );
+
+        // Show modal
+        await tester.tap(find.text('Show Modal'));
+        await tester.pumpAndSettle();
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ElevatedButton)),
+        );
+
+        // Modal should be visible
+        var state = container.read(audioRecorderControllerProvider);
+        expect(state.modalVisible, isTrue);
+
+        // Dismiss modal by tapping outside
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pump();
+
+        // Modal should be invisible after dismissal
+        state = container.read(audioRecorderControllerProvider);
+        expect(state.modalVisible, isFalse);
+      });
+
+      testWidgets('should handle show() without categoryId', (tester) async {
+        await pumpShowModalTrigger(tester);
+
+        await tester.tap(find.text('Show Modal'));
+        await tester.pumpAndSettle();
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ElevatedButton)),
+        );
+        final state = container.read(audioRecorderControllerProvider);
+
+        expect(state.modalVisible, isTrue);
+        expect(find.byType(AudioRecordingModalContent), findsOneWidget);
+      });
+    });
+
+    group('Stop Button Rendering and _isRecording Coverage', () {
+      testWidgets(
+        'should render stop button UI when _isRecording returns true '
+        '(recording state)',
+        (tester) async {
+          stubCategory();
+
+          final recordingState = AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: const Duration(seconds: 5),
+            vu: 80,
+            dBFS: -20,
+            showIndicator: false,
+            modalVisible: true,
+          );
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => false),
+              audioRecorderControllerProvider.overrideWith(
+                () => TestAudioRecorderController(recordingState),
+              ),
+            ],
+          );
+
+          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          final stopControlsFinder =
+              find.byKey(const ValueKey('stop_controls'));
+          expect(stopControlsFinder, findsOneWidget);
+          expect(find.text('STOP'), findsOneWidget);
+          expect(
+            find.descendant(
+              of: stopControlsFinder,
+              matching: find.byType(Container),
+            ),
+            findsWidgets,
+          );
+        },
+      );
+
+      testWidgets(
+        'should render stop button when _isRecording returns true '
+        '(paused state)',
+        (tester) async {
+          stubCategory();
+
+          final pausedState = AudioRecorderState(
+            status: AudioRecorderStatus.paused,
+            progress: const Duration(seconds: 10),
+            vu: 0,
+            dBFS: -60,
+            showIndicator: false,
+            modalVisible: true,
+          );
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => false),
+              audioRecorderControllerProvider.overrideWith(
+                () => TestAudioRecorderController(pausedState),
+              ),
+            ],
+          );
+
+          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          final stopControlsFinder =
+              find.byKey(const ValueKey('stop_controls'));
+          expect(stopControlsFinder, findsOneWidget);
+          expect(find.text('STOP'), findsOneWidget);
+        },
+      );
+    });
+
+    group('Record Button Coverage', () {
+      testWidgets('should call record when record button is tapped', (
+        tester,
+      ) async {
+        stubCategory();
+
+        await pumpModalContent(
+          tester,
+          linkedId: 'test-linked-id',
+        );
+
+        await tester.pumpAndSettle();
+
+        final recordButton = find.byKey(const ValueKey('record'));
+        expect(recordButton, findsOneWidget);
+        expect(find.text('RECORD'), findsOneWidget);
+
+        await tester.tap(recordButton);
+        await tester.pump();
+
+        verify(
+          () => mockAudioRecorderRepository.startRecording(),
+        ).called(1);
+      });
+    });
+
+    group('Checkbox onChange Callbacks Coverage', () {
+      testWidgets(
+        'should call setEnableSpeechRecognition when speech checkbox toggled',
+        (tester) async {
+          stubCategory();
+
+          await pumpModalContent(
+            tester,
+            linkedId: 'task-1',
+            extraOverrides: [
+              checkboxVisibilityProvider(
+                categoryId: 'test-category',
+                linkedId: 'task-1',
+              ).overrideWithValue(
+                const AutomaticPromptVisibility(speech: true),
+              ),
+            ],
+          );
+
+          await tester.pumpAndSettle();
+          await tester.pump();
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(Scaffold)),
+          );
+
+          final speechCheckbox = find.byKey(
+            const Key('speech_recognition_checkbox'),
+          );
+          expect(speechCheckbox, findsOneWidget);
+
+          var state = container.read(audioRecorderControllerProvider);
+          final initialValue = state.enableSpeechRecognition ?? true;
+
+          await tester.tap(speechCheckbox);
+          await tester.pump();
+
+          state = container.read(audioRecorderControllerProvider);
+          expect(state.enableSpeechRecognition, !initialValue);
+        },
+      );
+    });
+
+    group('Realtime Mode UI Coverage', () {
+      testWidgets(
+        'should render mode toggle when realtime is available',
+        (tester) async {
+          stubCategory();
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => true),
+            ],
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(find.byType(Switch), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should toggle between standard and realtime mode',
+        (tester) async {
+          stubCategory();
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => true),
+            ],
+          );
+
+          await tester.pumpAndSettle();
+
+          final switchWidget = find.byType(Switch);
+          expect(switchWidget, findsOneWidget);
+
+          await tester.tap(switchWidget);
+          await tester.pump();
+
+          final switchState = tester.widget<Switch>(switchWidget);
+          expect(switchState.value, isTrue);
+        },
+      );
+
+      testWidgets(
+        'should render cancel button in realtime recording mode',
+        (tester) async {
+          stubCategory();
+
+          final realtimeRecordingState = AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: const Duration(seconds: 5),
+            vu: 80,
+            dBFS: -20,
+            showIndicator: false,
+            modalVisible: true,
+            isRealtimeMode: true,
+          );
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => true),
+              audioRecorderControllerProvider.overrideWith(
+                () => TestAudioRecorderController(realtimeRecordingState),
+              ),
+            ],
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          expect(find.text('CANCEL'), findsOneWidget);
+          expect(find.text('STOP'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should render live transcript area with listening spinner',
+        (tester) async {
+          stubCategory();
+
+          final realtimeRecordingState = AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: const Duration(seconds: 3),
+            vu: 60,
+            dBFS: -30,
+            showIndicator: false,
+            modalVisible: true,
+            isRealtimeMode: true,
+          );
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => true),
+              audioRecorderControllerProvider.overrideWith(
+                () => TestAudioRecorderController(realtimeRecordingState),
+              ),
+            ],
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'should render live transcript text when available',
+        (tester) async {
+          stubCategory();
+
+          final realtimeRecordingState = AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: const Duration(seconds: 5),
+            vu: 60,
+            dBFS: -30,
+            showIndicator: false,
+            modalVisible: true,
+            isRealtimeMode: true,
+            partialTranscript: 'Hello this is a test transcription',
+          );
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              realtimeAvailableProvider.overrideWith((_) async => true),
+              audioRecorderControllerProvider.overrideWith(
+                () => TestAudioRecorderController(realtimeRecordingState),
+              ),
+            ],
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('Hello this is a test transcription'),
+            findsOneWidget,
+          );
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+
+      testWidgets('tapping STOP in realtime mode calls stopRealtime', (
+        tester,
+      ) async {
+        stubCategory();
+
+        var stopRealtimeCalled = false;
+        final realtimeRecordingState = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 5),
+          vu: 80,
+          dBFS: -20,
+          showIndicator: false,
+          modalVisible: true,
+          isRealtimeMode: true,
+        );
+
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => true),
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: realtimeRecordingState,
+                onStopRealtimeCalled: () => stopRealtimeCalled = true,
+              ),
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.text('STOP'), findsOneWidget);
+        await tester.tap(find.text('STOP'));
+        await tester.pumpAndSettle();
+
+        expect(stopRealtimeCalled, isTrue);
+      });
+
+      testWidgets('tapping CANCEL in realtime mode calls cancelRealtime', (
+        tester,
+      ) async {
+        stubCategory();
+
+        var cancelRealtimeCalled = false;
+        final realtimeRecordingState = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 5),
+          vu: 80,
+          dBFS: -20,
+          showIndicator: false,
+          modalVisible: true,
+          isRealtimeMode: true,
+        );
+
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => true),
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: realtimeRecordingState,
+                onCancelRealtimeCalled: () => cancelRealtimeCalled = true,
+              ),
+            ),
+          ],
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.text('CANCEL'), findsOneWidget);
+        await tester.tap(find.text('CANCEL'));
+        await tester.pumpAndSettle();
+
+        expect(cancelRealtimeCalled, isTrue);
+      });
+
+      testWidgets('tapping RECORD in realtime mode calls recordRealtime', (
+        tester,
+      ) async {
+        stubCategory();
+
+        var recordRealtimeCalled = false;
+        final idleState = AudioRecorderState(
+          status: AudioRecorderStatus.stopped,
+          progress: Duration.zero,
+          vu: 0,
+          dBFS: -160,
+          showIndicator: false,
+          modalVisible: true,
+        );
+
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => true),
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: idleState,
+                onRecordRealtimeCalled: () => recordRealtimeCalled = true,
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+
+        // Toggle to realtime mode first
+        final switchWidget = find.byType(Switch);
+        expect(switchWidget, findsOneWidget);
+        await tester.tap(switchWidget);
+        await tester.pump();
+
+        // Tap the RECORD button (now in realtime mode)
+        expect(find.text('RECORD'), findsOneWidget);
+        await tester.tap(find.text('RECORD'));
+        await tester.pump();
+
+        expect(recordRealtimeCalled, isTrue);
+      });
+
+      testWidgets('should not show mode toggle when recording', (
+        tester,
+      ) async {
+        stubCategory();
+
+        final recordingState = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(seconds: 5),
+          vu: 80,
+          dBFS: -20,
+          showIndicator: false,
+          modalVisible: true,
+        );
+
+        await pumpModalContent(
+          tester,
+          extraOverrides: [
+            realtimeAvailableProvider.overrideWith((_) async => true),
+            audioRecorderControllerProvider.overrideWith(
+              () => TestAudioRecorderController(recordingState),
+            ),
+          ],
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Switch), findsNothing);
+      });
     });
   });
 
@@ -1134,4 +1742,52 @@ void main() {
       },
     );
   });
+}
+
+/// Controller that tracks method calls for interaction tests
+class _CallbackTrackingController extends AudioRecorderController {
+  _CallbackTrackingController({
+    required this.fixedState,
+    this.onStopRealtimeCalled,
+    this.onCancelRealtimeCalled,
+    this.onRecordRealtimeCalled,
+  });
+
+  final AudioRecorderState fixedState;
+  final VoidCallback? onStopRealtimeCalled;
+  final VoidCallback? onCancelRealtimeCalled;
+  final VoidCallback? onRecordRealtimeCalled;
+
+  @override
+  AudioRecorderState build() => fixedState;
+
+  @override
+  Future<String?> stopRealtime() async {
+    onStopRealtimeCalled?.call();
+    state = fixedState.copyWith(
+      status: AudioRecorderStatus.stopped,
+      modalVisible: false,
+    );
+    return null;
+  }
+
+  @override
+  Future<void> cancelRealtime() async {
+    onCancelRealtimeCalled?.call();
+    state = fixedState.copyWith(
+      status: AudioRecorderStatus.stopped,
+      modalVisible: false,
+    );
+  }
+
+  @override
+  Future<void> recordRealtime({String? linkedId}) async {
+    onRecordRealtimeCalled?.call();
+  }
+
+  @override
+  Future<void> record({String? linkedId}) async {}
+
+  @override
+  Future<String?> stop() async => null;
 }

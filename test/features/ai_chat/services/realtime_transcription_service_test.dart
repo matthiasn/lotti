@@ -25,6 +25,10 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 // Fakes & Mocks
 // ---------------------------------------------------------------------------
 
+/// Deliberately file-local instead of the central `MockDomainLogger`: this
+/// file asserts on *accumulated* log/error content across whole flows
+/// (e.g. "any exception message contains X"), which list collection
+/// expresses more directly than per-call mocktail `verify` matching.
 class _FakeDomainLogger extends Fake implements DomainLogger {
   final events = <String>[];
   final exceptions = <Object>[];
@@ -408,22 +412,9 @@ class _TestBench {
     _pcmController!.add(data);
   }
 
-  /// Schedules a `transcription.done` event with enough delay for `stop()`
-  /// to be listening on the broadcast stream.
-  void scheduleDone(String text, {Map<String, dynamic>? extra}) {
-    unawaited(
-      Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
-        channel.simulateServerMessage({
-          'type': 'transcription.done',
-          'text': text,
-          ...?extra,
-        });
-      }),
-    );
-  }
-
   /// Sends a `transcription.done` event immediately — use inside `fakeAsync`
-  /// blocks after elapsing time past the scheduled delay.
+  /// blocks after elapsing time past the scheduled delay, or via
+  /// [stop]'s `afterListening` hook once the done listener is active.
   void simulateDone(String text, {Map<String, dynamic>? extra}) {
     channel.simulateServerMessage({
       'type': 'transcription.done',
@@ -434,9 +425,16 @@ class _TestBench {
 
   /// Calls `service.stop` with a temp output directory.
   /// Returns the stop result and cleans up the temp dir.
+  ///
+  /// [afterListening] runs synchronously right after `service.stop` is
+  /// invoked. The service subscribes to the `transcription.done` broadcast
+  /// stream synchronously before its first await, so a done event fired
+  /// here is guaranteed to be observed — no wall-clock delay needed
+  /// (fake-time policy).
   Future<RealtimeStopResult> stop({
     Future<void> Function()? stopRecorder,
     String? outputPath,
+    void Function()? afterListening,
   }) async {
     final dir =
         outputPath ?? (await Directory.systemTemp.createTemp('rt_test_')).path;
@@ -445,10 +443,12 @@ class _TestBench {
       if (d.existsSync()) await d.delete(recursive: true);
     });
 
-    return service.stop(
+    final result = service.stop(
       stopRecorder: stopRecorder ?? () async {},
       outputPath: '$dir/output',
     );
+    afterListening?.call();
+    return result;
   }
 
   void dispose() {
@@ -915,9 +915,9 @@ void main() {
           'type': 'transcription.language',
           'language': 'en',
         });
-        bench.scheduleDone('hello');
-
-        final result = await bench.stop();
+        final result = await bench.stop(
+          afterListening: () => bench.simulateDone('hello'),
+        );
 
         expect(result.detectedLanguage, 'en');
         expect(result.transcript, 'hello');
@@ -946,20 +946,21 @@ void main() {
           if (dir.existsSync()) await dir.delete(recursive: true);
         });
 
-        unawaited(
-          Future<void>.delayed(const Duration(milliseconds: 20)).then((_) {
-            bench.mlxAudioChannel.emit(
-              const MlxAudioRealtimeEvent(
-                type: MlxAudioRealtimeEventType.error,
-                message: 'inference crashed',
-              ),
-            );
-          }),
-        );
-        final result = await bench.service.stop(
+        // Start stop() and drain the event queue so it is parked on the
+        // done completer (error handler attached) before the error is
+        // emitted — deterministic, no wall-clock delay (fake-time policy).
+        final stopFuture = bench.service.stop(
           stopRecorder: () async {},
           outputPath: '${dir.path}/output',
         );
+        await pumpEventQueue();
+        bench.mlxAudioChannel.emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.error,
+            message: 'inference crashed',
+          ),
+        );
+        final result = await stopFuture;
 
         expect(result.usedTranscriptFallback, isTrue);
         expect(result.transcript, 'before crash');
@@ -987,17 +988,18 @@ void main() {
         addTearDown(() async {
           if (dir.existsSync()) await dir.delete(recursive: true);
         });
-        unawaited(
-          Future<void>.delayed(const Duration(milliseconds: 20)).then((_) {
-            bench.mlxAudioChannel.eventsController.addError(
-              Exception('event stream broken'),
-            );
-          }),
-        );
-        final result = await bench.service.stop(
+        // Start stop() and drain the event queue so it is parked on the
+        // done completer (error handler attached) before the stream error
+        // is added — deterministic, no wall-clock delay (fake-time policy).
+        final stopFuture = bench.service.stop(
           stopRecorder: () async {},
           outputPath: '${dir.path}/output',
         );
+        await pumpEventQueue();
+        bench.mlxAudioChannel.eventsController.addError(
+          Exception('event stream broken'),
+        );
+        final result = await stopFuture;
 
         expect(result.usedTranscriptFallback, isTrue);
         expect(
@@ -1050,14 +1052,14 @@ void main() {
       await bench.startTranscription();
       await bench.sendPcm(_pcmSilence(64));
 
-      bench.scheduleDone(
-        'Final transcript',
-        extra: {
-          'usage': {'audio_seconds': 3.0},
-        },
+      final result = await bench.stop(
+        afterListening: () => bench.simulateDone(
+          'Final transcript',
+          extra: {
+            'usage': {'audio_seconds': 3.0},
+          },
+        ),
       );
-
-      final result = await bench.stop();
       expect(result.transcript, 'Final transcript');
       expect(result.usedTranscriptFallback, isFalse);
     });
@@ -1079,9 +1081,9 @@ void main() {
         });
       await Future<void>.delayed(Duration.zero);
 
-      bench.scheduleDone('Complete client animation');
-
-      final result = await bench.stop();
+      final result = await bench.stop(
+        afterListening: () => bench.simulateDone('Complete client animation'),
+      );
       expect(
         result.transcript,
         'Complete client animation and commission work',
@@ -1127,9 +1129,7 @@ void main() {
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
-      bench.scheduleDone('done');
-
-      await bench.stop();
+      await bench.stop(afterListening: () => bench.simulateDone('done'));
 
       final endMessages = bench.channel.sentMessages
           .map((m) => jsonDecode(m) as Map<String, dynamic>)
@@ -1144,12 +1144,11 @@ void main() {
       await bench.startTranscription();
       var recorderStopped = false;
 
-      bench.scheduleDone('ok');
-
       await bench.stop(
         stopRecorder: () async {
           recorderStopped = true;
         },
+        afterListening: () => bench.simulateDone('ok'),
       );
 
       expect(recorderStopped, isTrue);
@@ -1162,8 +1161,7 @@ void main() {
       await bench.startTranscription();
       expect(bench.service.isActive, isTrue);
 
-      bench.scheduleDone('done');
-      await bench.stop();
+      await bench.stop(afterListening: () => bench.simulateDone('done'));
 
       expect(bench.service.isActive, isFalse);
     });
@@ -1175,8 +1173,9 @@ void main() {
       await bench.startTranscription();
       // Don't send any PCM data — buffer remains empty
 
-      bench.scheduleDone('');
-      final result = await bench.stop();
+      final result = await bench.stop(
+        afterListening: () => bench.simulateDone(''),
+      );
 
       expect(result.audioFilePath, isNull);
     });
@@ -1458,8 +1457,9 @@ void main() {
       final pcmData = Uint8List.fromList(List.filled(320, 0));
       await bench.sendPcm(pcmData);
 
-      bench.scheduleDone('test');
-      final result = await bench.stop();
+      final result = await bench.stop(
+        afterListening: () => bench.simulateDone('test'),
+      );
 
       expect(result.audioFilePath, isNotNull);
       final bytes = await File(result.audioFilePath!).readAsBytes();
@@ -1511,8 +1511,9 @@ void main() {
         await bench.startTranscription();
         await bench.sendPcm(_pcmSilence(3200));
 
-        bench.scheduleDone('converted ok');
-        final result = await bench.stop();
+        final result = await bench.stop(
+          afterListening: () => bench.simulateDone('converted ok'),
+        );
 
         expect(result.transcript, 'converted ok');
         expect(result.audioFilePath, isNotNull);
@@ -1535,8 +1536,9 @@ void main() {
       await bench.startTranscription();
       await bench.sendPcm(_pcmSilence(64));
 
-      bench.scheduleDone('test');
-      final result = await bench.stop();
+      final result = await bench.stop(
+        afterListening: () => bench.simulateDone('test'),
+      );
 
       // Without native M4A converter, should fall back to .wav
       expect(result.audioFilePath, isNotNull);
@@ -1550,13 +1552,15 @@ void main() {
       await bench.startTranscription();
       await bench.sendPcm(_pcmSilence(64));
 
-      bench.scheduleDone('test');
-
-      // Use an invalid path to trigger the catch block in _saveAudio
-      final result = await bench.service.stop(
+      // Use an invalid path to trigger the catch block in _saveAudio.
+      // service.stop subscribes to the done stream synchronously, so the
+      // done event fired right after the call cannot be missed.
+      final stopFuture = bench.service.stop(
         stopRecorder: () async {},
         outputPath: '/nonexistent/deeply/nested/path/output',
       );
+      bench.simulateDone('test');
+      final result = await stopFuture;
 
       // Should gracefully handle the error
       expect(result.transcript, 'test');
@@ -1577,8 +1581,9 @@ void main() {
         await Future<void>.delayed(Duration.zero);
       }
 
-      bench.scheduleDone('long recording test');
-      final result = await bench.stop();
+      final result = await bench.stop(
+        afterListening: () => bench.simulateDone('long recording test'),
+      );
 
       expect(result.transcript, 'long recording test');
       expect(result.audioFilePath, isNotNull);
@@ -1596,8 +1601,9 @@ void main() {
       );
       await bench.sendPcm(oversizedChunk);
 
-      bench.scheduleDone('oversized chunk test');
-      final result = await bench.stop();
+      final result = await bench.stop(
+        afterListening: () => bench.simulateDone('oversized chunk test'),
+      );
 
       expect(result.transcript, 'oversized chunk test');
       expect(result.audioFilePath, isNotNull);
@@ -1614,8 +1620,9 @@ void main() {
         await bench.startTranscription();
         await bench.sendPcm(_pcmSilence(3200));
 
-        bench.scheduleDone('save error test');
-        final result = await bench.stop();
+        final result = await bench.stop(
+          afterListening: () => bench.simulateDone('save error test'),
+        );
 
         expect(result.transcript, 'save error test');
         // The audio file should still be present (WAV fallback on test env)

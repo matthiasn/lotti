@@ -875,8 +875,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.send));
-      // Drain the 100ms Future.delayed inside _sendMessage.
-      await tester.pump(const Duration(milliseconds: 200));
+      // One pump runs the post-frame scroll callback in _sendMessage.
+      await tester.pump();
 
       expect(sent, 'hello world');
       expect(textController.text, isEmpty);
@@ -903,8 +903,8 @@ void main() {
 
       final textField = tester.widget<TextField>(find.byType(TextField));
       textField.onSubmitted!('typed message');
-      // Drain the 100ms Future.delayed inside _sendMessage.
-      await tester.pump(const Duration(milliseconds: 200));
+      // One pump runs the post-frame scroll callback in _sendMessage.
+      await tester.pump();
 
       expect(sent, 'typed message');
       expect(textController.text, isEmpty);

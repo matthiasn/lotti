@@ -84,7 +84,12 @@ class InputAreaState extends ConsumerState<InputArea> {
     widget.onSendMessage(message);
     widget.controller.clear();
 
-    Future.delayed(const Duration(milliseconds: 100), () {
+    // Scroll to the bottom once the frame containing the new message has
+    // rendered. A post-frame callback is deterministic (clearing the
+    // controller above already schedules a frame), unlike the arbitrary
+    // delay this replaces.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (widget.scrollController.hasClients) {
         widget.scrollController.animateTo(
           widget.scrollController.position.maxScrollExtent,

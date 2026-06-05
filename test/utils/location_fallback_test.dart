@@ -45,10 +45,6 @@ Future<Geolocation?> nullIpGeolocationProvider({
   return null;
 }
 
-class MockLocation extends Mock implements Location {}
-
-class MockLocationData extends Mock implements LocationData {}
-
 Future<Geolocation?> fakeIpGeolocationProvider({
   http.Client? httpClient,
 }) async {

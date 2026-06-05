@@ -138,23 +138,30 @@ void main() {
         );
       });
 
-      test('portal handle tokens are unique and secure', () async {
+      test('portal handle tokens are unique and secure', () {
+        // No wall-clock delay needed (fake-time policy): uniqueness is
+        // guaranteed structurally by the monotonic counter suffix, even
+        // when tokens are created back-to-back with identical timestamps.
         final token1 = PortalService.createHandleToken('test');
-        // Add delay to ensure different timestamp
-        await Future<void>.delayed(const Duration(milliseconds: 2));
         final token2 = PortalService.createHandleToken('test');
 
         // Tokens should be unique
         expect(token1, isNot(equals(token2)));
 
-        // Tokens should include timestamp for uniqueness
-        expect(token1, contains('test_'));
-        expect(token2, contains('test_'));
+        // Structure: prefix_timestamp_counter with numeric components
+        final parts1 = token1.split('_');
+        final parts2 = token2.split('_');
+        expect(parts1.first, equals('test'));
+        expect(parts2.first, equals('test'));
+        expect(int.tryParse(parts1[1]), isNotNull);
+        expect(int.tryParse(parts2[1]), isNotNull);
 
-        // Extract timestamps and verify they're different
-        final timestamp1 = token1.split('_').last;
-        final timestamp2 = token2.split('_').last;
-        expect(timestamp1, isNot(equals(timestamp2)));
+        // The counter suffix is strictly monotonic — this is the actual
+        // uniqueness mechanism for rapid successive calls
+        expect(
+          int.parse(parts2.last),
+          greaterThan(int.parse(parts1.last)),
+        );
       });
     });
 

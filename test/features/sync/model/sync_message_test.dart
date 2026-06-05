@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -8,7 +9,185 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+
+// ---------------------------------------------------------------------------
+// Glados helpers — top-level so they are accessible inside main()
+// ---------------------------------------------------------------------------
+
+class _GeneratedThemingSelection {
+  const _GeneratedThemingSelection({
+    required this.lightThemeName,
+    required this.darkThemeName,
+    required this.themeMode,
+    required this.updatedAt,
+    required this.status,
+  });
+
+  final String lightThemeName;
+  final String darkThemeName;
+  final String themeMode;
+  final int updatedAt;
+  final SyncEntryStatus status;
+
+  @override
+  String toString() => '_GeneratedThemingSelection('
+      'lightThemeName: $lightThemeName, '
+      'darkThemeName: $darkThemeName, '
+      'themeMode: $themeMode, '
+      'updatedAt: $updatedAt, '
+      'status: $status'
+      ')';
+}
+
+class _GeneratedBackfillRequest {
+  _GeneratedBackfillRequest({
+    required this.requesterId,
+    required this.entries,
+  });
+
+  final String requesterId;
+  final List<BackfillRequestEntry> entries;
+
+  @override
+  String toString() => '_GeneratedBackfillRequest('
+      'requesterId: $requesterId, '
+      'entries: $entries'
+      ')';
+}
+
+class _GeneratedBackfillResponse {
+  const _GeneratedBackfillResponse({
+    required this.hostId,
+    required this.counter,
+    required this.deleted,
+    required this.unresolvable,
+    required this.payloadType,
+  });
+
+  final String hostId;
+  final int counter;
+  final bool deleted;
+  final bool unresolvable;
+  final SyncSequencePayloadType? payloadType;
+
+  @override
+  String toString() => '_GeneratedBackfillResponse('
+      'hostId: $hostId, '
+      'counter: $counter, '
+      'deleted: $deleted, '
+      'unresolvable: $unresolvable, '
+      'payloadType: $payloadType'
+      ')';
+}
+
+class _GeneratedAiConfigDelete {
+  const _GeneratedAiConfigDelete({required this.id});
+
+  final String id;
+
+  @override
+  String toString() => '_GeneratedAiConfigDelete(id: $id)';
+}
+
+extension _AnySyncMessageGlados on glados.Any {
+  glados.Generator<String> get _twoCharId =>
+      glados.CombinableAny(this).combine2(
+        glados.any.letterOrDigits,
+        glados.any.letterOrDigits,
+        (String a, String b) => '$a$b',
+      );
+
+  glados.Generator<SyncEntryStatus> get _syncEntryStatus =>
+      glados.AnyUtils(this).choose(SyncEntryStatus.values);
+
+  glados.Generator<SyncSequencePayloadType?> get _optionalPayloadType =>
+      glados.CombinableAny(this).combine2(
+        glados.BoolAny(this).bool,
+        glados.AnyUtils(this).choose(SyncSequencePayloadType.values),
+        (bool include, SyncSequencePayloadType t) => include ? t : null,
+      );
+
+  glados.Generator<_GeneratedThemingSelection> get generatedThemingSelection =>
+      glados.CombinableAny(this).combine5(
+        _twoCharId,
+        _twoCharId,
+        glados.AnyUtils(this).choose(
+          const <String>['light', 'dark', 'system'],
+        ),
+        glados.IntAnys(this).intInRange(0, 999999999),
+        _syncEntryStatus,
+        (
+          String light,
+          String dark,
+          String mode,
+          int ts,
+          SyncEntryStatus status,
+        ) =>
+            _GeneratedThemingSelection(
+              lightThemeName: light,
+              darkThemeName: dark,
+              themeMode: mode,
+              updatedAt: ts,
+              status: status,
+            ),
+      );
+
+  glados.Generator<_GeneratedAiConfigDelete> get generatedAiConfigDelete =>
+      _twoCharId.map((String id) => _GeneratedAiConfigDelete(id: id));
+
+  glados.Generator<BackfillRequestEntry> get _backfillEntry =>
+      glados.CombinableAny(this).combine2(
+        _twoCharId,
+        glados.IntAnys(this).intInRange(1, 9999),
+        (String hostId, int counter) =>
+            BackfillRequestEntry(hostId: hostId, counter: counter),
+      );
+
+  glados.Generator<_GeneratedBackfillRequest> get generatedBackfillRequest =>
+      glados.CombinableAny(this).combine2(
+        _twoCharId,
+        glados.ListAnys(this).listWithLengthInRange(0, 6, _backfillEntry),
+        (String requesterId, List<BackfillRequestEntry> entries) =>
+            _GeneratedBackfillRequest(
+              requesterId: requesterId,
+              entries: entries,
+            ),
+      );
+
+  glados.Generator<_GeneratedBackfillResponse> get generatedBackfillResponse =>
+      glados.CombinableAny(this).combine5(
+        _twoCharId,
+        glados.IntAnys(this).intInRange(1, 9999),
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        _optionalPayloadType,
+        (
+          String hostId,
+          int counter,
+          bool deleted,
+          bool unresolvable,
+          SyncSequencePayloadType? payloadType,
+        ) =>
+            _GeneratedBackfillResponse(
+              hostId: hostId,
+              counter: counter,
+              deleted: deleted,
+              unresolvable: unresolvable,
+              payloadType: payloadType,
+            ),
+      );
+}
+
+SyncMessage _roundTripSyncMessage(SyncMessage msg) =>
+    SyncMessage.fromJson(
+      jsonDecode(jsonEncode(msg.toJson())) as Map<String, dynamic>,
+    );
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 void main() {
   group('SyncMessage.themingSelection', () {
@@ -719,5 +898,114 @@ void main() {
       expect(bundle.links, isEmpty);
       expect(bundle.jsonPath, '/agent_bundles/run-1.json');
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Glados — generative JSON round-trip properties
+  // -------------------------------------------------------------------------
+
+  group('SyncMessage — Glados JSON round-trip', () {
+    glados.Glados(
+      glados.any.generatedThemingSelection,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'themingSelection round-trip preserves all scalar fields',
+      (gen) {
+        final msg = SyncMessage.themingSelection(
+          lightThemeName: gen.lightThemeName,
+          darkThemeName: gen.darkThemeName,
+          themeMode: gen.themeMode,
+          updatedAt: gen.updatedAt,
+          status: gen.status,
+        );
+        final decoded = _roundTripSyncMessage(msg) as SyncThemingSelection;
+        expect(decoded.lightThemeName, gen.lightThemeName,
+            reason: '$gen');
+        expect(decoded.darkThemeName, gen.darkThemeName, reason: '$gen');
+        expect(decoded.themeMode, gen.themeMode, reason: '$gen');
+        expect(decoded.updatedAt, gen.updatedAt, reason: '$gen');
+        expect(decoded.status, gen.status, reason: '$gen');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.generatedThemingSelection,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'themingSelection runtimeType discriminator is stable across variants',
+      (gen) {
+        final msg = SyncMessage.themingSelection(
+          lightThemeName: gen.lightThemeName,
+          darkThemeName: gen.darkThemeName,
+          themeMode: gen.themeMode,
+          updatedAt: gen.updatedAt,
+          status: gen.status,
+        );
+        final json =
+            jsonDecode(jsonEncode(msg.toJson())) as Map<String, dynamic>;
+        expect(json['runtimeType'], 'themingSelection', reason: '$gen');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.generatedAiConfigDelete,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'aiConfigDelete round-trip preserves id',
+      (gen) {
+        final msg = SyncMessage.aiConfigDelete(id: gen.id);
+        final decoded = _roundTripSyncMessage(msg) as SyncAiConfigDelete;
+        expect(decoded.id, gen.id, reason: '$gen');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.generatedBackfillRequest,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'backfillRequest round-trip preserves requester and entry list',
+      (gen) {
+        final msg = SyncMessage.backfillRequest(
+          entries: gen.entries,
+          requesterId: gen.requesterId,
+        );
+        final decoded = _roundTripSyncMessage(msg) as SyncBackfillRequest;
+        expect(decoded.requesterId, gen.requesterId, reason: '$gen');
+        expect(decoded.entries.length, gen.entries.length, reason: '$gen');
+        for (var i = 0; i < gen.entries.length; i++) {
+          expect(decoded.entries[i].hostId, gen.entries[i].hostId,
+              reason: 'entry[$i] $gen');
+          expect(decoded.entries[i].counter, gen.entries[i].counter,
+              reason: 'entry[$i] $gen');
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.generatedBackfillResponse,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'backfillResponse round-trip preserves all fields',
+      (gen) {
+        final msg = SyncMessage.backfillResponse(
+          hostId: gen.hostId,
+          counter: gen.counter,
+          deleted: gen.deleted,
+          unresolvable: gen.unresolvable,
+          payloadType: gen.payloadType,
+        );
+        final decoded = _roundTripSyncMessage(msg) as SyncBackfillResponse;
+        expect(decoded.hostId, gen.hostId, reason: '$gen');
+        expect(decoded.counter, gen.counter, reason: '$gen');
+        expect(decoded.deleted, gen.deleted, reason: '$gen');
+        expect(decoded.unresolvable, gen.unresolvable, reason: '$gen');
+        expect(decoded.payloadType, gen.payloadType, reason: '$gen');
+      },
+      tags: 'glados',
+    );
   });
 }

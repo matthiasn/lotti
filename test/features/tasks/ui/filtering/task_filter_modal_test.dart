@@ -841,6 +841,300 @@ void main() {
       },
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // Tests from task_filter_modal_save_flow_test.dart — recording save flow
+  // ---------------------------------------------------------------------------
+  group('save flow (recording)', () {
+    late FakeJournalPageController saveFlowFakeController;
+    late JournalPageState saveFlowMockState;
+    late MockEntitiesCacheService saveFlowMockCache;
+    late MockJournalDb saveFlowMockJournalDb;
+
+    setUp(() {
+      saveFlowMockCache = MockEntitiesCacheService();
+      saveFlowMockJournalDb = MockJournalDb();
+
+      when(() => saveFlowMockCache.sortedCategories).thenReturn(const []);
+      when(() => saveFlowMockCache.sortedLabels).thenReturn(const []);
+      when(
+        () => saveFlowMockJournalDb.getProjectsForCategory(any()),
+      ).thenAnswer((_) async => <ProjectEntry>[]);
+
+      saveFlowMockState = const JournalPageState(
+        taskStatuses: ['OPEN', 'IN PROGRESS'],
+        selectedTaskStatuses: {'OPEN'},
+        selectedCategoryIds: {},
+        selectedLabelIds: {},
+        selectedPriorities: {},
+      );
+
+      final saveFlowMockSettingsDb = MockSettingsDb();
+      when(
+        () => saveFlowMockSettingsDb.itemByKey(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => saveFlowMockSettingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+
+      getIt.allowReassignment = true;
+      getIt
+        ..registerSingleton<EntitiesCacheService>(saveFlowMockCache)
+        ..registerSingleton<JournalDb>(saveFlowMockJournalDb)
+        ..registerSingleton<SettingsDb>(saveFlowMockSettingsDb);
+    });
+
+    tearDown(getIt.reset);
+
+    Widget buildSaveFlowSubject({
+      required _RecordingSavedFiltersController recorder,
+      String? activeId,
+      bool hasUnsavedClauses = true,
+      JournalPageState? pageState,
+    }) {
+      saveFlowFakeController =
+          FakeJournalPageController(pageState ?? saveFlowMockState);
+
+      return WidgetTestBench(
+        child: ProviderScope(
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => saveFlowFakeController,
+            ),
+            savedTaskFiltersControllerProvider.overrideWith(() => recorder),
+            currentSavedTaskFilterIdProvider.overrideWith((ref) => activeId),
+            tasksFilterHasUnsavedClausesProvider.overrideWith(
+              (ref) => hasUnsavedClauses,
+            ),
+          ],
+          child: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                key: const ValueKey('open-filter-modal'),
+                onPressed: () =>
+                    showTaskFilterModal(context, showTasks: true),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    Future<void> openModalAndSave(
+      WidgetTester tester, {
+      required String typedName,
+    }) async {
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
+        typedName,
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'creates a new saved filter when no active id is set, captures the '
+      'modal draft, and closes the modal',
+      (tester) async {
+        final recorder = _RecordingSavedFiltersController(const []);
+        await tester.pumpWidget(
+          buildSaveFlowSubject(
+            recorder: recorder,
+            pageState: const JournalPageState(
+              taskStatuses: ['OPEN', 'IN PROGRESS'],
+              selectedTaskStatuses: {'IN PROGRESS'},
+              selectedCategoryIds: {},
+              selectedLabelIds: {},
+              selectedPriorities: {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await openModalAndSave(tester, typedName: '  My filter  ');
+
+        expect(recorder.creates, hasLength(1));
+        expect(recorder.creates.single.name, 'My filter');
+        expect(
+          recorder.creates.single.filter.selectedTaskStatuses,
+          {'IN PROGRESS'},
+        );
+        expect(recorder.updates, isEmpty);
+
+        expect(
+          find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'updates the active saved filter when typed name matches the active name',
+      (tester) async {
+        final recorder = _RecordingSavedFiltersController(
+          const [
+            SavedTaskFilter(
+              id: 'sv-1',
+              name: 'In progress',
+              filter: TasksFilter(),
+            ),
+          ],
+        );
+        await tester.pumpWidget(
+          buildSaveFlowSubject(
+            recorder: recorder,
+            activeId: 'sv-1',
+            pageState: const JournalPageState(
+              taskStatuses: ['OPEN', 'IN PROGRESS', 'BLOCKED'],
+              selectedTaskStatuses: {'BLOCKED'},
+              selectedCategoryIds: {},
+              selectedLabelIds: {},
+              selectedPriorities: {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byKey(const ValueKey('open-filter-modal'))),
+        );
+        await container.read(savedTaskFiltersControllerProvider.future);
+        await tester.pumpAndSettle();
+
+        await openModalAndSave(tester, typedName: 'In progress');
+
+        expect(recorder.updates, hasLength(1));
+        expect(recorder.updates.single.id, 'sv-1');
+        expect(
+          recorder.updates.single.filter.selectedTaskStatuses,
+          {'BLOCKED'},
+        );
+        expect(recorder.creates, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'creates a new saved filter when active id has no resolved name',
+      (tester) async {
+        final recorder = _RecordingSavedFiltersController(const []);
+        await tester.pumpWidget(
+          buildSaveFlowSubject(
+            recorder: recorder,
+            activeId: 'sv-1',
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await openModalAndSave(tester, typedName: 'Whatever');
+
+        expect(recorder.creates, hasLength(1));
+        expect(recorder.creates.single.name, 'Whatever');
+        expect(recorder.updates, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'creates a new saved filter when typed name differs from active name',
+      (tester) async {
+        final recorder = _RecordingSavedFiltersController(
+          const [
+            SavedTaskFilter(
+              id: 'sv-1',
+              name: 'Existing',
+              filter: TasksFilter(),
+            ),
+          ],
+        );
+        await tester.pumpWidget(
+          buildSaveFlowSubject(
+            recorder: recorder,
+            activeId: 'sv-1',
+            pageState: const JournalPageState(
+              taskStatuses: ['OPEN', 'IN PROGRESS', 'BLOCKED'],
+              selectedTaskStatuses: {'BLOCKED'},
+              selectedCategoryIds: {},
+              selectedLabelIds: {},
+              selectedPriorities: {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byKey(const ValueKey('open-filter-modal'))),
+        );
+        await container.read(savedTaskFiltersControllerProvider.future);
+        await tester.pumpAndSettle();
+
+        await openModalAndSave(tester, typedName: 'Different');
+
+        expect(recorder.creates, hasLength(1));
+        expect(recorder.creates.single.name, 'Different');
+        expect(recorder.updates, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'captures in-modal priority edits in the saved filter — regression '
+      'guard for the bug where Save persisted the previously applied '
+      'filter instead of the current modal draft',
+      (tester) async {
+        final recorder = _RecordingSavedFiltersController(const []);
+        await tester.pumpWidget(buildSaveFlowSubject(recorder: recorder));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+        await tester.pumpAndSettle();
+
+        final p1Chip = find.byKey(
+          const ValueKey('design-system-task-filter-priority-p1'),
+        );
+        await tester.ensureVisible(p1Chip);
+        await tester.pumpAndSettle();
+        await tester.tap(p1Chip);
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
+          'Edited',
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
+        );
+        await tester.pumpAndSettle();
+
+        expect(recorder.creates, hasLength(1));
+        expect(recorder.creates.single.name, 'Edited');
+        expect(
+          recorder.creates.single.filter.selectedPriorities,
+          {'P1'},
+        );
+        expect(recorder.updates, isEmpty);
+        expect(
+          find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+          findsNothing,
+        );
+      },
+    );
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -909,5 +1203,38 @@ class _ThrowingSavedTaskFiltersController extends SavedTaskFiltersController {
       name: name,
       filter: filter,
     );
+  }
+}
+
+/// Recorder controller — captures `create` and `updateFilter` calls so we can
+/// assert which save-flow branch ran.
+class _RecordingSavedFiltersController extends SavedTaskFiltersController {
+  _RecordingSavedFiltersController(this._seed);
+
+  final List<SavedTaskFilter> _seed;
+  final List<({String name, TasksFilter filter})> creates = [];
+  final List<({String id, TasksFilter filter})> updates = [];
+
+  @override
+  Future<List<SavedTaskFilter>> build() async => _seed;
+
+  @override
+  Future<SavedTaskFilter> create({
+    required String name,
+    required TasksFilter filter,
+  }) async {
+    creates.add((name: name, filter: filter));
+    final created = SavedTaskFilter(
+      id: 'sv-${creates.length}',
+      name: name,
+      filter: filter,
+    );
+    state = AsyncData([..._seed, created]);
+    return created;
+  }
+
+  @override
+  Future<void> updateFilter(String id, TasksFilter filter) async {
+    updates.add((id: id, filter: filter));
   }
 }
