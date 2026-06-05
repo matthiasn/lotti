@@ -3046,6 +3046,53 @@ void main() {
     );
 
     test(
+      'forward bootstrap with an unresolvable anchor falls back to the '
+      'backward walk (errorNoProgress path)',
+      () async {
+        final coordinator = buildWithRealQueue();
+        await coordinator.start();
+        addTearDown(() async => coordinator.stop());
+
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        // Forward walk: the anchor context fetch throws, producing
+        // totalPages == 0 + error == _BootstrapOutcome.errorNoProgress.
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+          ),
+        ).thenThrow(Exception('anchor context fetch failed'));
+        // Backward walk: empty, exhausted timeline -> completes cleanly.
+        final timeline = stubTimeline(
+          events: <Event>[],
+          canRequestHistory: () => false,
+          onRequestHistory: (_) async {},
+        );
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        final completed = await coordinator.runBootstrapForTest(
+          room: room,
+          untilTimestamp: 100,
+          anchorEventId: r'$compacted-away-anchor',
+        );
+
+        // The fallback chain completed via the backward walk.
+        expect(completed, isTrue);
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any(that: contains('fallbackToBackward')),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+        // The backward walk actually ran after the forward failure.
+        verify(() => room.getTimeline(limit: any(named: 'limit'))).called(1);
+      },
+    );
+
+    test(
       'maybeStartGapRecovery is a no-op when no barren bridge has '
       'been recorded yet — gap detection on a healthy pipeline does '
       'not burn a full /messages walk',
