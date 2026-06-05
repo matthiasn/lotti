@@ -279,7 +279,7 @@ genuine candidates with algebraic invariants over pure logic:
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Real I/O in
+- [x] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Real I/O in
   `copyImage` setUp** (lines 2 929–2 979): This test group creates a real `Directory.systemTemp`
   directory, writes a PNG file, and registers a real `Directory` in GetIt. This is the only
   group in this scope with real filesystem I/O. While the I/O is minimal, the `setUp` and
