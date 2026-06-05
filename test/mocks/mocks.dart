@@ -226,6 +226,10 @@ class MockMatrixClient extends Mock implements Client {}
 
 class MockMatrixDatabase extends Mock implements DatabaseApi {}
 
+class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+class MockDeviceKeysList extends Mock implements DeviceKeysList {}
+
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
   bool get showPrivateEntries {
@@ -710,6 +714,8 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
 }
 
 class MockMatrixStreamProcessor extends Mock implements MatrixStreamProcessor {}
+
+class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
 
 class MockSyncNodeProfileBroadcaster extends Mock
     implements SyncNodeProfileBroadcaster {}

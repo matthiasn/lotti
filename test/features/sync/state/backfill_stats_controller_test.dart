@@ -1318,24 +1318,51 @@ void main() {
     (state) {
       final copied = state.copyWith();
 
-      expect(copied.isLoading, state.isLoading,
-          reason: 'isLoading must be preserved by no-arg copyWith');
-      expect(copied.isProcessing, state.isProcessing,
-          reason: 'isProcessing must be preserved by no-arg copyWith');
-      expect(copied.isReRequesting, state.isReRequesting,
-          reason: 'isReRequesting must be preserved by no-arg copyWith');
-      expect(copied.isResetting, state.isResetting,
-          reason: 'isResetting must be preserved by no-arg copyWith');
-      expect(copied.isRetiringStuck, state.isRetiringStuck,
-          reason: 'isRetiringStuck must be preserved by no-arg copyWith');
-      expect(copied.lastProcessedCount, state.lastProcessedCount,
-          reason: 'lastProcessedCount must be preserved by no-arg copyWith');
-      expect(copied.lastReRequestedCount, state.lastReRequestedCount,
-          reason: 'lastReRequestedCount must be preserved by no-arg copyWith');
-      expect(copied.lastResetCount, state.lastResetCount,
-          reason: 'lastResetCount must be preserved by no-arg copyWith');
-      expect(copied.lastRetiredStuckCount, state.lastRetiredStuckCount,
-          reason: 'lastRetiredStuckCount must be preserved by no-arg copyWith');
+      expect(
+        copied.isLoading,
+        state.isLoading,
+        reason: 'isLoading must be preserved by no-arg copyWith',
+      );
+      expect(
+        copied.isProcessing,
+        state.isProcessing,
+        reason: 'isProcessing must be preserved by no-arg copyWith',
+      );
+      expect(
+        copied.isReRequesting,
+        state.isReRequesting,
+        reason: 'isReRequesting must be preserved by no-arg copyWith',
+      );
+      expect(
+        copied.isResetting,
+        state.isResetting,
+        reason: 'isResetting must be preserved by no-arg copyWith',
+      );
+      expect(
+        copied.isRetiringStuck,
+        state.isRetiringStuck,
+        reason: 'isRetiringStuck must be preserved by no-arg copyWith',
+      );
+      expect(
+        copied.lastProcessedCount,
+        state.lastProcessedCount,
+        reason: 'lastProcessedCount must be preserved by no-arg copyWith',
+      );
+      expect(
+        copied.lastReRequestedCount,
+        state.lastReRequestedCount,
+        reason: 'lastReRequestedCount must be preserved by no-arg copyWith',
+      );
+      expect(
+        copied.lastResetCount,
+        state.lastResetCount,
+        reason: 'lastResetCount must be preserved by no-arg copyWith',
+      );
+      expect(
+        copied.lastRetiredStuckCount,
+        state.lastRetiredStuckCount,
+        reason: 'lastRetiredStuckCount must be preserved by no-arg copyWith',
+      );
     },
     tags: 'glados',
   );
@@ -1349,8 +1376,11 @@ void main() {
       final withError = state.copyWith(error: 'some error');
       final cleared = withError.copyWith(clearError: true);
 
-      expect(cleared.error, isNull,
-          reason: 'clearError must null the error field');
+      expect(
+        cleared.error,
+        isNull,
+        reason: 'clearError must null the error field',
+      );
       // All boolean flags and counts must remain intact.
       expect(cleared.isLoading, withError.isLoading);
       expect(cleared.isProcessing, withError.isProcessing);

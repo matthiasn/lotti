@@ -7,13 +7,10 @@ import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
-
-class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 /// A pre-acquired lock so the Verify button's tryAcquire() returns false.
 class _PreAcquiredLock extends MatrixVerificationModalLock {

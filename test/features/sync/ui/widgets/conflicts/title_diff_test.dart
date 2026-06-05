@@ -506,8 +506,7 @@ void main() {
       );
       expect(
         diff.isIdentical,
-        scenario.localTokens.join(' ') ==
-            scenario.remoteTokens.join(' '),
+        scenario.localTokens.join(' ') == scenario.remoteTokens.join(' '),
         reason: '$scenario',
       );
       expect(

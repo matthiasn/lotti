@@ -30,10 +30,6 @@ class MockClient extends Mock implements Client {}
 
 class MockMatrixSdkGateway extends Mock implements MatrixSdkGateway {}
 
-class MockDeviceKeysList extends Mock implements DeviceKeysList {}
-
-class MockDeviceKeys extends Mock implements DeviceKeys {}
-
 class MockKeyVerification extends Mock implements KeyVerification {}
 
 class MockSyncUpdate extends Mock implements SyncUpdate {}

@@ -570,7 +570,9 @@ void main() {
       mockRoom = MockRoom();
       mockClient = _MockMatrixClient();
 
-      when(() => mockGateway.invites).thenAnswer((_) => inviteController.stream);
+      when(
+        () => mockGateway.invites,
+      ).thenAnswer((_) => inviteController.stream);
       when(() => mockGateway.getRoomById(any<String>())).thenReturn(null);
       when(
         () => mockSettingsDb.itemByKey(any<String>()),

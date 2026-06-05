@@ -64,9 +64,9 @@ assigned test files.
   - `matrix_service_pipeline_test.dart:27–51` — 11 inline private mock classes
   - `matrix_service_change_password_test.dart:23–39` — 9 inline private mock classes
 
-- [ ] **[HIGH]** **`MockJournalEntityLoader` declared in `sync_event_processor_test_helpers.dart` instead of `test/mocks/mocks.dart`.** Six test files import the helper; any future seventh file covering loader behavior will either need to import this private-scope file or re-declare it. Move to the centralized file now (`test_helpers.dart:26`).
+- [x] **[HIGH]** **`MockJournalEntityLoader` declared in `sync_event_processor_test_helpers.dart` instead of `test/mocks/mocks.dart`.** Six test files import the helper; any future seventh file covering loader behavior will either need to import this private-scope file or re-declare it. Move to the centralized file now (`test_helpers.dart:26`).
 
-- [ ] **[HIGH]** **`matrix_message_sender_test.dart` inline `MockDeviceKeys` at line 32** despite `MockDeviceKeys` existing in `test/mocks/mocks.dart:32`. The inline version is identical; the only difference is the class name, which means the centralized `MockDeviceKeys` could be used directly.
+- [x] **[HIGH]** **`matrix_message_sender_test.dart` inline `MockDeviceKeys` at line 32** despite `MockDeviceKeys` existing in `test/mocks/mocks.dart:32`. The inline version is identical; the only difference is the class name, which means the centralized `MockDeviceKeys` could be used directly.
 
 - [ ] **[MED]** **`matrix_service_test.dart` `can be constructed` smoke test (line 183–187).** The test instantiates the service and asserts only `isNotNull`. Per project rules: *"No constructor smoke tests — test behavior, not existence."* The construction is already covered implicitly by every other test in the file. Remove it.
 

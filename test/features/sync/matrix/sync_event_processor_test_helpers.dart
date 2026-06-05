@@ -24,8 +24,6 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
-class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
-
 /// Shared mutable test state populated by [setUpProcessorMocks] before every
 /// test. Within a single test file these are sequential, so the late globals
 /// stay deterministic.

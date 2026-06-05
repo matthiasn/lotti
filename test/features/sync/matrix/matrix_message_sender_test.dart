@@ -29,8 +29,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockDeviceKeys extends Mock implements DeviceKeys {}
-
 enum _GeneratedSendMessageKind {
   aiConfigDelete,
   themingSelection,

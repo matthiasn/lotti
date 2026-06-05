@@ -10,7 +10,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -620,8 +619,6 @@ void main() {
     );
   });
 }
-
-class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 /// A [MatrixVerificationModalLock] that starts already acquired so that
 /// [tryAcquire] always returns `false` in tests.

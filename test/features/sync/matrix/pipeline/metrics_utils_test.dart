@@ -29,7 +29,8 @@ extension _AnyMetricsUtils on glados.Any {
         'notification',
       ]);
 
-  glados.Generator<int> get _nonNegInt => glados.IntAnys(this).intInRange(0, 500);
+  glados.Generator<int> get _nonNegInt =>
+      glados.IntAnys(this).intInRange(0, 500);
 
   glados.Generator<List<String>> get lastIgnoredList =>
       glados.ListAnys(this).listWithLengthInRange(
@@ -49,13 +50,12 @@ extension _AnyMetricsUtils on glados.Any {
           Map<String, int> processedByType,
           Map<String, int> droppedByType,
           List<String> lastIgnored,
-        ) =>
-            _SnapshotScenario(
-              seed: seed,
-              processedByType: processedByType,
-              droppedByType: droppedByType,
-              lastIgnored: lastIgnored,
-            ),
+        ) => _SnapshotScenario(
+          seed: seed,
+          processedByType: processedByType,
+          droppedByType: droppedByType,
+          lastIgnored: lastIgnored,
+        ),
       );
 }
 
@@ -73,7 +73,8 @@ class _SnapshotScenario {
   final List<String> lastIgnored;
 
   @override
-  String toString() => '_SnapshotScenario('
+  String toString() =>
+      '_SnapshotScenario('
       'seed: $seed, '
       'processedByType: $processedByType, '
       'droppedByType: $droppedByType, '
@@ -214,27 +215,30 @@ void main() {
       },
     );
 
-    test('empty lastIgnored produces lastIgnoredCount=0 and no lastIgnored.N', () {
-      final snap = MetricsUtils.buildSnapshot(
-        processed: 0,
-        skipped: 0,
-        failures: 0,
-        flushes: 0,
-        catchupBatches: 0,
-        skippedByRetryLimit: 0,
-        retriesScheduled: 0,
-        circuitOpens: 0,
-        processedByType: const <String, int>{},
-        droppedByType: const <String, int>{},
-        dbApplied: 0,
-        dbIgnoredByVectorClock: 0,
-        conflictsCreated: 0,
-        lastIgnored: const <String>[],
-      );
+    test(
+      'empty lastIgnored produces lastIgnoredCount=0 and no lastIgnored.N',
+      () {
+        final snap = MetricsUtils.buildSnapshot(
+          processed: 0,
+          skipped: 0,
+          failures: 0,
+          flushes: 0,
+          catchupBatches: 0,
+          skippedByRetryLimit: 0,
+          retriesScheduled: 0,
+          circuitOpens: 0,
+          processedByType: const <String, int>{},
+          droppedByType: const <String, int>{},
+          dbApplied: 0,
+          dbIgnoredByVectorClock: 0,
+          conflictsCreated: 0,
+          lastIgnored: const <String>[],
+        );
 
-      expect(snap['lastIgnoredCount'], 0);
-      expect(snap.keys.any((k) => k.startsWith('lastIgnored.')), isFalse);
-    });
+        expect(snap['lastIgnoredCount'], 0);
+        expect(snap.keys.any((k) => k.startsWith('lastIgnored.')), isFalse);
+      },
+    );
 
     test('both type maps together do not collide with scalar keys', () {
       final snap = MetricsUtils.buildSnapshot(
