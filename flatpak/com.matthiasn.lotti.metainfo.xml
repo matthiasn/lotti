@@ -35,12 +35,13 @@
     <release version="0.9.1015" date="2026-06-04">
       <description>
           <p>The linked entries "Filter and Sort" modal now has a "Show flagged entries only" toggle that narrows the list below a task to flagged entries, updating immediately when the toggle or an entry's flag changes.</p>
+          <p>New "Agent fork healing" flag in Settings (off by default): agents whose histories diverged through multi-device use merge them back together at the next wake.</p>
+          <p>The "Agent memory compaction" flag now also covers project and day agents: all three read their context from an append-only memory log and summarize its oldest entries into a rolling memory using their own model.</p>
       </description>
     </release>
     <release version="0.9.1014" date="2026-06-04">
       <description>
-          <p>New "Agent memory compaction" flag in Settings (off by default): task, project and day agents summarize the oldest entries of their memory log into a rolling memory using their own model, keeping the wake context compact while recent entries stay verbatim.</p>
-          <p>New "Agent fork healing" flag in Settings (off by default): agents whose histories diverged through multi-device use merge them back together at the next wake.</p>
+          <p>New "Agent memory compaction" flag in Settings (off by default): task agents summarize older task-log entries into a rolling memory using their own model, keeping the wake context compact while recent entries stay verbatim.</p>
           <p>Task agents now update their report only when its content would materially change, instead of re-publishing it on every wake.</p>
           <p>Task agents can now propose archiving a duplicate or obsolete checklist item, confirmed through the usual proposal flow and reversible.</p>
           <p>The agent conversation view now shows each wake's exact system prompt as an expandable row and labels milestone and retraction rows distinctly.</p>

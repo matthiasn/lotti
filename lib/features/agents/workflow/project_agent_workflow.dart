@@ -156,36 +156,6 @@ class ProjectAgentWorkflow {
 
     final now = clock.now();
 
-    // 1a. Capture this wake's project-linked journal entries into the log
-    // (ADR 0020) — same substrate and renderer as the task agent (only
-    // text/audio/image log entries are kept; member TASKS are state, not
-    // log, and stay in the linked-tasks context). Non-fatal.
-    final memory = AgentWakeMemory(
-      journalDb: journalDb,
-      syncService: syncService,
-      inputCaptureService: inputCaptureService,
-      logSummarizer: logSummarizer,
-      compactionEnabled: compactionEnabled,
-      domainLogger: domainLogger,
-    );
-    var captureSucceeded = false;
-    if (inputCaptureService != null) {
-      try {
-        final linked = await journalRepository.getLinkedEntities(
-          linkedTo: projectId,
-        );
-        captureSucceeded = await memory.capture(
-          agentId: agentId,
-          sources: renderTaskSources(linked),
-          at: now,
-          threadId: threadId,
-          runKey: runKey,
-        );
-      } catch (e) {
-        _logError('failed to capture wake inputs', error: e);
-      }
-    }
-
     // 2. Load the latest report and decide whether a due scheduled wake can be
     // skipped cheaply because no new project activity was recorded.
     final lastReport = await agentRepository.getLatestReport(
@@ -222,6 +192,38 @@ class ProjectAgentWorkflow {
     final scheduledWakeWasDue =
         state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
     final shouldInitializeSchedule = state.scheduledWakeAt == null;
+
+    // 2a. Capture this wake's project-linked journal entries into the log
+    // (ADR 0020) — same substrate and renderer as the task agent (only
+    // text/audio/image log entries are kept; member TASKS are state, not
+    // log, and stay in the linked-tasks context). Runs AFTER the dormant
+    // skip so no-activity scheduled wakes stay cheap (a dormant wake has
+    // nothing new to capture). Non-fatal.
+    final memory = AgentWakeMemory(
+      journalDb: journalDb,
+      syncService: syncService,
+      inputCaptureService: inputCaptureService,
+      logSummarizer: logSummarizer,
+      compactionEnabled: compactionEnabled,
+      domainLogger: domainLogger,
+    );
+    var captureSucceeded = false;
+    if (inputCaptureService != null) {
+      try {
+        final linked = await journalRepository.getLinkedEntities(
+          linkedTo: projectId,
+        );
+        captureSucceeded = await memory.capture(
+          agentId: agentId,
+          sources: renderTaskSources(linked),
+          at: now,
+          threadId: threadId,
+          runKey: runKey,
+        );
+      } catch (e) {
+        _logError('failed to capture wake inputs', error: e);
+      }
+    }
 
     // 3. Load project entity and linked task context.
     final projectEntity = await journalRepository.getJournalEntityById(

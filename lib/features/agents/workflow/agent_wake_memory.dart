@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
@@ -103,8 +105,17 @@ class AgentWakeMemory {
   }
 
   void _logError(String message, {Object? error}) {
-    if (error != null) {
-      domainLogger?.error(logDomain, error, message: message);
+    if (error == null) return;
+    if (domainLogger != null) {
+      domainLogger!.error(logDomain, error, message: message);
+    } else {
+      // Fallback so failures never vanish silently (same convention as the
+      // workflows' _logError helpers).
+      developer.log(
+        '$message (errorType=${error.runtimeType})',
+        name: 'AgentWakeMemory',
+        error: error.runtimeType,
+      );
     }
   }
 
@@ -172,8 +183,11 @@ class AgentWakeMemory {
       }
     }
     if (!compactionOn) {
-      return const WakeMemoryView(
-        captureSucceeded: false,
+      // Capture ran before the flag read (workflows capture unconditionally
+      // so the frontier stays fresh while the flag is off) — forward its
+      // actual result rather than masking it.
+      return WakeMemoryView(
+        captureSucceeded: captureSucceeded,
         compactionOn: false,
         compactedLog: null,
         useCompactedLog: false,

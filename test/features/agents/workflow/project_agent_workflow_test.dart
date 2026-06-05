@@ -696,6 +696,55 @@ void main() {
       );
 
       test(
+        'dormant scheduled wake skips input capture entirely',
+        () async {
+          // The capture block runs AFTER the dormant-skip decision so a
+          // no-activity wake never loads linked entities or writes deltas.
+          final testDate = DateTime(2026, 3, 20, 6, 30);
+          final dueState = makeTestState(
+            slots: const AgentSlots(activeProjectId: projectId),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => dueState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => makeTestReport());
+
+          final recorder = _RecordingCaptureService();
+          final capturingWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            inputCaptureService: recorder,
+            compactionEnabled: false,
+          );
+
+          await withClock(Clock.fixed(testDate), () async {
+            final result = await capturingWorkflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+            expect(result.success, isTrue);
+          });
+
+          expect(recorder.callCount, 0);
+          verifyNever(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          );
+        },
+      );
+
+      test(
         'rolls forward the daily digest schedule when the scheduled wake is due',
         () async {
           final testDate = DateTime(2026, 3, 20, 6, 30);

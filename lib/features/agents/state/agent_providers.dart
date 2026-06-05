@@ -157,10 +157,11 @@ WakeRunner wakeRunner(Ref ref) {
 
 /// Builds the wake-start fork-healing hook (ADR 0018 rule 8): a [WakeStartHook]
 /// that, at the start of each wake, heals the agent's fork via a [ForkHealer]
-/// over [syncService] ([now] supplies the join timestamp). The healer is
-/// built lazily on the first enabled invocation, then reused — so wiring the
-/// hook costs nothing while the flag stays off. Extracted from
-/// [wakeOrchestrator] so the wiring is unit-testable.
+/// over [syncService] ([now] supplies the join timestamp). The healer is a
+/// stateless wrapper built fresh per enabled invocation — [syncService] is
+/// re-read each time so the hook never holds a stale instance across provider
+/// rebuilds, and wiring the hook costs nothing while the flag stays off.
+/// Extracted from [wakeOrchestrator] so the wiring is unit-testable.
 ///
 /// [isEnabled] is consulted **per invocation** (the `enable_fork_healing`
 /// config flag in production): the orchestrator captures this hook at
@@ -174,11 +175,10 @@ WakeStartHook forkHealingHook(
   DateTime Function() now, {
   required Future<bool> Function() isEnabled,
 }) {
-  ForkHealer? forkHealer;
   return (agentId, runKey, threadId) async {
     if (!await isEnabled()) return;
-    forkHealer ??= ForkHealer(syncService: syncService());
-    await forkHealer!.maybeHealFork(
+    final forkHealer = ForkHealer(syncService: syncService());
+    await forkHealer.maybeHealFork(
       agentId: agentId,
       at: now(),
       threadId: threadId,

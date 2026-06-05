@@ -9,17 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The linked entries "Filter & Sort" modal now has a "Show flagged entries
   only" toggle that narrows the list below a task to flagged entries; the
   list updates immediately when the toggle or an entry's flag changes.
+- New "Agent fork healing" flag in Settings → Flags (off by default): when
+  enabled, agents whose histories diverged through multi-device use merge
+  them back together at the next wake.
+
+### Changed
+- The "Agent memory compaction" flag now also covers project and day agents:
+  when enabled, all three read their context from an append-only memory log
+  and summarize its oldest entries into a rolling memory using their own
+  model, keeping the wake context compact while recent entries stay verbatim.
 
 ## [0.9.1014]
 ### Added
 - New "Agent memory compaction" flag in Settings → Flags (off by default):
-  when enabled, task, project and day agents read their context from an
-  append-only memory log and summarize its oldest entries into a rolling
+  when enabled, task agents summarize older task-log entries into a rolling
   memory using their own model, keeping the wake context compact while recent
   entries stay verbatim.
-- New "Agent fork healing" flag in Settings → Flags (off by default): when
-  enabled, agents whose histories diverged through multi-device use merge
-  them back together at the next wake.
 
 ### Changed
 - Task agents now update their report only when its content would materially

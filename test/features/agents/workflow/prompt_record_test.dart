@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
@@ -53,10 +55,15 @@ void main() {
         summaryId: 's',
         until: until,
       );
-      // Simulate the payload's JSON persistence: values must already be
-      // plain JSON types.
-      final reparsed = Map<String, Object?>.from(encoded);
-      expect(decodePromptRecord(reparsed)!.until, until);
+      // The payload persists as JSON: a real encode/decode cycle proves the
+      // record contains only plain JSON types and survives intact.
+      final reparsed = (jsonDecode(jsonEncode(encoded)) as Map)
+          .cast<String, Object?>();
+      final decoded = decodePromptRecord(reparsed)!;
+      expect(decoded.until, until);
+      expect(decoded.head, 'H');
+      expect(decoded.tail, 'T');
+      expect(decoded.summaryId, 's');
     });
   });
 }
