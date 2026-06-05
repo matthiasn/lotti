@@ -24,6 +24,16 @@ It happens when the widget's `await for` is still attached to the controller's s
 
 For broader test conventions — centralized mocks/fallbacks (`test/mocks/mocks.dart`, `test/helpers/fallbacks.dart`), `setUpTestGetIt()` / `makeTestableWidget()`, the "every test must assert something meaningful" rule, and one-test-file-per-source-file — see the **Testing Guidelines** section of `AGENTS.md`.
 
+## Database test layout
+
+`lib/database/database.dart` and `lib/database/sync_db.dart` are shells (constructor + migration ladder) whose query surfaces live in `part` files holding private mixins (`database_task_queries.dart`, `sync_db_outbox.dart`, …). The tests mirror that layout one test file per part file:
+
+- `test/database/database_*_test.dart` mirror `lib/database/database_*.dart`; shared setup (GetIt registrations, mock stubs, fallback values) and entity builders live in `test/database/test_utils.dart`. `database_test.dart` itself only covers the shell's migration path.
+- `test/database/sync_db_*_test.dart` mirror `lib/database/sync_db_*.dart`; the shared outbox-row builder and generated-status model live in `test/database/sync_db_test_utils.dart`. Migration coverage (with `_createXxx` DDL seed helpers) lives in `sync_db_migration_test.dart`.
+- Watermark behavior (`sync_db_watermarks.dart`) is exercised through the public sequence-log API in `sync_db_sequence_test.dart` rather than a dedicated file — the watermark members are library-private.
+
+When adding a query to one of the mixins, put its tests in the matching mirror file; don't grow a new monolith or split one source file's tests across files.
+
 ## Property-Based Tests with Glados
 
 We use [`package:glados`](https://pub.dev/packages/glados) for property-based ("generative") testing of pure logic. Going forward, **any new code with non-trivial pure logic should reach for Glados first** — it explores far more inputs than hand-rolled examples and shrinks failing cases automatically. Reach for Glados when you have:

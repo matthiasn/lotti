@@ -15,6 +15,20 @@ void main() {
   });
 
   group('NotificationsDb', () {
+    test('forLinkedEntity returns empty list for unknown task id', () async {
+      await db.upsertNotification(
+        _notification(
+          id: 'other',
+          createdAt: DateTime.utc(2026, 5, 17, 10),
+          updatedAt: DateTime.utc(2026, 5, 17, 10),
+          scheduledFor: DateTime.utc(2026, 5, 17, 12),
+          linkedTaskId: 'task-1',
+        ),
+      );
+
+      expect(await db.forLinkedEntity('no-such-task'), isEmpty);
+    });
+
     test('persists notifications and filters due/upcoming rows', () async {
       final now = DateTime.utc(2026, 5, 17, 10);
       final due = _notification(

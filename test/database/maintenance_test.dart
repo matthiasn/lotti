@@ -31,15 +31,10 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
-
-class _MockPathProviderPlatform extends Mock
-    with MockPlatformInterfaceMixin
-    implements PathProviderPlatform {}
 
 JournalEntry _buildJournalEntry({
   required String id,
@@ -146,7 +141,7 @@ void main() {
     late List<String> loggedEvents;
     late List<dynamic> loggedExceptions;
     late PathProviderPlatform originalPathProvider;
-    late _MockPathProviderPlatform mockPathProvider;
+    late MockPathProviderPlatform mockPathProvider;
 
     setUp(() async {
       await getIt.reset();
@@ -179,7 +174,7 @@ void main() {
       initialFts5 = Fts5Db(inMemoryDatabase: true);
       getIt.registerSingleton<Fts5Db>(initialFts5);
 
-      mockPathProvider = _MockPathProviderPlatform();
+      mockPathProvider = MockPathProviderPlatform();
       originalPathProvider = PathProviderPlatform.instance;
       PathProviderPlatform.instance = mockPathProvider;
       when(

@@ -54,7 +54,7 @@ void main() {
       });
     });
 
-    test('returns false when flag not found', () {
+    test('returns false when the flag is missing or its status is false', () {
       fakeAsync((async) {
         when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
           (_) => Stream<bool>.value(false),
@@ -73,32 +73,8 @@ void main() {
 
         async.flushMicrotasks();
 
-        // Assert: Provider emits false when flag not found
-        final asyncValue = subscription.read();
-        expect(asyncValue.value, isFalse);
-      });
-    });
-
-    test('returns false when flag status is false', () {
-      fakeAsync((async) {
-        when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
-          (_) => Stream<bool>.value(false),
-        );
-
-        container = ProviderContainer(
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-        );
-
-        final subscription = container!.listen(
-          configFlagProvider(enableEventsFlag),
-          (previous, next) {},
-        );
-
-        async.flushMicrotasks();
-
-        // Assert: Provider emits false
+        // watchConfigFlag emits false both for unknown flags and for
+        // flags stored with status=false; the provider forwards it.
         final asyncValue = subscription.read();
         expect(asyncValue.value, isFalse);
       });

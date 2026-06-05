@@ -762,14 +762,23 @@ void main() {
         final db = makeDbEntity(entry);
         final restored = fromDbEntity(db);
 
-        expect(restored.meta.id, entry.meta.id,
-            reason: 'id must survive round-trip');
-        expect(restored, isA<MeasurementEntry>(),
-            reason: 'variant must be preserved');
+        expect(
+          restored.meta.id,
+          entry.meta.id,
+          reason: 'id must survive round-trip',
+        );
+        expect(
+          restored,
+          isA<MeasurementEntry>(),
+          reason: 'variant must be preserved',
+        );
         // taskPriority column is null for non-Task rows — patch branch must
         // not execute.
-        expect(db.taskPriority, isNull,
-            reason: 'non-Task row must not have a taskPriority column value');
+        expect(
+          db.taskPriority,
+          isNull,
+          reason: 'non-Task row must not have a taskPriority column value',
+        );
       },
     );
 
@@ -778,17 +787,19 @@ void main() {
       'priority (no-op patch)',
       () {
         const priority = TaskPriority.p1High;
-        final entry = _taskEntry(
-          id: 'task-noop',
-          status: TaskStatus.open(
-            id: 'open-noop',
-            createdAt: _baseTime,
-            utcOffset: 0,
-          ),
-        ).maybeMap(
-          task: (t) => t.copyWith(data: t.data.copyWith(priority: priority)),
-          orElse: () => throw StateError('unexpected variant'),
-        );
+        final entry =
+            _taskEntry(
+              id: 'task-noop',
+              status: TaskStatus.open(
+                id: 'open-noop',
+                createdAt: _baseTime,
+                utcOffset: 0,
+              ),
+            ).maybeMap(
+              task: (t) =>
+                  t.copyWith(data: t.data.copyWith(priority: priority)),
+              orElse: () => throw StateError('unexpected variant'),
+            );
 
         // Column value matches the serialized JSON — patch must be a no-op.
         final db = makeDbEntity(entry, taskPriorityOverride: 'P1');
@@ -810,18 +821,20 @@ void main() {
       'differ (patch applies)',
       () {
         // Serialize a task with p2Medium, then supply a column that says P0.
-        final entry = _taskEntry(
-          id: 'task-override',
-          status: TaskStatus.open(
-            id: 'open-override',
-            createdAt: _baseTime,
-            utcOffset: 0,
-          ),
-        ).maybeMap(
-          task: (t) =>
-              t.copyWith(data: t.data.copyWith(priority: TaskPriority.p2Medium)),
-          orElse: () => throw StateError('unexpected variant'),
-        );
+        final entry =
+            _taskEntry(
+              id: 'task-override',
+              status: TaskStatus.open(
+                id: 'open-override',
+                createdAt: _baseTime,
+                utcOffset: 0,
+              ),
+            ).maybeMap(
+              task: (t) => t.copyWith(
+                data: t.data.copyWith(priority: TaskPriority.p2Medium),
+              ),
+              orElse: () => throw StateError('unexpected variant'),
+            );
 
         final db = makeDbEntity(entry, taskPriorityOverride: 'P0');
         final restored = fromDbEntity(db);
@@ -842,18 +855,20 @@ void main() {
     test(
       'empty taskPriority column string is treated as absent (patch skipped)',
       () {
-        final entry = _taskEntry(
-          id: 'task-empty-prio',
-          status: TaskStatus.open(
-            id: 'open-empty',
-            createdAt: _baseTime,
-            utcOffset: 0,
-          ),
-        ).maybeMap(
-          task: (t) =>
-              t.copyWith(data: t.data.copyWith(priority: TaskPriority.p3Low)),
-          orElse: () => throw StateError('unexpected variant'),
-        );
+        final entry =
+            _taskEntry(
+              id: 'task-empty-prio',
+              status: TaskStatus.open(
+                id: 'open-empty',
+                createdAt: _baseTime,
+                utcOffset: 0,
+              ),
+            ).maybeMap(
+              task: (t) => t.copyWith(
+                data: t.data.copyWith(priority: TaskPriority.p3Low),
+              ),
+              orElse: () => throw StateError('unexpected variant'),
+            );
 
         // An empty string must NOT trigger the patch.
         final db = makeDbEntity(entry, taskPriorityOverride: '');
@@ -897,7 +912,10 @@ void main() {
       'toDbEntity → fromDbEntity preserves id and priority for every '
       'TaskPriority value',
       (priority) {
-        final entity = taskWithPriority('glados-prio-${priority.name}', priority);
+        final entity = taskWithPriority(
+          'glados-prio-${priority.name}',
+          priority,
+        );
         final db = toDbEntity(entity);
         final restored = fromDbEntity(db);
 
@@ -986,20 +1004,25 @@ void main() {
       expect(dbEntity.deleted, isFalse);
     });
 
-    test('fromLabelDefinitionDbEntity restores deletedAt from serialized JSON',
-        () {
-      final label = makeLabel(
-        id: 'deleted-rt',
-        name: 'Was Deleted',
-        deletedAt: _baseTime,
-      );
+    test(
+      'fromLabelDefinitionDbEntity restores deletedAt from serialized JSON',
+      () {
+        final label = makeLabel(
+          id: 'deleted-rt',
+          name: 'Was Deleted',
+          deletedAt: _baseTime,
+        );
 
-      final dbEntity = labelDefinitionDbEntity(label);
-      final restored = fromLabelDefinitionDbEntity(dbEntity);
+        final dbEntity = labelDefinitionDbEntity(label);
+        final restored = fromLabelDefinitionDbEntity(dbEntity);
 
-      expect(restored.deletedAt, _baseTime,
-          reason: 'deletedAt must round-trip through serialized JSON');
-    });
+        expect(
+          restored.deletedAt,
+          _baseTime,
+          reason: 'deletedAt must round-trip through serialized JSON',
+        );
+      },
+    );
 
     test('labelDefinitionsStreamMapper maps a list correctly', () {
       final labels = <LabelDefinition>[
