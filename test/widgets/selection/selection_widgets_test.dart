@@ -36,7 +36,7 @@ void main() {
           onSave: savedOptions.addAll,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Initially no selections
       expect(
@@ -46,7 +46,7 @@ void main() {
 
       // Select first option
       await tester.tap(find.text('Option 1'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show checkmark
       expect(
@@ -56,7 +56,7 @@ void main() {
 
       // Select second option
       await tester.tap(find.text('Option 2'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(
         find.byIcon(Icons.check_rounded),
@@ -65,7 +65,7 @@ void main() {
 
       // Deselect first option
       await tester.tap(find.text('Option 1'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(
         find.byIcon(Icons.check_rounded),
@@ -74,7 +74,7 @@ void main() {
 
       // Save
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(savedOptions, ['Option 2']);
     });
@@ -92,7 +92,7 @@ void main() {
           singleSelection: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Initially no selection, save button should be disabled
       final saveButton = tester.widget<SelectionSaveButton>(
@@ -102,11 +102,11 @@ void main() {
 
       // Select first option
       await tester.tap(find.text('Option A'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Select second option (should deselect first)
       await tester.tap(find.text('Option B'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Save button should now be enabled
       final updatedSaveButton = tester.widget<SelectionSaveButton>(
@@ -116,7 +116,7 @@ void main() {
 
       // Save
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(savedOptions, ['Option B']);
     });
@@ -148,7 +148,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify all components are present
       expect(find.byType(SelectionModalContent), findsOneWidget);
@@ -167,7 +167,7 @@ void main() {
 
       // Test save button
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('handles scroll in long lists correctly', (tester) async {
@@ -182,7 +182,7 @@ void main() {
           onSave: (_) {},
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Initial items visible
       expect(find.text('Option 0'), findsOneWidget);
@@ -196,7 +196,7 @@ void main() {
         find.text('Option 19'),
         500,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Last item should be visible now
       expect(find.text('Option 19'), findsOneWidget);
@@ -216,7 +216,7 @@ void main() {
           onSave: savedOptions.addAll,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show save button only
       expect(find.byType(SelectionOption), findsNothing);
@@ -224,7 +224,7 @@ void main() {
 
       // Can still save with empty selection
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(savedOptions, isEmpty);
     });
@@ -255,7 +255,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify light theme
       var context = tester.element(find.text('Option 1'));
@@ -286,7 +286,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify dark theme
       context = tester.element(find.text('Option 1'));

@@ -29,7 +29,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Save'), findsOneWidget);
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
@@ -43,7 +43,7 @@ void main() {
             label: 'Custom Label',
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Custom Label'), findsOneWidget);
         expect(find.text('Save'), findsNothing);
@@ -56,7 +56,7 @@ void main() {
             icon: Icons.done_all,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byIcon(Icons.done_all), findsOneWidget);
         expect(find.byIcon(Icons.check_rounded), findsNothing);
@@ -68,7 +68,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The SelectionSaveButton contains a SizedBox with width: double.infinity
         final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
@@ -84,7 +84,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final text = tester.widget<Text>(find.text('Save'));
         expect(text.style?.fontWeight, FontWeight.w600);
@@ -97,7 +97,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final icon = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
         expect(icon.size, 20);
@@ -113,7 +113,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final saveButton = tester.widget<SelectionSaveButton>(
           find.byType(SelectionSaveButton),
@@ -128,7 +128,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final saveButton = tester.widget<SelectionSaveButton>(
           find.byType(SelectionSaveButton),
@@ -146,7 +146,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The button should be visible and have the correct styling
         expect(find.byType(SelectionSaveButton), findsOneWidget);
@@ -156,7 +156,7 @@ void main() {
 
       testWidgets('applies correct colors when disabled', (tester) async {
         await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The disabled button should still be visible
         expect(find.byType(SelectionSaveButton), findsOneWidget);
@@ -174,7 +174,7 @@ void main() {
             onPressed: () => pressed = true,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         await tester.tap(find.byType(SelectionSaveButton));
         expect(pressed, true);
@@ -184,7 +184,7 @@ void main() {
         const pressed = false;
 
         await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         await tester.tap(find.byType(SelectionSaveButton));
         expect(pressed, false);
@@ -196,7 +196,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap and hold to see ink effect
         final gesture = await tester.startGesture(
@@ -218,7 +218,7 @@ void main() {
             onPressed: () => tapCount++,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Rapid taps on the SelectionSaveButton
         for (var i = 0; i < 5; i++) {
@@ -237,7 +237,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The button should have proper padding as defined in the widget
         expect(find.byType(SelectionSaveButton), findsOneWidget);
@@ -249,7 +249,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The button should have rounded corners as defined in the widget
         expect(find.byType(SelectionSaveButton), findsOneWidget);
@@ -261,7 +261,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The button should have elevation/shadow when enabled
         expect(find.byType(SelectionSaveButton), findsOneWidget);
@@ -282,7 +282,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final context = tester.element(find.byType(SelectionSaveButton));
         final theme = Theme.of(context);
@@ -314,7 +314,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final context = tester.element(find.byType(SelectionSaveButton));
         final colorScheme = Theme.of(context).colorScheme;
@@ -335,7 +335,7 @@ void main() {
             onPressed: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The button should have a minimum height of 48 for accessibility
         final saveButton = find.byType(SelectionSaveButton);
@@ -351,7 +351,7 @@ void main() {
             label: 'Very Long Button Label Text That Might Wrap',
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Text should be visible and not overflow
         expect(
@@ -369,7 +369,7 @@ void main() {
             label: '',
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Find the text widget with empty string
         expect(find.text(''), findsOneWidget);
@@ -390,7 +390,7 @@ void main() {
             label: longLabel,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text(longLabel), findsOneWidget);
         // Button widget should exist
@@ -420,7 +420,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Initially enabled - check the SelectionSaveButton
         var saveButton = tester.widget<SelectionSaveButton>(

@@ -210,27 +210,34 @@ void main() {
         );
       });
 
-      testWidgets('creates page with back button', (tester) async {
-        // var backPressed = false; // Not used in this test, just checking widget creation
+      testWidgets('creates page with back button that fires onTapBack', (
+        tester,
+      ) async {
+        var backPressed = false;
+        Widget? leading;
 
         await tester.pumpWidget(
           MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  child: const Text('Test Content'),
-                  onTapBack: () {}, // backPressed = true,
-                );
-
-                expect(page.leadingNavBarWidget, isNotNull);
-                expect(page.leadingNavBarWidget, isA<IconButton>());
-
-                return const SizedBox();
-              },
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  leading ??= ModalUtils.modalSheetPage(
+                    context: context,
+                    child: const Text('Test Content'),
+                    onTapBack: () => backPressed = true,
+                  ).leadingNavBarWidget;
+                  return leading!;
+                },
+              ),
             ),
           ),
         );
+
+        expect(leading, isA<IconButton>());
+
+        // The back button must actually invoke the supplied callback.
+        await tester.tap(find.byType(IconButton));
+        expect(backPressed, isTrue);
       });
 
       testWidgets('creates page with close button', (tester) async {
@@ -726,29 +733,36 @@ void main() {
         );
       });
 
-      testWidgets('creates sliver page with back button', (tester) async {
-        // var backPressed = false; // Not used in this test, just checking widget creation
+      testWidgets('creates sliver page with back button that fires onTapBack', (
+        tester,
+      ) async {
+        var backPressed = false;
+        Widget? leading;
 
         await tester.pumpWidget(
           MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.sliverModalSheetPage(
-                  context: context,
-                  slivers: const [
-                    SliverToBoxAdapter(child: Text('Test Sliver')),
-                  ],
-                  onTapBack: () {}, // backPressed = true,
-                );
-
-                expect(page.leadingNavBarWidget, isNotNull);
-                expect(page.leadingNavBarWidget, isA<IconButton>());
-
-                return const SizedBox();
-              },
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  leading ??= ModalUtils.sliverModalSheetPage(
+                    context: context,
+                    slivers: const [
+                      SliverToBoxAdapter(child: Text('Test Sliver')),
+                    ],
+                    onTapBack: () => backPressed = true,
+                  ).leadingNavBarWidget;
+                  return leading!;
+                },
+              ),
             ),
           ),
         );
+
+        expect(leading, isA<IconButton>());
+
+        // The back button must actually invoke the supplied callback.
+        await tester.tap(find.byType(IconButton));
+        expect(backPressed, isTrue);
       });
 
       testWidgets('creates sliver page with close button', (tester) async {

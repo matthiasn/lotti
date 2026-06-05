@@ -75,7 +75,7 @@ void main() {
             child: const Text('Test Content'),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Test Modal'), findsOneWidget);
         expect(find.text('Test Content'), findsOneWidget);
@@ -91,7 +91,7 @@ void main() {
             child: const Text('Test Content'),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(SelectionSaveButton), findsOneWidget);
       });
@@ -103,7 +103,7 @@ void main() {
             child: const Text('Test Content'),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(SelectionSaveButton), findsNothing);
       });
@@ -116,7 +116,7 @@ void main() {
             child: const Text('Test Content'),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byIcon(Icons.info), findsOneWidget);
       });
@@ -140,11 +140,13 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap button to open modal
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        // Advance through the modal route transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
         // Verify modal content is shown
         expect(find.text('Test Child'), findsOneWidget);
@@ -165,7 +167,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Child 1'), findsOneWidget);
         expect(find.text('Child 2'), findsOneWidget);
@@ -189,7 +191,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(ListView), findsOneWidget);
         expect(find.byType(ListTile), findsNWidgets(5));
@@ -208,7 +210,7 @@ void main() {
             child: const Text('Test Content'),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         await tester.tap(find.byType(SelectionSaveButton));
         expect(saved, true);
@@ -221,7 +223,7 @@ void main() {
             child: const Text('Test Content'),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Save button should not exist when onSave is null
         expect(find.byType(SelectionSaveButton), findsNothing);
@@ -236,7 +238,7 @@ void main() {
             child: const SizedBox.shrink(),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(SizedBox), findsAtLeastNWidgets(1));
       });
@@ -263,11 +265,13 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap button to open modal
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        // Advance through the modal route transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
         // Verify content is shown (title might be truncated in the modal)
         expect(find.text('Test'), findsOneWidget);
@@ -286,7 +290,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Very tall content'), findsOneWidget);
       });
@@ -314,7 +318,7 @@ void main() {
           children: const [Text('Test Content')],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final padding = tester.widget<Padding>(
         find.byType(Padding).first,
@@ -329,7 +333,7 @@ void main() {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final padding = tester.widget<Padding>(
         find.byType(Padding).first,
@@ -350,7 +354,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Child 1'), findsOneWidget);
       expect(find.text('Child 2'), findsOneWidget);
@@ -363,7 +367,7 @@ void main() {
           children: const [Text('Content')],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final column = tester.widget<Column>(find.byType(Column).first);
       expect(column.mainAxisSize, MainAxisSize.min);
@@ -375,7 +379,7 @@ void main() {
           children: const [],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(SelectionModalContent), findsOneWidget);
       expect(find.byType(Column), findsOneWidget);
@@ -411,7 +415,7 @@ void main() {
           itemBuilder: (context, index) => Text('Item $index'),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       for (var i = 0; i < 5; i++) {
         expect(find.text('Item $i'), findsOneWidget);
@@ -428,7 +432,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check ListView.separated is used
       final listView = tester.widget<ListView>(find.byType(ListView));
@@ -445,7 +449,7 @@ void main() {
           itemBuilder: (context, index) => Text('Item $index'),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ListView), findsOneWidget);
       expect(find.text('Item 0'), findsNothing);
@@ -458,7 +462,7 @@ void main() {
           itemBuilder: (context, index) => Text('Item $index'),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final listView = tester.widget<ListView>(find.byType(ListView));
       expect(listView.shrinkWrap, true);
@@ -480,7 +484,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(
         find.ancestor(
@@ -507,7 +511,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All items should be rendered
       for (var i = 0; i < 5; i++) {
@@ -553,7 +557,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify structure
       expect(find.byType(TestSelectionModal), findsOneWidget);
@@ -597,11 +601,13 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap button to open modal
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      // Advance through the modal route transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Verify content is shown with dark theme
       expect(find.text('Dark theme content'), findsOneWidget);

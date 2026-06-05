@@ -99,11 +99,11 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/widgets/modal/modal_utils_test.dart` lines 213–233 and 729–751: `creates page with back button` has the callback commented out (`// backPressed = true`). The `onTapBack` callback is never invoked and its side effect never verified. Both back-button tests are dead-code assertions masquerading as real tests. Fix: actually tap the back button and assert the callback fires.
+- [x] **[HIGH]** `test/widgets/modal/modal_utils_test.dart` lines 213–233 and 729–751: `creates page with back button` has the callback commented out (`// backPressed = true`). The `onTapBack` callback is never invoked and its side effect never verified. Both back-button tests are dead-code assertions masquerading as real tests. Fix: actually tap the back button and assert the callback fires.
 
 - [x] **[HIGH]** `test/widgets/misc/time_recording_indicator_navigation_test.dart` lines 16–43: Defines `MockNavService extends Mock implements NavService` and `FakeTimeService extends TimeService` inline. `MockNavService` is already present in `test/mocks/mocks.dart` (line 510). Use the centralized mock; define only `FakeTimeService` locally (it has stateful behavior inappropriate for a pure Mock).
 
-- [ ] **[HIGH]** `test/widgets/misc/time_recording_indicator_navigation_test.dart` lines 53–66 and `test/widgets/misc/time_recording_indicator_timer_text_test.dart` lines 13–19: Both files use non-standard GetIt scope management (`getIt.pushNewScope` / `getIt.popScope` / inline `getIt.registerSingleton`) instead of `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. This risks suite contamination.
+- [x] **[HIGH]** `test/widgets/misc/time_recording_indicator_navigation_test.dart` lines 53–66 and `test/widgets/misc/time_recording_indicator_timer_text_test.dart` lines 13–19: Both files use non-standard GetIt scope management (`getIt.pushNewScope` / `getIt.popScope` / inline `getIt.registerSingleton`) instead of `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. This risks suite contamination.
 
 - [ ] **[HIGH]** `test/widgets/search/entry_type_filter_test.dart` lines 22–38: Defines `MockJournalPageController extends JournalPageController` inline. This should either use the existing Riverpod controller override mechanism or move to a shared test utility. Repeated `GetIt.I.registerSingleton<JournalDb>(mockDb)` without cleanup in `setUp` (only `tearDown` calls `GetIt.I.reset()`) is fragile if a test throws before `tearDown`.
 
@@ -139,11 +139,11 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/widgets/modal/confirmation_modal.dart` (82 lines) — **no test**. Missing branches: cancel button sets result to `false`; confirm button sets result to `true`; `isDestructive: false` hides the warning icon; custom `confirmLabel`/`cancelLabel` strings appear; the modal dismisses after either action.
+- [x] **[HIGH]** `lib/widgets/modal/confirmation_modal.dart` (82 lines) — **no test**. Missing branches: cancel button sets result to `false`; confirm button sets result to `true`; `isDestructive: false` hides the warning icon; custom `confirmLabel`/`cancelLabel` strings appear; the modal dismisses after either action.
 
-- [ ] **[HIGH]** `lib/widgets/form/lotti_form_section.dart` (111 lines) — **no test**. Missing branches: with/without `icon`, with/without `description`, custom `padding`, gradient decoration renders.
+- [x] **[HIGH]** `lib/widgets/form/lotti_form_section.dart` (111 lines) — **no test**. Missing branches: with/without `icon`, with/without `description`, custom `padding`, gradient decoration renders.
 
-- [ ] **[HIGH]** `lib/widgets/form/lotti_switch_field.dart` (106 lines) — **no test**. Missing branches: `enabled: false` dims title and disables the switch; `subtitle` visibility; `icon` in leading position; `dense` reduces padding; `onChanged` invoked on toggle.
+- [x] **[HIGH]** `lib/widgets/form/lotti_switch_field.dart` (106 lines) — **no test**. Missing branches: `enabled: false` dims title and disables the switch; `subtitle` visibility; `icon` in leading position; `dense` reduces padding; `onChanged` invoked on toggle.
 
 - [ ] **[MED]** `lib/widgets/misc/tasks_counts.dart` (104 lines) — **no test**. `TaskCounts` renders count chips per status; `FlaggedCount` renders "Flagged: N". Both use `FutureBuilder` — testable by mocking `JournalDb` via `setUpTestGetIt`.
 
@@ -161,13 +161,13 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/widgets/selection/selection_modal_base_test.dart` — 28 `pumpAndSettle` calls. The `WidgetTestBench` wrapper contains no animations requiring `pumpAndSettle`; replacing with `tester.pump()` would eliminate up to 28 × 100 ms default wait-per-frame passes. **Estimated save: moderate (no real animations to settle).**
+- [x] **[HIGH]** `test/widgets/selection/selection_modal_base_test.dart` — 28 `pumpAndSettle` calls. The `WidgetTestBench` wrapper contains no animations requiring `pumpAndSettle`; replacing with `tester.pump()` would eliminate up to 28 × 100 ms default wait-per-frame passes. **Estimated save: moderate (no real animations to settle).**
 
-- [ ] **[HIGH]** `test/widgets/selection/selection_save_button_test.dart` — 24 `pumpAndSettle` calls. `SelectionSaveButton` is a stateless button with no animations. All 24 calls could be `tester.pump()`. **Estimated save: up to 24 unnecessary settle cycles per run.**
+- [x] **[HIGH]** `test/widgets/selection/selection_save_button_test.dart` — 24 `pumpAndSettle` calls. `SelectionSaveButton` is a stateless button with no animations. All 24 calls could be `tester.pump()`. **Estimated save: up to 24 unnecessary settle cycles per run.**
 
-- [ ] **[HIGH]** `test/widgets/misc/timespan_segmented_control_test.dart` — 14 `pumpAndSettle` calls. `SegmentedButton` tap/settle does involve a brief ripple, but explicit `tester.pump(const Duration(milliseconds: 50))` would be sufficient and deterministic instead of unbounded `pumpAndSettle`.
+- [x] **[HIGH]** `test/widgets/misc/timespan_segmented_control_test.dart` — 14 `pumpAndSettle` calls. `SegmentedButton` tap/settle does involve a brief ripple, but explicit `tester.pump(const Duration(milliseconds: 50))` would be sufficient and deterministic instead of unbounded `pumpAndSettle`.
 
-- [ ] **[HIGH]** `test/widgets/selection/selection_widgets_test.dart` — 17 `pumpAndSettle` calls for stateless selection-option widgets. Replace with `tester.pump()`.
+- [x] **[HIGH]** `test/widgets/selection/selection_widgets_test.dart` — 17 `pumpAndSettle` calls for stateless selection-option widgets. Replace with `tester.pump()`.
 
 - [ ] **[MED]** `test/widgets/modal/modal_utils_test.dart` — 17 `pumpAndSettle` calls. The `showSinglePageModal` / `showBottomSheet` tests open a modal — `pumpAndSettle` is appropriate there. However the `modalSheetPage` / `sliverModalSheetPage` builder tests (which never actually show a modal) call `pumpAndSettle` unnecessarily. Replacing those ~8 calls with `tester.pump()` would speed up ~8 tests.
 
