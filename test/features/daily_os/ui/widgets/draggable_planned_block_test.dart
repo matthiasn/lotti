@@ -381,9 +381,11 @@ void main() {
       );
       await tester.pump();
 
-      // Tap the block - should not crash
+      // Tap the block - should not crash. Pump past the double-tap
+      // recognizer's 300ms window so its countdown timer is not pending
+      // at teardown.
       await tester.tap(find.text('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Block should still be visible
       expect(find.text('Work'), findsOneWidget);
@@ -406,11 +408,12 @@ void main() {
       );
       await tester.pump();
 
-      // Double tap - should not crash (would normally open edit modal)
+      // Double tap - should not crash (would normally open edit modal).
+      // The trailing pump clears the double-tap recognizer's window.
       await tester.tap(find.text('Work'));
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.text('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Block widget should still be visible (modal may also show "Work")
       expect(find.byType(DraggablePlannedBlock), findsOneWidget);
@@ -451,7 +454,7 @@ void main() {
 
       // End the gesture
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(dragActive, isFalse);
     });
@@ -486,7 +489,7 @@ void main() {
       expect(find.text('11:00'), findsOneWidget);
 
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('drag updates position visually', (tester) async {
@@ -521,7 +524,7 @@ void main() {
       expect(find.text('12:00'), findsOneWidget);
 
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('drag is clamped to section boundaries', (tester) async {
@@ -557,7 +560,7 @@ void main() {
       expect(find.text('12:00'), findsOneWidget);
 
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('dragging up is also clamped to section start', (tester) async {
@@ -592,7 +595,7 @@ void main() {
       expect(find.text('10:00'), findsOneWidget);
 
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
   });
 
@@ -633,7 +636,7 @@ void main() {
       expect(find.text('12:00'), findsOneWidget); // Same end
 
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('tapping bottom edge detects resize bottom mode', (
@@ -673,7 +676,7 @@ void main() {
       expect(find.text('12:30'), findsOneWidget); // New end
 
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('tapping block center detects move mode and shows duration', (
@@ -707,7 +710,7 @@ void main() {
       expect(find.text('3h'), findsOneWidget);
 
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets(
@@ -748,7 +751,7 @@ void main() {
         expect(find.text('10:30'), findsOneWidget); // New end
 
         await gesture.up();
-        await tester.pumpAndSettle();
+        await tester.pump();
       },
     );
   });
@@ -793,7 +796,7 @@ void main() {
         expect(messages, isNotEmpty);
 
         await gesture.up();
-        await tester.pumpAndSettle();
+        await tester.pump();
       } finally {
         // Clean up mock handler to prevent leaks into other tests
         tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -856,7 +859,7 @@ void main() {
         );
 
         await gesture.up();
-        await tester.pumpAndSettle();
+        await tester.pump();
       },
     );
 
@@ -910,7 +913,7 @@ void main() {
         );
 
         await gesture.up();
-        await tester.pumpAndSettle();
+        await tester.pump();
       },
     );
   });
@@ -1096,7 +1099,7 @@ void main() {
         );
 
         await gesture.up();
-        await tester.pumpAndSettle();
+        await tester.pump();
       },
     );
 
@@ -1152,7 +1155,7 @@ void main() {
         );
 
         await gesture.up();
-        await tester.pumpAndSettle();
+        await tester.pump();
       },
     );
   });
