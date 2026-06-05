@@ -232,17 +232,17 @@ genuine candidates with algebraic invariants over pure logic:
   A dedicated `journal_page_subscriptions_test.dart` should at minimum test
   `applyJournalConfigFlags` directly (it is a pure static method and requires no mocks).
 
-- [ ] **[HIGH]** `lib/features/journal/state/journal_page_state.dart` — **No test file**. The
+- [x] **[HIGH]** `lib/features/journal/state/journal_page_state.dart` — **No test file**. The
   `TasksFilter.fromJson` factory and the `@freezed` `copyWith` mechanics are exercised
   indirectly, but there are no direct unit tests for malformed JSON, missing optional fields,
   or enum parsing edge cases.
 
-- [ ] **[HIGH]** `lib/features/journal/state/entry_controller.dart` — **`save()` for
+- [x] **[HIGH]** `lib/features/journal/state/entry_controller.dart` — **`save()` for
   `JournalEvent` type is untested**: The `save()` method has an `if (entry is JournalEvent)`
   branch (lines 229–243) that calls `_persistenceLogic.updateEvent`. There are save tests for
   `JournalEntry` (text) and `Task`, but no test that exercises the Event save path.
 
-- [ ] **[HIGH]** `lib/features/journal/state/entry_controller.dart` — **`save()` with a running
+- [x] **[HIGH]** `lib/features/journal/state/entry_controller.dart` — **`save()` with a running
   timer entry**: Lines 250–258 contain a `stopRecording` + `Future.delayed(stopRecordingDelay)`
   path. The `stopRecording: true` test (line 1 429) does call `TimeService.stop`, but it does
   not assert that the `_shouldShowEditorToolBar` is reset to `false` and `_dirty` is cleared —
