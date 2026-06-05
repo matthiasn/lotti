@@ -148,7 +148,7 @@ void main() {
       final entry = textEntry();
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(MdiIcons.labelOutline), findsOneWidget);
       expect(find.text('Labels'), findsOneWidget);
@@ -160,13 +160,13 @@ void main() {
 
     testWidgets('hides Labels action item for Task entries', (tester) async {
       await tester.pumpWidget(buildWrapper(taskEntry()));
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(find.byIcon(MdiIcons.labelOutline), findsNothing);
     });
 
     testWidgets('hides Labels action item when entry is null', (tester) async {
       await tester.pumpWidget(buildWrapper(null));
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(find.byIcon(MdiIcons.labelOutline), findsNothing);
     });
   });
@@ -174,7 +174,7 @@ void main() {
   group('InitialModalPageContent ModernSetTaskLanguageItem integration', () {
     testWidgets('shows Set language action for tasks', (tester) async {
       await tester.pumpWidget(buildWrapper(taskEntry()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Set language'), findsOneWidget);
       expect(find.byIcon(Icons.language), findsOneWidget);
@@ -184,7 +184,7 @@ void main() {
       'renders a country flag when task has a language code set',
       (tester) async {
         await tester.pumpWidget(buildWrapper(taskEntry(languageCode: 'en')));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Set language'), findsOneWidget);
         expect(find.byKey(const ValueKey('action-flag-en')), findsOneWidget);
@@ -196,7 +196,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildWrapper(textEntry()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Set language'), findsNothing);
     });
@@ -207,7 +207,7 @@ void main() {
       final entry = textEntry();
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Link from'), findsOneWidget);
       expect(find.text('Link to'), findsOneWidget);
@@ -263,7 +263,7 @@ void main() {
       final entry = audioEntry();
 
       await tester.pumpWidget(buildAudioWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.transcribe_rounded), findsOneWidget);
       expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
@@ -319,7 +319,7 @@ void main() {
       final entry = imageEntry();
 
       await tester.pumpWidget(buildImageWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
       expect(find.byIcon(Icons.share_rounded), findsOneWidget);
@@ -384,7 +384,7 @@ void main() {
       await tester.pumpWidget(
         buildImageLinkedWrapper(image: image, linkedParent: task),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Set cover'), findsOneWidget);
     });
@@ -398,7 +398,7 @@ void main() {
       await tester.pumpWidget(
         buildImageLinkedWrapper(image: image, linkedParent: parent),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Set cover'), findsNothing);
     });
@@ -429,7 +429,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Set cover'), findsNothing);
     });
@@ -483,7 +483,7 @@ void main() {
       final entry = entryWithGeolocation();
 
       await tester.pumpWidget(buildGeoWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.map_outlined), findsOneWidget);
     });
@@ -538,7 +538,7 @@ void main() {
       await tester.pumpWidget(
         buildLinkedWrapper(entry: entry, linkedFromId: 'parent-123'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.link_off_rounded), findsOneWidget);
     });
@@ -565,7 +565,7 @@ void main() {
           link: link,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.visibility_rounded), findsOneWidget);
     });

@@ -237,7 +237,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
@@ -253,7 +253,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.star_rounded), findsOneWidget);
     });
@@ -271,7 +271,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -290,7 +290,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.lock_open_rounded), findsOneWidget);
@@ -306,7 +306,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
     });
@@ -324,7 +324,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -345,7 +345,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
@@ -361,7 +361,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.flag_rounded), findsOneWidget);
     });
@@ -379,7 +379,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -400,7 +400,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
@@ -421,7 +421,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
@@ -439,7 +439,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.transcribe_rounded), findsOneWidget);
@@ -461,7 +461,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -480,7 +480,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
@@ -498,7 +498,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
@@ -516,7 +516,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
       expect(find.text('Show in Finder'), findsOneWidget);
@@ -535,7 +535,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Show in File Explorer'), findsOneWidget);
     });
@@ -553,7 +553,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Show in Files'), findsOneWidget);
     });
@@ -575,7 +575,10 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -604,7 +607,10 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -628,7 +634,10 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -651,7 +660,10 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -670,7 +682,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
@@ -685,7 +697,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.share_rounded), findsOneWidget);
@@ -701,7 +713,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
     });
@@ -718,7 +730,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
@@ -733,7 +745,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(MdiIcons.contentCopy), findsOneWidget);
@@ -748,7 +760,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.add_link), findsOneWidget);
@@ -763,7 +775,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(MdiIcons.target), findsOneWidget);
@@ -784,7 +796,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.link_off_rounded), findsOneWidget);
@@ -814,7 +826,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.visibility_rounded), findsOneWidget);
@@ -843,7 +855,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.visibility_off_rounded), findsOneWidget);
       expect(find.text('Show link'), findsOneWidget);
@@ -873,7 +885,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -920,7 +932,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
@@ -940,7 +952,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.image_outlined), findsOneWidget);
@@ -962,7 +974,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.image), findsOneWidget);
@@ -985,7 +997,10 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       // Verify we're on the pushed route
       expect(find.byType(ActionMenuListItem), findsOneWidget);
 
@@ -1013,7 +1028,10 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pumpAndSettle();
@@ -1035,7 +1053,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
@@ -1051,7 +1069,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.map_outlined), findsOneWidget);
@@ -1071,7 +1089,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.map_rounded), findsOneWidget);
@@ -1090,7 +1108,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
@@ -1108,7 +1126,7 @@ void main() {
           child: const ModernSetTaskLanguageItem(entryId: 'entry-1'),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
@@ -1124,7 +1142,7 @@ void main() {
             child: const ModernSetTaskLanguageItem(entryId: 'task-1'),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         expect(find.byIcon(Icons.language), findsOneWidget);
@@ -1142,7 +1160,7 @@ void main() {
             child: const ModernSetTaskLanguageItem(entryId: 'task-1'),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byKey(const ValueKey('action-flag-de')), findsOneWidget);
         expect(find.byIcon(Icons.language), findsNothing);
@@ -1163,7 +1181,10 @@ void main() {
             child: const ModernSetTaskLanguageItem(entryId: 'task-1'),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(find.byType(ActionMenuListItem));
         await tester.pumpAndSettle();
@@ -1199,7 +1220,10 @@ void main() {
             child: const ModernSetTaskLanguageItem(entryId: 'task-1'),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(find.byType(ActionMenuListItem));
         await tester.pumpAndSettle();
@@ -1230,7 +1254,10 @@ void main() {
             child: const ModernDeleteItem(entryId: 'entry-1', beamBack: false),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         await tester.tap(find.byType(ActionMenuListItem));
@@ -1261,7 +1288,10 @@ void main() {
             child: const ModernDeleteItem(entryId: 'entry-1', beamBack: false),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(find.byType(ActionMenuListItem));
         await tester.pumpAndSettle();
@@ -1294,7 +1324,10 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         await tester.tap(find.byType(ActionMenuListItem));
@@ -1329,7 +1362,10 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(find.byType(ActionMenuListItem));
         await tester.pumpAndSettle();
@@ -1360,7 +1396,10 @@ void main() {
             child: const ModernCopyImageItem(entryId: 'image-1'),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         await tester.tap(find.byType(ActionMenuListItem));
@@ -1386,7 +1425,10 @@ void main() {
           child: const ModernLinkFromItem(entryId: 'entry-42'),
         ),
       );
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       await tester.tap(find.byType(ActionMenuListItem));
@@ -1411,7 +1453,10 @@ void main() {
           child: const ModernLinkToItem(entryId: 'entry-99'),
         ),
       );
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       await tester.tap(find.byType(ActionMenuListItem));
@@ -1439,7 +1484,10 @@ void main() {
             child: const ModernRateSessionItem(entryId: 'entry-1'),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         await tester.tap(find.byType(ActionMenuListItem));
@@ -1466,7 +1514,10 @@ void main() {
             child: const ModernRateSessionItem(entryId: 'entry-1'),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         await tester.tap(find.byType(ActionMenuListItem));
@@ -1490,7 +1541,10 @@ void main() {
             child: const ModernShareItem(entryId: 'image-1'),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         await tester.tap(find.byType(ActionMenuListItem));
@@ -1512,7 +1566,10 @@ void main() {
             child: const ModernShareItem(entryId: 'audio-1'),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         await tester.tap(find.byType(ActionMenuListItem));
@@ -1542,7 +1599,10 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        // One frame fires the post-frame route push; the second advances
+        // past the MaterialPageRoute transition (bounded, no settle).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         await tester.tap(find.byType(ActionMenuListItem));
@@ -1582,7 +1642,10 @@ void main() {
           child: const ModernShareItem(entryId: 'image-1'),
         ),
       );
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pumpAndSettle();
@@ -1605,7 +1668,10 @@ void main() {
           child: const ModernShareItem(entryId: 'audio-1'),
         ),
       );
-      await tester.pumpAndSettle();
+      // One frame fires the post-frame route push; the second advances
+      // past the MaterialPageRoute transition (bounded, no settle).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pumpAndSettle();
@@ -2120,8 +2186,7 @@ void main() {
 
       testWidgets('passes entry categoryId to selector', (tester) async {
         final entry = textEntryWithLabels(const []).copyWith(
-          meta:
-              textEntryWithLabels(const []).meta.copyWith(categoryId: 'work'),
+          meta: textEntryWithLabels(const []).meta.copyWith(categoryId: 'work'),
         );
 
         await tester.pumpWidget(buildWrapper(entry));
@@ -2388,7 +2453,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final context = tester.element(find.byType(ModernRateSessionItem));
         expect(find.byType(ActionMenuListItem), findsOneWidget);
@@ -2415,7 +2480,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
@@ -2437,7 +2502,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final context = tester.element(find.byType(ModernRateSessionItem));
         expect(find.byType(ActionMenuListItem), findsOneWidget);
@@ -2487,7 +2552,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Copy as text'), findsOneWidget);
 
@@ -2521,7 +2586,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Copy as Markdown'), findsOneWidget);
 
@@ -2549,7 +2614,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Copy as text'), findsNothing);
       expect(find.text('Copy as Markdown'), findsNothing);
@@ -2577,6 +2642,8 @@ void main() {
         ),
       );
 
+      // The Quill editor schedules several follow-up frames before the
+      // toolbar appears — a genuine settle case.
       await tester.pumpAndSettle();
 
       expect(find.byType(QuillSimpleToolbar), findsOneWidget);
@@ -2614,7 +2681,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Copy as text'), findsOneWidget);
       expect(find.text('Copy as Markdown'), findsOneWidget);
