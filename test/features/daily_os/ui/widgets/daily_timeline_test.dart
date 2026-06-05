@@ -17,6 +17,7 @@ import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/compressed_timeline_region.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
+import 'package:lotti/features/daily_os/ui/widgets/draggable_planned_block.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -551,8 +552,19 @@ void main() {
       );
       await tester.pump();
 
-      // Widget should render (test passes if no exception)
-      expect(find.byType(DailyTimeline), findsOneWidget);
+      // The highlighted planned block renders with the emphasized border
+      // (width 2 vs the default 1).
+      final blockContainer = tester.widget<AnimatedContainer>(
+        find
+            .descendant(
+              of: find.byType(DraggablePlannedBlock),
+              matching: find.byType(AnimatedContainer),
+            )
+            .first,
+      );
+      final border =
+          (blockContainer.decoration as BoxDecoration?)?.border as Border?;
+      expect(border?.top.width, 2);
     });
 
     testWidgets('renders both planned and actual blocks simultaneously', (
@@ -2739,11 +2751,8 @@ void main() {
         );
         await tester.pump();
 
-        // The block with no category shows an empty semantics label.
-        final gestureDetectors = find.byType(GestureDetector);
-        expect(gestureDetectors, findsWidgets);
-
         // Long press must not throw even when categoryId is null.
+        final gestureDetectors = find.byType(GestureDetector);
         await tester.longPress(gestureDetectors.last);
         await tester.pump();
 
