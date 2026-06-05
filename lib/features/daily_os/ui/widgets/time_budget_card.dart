@@ -18,7 +18,8 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
 
 /// Formats a duration as "Xh Ym" or "Xm".
-String _formatCompactDuration(Duration duration) {
+@visibleForTesting
+String formatCompactDuration(Duration duration) {
   if (duration.inHours > 0) {
     final hours = duration.inHours;
     final mins = duration.inMinutes % 60;
@@ -321,7 +322,7 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
         ],
         // Time: recorded / planned
         Text(
-          '${_formatCompactDuration(progress.recordedDuration)} / ${_formatCompactDuration(progress.plannedDuration)}',
+          '${formatCompactDuration(progress.recordedDuration)} / ${formatCompactDuration(progress.plannedDuration)}',
           style: context.textTheme.bodySmall?.copyWith(
             color: isTimerRunningForCategory
                 ? context.colorScheme.error
@@ -465,7 +466,7 @@ class _TaskListContent extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                '• ${_formatCompactDuration(totalTime)}',
+                '• ${formatCompactDuration(totalTime)}',
                 style: context.textTheme.labelSmall?.copyWith(
                   color: context.colorScheme.onSurfaceVariant,
                 ),
@@ -710,7 +711,7 @@ class _TaskProgressRow extends StatelessWidget {
             const SizedBox(width: 8),
             // Time spent
             Text(
-              _formatCompactDuration(item.timeSpentOnDay),
+              formatCompactDuration(item.timeSpentOnDay),
               style: context.textTheme.labelSmall?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -899,7 +900,7 @@ class _TaskGridTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  _formatCompactDuration(item.timeSpentOnDay),
+                  formatCompactDuration(item.timeSpentOnDay),
                   style: context.textTheme.labelSmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w500,

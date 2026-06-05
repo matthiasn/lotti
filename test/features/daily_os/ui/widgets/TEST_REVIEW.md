@@ -88,7 +88,7 @@ None of the files in this scope currently have Glados tests.
   - `_getLaneCount` equals `max(laneIndex) + 1` for all non-empty inputs.
   - These are worth ~2–3 Glados property tests once moved to `lane_assignment_utils.dart`.
 
-- [ ] **[HIGH]** `lib/features/daily_os/ui/widgets/time_budget_card.dart` — `_formatCompactDuration` (lines 21–29) is a pure `Duration → String` formatter. Invariants: for any `duration` with `inHours > 0` the output always starts with `${hours}h`; for `mins == 0` no "m" suffix appears; round-trip parsing is testable. A handful of Glados property tests over arbitrary `Duration` values would guard against future formatting regressions.
+- [x] **[HIGH]** `lib/features/daily_os/ui/widgets/time_budget_card.dart` — `_formatCompactDuration` (lines 21–29) is a pure `Duration → String` formatter. Invariants: for any `duration` with `inHours > 0` the output always starts with `${hours}h`; for `mins == 0` no "m" suffix appears; round-trip parsing is testable. A handful of Glados property tests over arbitrary `Duration` values would guard against future formatting regressions.
   - `_getTaskStatusColor` (lines 32–43): a pure `TaskStatus → Color` switch — all status enum values are covered, no nesting. Parameterized static tests are sufficient; not a Glados candidate.
   - `_calculatePriorityBadgeTop` (lines 971–976): pure arithmetic — `isCompleted × completedBadgeHeight + isDueOrOverdue × dueBadgeHeight + initialTop`. Algebraic invariant (additive, bounded). A single Glados property test over `(bool, bool)` input pairs.
 

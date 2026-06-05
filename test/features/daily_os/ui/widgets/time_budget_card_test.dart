@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -2516,6 +2517,46 @@ void main() {
       },
     );
   });
+
+  group('formatCompactDuration', () {
+    test('formats canonical examples', () {
+      expect(formatCompactDuration(Duration.zero), '0m');
+      expect(formatCompactDuration(const Duration(minutes: 45)), '45m');
+      expect(formatCompactDuration(const Duration(hours: 2)), '2h');
+      expect(
+        formatCompactDuration(const Duration(hours: 1, minutes: 5)),
+        '1h 5m',
+      );
+    });
+
+    glados.Glados(
+      glados.any.compactDurationMinutes,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('output always reconstructs the duration in whole minutes', (
+      totalMinutes,
+    ) {
+      final duration = Duration(minutes: totalMinutes);
+      final formatted = formatCompactDuration(duration);
+
+      final hours = totalMinutes ~/ 60;
+      final mins = totalMinutes % 60;
+      if (hours > 0) {
+        expect(formatted, startsWith('${hours}h'), reason: formatted);
+        if (mins == 0) {
+          expect(formatted, '${hours}h');
+        } else {
+          expect(formatted, '${hours}h ${mins}m');
+        }
+      } else {
+        expect(formatted, '${mins}m');
+      }
+    }, tags: 'glados');
+  });
+}
+
+extension _AnyCompactDuration on glados.Any {
+  glados.Generator<int> get compactDurationMinutes =>
+      glados.IntAnys(this).intInRange(0, 60 * 50);
 }
 
 /// Test controller that returns grid mode.
