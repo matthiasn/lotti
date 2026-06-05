@@ -52,7 +52,7 @@ Extra test files with no direct source counterpart:
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/…/header/modern_action_items_test.dart` — The `ModernDeleteItem` and `ModernUnlinkItem` render tests (lines ~371–389, ~754–773) each assert only `expect(find.byType(ActionMenuListItem), findsOneWidget)` — a pure smoke test with no behavioral assertion. Verify that the correct `isDestructive: true` flag reaches `ActionMenuListItem`, or that the correct icon is rendered.
+- [x] **[HIGH]** `test/…/header/modern_action_items_test.dart` — The `ModernDeleteItem` and `ModernUnlinkItem` render tests (lines ~371–389, ~754–773) each assert only `expect(find.byType(ActionMenuListItem), findsOneWidget)` — a pure smoke test with no behavioral assertion. Verify that the correct `isDestructive: true` flag reaches `ActionMenuListItem`, or that the correct icon is rendered.
 
 - [ ] **[HIGH]** `test/…/header/modern_action_items_test.dart` — Contains **10 private class definitions** at the bottom of the file (lines 1606–1774): `_FakeSharePlatform`, `_DeletingFakeEntryController`, `_CopyImageFakeEntryController`, `_RemoveLinkTrackingController`, `_FakeNoRatingController`, `_FakeHasRatingController`, `_RecordingProcessRunner`, `_ProcessCall`, `_FakeLinkedEntriesController`, `_TrackingLinkedEntriesController`. Several of these (tracking controllers, fake linked-entries controllers) are duplicated in spirit across test files. Any that aren't tied to share-platform or process-runner specifics belong in `test/helpers/` as shared fakes.
 

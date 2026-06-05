@@ -402,7 +402,11 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      final item = tester.widget<ActionMenuListItem>(
+        find.byType(ActionMenuListItem),
+      );
+      expect(item.isDestructive, isTrue);
+      expect(item.title, 'Delete entry');
       expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
     });
   });
@@ -798,7 +802,13 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      final item = tester.widget<ActionMenuListItem>(
+        find.byType(ActionMenuListItem),
+      );
+      expect(item.title, 'Unlink');
+      // Unlinking is reversible — the row itself is not styled destructive
+      // (the confirmation modal carries the destructive action instead).
+      expect(item.isDestructive, isFalse);
       expect(find.byIcon(Icons.link_off_rounded), findsOneWidget);
     });
   });
