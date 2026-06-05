@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -103,6 +104,32 @@ void main() {
       expect(view.compactionOn, isFalse);
       expect(view.captureSucceeded, isTrue);
       expect(view.useCompactedLog, isFalse);
+    });
+
+    test('routes failures through the domain logger when one is '
+        'wired', () async {
+      final loggingService = MockLoggingService();
+      final journalDb = MockJournalDb();
+      when(
+        () => journalDb.getConfigFlag(enableAgentCompactionFlag),
+      ).thenThrow(StateError('db unavailable'));
+      final memory = AgentWakeMemory(
+        journalDb: journalDb,
+        syncService: syncService,
+        domainLogger: DomainLogger(loggingService: loggingService),
+      );
+
+      final view = await assemble(memory, captureSucceeded: false);
+
+      expect(view.compactionOn, isFalse);
+      verify(
+        () => loggingService.captureException(
+          any<Object>(that: contains(enableAgentCompactionFlag)),
+          domain: LogDomain.agentWorkflow.wireName,
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
   });
 

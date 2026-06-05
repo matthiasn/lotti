@@ -51,6 +51,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/consts.dart' show enableForkHealingFlag;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -2830,6 +2831,54 @@ void main() {
       await orchestrator.syncEntityWriter!(entity);
 
       verify(() => mockSyncService.upsertEntity(entity)).called(1);
+    });
+
+    test('wires the fork-healing hook to the journalDb flag and the sync '
+        'service', () async {
+      // Exercises the PRODUCTION wiring: the hook reads the
+      // `enable_fork_healing` flag through journalDb per invocation and,
+      // when on, heals through the provider's sync service.
+      final bench = makeForkBench();
+      await seedForkInto(bench.repo, head: 'b'); // a 2-head fork {a, b}
+      final queue = WakeQueue();
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+
+      final journalDb = MockJournalDb();
+      var flag = false;
+      when(
+        () => journalDb.getConfigFlag(enableForkHealingFlag),
+      ).thenAnswer((_) async => flag);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+          agentSyncServiceProvider.overrideWithValue(bench.service),
+          journalDbProvider.overrideWithValue(journalDb),
+          wakeQueueProvider.overrideWithValue(queue),
+          wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final orchestrator = container.read(wakeOrchestratorProvider);
+
+      // Flag off: the hook returns without touching the log.
+      await orchestrator.onWakeStart!('agent-1', 'rk-1', 'thread-1');
+      expect(
+        headsOfLog(bench.repo.messages, bench.repo.links).toSet(),
+        {'a', 'b'},
+      );
+
+      // Flag flipped on: the SAME captured hook heals on the next wake.
+      flag = true;
+      await orchestrator.onWakeStart!('agent-1', 'rk-2', 'thread-1');
+      expect(headsOfLog(bench.repo.messages, bench.repo.links), [
+        computeJoinId(['a', 'b']),
+      ]);
     });
 
     group('taskContentChecker', () {

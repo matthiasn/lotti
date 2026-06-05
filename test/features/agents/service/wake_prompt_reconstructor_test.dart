@@ -1,9 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/wake_prompt_reconstructor.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -148,17 +152,38 @@ void main() {
   });
 
   test(
-    're-derived decision events appear when the agent has a task link',
+    're-derives resolved decision events through the agent task link',
     () async {
-      // Without stubbing a full ledger the in-memory repo returns an empty
-      // one, so this asserts the lookup path is tolerant: a task link with no
-      // resolved proposals reconstructs cleanly.
       await repo.upsertLink(
         makeTestAgentTaskLink(
           id: 'link-task',
           fromId: _agentId,
           toId: 'task-1',
         ),
+      );
+      // A verdict resolved BEFORE the wake's boundary: it was in the prompt,
+      // so reconstruction must re-derive it from the synced ledger.
+      final entry = LedgerEntry(
+        changeSetId: 'cs-1',
+        itemIndex: 0,
+        toolName: 'set_task_title',
+        args: const {},
+        humanSummary: 'Set title to "X"',
+        fingerprint: 'set_task_title:123',
+        status: ChangeItemStatus.confirmed,
+        createdAt: DateTime.utc(2024, 3, 5),
+        resolvedAt: DateTime.utc(2024, 3, 5),
+        resolvedBy: DecisionActor.user,
+        verdict: ChangeDecisionVerdict.confirmed,
+      );
+      when(
+        () => repo.getProposalLedger(
+          _agentId,
+          taskId: 'task-1',
+          resolvedLimit: TaskAgentWorkflow.resolvedDecisionWindow,
+        ),
+      ).thenAnswer(
+        (_) async => ProposalLedger(open: const [], resolved: [entry]),
       );
       await captureAll([src('e1', 'note', day: 1)], 10);
       final assembled = await compactor.assembleContextDetailed(_agentId);
@@ -181,6 +206,50 @@ void main() {
         },
       );
       expect(reconstructed, contains('note'));
+      expect(reconstructed, contains(formatResolvedLedgerLine(entry)));
+    },
+  );
+
+  test(
+    'absorbs inline-event lookup failures and reconstructs without them',
+    () async {
+      // The task-link read throws (e.g. the ledger table is unavailable):
+      // reconstruction degrades to the captured log alone, never to null.
+      await repo.upsertLink(
+        makeTestAgentTaskLink(
+          id: 'link-task',
+          fromId: _agentId,
+          toId: 'task-1',
+        ),
+      );
+      when(
+        () => repo.getProposalLedger(
+          _agentId,
+          taskId: 'task-1',
+          resolvedLimit: TaskAgentWorkflow.resolvedDecisionWindow,
+        ),
+      ).thenThrow(StateError('ledger unavailable'));
+      await captureAll([src('e1', 'note', day: 1)], 10);
+      final assembled = await compactor.assembleContextDetailed(_agentId);
+
+      final reconstructed = await reconstructor.reconstruct(
+        agentId: _agentId,
+        content: <String, Object?>{
+          'promptFormat': 'v2',
+          'head': 'H\n',
+          'tail': '\nT',
+          'log': <String, Object?>{
+            if (assembled.lastEventPosition != null)
+              'until': <String, Object?>{
+                'at': assembled.lastEventPosition!.at.toIso8601String(),
+                'sourceAt': assembled.lastEventPosition!.sourceAt
+                    .toIso8601String(),
+                'key': assembled.lastEventPosition!.key,
+              },
+          },
+        },
+      );
+      expect(reconstructed, 'H\n${assembled.text}\nT');
     },
   );
 }

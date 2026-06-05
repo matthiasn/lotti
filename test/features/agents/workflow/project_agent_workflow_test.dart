@@ -469,6 +469,40 @@ void main() {
       );
 
       test(
+        'continues the wake when capture input loading throws',
+        () async {
+          // Capture is an optimization: a failed linked-entity load is
+          // absorbed and the wake proceeds on the legacy context.
+          when(
+            () => mockJournalRepository.getLinkedEntities(linkedTo: projectId),
+          ).thenThrow(StateError('journal unavailable'));
+
+          final recorder = _RecordingCaptureService();
+          final capturingWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            inputCaptureService: recorder,
+            compactionEnabled: false,
+          );
+
+          final result = await capturingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(recorder.callCount, 0);
+        },
+      );
+
+      test(
         'read-flips to ## Project Log and drops the observations section',
         () async {
           const tailContent = {

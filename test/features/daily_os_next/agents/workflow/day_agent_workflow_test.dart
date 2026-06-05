@@ -382,6 +382,52 @@ void main() {
       expect(marker['until'], isNotNull);
     });
 
+    test('falls back to the legacy prompt when the capture-entity load '
+        'throws', () async {
+      // The substrate is an optimization: a failed capture load is absorbed,
+      // the read-flip gate stays closed, and the wake proceeds legacy-shaped.
+      when(() => syncService.repository).thenReturn(repository);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+      ).thenAnswer((_) async => []);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+      ).thenAnswer((_) async => []);
+      when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.capture,
+        ),
+      ).thenThrow(StateError('capture table unavailable'));
+
+      final sut = DayAgentWorkflow(
+        agentRepository: repository,
+        conversationRepository: conversationRepository,
+        aiConfigRepository: aiConfigRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        syncService: syncService,
+        templateService: templateService,
+        domainLogger: domainLogger,
+        onPersistedStateChanged: changedTokens.add,
+        compactionEnabled: true,
+      );
+      final result = await execute(sut, triggerTokens: {dayId});
+      expect(result.success, isTrue);
+
+      // No dayLog in the sent prompt, and the persisted payload stays a
+      // legacy full blob (no v2 record without a usable compacted log).
+      expect(
+        conversationRepository.lastUserMessage,
+        isNot(contains('"dayLog"')),
+      );
+      final v2Records = upsertedEntities
+          .whereType<AgentMessagePayloadEntity>()
+          .map((p) => p.content)
+          .where((c) => c['promptFormat'] == 'v2');
+      expect(v2Records, isEmpty);
+    });
+
     test(
       'records observations, schedules wake, and persists wake output',
       () async {
