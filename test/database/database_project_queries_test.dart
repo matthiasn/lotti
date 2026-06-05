@@ -11,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -76,6 +77,22 @@ void main() {
         )..where((t) => t.id.equals('proj-id-col-task'))).getSingle();
         expect(row.projectId, isNull);
       });
+
+      test('logs and swallows when the underlying statement fails', () async {
+        // Dropping the journal table makes the raw UPDATE throw; the method
+        // must log the failure instead of propagating it to the caller.
+        await db!.customStatement('DROP TABLE journal');
+        DevLogger.clear();
+
+        await db!.updateProjectIdColumn('proj-id-col-task', 'proj-x');
+
+        expect(
+          DevLogger.capturedLogs.any(
+            (message) => message.contains('updateProjectIdColumn error'),
+          ),
+          isTrue,
+        );
+      });
     });
 
     group('getTaskIdsForProjects -', () {
@@ -114,6 +131,46 @@ void main() {
         expect(ids, contains('task-proj-a'));
         expect(ids, isNot(contains('task-proj-b')));
       });
+    });
+
+    group('getProjectIdsForTaskIds chunking -', () {
+      test(
+        'resolves project ids across the 500-id chunk boundary',
+        () async {
+          final base = DateTime(2024, 11, 3, 10);
+          for (final (taskId, projectId) in [
+            ('task-chunk-first', 'proj-chunk-1'),
+            ('task-chunk-last', 'proj-chunk-2'),
+          ]) {
+            await db!.upsertJournalDbEntity(
+              toDbEntity(
+                buildTaskEntry(
+                  id: taskId,
+                  timestamp: base,
+                  status: TaskStatus.open(
+                    id: 'ts-$taskId',
+                    createdAt: base,
+                    utcOffset: 0,
+                  ),
+                ),
+              ),
+            );
+            await db!.updateProjectIdColumn(taskId, projectId);
+          }
+
+          // Real ids sit at positions 0 and 500 so they land in different
+          // chunks; everything in between is unknown to the database.
+          final queryIds = <String>{
+            'task-chunk-first',
+            for (var i = 0; i < 499; i++) 'task-chunk-missing-$i',
+            'task-chunk-last',
+          };
+          expect(queryIds, hasLength(501));
+
+          final projectIds = await db!.getProjectIdsForTaskIds(queryIds);
+          expect(projectIds, {'proj-chunk-1', 'proj-chunk-2'});
+        },
+      );
     });
 
     group('Project queries -', () {
@@ -1117,11 +1174,6 @@ void main() {
           expect(rollup2.blockedTaskCount, 0);
         },
       );
-
-      test('getProjectTaskRollups returns empty map for empty input', () async {
-        final result = await db!.getProjectTaskRollups(<String>{});
-        expect(result, isEmpty);
-      });
 
       test(
         'getProjectTaskRollups filtered path excludes private tasks when '

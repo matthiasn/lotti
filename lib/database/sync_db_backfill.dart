@@ -15,6 +15,11 @@ mixin _SyncDbBackfill on _$SyncDatabase {
   /// naturally via the standard sync path before backfill fires. Only rows
   /// whose `created_at` is at or before `now - minAge` are returned. Pass
   /// `Duration.zero` to disable (manual / "request now" paths).
+  ///
+  /// Ordered by `(created_at, host_id, counter)`: `created_at` is stored as
+  /// Unix seconds, so equal timestamps are common and the unique
+  /// `(host_id, counter)` tie-breaker keeps LIMIT/OFFSET pagination stable
+  /// across calls.
   Future<List<SyncSequenceLogItem>> getMissingEntries({
     int limit = 50,
     int maxRequestCount = 10,
@@ -31,7 +36,11 @@ mixin _SyncDbBackfill on _$SyncDatabase {
                 t.requestCount.isSmallerThanValue(maxRequestCount) &
                 t.createdAt.isSmallerOrEqualValue(cutoff),
           )
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.createdAt),
+            (t) => OrderingTerm(expression: t.hostId),
+            (t) => OrderingTerm(expression: t.counter),
+          ])
           ..limit(limit, offset: offset))
         .get();
   }
@@ -53,20 +62,33 @@ mixin _SyncDbBackfill on _$SyncDatabase {
     final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
     await batch((b) {
       for (final entry in entries) {
+        // Guarded on actionable statuses: a row selected as missing can
+        // resolve (e.g. the payload arrives via live sync) between the
+        // sweep's SELECT and this batch write. Without the guard, the
+        // UPDATE would flip a `received`/`backfilled`/`deleted` row back
+        // to `requested` and block the watermark again.
+        //
+        // Raw SQL bypasses drift's table-update inference, so the affected
+        // table is declared explicitly — otherwise stream queries watching
+        // sync_sequence_log would not be invalidated by this write.
         b.customStatement(
           'UPDATE sync_sequence_log '
           'SET request_count = request_count + 1, '
           'status = ?, '
           'updated_at = ?, '
           'last_requested_at = ? '
-          'WHERE host_id = ? AND counter = ?',
+          'WHERE host_id = ? AND counter = ? '
+          'AND status IN (?, ?)',
           [
             SyncSequenceStatus.requested.index,
             nowSeconds,
             nowSeconds,
             entry.hostId,
             entry.counter,
+            SyncSequenceStatus.missing.index,
+            SyncSequenceStatus.requested.index,
           ],
+          [TableUpdate.onTable(syncSequenceLog, kind: UpdateKind.update)],
         );
       }
     });
@@ -133,6 +155,9 @@ mixin _SyncDbBackfill on _$SyncDatabase {
   /// Get entries with status 'requested' for re-requesting.
   /// These are entries that were requested but never received.
   /// Ignores maxRequestCount to allow re-requesting stuck entries.
+  ///
+  /// Ordered by `(created_at, host_id, counter)` so LIMIT/OFFSET sweeps stay
+  /// stable when rows share a `created_at` second (see [getMissingEntries]).
   Future<List<SyncSequenceLogItem>> getRequestedEntries({
     int limit = 50,
     int offset = 0,
@@ -141,7 +166,11 @@ mixin _SyncDbBackfill on _$SyncDatabase {
           ..where(
             (t) => t.status.equals(SyncSequenceStatus.requested.index),
           )
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.createdAt),
+            (t) => OrderingTerm(expression: t.hostId),
+            (t) => OrderingTerm(expression: t.counter),
+          ])
           ..limit(limit, offset: offset))
         .get();
   }
@@ -247,7 +276,13 @@ mixin _SyncDbBackfill on _$SyncDatabase {
         }
         return predicate;
       })
-      ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
+      // (created_at, host_id, counter) — see getMissingEntries for why the
+      // unique tie-breaker matters for LIMIT/OFFSET stability.
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.createdAt),
+        (t) => OrderingTerm(expression: t.hostId),
+        (t) => OrderingTerm(expression: t.counter),
+      ]);
 
     // Cap the SQL fetch so a pathologically large missing-row backlog does
     // not blow up memory. Without `maxPerHost` the tight `offset + limit`
@@ -270,8 +305,16 @@ mixin _SyncDbBackfill on _$SyncDatabase {
       for (final entry in entries) {
         byHost.putIfAbsent(entry.hostId, () => []).add(entry);
       }
+      // Same (created_at, host_id, counter) order as the SQL above, so the
+      // post-quota merge preserves stable pagination.
       entries = byHost.values.expand((list) => list.take(maxPerHost)).toList()
-        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        ..sort((a, b) {
+          final byCreatedAt = a.createdAt.compareTo(b.createdAt);
+          if (byCreatedAt != 0) return byCreatedAt;
+          final byHostId = a.hostId.compareTo(b.hostId);
+          if (byHostId != 0) return byHostId;
+          return a.counter.compareTo(b.counter);
+        });
     }
 
     return entries.skip(offset).take(limit).toList();

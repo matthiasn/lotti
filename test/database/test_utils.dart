@@ -18,6 +18,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -38,6 +39,7 @@ Directory setupTestDirectory() {
 /// `setUpAll`.
 void registerJournalDbTestFallbacks() {
   registerFallbackValue(StackTrace.empty);
+  registerFallbackValue(InsightLevel.info);
   registerFallbackValue(const Stream<Set<String>>.empty());
   registerFallbackValue(fallbackJournalEntity);
   registerFallbackValue(
@@ -77,6 +79,7 @@ void registerJournalDbTestServices({
       any<LogDomain>(),
       any<String>(),
       subDomain: any<String?>(named: 'subDomain'),
+      level: any<InsightLevel>(named: 'level'),
     ),
   ).thenAnswer((_) => Future<void>.value());
 
@@ -86,6 +89,7 @@ void registerJournalDbTestServices({
       any<Object>(),
       stackTrace: any<StackTrace?>(named: 'stackTrace'),
       subDomain: any<String?>(named: 'subDomain'),
+      message: any<String?>(named: 'message'),
     ),
   ).thenAnswer((_) async {});
 }

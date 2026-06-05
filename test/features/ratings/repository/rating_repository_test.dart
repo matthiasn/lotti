@@ -105,10 +105,16 @@ void main() {
 
   group('RatingRepository', () {
     group('getRatingForTargetEntry', () {
+      // Stubs and verifies must pass `catalogId` explicitly because the
+      // repository always passes it to the JournalDb call: noSuchMethod
+      // forwarders for mixin-declared methods do not reliably fill in
+      // omitted optional parameters, so a stub that omits a parameter the
+      // production call passes never matches.
       test('delegates to JournalDb', () async {
         when(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
           ),
         ).thenAnswer((_) async => testRatingEntry);
 
@@ -120,6 +126,8 @@ void main() {
         verify(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            // ignore: avoid_redundant_argument_values
+            catalogId: 'session',
           ),
         ).called(1);
       });
@@ -128,6 +136,7 @@ void main() {
         when(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
           ),
         ).thenAnswer((_) async => null);
 
@@ -166,6 +175,7 @@ void main() {
         when(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
           ),
         ).thenAnswer((_) async => null);
         when(
@@ -229,6 +239,7 @@ void main() {
         when(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
           ),
         ).thenAnswer((_) async => testRatingEntry);
         when(
@@ -273,6 +284,7 @@ void main() {
         when(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
           ),
         ).thenAnswer((_) async => null);
         when(
@@ -330,6 +342,7 @@ void main() {
         when(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
           ),
         ).thenAnswer((_) async => null);
         when(
@@ -382,6 +395,7 @@ void main() {
         when(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
           ),
         ).thenThrow(Exception('DB error'));
         when(
@@ -415,6 +429,7 @@ void main() {
         when(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
           ),
         ).thenAnswer((_) async => null);
         when(
@@ -462,6 +477,7 @@ void main() {
         when(
           () => mockDb.getRatingForTimeEntry(
             testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
           ),
         ).thenAnswer((_) async => null);
         when(
@@ -540,7 +556,10 @@ void main() {
 
       Future<void> stubCreateRatingFlow() async {
         when(
-          () => mockDb.getRatingForTimeEntry(testTimeEntryId),
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
+          ),
         ).thenAnswer((_) async => null);
         when(
           () => mockDb.journalEntityById(testTimeEntryId),
@@ -627,7 +646,10 @@ void main() {
         Future<int> Function()? upsertResult,
       }) async {
         when(
-          () => mockDb.getRatingForTimeEntry(testTimeEntryId),
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
+          ),
         ).thenAnswer((_) async => null);
         when(
           () => mockDb.journalEntityById(testTimeEntryId),

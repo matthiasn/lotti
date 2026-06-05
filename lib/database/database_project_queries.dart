@@ -37,6 +37,7 @@ mixin _JournalDbProjectQueries on _$JournalDb, _JournalDbConfigFlags {
               (t) =>
                   t.projectId.isIn(projectIds.toList()) &
                   t.type.equals('Task') &
+                  t.task.equals(true) &
                   t.deleted.equals(false),
             ))
             .get();
@@ -62,20 +63,29 @@ mixin _JournalDbProjectQueries on _$JournalDb, _JournalDbConfigFlags {
   /// project via the denormalized `project_id` column.
   Future<Set<String>> getProjectIdsForTaskIds(Set<String> taskIds) async {
     if (taskIds.isEmpty) return {};
-    final rows =
-        await (selectOnly(journal)
-              ..addColumns([journal.projectId])
-              ..where(
-                journal.id.isIn(taskIds.toList()) &
-                    journal.type.equals('Task') &
-                    journal.deleted.equals(false) &
-                    journal.projectId.isNotNull(),
-              ))
-            .get();
-    return rows
-        .map((row) => row.read(journal.projectId))
-        .whereType<String>()
-        .toSet();
+    final idList = taskIds.toList(growable: false);
+    final projectIds = <String>{};
+    // Chunked so an arbitrarily large task-id intersection set cannot
+    // exceed SQLite's bind-variable cap.
+    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
+      final end = (i + _sqliteInListChunk).clamp(0, idList.length);
+      final chunk = idList.sublist(i, end);
+      final rows =
+          await (selectOnly(journal)
+                ..addColumns([journal.projectId])
+                ..where(
+                  journal.id.isIn(chunk) &
+                      journal.type.equals('Task') &
+                      journal.task.equals(true) &
+                      journal.deleted.equals(false) &
+                      journal.projectId.isNotNull(),
+                ))
+              .get();
+      projectIds.addAll(
+        rows.map((row) => row.read(journal.projectId)).whereType<String>(),
+      );
+    }
+    return projectIds;
   }
 
   /// Returns all visible, non-deleted projects across categories.

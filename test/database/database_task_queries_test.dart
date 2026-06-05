@@ -10,6 +10,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1176,6 +1177,26 @@ void main() {
         )..where((t) => t.id.equals('prio-col-task'))).getSingle();
         expect(row.taskPriority, 'P0');
         expect(row.taskPriorityRank, 42);
+      });
+
+      test('logs and swallows when the underlying statement fails', () async {
+        // Dropping the journal table makes the raw UPDATE throw; the method
+        // must log the failure instead of propagating it to the caller.
+        await db!.customStatement('DROP TABLE journal');
+        DevLogger.clear();
+
+        await db!.updateTaskPriorityColumn(
+          id: 'prio-col-task',
+          priority: 'P0',
+          rank: 1,
+        );
+
+        expect(
+          DevLogger.capturedLogs.any(
+            (message) => message.contains('updateTaskPriorityColumn error'),
+          ),
+          isTrue,
+        );
       });
     });
 

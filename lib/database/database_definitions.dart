@@ -14,6 +14,17 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
         ),
       );
     } catch (ex) {
+      // SQLITE_CONSTRAINT (19) covers the duplicate (journal_id, label_id)
+      // pair — re-applying labels must stay idempotent — and FK failures
+      // when the label definition has not arrived via sync yet. Those were
+      // always tolerated; anything else now propagates so addLabeled's
+      // transaction rolls back instead of committing a partial reconcile.
+      // Drift can wrap SqliteException when running through an isolate, so
+      // match the printed form as well as the type.
+      final isConstraintViolation =
+          (ex is SqliteException && ex.resultCode == 19) ||
+          ex.toString().contains('SqliteException(19');
+      if (!isConstraintViolation) rethrow;
       DevLogger.error(
         name: 'JournalDb',
         message: 'insertLabel failed',
@@ -60,15 +71,25 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     );
   }
 
-  /// Snapshot version of label usage statistics for prompt construction or one-off queries
+  /// Snapshot version of label usage statistics for prompt construction or
+  /// one-off queries.
+  ///
+  /// Only counts labels on visible journal entries: soft-deleted entries are
+  /// excluded, and private entries only count while the `private` config flag
+  /// is enabled (the same `private IN (0, flag)` gate the definition queries
+  /// in `database.drift` use), so usage stats can neither overcount nor leak
+  /// hidden-entry volume.
   Future<Map<String, int>> getLabelUsageCounts() async {
     final query = customSelect(
       '''
-      SELECT label_id, COUNT(*) AS usage_count
-      FROM labeled
-      GROUP BY label_id
+      SELECT l.label_id AS label_id, COUNT(*) AS usage_count
+      FROM labeled l
+      INNER JOIN journal j ON j.id = l.journal_id
+      WHERE j.deleted = FALSE
+        AND j.private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+      GROUP BY l.label_id
       ''',
-      readsFrom: {labeled},
+      readsFrom: {labeled, journal, configFlags},
     );
 
     final rows = await query.get();

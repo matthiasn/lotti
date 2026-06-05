@@ -47,6 +47,7 @@ mixin _JournalDbTaskQueries on _$JournalDb, _JournalDbConfigFlags {
       WHERE id IN ($placeholders)
       AND deleted = FALSE
       AND type = 'Task'
+      AND task = 1
       ''',
       variables: [
         for (final id in idList) Variable<String>(id),

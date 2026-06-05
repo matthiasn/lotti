@@ -988,7 +988,7 @@ void main() {
         await db!.upsertJournalDbEntity(toDbEntity(flaggedEntry));
 
         final count = await db!.getCountImportFlagEntries();
-        expect(count, greaterThanOrEqualTo(1));
+        expect(count, 1);
       });
 
       test('returns zero when no import-flagged entries exist', () async {
@@ -1062,9 +1062,12 @@ void main() {
             types: const ['JournalEntry'],
             starredStatuses: const [true, false],
             privateStatuses: const [true, false],
+            // [0, 1] is the matches-all-flag-states sentinel the dispatch in
+            // _selectJournalEntities checks for (and what production callers
+            // pass) — required to actually reach the fast paths under test.
             flaggedStatuses: [
               EntryFlag.none.index,
-              EntryFlag.followUpNeeded.index,
+              EntryFlag.import.index,
             ],
             categoryIds: {'filter-cat-fast'},
           );
@@ -1083,9 +1086,12 @@ void main() {
             types: const ['JournalEntry'],
             starredStatuses: const [true, false],
             privateStatuses: const [false],
+            // [0, 1] is the matches-all-flag-states sentinel the dispatch in
+            // _selectJournalEntities checks for (and what production callers
+            // pass) — required to actually reach the fast paths under test.
             flaggedStatuses: [
               EntryFlag.none.index,
-              EntryFlag.followUpNeeded.index,
+              EntryFlag.import.index,
             ],
             categoryIds: {'filter-cat-fast'},
           );
@@ -1223,9 +1229,12 @@ void main() {
             types: const ['JournalEntry'],
             starredStatuses: const [true, false],
             privateStatuses: const [false],
+            // [0, 1] is the matches-all-flag-states sentinel the dispatch in
+            // _selectJournalEntities checks for (and what production callers
+            // pass) — required to actually reach the fast paths under test.
             flaggedStatuses: [
               EntryFlag.none.index,
-              EntryFlag.followUpNeeded.index,
+              EntryFlag.import.index,
             ],
             categoryIds: {'gje-cat'},
           );
@@ -1260,9 +1269,12 @@ void main() {
             types: const ['JournalEntry'],
             starredStatuses: const [true, false],
             privateStatuses: const [false],
+            // [0, 1] is the matches-all-flag-states sentinel the dispatch in
+            // _selectJournalEntities checks for (and what production callers
+            // pass) — required to actually reach the fast paths under test.
             flaggedStatuses: [
               EntryFlag.none.index,
-              EntryFlag.followUpNeeded.index,
+              EntryFlag.import.index,
             ],
           );
           final ids = result.map((e) => e.meta.id).toSet();
@@ -1363,8 +1375,9 @@ void main() {
       tags: 'glados',
     );
 
-    glados.Glados(glados.any.invalidJsonString).test(
-      'malformed JSON never throws and yields null for both extractors',
+    glados.Glados(glados.any.nonVectorClockJson).test(
+      'malformed or non-object JSON never throws and yields null for both '
+      'extractors',
       (garbage) {
         expect(extractVectorClockForTesting(garbage), isNull);
         expect(extractEntryLinkVectorClockForTesting(garbage), isNull);
@@ -1415,8 +1428,19 @@ extension _AnyVectorClockJson on glados.Any {
         glados.IntAnys(this).intInRange(-1000000, 1000000),
       );
 
-  /// Strings that are guaranteed not to parse as JSON: a `{` followed by
-  /// letters/digits can never form a valid object (keys must be quoted).
-  glados.Generator<String> get invalidJsonString =>
-      glados.StringAnys(this).letterOrDigits.map((s) => '{$s');
+  /// Strings that either fail to parse as JSON at all or parse to a
+  /// non-object top level (array, string, number). Both extractors must
+  /// map every one of them to null without throwing.
+  glados.Generator<String> get nonVectorClockJson =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.StringAnys(this).letterOrDigits,
+        (int shape, String s) => switch (shape) {
+          0 => '{$s', // unbalanced object — never valid JSON
+          1 => '[$s]', // array (or garbage) — wrong top-level shape
+          2 => '"$s"', // JSON string — wrong top-level shape
+          3 => s, // bare token: number or garbage
+          _ => '$s}', // trailing garbage
+        },
+      );
 }

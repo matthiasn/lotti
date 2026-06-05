@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/journal_update_result.dart';
@@ -323,6 +324,37 @@ void main() {
     });
 
     group('purgeDeletedFiles -', () {
+      test(
+        'missing media file does not prevent JSON descriptor cleanup',
+        () async {
+          final deletionTime = DateTime(2024, 1, 4, 11);
+          final imageEntry = buildImageEntry(
+            id: 'image-missing-media',
+            timestamp: deletionTime,
+            imageDirectory: '/images/2024/01/04/',
+            imageFile: 'missing.jpg',
+            deletedAt: deletionTime,
+          );
+          await db!.updateJournalEntity(imageEntry);
+
+          final image = imageEntry as JournalImage;
+          final docDir = getIt<Directory>();
+          final imagePath = getFullImagePath(
+            image,
+            documentsDirectory: docDir.path,
+          );
+          // The media file was never written (or is already gone); only the
+          // JSON descriptor exists.
+          final jsonPath = '$imagePath.json';
+          expect(File(imagePath).existsSync(), isFalse);
+          expect(File(jsonPath).existsSync(), isTrue);
+
+          await db!.purgeDeletedFiles();
+
+          expect(File(jsonPath).existsSync(), isFalse);
+        },
+      );
+
       test('removes image files and JSON', () async {
         final deletionTime = DateTime(2024, 1, 1, 8);
         final imageEntry = buildImageEntry(
@@ -396,40 +428,49 @@ void main() {
         expect(File(jsonPath).existsSync(), isFalse);
       });
 
-      test('handles file deletion errors gracefully', () async {
-        final deletionTime = DateTime(2024, 1, 4, 11);
-        final imageEntry = buildImageEntry(
-          id: 'image-missing-file',
-          timestamp: deletionTime,
-          imageDirectory: '/images/2024/01/04/',
-          imageFile: 'missing.jpg',
-          deletedAt: deletionTime,
-        );
-        final textEntry = buildTextEntry(
-          id: 'text-still-deleted',
-          timestamp: deletionTime,
-          text: 'Should still be deleted',
-          deletedAt: deletionTime,
-        );
-        await db!.updateJournalEntity(imageEntry);
-        await db!.updateJournalEntity(textEntry);
+      test(
+        'handles per-entity purge errors gracefully and continues',
+        () async {
+          final deletionTime = DateTime(2024, 1, 4, 11);
+          // A deleted row whose serialized payload cannot be decoded forces
+          // the per-entity error path; the loop must log it and keep purging
+          // the remaining entities. (Missing files no longer error — deletes
+          // are existence-checked.)
+          final malformedRow = toDbEntity(
+            buildTextEntry(
+              id: 'malformed-purge-row',
+              timestamp: deletionTime,
+              text: 'will be corrupted',
+              deletedAt: deletionTime,
+            ),
+          ).copyWith(serialized: 'not-json');
+          await db!.upsertJournalDbEntity(malformedRow);
 
-        final docDir = getIt<Directory>();
-        final textJsonPath = entityPath(textEntry, docDir);
-        expect(File(textJsonPath).existsSync(), isTrue);
+          final textEntry = buildTextEntry(
+            id: 'text-still-deleted',
+            timestamp: deletionTime,
+            text: 'Should still be deleted',
+            deletedAt: deletionTime,
+          );
+          await db!.updateJournalEntity(textEntry);
 
-        await db!.purgeDeletedFiles();
+          final docDir = getIt<Directory>();
+          final textJsonPath = entityPath(textEntry, docDir);
+          expect(File(textJsonPath).existsSync(), isTrue);
 
-        verify(
-          () => mockLoggingService.error(
-            LogDomain.database,
-            any<Object>(),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            subDomain: 'purgeDeletedFiles',
-          ),
-        ).called(1);
-        expect(File(textJsonPath).existsSync(), isFalse);
-      });
+          await db!.purgeDeletedFiles();
+
+          verify(
+            () => mockLoggingService.error(
+              LogDomain.database,
+              any<Object>(),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'purgeDeletedFiles',
+            ),
+          ).called(1);
+          expect(File(textJsonPath).existsSync(), isFalse);
+        },
+      );
     });
 
     group('purgeDeleted -', () {

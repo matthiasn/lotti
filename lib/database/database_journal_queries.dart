@@ -218,14 +218,20 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     var offset = 0;
 
     while (true) {
-      final batch = await (select(journal)..limit(batchSize, offset: offset))
-          .map(
-            (row) => (
-              id: row.id,
-              vectorClock: _extractVectorClock(row.serialized),
-            ),
-          )
-          .get();
+      // Deterministic paging order: without ORDER BY, SQLite gives no
+      // stability guarantee across LIMIT/OFFSET batches, which could skip
+      // or duplicate rows while populating the sequence log.
+      final batch =
+          await (select(journal)
+                ..orderBy([(t) => OrderingTerm.asc(t.id)])
+                ..limit(batchSize, offset: offset))
+              .map(
+                (row) => (
+                  id: row.id,
+                  vectorClock: _extractVectorClock(row.serialized),
+                ),
+              )
+              .get();
 
       if (batch.isEmpty) break;
 
@@ -242,8 +248,11 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     var offset = 0;
 
     while (true) {
+      // Same deterministic paging order as the journal-entry stream above.
       final batch =
-          await (select(linkedEntries)..limit(batchSize, offset: offset))
+          await (select(linkedEntries)
+                ..orderBy([(t) => OrderingTerm.asc(t.id)])
+                ..limit(batchSize, offset: offset))
               .map(
                 (row) => (
                   id: row.id,
@@ -475,8 +484,10 @@ Map<String, int>? _extractEntryLinkVectorClock(String serialized) {
       if (v is! num) return null;
     }
     return vc.map((k, v) => MapEntry(k, (v as num).toInt()));
-  } on FormatException catch (_) {
-    // Invalid JSON format
+  } catch (_) {
+    // Invalid JSON, or a valid document whose top level / vectorClock is
+    // not an object — either way the row carries no usable clock. A bad
+    // row must yield null instead of aborting the enclosing stream.
     return null;
   }
 }

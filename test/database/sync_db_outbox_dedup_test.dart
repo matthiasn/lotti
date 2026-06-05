@@ -423,6 +423,39 @@ void main() {
       await db?.close();
     });
 
+    test(
+      'findPendingByEntryId breaks same-second createdAt ties by newest id',
+      () async {
+        final sameInstant = DateTime(2024, 3, 15, 10);
+        // created_at is stored at second granularity, so two rapid edits
+        // collide on the timestamp; the higher (newer) id must win.
+        await db!.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('older-edit'),
+            message: const Value('{"v": 1}'),
+            createdAt: Value(sameInstant),
+            updatedAt: Value(sameInstant),
+            outboxEntryId: const Value('tie-entry'),
+          ),
+        );
+        await db!.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('newer-edit'),
+            message: const Value('{"v": 2}'),
+            createdAt: Value(sameInstant),
+            updatedAt: Value(sameInstant),
+            outboxEntryId: const Value('tie-entry'),
+          ),
+        );
+
+        final pending = await db!.findPendingByEntryId('tie-entry');
+        expect(pending, isNotNull);
+        expect(pending!.subject, 'newer-edit');
+      },
+    );
+
     test('findPendingByEntryId returns pending item for entry', () async {
       final database = db!;
       final now = DateTime(2024, 1, 1);

@@ -41,6 +41,12 @@ mixin _JournalDbConfigFlags on _$JournalDb {
         Future<void>(() async {
           await _ensureConfigFlagsLoaded();
           emit(_currentConfigFlags());
+        }).catchError((Object error, StackTrace stackTrace) {
+          // Surface bootstrap failures to the subscriber instead of leaking
+          // an unhandled async error from this fire-and-forget future.
+          if (!controller.isClosed) {
+            controller.addError(error, stackTrace);
+          }
         });
       }
 

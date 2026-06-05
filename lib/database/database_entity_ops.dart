@@ -174,21 +174,18 @@ mixin _JournalDbEntityOps
         await journalEntity.maybeMap(
           journalImage: (JournalImage image) async {
             final fullPath = getFullImagePath(image);
-            final jsonPath = '$fullPath.json';
-            await File(fullPath).delete();
-            await File(jsonPath).delete();
+            await _deleteFileIfExists(fullPath);
+            await _deleteFileIfExists('$fullPath.json');
           },
           journalAudio: (JournalAudio audio) async {
             final fullPath = await AudioUtils.getFullAudioPath(audio);
-            final jsonPath = '$fullPath.json';
-            await File(fullPath).delete();
-            await File(jsonPath).delete();
+            await _deleteFileIfExists(fullPath);
+            await _deleteFileIfExists('$fullPath.json');
           },
           orElse: () async {
             // For all other entry types, just delete the JSON file
             final docDir = getDocumentsDirectory();
-            final jsonPath = entityPath(journalEntity, docDir);
-            await File(jsonPath).delete();
+            await _deleteFileIfExists(entityPath(journalEntity, docDir));
           },
         );
       } catch (e) {
@@ -199,6 +196,16 @@ mixin _JournalDbEntityOps
           subDomain: 'purgeDeletedFiles',
         );
       }
+    }
+  }
+
+  /// Deletes [path] if it exists. A missing media file must not abort the
+  /// purge of its sibling JSON descriptor (or vice versa), so deletes are
+  /// existence-checked instead of letting [File.delete] throw.
+  Future<void> _deleteFileIfExists(String path) async {
+    final file = File(path);
+    if (file.existsSync()) {
+      await file.delete();
     }
   }
 

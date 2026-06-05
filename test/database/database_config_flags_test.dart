@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
@@ -387,6 +388,21 @@ void main() {
       },
     );
 
+    group('watchConfigFlags bootstrap failure -', () {
+      test(
+        'bootstrap errors surface on the stream instead of going unhandled',
+        () async {
+          final throwingDb = _BootstrapThrowingJournalDb();
+          addTearDown(throwingDb.close);
+
+          await expectLater(
+            throwingDb.watchConfigFlags().first,
+            throwsStateError,
+          );
+        },
+      );
+    });
+
     group('config flags bootstrap -', () {
       test(
         'getConfigFlag bootstraps and loads persisted flags into the cache',
@@ -418,6 +434,68 @@ void main() {
           expect(await freshDb.getConfigFlag('missing-flag'), isFalse);
         },
       );
+
+      test(
+        'a failed bootstrap is not cached — the next read retries and '
+        'succeeds once the underlying query recovers',
+        () async {
+          final flakyDb = _FlakyBootstrapJournalDb();
+          addTearDown(flakyDb.close);
+
+          // The async bootstrap failure propagates to the caller…
+          await expectLater(
+            flakyDb.getConfigFlag('retry-flag'),
+            throwsA(anything),
+          );
+
+          // …but must reset the bootstrap future so this read starts a
+          // fresh load instead of replaying the cached failure.
+          flakyDb.failBootstrap = false;
+          await flakyDb
+              .into(flakyDb.configFlags)
+              .insert(
+                const ConfigFlag(
+                  name: 'retry-flag',
+                  description: 'Retry flag',
+                  status: true,
+                ),
+              );
+          expect(await flakyDb.getConfigFlag('retry-flag'), isTrue);
+        },
+      );
     });
   });
+}
+
+/// Forces the lazy config-flag bootstrap to fail so the stream error path
+/// in `watchConfigFlags` is exercised.
+class _BootstrapThrowingJournalDb extends JournalDb {
+  _BootstrapThrowingJournalDb() : super(inMemoryDatabase: true);
+
+  @override
+  drift.Selectable<ConfigFlag> listConfigFlags() {
+    throw StateError('config flags unavailable');
+  }
+}
+
+/// Fails the config-flag bootstrap *asynchronously* (the query itself
+/// errors, unlike [_BootstrapThrowingJournalDb]'s synchronous throw) so the
+/// bootstrap future's failure-reset path is exercised; flipping
+/// [failBootstrap] lets the same instance recover afterwards.
+class _FlakyBootstrapJournalDb extends JournalDb {
+  _FlakyBootstrapJournalDb() : super(inMemoryDatabase: true);
+
+  bool failBootstrap = true;
+
+  @override
+  drift.Selectable<ConfigFlag> listConfigFlags() {
+    if (failBootstrap) {
+      // Querying a non-existent table fails when the statement runs, which
+      // is after the bootstrap future has been installed.
+      return customSelect('SELECT * FROM no_such_table').map(
+        (_) => throw StateError('unreachable - the query itself fails'),
+      );
+    }
+    return super.listConfigFlags();
+  }
 }

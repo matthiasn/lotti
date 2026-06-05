@@ -71,6 +71,24 @@ extension _AnyMissingLimitsScenario on Any {
   );
 }
 
+Future<void> _insertSequenceRow(
+  SyncDatabase database, {
+  required String hostId,
+  required int counter,
+  required SyncSequenceStatus status,
+  required DateTime createdAt,
+}) {
+  return database.recordSequenceEntry(
+    SyncSequenceLogCompanion(
+      hostId: Value(hostId),
+      counter: Value(counter),
+      status: Value(status.index),
+      createdAt: Value(createdAt),
+      updatedAt: Value(createdAt),
+    ),
+  );
+}
+
 void main() {
   SyncDatabase? db;
 
@@ -758,6 +776,97 @@ void main() {
       expect(missing, hasLength(3));
       expect(missing.every((e) => e.hostId == 'host-1'), isTrue);
     });
+
+    test('breaks created_at ties by (host_id, counter), including the '
+        'in-memory maxPerHost merge', () async {
+      final database = db!;
+      final sameSecond = DateTime(2024, 1, 15, 12);
+      final shuffled = [
+        (hostId: 'host-b', counter: 5),
+        (hostId: 'host-a', counter: 8),
+        (hostId: 'host-b', counter: 2),
+        (hostId: 'host-a', counter: 4),
+      ];
+      for (final row in shuffled) {
+        await _insertSequenceRow(
+          database,
+          hostId: row.hostId,
+          counter: row.counter,
+          status: SyncSequenceStatus.missing,
+          createdAt: sameSecond,
+        );
+      }
+
+      // SQL path (no per-host cap).
+      final unlimited = await database.getMissingEntriesWithLimits();
+      expect(
+        unlimited.map((e) => (e.hostId, e.counter)).toList(),
+        [('host-a', 4), ('host-a', 8), ('host-b', 2), ('host-b', 5)],
+      );
+
+      // In-memory merge path: maxPerHost keeps the first row per host and
+      // the merged result stays tuple-ordered.
+      final capped = await database.getMissingEntriesWithLimits(
+        maxPerHost: 1,
+      );
+      expect(
+        capped.map((e) => (e.hostId, e.counter)).toList(),
+        [('host-a', 4), ('host-b', 2)],
+      );
+
+      // With both same-second rows of a host surviving the cap, the merge
+      // sort has to fall through to the counter tie-breaker.
+      final cappedTwo = await database.getMissingEntriesWithLimits(
+        maxPerHost: 2,
+      );
+      expect(
+        cappedTwo.map((e) => (e.hostId, e.counter)).toList(),
+        [('host-a', 4), ('host-a', 8), ('host-b', 2), ('host-b', 5)],
+      );
+    });
+  });
+
+  group('getMissingEntries ordering Tests', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('breaks created_at ties by (host_id, counter) so LIMIT/OFFSET '
+        'sweeps stay stable', () async {
+      final database = db!;
+      final sameSecond = DateTime(2024, 1, 15, 12);
+      final shuffled = [
+        (hostId: 'host-b', counter: 7),
+        (hostId: 'host-a', counter: 6),
+        (hostId: 'host-b', counter: 3),
+        (hostId: 'host-a', counter: 1),
+      ];
+      for (final row in shuffled) {
+        await _insertSequenceRow(
+          database,
+          hostId: row.hostId,
+          counter: row.counter,
+          status: SyncSequenceStatus.missing,
+          createdAt: sameSecond,
+        );
+      }
+
+      final all = await database.getMissingEntries();
+      expect(
+        all.map((e) => (e.hostId, e.counter)).toList(),
+        [('host-a', 1), ('host-a', 6), ('host-b', 3), ('host-b', 7)],
+      );
+
+      final page1 = await database.getMissingEntries(limit: 2);
+      final page2 = await database.getMissingEntries(limit: 2, offset: 2);
+      expect(
+        [...page1, ...page2].map((e) => (e.hostId, e.counter)).toList(),
+        all.map((e) => (e.hostId, e.counter)).toList(),
+      );
+    });
   });
 
   group('getRequestedEntries Tests', () {
@@ -912,6 +1021,44 @@ void main() {
       expect(requested[0].counter, 1); // Oldest first
       expect(requested[1].counter, 2);
       expect(requested[2].counter, 3); // Newest last
+    });
+
+    test('breaks created_at ties by (host_id, counter) so LIMIT/OFFSET '
+        'pages neither skip nor duplicate rows', () async {
+      final database = db!;
+      // created_at is stored as Unix seconds, so same-second rows are
+      // common in production. Insert in shuffled order to prove the
+      // ordering comes from the query, not insertion order.
+      final sameSecond = DateTime(2024, 1, 15, 12);
+      final shuffled = [
+        (hostId: 'host-b', counter: 2),
+        (hostId: 'host-a', counter: 9),
+        (hostId: 'host-b', counter: 1),
+        (hostId: 'host-a', counter: 3),
+      ];
+      for (final row in shuffled) {
+        await _insertSequenceRow(
+          database,
+          hostId: row.hostId,
+          counter: row.counter,
+          status: SyncSequenceStatus.requested,
+          createdAt: sameSecond,
+        );
+      }
+
+      final all = await database.getRequestedEntries();
+      expect(
+        all.map((e) => (e.hostId, e.counter)).toList(),
+        [('host-a', 3), ('host-a', 9), ('host-b', 1), ('host-b', 2)],
+      );
+
+      // Paging through the same data reassembles the full sequence.
+      final page1 = await database.getRequestedEntries(limit: 2);
+      final page2 = await database.getRequestedEntries(limit: 2, offset: 2);
+      expect(
+        [...page1, ...page2].map((e) => (e.hostId, e.counter)).toList(),
+        all.map((e) => (e.hostId, e.counter)).toList(),
+      );
     });
 
     test('ignores maxRequestCount - returns all requested entries', () async {
@@ -1082,6 +1229,89 @@ void main() {
     tearDown(() async {
       await db?.close();
     });
+
+    test('invalidates sync_sequence_log stream queries (raw SQL declares '
+        'its table update explicitly)', () async {
+      final database = db!;
+      await _insertSequenceRow(
+        database,
+        hostId: 'host-1',
+        counter: 1,
+        status: SyncSequenceStatus.missing,
+        createdAt: DateTime(2024, 1, 15),
+      );
+
+      // Subscribe before the write; resolves only if drift re-runs the
+      // watch query after the batch (raw customStatement updates are not
+      // inferred automatically, so this hangs without the explicit
+      // TableUpdate declaration).
+      final updated = database
+          .select(database.syncSequenceLog)
+          .watch()
+          .firstWhere(
+            (rows) => rows.any(
+              (row) =>
+                  row.requestCount == 1 &&
+                  row.status == SyncSequenceStatus.requested.index,
+            ),
+          );
+
+      await database.batchIncrementRequestCounts([
+        (hostId: 'host-1', counter: 1),
+      ]);
+
+      final rows = await updated;
+      expect(rows.single.requestCount, 1);
+      expect(rows.single.status, SyncSequenceStatus.requested.index);
+    });
+
+    test(
+      'does not revert rows that resolved between selection and the batch '
+      'write',
+      () async {
+        final database = db!;
+        final base = DateTime(2024, 3, 15, 10);
+        await database.batchInsertSequenceEntries([
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: const Value(1),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(base),
+            updatedAt: Value(base),
+          ),
+          // Resolved while the backfill sweep was preparing its batch.
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: const Value(2),
+            entryId: const Value('entry-2'),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(base),
+            updatedAt: Value(base),
+          ),
+        ]);
+
+        await database.batchIncrementRequestCounts([
+          (hostId: 'host-1', counter: 1),
+          (hostId: 'host-1', counter: 2),
+        ]);
+
+        final actionable = await database.getEntryByHostAndCounter(
+          'host-1',
+          1,
+        );
+        expect(actionable!.status, SyncSequenceStatus.requested.index);
+        expect(actionable.requestCount, 1);
+
+        final resolved = await database.getEntryByHostAndCounter(
+          'host-1',
+          2,
+        );
+        // The guard must leave the resolved row untouched.
+        expect(resolved!.status, SyncSequenceStatus.received.index);
+        expect(resolved.requestCount, 0);
+        expect(resolved.lastRequestedAt, isNull);
+      },
+    );
 
     test('increments request count for single entry', () async {
       final database = db!;

@@ -1102,6 +1102,57 @@ void main() {
     });
 
     group('getBulkLinkedTimeSpans -', () {
+      test(
+        'resolves spans across the 500-id chunk boundary',
+        () async {
+          final base = DateTime(2024, 11, 6, 9);
+          for (final parentId in ['span-parent-first', 'span-parent-last']) {
+            final parent = buildJournalEntry(
+              id: parentId,
+              timestamp: base,
+              text: 'parent',
+            );
+            final child = buildJournalEntry(
+              id: '$parentId-child',
+              timestamp: base.add(const Duration(minutes: 5)),
+              text: 'child',
+            );
+            await db!.upsertJournalDbEntity(toDbEntity(parent));
+            await db!.upsertJournalDbEntity(toDbEntity(child));
+            await db!.upsertEntryLink(
+              buildEntryLink(
+                id: '$parentId-link',
+                fromId: parentId,
+                toId: '$parentId-child',
+                timestamp: base,
+              ),
+            );
+          }
+
+          // Real parents sit at positions 0 and 500 so they land in
+          // different chunks; everything in between is unknown.
+          final fromIds = <String>{
+            'span-parent-first',
+            for (var i = 0; i < 499; i++) 'span-parent-missing-$i',
+            'span-parent-last',
+          };
+          expect(fromIds, hasLength(501));
+
+          final result = await db!.getBulkLinkedTimeSpans(fromIds);
+
+          expect(result, hasLength(501));
+          expect(
+            result['span-parent-first']!.single.id,
+            'span-parent-first-child',
+          );
+          expect(
+            result['span-parent-last']!.single.id,
+            'span-parent-last-child',
+          );
+          expect(result['span-parent-missing-0'], isEmpty);
+        },
+      );
+
       test('returns empty map for empty input', () async {
         final result = await db!.getBulkLinkedTimeSpans({});
         expect(result, isEmpty);

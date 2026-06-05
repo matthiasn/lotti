@@ -87,15 +87,29 @@ mixin _JournalDbLinksRatings
     }
 
     final fromIdList = fromIds.toList(growable: false);
-    final fromPlaceholders = List.filled(fromIdList.length, '?').join(', ');
     final privateStatuses = await _visiblePrivateStatuses();
     final filterPrivate = !_matchesAllPrivateStates(privateStatuses);
     final privateClause = filterPrivate
-        ? 'AND journal.private IN (${List.filled(privateStatuses.length, '?').join(', ')})'
+        ? "AND journal.private IN (${List.filled(privateStatuses.length, '?').join(', ')})"
         : '';
 
-    final rows = await customSelect(
-      '''
+    final result = <String, List<LinkedEntityTimeSpan>>{
+      for (final id in fromIds) id: <LinkedEntityTimeSpan>[],
+    };
+    final seenEntities = <String, Set<String>>{
+      for (final id in fromIds) id: <String>{},
+    };
+
+    // Chunk the parent ids so a caller fanning out past the DailyOS
+    // prefetch window cannot blow past SQLite's bind-variable cap — same
+    // pattern as the other bulk-by-id helpers in this library.
+    for (var i = 0; i < fromIdList.length; i += _sqliteInListChunk) {
+      final chunkEnd = (i + _sqliteInListChunk).clamp(0, fromIdList.length);
+      final chunk = fromIdList.sublist(i, chunkEnd);
+      final fromPlaceholders = List.filled(chunk.length, '?').join(', ');
+
+      final rows = await customSelect(
+        '''
       SELECT
         linked_entries.from_id AS parent_id,
         journal.id AS entity_id,
@@ -109,35 +123,29 @@ mixin _JournalDbLinksRatings
         AND journal.type NOT IN ('Task', 'AiResponse', 'JournalAudio')
         $privateClause
       ''',
-      variables: [
-        for (final fromId in fromIdList) Variable<String>(fromId),
-        if (filterPrivate)
-          for (final privateStatus in privateStatuses)
-            Variable<bool>(privateStatus),
-      ],
-      readsFrom: {linkedEntries, journal},
-    ).get();
+        variables: [
+          for (final fromId in chunk) Variable<String>(fromId),
+          if (filterPrivate)
+            for (final privateStatus in privateStatuses)
+              Variable<bool>(privateStatus),
+        ],
+        readsFrom: {linkedEntries, journal},
+      ).get();
 
-    final result = <String, List<LinkedEntityTimeSpan>>{
-      for (final id in fromIds) id: <LinkedEntityTimeSpan>[],
-    };
-    final seenEntities = <String, Set<String>>{
-      for (final id in fromIds) id: <String>{},
-    };
+      for (final row in rows) {
+        final parentId = row.read<String>('parent_id');
+        final entityId = row.read<String>('entity_id');
+        final seenForParent = seenEntities[parentId];
+        if (seenForParent == null || !seenForParent.add(entityId)) {
+          continue;
+        }
 
-    for (final row in rows) {
-      final parentId = row.read<String>('parent_id');
-      final entityId = row.read<String>('entity_id');
-      final seenForParent = seenEntities[parentId];
-      if (seenForParent == null || !seenForParent.add(entityId)) {
-        continue;
+        result[parentId]!.add((
+          id: entityId,
+          dateFrom: row.read<DateTime>('date_from'),
+          dateTo: row.read<DateTime>('date_to'),
+        ));
       }
-
-      result[parentId]!.add((
-        id: entityId,
-        dateFrom: row.read<DateTime>('date_from'),
-        dateTo: row.read<DateTime>('date_to'),
-      ));
     }
 
     return result;

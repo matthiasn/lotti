@@ -34,6 +34,73 @@ For broader test conventions — centralized mocks/fallbacks (`test/mocks/mocks.
 
 When adding a query to one of the mixins, put its tests in the matching mirror file; don't grow a new monolith or split one source file's tests across files.
 
+## Mocktail global-state hygiene
+
+Mocktail stores argument matchers (`any`, `captureAny`) in **process-global**
+state between `when`/`verify` registration and the mock invocation that
+consumes them. A matcher that is registered but never consumed silently
+corrupts the next mock interaction — anywhere in the same isolate. Under
+plain `flutter test` every file gets its own isolate, so the damage stays
+local; under very_good's test optimizer (CI and `make test` run one isolate
+per shard) it can break an unrelated test in a different file, and the victim
+depends on the platform-specific bundle order — which is why such failures
+appear on one machine/shard and not another.
+
+`test/flutter_test_config.dart` therefore registers a global
+`tearDown(resetMocktailState)` that clears this state after every test,
+confining any leak to the test that caused it. Registered fallback values
+survive the reset by design, and stubs live on mock instances, so
+`setUpAll`-created stubs keep working. If you see a stub or `verify` that
+matches in isolation but fails in a bundled run, suspect a matcher leak in a
+test that ran earlier in the bundle — or the mixin-default pitfall below.
+
+## Stubbing mixin-declared methods: mirror the production call shape
+
+`JournalDb` and `SyncDatabase` get their query members from private mixins in
+`part` files (see "Database test layout"). Mocktail mocks of these classes
+(`MockJournalDb`, `MockSyncDatabase`) dispatch through compiler-generated
+noSuchMethod forwarders, and the forwarders' handling of *omitted optional
+parameters with default values* is **not stable for mixin-declared members**:
+in a plain `flutter test` run the forwarder fills in the declared default
+(`catalogId: 'session'`), but in very_good's optimizer bundle (CI) the same
+forwarder can fill `null` instead, because the default values of
+mixin-cloned members get lost in modular compilation. Which library is
+affected depends on compile order, so the failures are
+machine/shard-specific: a stub that "works on my machine" can fail only in
+CI, and vice versa.
+
+Consequence: a `when`/`verify` on a mixin-declared method matches reliably
+**only if it passes exactly the parameters the production call site passes
+and omits exactly what production omits**. Example: the sequence-log service
+calls `getMissingEntries(limit:, maxRequestCount:, offset:, minAge:)` and
+omits `now`, so the stub must supply matchers for all four passed parameters
+and must *not* stub `now`:
+
+```dart
+when(
+  () => mockDb.getMissingEntries(
+    limit: any(named: 'limit'),
+    maxRequestCount: any(named: 'maxRequestCount'),
+    offset: any(named: 'offset'),
+    minAge: any(named: 'minAge'),
+  ),
+).thenAnswer((_) async => []);
+```
+
+A lazy `when(() => mockDb.getMissingEntries(limit: any(named: 'limit')))`
+matches under plain `flutter test` (both sides get the same forwarder-filled
+defaults) but mismatches in the CI bundle (stub records `offset: null`, the
+real call passes `offset: 0`) — the mock then returns `null` and the test
+dies with `type 'Null' is not a subtype of type 'Future<…>'`. The same
+failure surfaced for `getRatingForTimeEntry(targetId)` stubs that omitted
+`catalogId` while `RatingRepository` passes it explicitly.
+
+This only bites for *mixin-declared* members mocked via mocktail; methods
+declared directly on a class keep their defaults in all compile modes.
+Prefer testing the DB mixins against a real in-memory database
+(`test/database/*_test.dart` do this); when a service test must mock the DB,
+mirror the call shape exactly.
+
 ## Property-Based Tests with Glados
 
 We use [`package:glados`](https://pub.dev/packages/glados) for property-based ("generative") testing of pure logic. Going forward, **any new code with non-trivial pure logic should reach for Glados first** — it explores far more inputs than hand-rolled examples and shrinks failing cases automatically. Reach for Glados when you have:

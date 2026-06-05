@@ -45,3 +45,9 @@ ignore:
   - "lib/services/portals/screenshot_portal_service.dart"
   - "lib/services/linux_location_portal.dart"
   - "lib/logic/image_import.dart"
+  # Drift table DSL: the column getters in this part file are compile-time
+  # markers consumed by the drift code generator. At runtime the generated
+  # `$...Table` classes override every getter (invoking the originals would
+  # throw `_isGenerated()`), so these declarations can never execute and
+  # their line coverage is structurally zero.
+  - "lib/database/sync_db_tables.dart"

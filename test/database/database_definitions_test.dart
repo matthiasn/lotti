@@ -331,7 +331,7 @@ void main() {
         await db!.insertLabel('lbl-count-entry-1', 'lbl-count-1');
 
         final count = await db!.getLabeledCount();
-        expect(count, greaterThanOrEqualTo(1));
+        expect(count, 1);
       });
     });
 
@@ -373,6 +373,83 @@ void main() {
         final counts = await db!.getLabelUsageCounts();
         expect(counts, isEmpty);
       });
+
+      test('excludes labels on soft-deleted entries', () async {
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'lbl-usage-del',
+            createdAt: DateTime(2024, 11, 6),
+            updatedAt: DateTime(2024, 11, 6),
+            name: 'UsageDeleted',
+            color: '#aabbcc',
+            vectorClock: null,
+          ),
+        );
+        final live = buildJournalEntry(
+          id: 'lbl-usage-live',
+          timestamp: DateTime(2024, 11, 6),
+          text: 'Live entry',
+        );
+        final deleted = buildJournalEntry(
+          id: 'lbl-usage-deleted',
+          timestamp: DateTime(2024, 11, 6, 1),
+          text: 'Deleted entry',
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(live));
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            deleted.copyWith(
+              meta: deleted.meta.copyWith(
+                deletedAt: DateTime(2024, 11, 6, 2),
+              ),
+            ),
+          ),
+        );
+        await db!.insertLabel('lbl-usage-live', 'lbl-usage-del');
+        await db!.insertLabel('lbl-usage-deleted', 'lbl-usage-del');
+
+        final counts = await db!.getLabelUsageCounts();
+        expect(counts['lbl-usage-del'], 1);
+      });
+
+      test(
+        'counts private entries only while the private flag is on',
+        () async {
+          await db!.upsertLabelDefinition(
+            LabelDefinition(
+              id: 'lbl-usage-priv',
+              createdAt: DateTime(2024, 11, 7),
+              updatedAt: DateTime(2024, 11, 7),
+              name: 'UsagePrivate',
+              color: '#aabbcc',
+              vectorClock: null,
+            ),
+          );
+          final public = buildJournalEntry(
+            id: 'lbl-usage-public',
+            timestamp: DateTime(2024, 11, 7),
+            text: 'Public entry',
+          );
+          final privateEntry = buildJournalEntry(
+            id: 'lbl-usage-private',
+            timestamp: DateTime(2024, 11, 7, 1),
+            text: 'Private entry',
+            privateFlag: true,
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(public));
+          await db!.upsertJournalDbEntity(toDbEntity(privateEntry));
+          await db!.insertLabel('lbl-usage-public', 'lbl-usage-priv');
+          await db!.insertLabel('lbl-usage-private', 'lbl-usage-priv');
+
+          // initConfigFlags seeds the private flag as enabled, so both
+          // entries count.
+          expect((await db!.getLabelUsageCounts())['lbl-usage-priv'], 2);
+
+          // With the flag off, the private entry's label no longer counts.
+          await db!.toggleConfigFlag(privateFlag);
+          expect((await db!.getLabelUsageCounts())['lbl-usage-priv'], 1);
+        },
+      );
     });
 
     group('Label reconciliation -', () {
@@ -469,6 +546,45 @@ void main() {
     });
 
     group('insertLabel error handling -', () {
+      test(
+        'missing label definition (FK violation) is tolerated and logged',
+        () async {
+          final base = DateTime(2024, 12, 2, 9);
+          final entry = buildJournalEntry(
+            id: 'fk-entry',
+            timestamp: base,
+            text: 'Entry without label definition',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(entry));
+
+          DevLogger.clear();
+          // The label definition has not arrived via sync yet — the FK
+          // failure must be swallowed so out-of-order sync stays tolerant.
+          await db!.insertLabel('fk-entry', 'label-not-synced-yet');
+
+          expect(
+            DevLogger.capturedLogs.any(
+              (message) => message.contains('insertLabel failed'),
+            ),
+            isTrue,
+          );
+          final rows = await db!
+              .customSelect('SELECT COUNT(*) AS c FROM labeled')
+              .getSingle();
+          expect(rows.read<int>('c'), 0);
+        },
+      );
+
+      test('non-constraint failures propagate to the caller', () async {
+        await db!.close();
+        // A closed database is not a constraint violation — the error must
+        // reach the caller so addLabeled's transaction rolls back.
+        await expectLater(
+          db!.insertLabel('any-journal', 'any-label'),
+          throwsA(anything),
+        );
+      });
+
       test(
         'duplicate (journal_id, label_id) is swallowed and logged',
         () async {

@@ -77,11 +77,19 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
 
   /// Find a pending outbox item for a specific entry ID.
   /// Returns the most recent pending item for this entry, or null.
+  ///
+  /// `created_at` is stored at second granularity, so two rapid edits can
+  /// collide on the timestamp; `id DESC` breaks the tie deterministically
+  /// in favor of the latest insert so the merge-dedup path always targets
+  /// the newest pending row.
   Future<OutboxItem?> findPendingByEntryId(String entryId) {
     return (select(outbox)
           ..where((t) => const CustomExpression<bool>('status = 0'))
           ..where((t) => t.outboxEntryId.equals(entryId))
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ])
           ..limit(1))
         .getSingleOrNull();
   }
