@@ -117,6 +117,42 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = CaptureToPlanLink;
 
+  /// Links an attention request to an evidence source.
+  /// [fromId] = attention request ID, [toId] = evidence entity ID.
+  const factory AgentLink.attentionRequestEvidence({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AttentionRequestEvidenceLink;
+
+  /// Links a planner award to the request it selected.
+  /// [fromId] = attention award ID, [toId] = attention request ID.
+  const factory AgentLink.attentionAwardRequest({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AttentionAwardRequestLink;
+
+  /// Links a planner award to the day plan it proposes to modify.
+  /// [fromId] = attention award ID, [toId] = day-plan entity ID.
+  const factory AgentLink.attentionAwardPlan({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AttentionAwardPlanLink;
+
   const factory AgentLink.templateAssignment({
     required String id,
     required String fromId,
@@ -224,6 +260,9 @@ extension AgentLinkSoftDelete on AgentLink {
     captureToParsedItem: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     parsedItemToTask: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     captureToPlan: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    attentionRequestEvidence: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    attentionAwardRequest: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    attentionAwardPlan: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     templateAssignment: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     improverTarget: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentProject: (l) => l.copyWith(deletedAt: at, updatedAt: at),

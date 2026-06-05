@@ -394,6 +394,63 @@ void main() {
         expectLinkFieldsMatch(roundtripped, original);
         expect(roundtripped.toJson()['runtimeType'], 'captureToPlan');
       });
+
+      test('AttentionRequestEvidenceLink roundtrips all fields', () {
+        final original = AgentLink.attentionRequestEvidence(
+          id: 'link-attention-evidence-001',
+          fromId: 'attention-request-001',
+          toId: 'task-001',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<AttentionRequestEvidenceLink>());
+        expectLinkFieldsMatch(roundtripped, original);
+        expect(
+          roundtripped.toJson()['runtimeType'],
+          'attentionRequestEvidence',
+        );
+      });
+
+      test('AttentionAwardRequestLink roundtrips all fields', () {
+        final original = AgentLink.attentionAwardRequest(
+          id: 'link-attention-award-request-001',
+          fromId: 'attention-award-001',
+          toId: 'attention-request-001',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<AttentionAwardRequestLink>());
+        expectLinkFieldsMatch(roundtripped, original);
+        expect(roundtripped.toJson()['runtimeType'], 'attentionAwardRequest');
+      });
+
+      test('AttentionAwardPlanLink roundtrips all fields', () {
+        final original = AgentLink.attentionAwardPlan(
+          id: 'link-attention-award-plan-001',
+          fromId: 'attention-award-001',
+          toId: 'day_agent_plan:dayplan-2026-05-25',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<AttentionAwardPlanLink>());
+        expectLinkFieldsMatch(roundtripped, original);
+        expect(roundtripped.toJson()['runtimeType'], 'attentionAwardPlan');
+      });
     });
 
     group('AgentProjectLink (agentProject variant)', () {

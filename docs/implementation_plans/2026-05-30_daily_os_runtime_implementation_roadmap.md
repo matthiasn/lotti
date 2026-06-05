@@ -114,6 +114,7 @@ default-off)**; detailed plan: [`2026-06-02_join_by_continuation_plan.md`](./202
 
 **PR 8 — Planner MVP (proposal-only)**
 - **Goal:** `attention_request` events (impact/priority/deadline-slack/energy-fit/cadence + **evidence references** + bounded fields) as new `AgentDomainEntity` + `AgentLink` types; a planner behavior that ranks by **fact-derived** utility; a **deterministic non-negotiable verifier** (recurrence + preemption, checked against health actuals, with manual override/bypass); VOI gate; output = `ChangeSet` proposal. **No auto-mutations.**
+- **Resolved foundation:** `AttentionRequestEntity` / `AttentionAwardEntity` and the evidence/award `AgentLink` variants exist; `AttentionPlannerArbitrator` provides pure deterministic ranking and slotting that emits ChangeSet-compatible `add_block` proposals. This does **not** yet wire a planner wake, verifier, VOI gate, award persistence flow, or `ChangeSet` emission.
 - **Depends on:** PR 4 (projection). (Auto-commit later needs PR 7.)
 - **Touches:** new event/edge types; planner behavior; verifier; `ChangeSet` emission; `DayPlan` (awards → `PlannedBlock`).
 - **Defers:** auto-resolution of anything irreversible; auto-commit (needs lease).

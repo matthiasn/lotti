@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
@@ -183,6 +184,63 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default(0) int scheduledMinutes,
     DateTime? deletedAt,
   }) = DayPlanEntity;
+
+  /// Event-sourced bid for the user's scarce attention.
+  ///
+  /// [agentId] is the requesting agent. A central planner reads pending
+  /// requests and emits [AttentionAwardEntity] records; the request itself is
+  /// immutable and evidence-backed so arbitration can be replayed
+  /// deterministically from the log.
+  const factory AgentDomainEntity.attentionRequest({
+    required String id,
+    required String agentId,
+    required String dayId,
+    required AttentionRequestKind kind,
+    required String title,
+    required String categoryId,
+    required int requestedMinutes,
+    required int impact,
+    required int urgency,
+    required AttentionEnergyFit energyFit,
+    required List<AttentionEvidenceRef> evidenceRefs,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    @Default(AttentionRequestStatus.pending) AttentionRequestStatus status,
+    DateTime? earliestStart,
+    DateTime? latestEnd,
+    DateTime? deadline,
+    String? targetId,
+    String? targetKind,
+    String? cadence,
+    String? rationale,
+    DateTime? deletedAt,
+  }) = AttentionRequestEntity;
+
+  /// Planner award produced by deterministic arbitration.
+  ///
+  /// Awards are proposal records: they describe the block the planner would
+  /// add, but schedule mutation still flows through the existing ChangeSet
+  /// gate.
+  const factory AgentDomainEntity.attentionAward({
+    required String id,
+    required String agentId,
+    required String requestId,
+    required String dayId,
+    required String planId,
+    required String blockId,
+    required String categoryId,
+    required String title,
+    required DateTime startTime,
+    required DateTime endTime,
+    required int rank,
+    required int utilityScore,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    @Default(AttentionAwardStatus.proposed) AttentionAwardStatus status,
+    String? taskId,
+    String? rationale,
+    DateTime? deletedAt,
+  }) = AttentionAwardEntity;
 
   /// Agent template — reusable blueprint for agent instances.
   ///

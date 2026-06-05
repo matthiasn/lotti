@@ -236,6 +236,16 @@ Runtime behavior:
   untouched. Both write `ChangeDecisionEntity` records per resolved item
   with `actor: user` and `verdict: confirmed | rejected`. Added blocks inherit
   `committed` state when the amended plan was already agreed/committed.
+- Attention negotiation has a persisted proposal substrate, but not the full
+  planner workflow yet. Agents can write `AttentionRequestEntity` records with
+  bounded impact/urgency/energy fields and evidence references, and the planner
+  can write `AttentionAwardEntity` records linked back to requests and day
+  plans. `AttentionPlannerArbitrator` is pure deterministic logic: it ranks
+  pending evidence-backed requests, respects plan capacity and existing blocks,
+  prefers high-energy bands for high-energy asks, and emits ChangeSet-compatible
+  `add_block` proposals. It performs no writes by itself; the future planner
+  behavior still needs to persist awards and route proposed blocks through the
+  existing `ChangeSet` gate.
 - Wakes consume any `scheduledWakeAt` timestamp that is no longer in the future
   so app restart does not replay an already-fired scheduled wake.
 - Future Daily OS Next commit, agenda, and shutdown tools should be added

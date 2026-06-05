@@ -430,6 +430,158 @@ Map<String, dynamic> _$DayPlanEntityToJson(DayPlanEntity instance) =>
       'runtimeType': instance.$type,
     };
 
+AttentionRequestEntity _$AttentionRequestEntityFromJson(
+  Map<String, dynamic> json,
+) => AttentionRequestEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  dayId: json['dayId'] as String,
+  kind: $enumDecode(_$AttentionRequestKindEnumMap, json['kind']),
+  title: json['title'] as String,
+  categoryId: json['categoryId'] as String,
+  requestedMinutes: (json['requestedMinutes'] as num).toInt(),
+  impact: (json['impact'] as num).toInt(),
+  urgency: (json['urgency'] as num).toInt(),
+  energyFit: $enumDecode(_$AttentionEnergyFitEnumMap, json['energyFit']),
+  evidenceRefs: (json['evidenceRefs'] as List<dynamic>)
+      .map((e) => AttentionEvidenceRef.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  status:
+      $enumDecodeNullable(_$AttentionRequestStatusEnumMap, json['status']) ??
+      AttentionRequestStatus.pending,
+  earliestStart: json['earliestStart'] == null
+      ? null
+      : DateTime.parse(json['earliestStart'] as String),
+  latestEnd: json['latestEnd'] == null
+      ? null
+      : DateTime.parse(json['latestEnd'] as String),
+  deadline: json['deadline'] == null
+      ? null
+      : DateTime.parse(json['deadline'] as String),
+  targetId: json['targetId'] as String?,
+  targetKind: json['targetKind'] as String?,
+  cadence: json['cadence'] as String?,
+  rationale: json['rationale'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$AttentionRequestEntityToJson(
+  AttentionRequestEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'dayId': instance.dayId,
+  'kind': _$AttentionRequestKindEnumMap[instance.kind]!,
+  'title': instance.title,
+  'categoryId': instance.categoryId,
+  'requestedMinutes': instance.requestedMinutes,
+  'impact': instance.impact,
+  'urgency': instance.urgency,
+  'energyFit': _$AttentionEnergyFitEnumMap[instance.energyFit]!,
+  'evidenceRefs': instance.evidenceRefs,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'status': _$AttentionRequestStatusEnumMap[instance.status]!,
+  'earliestStart': instance.earliestStart?.toIso8601String(),
+  'latestEnd': instance.latestEnd?.toIso8601String(),
+  'deadline': instance.deadline?.toIso8601String(),
+  'targetId': instance.targetId,
+  'targetKind': instance.targetKind,
+  'cadence': instance.cadence,
+  'rationale': instance.rationale,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$AttentionRequestKindEnumMap = {
+  AttentionRequestKind.task: 'task',
+  AttentionRequestKind.project: 'project',
+  AttentionRequestKind.projectPhase: 'projectPhase',
+  AttentionRequestKind.outcome: 'outcome',
+  AttentionRequestKind.maintenance: 'maintenance',
+};
+
+const _$AttentionEnergyFitEnumMap = {
+  AttentionEnergyFit.low: 'low',
+  AttentionEnergyFit.neutral: 'neutral',
+  AttentionEnergyFit.high: 'high',
+};
+
+const _$AttentionRequestStatusEnumMap = {
+  AttentionRequestStatus.pending: 'pending',
+  AttentionRequestStatus.withdrawn: 'withdrawn',
+  AttentionRequestStatus.awarded: 'awarded',
+  AttentionRequestStatus.rejected: 'rejected',
+};
+
+AttentionAwardEntity _$AttentionAwardEntityFromJson(
+  Map<String, dynamic> json,
+) => AttentionAwardEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  requestId: json['requestId'] as String,
+  dayId: json['dayId'] as String,
+  planId: json['planId'] as String,
+  blockId: json['blockId'] as String,
+  categoryId: json['categoryId'] as String,
+  title: json['title'] as String,
+  startTime: DateTime.parse(json['startTime'] as String),
+  endTime: DateTime.parse(json['endTime'] as String),
+  rank: (json['rank'] as num).toInt(),
+  utilityScore: (json['utilityScore'] as num).toInt(),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  status:
+      $enumDecodeNullable(_$AttentionAwardStatusEnumMap, json['status']) ??
+      AttentionAwardStatus.proposed,
+  taskId: json['taskId'] as String?,
+  rationale: json['rationale'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$AttentionAwardEntityToJson(
+  AttentionAwardEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'requestId': instance.requestId,
+  'dayId': instance.dayId,
+  'planId': instance.planId,
+  'blockId': instance.blockId,
+  'categoryId': instance.categoryId,
+  'title': instance.title,
+  'startTime': instance.startTime.toIso8601String(),
+  'endTime': instance.endTime.toIso8601String(),
+  'rank': instance.rank,
+  'utilityScore': instance.utilityScore,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'status': _$AttentionAwardStatusEnumMap[instance.status]!,
+  'taskId': instance.taskId,
+  'rationale': instance.rationale,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$AttentionAwardStatusEnumMap = {
+  AttentionAwardStatus.proposed: 'proposed',
+  AttentionAwardStatus.accepted: 'accepted',
+  AttentionAwardStatus.rejected: 'rejected',
+  AttentionAwardStatus.superseded: 'superseded',
+};
+
 AgentTemplateEntity _$AgentTemplateEntityFromJson(Map<String, dynamic> json) =>
     AgentTemplateEntity(
       id: json['id'] as String,
