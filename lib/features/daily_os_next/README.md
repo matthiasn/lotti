@@ -237,15 +237,16 @@ Runtime behavior:
   with `actor: user` and `verdict: confirmed | rejected`. Added blocks inherit
   `committed` state when the amended plan was already agreed/committed.
 - Attention negotiation has a persisted proposal substrate, but not the full
-  planner workflow yet. Agents can write `AttentionRequestEntity` records with
-  bounded impact/urgency/energy fields and evidence references, and the planner
-  can write `AttentionAwardEntity` records linked back to requests and day
-  plans. `AttentionPlannerArbitrator` is pure deterministic logic: it ranks
-  pending evidence-backed requests, respects plan capacity and existing blocks,
-  prefers high-energy bands for high-energy asks, and emits ChangeSet-compatible
-  `add_block` proposals. It performs no writes by itself; the future planner
-  behavior still needs to persist awards and route proposed blocks through the
-  existing `ChangeSet` gate.
+  planner workflow yet. Agents can write `AttentionRequestEntity` records as
+  evidence-backed claims for attention, and the planner can write
+  `AttentionAwardEntity` records linked back to requests and concrete day plans
+  when a block is proposed. `StandingAgreementEntity` records model durable
+  user policies/goals and are discoverable through `standing_agreement_index`,
+  not source-table JSON scans. Per ADR 0021, the target planner behavior is
+  LLM-mediated claim weighing: specialist agents make window-scoped claims, the
+  day-planner LLM weighs them against the plan and standing agreements, and
+  deterministic code validates/routes the result through the `ChangeSet` gate.
+  There is no standalone deterministic arbitrator fallback in production.
 - Wakes consume any `scheduledWakeAt` timestamp that is no longer in the future
   so app restart does not replay an already-fired scheduled wake.
 - Future Daily OS Next commit, agenda, and shutdown tools should be added

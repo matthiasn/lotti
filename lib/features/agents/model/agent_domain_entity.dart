@@ -187,14 +187,12 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
   /// Event-sourced bid for the user's scarce attention.
   ///
-  /// [agentId] is the requesting agent. A central planner reads pending
-  /// requests and emits [AttentionAwardEntity] records; the request itself is
-  /// immutable and evidence-backed so arbitration can be replayed
-  /// deterministically from the log.
+  /// [agentId] is the requesting agent. A planner reads pending requests and
+  /// emits proposal/disposition records; the request itself is immutable and
+  /// evidence-backed so decisions can be audited from the log.
   const factory AgentDomainEntity.attentionRequest({
     required String id,
     required String agentId,
-    required String dayId,
     required AttentionRequestKind kind,
     required String title,
     required String categoryId,
@@ -205,10 +203,14 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required List<AttentionEvidenceRef> evidenceRefs,
     required DateTime createdAt,
     required VectorClock? vectorClock,
+    @Default(AttentionClaimScopeKind.day) AttentionClaimScopeKind scopeKind,
     @Default(AttentionRequestStatus.pending) AttentionRequestStatus status,
+    DateTime? rangeStart,
+    DateTime? rangeEnd,
     DateTime? earliestStart,
     DateTime? latestEnd,
     DateTime? deadline,
+    DateTime? nextReviewAt,
     String? targetId,
     String? targetKind,
     String? cadence,
@@ -216,7 +218,27 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = AttentionRequestEntity;
 
-  /// Planner award produced by deterministic arbitration.
+  /// Planner/user/system disposition for an attention claim.
+  ///
+  /// The original [AttentionRequestEntity] remains auditable. Disposition
+  /// records project the current lifecycle state without mutating away the
+  /// request's original rationale and evidence.
+  const factory AgentDomainEntity.attentionClaimDisposition({
+    required String id,
+    required String agentId,
+    required String requestId,
+    required AttentionClaimStatus status,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    String? awardId,
+    String? planId,
+    String? changeSetId,
+    String? reason,
+    DateTime? nextReviewAt,
+    DateTime? deletedAt,
+  }) = AttentionClaimDispositionEntity;
+
+  /// Planner award proposal for a concrete plan block.
   ///
   /// Awards are proposal records: they describe the block the planner would
   /// add, but schedule mutation still flows through the existing ChangeSet
@@ -241,6 +263,49 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     String? rationale,
     DateTime? deletedAt,
   }) = AttentionAwardEntity;
+
+  /// Durable policy/goal the planner must consider across planning windows.
+  ///
+  /// Standing agreements are not per-day claims. They represent user-approved
+  /// norms such as "exercise 3x/week", "protect sleep wind-down", or "cap
+  /// paperwork time". Specialist agents may use them to emit concrete
+  /// [AttentionRequestEntity] claims; the day-planner reads them directly when
+  /// weighing claims and deciding whether a proposal can be auto-accepted,
+  /// should ask the user, or must be rejected.
+  const factory AgentDomainEntity.standingAgreement({
+    required String id,
+    required String agentId,
+    required String title,
+    required StandingAgreementScope scope,
+    required StandingAgreementCadence cadence,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    @Default(StandingAgreementStatus.active) StandingAgreementStatus status,
+    @Default(StandingAgreementEnforcement.target)
+    StandingAgreementEnforcement enforcement,
+    @Default(StandingAgreementApprovalMode.ask)
+    StandingAgreementApprovalMode approvalMode,
+    String? categoryId,
+    String? targetId,
+    String? targetKind,
+    String? customScope,
+    String? customCadence,
+    int? minCount,
+    int? maxCount,
+    int? minMinutes,
+    int? maxMinutes,
+    int? preferredSessionMinutes,
+    @Default(false) bool canPreempt,
+    @Default(0) int priority,
+    @Default([]) List<String> preemptibleCategoryIds,
+    @Default([]) List<String> protectedCategoryIds,
+    @Default([]) List<AttentionEvidenceRef> evidenceRefs,
+    DateTime? activeFrom,
+    DateTime? activeUntil,
+    String? rationale,
+    DateTime? deletedAt,
+  }) = StandingAgreementEntity;
 
   /// Agent template — reusable blueprint for agent instances.
   ///

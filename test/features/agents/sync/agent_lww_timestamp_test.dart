@@ -104,7 +104,6 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     entity: AgentDomainEntity.attentionRequest(
       id: 'attention-request-1',
       agentId: 'agent-1',
-      dayId: 'dayplan-2024-06-01',
       kind: AttentionRequestKind.task,
       title: 'Focus block',
       categoryId: 'work',
@@ -115,6 +114,18 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
       evidenceRefs: const [
         AttentionEvidenceRef(kind: AttentionEvidenceKind.task, id: 'task-1'),
       ],
+      createdAt: _created,
+      vectorClock: null,
+    ),
+    expected: _created,
+  ),
+  (
+    label: 'attentionClaimDisposition',
+    entity: AgentDomainEntity.attentionClaimDisposition(
+      id: 'attention-disposition-1',
+      agentId: 'day-agent-1',
+      requestId: 'attention-request-1',
+      status: AttentionClaimStatus.deferred,
       createdAt: _created,
       vectorClock: null,
     ),
@@ -139,6 +150,20 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
       vectorClock: null,
     ),
     expected: _created,
+  ),
+  (
+    label: 'standingAgreement',
+    entity: AgentDomainEntity.standingAgreement(
+      id: 'standing-agreement-1',
+      agentId: 'fitness-agent-1',
+      title: 'Exercise three times per week',
+      scope: StandingAgreementScope.fitness,
+      cadence: StandingAgreementCadence.weekly,
+      createdAt: _created,
+      updatedAt: _updated,
+      vectorClock: null,
+    ),
+    expected: _updated,
   ),
   (
     label: 'agentTemplate',
@@ -235,7 +260,7 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 25);
+      expect(_cases.length, 27);
     });
   });
 }

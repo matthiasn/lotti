@@ -24,8 +24,10 @@
   agent-state counters; content-addressed input capture and compaction; and
   flag-gated lazy join/fork healing.
 - **Gaps to close:** Foundation B leader leasing/fencing; attention negotiation
-  planner and standing agreements; outcome tracking; EU fallback tier; and the
-  content-addressed response cache.
+  planner wiring; outcome tracking; EU fallback tier; and the content-addressed
+  response cache. Standing agreements are now modeled as durable
+  `StandingAgreementEntity` records with an indexed local projection, but the
+  planner does not consume them yet.
 
 ## PR sequence
 
@@ -113,12 +115,12 @@ default-off)**; detailed plan: [`2026-06-02_join_by_continuation_plan.md`](./202
 ### Phase 5 — The executive-assistant loop
 
 **PR 8 — Planner MVP (proposal-only)**
-- **Goal:** `attention_request` events (impact/priority/deadline-slack/energy-fit/cadence + **evidence references** + bounded fields) as new `AgentDomainEntity` + `AgentLink` types; a planner behavior that ranks by **fact-derived** utility; a **deterministic non-negotiable verifier** (recurrence + preemption, checked against health actuals, with manual override/bypass); VOI gate; output = `ChangeSet` proposal. **No auto-mutations.**
-- **Resolved foundation:** `AttentionRequestEntity` / `AttentionAwardEntity` and the evidence/award `AgentLink` variants exist; `AttentionPlannerArbitrator` provides pure deterministic ranking and slotting that emits ChangeSet-compatible `add_block` proposals. This does **not** yet wire a planner wake, verifier, VOI gate, award persistence flow, or `ChangeSet` emission.
+- **Goal:** `attention_request` events (impact/priority/deadline-slack/energy-fit/cadence + **evidence references** + bounded fields), standing agreements, and indexed planner-window lookup feed an LLM-mediated planner behavior; a **deterministic non-negotiable verifier** (recurrence + preemption, checked against health actuals, with manual override/bypass) validates the result; VOI gate; output = `ChangeSet` proposal. **No auto-mutations.**
+- **Resolved foundation:** `AttentionRequestEntity`, `AttentionClaimDispositionEntity`, `AttentionAwardEntity`, `StandingAgreementEntity`, the evidence/award `AgentLink` variants, and indexed local projections for attention claims and standing agreements exist. This does **not** yet wire a planner wake, brief builder, verifier, VOI gate, award persistence flow, or `ChangeSet` emission. There is no speculative deterministic planner arbitrator in production.
 - **Depends on:** PR 4 (projection). (Auto-commit later needs PR 7.)
 - **Touches:** new event/edge types; planner behavior; verifier; `ChangeSet` emission; `DayPlan` (awards → `PlannedBlock`).
 - **Defers:** auto-resolution of anything irreversible; auto-commit (needs lease).
-- **Done when:** competing bids produce a deterministic, fact-grounded ranking; non-negotiables can't be violated by a model; proposals appear in the existing gate.
+- **Done when:** competing claims and standing agreements produce a fact-grounded planner proposal; non-negotiables can't be violated by a model; proposals appear in the existing gate.
 - **Realizes:** §5, §9; ADR 0019. **Open decision to resolve here:** bid-vs-blackboard primary abstraction; VOI weighting.
 
 **PR 9 — Project phases + recurring attention-requests**

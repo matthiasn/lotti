@@ -1181,6 +1181,1583 @@ class AgentLinksCompanion extends UpdateCompanion<AgentLink> {
   }
 }
 
+class AttentionClaimIndex extends Table
+    with TableInfo<AttentionClaimIndex, AttentionClaimIndexData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  AttentionClaimIndex(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _scopeKindMeta = const VerificationMeta(
+    'scopeKind',
+  );
+  late final GeneratedColumn<String> scopeKind = GeneratedColumn<String>(
+    'scope_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _visibilityStartMeta = const VerificationMeta(
+    'visibilityStart',
+  );
+  late final GeneratedColumn<DateTime> visibilityStart =
+      GeneratedColumn<DateTime>(
+        'visibility_start',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+        $customConstraints: 'NOT NULL',
+      );
+  static const VerificationMeta _visibilityEndMeta = const VerificationMeta(
+    'visibilityEnd',
+  );
+  late final GeneratedColumn<DateTime> visibilityEnd =
+      GeneratedColumn<DateTime>(
+        'visibility_end',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+        $customConstraints: 'NOT NULL',
+      );
+  static const VerificationMeta _deadlineMeta = const VerificationMeta(
+    'deadline',
+  );
+  late final GeneratedColumn<DateTime> deadline = GeneratedColumn<DateTime>(
+    'deadline',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _nextReviewAtMeta = const VerificationMeta(
+    'nextReviewAt',
+  );
+  late final GeneratedColumn<DateTime> nextReviewAt = GeneratedColumn<DateTime>(
+    'next_review_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _targetIdMeta = const VerificationMeta(
+    'targetId',
+  );
+  late final GeneratedColumn<String> targetId = GeneratedColumn<String>(
+    'target_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _targetKindMeta = const VerificationMeta(
+    'targetKind',
+  );
+  late final GeneratedColumn<String> targetKind = GeneratedColumn<String>(
+    'target_kind',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    requestId,
+    agentId,
+    status,
+    scopeKind,
+    visibilityStart,
+    visibilityEnd,
+    deadline,
+    nextReviewAt,
+    targetId,
+    targetKind,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'attention_claim_index';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AttentionClaimIndexData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_requestIdMeta);
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_agentIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('scope_kind')) {
+      context.handle(
+        _scopeKindMeta,
+        scopeKind.isAcceptableOrUnknown(data['scope_kind']!, _scopeKindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scopeKindMeta);
+    }
+    if (data.containsKey('visibility_start')) {
+      context.handle(
+        _visibilityStartMeta,
+        visibilityStart.isAcceptableOrUnknown(
+          data['visibility_start']!,
+          _visibilityStartMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_visibilityStartMeta);
+    }
+    if (data.containsKey('visibility_end')) {
+      context.handle(
+        _visibilityEndMeta,
+        visibilityEnd.isAcceptableOrUnknown(
+          data['visibility_end']!,
+          _visibilityEndMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_visibilityEndMeta);
+    }
+    if (data.containsKey('deadline')) {
+      context.handle(
+        _deadlineMeta,
+        deadline.isAcceptableOrUnknown(data['deadline']!, _deadlineMeta),
+      );
+    }
+    if (data.containsKey('next_review_at')) {
+      context.handle(
+        _nextReviewAtMeta,
+        nextReviewAt.isAcceptableOrUnknown(
+          data['next_review_at']!,
+          _nextReviewAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_id')) {
+      context.handle(
+        _targetIdMeta,
+        targetId.isAcceptableOrUnknown(data['target_id']!, _targetIdMeta),
+      );
+    }
+    if (data.containsKey('target_kind')) {
+      context.handle(
+        _targetKindMeta,
+        targetKind.isAcceptableOrUnknown(data['target_kind']!, _targetKindMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {requestId};
+  @override
+  AttentionClaimIndexData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AttentionClaimIndexData(
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      scopeKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope_kind'],
+      )!,
+      visibilityStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}visibility_start'],
+      )!,
+      visibilityEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}visibility_end'],
+      )!,
+      deadline: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deadline'],
+      ),
+      nextReviewAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_review_at'],
+      ),
+      targetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_id'],
+      ),
+      targetKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_kind'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  AttentionClaimIndex createAlias(String alias) {
+    return AttentionClaimIndex(attachedDatabase, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class AttentionClaimIndexData extends DataClass
+    implements Insertable<AttentionClaimIndexData> {
+  final String requestId;
+  final String agentId;
+  final String status;
+  final String scopeKind;
+  final DateTime visibilityStart;
+  final DateTime visibilityEnd;
+  final DateTime? deadline;
+  final DateTime? nextReviewAt;
+  final String? targetId;
+  final String? targetKind;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  const AttentionClaimIndexData({
+    required this.requestId,
+    required this.agentId,
+    required this.status,
+    required this.scopeKind,
+    required this.visibilityStart,
+    required this.visibilityEnd,
+    this.deadline,
+    this.nextReviewAt,
+    this.targetId,
+    this.targetKind,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['request_id'] = Variable<String>(requestId);
+    map['agent_id'] = Variable<String>(agentId);
+    map['status'] = Variable<String>(status);
+    map['scope_kind'] = Variable<String>(scopeKind);
+    map['visibility_start'] = Variable<DateTime>(visibilityStart);
+    map['visibility_end'] = Variable<DateTime>(visibilityEnd);
+    if (!nullToAbsent || deadline != null) {
+      map['deadline'] = Variable<DateTime>(deadline);
+    }
+    if (!nullToAbsent || nextReviewAt != null) {
+      map['next_review_at'] = Variable<DateTime>(nextReviewAt);
+    }
+    if (!nullToAbsent || targetId != null) {
+      map['target_id'] = Variable<String>(targetId);
+    }
+    if (!nullToAbsent || targetKind != null) {
+      map['target_kind'] = Variable<String>(targetKind);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  AttentionClaimIndexCompanion toCompanion(bool nullToAbsent) {
+    return AttentionClaimIndexCompanion(
+      requestId: Value(requestId),
+      agentId: Value(agentId),
+      status: Value(status),
+      scopeKind: Value(scopeKind),
+      visibilityStart: Value(visibilityStart),
+      visibilityEnd: Value(visibilityEnd),
+      deadline: deadline == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deadline),
+      nextReviewAt: nextReviewAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextReviewAt),
+      targetId: targetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetId),
+      targetKind: targetKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetKind),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory AttentionClaimIndexData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AttentionClaimIndexData(
+      requestId: serializer.fromJson<String>(json['request_id']),
+      agentId: serializer.fromJson<String>(json['agent_id']),
+      status: serializer.fromJson<String>(json['status']),
+      scopeKind: serializer.fromJson<String>(json['scope_kind']),
+      visibilityStart: serializer.fromJson<DateTime>(json['visibility_start']),
+      visibilityEnd: serializer.fromJson<DateTime>(json['visibility_end']),
+      deadline: serializer.fromJson<DateTime?>(json['deadline']),
+      nextReviewAt: serializer.fromJson<DateTime?>(json['next_review_at']),
+      targetId: serializer.fromJson<String?>(json['target_id']),
+      targetKind: serializer.fromJson<String?>(json['target_kind']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deleted_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'request_id': serializer.toJson<String>(requestId),
+      'agent_id': serializer.toJson<String>(agentId),
+      'status': serializer.toJson<String>(status),
+      'scope_kind': serializer.toJson<String>(scopeKind),
+      'visibility_start': serializer.toJson<DateTime>(visibilityStart),
+      'visibility_end': serializer.toJson<DateTime>(visibilityEnd),
+      'deadline': serializer.toJson<DateTime?>(deadline),
+      'next_review_at': serializer.toJson<DateTime?>(nextReviewAt),
+      'target_id': serializer.toJson<String?>(targetId),
+      'target_kind': serializer.toJson<String?>(targetKind),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'deleted_at': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  AttentionClaimIndexData copyWith({
+    String? requestId,
+    String? agentId,
+    String? status,
+    String? scopeKind,
+    DateTime? visibilityStart,
+    DateTime? visibilityEnd,
+    Value<DateTime?> deadline = const Value.absent(),
+    Value<DateTime?> nextReviewAt = const Value.absent(),
+    Value<String?> targetId = const Value.absent(),
+    Value<String?> targetKind = const Value.absent(),
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => AttentionClaimIndexData(
+    requestId: requestId ?? this.requestId,
+    agentId: agentId ?? this.agentId,
+    status: status ?? this.status,
+    scopeKind: scopeKind ?? this.scopeKind,
+    visibilityStart: visibilityStart ?? this.visibilityStart,
+    visibilityEnd: visibilityEnd ?? this.visibilityEnd,
+    deadline: deadline.present ? deadline.value : this.deadline,
+    nextReviewAt: nextReviewAt.present ? nextReviewAt.value : this.nextReviewAt,
+    targetId: targetId.present ? targetId.value : this.targetId,
+    targetKind: targetKind.present ? targetKind.value : this.targetKind,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  AttentionClaimIndexData copyWithCompanion(AttentionClaimIndexCompanion data) {
+    return AttentionClaimIndexData(
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      status: data.status.present ? data.status.value : this.status,
+      scopeKind: data.scopeKind.present ? data.scopeKind.value : this.scopeKind,
+      visibilityStart: data.visibilityStart.present
+          ? data.visibilityStart.value
+          : this.visibilityStart,
+      visibilityEnd: data.visibilityEnd.present
+          ? data.visibilityEnd.value
+          : this.visibilityEnd,
+      deadline: data.deadline.present ? data.deadline.value : this.deadline,
+      nextReviewAt: data.nextReviewAt.present
+          ? data.nextReviewAt.value
+          : this.nextReviewAt,
+      targetId: data.targetId.present ? data.targetId.value : this.targetId,
+      targetKind: data.targetKind.present
+          ? data.targetKind.value
+          : this.targetKind,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AttentionClaimIndexData(')
+          ..write('requestId: $requestId, ')
+          ..write('agentId: $agentId, ')
+          ..write('status: $status, ')
+          ..write('scopeKind: $scopeKind, ')
+          ..write('visibilityStart: $visibilityStart, ')
+          ..write('visibilityEnd: $visibilityEnd, ')
+          ..write('deadline: $deadline, ')
+          ..write('nextReviewAt: $nextReviewAt, ')
+          ..write('targetId: $targetId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    requestId,
+    agentId,
+    status,
+    scopeKind,
+    visibilityStart,
+    visibilityEnd,
+    deadline,
+    nextReviewAt,
+    targetId,
+    targetKind,
+    updatedAt,
+    deletedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AttentionClaimIndexData &&
+          other.requestId == this.requestId &&
+          other.agentId == this.agentId &&
+          other.status == this.status &&
+          other.scopeKind == this.scopeKind &&
+          other.visibilityStart == this.visibilityStart &&
+          other.visibilityEnd == this.visibilityEnd &&
+          other.deadline == this.deadline &&
+          other.nextReviewAt == this.nextReviewAt &&
+          other.targetId == this.targetId &&
+          other.targetKind == this.targetKind &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class AttentionClaimIndexCompanion
+    extends UpdateCompanion<AttentionClaimIndexData> {
+  final Value<String> requestId;
+  final Value<String> agentId;
+  final Value<String> status;
+  final Value<String> scopeKind;
+  final Value<DateTime> visibilityStart;
+  final Value<DateTime> visibilityEnd;
+  final Value<DateTime?> deadline;
+  final Value<DateTime?> nextReviewAt;
+  final Value<String?> targetId;
+  final Value<String?> targetKind;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<int> rowid;
+  const AttentionClaimIndexCompanion({
+    this.requestId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.scopeKind = const Value.absent(),
+    this.visibilityStart = const Value.absent(),
+    this.visibilityEnd = const Value.absent(),
+    this.deadline = const Value.absent(),
+    this.nextReviewAt = const Value.absent(),
+    this.targetId = const Value.absent(),
+    this.targetKind = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AttentionClaimIndexCompanion.insert({
+    required String requestId,
+    required String agentId,
+    required String status,
+    required String scopeKind,
+    required DateTime visibilityStart,
+    required DateTime visibilityEnd,
+    this.deadline = const Value.absent(),
+    this.nextReviewAt = const Value.absent(),
+    this.targetId = const Value.absent(),
+    this.targetKind = const Value.absent(),
+    required DateTime updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : requestId = Value(requestId),
+       agentId = Value(agentId),
+       status = Value(status),
+       scopeKind = Value(scopeKind),
+       visibilityStart = Value(visibilityStart),
+       visibilityEnd = Value(visibilityEnd),
+       updatedAt = Value(updatedAt);
+  static Insertable<AttentionClaimIndexData> custom({
+    Expression<String>? requestId,
+    Expression<String>? agentId,
+    Expression<String>? status,
+    Expression<String>? scopeKind,
+    Expression<DateTime>? visibilityStart,
+    Expression<DateTime>? visibilityEnd,
+    Expression<DateTime>? deadline,
+    Expression<DateTime>? nextReviewAt,
+    Expression<String>? targetId,
+    Expression<String>? targetKind,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (requestId != null) 'request_id': requestId,
+      if (agentId != null) 'agent_id': agentId,
+      if (status != null) 'status': status,
+      if (scopeKind != null) 'scope_kind': scopeKind,
+      if (visibilityStart != null) 'visibility_start': visibilityStart,
+      if (visibilityEnd != null) 'visibility_end': visibilityEnd,
+      if (deadline != null) 'deadline': deadline,
+      if (nextReviewAt != null) 'next_review_at': nextReviewAt,
+      if (targetId != null) 'target_id': targetId,
+      if (targetKind != null) 'target_kind': targetKind,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AttentionClaimIndexCompanion copyWith({
+    Value<String>? requestId,
+    Value<String>? agentId,
+    Value<String>? status,
+    Value<String>? scopeKind,
+    Value<DateTime>? visibilityStart,
+    Value<DateTime>? visibilityEnd,
+    Value<DateTime?>? deadline,
+    Value<DateTime?>? nextReviewAt,
+    Value<String?>? targetId,
+    Value<String?>? targetKind,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return AttentionClaimIndexCompanion(
+      requestId: requestId ?? this.requestId,
+      agentId: agentId ?? this.agentId,
+      status: status ?? this.status,
+      scopeKind: scopeKind ?? this.scopeKind,
+      visibilityStart: visibilityStart ?? this.visibilityStart,
+      visibilityEnd: visibilityEnd ?? this.visibilityEnd,
+      deadline: deadline ?? this.deadline,
+      nextReviewAt: nextReviewAt ?? this.nextReviewAt,
+      targetId: targetId ?? this.targetId,
+      targetKind: targetKind ?? this.targetKind,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (scopeKind.present) {
+      map['scope_kind'] = Variable<String>(scopeKind.value);
+    }
+    if (visibilityStart.present) {
+      map['visibility_start'] = Variable<DateTime>(visibilityStart.value);
+    }
+    if (visibilityEnd.present) {
+      map['visibility_end'] = Variable<DateTime>(visibilityEnd.value);
+    }
+    if (deadline.present) {
+      map['deadline'] = Variable<DateTime>(deadline.value);
+    }
+    if (nextReviewAt.present) {
+      map['next_review_at'] = Variable<DateTime>(nextReviewAt.value);
+    }
+    if (targetId.present) {
+      map['target_id'] = Variable<String>(targetId.value);
+    }
+    if (targetKind.present) {
+      map['target_kind'] = Variable<String>(targetKind.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AttentionClaimIndexCompanion(')
+          ..write('requestId: $requestId, ')
+          ..write('agentId: $agentId, ')
+          ..write('status: $status, ')
+          ..write('scopeKind: $scopeKind, ')
+          ..write('visibilityStart: $visibilityStart, ')
+          ..write('visibilityEnd: $visibilityEnd, ')
+          ..write('deadline: $deadline, ')
+          ..write('nextReviewAt: $nextReviewAt, ')
+          ..write('targetId: $targetId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class StandingAgreementIndex extends Table
+    with TableInfo<StandingAgreementIndex, StandingAgreementIndexData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  StandingAgreementIndex(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _agreementIdMeta = const VerificationMeta(
+    'agreementId',
+  );
+  late final GeneratedColumn<String> agreementId = GeneratedColumn<String>(
+    'agreement_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _scopeMeta = const VerificationMeta('scope');
+  late final GeneratedColumn<String> scope = GeneratedColumn<String>(
+    'scope',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _cadenceMeta = const VerificationMeta(
+    'cadence',
+  );
+  late final GeneratedColumn<String> cadence = GeneratedColumn<String>(
+    'cadence',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _approvalModeMeta = const VerificationMeta(
+    'approvalMode',
+  );
+  late final GeneratedColumn<String> approvalMode = GeneratedColumn<String>(
+    'approval_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _enforcementMeta = const VerificationMeta(
+    'enforcement',
+  );
+  late final GeneratedColumn<String> enforcement = GeneratedColumn<String>(
+    'enforcement',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _activeFromMeta = const VerificationMeta(
+    'activeFrom',
+  );
+  late final GeneratedColumn<DateTime> activeFrom = GeneratedColumn<DateTime>(
+    'active_from',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _activeUntilMeta = const VerificationMeta(
+    'activeUntil',
+  );
+  late final GeneratedColumn<DateTime> activeUntil = GeneratedColumn<DateTime>(
+    'active_until',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _priorityMeta = const VerificationMeta(
+    'priority',
+  );
+  late final GeneratedColumn<int> priority = GeneratedColumn<int>(
+    'priority',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _targetIdMeta = const VerificationMeta(
+    'targetId',
+  );
+  late final GeneratedColumn<String> targetId = GeneratedColumn<String>(
+    'target_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _targetKindMeta = const VerificationMeta(
+    'targetKind',
+  );
+  late final GeneratedColumn<String> targetKind = GeneratedColumn<String>(
+    'target_kind',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    agreementId,
+    agentId,
+    status,
+    scope,
+    cadence,
+    approvalMode,
+    enforcement,
+    activeFrom,
+    activeUntil,
+    priority,
+    targetId,
+    targetKind,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'standing_agreement_index';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StandingAgreementIndexData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('agreement_id')) {
+      context.handle(
+        _agreementIdMeta,
+        agreementId.isAcceptableOrUnknown(
+          data['agreement_id']!,
+          _agreementIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_agreementIdMeta);
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_agentIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('scope')) {
+      context.handle(
+        _scopeMeta,
+        scope.isAcceptableOrUnknown(data['scope']!, _scopeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scopeMeta);
+    }
+    if (data.containsKey('cadence')) {
+      context.handle(
+        _cadenceMeta,
+        cadence.isAcceptableOrUnknown(data['cadence']!, _cadenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cadenceMeta);
+    }
+    if (data.containsKey('approval_mode')) {
+      context.handle(
+        _approvalModeMeta,
+        approvalMode.isAcceptableOrUnknown(
+          data['approval_mode']!,
+          _approvalModeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_approvalModeMeta);
+    }
+    if (data.containsKey('enforcement')) {
+      context.handle(
+        _enforcementMeta,
+        enforcement.isAcceptableOrUnknown(
+          data['enforcement']!,
+          _enforcementMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_enforcementMeta);
+    }
+    if (data.containsKey('active_from')) {
+      context.handle(
+        _activeFromMeta,
+        activeFrom.isAcceptableOrUnknown(data['active_from']!, _activeFromMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_activeFromMeta);
+    }
+    if (data.containsKey('active_until')) {
+      context.handle(
+        _activeUntilMeta,
+        activeUntil.isAcceptableOrUnknown(
+          data['active_until']!,
+          _activeUntilMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_activeUntilMeta);
+    }
+    if (data.containsKey('priority')) {
+      context.handle(
+        _priorityMeta,
+        priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_priorityMeta);
+    }
+    if (data.containsKey('target_id')) {
+      context.handle(
+        _targetIdMeta,
+        targetId.isAcceptableOrUnknown(data['target_id']!, _targetIdMeta),
+      );
+    }
+    if (data.containsKey('target_kind')) {
+      context.handle(
+        _targetKindMeta,
+        targetKind.isAcceptableOrUnknown(data['target_kind']!, _targetKindMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {agreementId};
+  @override
+  StandingAgreementIndexData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StandingAgreementIndexData(
+      agreementId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agreement_id'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      scope: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope'],
+      )!,
+      cadence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cadence'],
+      )!,
+      approvalMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}approval_mode'],
+      )!,
+      enforcement: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}enforcement'],
+      )!,
+      activeFrom: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}active_from'],
+      )!,
+      activeUntil: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}active_until'],
+      )!,
+      priority: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}priority'],
+      )!,
+      targetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_id'],
+      ),
+      targetKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_kind'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  StandingAgreementIndex createAlias(String alias) {
+    return StandingAgreementIndex(attachedDatabase, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class StandingAgreementIndexData extends DataClass
+    implements Insertable<StandingAgreementIndexData> {
+  final String agreementId;
+  final String agentId;
+  final String status;
+  final String scope;
+  final String cadence;
+  final String approvalMode;
+  final String enforcement;
+  final DateTime activeFrom;
+  final DateTime activeUntil;
+  final int priority;
+  final String? targetId;
+  final String? targetKind;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  const StandingAgreementIndexData({
+    required this.agreementId,
+    required this.agentId,
+    required this.status,
+    required this.scope,
+    required this.cadence,
+    required this.approvalMode,
+    required this.enforcement,
+    required this.activeFrom,
+    required this.activeUntil,
+    required this.priority,
+    this.targetId,
+    this.targetKind,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['agreement_id'] = Variable<String>(agreementId);
+    map['agent_id'] = Variable<String>(agentId);
+    map['status'] = Variable<String>(status);
+    map['scope'] = Variable<String>(scope);
+    map['cadence'] = Variable<String>(cadence);
+    map['approval_mode'] = Variable<String>(approvalMode);
+    map['enforcement'] = Variable<String>(enforcement);
+    map['active_from'] = Variable<DateTime>(activeFrom);
+    map['active_until'] = Variable<DateTime>(activeUntil);
+    map['priority'] = Variable<int>(priority);
+    if (!nullToAbsent || targetId != null) {
+      map['target_id'] = Variable<String>(targetId);
+    }
+    if (!nullToAbsent || targetKind != null) {
+      map['target_kind'] = Variable<String>(targetKind);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  StandingAgreementIndexCompanion toCompanion(bool nullToAbsent) {
+    return StandingAgreementIndexCompanion(
+      agreementId: Value(agreementId),
+      agentId: Value(agentId),
+      status: Value(status),
+      scope: Value(scope),
+      cadence: Value(cadence),
+      approvalMode: Value(approvalMode),
+      enforcement: Value(enforcement),
+      activeFrom: Value(activeFrom),
+      activeUntil: Value(activeUntil),
+      priority: Value(priority),
+      targetId: targetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetId),
+      targetKind: targetKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetKind),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory StandingAgreementIndexData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StandingAgreementIndexData(
+      agreementId: serializer.fromJson<String>(json['agreement_id']),
+      agentId: serializer.fromJson<String>(json['agent_id']),
+      status: serializer.fromJson<String>(json['status']),
+      scope: serializer.fromJson<String>(json['scope']),
+      cadence: serializer.fromJson<String>(json['cadence']),
+      approvalMode: serializer.fromJson<String>(json['approval_mode']),
+      enforcement: serializer.fromJson<String>(json['enforcement']),
+      activeFrom: serializer.fromJson<DateTime>(json['active_from']),
+      activeUntil: serializer.fromJson<DateTime>(json['active_until']),
+      priority: serializer.fromJson<int>(json['priority']),
+      targetId: serializer.fromJson<String?>(json['target_id']),
+      targetKind: serializer.fromJson<String?>(json['target_kind']),
+      updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deleted_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'agreement_id': serializer.toJson<String>(agreementId),
+      'agent_id': serializer.toJson<String>(agentId),
+      'status': serializer.toJson<String>(status),
+      'scope': serializer.toJson<String>(scope),
+      'cadence': serializer.toJson<String>(cadence),
+      'approval_mode': serializer.toJson<String>(approvalMode),
+      'enforcement': serializer.toJson<String>(enforcement),
+      'active_from': serializer.toJson<DateTime>(activeFrom),
+      'active_until': serializer.toJson<DateTime>(activeUntil),
+      'priority': serializer.toJson<int>(priority),
+      'target_id': serializer.toJson<String?>(targetId),
+      'target_kind': serializer.toJson<String?>(targetKind),
+      'updated_at': serializer.toJson<DateTime>(updatedAt),
+      'deleted_at': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  StandingAgreementIndexData copyWith({
+    String? agreementId,
+    String? agentId,
+    String? status,
+    String? scope,
+    String? cadence,
+    String? approvalMode,
+    String? enforcement,
+    DateTime? activeFrom,
+    DateTime? activeUntil,
+    int? priority,
+    Value<String?> targetId = const Value.absent(),
+    Value<String?> targetKind = const Value.absent(),
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => StandingAgreementIndexData(
+    agreementId: agreementId ?? this.agreementId,
+    agentId: agentId ?? this.agentId,
+    status: status ?? this.status,
+    scope: scope ?? this.scope,
+    cadence: cadence ?? this.cadence,
+    approvalMode: approvalMode ?? this.approvalMode,
+    enforcement: enforcement ?? this.enforcement,
+    activeFrom: activeFrom ?? this.activeFrom,
+    activeUntil: activeUntil ?? this.activeUntil,
+    priority: priority ?? this.priority,
+    targetId: targetId.present ? targetId.value : this.targetId,
+    targetKind: targetKind.present ? targetKind.value : this.targetKind,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  StandingAgreementIndexData copyWithCompanion(
+    StandingAgreementIndexCompanion data,
+  ) {
+    return StandingAgreementIndexData(
+      agreementId: data.agreementId.present
+          ? data.agreementId.value
+          : this.agreementId,
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      status: data.status.present ? data.status.value : this.status,
+      scope: data.scope.present ? data.scope.value : this.scope,
+      cadence: data.cadence.present ? data.cadence.value : this.cadence,
+      approvalMode: data.approvalMode.present
+          ? data.approvalMode.value
+          : this.approvalMode,
+      enforcement: data.enforcement.present
+          ? data.enforcement.value
+          : this.enforcement,
+      activeFrom: data.activeFrom.present
+          ? data.activeFrom.value
+          : this.activeFrom,
+      activeUntil: data.activeUntil.present
+          ? data.activeUntil.value
+          : this.activeUntil,
+      priority: data.priority.present ? data.priority.value : this.priority,
+      targetId: data.targetId.present ? data.targetId.value : this.targetId,
+      targetKind: data.targetKind.present
+          ? data.targetKind.value
+          : this.targetKind,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StandingAgreementIndexData(')
+          ..write('agreementId: $agreementId, ')
+          ..write('agentId: $agentId, ')
+          ..write('status: $status, ')
+          ..write('scope: $scope, ')
+          ..write('cadence: $cadence, ')
+          ..write('approvalMode: $approvalMode, ')
+          ..write('enforcement: $enforcement, ')
+          ..write('activeFrom: $activeFrom, ')
+          ..write('activeUntil: $activeUntil, ')
+          ..write('priority: $priority, ')
+          ..write('targetId: $targetId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    agreementId,
+    agentId,
+    status,
+    scope,
+    cadence,
+    approvalMode,
+    enforcement,
+    activeFrom,
+    activeUntil,
+    priority,
+    targetId,
+    targetKind,
+    updatedAt,
+    deletedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StandingAgreementIndexData &&
+          other.agreementId == this.agreementId &&
+          other.agentId == this.agentId &&
+          other.status == this.status &&
+          other.scope == this.scope &&
+          other.cadence == this.cadence &&
+          other.approvalMode == this.approvalMode &&
+          other.enforcement == this.enforcement &&
+          other.activeFrom == this.activeFrom &&
+          other.activeUntil == this.activeUntil &&
+          other.priority == this.priority &&
+          other.targetId == this.targetId &&
+          other.targetKind == this.targetKind &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class StandingAgreementIndexCompanion
+    extends UpdateCompanion<StandingAgreementIndexData> {
+  final Value<String> agreementId;
+  final Value<String> agentId;
+  final Value<String> status;
+  final Value<String> scope;
+  final Value<String> cadence;
+  final Value<String> approvalMode;
+  final Value<String> enforcement;
+  final Value<DateTime> activeFrom;
+  final Value<DateTime> activeUntil;
+  final Value<int> priority;
+  final Value<String?> targetId;
+  final Value<String?> targetKind;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<int> rowid;
+  const StandingAgreementIndexCompanion({
+    this.agreementId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.scope = const Value.absent(),
+    this.cadence = const Value.absent(),
+    this.approvalMode = const Value.absent(),
+    this.enforcement = const Value.absent(),
+    this.activeFrom = const Value.absent(),
+    this.activeUntil = const Value.absent(),
+    this.priority = const Value.absent(),
+    this.targetId = const Value.absent(),
+    this.targetKind = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StandingAgreementIndexCompanion.insert({
+    required String agreementId,
+    required String agentId,
+    required String status,
+    required String scope,
+    required String cadence,
+    required String approvalMode,
+    required String enforcement,
+    required DateTime activeFrom,
+    required DateTime activeUntil,
+    required int priority,
+    this.targetId = const Value.absent(),
+    this.targetKind = const Value.absent(),
+    required DateTime updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : agreementId = Value(agreementId),
+       agentId = Value(agentId),
+       status = Value(status),
+       scope = Value(scope),
+       cadence = Value(cadence),
+       approvalMode = Value(approvalMode),
+       enforcement = Value(enforcement),
+       activeFrom = Value(activeFrom),
+       activeUntil = Value(activeUntil),
+       priority = Value(priority),
+       updatedAt = Value(updatedAt);
+  static Insertable<StandingAgreementIndexData> custom({
+    Expression<String>? agreementId,
+    Expression<String>? agentId,
+    Expression<String>? status,
+    Expression<String>? scope,
+    Expression<String>? cadence,
+    Expression<String>? approvalMode,
+    Expression<String>? enforcement,
+    Expression<DateTime>? activeFrom,
+    Expression<DateTime>? activeUntil,
+    Expression<int>? priority,
+    Expression<String>? targetId,
+    Expression<String>? targetKind,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (agreementId != null) 'agreement_id': agreementId,
+      if (agentId != null) 'agent_id': agentId,
+      if (status != null) 'status': status,
+      if (scope != null) 'scope': scope,
+      if (cadence != null) 'cadence': cadence,
+      if (approvalMode != null) 'approval_mode': approvalMode,
+      if (enforcement != null) 'enforcement': enforcement,
+      if (activeFrom != null) 'active_from': activeFrom,
+      if (activeUntil != null) 'active_until': activeUntil,
+      if (priority != null) 'priority': priority,
+      if (targetId != null) 'target_id': targetId,
+      if (targetKind != null) 'target_kind': targetKind,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StandingAgreementIndexCompanion copyWith({
+    Value<String>? agreementId,
+    Value<String>? agentId,
+    Value<String>? status,
+    Value<String>? scope,
+    Value<String>? cadence,
+    Value<String>? approvalMode,
+    Value<String>? enforcement,
+    Value<DateTime>? activeFrom,
+    Value<DateTime>? activeUntil,
+    Value<int>? priority,
+    Value<String?>? targetId,
+    Value<String?>? targetKind,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return StandingAgreementIndexCompanion(
+      agreementId: agreementId ?? this.agreementId,
+      agentId: agentId ?? this.agentId,
+      status: status ?? this.status,
+      scope: scope ?? this.scope,
+      cadence: cadence ?? this.cadence,
+      approvalMode: approvalMode ?? this.approvalMode,
+      enforcement: enforcement ?? this.enforcement,
+      activeFrom: activeFrom ?? this.activeFrom,
+      activeUntil: activeUntil ?? this.activeUntil,
+      priority: priority ?? this.priority,
+      targetId: targetId ?? this.targetId,
+      targetKind: targetKind ?? this.targetKind,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (agreementId.present) {
+      map['agreement_id'] = Variable<String>(agreementId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (scope.present) {
+      map['scope'] = Variable<String>(scope.value);
+    }
+    if (cadence.present) {
+      map['cadence'] = Variable<String>(cadence.value);
+    }
+    if (approvalMode.present) {
+      map['approval_mode'] = Variable<String>(approvalMode.value);
+    }
+    if (enforcement.present) {
+      map['enforcement'] = Variable<String>(enforcement.value);
+    }
+    if (activeFrom.present) {
+      map['active_from'] = Variable<DateTime>(activeFrom.value);
+    }
+    if (activeUntil.present) {
+      map['active_until'] = Variable<DateTime>(activeUntil.value);
+    }
+    if (priority.present) {
+      map['priority'] = Variable<int>(priority.value);
+    }
+    if (targetId.present) {
+      map['target_id'] = Variable<String>(targetId.value);
+    }
+    if (targetKind.present) {
+      map['target_kind'] = Variable<String>(targetKind.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StandingAgreementIndexCompanion(')
+          ..write('agreementId: $agreementId, ')
+          ..write('agentId: $agentId, ')
+          ..write('status: $status, ')
+          ..write('scope: $scope, ')
+          ..write('cadence: $cadence, ')
+          ..write('approvalMode: $approvalMode, ')
+          ..write('enforcement: $enforcement, ')
+          ..write('activeFrom: $activeFrom, ')
+          ..write('activeUntil: $activeUntil, ')
+          ..write('priority: $priority, ')
+          ..write('targetId: $targetId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -2831,6 +4408,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_agent_entities_active_type_created',
     'CREATE INDEX idx_agent_entities_active_type_created ON agent_entities (type, created_at DESC) WHERE deleted_at IS NULL',
   );
+  late final Index idxAgentEntitiesActiveTypeSubCreatedId = Index(
+    'idx_agent_entities_active_type_sub_created_id',
+    'CREATE INDEX idx_agent_entities_active_type_sub_created_id ON agent_entities (type, subtype, created_at DESC, id DESC) WHERE deleted_at IS NULL',
+  );
   late final Index idxAgentEntitiesTokenUsageSince = Index(
     'idx_agent_entities_token_usage_since',
     'CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities (type, created_at DESC) WHERE type = \'wakeTokenUsage\' AND deleted_at IS NULL',
@@ -2871,6 +4452,27 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   late final Index idxAgentLinksActiveToType = Index(
     'idx_agent_links_active_to_type',
     'CREATE INDEX idx_agent_links_active_to_type ON agent_links (to_id, type) WHERE deleted_at IS NULL',
+  );
+  late final AttentionClaimIndex attentionClaimIndex = AttentionClaimIndex(
+    this,
+  );
+  late final Index idxAttentionClaimsActiveWindow = Index(
+    'idx_attention_claims_active_window',
+    'CREATE INDEX idx_attention_claims_active_window ON attention_claim_index (status, visibility_start, visibility_end, next_review_at, deadline, request_id) WHERE deleted_at IS NULL',
+  );
+  late final Index idxAttentionClaimsActiveDeadline = Index(
+    'idx_attention_claims_active_deadline',
+    'CREATE INDEX idx_attention_claims_active_deadline ON attention_claim_index (status, deadline, request_id) WHERE deleted_at IS NULL AND deadline IS NOT NULL',
+  );
+  late final StandingAgreementIndex standingAgreementIndex =
+      StandingAgreementIndex(this);
+  late final Index idxStandingAgreementsActiveWindow = Index(
+    'idx_standing_agreements_active_window',
+    'CREATE INDEX idx_standing_agreements_active_window ON standing_agreement_index (status, active_from, active_until, priority DESC, updated_at DESC, agreement_id) WHERE deleted_at IS NULL',
+  );
+  late final Index idxStandingAgreementsActiveScopeWindow = Index(
+    'idx_standing_agreements_active_scope_window',
+    'CREATE INDEX idx_standing_agreements_active_scope_window ON standing_agreement_index (status, scope, active_from, active_until, priority DESC, updated_at DESC, agreement_id) WHERE deleted_at IS NULL',
   );
   late final WakeRunLog wakeRunLog = WakeRunLog(this);
   late final Index idxWakeRunLogAgent = Index(
@@ -3503,6 +5105,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentEntitiesActiveAgentTypeCreatedId,
     idxAgentEntitiesActiveAgentTypeSubCreatedId,
     idxAgentEntitiesActiveTypeCreated,
+    idxAgentEntitiesActiveTypeSubCreatedId,
     idxAgentEntitiesTokenUsageSince,
     idxAgentEntitiesDueWake,
     agentLinks,
@@ -3514,6 +5117,12 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxUniqueSoulPerTemplate,
     idxAgentLinksActiveFromTypeTo,
     idxAgentLinksActiveToType,
+    attentionClaimIndex,
+    idxAttentionClaimsActiveWindow,
+    idxAttentionClaimsActiveDeadline,
+    standingAgreementIndex,
+    idxStandingAgreementsActiveWindow,
+    idxStandingAgreementsActiveScopeWindow,
     wakeRunLog,
     idxWakeRunLogAgent,
     idxWakeRunLogTemplate,
@@ -4097,6 +5706,750 @@ typedef $AgentLinksProcessedTableManager =
       $AgentLinksUpdateCompanionBuilder,
       (AgentLink, BaseReferences<_$AgentDatabase, AgentLinks, AgentLink>),
       AgentLink,
+      PrefetchHooks Function()
+    >;
+typedef $AttentionClaimIndexCreateCompanionBuilder =
+    AttentionClaimIndexCompanion Function({
+      required String requestId,
+      required String agentId,
+      required String status,
+      required String scopeKind,
+      required DateTime visibilityStart,
+      required DateTime visibilityEnd,
+      Value<DateTime?> deadline,
+      Value<DateTime?> nextReviewAt,
+      Value<String?> targetId,
+      Value<String?> targetKind,
+      required DateTime updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+typedef $AttentionClaimIndexUpdateCompanionBuilder =
+    AttentionClaimIndexCompanion Function({
+      Value<String> requestId,
+      Value<String> agentId,
+      Value<String> status,
+      Value<String> scopeKind,
+      Value<DateTime> visibilityStart,
+      Value<DateTime> visibilityEnd,
+      Value<DateTime?> deadline,
+      Value<DateTime?> nextReviewAt,
+      Value<String?> targetId,
+      Value<String?> targetKind,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+
+class $AttentionClaimIndexFilterComposer
+    extends Composer<_$AgentDatabase, AttentionClaimIndex> {
+  $AttentionClaimIndexFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scopeKind => $composableBuilder(
+    column: $table.scopeKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get visibilityStart => $composableBuilder(
+    column: $table.visibilityStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get visibilityEnd => $composableBuilder(
+    column: $table.visibilityEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deadline => $composableBuilder(
+    column: $table.deadline,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextReviewAt => $composableBuilder(
+    column: $table.nextReviewAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $AttentionClaimIndexOrderingComposer
+    extends Composer<_$AgentDatabase, AttentionClaimIndex> {
+  $AttentionClaimIndexOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get scopeKind => $composableBuilder(
+    column: $table.scopeKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get visibilityStart => $composableBuilder(
+    column: $table.visibilityStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get visibilityEnd => $composableBuilder(
+    column: $table.visibilityEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deadline => $composableBuilder(
+    column: $table.deadline,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextReviewAt => $composableBuilder(
+    column: $table.nextReviewAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $AttentionClaimIndexAnnotationComposer
+    extends Composer<_$AgentDatabase, AttentionClaimIndex> {
+  $AttentionClaimIndexAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get requestId =>
+      $composableBuilder(column: $table.requestId, builder: (column) => column);
+
+  GeneratedColumn<String> get agentId =>
+      $composableBuilder(column: $table.agentId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get scopeKind =>
+      $composableBuilder(column: $table.scopeKind, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get visibilityStart => $composableBuilder(
+    column: $table.visibilityStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get visibilityEnd => $composableBuilder(
+    column: $table.visibilityEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get deadline =>
+      $composableBuilder(column: $table.deadline, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get nextReviewAt => $composableBuilder(
+    column: $table.nextReviewAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get targetId =>
+      $composableBuilder(column: $table.targetId, builder: (column) => column);
+
+  GeneratedColumn<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $AttentionClaimIndexTableManager
+    extends
+        RootTableManager<
+          _$AgentDatabase,
+          AttentionClaimIndex,
+          AttentionClaimIndexData,
+          $AttentionClaimIndexFilterComposer,
+          $AttentionClaimIndexOrderingComposer,
+          $AttentionClaimIndexAnnotationComposer,
+          $AttentionClaimIndexCreateCompanionBuilder,
+          $AttentionClaimIndexUpdateCompanionBuilder,
+          (
+            AttentionClaimIndexData,
+            BaseReferences<
+              _$AgentDatabase,
+              AttentionClaimIndex,
+              AttentionClaimIndexData
+            >,
+          ),
+          AttentionClaimIndexData,
+          PrefetchHooks Function()
+        > {
+  $AttentionClaimIndexTableManager(
+    _$AgentDatabase db,
+    AttentionClaimIndex table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $AttentionClaimIndexFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $AttentionClaimIndexOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $AttentionClaimIndexAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> requestId = const Value.absent(),
+                Value<String> agentId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> scopeKind = const Value.absent(),
+                Value<DateTime> visibilityStart = const Value.absent(),
+                Value<DateTime> visibilityEnd = const Value.absent(),
+                Value<DateTime?> deadline = const Value.absent(),
+                Value<DateTime?> nextReviewAt = const Value.absent(),
+                Value<String?> targetId = const Value.absent(),
+                Value<String?> targetKind = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AttentionClaimIndexCompanion(
+                requestId: requestId,
+                agentId: agentId,
+                status: status,
+                scopeKind: scopeKind,
+                visibilityStart: visibilityStart,
+                visibilityEnd: visibilityEnd,
+                deadline: deadline,
+                nextReviewAt: nextReviewAt,
+                targetId: targetId,
+                targetKind: targetKind,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String requestId,
+                required String agentId,
+                required String status,
+                required String scopeKind,
+                required DateTime visibilityStart,
+                required DateTime visibilityEnd,
+                Value<DateTime?> deadline = const Value.absent(),
+                Value<DateTime?> nextReviewAt = const Value.absent(),
+                Value<String?> targetId = const Value.absent(),
+                Value<String?> targetKind = const Value.absent(),
+                required DateTime updatedAt,
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AttentionClaimIndexCompanion.insert(
+                requestId: requestId,
+                agentId: agentId,
+                status: status,
+                scopeKind: scopeKind,
+                visibilityStart: visibilityStart,
+                visibilityEnd: visibilityEnd,
+                deadline: deadline,
+                nextReviewAt: nextReviewAt,
+                targetId: targetId,
+                targetKind: targetKind,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $AttentionClaimIndexProcessedTableManager =
+    ProcessedTableManager<
+      _$AgentDatabase,
+      AttentionClaimIndex,
+      AttentionClaimIndexData,
+      $AttentionClaimIndexFilterComposer,
+      $AttentionClaimIndexOrderingComposer,
+      $AttentionClaimIndexAnnotationComposer,
+      $AttentionClaimIndexCreateCompanionBuilder,
+      $AttentionClaimIndexUpdateCompanionBuilder,
+      (
+        AttentionClaimIndexData,
+        BaseReferences<
+          _$AgentDatabase,
+          AttentionClaimIndex,
+          AttentionClaimIndexData
+        >,
+      ),
+      AttentionClaimIndexData,
+      PrefetchHooks Function()
+    >;
+typedef $StandingAgreementIndexCreateCompanionBuilder =
+    StandingAgreementIndexCompanion Function({
+      required String agreementId,
+      required String agentId,
+      required String status,
+      required String scope,
+      required String cadence,
+      required String approvalMode,
+      required String enforcement,
+      required DateTime activeFrom,
+      required DateTime activeUntil,
+      required int priority,
+      Value<String?> targetId,
+      Value<String?> targetKind,
+      required DateTime updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+typedef $StandingAgreementIndexUpdateCompanionBuilder =
+    StandingAgreementIndexCompanion Function({
+      Value<String> agreementId,
+      Value<String> agentId,
+      Value<String> status,
+      Value<String> scope,
+      Value<String> cadence,
+      Value<String> approvalMode,
+      Value<String> enforcement,
+      Value<DateTime> activeFrom,
+      Value<DateTime> activeUntil,
+      Value<int> priority,
+      Value<String?> targetId,
+      Value<String?> targetKind,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+
+class $StandingAgreementIndexFilterComposer
+    extends Composer<_$AgentDatabase, StandingAgreementIndex> {
+  $StandingAgreementIndexFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get agreementId => $composableBuilder(
+    column: $table.agreementId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scope => $composableBuilder(
+    column: $table.scope,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cadence => $composableBuilder(
+    column: $table.cadence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get approvalMode => $composableBuilder(
+    column: $table.approvalMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get enforcement => $composableBuilder(
+    column: $table.enforcement,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get activeFrom => $composableBuilder(
+    column: $table.activeFrom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get activeUntil => $composableBuilder(
+    column: $table.activeUntil,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $StandingAgreementIndexOrderingComposer
+    extends Composer<_$AgentDatabase, StandingAgreementIndex> {
+  $StandingAgreementIndexOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get agreementId => $composableBuilder(
+    column: $table.agreementId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get scope => $composableBuilder(
+    column: $table.scope,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cadence => $composableBuilder(
+    column: $table.cadence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get approvalMode => $composableBuilder(
+    column: $table.approvalMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get enforcement => $composableBuilder(
+    column: $table.enforcement,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get activeFrom => $composableBuilder(
+    column: $table.activeFrom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get activeUntil => $composableBuilder(
+    column: $table.activeUntil,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $StandingAgreementIndexAnnotationComposer
+    extends Composer<_$AgentDatabase, StandingAgreementIndex> {
+  $StandingAgreementIndexAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get agreementId => $composableBuilder(
+    column: $table.agreementId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get agentId =>
+      $composableBuilder(column: $table.agentId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get scope =>
+      $composableBuilder(column: $table.scope, builder: (column) => column);
+
+  GeneratedColumn<String> get cadence =>
+      $composableBuilder(column: $table.cadence, builder: (column) => column);
+
+  GeneratedColumn<String> get approvalMode => $composableBuilder(
+    column: $table.approvalMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get enforcement => $composableBuilder(
+    column: $table.enforcement,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get activeFrom => $composableBuilder(
+    column: $table.activeFrom,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get activeUntil => $composableBuilder(
+    column: $table.activeUntil,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get priority =>
+      $composableBuilder(column: $table.priority, builder: (column) => column);
+
+  GeneratedColumn<String> get targetId =>
+      $composableBuilder(column: $table.targetId, builder: (column) => column);
+
+  GeneratedColumn<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $StandingAgreementIndexTableManager
+    extends
+        RootTableManager<
+          _$AgentDatabase,
+          StandingAgreementIndex,
+          StandingAgreementIndexData,
+          $StandingAgreementIndexFilterComposer,
+          $StandingAgreementIndexOrderingComposer,
+          $StandingAgreementIndexAnnotationComposer,
+          $StandingAgreementIndexCreateCompanionBuilder,
+          $StandingAgreementIndexUpdateCompanionBuilder,
+          (
+            StandingAgreementIndexData,
+            BaseReferences<
+              _$AgentDatabase,
+              StandingAgreementIndex,
+              StandingAgreementIndexData
+            >,
+          ),
+          StandingAgreementIndexData,
+          PrefetchHooks Function()
+        > {
+  $StandingAgreementIndexTableManager(
+    _$AgentDatabase db,
+    StandingAgreementIndex table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $StandingAgreementIndexFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $StandingAgreementIndexOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $StandingAgreementIndexAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> agreementId = const Value.absent(),
+                Value<String> agentId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> scope = const Value.absent(),
+                Value<String> cadence = const Value.absent(),
+                Value<String> approvalMode = const Value.absent(),
+                Value<String> enforcement = const Value.absent(),
+                Value<DateTime> activeFrom = const Value.absent(),
+                Value<DateTime> activeUntil = const Value.absent(),
+                Value<int> priority = const Value.absent(),
+                Value<String?> targetId = const Value.absent(),
+                Value<String?> targetKind = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StandingAgreementIndexCompanion(
+                agreementId: agreementId,
+                agentId: agentId,
+                status: status,
+                scope: scope,
+                cadence: cadence,
+                approvalMode: approvalMode,
+                enforcement: enforcement,
+                activeFrom: activeFrom,
+                activeUntil: activeUntil,
+                priority: priority,
+                targetId: targetId,
+                targetKind: targetKind,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String agreementId,
+                required String agentId,
+                required String status,
+                required String scope,
+                required String cadence,
+                required String approvalMode,
+                required String enforcement,
+                required DateTime activeFrom,
+                required DateTime activeUntil,
+                required int priority,
+                Value<String?> targetId = const Value.absent(),
+                Value<String?> targetKind = const Value.absent(),
+                required DateTime updatedAt,
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StandingAgreementIndexCompanion.insert(
+                agreementId: agreementId,
+                agentId: agentId,
+                status: status,
+                scope: scope,
+                cadence: cadence,
+                approvalMode: approvalMode,
+                enforcement: enforcement,
+                activeFrom: activeFrom,
+                activeUntil: activeUntil,
+                priority: priority,
+                targetId: targetId,
+                targetKind: targetKind,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $StandingAgreementIndexProcessedTableManager =
+    ProcessedTableManager<
+      _$AgentDatabase,
+      StandingAgreementIndex,
+      StandingAgreementIndexData,
+      $StandingAgreementIndexFilterComposer,
+      $StandingAgreementIndexOrderingComposer,
+      $StandingAgreementIndexAnnotationComposer,
+      $StandingAgreementIndexCreateCompanionBuilder,
+      $StandingAgreementIndexUpdateCompanionBuilder,
+      (
+        StandingAgreementIndexData,
+        BaseReferences<
+          _$AgentDatabase,
+          StandingAgreementIndex,
+          StandingAgreementIndexData
+        >,
+      ),
+      StandingAgreementIndexData,
       PrefetchHooks Function()
     >;
 typedef $WakeRunLogCreateCompanionBuilder =
@@ -4838,6 +7191,10 @@ class $AgentDatabaseManager {
       $AgentEntitiesTableManager(_db, _db.agentEntities);
   $AgentLinksTableManager get agentLinks =>
       $AgentLinksTableManager(_db, _db.agentLinks);
+  $AttentionClaimIndexTableManager get attentionClaimIndex =>
+      $AttentionClaimIndexTableManager(_db, _db.attentionClaimIndex);
+  $StandingAgreementIndexTableManager get standingAgreementIndex =>
+      $StandingAgreementIndexTableManager(_db, _db.standingAgreementIndex);
   $WakeRunLogTableManager get wakeRunLog =>
       $WakeRunLogTableManager(_db, _db.wakeRunLog);
   $SagaLogTableManager get sagaLog => $SagaLogTableManager(_db, _db.sagaLog);

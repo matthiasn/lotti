@@ -25,6 +25,7 @@ CREATE INDEX idx_agent_entities_thread ON agent_entities(agent_id, thread_id, cr
 CREATE INDEX idx_agent_entities_active_agent_type_created_id ON agent_entities(agent_id, type, created_at DESC, id DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_agent_entities_active_agent_type_sub_created_id ON agent_entities(agent_id, type, subtype, created_at DESC, id DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_agent_entities_active_type_created ON agent_entities(type, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_agent_entities_active_type_sub_created_id ON agent_entities(type, subtype, created_at DESC, id DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities(type, created_at DESC) WHERE type = 'wakeTokenUsage' AND deleted_at IS NULL;
 -- Expression partial for `getDueScheduledAgentStates`. The query
 -- filters `type = 'agentState' AND deleted_at IS NULL AND
@@ -69,6 +70,52 @@ CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links(to_id) WHERE
 CREATE UNIQUE INDEX idx_unique_soul_per_template ON agent_links(from_id) WHERE type = 'soul_assignment' AND deleted_at IS NULL;
 CREATE INDEX idx_agent_links_active_from_type_to ON agent_links(from_id, type, to_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_agent_links_active_to_type ON agent_links(to_id, type) WHERE deleted_at IS NULL;
+
+CREATE TABLE attention_claim_index (
+  request_id TEXT NOT NULL PRIMARY KEY,
+  agent_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  scope_kind TEXT NOT NULL,
+  visibility_start DATETIME NOT NULL,
+  visibility_end DATETIME NOT NULL,
+  deadline DATETIME,
+  next_review_at DATETIME,
+  target_id TEXT,
+  target_kind TEXT,
+  updated_at DATETIME NOT NULL,
+  deleted_at DATETIME
+);
+
+CREATE INDEX idx_attention_claims_active_window
+  ON attention_claim_index(status, visibility_start, visibility_end, next_review_at, deadline, request_id)
+  WHERE deleted_at IS NULL;
+CREATE INDEX idx_attention_claims_active_deadline
+  ON attention_claim_index(status, deadline, request_id)
+  WHERE deleted_at IS NULL AND deadline IS NOT NULL;
+
+CREATE TABLE standing_agreement_index (
+  agreement_id TEXT NOT NULL PRIMARY KEY,
+  agent_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  scope TEXT NOT NULL,
+  cadence TEXT NOT NULL,
+  approval_mode TEXT NOT NULL,
+  enforcement TEXT NOT NULL,
+  active_from DATETIME NOT NULL,
+  active_until DATETIME NOT NULL,
+  priority INTEGER NOT NULL,
+  target_id TEXT,
+  target_kind TEXT,
+  updated_at DATETIME NOT NULL,
+  deleted_at DATETIME
+);
+
+CREATE INDEX idx_standing_agreements_active_window
+  ON standing_agreement_index(status, active_from, active_until, priority DESC, updated_at DESC, agreement_id)
+  WHERE deleted_at IS NULL;
+CREATE INDEX idx_standing_agreements_active_scope_window
+  ON standing_agreement_index(status, scope, active_from, active_until, priority DESC, updated_at DESC, agreement_id)
+  WHERE deleted_at IS NULL;
 
 CREATE TABLE wake_run_log (
   run_key TEXT NOT NULL PRIMARY KEY,

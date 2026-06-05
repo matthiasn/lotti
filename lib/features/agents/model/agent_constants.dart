@@ -34,7 +34,9 @@ abstract final class AgentEntityTypes {
   static const parsedItem = 'parsed_capture_item';
   static const dayPlan = 'day_plan';
   static const attentionRequest = 'attentionRequest';
+  static const attentionClaimDisposition = 'attentionClaimDisposition';
   static const attentionAward = 'attentionAward';
+  static const standingAgreement = 'standingAgreement';
   static const agentState = 'agentState';
   static const agentMessage = 'agentMessage';
   static const agentReport = 'agentReport';

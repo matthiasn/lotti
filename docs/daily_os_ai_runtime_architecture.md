@@ -261,7 +261,10 @@ The moves are additive, so they ship incrementally — each is useful alone:
 1. **Projection kernel + convergence tests first.** Build the deterministic projection with canonical ordering (§8) and **concurrent-agent sync conflict tests**, before any new synced derived state is written. Everything else depends on this.
 2. **Compaction as a local read-side cache** (§6). Ship it **unsynced** first so summary pointers can't become a new conflict surface; promote to synced only once (1) lands and compaction is single-writer or deterministic-selection.
 3. **State-as-projection migration** (Move 1). Migrate the upsert-in-place entities (`agent_repository.upsertEntity`) to derived projections; generalize the `Version`/`Head` snapshot pattern for genuinely user-authored state.
-4. **Planner MVP — proposal only.** Event-sourced `attention_request` + the deterministic hard-constraint verifier + a `ChangeSet` **proposal**. No auto-mutations, and no auto-resolution of irreversible actions.
+4. **Planner MVP — proposal only.** Event-sourced `attention_request`,
+   durable standing agreements, indexed planner-window lookup, the
+   deterministic hard-constraint verifier, and a `ChangeSet` **proposal**. No
+   auto-mutations, and no auto-resolution of irreversible actions.
 5. **Executor lease + fencing** (§8) with a *named backend and explicit offline behavior*, before any cross-device auto-execution or single-writer compaction.
 6. **Project phases + recurring requests; outcome tracking + drift nudges** (§§5, 9).
 7. **Provider compliance + model-pinning checks** before relying on the EU fallback tier (§7, Thread D).

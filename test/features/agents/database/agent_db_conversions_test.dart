@@ -501,12 +501,11 @@ void main() {
     });
 
     test(
-      'toEntityCompanion writes attention request type and day subtype',
+      'toEntityCompanion writes attention request type and scope subtype',
       () {
         final entity = AgentDomainEntity.attentionRequest(
           id: 'attention-request-001',
           agentId: 'task-agent-001',
-          dayId: 'dayplan-2026-05-25',
           kind: AttentionRequestKind.task,
           title: 'Prep demo',
           categoryId: 'work',
@@ -520,6 +519,7 @@ void main() {
               id: 'task-001',
             ),
           ],
+          scopeKind: AttentionClaimScopeKind.deadline,
           createdAt: createdAt,
           vectorClock: null,
         );
@@ -528,7 +528,36 @@ void main() {
 
         expect(companion.id, const Value('attention-request-001'));
         expect(companion.type, const Value(AgentEntityTypes.attentionRequest));
-        expect(companion.subtype, const Value('dayplan-2026-05-25'));
+        expect(companion.subtype, const Value('deadline'));
+        expect(companion.createdAt, Value(createdAt));
+        expect(companion.updatedAt, Value(createdAt));
+      },
+    );
+
+    test(
+      'toEntityCompanion writes claim disposition type and request subtype',
+      () {
+        final entity = AgentDomainEntity.attentionClaimDisposition(
+          id: 'attention-disposition-001',
+          agentId: 'planner-agent-001',
+          requestId: 'attention-request-001',
+          status: AttentionClaimStatus.deferred,
+          planId: 'day_agent_plan:dayplan-2026-05-25',
+          changeSetId: 'changeset-001',
+          reason: 'Revisit tomorrow.',
+          nextReviewAt: DateTime(2026, 5, 24, 18),
+          createdAt: createdAt,
+          vectorClock: null,
+        );
+
+        final companion = AgentDbConversions.toEntityCompanion(entity);
+
+        expect(companion.id, const Value('attention-disposition-001'));
+        expect(
+          companion.type,
+          const Value(AgentEntityTypes.attentionClaimDisposition),
+        );
+        expect(companion.subtype, const Value('attention-request-001'));
         expect(companion.createdAt, Value(createdAt));
         expect(companion.updatedAt, Value(createdAt));
       },
@@ -560,6 +589,39 @@ void main() {
       expect(companion.createdAt, Value(createdAt));
       expect(companion.updatedAt, Value(createdAt));
     });
+
+    test(
+      'toEntityCompanion writes standing agreement type and scope subtype',
+      () {
+        final entity = AgentDomainEntity.standingAgreement(
+          id: 'standing-agreement-001',
+          agentId: 'fitness-agent-001',
+          title: 'Exercise three times per week',
+          scope: StandingAgreementScope.fitness,
+          cadence: StandingAgreementCadence.weekly,
+          enforcement: StandingAgreementEnforcement.nonNegotiable,
+          approvalMode: StandingAgreementApprovalMode.autoAccept,
+          minCount: 3,
+          minMinutes: 135,
+          preferredSessionMinutes: 45,
+          priority: 80,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        );
+
+        final companion = AgentDbConversions.toEntityCompanion(entity);
+
+        expect(companion.id, const Value('standing-agreement-001'));
+        expect(
+          companion.type,
+          const Value(AgentEntityTypes.standingAgreement),
+        );
+        expect(companion.subtype, const Value('fitness'));
+        expect(companion.createdAt, Value(createdAt));
+        expect(companion.updatedAt, Value(updatedAt));
+      },
+    );
 
     test('toLinkCompanion writes capture reconcile link types', () {
       final captureLink = model.AgentLink.captureToParsedItem(

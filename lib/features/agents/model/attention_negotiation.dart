@@ -47,7 +47,7 @@ enum AttentionRequestStatus {
 
 /// Lifecycle for a planner award.
 enum AttentionAwardStatus {
-  /// Proposed by deterministic arbitration; still human-gated downstream.
+  /// Proposed by a planner; still human-gated downstream.
   proposed,
 
   /// The user accepted the downstream ChangeSet.
@@ -58,6 +58,135 @@ enum AttentionAwardStatus {
 
   /// A newer award superseded this proposal.
   superseded,
+}
+
+/// Planning scope for an attention claim.
+enum AttentionClaimScopeKind {
+  /// Claim is visible across one calendar-day-sized planning window.
+  day,
+
+  /// Claim may be scheduled anywhere inside a bounded date/time range.
+  dateRange,
+
+  /// Claim must be satisfied before a deadline.
+  deadline,
+
+  /// Claim describes a recurring need inside a cadence/range.
+  recurrence,
+}
+
+/// Projected lifecycle state for an attention claim.
+enum AttentionClaimStatus {
+  /// Claim is open and can be considered by a planner.
+  open,
+
+  /// Claim is included in a planner proposal that has not been accepted yet.
+  proposed,
+
+  /// Claim has been fully satisfied by accepted plan changes or actuals.
+  satisfied,
+
+  /// Claim has been partly satisfied and may still need planner attention.
+  partiallySatisfied,
+
+  /// Planner/user chose not to schedule this claim.
+  declined,
+
+  /// Planner deferred this claim for later reconsideration.
+  deferred,
+
+  /// A newer claim replaces this one.
+  superseded,
+
+  /// Claim's useful scheduling window passed.
+  expired,
+
+  /// Originating agent withdrew the claim.
+  withdrawn,
+}
+
+/// Durable user-agreement domain a planner should consider.
+enum StandingAgreementScope {
+  /// Fitness, exercise, steps, workouts, or recovery.
+  fitness,
+
+  /// Sleep timing, wind-down, and wake consistency.
+  sleep,
+
+  /// Paperwork, admin, taxes, finance chores, or filing.
+  paperwork,
+
+  /// Focus time for concrete tasks.
+  taskWork,
+
+  /// Focus or review time for projects.
+  projectWork,
+
+  /// Operational maintenance and lightweight check-ins.
+  maintenance,
+
+  /// Money or financial outcome guardrails.
+  finances,
+
+  /// Forward-compatible custom agreement.
+  custom,
+}
+
+/// Lifecycle for a standing agreement.
+enum StandingAgreementStatus {
+  /// Agreement should be considered by planners.
+  active,
+
+  /// Agreement exists but should not currently influence planning.
+  paused,
+
+  /// Agreement is kept for audit/history only.
+  retired,
+}
+
+/// Cadence over which an agreement's quota should be evaluated.
+enum StandingAgreementCadence {
+  /// Repeats each day.
+  daily,
+
+  /// Repeats each week.
+  weekly,
+
+  /// Repeats each month.
+  monthly,
+
+  /// Repeats each quarter.
+  quarterly,
+
+  /// Repeats each year.
+  yearly,
+
+  /// Agreement-specific cadence captured in `customCadence`.
+  custom,
+}
+
+/// How strongly a planner should treat an agreement.
+enum StandingAgreementEnforcement {
+  /// Preference: useful context, but easy to trade off.
+  preference,
+
+  /// Target: planner should try to satisfy this unless there is a good reason.
+  target,
+
+  /// Non-negotiable: violating proposals need hard validation/user override.
+  nonNegotiable,
+}
+
+/// Trust boundary for planner proposals governed by an agreement.
+enum StandingAgreementApprovalMode {
+  /// Low-risk matching proposals may be accepted without interrupting the user.
+  autoAccept,
+
+  /// Matching proposals should be shown to the user for approval.
+  ask,
+
+  /// Matching proposals are blocked unless a later override changes policy.
+  reject,
 }
 
 /// Type of evidence backing an attention request.

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/agent_link.dart'
     show AgentLinkSelection;
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -2047,6 +2049,136 @@ void main() {
     updatedAt: testDate,
   );
 
+  AttentionRequestEntity makeAttentionClaim({
+    String id = 'attention-claim-001',
+    String agentId = testAgentId,
+    String title = 'Focus block',
+    AttentionClaimScopeKind scopeKind = AttentionClaimScopeKind.dateRange,
+    AttentionRequestStatus status = AttentionRequestStatus.pending,
+    DateTime? rangeStart,
+    DateTime? rangeEnd,
+    DateTime? earliestStart,
+    DateTime? latestEnd,
+    DateTime? deadline,
+    DateTime? nextReviewAt,
+    DateTime? createdAt,
+    DateTime? deletedAt,
+  }) {
+    return AgentDomainEntity.attentionRequest(
+          id: id,
+          agentId: agentId,
+          kind: AttentionRequestKind.task,
+          title: title,
+          categoryId: 'work',
+          requestedMinutes: 45,
+          impact: 4,
+          urgency: 3,
+          energyFit: AttentionEnergyFit.high,
+          evidenceRefs: const [
+            AttentionEvidenceRef(
+              kind: AttentionEvidenceKind.task,
+              id: 'task-1',
+              label: 'Task 1',
+            ),
+          ],
+          scopeKind: scopeKind,
+          status: status,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+          earliestStart: earliestStart,
+          latestEnd: latestEnd,
+          deadline: deadline,
+          nextReviewAt: nextReviewAt,
+          targetId: 'task-1',
+          targetKind: 'task',
+          createdAt: createdAt ?? testDate,
+          vectorClock: const VectorClock({'node-1': 10}),
+          deletedAt: deletedAt,
+        )
+        as AttentionRequestEntity;
+  }
+
+  AttentionClaimDispositionEntity makeAttentionDisposition({
+    required String id,
+    required String requestId,
+    AttentionClaimStatus status = AttentionClaimStatus.deferred,
+    DateTime? createdAt,
+    DateTime? nextReviewAt,
+    String? awardId,
+    String? planId,
+    String? changeSetId,
+    String? reason,
+  }) {
+    return AgentDomainEntity.attentionClaimDisposition(
+          id: id,
+          agentId: 'planner-agent-001',
+          requestId: requestId,
+          status: status,
+          awardId: awardId,
+          planId: planId,
+          changeSetId: changeSetId,
+          reason: reason,
+          nextReviewAt: nextReviewAt,
+          createdAt: createdAt ?? testDate,
+          vectorClock: const VectorClock({'node-1': 11}),
+        )
+        as AttentionClaimDispositionEntity;
+  }
+
+  StandingAgreementEntity makeStandingAgreement({
+    String id = 'standing-agreement-001',
+    String agentId = 'fitness-agent-001',
+    String title = 'Exercise three times per week',
+    StandingAgreementScope scope = StandingAgreementScope.fitness,
+    StandingAgreementCadence cadence = StandingAgreementCadence.weekly,
+    StandingAgreementStatus status = StandingAgreementStatus.active,
+    StandingAgreementEnforcement enforcement =
+        StandingAgreementEnforcement.target,
+    StandingAgreementApprovalMode approvalMode =
+        StandingAgreementApprovalMode.ask,
+    String? categoryId = 'health',
+    String? targetId = 'habit-strength',
+    String? targetKind = 'habit',
+    int? minCount = 3,
+    int? minMinutes = 135,
+    int? maxMinutes,
+    int? preferredSessionMinutes = 45,
+    int priority = 10,
+    bool canPreempt = false,
+    DateTime? activeFrom,
+    DateTime? activeUntil,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
+  }) {
+    return AgentDomainEntity.standingAgreement(
+          id: id,
+          agentId: agentId,
+          title: title,
+          scope: scope,
+          cadence: cadence,
+          status: status,
+          enforcement: enforcement,
+          approvalMode: approvalMode,
+          categoryId: categoryId,
+          targetId: targetId,
+          targetKind: targetKind,
+          minCount: minCount,
+          minMinutes: minMinutes,
+          maxMinutes: maxMinutes,
+          preferredSessionMinutes: preferredSessionMinutes,
+          priority: priority,
+          canPreempt: canPreempt,
+          activeFrom: activeFrom,
+          activeUntil: activeUntil,
+          createdAt: createdAt ?? testDate,
+          updatedAt: updatedAt ?? testDate,
+          vectorClock: const VectorClock({'node-1': 12}),
+          deletedAt: deletedAt,
+        )
+        as StandingAgreementEntity;
+  }
+
   setUp(() {
     db = AgentDatabase(inMemoryDatabase: true, background: false);
     repo = AgentRepository(db);
@@ -3537,6 +3669,520 @@ void main() {
         }
       },
       tags: 'glados',
+    );
+  });
+
+  group('getAttentionClaimsForWindow', () {
+    test('returns claims whose flexible visibility window overlaps', () async {
+      final visibleClaim = makeAttentionClaim(
+        id: 'attention-claim-visible',
+        title: 'Prepare tax packet',
+        rangeStart: DateTime(2026, 5, 26),
+        rangeEnd: DateTime(2026, 5, 28),
+        deadline: DateTime(2026, 5, 28, 17),
+        nextReviewAt: DateTime(2026, 5, 25, 8),
+      );
+      final outsideClaim = makeAttentionClaim(
+        id: 'attention-claim-outside',
+        title: 'Later review',
+        rangeStart: DateTime(2026, 5, 29),
+        rangeEnd: DateTime(2026, 5, 30),
+      );
+
+      await repo.upsertEntity(outsideClaim);
+      await repo.upsertEntity(visibleClaim);
+
+      final claims = await repo.getAttentionClaimsForWindow(
+        start: DateTime(2026, 5, 27),
+        end: DateTime(2026, 5, 28),
+      );
+
+      expect(claims.map((claim) => claim.id), ['attention-claim-visible']);
+      expect(claims.single.rangeStart, DateTime(2026, 5, 26));
+      expect(claims.single.rangeEnd, DateTime(2026, 5, 28));
+    });
+
+    test('projects latest disposition status for planner discovery', () async {
+      final claim = makeAttentionClaim(
+        id: 'attention-claim-status',
+        rangeStart: DateTime(2026, 5, 26),
+        rangeEnd: DateTime(2026, 5, 28),
+      );
+      await repo.upsertEntity(claim);
+      await repo.upsertEntity(
+        makeAttentionDisposition(
+          id: 'attention-disposition-declined',
+          requestId: claim.id,
+          status: AttentionClaimStatus.declined,
+          createdAt: testDate.add(const Duration(minutes: 1)),
+          reason: 'Not worth scheduling.',
+        ),
+      );
+
+      final defaultClaims = await repo.getAttentionClaimsForWindow(
+        start: DateTime(2026, 5, 27),
+        end: DateTime(2026, 5, 28),
+      );
+      expect(defaultClaims, isEmpty);
+
+      final declinedClaims = await repo.getAttentionClaimsForWindow(
+        start: DateTime(2026, 5, 27),
+        end: DateTime(2026, 5, 28),
+        statuses: const {AttentionClaimStatus.declined},
+      );
+      expect(declinedClaims.map((item) => item.id), [claim.id]);
+
+      await repo.upsertEntity(
+        makeAttentionDisposition(
+          id: 'attention-disposition-deferred',
+          requestId: claim.id,
+          createdAt: testDate.add(const Duration(minutes: 2)),
+          nextReviewAt: DateTime(2026, 5, 27, 8),
+          reason: 'Reconsider in tomorrow planning.',
+        ),
+      );
+
+      final deferredClaims = await repo.getAttentionClaimsForWindow(
+        start: DateTime(2026, 5, 27),
+        end: DateTime(2026, 5, 28),
+      );
+      expect(deferredClaims.map((item) => item.id), [claim.id]);
+    });
+
+    test(
+      'surfaces awarded claims until a disposition satisfies them',
+      () async {
+        final claim = makeAttentionClaim(
+          id: 'attention-claim-awarded',
+          status: AttentionRequestStatus.awarded,
+          rangeStart: DateTime(2026, 5, 26),
+          rangeEnd: DateTime(2026, 5, 28),
+        );
+        await repo.upsertEntity(claim);
+
+        final proposedClaims = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(proposedClaims.map((item) => item.id), [claim.id]);
+
+        final satisfiedClaims = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+          statuses: const {AttentionClaimStatus.satisfied},
+        );
+        expect(satisfiedClaims, isEmpty);
+
+        await repo.upsertEntity(
+          makeAttentionDisposition(
+            id: 'attention-disposition-satisfied',
+            requestId: claim.id,
+            status: AttentionClaimStatus.satisfied,
+            createdAt: testDate.add(const Duration(minutes: 1)),
+            reason: 'Accepted through the human gate.',
+          ),
+        );
+
+        final defaultClaims = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(defaultClaims, isEmpty);
+
+        final acceptedClaims = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+          statuses: const {AttentionClaimStatus.satisfied},
+        );
+        expect(acceptedClaims.map((item) => item.id), [claim.id]);
+      },
+    );
+
+    test('projects request-side rejected claims as declined', () async {
+      final claim = makeAttentionClaim(
+        id: 'attention-claim-rejected',
+        status: AttentionRequestStatus.rejected,
+        rangeStart: DateTime(2026, 5, 26),
+        rangeEnd: DateTime(2026, 5, 28),
+      );
+      await repo.upsertEntity(claim);
+
+      final defaultClaims = await repo.getAttentionClaimsForWindow(
+        start: DateTime(2026, 5, 27),
+        end: DateTime(2026, 5, 28),
+      );
+      expect(defaultClaims, isEmpty);
+
+      final declinedClaims = await repo.getAttentionClaimsForWindow(
+        start: DateTime(2026, 5, 27),
+        end: DateTime(2026, 5, 28),
+        statuses: const {AttentionClaimStatus.declined},
+      );
+      expect(declinedClaims.map((item) => item.id), [claim.id]);
+    });
+
+    test(
+      'uses fallback visibility windows for latestEnd, deadline, and invalid '
+      'ranges',
+      () async {
+        final latestEndClaim = makeAttentionClaim(
+          id: 'attention-claim-latest-end',
+          earliestStart: DateTime(2026, 5, 27, 9),
+          latestEnd: DateTime(2026, 5, 27, 11),
+        );
+        final deadlineClaim = makeAttentionClaim(
+          id: 'attention-claim-deadline',
+          createdAt: DateTime(2026, 5, 28, 8),
+          rangeStart: DateTime(2026, 5, 28, 9),
+          deadline: DateTime(2026, 5, 28, 12),
+        );
+        final normalizedClaim = makeAttentionClaim(
+          id: 'attention-claim-normalized',
+          rangeStart: DateTime(2026, 5, 29, 13),
+          rangeEnd: DateTime(2026, 5, 29, 12),
+        );
+
+        await repo.upsertEntity(latestEndClaim);
+        await repo.upsertEntity(deadlineClaim);
+        await repo.upsertEntity(normalizedClaim);
+
+        final latestEndClaims = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 27, 10),
+          end: DateTime(2026, 5, 27, 10, 30),
+        );
+        expect(latestEndClaims.map((item) => item.id), [
+          latestEndClaim.id,
+        ]);
+
+        final deadlineClaims = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 28, 11),
+          end: DateTime(2026, 5, 28, 11, 30),
+        );
+        expect(deadlineClaims.map((item) => item.id), [deadlineClaim.id]);
+
+        final normalizedClaims = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 29, 13),
+          end: DateTime(2026, 5, 29, 13, 1),
+        );
+        expect(normalizedClaims.map((item) => item.id), [
+          normalizedClaim.id,
+        ]);
+      },
+    );
+
+    test(
+      'removes claim projection when the source request is soft-deleted',
+      () async {
+        final claim = makeAttentionClaim(
+          id: 'attention-claim-soft-delete',
+          rangeStart: DateTime(2026, 5, 26),
+          rangeEnd: DateTime(2026, 5, 28),
+        );
+        await repo.upsertEntity(claim);
+
+        final beforeDelete = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(beforeDelete.map((item) => item.id), [claim.id]);
+
+        await repo.upsertEntity(
+          makeAttentionClaim(
+            id: claim.id,
+            rangeStart: DateTime(2026, 5, 26),
+            rangeEnd: DateTime(2026, 5, 28),
+            deletedAt: testDate.add(const Duration(minutes: 1)),
+          ),
+        );
+
+        final afterDelete = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(afterDelete, isEmpty);
+      },
+    );
+
+    test(
+      'rebuilds the local projection from source entities for repair',
+      () async {
+        final claim = makeAttentionClaim(
+          id: 'attention-claim-rebuild',
+          rangeStart: DateTime(2026, 5, 26),
+          rangeEnd: DateTime(2026, 5, 28),
+        );
+        await repo.upsertEntity(claim);
+        await repo.upsertEntity(
+          makeAttentionDisposition(
+            id: 'attention-disposition-rebuild',
+            requestId: claim.id,
+            nextReviewAt: DateTime(2026, 5, 27, 8),
+            createdAt: testDate.add(const Duration(minutes: 1)),
+          ),
+        );
+        await db.customStatement('DELETE FROM attention_claim_index');
+
+        final missingClaims = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(missingClaims, isEmpty);
+
+        await repo.rebuildAttentionClaimProjection();
+
+        final rebuiltClaims = await repo.getAttentionClaimsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(rebuiltClaims.map((item) => item.id), [claim.id]);
+      },
+    );
+  });
+
+  group('getStandingAgreementsForWindow', () {
+    test(
+      'returns active agreements whose windows overlap the planner window',
+      () async {
+        final lowerPriority = makeStandingAgreement(
+          id: 'standing-agreement-lower',
+          title: 'Keep admin bounded',
+          scope: StandingAgreementScope.paperwork,
+          minMinutes: null,
+          maxMinutes: 180,
+          activeFrom: DateTime(2026, 5),
+          activeUntil: DateTime(2026, 6),
+        );
+        final higherPriority = makeStandingAgreement(
+          id: 'standing-agreement-higher',
+          title: 'Exercise three times',
+          priority: 90,
+          canPreempt: true,
+          activeFrom: DateTime(2026, 5, 15),
+          activeUntil: DateTime(2026, 5, 29),
+          updatedAt: testDate.add(const Duration(minutes: 1)),
+        );
+        final future = makeStandingAgreement(
+          id: 'standing-agreement-future',
+          activeFrom: DateTime(2026, 6),
+          activeUntil: DateTime(2026, 7),
+          priority: 100,
+        );
+
+        await repo.upsertEntity(lowerPriority);
+        await repo.upsertEntity(higherPriority);
+        await repo.upsertEntity(future);
+
+        final agreements = await repo.getStandingAgreementsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+
+        expect(
+          agreements.map((agreement) => agreement.id),
+          ['standing-agreement-higher', 'standing-agreement-lower'],
+        );
+        expect(agreements.first.canPreempt, isTrue);
+        expect(agreements.first.minCount, 3);
+        expect(agreements.last.maxMinutes, 180);
+      },
+    );
+
+    test('filters by status, scope, active window, and deletion', () async {
+      final activeFitness = makeStandingAgreement(
+        id: 'standing-agreement-active-fitness',
+        activeFrom: DateTime(2026, 5),
+      );
+      final pausedSleep = makeStandingAgreement(
+        id: 'standing-agreement-paused-sleep',
+        title: 'Protect sleep',
+        scope: StandingAgreementScope.sleep,
+        cadence: StandingAgreementCadence.daily,
+        status: StandingAgreementStatus.paused,
+        activeFrom: DateTime(2026, 5),
+      );
+      final expiredFitness = makeStandingAgreement(
+        id: 'standing-agreement-expired-fitness',
+        activeFrom: DateTime(2026, 4),
+        activeUntil: DateTime(2026, 5),
+      );
+      final deletedFitness = makeStandingAgreement(
+        id: 'standing-agreement-deleted-fitness',
+        activeFrom: DateTime(2026, 5),
+        deletedAt: testDate.add(const Duration(minutes: 1)),
+      );
+
+      await repo.upsertEntity(activeFitness);
+      await repo.upsertEntity(pausedSleep);
+      await repo.upsertEntity(expiredFitness);
+      await repo.upsertEntity(deletedFitness);
+
+      final activeFitnessAgreements = await repo.getStandingAgreementsForWindow(
+        start: DateTime(2026, 5, 27),
+        end: DateTime(2026, 5, 28),
+        scopes: const {StandingAgreementScope.fitness},
+      );
+      expect(
+        activeFitnessAgreements.map((agreement) => agreement.id),
+        ['standing-agreement-active-fitness'],
+      );
+
+      final pausedSleepAgreements = await repo.getStandingAgreementsForWindow(
+        start: DateTime(2026, 5, 27),
+        end: DateTime(2026, 5, 28),
+        statuses: const {StandingAgreementStatus.paused},
+        scopes: const {StandingAgreementScope.sleep},
+      );
+      expect(
+        pausedSleepAgreements.map((agreement) => agreement.id),
+        ['standing-agreement-paused-sleep'],
+      );
+
+      final noScopes = await repo.getStandingAgreementsForWindow(
+        start: DateTime(2026, 5, 27),
+        end: DateTime(2026, 5, 28),
+        scopes: const {},
+      );
+      expect(noScopes, isEmpty);
+    });
+
+    test(
+      'updates the projection when an agreement lifecycle changes',
+      () async {
+        final active = makeStandingAgreement(
+          id: 'standing-agreement-lifecycle',
+          activeFrom: DateTime(2026, 5),
+        );
+        await repo.upsertEntity(active);
+
+        final beforePause = await repo.getStandingAgreementsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(beforePause.map((agreement) => agreement.id), [active.id]);
+
+        await repo.upsertEntity(
+          makeStandingAgreement(
+            id: active.id,
+            status: StandingAgreementStatus.paused,
+            activeFrom: DateTime(2026, 5),
+            updatedAt: testDate.add(const Duration(minutes: 1)),
+          ),
+        );
+
+        final defaultAgreements = await repo.getStandingAgreementsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(defaultAgreements, isEmpty);
+
+        final pausedAgreements = await repo.getStandingAgreementsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+          statuses: const {StandingAgreementStatus.paused},
+        );
+        expect(pausedAgreements.map((agreement) => agreement.id), [active.id]);
+      },
+    );
+
+    test(
+      'normalizes invalid active windows to a one-minute projection',
+      () async {
+        final agreement = makeStandingAgreement(
+          id: 'standing-agreement-normalized',
+          activeFrom: DateTime(2026, 5, 27, 9),
+          activeUntil: DateTime(2026, 5, 27, 9),
+        );
+        await repo.upsertEntity(agreement);
+
+        final agreements = await repo.getStandingAgreementsForWindow(
+          start: DateTime(2026, 5, 27, 9),
+          end: DateTime(2026, 5, 27, 9, 1),
+        );
+        expect(agreements.map((item) => item.id), [agreement.id]);
+      },
+    );
+
+    test(
+      'reads from the projection and rebuilds it only on explicit repair',
+      () async {
+        final agreement = makeStandingAgreement(
+          id: 'standing-agreement-rebuild',
+          activeFrom: DateTime(2026, 5),
+          activeUntil: DateTime(2026, 6),
+        );
+        await repo.upsertEntity(agreement);
+        await db.customStatement('DELETE FROM standing_agreement_index');
+
+        final missingAgreements = await repo.getStandingAgreementsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(missingAgreements, isEmpty);
+
+        await repo.rebuildStandingAgreementProjection();
+
+        final rebuiltAgreements = await repo.getStandingAgreementsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+        expect(rebuiltAgreements.map((agreement) => agreement.id), [
+          'standing-agreement-rebuild',
+        ]);
+      },
+    );
+
+    test(
+      'skips malformed standing-agreement source rows during repair',
+      () async {
+        const malformedId = 'standing-agreement-malformed';
+        const malformedCreatedAtIso = '2026-02-20T00:00:00.000';
+        const serializedUnknown =
+            '''
+{"runtimeType":"futureVariantNotYetKnown","id":"$malformedId","agentId":"$testAgentId","createdAt":"$malformedCreatedAtIso","vectorClock":null,"deletedAt":null}
+''';
+
+        await db.customInsert(
+          '''
+          INSERT INTO agent_entities (
+            id,
+            agent_id,
+            type,
+            subtype,
+            thread_id,
+            created_at,
+            updated_at,
+            deleted_at,
+            serialized,
+            schema_version
+          )
+          VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, ?, 1)
+        ''',
+          variables: [
+            Variable.withString(malformedId),
+            Variable.withString(testAgentId),
+            Variable.withString(AgentEntityTypes.standingAgreement),
+            Variable.withDateTime(testDate),
+            Variable.withDateTime(testDate),
+            Variable.withString(serializedUnknown.trim()),
+          ],
+          updates: {db.agentEntities},
+        );
+
+        await repo.rebuildStandingAgreementProjection();
+
+        final projectedRows = await db
+            .customSelect(
+              '''
+              SELECT agreement_id
+              FROM standing_agreement_index
+              WHERE agreement_id = ?
+            ''',
+              variables: [Variable.withString(malformedId)],
+              readsFrom: {db.standingAgreementIndex},
+            )
+            .get();
+        expect(projectedRows, isEmpty);
+      },
     );
   });
 

@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration {
@@ -271,6 +271,77 @@ class AgentDatabase extends _$AgentDatabase {
             'CREATE UNIQUE INDEX idx_agent_links_unique_from_to_type '
             'ON agent_links(from_id, to_id, type) '
             "WHERE type != 'message_payload'",
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 12) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_agent_entities_active_type_sub_created_id '
+            'ON agent_entities(type, subtype, created_at DESC, id DESC) '
+            'WHERE deleted_at IS NULL',
+          );
+          await customStatement('''
+            CREATE TABLE IF NOT EXISTS attention_claim_index (
+              request_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              scope_kind TEXT NOT NULL,
+              visibility_start DATETIME NOT NULL,
+              visibility_end DATETIME NOT NULL,
+              deadline DATETIME,
+              next_review_at DATETIME,
+              target_id TEXT,
+              target_kind TEXT,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME
+            )
+          ''');
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_attention_claims_active_window '
+            'ON attention_claim_index(status, visibility_start, '
+            'visibility_end, next_review_at, deadline, request_id) '
+            'WHERE deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_attention_claims_active_deadline '
+            'ON attention_claim_index(status, deadline, request_id) '
+            'WHERE deleted_at IS NULL AND deadline IS NOT NULL',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 13) {
+          await customStatement('''
+            CREATE TABLE IF NOT EXISTS standing_agreement_index (
+              agreement_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              scope TEXT NOT NULL,
+              cadence TEXT NOT NULL,
+              approval_mode TEXT NOT NULL,
+              enforcement TEXT NOT NULL,
+              active_from DATETIME NOT NULL,
+              active_until DATETIME NOT NULL,
+              priority INTEGER NOT NULL,
+              target_id TEXT,
+              target_kind TEXT,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME
+            )
+          ''');
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_standing_agreements_active_window '
+            'ON standing_agreement_index(status, active_from, active_until, '
+            'priority DESC, updated_at DESC, agreement_id) '
+            'WHERE deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_standing_agreements_active_scope_window '
+            'ON standing_agreement_index(status, scope, active_from, '
+            'active_until, priority DESC, updated_at DESC, agreement_id) '
+            'WHERE deleted_at IS NULL',
           );
           await customStatement('ANALYZE');
         }
