@@ -187,6 +187,8 @@ flowchart LR
   FlagProvider --> SettingsLanding["Settings landing page"]
   FlagProvider --> FlagsPage["Flags page"]
   FlagsPage --> Persistence["PersistenceLogic.setConfigFlag(...)"]
+  Logging["Advanced logging toggles"] --> Persistence
+  Persistence --> FlagSync["SyncMessage.configFlag"]
   JournalDb --> NavService["NavService"]
   NavService --> Tabs["Top-level tab availability"]
 ```
@@ -197,6 +199,9 @@ This is why the flags page is not just a developer toy:
 - toggling `enableMatrixFlag` changes visibility of Sync surfaces and also affects the Sync feature gate
 - toggling `enableAiSummaryTtsFlag` shows or hides the local MLX Audio TTS button on task AI summaries
 - logging flags influence subdomain logging pages under Advanced
+- toggling a flag through Settings enqueues a `configFlag` sync message with the
+  new boolean status; startup flag seeding does not enqueue anything, so devices
+  do not overwrite each other just because an app session opened
 
 The control panel is wired to actual breakers, not cardboard cutouts.
 
@@ -263,7 +268,9 @@ Each visible flag has:
 - a localized title
 - a localized description
 - a hand-picked icon
-- a `Switch.adaptive` that writes back through `PersistenceLogic`
+- a `Switch.adaptive` that writes back through `PersistenceLogic`, which updates
+  the local `JournalDb` row and enqueues a `configFlag` sync message only when
+  the flag status changed
 
 The Flags entry is reached through Advanced; the `/settings/flags` URL itself is unchanged so existing deep links keep resolving.
 

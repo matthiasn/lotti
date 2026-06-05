@@ -3032,6 +3032,7 @@
   "syncPayloadAiConfigDelete": "Eliminación de configuración AI",
   "syncPayloadBackfillRequest": "Solicitud de relleno",
   "syncPayloadBackfillResponse": "Respuesta de relleno",
+  "syncPayloadConfigFlag": "Indicador de configuración",
   "syncPayloadEntityDefinition": "Definición de entidad",
   "syncPayloadEntryLink": "Enlace de entrada",
   "syncPayloadJournalEntity": "Entrada de diario",

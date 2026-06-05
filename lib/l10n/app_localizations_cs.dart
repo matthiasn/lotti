@@ -6855,6 +6855,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Odpověď na doplnění';
 
   @override
+  String get syncPayloadConfigFlag => 'Konfigurační příznak';
+
+  @override
   String get syncPayloadEntityDefinition => 'Definice entity';
 
   @override

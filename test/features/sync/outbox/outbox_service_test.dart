@@ -124,6 +124,7 @@ enum _GeneratedPriorityMessageKind {
   notificationStateUpdate,
   outboxBundle,
   syncNodeProfile,
+  configFlag,
 }
 
 class _GeneratedPriorityScenario {
@@ -250,6 +251,11 @@ class _GeneratedPriorityScenario {
             updatedAt: DateTime.utc(2026, 3, 15, 12, counterSlot),
           ),
         ),
+      _GeneratedPriorityMessageKind.configFlag => SyncMessage.configFlag(
+        name: 'generated-flag-$counterSlot',
+        description: 'Generated flag',
+        status: statusIsUpdate,
+      ),
     };
   }
 
@@ -265,6 +271,7 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.notification ||
       _GeneratedPriorityMessageKind.notificationStateUpdate ||
       _GeneratedPriorityMessageKind.themingSelection ||
+      _GeneratedPriorityMessageKind.configFlag ||
       _GeneratedPriorityMessageKind.outboxBundle => OutboxPriority.normal.index,
       _GeneratedPriorityMessageKind.entityDefinition ||
       _GeneratedPriorityMessageKind.aiConfig ||
@@ -4324,6 +4331,95 @@ void main() {
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
+    });
+  });
+
+  group('SyncConfigFlag', () {
+    test('enqueues config flag message with flag-specific subject', () async {
+      const message = SyncMessage.configFlag(
+        name: 'enableDailyOs',
+        description: 'Enable DailyOS Page?',
+        status: true,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'configFlag:enableDailyOs');
+      expect(companion.outboxEntryId.value, 'configFlag:enableDailyOs');
+
+      final queued =
+          SyncMessage.fromJson(
+                jsonDecode(companion.message.value) as Map<String, dynamic>,
+              )
+              as SyncConfigFlag;
+      expect(queued.status, isTrue);
+      expect(queued.originatingHostId, 'hostA');
+    });
+
+    test('merges pending config flag message to the latest status', () async {
+      const oldMessage = SyncMessage.configFlag(
+        name: 'enableDailyOs',
+        description: 'Enable DailyOS Page?',
+        status: false,
+      );
+      const newMessage = SyncMessage.configFlag(
+        name: 'enableDailyOs',
+        description: 'Enable DailyOS Page?',
+        status: true,
+      );
+
+      when(
+        () => syncDatabase.findPendingByEntryId('configFlag:enableDailyOs'),
+      ).thenAnswer(
+        (_) async => OutboxItem(
+          id: 42,
+          message: jsonEncode(oldMessage.toJson()),
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          subject: 'configFlag:enableDailyOs',
+          outboxEntryId: 'configFlag:enableDailyOs',
+          priority: OutboxPriority.normal.index,
+        ),
+      );
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
+        ),
+      ).thenAnswer((_) async => 1);
+
+      await service.enqueueMessage(newMessage);
+
+      final captured =
+          verify(
+                () => syncDatabase.updateOutboxMessage(
+                  itemId: 42,
+                  newMessage: captureAny(named: 'newMessage'),
+                  newSubject: 'configFlag:enableDailyOs',
+                  payloadSize: any(named: 'payloadSize'),
+                  priority: any(named: 'priority'),
+                ),
+              ).captured.single
+              as String;
+      final merged =
+          SyncMessage.fromJson(
+                jsonDecode(captured) as Map<String, dynamic>,
+              )
+              as SyncConfigFlag;
+      expect(merged.status, isTrue);
+      expect(merged.originatingHostId, 'hostA');
+      verifyNever(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()));
     });
   });
 

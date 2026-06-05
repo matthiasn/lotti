@@ -731,6 +731,23 @@ void main() {
         );
       });
 
+      testWidgets('configFlag payload label', (tester) async {
+        const msg = SyncMessage.configFlag(
+          name: 'enable_logging',
+          description: 'Enable logging',
+          status: true,
+        );
+        final result = await pumpWithMessage(
+          tester,
+          306,
+          jsonEncode(msg.toJson()),
+        );
+        expect(
+          result.viewModel.payloadKindLabel,
+          result.ctx.messages.syncPayloadConfigFlag,
+        );
+      });
+
       testWidgets('themingSelection payload label (line 158)', (tester) async {
         const msg = SyncMessage.themingSelection(
           lightThemeName: 'Indigo',

@@ -9,6 +9,7 @@ import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -61,8 +62,8 @@ class LoggingSettingsBody extends ConsumerWidget {
             subtitle: context.messages.settingsLoggingGlobalToggleSubtitle,
             icon: Icons.article_rounded,
             value: enableLogging,
-            onChanged: (_) =>
-                getIt<JournalDb>().toggleConfigFlag(enableLoggingFlag),
+            onChanged: (status) =>
+                _setConfigFlagStatus(enableLoggingFlag, status),
           ),
           for (final domain in LogDomain.values)
             (
@@ -72,7 +73,7 @@ class LoggingSettingsBody extends ConsumerWidget {
               value:
                   ref.watch(configFlagProvider(domain.flagName)).value ?? false,
               onChanged: enableLogging
-                  ? (_) => getIt<JournalDb>().toggleConfigFlag(domain.flagName)
+                  ? (status) => _setConfigFlagStatus(domain.flagName, status)
                   : null,
             ),
           (
@@ -81,7 +82,7 @@ class LoggingSettingsBody extends ConsumerWidget {
             icon: Icons.speed_rounded,
             value: logSlowQueries,
             onChanged: enableLogging
-                ? (_) => getIt<JournalDb>().toggleConfigFlag(logSlowQueriesFlag)
+                ? (status) => _setConfigFlagStatus(logSlowQueriesFlag, status)
                 : null,
           ),
         ];
@@ -110,6 +111,18 @@ class LoggingSettingsBody extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _setConfigFlagStatus(String flagName, bool status) async {
+  final flag = await getIt<JournalDb>().getConfigFlagByName(flagName);
+  await getIt<PersistenceLogic>().setConfigFlag(
+    flag?.copyWith(status: status) ??
+        ConfigFlag(
+          name: flagName,
+          description: '',
+          status: status,
+        ),
+  );
 }
 
 /// Localized label for a logging [domain]. Falls back to [LogDomain.label]

@@ -3813,6 +3813,138 @@ void main() {
     );
 
     test(
+      '_ensureOriginatingHostId stamps SyncConfigFlag when host is missing',
+      () async {
+        final vectorClockService = MockVectorClockService();
+        when(vectorClockService.getHost).thenAnswer((_) async => 'host-C');
+        final stamper = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: SentEventRegistry(),
+          vectorClockService: vectorClockService,
+        );
+
+        final stamped = await stamper.ensureOriginatingHostIdForTesting(
+          const SyncMessage.configFlag(
+            name: 'enable_logging',
+            description: 'Enable logging',
+            status: true,
+          ),
+        );
+
+        expect(stamped, isA<SyncConfigFlag>());
+        final flag = stamped as SyncConfigFlag;
+        expect(flag.originatingHostId, 'host-C');
+        expect(flag.name, 'enable_logging');
+        expect(flag.status, isTrue);
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(
+              that: allOf(
+                contains('originatingHostId filled for configFlag'),
+                contains('name=enable_logging'),
+                contains('host=host-C'),
+              ),
+            ),
+            subDomain: 'sendMatrixMsg.originatingHostId',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      '_ensureOriginatingHostId leaves a SyncConfigFlag that already carries '
+      'an originatingHostId untouched and does not re-log',
+      () async {
+        final vectorClockService = MockVectorClockService();
+        when(vectorClockService.getHost).thenAnswer((_) async => 'host-C');
+        final stamper = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: SentEventRegistry(),
+          vectorClockService: vectorClockService,
+        );
+
+        const original = SyncMessage.configFlag(
+          name: 'enable_logging',
+          description: 'Enable logging',
+          status: false,
+          originatingHostId: 'remote-host',
+        );
+
+        final result = await stamper.ensureOriginatingHostIdForTesting(
+          original,
+        );
+
+        expect(result, same(original));
+        expect((result as SyncConfigFlag).originatingHostId, 'remote-host');
+        verifyNever(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('configFlag')),
+            subDomain: 'sendMatrixMsg.originatingHostId',
+          ),
+        );
+      },
+    );
+
+    test(
+      'fills originatingHostId on a SyncConfigFlag child inside an outbox '
+      'bundle so the receiver matches it to the local host id and skips '
+      're-applying its own toggle',
+      () async {
+        final vectorClockService = MockVectorClockService();
+        when(vectorClockService.getHost).thenAnswer((_) async => 'host-A');
+        final stamper = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: SentEventRegistry(),
+          vectorClockService: vectorClockService,
+        );
+
+        MatrixFile? capturedFile;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedFile = inv.positionalArguments.first as MatrixFile;
+          return r'$file-id';
+        });
+
+        const configFlag = SyncMessage.configFlag(
+          name: 'enable_logging',
+          description: 'Enable logging',
+          status: true,
+        );
+
+        final stripped = await stamper.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: const SyncOutboxBundle(children: [configFlag]),
+        );
+
+        expect(stripped, isNotNull);
+        final manifest =
+            json.decode(utf8.decode(gzip.decode(capturedFile!.bytes)))
+                as Map<String, dynamic>;
+        final entries = manifest['entries'] as List;
+        final reconstructed = SyncMessage.fromJson(
+          (entries.single as Map<String, dynamic>)['envelope']
+              as Map<String, dynamic>,
+        );
+        expect(reconstructed, isA<SyncConfigFlag>());
+        final reconstructedFlag = reconstructed as SyncConfigFlag;
+        expect(reconstructedFlag.originatingHostId, 'host-A');
+        expect(reconstructedFlag.status, isTrue);
+      },
+    );
+
+    test(
       '_sendNotificationPayload returns null when the JSON file is missing '
       'on disk',
       () async {

@@ -3032,6 +3032,7 @@
   "syncPayloadAiConfigDelete": "Ștergere configurare AI",
   "syncPayloadBackfillRequest": "Cerere de completare",
   "syncPayloadBackfillResponse": "Răspuns de completare",
+  "syncPayloadConfigFlag": "Indicator de configurare",
   "syncPayloadEntityDefinition": "Definiție entitate",
   "syncPayloadEntryLink": "Link intrare",
   "syncPayloadJournalEntity": "Intrare jurnal",

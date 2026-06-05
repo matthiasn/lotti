@@ -363,11 +363,11 @@ class SyncEventProcessor {
   /// that carries one. Families without the field (`SyncEntityDefinition`,
   /// `SyncAiConfig`, `SyncAiConfigDelete`, `SyncThemingSelection`,
   /// `SyncBackfillRequest`, `SyncBackfillResponse`) return null and bypass
-  /// the self-echo check — they are tiny inline payloads where the cost
-  /// of running prepare is already negligible.
+  /// the self-echo check.
   static String? _originatingHostIdOf(SyncMessage message) => switch (message) {
     final SyncJournalEntity m => m.originatingHostId,
     final SyncEntryLink m => m.originatingHostId,
+    final SyncConfigFlag m => m.originatingHostId,
     final SyncAgentEntity m => m.originatingHostId,
     final SyncAgentLink m => m.originatingHostId,
     final SyncNotification m => m.originatingHostId,
@@ -536,6 +536,20 @@ class SyncEventProcessor {
           id,
           fromSync: true,
         );
+        return null;
+      case SyncConfigFlag(:final name, :final description, :final status):
+        final configFlag = ConfigFlag(
+          name: name,
+          description: description,
+          status: status,
+        );
+        await journalDb.upsertConfigFlag(configFlag);
+        if (configFlag.name == 'private') {
+          _updateNotifications.notify(
+            {privateToggleNotification},
+            fromSync: true,
+          );
+        }
         return null;
       case SyncThemingSelection(
         :final lightThemeName,

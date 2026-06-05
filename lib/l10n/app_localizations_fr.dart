@@ -6900,6 +6900,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Réponse de rattrapage';
 
   @override
+  String get syncPayloadConfigFlag => 'Option de configuration';
+
+  @override
   String get syncPayloadEntityDefinition => 'Définition d\'entité';
 
   @override

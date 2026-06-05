@@ -84,11 +84,17 @@ Current message families in `model/sync_message.dart`:
 - `entryLink`
 - `aiConfig`
 - `aiConfigDelete`
+- `configFlag`
 - `themingSelection`
+- `notification`
+- `notificationStateUpdate`
 - `backfillRequest`
 - `backfillResponse`
 - `agentEntity`
 - `agentLink`
+- `agentBundle` (legacy receive-only)
+- `outboxBundle`
+- `syncNodeProfile`
 
 Sequence-tracked payloads are narrower:
 
@@ -1000,6 +1006,10 @@ The code still depends on a few sharp assumptions:
   links
 - `agents/sync/agent_sync_service.dart` enqueues agent entities and links
 - `ai` repositories enqueue AI config updates and deletes
+- Settings flag flips enqueue `configFlag` messages through
+  `PersistenceLogic.setConfigFlag(...)`. Startup flag seeding deliberately uses
+  `JournalDb.insertFlagIfNotExists(...)` and does not broadcast, so a device
+  only pushes a flag state when the user explicitly changes that setting.
 - theming changes enqueue `themingSelection`
 - sync-facing settings, verification, maintenance, and diagnostics UI live
   under `lib/features/sync/ui/` and `lib/features/sync/state/`

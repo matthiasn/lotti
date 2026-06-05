@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -32,7 +33,8 @@ class _GeneratedThemingSelection {
   final SyncEntryStatus status;
 
   @override
-  String toString() => '_GeneratedThemingSelection('
+  String toString() =>
+      '_GeneratedThemingSelection('
       'lightThemeName: $lightThemeName, '
       'darkThemeName: $darkThemeName, '
       'themeMode: $themeMode, '
@@ -51,7 +53,8 @@ class _GeneratedBackfillRequest {
   final List<BackfillRequestEntry> entries;
 
   @override
-  String toString() => '_GeneratedBackfillRequest('
+  String toString() =>
+      '_GeneratedBackfillRequest('
       'requesterId: $requesterId, '
       'entries: $entries'
       ')';
@@ -73,7 +76,8 @@ class _GeneratedBackfillResponse {
   final SyncSequencePayloadType? payloadType;
 
   @override
-  String toString() => '_GeneratedBackfillResponse('
+  String toString() =>
+      '_GeneratedBackfillResponse('
       'hostId: $hostId, '
       'counter: $counter, '
       'deleted: $deleted, '
@@ -124,14 +128,13 @@ extension _AnySyncMessageGlados on glados.Any {
           String mode,
           int ts,
           SyncEntryStatus status,
-        ) =>
-            _GeneratedThemingSelection(
-              lightThemeName: light,
-              darkThemeName: dark,
-              themeMode: mode,
-              updatedAt: ts,
-              status: status,
-            ),
+        ) => _GeneratedThemingSelection(
+          lightThemeName: light,
+          darkThemeName: dark,
+          themeMode: mode,
+          updatedAt: ts,
+          status: status,
+        ),
       );
 
   glados.Generator<_GeneratedAiConfigDelete> get generatedAiConfigDelete =>
@@ -169,27 +172,49 @@ extension _AnySyncMessageGlados on glados.Any {
           bool deleted,
           bool unresolvable,
           SyncSequencePayloadType? payloadType,
-        ) =>
-            _GeneratedBackfillResponse(
-              hostId: hostId,
-              counter: counter,
-              deleted: deleted,
-              unresolvable: unresolvable,
-              payloadType: payloadType,
-            ),
+        ) => _GeneratedBackfillResponse(
+          hostId: hostId,
+          counter: counter,
+          deleted: deleted,
+          unresolvable: unresolvable,
+          payloadType: payloadType,
+        ),
       );
 }
 
-SyncMessage _roundTripSyncMessage(SyncMessage msg) =>
-    SyncMessage.fromJson(
-      jsonDecode(jsonEncode(msg.toJson())) as Map<String, dynamic>,
-    );
+SyncMessage _roundTripSyncMessage(SyncMessage msg) => SyncMessage.fromJson(
+  jsonDecode(jsonEncode(msg.toJson())) as Map<String, dynamic>,
+);
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 void main() {
+  group('SyncMessage.configFlag', () {
+    test('round-trips a config flag through JSON', () {
+      const flag = ConfigFlag(
+        name: 'enableDailyOs',
+        description: 'Enable DailyOS Page?',
+        status: true,
+      );
+      final message = SyncMessage.configFlag(
+        name: flag.name,
+        description: flag.description,
+        status: flag.status,
+        originatingHostId: 'host-a',
+      );
+
+      final decoded = SyncMessage.fromJson(message.toJson()) as SyncConfigFlag;
+
+      expect(decoded.name, flag.name);
+      expect(decoded.description, flag.description);
+      expect(decoded.status, flag.status);
+      expect(decoded.originatingHostId, 'host-a');
+      expect(decoded.toJson()['runtimeType'], 'configFlag');
+    });
+  });
+
   group('SyncMessage.themingSelection', () {
     test('serializes to JSON correctly', () {
       const message = SyncMessage.themingSelection(
@@ -919,8 +944,7 @@ void main() {
           status: gen.status,
         );
         final decoded = _roundTripSyncMessage(msg) as SyncThemingSelection;
-        expect(decoded.lightThemeName, gen.lightThemeName,
-            reason: '$gen');
+        expect(decoded.lightThemeName, gen.lightThemeName, reason: '$gen');
         expect(decoded.darkThemeName, gen.darkThemeName, reason: '$gen');
         expect(decoded.themeMode, gen.themeMode, reason: '$gen');
         expect(decoded.updatedAt, gen.updatedAt, reason: '$gen');
@@ -976,10 +1000,16 @@ void main() {
         expect(decoded.requesterId, gen.requesterId, reason: '$gen');
         expect(decoded.entries.length, gen.entries.length, reason: '$gen');
         for (var i = 0; i < gen.entries.length; i++) {
-          expect(decoded.entries[i].hostId, gen.entries[i].hostId,
-              reason: 'entry[$i] $gen');
-          expect(decoded.entries[i].counter, gen.entries[i].counter,
-              reason: 'entry[$i] $gen');
+          expect(
+            decoded.entries[i].hostId,
+            gen.entries[i].hostId,
+            reason: 'entry[$i] $gen',
+          );
+          expect(
+            decoded.entries[i].counter,
+            gen.entries[i].counter,
+            reason: 'entry[$i] $gen',
+          );
         }
       },
       tags: 'glados',

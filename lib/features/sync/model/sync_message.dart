@@ -86,6 +86,13 @@ sealed class SyncMessage with _$SyncMessage {
     required String id,
   }) = SyncAiConfigDelete;
 
+  const factory SyncMessage.configFlag({
+    required String name,
+    required String description,
+    required bool status,
+    String? originatingHostId,
+  }) = SyncConfigFlag;
+
   const factory SyncMessage.themingSelection({
     required String lightThemeName,
     required String darkThemeName,

@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Agent memory compaction now runs by default for task, project, and day
   agents, and the Settings flag that controlled it has been removed.
+- Config flag changes from Settings now sync to the user's other devices when
+  the flag is flipped, without broadcasting default startup flag seeding.
 
 ## [0.9.1014]
 ### Added

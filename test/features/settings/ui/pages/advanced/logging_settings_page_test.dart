@@ -11,10 +11,12 @@ import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 import '../../../test_utils.dart';
@@ -41,17 +43,31 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockJournalDb mockJournalDb;
+  late MockPersistenceLogic mockPersistenceLogic;
+
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
     mockJournalDb = MockJournalDb();
+    mockPersistenceLogic = MockPersistenceLogic();
 
     when(
       () => mockJournalDb.watchConfigFlag(any()),
     ).thenAnswer((_) => Stream.value(true));
+    when(
+      () => mockJournalDb.getConfigFlagByName(any()),
+    ).thenAnswer((invocation) async {
+      final flagName = invocation.positionalArguments.single as String;
+      return _storedFlag(flagName);
+    });
+    when(
+      () => mockPersistenceLogic.setConfigFlag(any()),
+    ).thenAnswer((_) async {});
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<UserActivityService>(UserActivityService());
+      ..registerSingleton<UserActivityService>(UserActivityService())
+      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
     ensureThemingServicesRegistered();
   });
@@ -140,42 +156,79 @@ void main() {
       }
     });
 
-    testWidgets('tapping global toggle calls toggleConfigFlag', (tester) async {
-      when(
-        () => mockJournalDb.toggleConfigFlag(any()),
-      ).thenAnswer((_) async {});
-
+    testWidgets('tapping global toggle persists updated flag', (tester) async {
       await pumpPage(tester);
+
+      final globalToggle = findSwitches().first;
+      final previousValue = switchState(
+        tester.widget<Widget>(globalToggle),
+      ).value;
+
+      await tester.tap(globalToggle);
+      await tester.pump();
+
+      verify(
+        () => mockJournalDb.getConfigFlagByName(enableLoggingFlag),
+      ).called(1);
+      verify(
+        () => mockPersistenceLogic.setConfigFlag(
+          _storedFlag(enableLoggingFlag, status: !previousValue),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('tapping missing flag persists fallback flag', (tester) async {
+      when(
+        () => mockJournalDb.getConfigFlagByName(enableLoggingFlag),
+      ).thenAnswer((_) async => null);
+
+      await pumpPage(
+        tester,
+        overrides: flagOverrides({enableLoggingFlag: false}),
+      );
 
       await tester.tap(findSwitches().first);
       await tester.pump();
 
-      verify(() => mockJournalDb.toggleConfigFlag(enableLoggingFlag)).called(1);
+      verify(
+        () => mockJournalDb.getConfigFlagByName(enableLoggingFlag),
+      ).called(1);
+      verify(
+        () => mockPersistenceLogic.setConfigFlag(
+          const ConfigFlag(
+            name: enableLoggingFlag,
+            description: '',
+            status: true,
+          ),
+        ),
+      ).called(1);
     });
 
-    testWidgets('tapping a domain toggle calls its flag', (tester) async {
-      when(
-        () => mockJournalDb.toggleConfigFlag(any()),
-      ).thenAnswer((_) async {});
-
+    testWidgets('tapping a domain toggle persists its flag', (tester) async {
       await pumpPage(
         tester,
         overrides: flagOverrides({enableLoggingFlag: true}),
       );
 
       // Index 0 is the global toggle; index 1 is the first domain (sync).
-      await tester.tap(findSwitches().at(1));
+      final domainToggle = findSwitches().at(1);
+      final previousValue = switchState(
+        tester.widget<Widget>(domainToggle),
+      ).value;
+
+      await tester.tap(domainToggle);
       await tester.pump();
+
+      final flagName = LogDomain.values.first.flagName;
+      verify(() => mockJournalDb.getConfigFlagByName(flagName)).called(1);
       verify(
-        () => mockJournalDb.toggleConfigFlag(LogDomain.values.first.flagName),
+        () => mockPersistenceLogic.setConfigFlag(
+          _storedFlag(flagName, status: !previousValue),
+        ),
       ).called(1);
     });
 
-    testWidgets('tapping slow-query toggle calls its flag', (tester) async {
-      when(
-        () => mockJournalDb.toggleConfigFlag(any()),
-      ).thenAnswer((_) async {});
-
+    testWidgets('tapping slow-query toggle persists its flag', (tester) async {
       await pumpPage(
         tester,
         overrides: flagOverrides({enableLoggingFlag: true}),
@@ -185,10 +238,17 @@ void main() {
       final slowQuery = findSwitches().at(_expectedSwitchCount - 1);
       await tester.ensureVisible(slowQuery);
       await tester.pumpAndSettle();
+      final previousValue = switchState(tester.widget<Widget>(slowQuery)).value;
+
       await tester.tap(slowQuery);
       await tester.pump();
       verify(
-        () => mockJournalDb.toggleConfigFlag(logSlowQueriesFlag),
+        () => mockJournalDb.getConfigFlagByName(logSlowQueriesFlag),
+      ).called(1);
+      verify(
+        () => mockPersistenceLogic.setConfigFlag(
+          _storedFlag(logSlowQueriesFlag, status: !previousValue),
+        ),
       ).called(1);
     });
 
@@ -265,3 +325,9 @@ void main() {
     });
   });
 }
+
+ConfigFlag _storedFlag(String name, {bool status = true}) => ConfigFlag(
+  name: name,
+  description: 'Stored $name',
+  status: status,
+);

@@ -6822,6 +6822,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Nachfüllantwort';
 
   @override
+  String get syncPayloadConfigFlag => 'Konfigurationsflag';
+
+  @override
   String get syncPayloadEntityDefinition => 'Entitätsdefinition';
 
   @override

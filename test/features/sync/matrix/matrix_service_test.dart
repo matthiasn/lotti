@@ -1119,6 +1119,20 @@ void main() {
       expect(service.messageCounts['aiConfigDelete'], 1);
     });
 
+    // Covers the configFlag bucket.
+    test('sendMatrixMsg increments configFlag bucket', () async {
+      stubSenderSuccess();
+      when(() => client.getRoomById(any())).thenReturn(null);
+      final service = createService();
+      const msg = SyncMessage.configFlag(
+        name: 'enable_logging',
+        description: 'Enable logging',
+        status: true,
+      );
+      await service.sendMatrixMsg(msg);
+      expect(service.messageCounts['configFlag'], 1);
+    });
+
     // Covers line 380: themingSelection bucket.
     test('sendMatrixMsg increments themingSelection bucket', () async {
       stubSenderSuccess();

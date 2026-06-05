@@ -309,6 +309,10 @@ SyncMessage _$SyncMessageFromJson(
           return SyncAiConfigDelete.fromJson(
             json
           );
+                case 'configFlag':
+          return SyncConfigFlag.fromJson(
+            json
+          );
                 case 'themingSelection':
           return SyncThemingSelection.fromJson(
             json
@@ -403,7 +407,7 @@ extension SyncMessagePatterns on SyncMessage {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SyncJournalEntity value)?  journalEntity,TResult Function( SyncEntityDefinition value)?  entityDefinition,TResult Function( SyncEntryLink value)?  entryLink,TResult Function( SyncAiConfig value)?  aiConfig,TResult Function( SyncSyncNodeProfile value)?  syncNodeProfile,TResult Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult Function( SyncThemingSelection value)?  themingSelection,TResult Function( SyncNotification value)?  notification,TResult Function( SyncNotificationStateUpdate value)?  notificationStateUpdate,TResult Function( SyncBackfillRequest value)?  backfillRequest,TResult Function( SyncBackfillResponse value)?  backfillResponse,TResult Function( SyncAgentEntity value)?  agentEntity,TResult Function( SyncAgentLink value)?  agentLink,TResult Function( SyncAgentBundle value)?  agentBundle,TResult Function( SyncOutboxBundle value)?  outboxBundle,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SyncJournalEntity value)?  journalEntity,TResult Function( SyncEntityDefinition value)?  entityDefinition,TResult Function( SyncEntryLink value)?  entryLink,TResult Function( SyncAiConfig value)?  aiConfig,TResult Function( SyncSyncNodeProfile value)?  syncNodeProfile,TResult Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult Function( SyncConfigFlag value)?  configFlag,TResult Function( SyncThemingSelection value)?  themingSelection,TResult Function( SyncNotification value)?  notification,TResult Function( SyncNotificationStateUpdate value)?  notificationStateUpdate,TResult Function( SyncBackfillRequest value)?  backfillRequest,TResult Function( SyncBackfillResponse value)?  backfillResponse,TResult Function( SyncAgentEntity value)?  agentEntity,TResult Function( SyncAgentLink value)?  agentLink,TResult Function( SyncAgentBundle value)?  agentBundle,TResult Function( SyncOutboxBundle value)?  outboxBundle,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
@@ -412,7 +416,8 @@ return entityDefinition(_that);case SyncEntryLink() when entryLink != null:
 return entryLink(_that);case SyncAiConfig() when aiConfig != null:
 return aiConfig(_that);case SyncSyncNodeProfile() when syncNodeProfile != null:
 return syncNodeProfile(_that);case SyncAiConfigDelete() when aiConfigDelete != null:
-return aiConfigDelete(_that);case SyncThemingSelection() when themingSelection != null:
+return aiConfigDelete(_that);case SyncConfigFlag() when configFlag != null:
+return configFlag(_that);case SyncThemingSelection() when themingSelection != null:
 return themingSelection(_that);case SyncNotification() when notification != null:
 return notification(_that);case SyncNotificationStateUpdate() when notificationStateUpdate != null:
 return notificationStateUpdate(_that);case SyncBackfillRequest() when backfillRequest != null:
@@ -439,7 +444,7 @@ return outboxBundle(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SyncJournalEntity value)  journalEntity,required TResult Function( SyncEntityDefinition value)  entityDefinition,required TResult Function( SyncEntryLink value)  entryLink,required TResult Function( SyncAiConfig value)  aiConfig,required TResult Function( SyncSyncNodeProfile value)  syncNodeProfile,required TResult Function( SyncAiConfigDelete value)  aiConfigDelete,required TResult Function( SyncThemingSelection value)  themingSelection,required TResult Function( SyncNotification value)  notification,required TResult Function( SyncNotificationStateUpdate value)  notificationStateUpdate,required TResult Function( SyncBackfillRequest value)  backfillRequest,required TResult Function( SyncBackfillResponse value)  backfillResponse,required TResult Function( SyncAgentEntity value)  agentEntity,required TResult Function( SyncAgentLink value)  agentLink,required TResult Function( SyncAgentBundle value)  agentBundle,required TResult Function( SyncOutboxBundle value)  outboxBundle,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SyncJournalEntity value)  journalEntity,required TResult Function( SyncEntityDefinition value)  entityDefinition,required TResult Function( SyncEntryLink value)  entryLink,required TResult Function( SyncAiConfig value)  aiConfig,required TResult Function( SyncSyncNodeProfile value)  syncNodeProfile,required TResult Function( SyncAiConfigDelete value)  aiConfigDelete,required TResult Function( SyncConfigFlag value)  configFlag,required TResult Function( SyncThemingSelection value)  themingSelection,required TResult Function( SyncNotification value)  notification,required TResult Function( SyncNotificationStateUpdate value)  notificationStateUpdate,required TResult Function( SyncBackfillRequest value)  backfillRequest,required TResult Function( SyncBackfillResponse value)  backfillResponse,required TResult Function( SyncAgentEntity value)  agentEntity,required TResult Function( SyncAgentLink value)  agentLink,required TResult Function( SyncAgentBundle value)  agentBundle,required TResult Function( SyncOutboxBundle value)  outboxBundle,}){
 final _that = this;
 switch (_that) {
 case SyncJournalEntity():
@@ -448,7 +453,8 @@ return entityDefinition(_that);case SyncEntryLink():
 return entryLink(_that);case SyncAiConfig():
 return aiConfig(_that);case SyncSyncNodeProfile():
 return syncNodeProfile(_that);case SyncAiConfigDelete():
-return aiConfigDelete(_that);case SyncThemingSelection():
+return aiConfigDelete(_that);case SyncConfigFlag():
+return configFlag(_that);case SyncThemingSelection():
 return themingSelection(_that);case SyncNotification():
 return notification(_that);case SyncNotificationStateUpdate():
 return notificationStateUpdate(_that);case SyncBackfillRequest():
@@ -471,7 +477,7 @@ return outboxBundle(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SyncJournalEntity value)?  journalEntity,TResult? Function( SyncEntityDefinition value)?  entityDefinition,TResult? Function( SyncEntryLink value)?  entryLink,TResult? Function( SyncAiConfig value)?  aiConfig,TResult? Function( SyncSyncNodeProfile value)?  syncNodeProfile,TResult? Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult? Function( SyncThemingSelection value)?  themingSelection,TResult? Function( SyncNotification value)?  notification,TResult? Function( SyncNotificationStateUpdate value)?  notificationStateUpdate,TResult? Function( SyncBackfillRequest value)?  backfillRequest,TResult? Function( SyncBackfillResponse value)?  backfillResponse,TResult? Function( SyncAgentEntity value)?  agentEntity,TResult? Function( SyncAgentLink value)?  agentLink,TResult? Function( SyncAgentBundle value)?  agentBundle,TResult? Function( SyncOutboxBundle value)?  outboxBundle,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SyncJournalEntity value)?  journalEntity,TResult? Function( SyncEntityDefinition value)?  entityDefinition,TResult? Function( SyncEntryLink value)?  entryLink,TResult? Function( SyncAiConfig value)?  aiConfig,TResult? Function( SyncSyncNodeProfile value)?  syncNodeProfile,TResult? Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult? Function( SyncConfigFlag value)?  configFlag,TResult? Function( SyncThemingSelection value)?  themingSelection,TResult? Function( SyncNotification value)?  notification,TResult? Function( SyncNotificationStateUpdate value)?  notificationStateUpdate,TResult? Function( SyncBackfillRequest value)?  backfillRequest,TResult? Function( SyncBackfillResponse value)?  backfillResponse,TResult? Function( SyncAgentEntity value)?  agentEntity,TResult? Function( SyncAgentLink value)?  agentLink,TResult? Function( SyncAgentBundle value)?  agentBundle,TResult? Function( SyncOutboxBundle value)?  outboxBundle,}){
 final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
@@ -480,7 +486,8 @@ return entityDefinition(_that);case SyncEntryLink() when entryLink != null:
 return entryLink(_that);case SyncAiConfig() when aiConfig != null:
 return aiConfig(_that);case SyncSyncNodeProfile() when syncNodeProfile != null:
 return syncNodeProfile(_that);case SyncAiConfigDelete() when aiConfigDelete != null:
-return aiConfigDelete(_that);case SyncThemingSelection() when themingSelection != null:
+return aiConfigDelete(_that);case SyncConfigFlag() when configFlag != null:
+return configFlag(_that);case SyncThemingSelection() when themingSelection != null:
 return themingSelection(_that);case SyncNotification() when notification != null:
 return notification(_that);case SyncNotificationStateUpdate() when notificationStateUpdate != null:
 return notificationStateUpdate(_that);case SyncBackfillRequest() when backfillRequest != null:
@@ -506,7 +513,7 @@ return outboxBundle(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  journalEntity,TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult Function( SyncNodeProfile profile)?  syncNodeProfile,TResult Function( String id)?  aiConfigDelete,TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? originatingHostId)?  agentBundle,TResult Function( List<SyncMessage> children,  String? jsonPath,  String? originatingHostId)?  outboxBundle,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  journalEntity,TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult Function( SyncNodeProfile profile)?  syncNodeProfile,TResult Function( String id)?  aiConfigDelete,TResult Function( String name,  String description,  bool status,  String? originatingHostId)?  configFlag,TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? originatingHostId)?  agentBundle,TResult Function( List<SyncMessage> children,  String? jsonPath,  String? originatingHostId)?  outboxBundle,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
 return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks);case SyncEntityDefinition() when entityDefinition != null:
@@ -514,7 +521,8 @@ return entityDefinition(_that.entityDefinition,_that.status);case SyncEntryLink(
 return entryLink(_that.entryLink,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAiConfig() when aiConfig != null:
 return aiConfig(_that.aiConfig,_that.status);case SyncSyncNodeProfile() when syncNodeProfile != null:
 return syncNodeProfile(_that.profile);case SyncAiConfigDelete() when aiConfigDelete != null:
-return aiConfigDelete(_that.id);case SyncThemingSelection() when themingSelection != null:
+return aiConfigDelete(_that.id);case SyncConfigFlag() when configFlag != null:
+return configFlag(_that.name,_that.description,_that.status,_that.originatingHostId);case SyncThemingSelection() when themingSelection != null:
 return themingSelection(_that.lightThemeName,_that.darkThemeName,_that.themeMode,_that.updatedAt,_that.status);case SyncNotification() when notification != null:
 return notification(_that.id,_that.jsonPath,_that.vectorClock,_that.originatingHostId,_that.coveredVectorClocks);case SyncNotificationStateUpdate() when notificationStateUpdate != null:
 return notificationStateUpdate(_that.id,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt);case SyncBackfillRequest() when backfillRequest != null:
@@ -541,7 +549,7 @@ return outboxBundle(_that.children,_that.jsonPath,_that.originatingHostId);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  journalEntity,required TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)  entityDefinition,required TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  entryLink,required TResult Function( AiConfig aiConfig,  SyncEntryStatus status)  aiConfig,required TResult Function( SyncNodeProfile profile)  syncNodeProfile,required TResult Function( String id)  aiConfigDelete,required TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)  themingSelection,required TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  List<VectorClock>? coveredVectorClocks)  notification,required TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)  notificationStateUpdate,required TResult Function( List<BackfillRequestEntry> entries,  String requesterId)  backfillRequest,required TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)  backfillResponse,required TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentEntity,required TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentLink,required TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? originatingHostId)  agentBundle,required TResult Function( List<SyncMessage> children,  String? jsonPath,  String? originatingHostId)  outboxBundle,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  journalEntity,required TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)  entityDefinition,required TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  entryLink,required TResult Function( AiConfig aiConfig,  SyncEntryStatus status)  aiConfig,required TResult Function( SyncNodeProfile profile)  syncNodeProfile,required TResult Function( String id)  aiConfigDelete,required TResult Function( String name,  String description,  bool status,  String? originatingHostId)  configFlag,required TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)  themingSelection,required TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  List<VectorClock>? coveredVectorClocks)  notification,required TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)  notificationStateUpdate,required TResult Function( List<BackfillRequestEntry> entries,  String requesterId)  backfillRequest,required TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)  backfillResponse,required TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentEntity,required TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentLink,required TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? originatingHostId)  agentBundle,required TResult Function( List<SyncMessage> children,  String? jsonPath,  String? originatingHostId)  outboxBundle,}) {final _that = this;
 switch (_that) {
 case SyncJournalEntity():
 return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks);case SyncEntityDefinition():
@@ -549,7 +557,8 @@ return entityDefinition(_that.entityDefinition,_that.status);case SyncEntryLink(
 return entryLink(_that.entryLink,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAiConfig():
 return aiConfig(_that.aiConfig,_that.status);case SyncSyncNodeProfile():
 return syncNodeProfile(_that.profile);case SyncAiConfigDelete():
-return aiConfigDelete(_that.id);case SyncThemingSelection():
+return aiConfigDelete(_that.id);case SyncConfigFlag():
+return configFlag(_that.name,_that.description,_that.status,_that.originatingHostId);case SyncThemingSelection():
 return themingSelection(_that.lightThemeName,_that.darkThemeName,_that.themeMode,_that.updatedAt,_that.status);case SyncNotification():
 return notification(_that.id,_that.jsonPath,_that.vectorClock,_that.originatingHostId,_that.coveredVectorClocks);case SyncNotificationStateUpdate():
 return notificationStateUpdate(_that.id,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt);case SyncBackfillRequest():
@@ -572,7 +581,7 @@ return outboxBundle(_that.children,_that.jsonPath,_that.originatingHostId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  journalEntity,TResult? Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult? Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult? Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult? Function( SyncNodeProfile profile)?  syncNodeProfile,TResult? Function( String id)?  aiConfigDelete,TResult? Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult? Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult? Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult? Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult? Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult? Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult? Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult? Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? originatingHostId)?  agentBundle,TResult? Function( List<SyncMessage> children,  String? jsonPath,  String? originatingHostId)?  outboxBundle,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  journalEntity,TResult? Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult? Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult? Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult? Function( SyncNodeProfile profile)?  syncNodeProfile,TResult? Function( String id)?  aiConfigDelete,TResult? Function( String name,  String description,  bool status,  String? originatingHostId)?  configFlag,TResult? Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult? Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult? Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult? Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult? Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult? Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult? Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult? Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? originatingHostId)?  agentBundle,TResult? Function( List<SyncMessage> children,  String? jsonPath,  String? originatingHostId)?  outboxBundle,}) {final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
 return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks);case SyncEntityDefinition() when entityDefinition != null:
@@ -580,7 +589,8 @@ return entityDefinition(_that.entityDefinition,_that.status);case SyncEntryLink(
 return entryLink(_that.entryLink,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAiConfig() when aiConfig != null:
 return aiConfig(_that.aiConfig,_that.status);case SyncSyncNodeProfile() when syncNodeProfile != null:
 return syncNodeProfile(_that.profile);case SyncAiConfigDelete() when aiConfigDelete != null:
-return aiConfigDelete(_that.id);case SyncThemingSelection() when themingSelection != null:
+return aiConfigDelete(_that.id);case SyncConfigFlag() when configFlag != null:
+return configFlag(_that.name,_that.description,_that.status,_that.originatingHostId);case SyncThemingSelection() when themingSelection != null:
 return themingSelection(_that.lightThemeName,_that.darkThemeName,_that.themeMode,_that.updatedAt,_that.status);case SyncNotification() when notification != null:
 return notification(_that.id,_that.jsonPath,_that.vectorClock,_that.originatingHostId,_that.coveredVectorClocks);case SyncNotificationStateUpdate() when notificationStateUpdate != null:
 return notificationStateUpdate(_that.id,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt);case SyncBackfillRequest() when backfillRequest != null:
@@ -1131,6 +1141,85 @@ class _$SyncAiConfigDeleteCopyWithImpl<$Res>
   return _then(SyncAiConfigDelete(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class SyncConfigFlag implements SyncMessage {
+  const SyncConfigFlag({required this.name, required this.description, required this.status, this.originatingHostId, final  String? $type}): $type = $type ?? 'configFlag';
+  factory SyncConfigFlag.fromJson(Map<String, dynamic> json) => _$SyncConfigFlagFromJson(json);
+
+ final  String name;
+ final  String description;
+ final  bool status;
+ final  String? originatingHostId;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncConfigFlagCopyWith<SyncConfigFlag> get copyWith => _$SyncConfigFlagCopyWithImpl<SyncConfigFlag>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncConfigFlagToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncConfigFlag&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.status, status) || other.status == status)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,name,description,status,originatingHostId);
+
+@override
+String toString() {
+  return 'SyncMessage.configFlag(name: $name, description: $description, status: $status, originatingHostId: $originatingHostId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SyncConfigFlagCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncConfigFlagCopyWith(SyncConfigFlag value, $Res Function(SyncConfigFlag) _then) = _$SyncConfigFlagCopyWithImpl;
+@useResult
+$Res call({
+ String name, String description, bool status, String? originatingHostId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SyncConfigFlagCopyWithImpl<$Res>
+    implements $SyncConfigFlagCopyWith<$Res> {
+  _$SyncConfigFlagCopyWithImpl(this._self, this._then);
+
+  final SyncConfigFlag _self;
+  final $Res Function(SyncConfigFlag) _then;
+
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? description = null,Object? status = null,Object? originatingHostId = freezed,}) {
+  return _then(SyncConfigFlag(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as bool,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
