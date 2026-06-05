@@ -97,6 +97,8 @@ void main() {
   late MockLabelsRepository mockLabelsRepository;
   late TestChecklistCompletionService testChecklistCompletionService;
 
+  late Directory suiteTempDir;
+
   setUpAll(() {
     // Isolate registrations from other files when tests are optimized
     getIt.pushNewScope();
@@ -115,6 +117,11 @@ void main() {
     registerFallbackValue(FakeChecklistData());
     registerFallbackValue(FakeChecklistItemData());
     registerFallbackValue(ChatCompletionMessageInputAudioFormat.wav);
+
+    // One suite-level temp root; each test gets a cheap unique subdirectory
+    // instead of its own systemTemp dir + recursive delete (~92 fs round
+    // trips saved per run). Deleted once in tearDownAll.
+    suiteTempDir = Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
   });
 
   late Directory? baseTempDir;
@@ -137,23 +144,18 @@ void main() {
 
     reset(mockJournalDb);
 
-    // Set up GetIt
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<Directory>()) {
-      getIt.unregister<Directory>();
-    }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
+    // Per-test GetIt scope: popScope in tearDown removes everything this
+    // test registered (including inline registrations in test bodies) in a
+    // single call, replacing six isRegistered/unregister round trips.
     getIt
+      ..pushNewScope()
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<Directory>(mockDirectory)
       ..registerSingleton<LoggingService>(mockLoggingService);
 
-    // Mock directory path to a writable temp location (unique per test)
-    baseTempDir = Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
+    // Mock directory path to a writable temp location (unique per test,
+    // nested under the suite-level root created in setUpAll)
+    baseTempDir = suiteTempDir.createTempSync('t');
     overrideTempDirs = <Directory>[];
     when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
 
@@ -201,16 +203,11 @@ void main() {
       ..autoChecklistServiceForTesting = mockAutoChecklistService;
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    // Clean up temp directories if they were created
-    // Note: Only remove if it still exists and is empty-ish; ignore errors
+    // Per-test base dirs live under suiteTempDir and are removed once in
+    // tearDownAll; only test-created override dirs are cleaned up here.
     try {
-      // Always attempt to remove the base temp dir
-      if (baseTempDir != null && baseTempDir!.existsSync()) {
-        baseTempDir!.deleteSync(recursive: true);
-      }
-      // Remove any override dirs registered by tests
       for (final d in overrideTempDirs) {
         if (d.existsSync()) {
           d.deleteSync(recursive: true);
@@ -220,18 +217,16 @@ void main() {
       when(() => mockDirectory.path).thenReturn(Directory.systemTemp.path);
     } catch (_) {}
 
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<Directory>()) {
-      getIt.unregister<Directory>();
-    }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
+    // Drop the per-test scope pushed in setUp (and anything tests added).
+    await getIt.popScope();
   });
 
   tearDownAll(() async {
+    try {
+      if (suiteTempDir.existsSync()) {
+        suiteTempDir.deleteSync(recursive: true);
+      }
+    } catch (_) {}
     // Pop scoped registrations for this file
     await getIt.resetScope();
     await getIt.popScope();
@@ -5513,14 +5508,8 @@ Take into account the following task context:
       () {
         // Register a mock AgentDatabase in GetIt before constructing the repo
         final mockAgentDb = MockAgentDatabase();
-        if (!getIt.isRegistered<AgentDatabase>()) {
-          getIt.registerSingleton<AgentDatabase>(mockAgentDb);
-        }
-        addTearDown(() {
-          if (getIt.isRegistered<AgentDatabase>()) {
-            getIt.unregister<AgentDatabase>();
-          }
-        });
+        // Registered in this test's GetIt scope; tearDown pops the scope.
+        getIt.registerSingleton<AgentDatabase>(mockAgentDb);
 
         // Constructing the repository should hit the branch at line 69
         final ref = container.read(testRefProvider);
@@ -5537,14 +5526,8 @@ Take into account the following task context:
     test('creates AutoChecklistService lazily when not set via testing setter', () {
       // AutoChecklistService internally calls getIt<DomainLogger>(), register it.
       final mockDomainLogger = MockDomainLogger();
-      if (!getIt.isRegistered<DomainLogger>()) {
-        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-      }
-      addTearDown(() {
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt.unregister<DomainLogger>();
-        }
-      });
+      // Registered in this test's GetIt scope; tearDown pops the scope.
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       // Create a fresh repository WITHOUT calling autoChecklistServiceForTesting
       final ref = container.read(testRefProvider);
@@ -7004,14 +6987,8 @@ Take into account the following task context:
           // LabelAssignmentProcessor calls getIt<DomainLogger>() in its
           // constructor — register a mock so the constructor doesn't throw.
           final mockDomainLogger = MockDomainLogger();
-          if (!getIt.isRegistered<DomainLogger>()) {
-            getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-          }
-          addTearDown(() {
-            if (getIt.isRegistered<DomainLogger>()) {
-              getIt.unregister<DomainLogger>();
-            }
-          });
+          // Registered in this test's GetIt scope; tearDown pops the scope.
+          getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
           // Build real LabelDefinition fixtures — global (no applicableCategoryIds)
           // and not deleted (no deletedAt) so the validator marks them valid.
@@ -7120,14 +7097,8 @@ Take into account the following task context:
           // LabelAssignmentProcessor's constructor resolves getIt<DomainLogger>
           // even though processAssignment is never reached on this path.
           final mockDomainLogger = MockDomainLogger();
-          if (!getIt.isRegistered<DomainLogger>()) {
-            getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-          }
-          addTearDown(() {
-            if (getIt.isRegistered<DomainLogger>()) {
-              getIt.unregister<DomainLogger>();
-            }
-          });
+          // Registered in this test's GetIt scope; tearDown pops the scope.
+          getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
           // Both requested labels (X, Y) are on the task's suppression set, so
           // `proposed` becomes empty while `requested` is non-empty, taking the
