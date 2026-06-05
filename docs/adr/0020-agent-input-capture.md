@@ -1,6 +1,6 @@
 # ADR 0020: Agent Input Capture — Per-Source Content-Addressed Snapshots
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-05-30
 
 ## Context
@@ -107,6 +107,14 @@ context blob vs. per-source payloads.
   and retention coupling with compaction — all built on the existing
   payload/link + frontier primitives, so no new mechanism.
 
+## Implementation Notes
+
+- Implemented: content-addressed per-source payloads, capture references,
+  input frontier projection, retraction handling, and task/project/day wake
+  memory assembly through `AgentWakeMemory`.
+- Still planned: planner-specific response caching and later retention tuning
+  beyond the current compaction coverage model.
+
 ### Rejected alternatives
 
 - **Reference-only.** Breaks replay purity, loses point-in-time provenance,
@@ -126,7 +134,6 @@ context blob vs. per-source payloads.
   frontier / coverage machinery.
 - ADR 0018 (convergent multi-device execution) — captured inputs are append-only
   and converge via the kernel; user content itself stays on the `Conflict` path.
-- Roadmap: [PR 4 plan — state-as-projection](../implementation_plans/2026-05-30_state_as_projection_plan.md)
-  (covers derived *state*; this ADR is its input-side companion) and PR 5
-  (compaction) are where this lands; generalizes the existing Daily OS
-  `CaptureEntity.transcript` snapshot to task and project agents.
+- Roadmap: PR 5 (content-addressed input capture + compaction) implemented this
+  input-side companion to state-as-projection and generalized the existing Daily
+  OS `CaptureEntity.transcript` snapshot to task/project/day agent memory.

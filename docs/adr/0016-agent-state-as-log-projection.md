@@ -1,6 +1,6 @@
 # ADR 0016: Agent-Derived State as a Projection of the Append-Only Log
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-05-30
 
 ## Context
@@ -63,6 +63,14 @@ flowchart LR
   snapshot.
 - Cold-start/replay cost grows with log length; mitigated by compaction
   checkpoints (ADR 0017).
+
+## Implementation Notes
+
+- Implemented: the deterministic projection kernel, storage adapter,
+  `messagePrev` DAG append path, shadow comparison, and wake-start
+  `reconciledAgentState` read path.
+- Still planned: Foundation B leader leasing/fencing and the attention planner
+  that will rely on this convergent substrate.
 
 ## Related
 

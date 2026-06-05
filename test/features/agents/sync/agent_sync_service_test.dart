@@ -2035,7 +2035,9 @@ void main() {
         ).captured.cast<AgentDomainEntity>();
         final joinMsg = upserted.whereType<AgentMessageEntity>().single;
         expect(joinMsg.id, joinId);
+        expect(joinMsg.threadId, joinId);
         expect(joinMsg.kind, AgentMessageKind.system);
+        expect(joinMsg.metadata, const AgentMessageMetadata());
         expect(
           upserted.whereType<AgentStateEntity>().single.recentHeadMessageId,
           joinId,

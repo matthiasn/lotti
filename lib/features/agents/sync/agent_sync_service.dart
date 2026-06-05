@@ -446,14 +446,15 @@ class AgentSyncService {
   ///
   /// **Content-addressed and deterministic.** [joinId] (from `computeJoinId`)
   /// and each edge id (`msgprev-${joinId}-${parentId}`) derive purely from the
-  /// sorted parent set, so two devices healing the same fork emit byte-identical
-  /// rows that set-union into one node + one edge set — no join storm. The join
-  /// carries no payload; its parents live in the edges and its identity in the
-  /// content-addressed id (the `sha256-v1:` prefix + a multi-parent `system`
-  /// message is what marks a node as a join). Per-device envelope fields
-  /// (`createdAt`, vector clock) are *not* canonicalized (deferred — inert while
-  /// the projection orders by `(hostId, id)` with `hostId = ''` and joins are
-  /// immutable); they never affect the merge, which is keyed by id.
+  /// sorted parent set, so two devices healing the same fork emit the same
+  /// structural row (`threadId == joinId`, empty metadata) and edge set — no join
+  /// storm. The join carries no payload; its parents live in the edges and its
+  /// identity in the content-addressed id (the `sha256-v1:` prefix + a
+  /// multi-parent `system` message is what marks a node as a join). Per-device
+  /// sync envelope fields (`createdAt`, vector clock) are *not* canonicalized
+  /// (deferred — inert while the projection orders by `(hostId, id)` with
+  /// `hostId = ''` and joins are immutable); they never affect the merge, which
+  /// is keyed by id.
   ///
   /// **Its own append path — never routed through [upsertEntity]/[_appendMessage]**,
   /// which chain a *single* parent off `recentHeadMessageId` and would both add a
@@ -476,8 +477,6 @@ class AgentSyncService {
     required String joinId,
     required List<String> parentIds,
     required DateTime at,
-    String? threadId,
-    String? runKey,
   }) async {
     // Defensive: a join heals ≥2 distinct heads (planJoin already gates this).
     final parents = parentIds.toSet().toList()..sort();
@@ -489,11 +488,11 @@ class AgentSyncService {
           AgentDomainEntity.agentMessage(
             id: joinId,
             agentId: agentId,
-            threadId: threadId ?? joinId,
+            threadId: joinId,
             kind: AgentMessageKind.system,
             createdAt: at,
             vectorClock: null,
-            metadata: AgentMessageMetadata(runKey: runKey),
+            metadata: const AgentMessageMetadata(),
           ),
         );
       }

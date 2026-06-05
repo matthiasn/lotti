@@ -48,14 +48,16 @@ Straight from ADR 0018 rule 8, made concrete against the current code:
    form a smaller fork the next cycle heals — converging in O(branches) bounded
    rounds, never storming (join ids are monotone children of a strictly-growing
    parent set, so a join can never re-create an existing ancestor). The
-   completeness gate (rule 5) removes the common "node synced before its edge"
-   trigger; the disjoint-branch residue is accepted as bounded self-healing, not
-   a correctness risk (ADR 0018: the join is an optimization, never correctness).
-3. **The join payload is fully deterministic — no wall-clock, `hostId`, or vector
-   clock in the *content*.** Content = the fixed kind + the sorted parent-head id
-   set (mirrored into the message body for auditability). Everything device-specific
-   (`createdAt`, `vectorClock`, authoring `hostId`) lives in the **envelope**,
-   which the projection never folds into identity.
+   completeness gate plus the pending-join guard (rule 5) remove the common
+   "join node synced before its edges" trigger; the disjoint-branch residue is
+   accepted as bounded self-healing, not a correctness risk (ADR 0018: the join
+   is an optimization, never correctness).
+3. **The join structure is deterministic — no wall-clock, `hostId`, or vector
+   clock in the content-addressed identity.** Structure = the fixed `system`
+   kind, `threadId == joinId`, empty metadata, and the sorted parent-head id set
+   materialized as `messagePrev` edges. Everything device-specific (`createdAt`,
+   `vectorClock`, authoring `hostId`) lives in the **sync envelope**, which the
+   projection never folds into identity.
 4. **Per-parent `messagePrev` link ids are also content-addressed.** The current
    single-parent scheme `msgprev-${childId}` cannot represent *n* edges from one
    child, and two devices must mint identical edge ids to set-union them. PR 6
@@ -65,11 +67,17 @@ Straight from ADR 0018 rule 8, made concrete against the current code:
    "≥2 heads survive past one wake cycle"). The pure `planJoin` gates on two
    conditions only:
    - **≥2 heads** (a single head is no fork); and
-   - **the local view is complete** — `projection.danglingParentIds.isEmpty`. A
-     `messagePrev` edge syncs as a message separate from its endpoint node, so a
-     node can arrive before the edge that marks its child as the real tip; on
-     that transient view a non-tip masquerades as a head and healing would mint
-     a join over the wrong set. Defer until the view settles (red-team J1 fix).
+   - **the local view is complete** — `projection.danglingParentIds.isEmpty`; and
+   - no **pending join head** exists. A join node can sync before its
+     `messagePrev` edges; while that happens, the join appears as an extra
+     parentless or partially-parented head. If the visible heads plus the join's
+     already-arrived parents reproduce the join id, healing defers until the
+     missing edges arrive instead of minting a second-order join.
+
+   A `messagePrev` edge syncs as a message separate from its endpoint node, so a
+   node can arrive before the edge that marks its child as the real tip; on that
+   transient view a non-tip masquerades as a head and healing would mint a join
+   over the wrong set. Defer until the view settles (red-team J1 fix).
 
    **No cross-wake marker / no new `AgentStateEntity` field.** An earlier draft
    gated on a persisted "head set unchanged since last wake" digest to enforce
@@ -87,16 +95,15 @@ Straight from ADR 0018 rule 8, made concrete against the current code:
    every sync. Capped: at most one join per wake; the content-addressed id makes
    re-emission idempotent (a re-run finds the row present and stops — the existing
    `_appendMessage` idempotency guard), so a crash-and-retry cannot storm.
-7. **Envelope reconciliation is deterministic, not LWW arrival-order.** When the
-   same join id arrives from two devices with different envelopes, the stored row
-   must converge replica-independently. Today the message sync path resolves a
-   concurrent duplicate-id by `resolveConcurrent` (canonical vector-clock
-   tiebreak) **only for `AgentStateEntity`**; plain messages fall to
-   dominance-or-apply-incoming, which is arrival-order-sensitive for the
-   *envelope*. PR 6 routes content-addressed events through the same
-   replica-independent canonicalization so the stored envelope converges (it does
-   **not** affect correctness — identity + edges already converge by id — but it
-   stops perpetual re-sync churn).
+7. **Envelope reconciliation is partially resolved, with vector-clock/timestamp
+   canonicalization deferred.** When the same join id arrives from two devices,
+   structural fields are canonical (`threadId == joinId`, empty metadata,
+   deterministic edge ids). The remaining per-device sync envelope (`createdAt`,
+   vector clock) may differ. That is inert today because projection ignores the
+   envelope (`hostIdOf` is unpopulated) and duplicate sync applies through the
+   raw repository path without re-enqueue churn. A replica-independent envelope
+   canonicalizer remains planned for the same change that starts projecting
+   persisted authoring host ids.
 
 **Why this is safe to land incrementally.** The join changes nothing the
 projection reads for *correctness* (heads + folds are identical with or without
@@ -114,9 +121,9 @@ exactly as PR 5's compaction did.
   cross-wake state. This is where the "≥2 heads over a complete view" gate and
   the content-addressed id live, and where the Glados properties bite
   (determinism, permutation-invariance over the head set, idempotence).
-- **Append mechanism — `AgentSyncService` (`agent_sync_service.dart`).** A new
-  `appendJoin(...)` (or a generalized `_appendMessage` that accepts an explicit
-  parent *list*) writes the join message, its *n* content-addressed `messagePrev`
+- **Append mechanism — `AgentSyncService` (`agent_sync_service.dart`).** A
+  dedicated `appendJoin({agentId, joinId, parentIds, at})` writes the join
+  message, its *n* content-addressed `messagePrev`
   links, and advances `recentHeadMessageId` to the join — all inside one
   `runInTransaction`, reusing the existing idempotency guard and the
   `_upsertAgentStatePreservingHead` overlay so the head advance is not clobbered.
@@ -135,12 +142,14 @@ exactly as PR 5's compaction did.
   emits before the wake's own messages, in **one** seam covering all agent kinds.
   A corrupt synced log (cycle / duplicate id) is caught and skipped (non-fatal),
   exactly like `reconciledAgentState`.
-- **Envelope canonicalization — deferred (see J4 / open decisions).** A
-  content-addressed duplicate-id message's per-device envelope (VC / `hostId` /
-  `createdAt`) is *not* reconciled in the sync apply path, because it is inert for
-  the projection today (`hostId = ''`, joins immutable, no re-sync churn). It
-  becomes load-bearing only if `hostIdOf` is ever populated, and must be added
-  with that change.
+- **Envelope canonicalization — partially resolved, vector-clock/timestamp
+  canonicalization deferred (see J4 / open decisions).** The join row now uses
+  canonical structure (`threadId == joinId`, empty metadata) and deterministic
+  edge ids. A content-addressed duplicate-id message's remaining per-device sync
+  envelope (VC / `createdAt`; `hostIdOf` remains unpopulated) is *not* reconciled
+  in the sync apply path, because it is inert for the projection today
+  (`hostId = ''`, joins immutable, no re-sync churn). It becomes load-bearing
+  only if `hostIdOf` is ever populated, and must be added with that change.
 
 The kernel (`project`/`canonicalOrder`) and the adapter (`agentEventsFromLog`)
 are **not** touched — they already handle multi-parent events. This is a deliberate
@@ -153,7 +162,7 @@ event."
 stateDiagram-v2
   [*] --> SingleHead
   SingleHead --> Forked: two devices append off the same head (concurrent messagePrev children)
-  Forked --> Forked: local view still settling (a dangling parent) — defer
+  Forked --> Forked: local view still settling (dangling parent or pending join edges) — defer
   Forked --> Joining: a wake starts and observes ≥2 heads over a complete view
   Joining --> SingleHead: append content-addressed join (messagePrev → all heads); head := joinId; prefix re-warms
   Joining --> SingleHead: peer emitted the same join id concurrently → set-union merges to one node
@@ -172,12 +181,13 @@ stateDiagram-v2
    single-head/empty/dups → null, `!viewComplete` → null. Unused in production.
    *Done when:* analyze clean, Glados green.
 2. **J2 — Multi-parent append path.** A **dedicated** `AgentSyncService.appendJoin
-   ({agentId, joinId, parentIds, at, ...})` — **not** routed through
+   ({agentId, joinId, parentIds, at})` — **not** routed through
    `_appendMessage` (red-team J1): `_appendMessage` would add a spurious
    single-parent `msgprev-${joinId}` edge off the pointer head *and* collide with
    the per-parent edge-id scheme. `appendJoin` writes, in one `runInTransaction`:
-   the join `system` message via `_upsertEntityRaw`; one `messagePrev` link per
-   parent with id `msgprev-${joinId}-${parentId}`; and the head advance to
+   the canonical join `system` message (`threadId == joinId`, empty metadata)
+   via `_upsertEntityRaw`; one `messagePrev` link per parent with id
+   `msgprev-${joinId}-${parentId}`; and the head advance to
    `joinId` through `_upsertAgentStatePreservingHead`. **Idempotency keys on the
    join node's presence** (not on a single `prevMessageId`, which a multi-parent
    node lacks) and re-asserts all *n* edges, so a crash between node-insert and
@@ -191,9 +201,11 @@ stateDiagram-v2
    in existing append tests.
 3. **J3 — Emit on wake (flag-gated default-off). ✅ done.** A focused
    `ForkHealer` (`lib/features/agents/sync/fork_healer.dart`,
-   `maybeHealFork(agentId, at, threadId, runKey)`) folds the full-log projection,
+   `maybeHealFork(agentId, at)`) folds the full-log projection,
    calls `planJoin`, and `appendJoin`s when due — catching a corrupt log as
-   non-fatal. The `WakeOrchestrator` gains one optional `onWakeStart` hook fired
+   non-fatal. It also defers while a content-addressed join head is missing part
+   of its edge set, so partial sync of a peer's join cannot create a follow-on
+   join. The `WakeOrchestrator` gains one optional `onWakeStart` hook fired
    just before the executor (covering all four agent kinds in one seam). DI
    (`agent_providers.dart`) always wires the hook, which consults the
    default-off `enable_fork_healing` config flag **per invocation** —
@@ -203,8 +215,9 @@ stateDiagram-v2
    per-wake flag read.)
    **No `AgentStateEntity` field, no `build_runner`** (the eager gate is
    stateless). Tested: `ForkHealer` over the in-memory repo (fork→heal, no-op,
-   defer-on-incomplete-view, idempotent re-fork prevention, non-fatal on a
-   corrupt log); orchestrator (hook runs before the executor with the wake
+   defer-on-incomplete-view, defer-on-pending-join, idempotent re-fork
+   prevention, arrival-order-independent join id, projection-after-heal shape,
+   non-fatal on a corrupt log); orchestrator (hook runs before the executor with the wake
    context; a throwing hook is non-fatal and the wake still completes).
 4. **J4 — Convergence sim; envelope canonicalization deliberately deferred. ✅
    done.** A two-device convergence sim (in `fork_healer_test.dart`): two devices
@@ -223,14 +236,15 @@ stateDiagram-v2
    for correctness today** and not worth destabilizing the most sensitive path:
    (a) the projection orders by `(hostId, id)` with `hostId = ''` in production
    (`agentEventsFromLog` is called with no `hostIdOf`), so a divergent stored
-   envelope never changes the order or the derived state; (b) a join node is
-   **immutable**, so its vector clock is never re-resolved; and (c) a synced
-   duplicate applies via the raw repository write (not re-enqueued), so the
-   envelope is *stably divergent after one exchange — no churn*. The
-   canonicalization becomes load-bearing only if `hostIdOf` is ever populated
-   (then two devices could order the join differently); it must be added *with*
-   that change. Recorded as an open decision below. *Done when:* the sim passes;
-   the deferral is documented.
+   vector-clock/timestamp envelope never changes the order or the derived state;
+   (b) a join node is **immutable**, so its vector clock is never re-resolved;
+   and (c) a synced duplicate applies via the raw repository write (not
+   re-enqueued), so the envelope is *stably divergent after one exchange — no
+   churn*. The row's structural fields are now canonical (`threadId == joinId`,
+   empty metadata); vector-clock/timestamp canonicalization becomes load-bearing
+   only if `hostIdOf` is ever populated (then two devices could order the join
+   differently); it must be added *with* that change. Recorded as an open
+   decision below. *Done when:* the sim passes; the deferral is documented.
 5. **J5 — README + capping audit + roadmap refresh. ✅ done.**
    `lib/features/agents/README.md` gained a "Fork healing: join-by-continuation"
    section (fork→heal Mermaid lifecycle + the join id / edge-id scheme + the
@@ -259,6 +273,11 @@ compaction flag — with a CHANGELOG entry **then** (none now: flag off = invisi
   (real projection); idempotent re-emit; per-parent edge ids; head advances to
   the join (incl. the stale-head-with-node-present case); partial-commit retry
   completes the edge set + head; no-state-row and <2-parent branches.
+- **Fork healer (`fork_healer.dart`):** two heads → one deterministic join;
+  repeated healing is idempotent; arrival order does not change the join id;
+  already-joined logs are untouched; dangling parents and pending join nodes
+  defer without crashing; projection after healing equals the pre-heal fork plus
+  the explicit join marker.
 - **Convergence sim (`fork_healer.dart` two-device):** concurrent joins over the
   same heads → one node + one head; full projection independent of merge order;
   repeated forks stay bounded (linear growth, no storm).
@@ -266,7 +285,8 @@ compaction flag — with a CHANGELOG entry **then** (none now: flag off = invisi
   executor with the wake context; a throwing hook is non-fatal; a hanging hook is
   bounded by `wakeStartHookTimeout` — the wake proceeds in all three.
 - **Cap/crash:** a crash between join-append and commit re-emits the same id on
-  retry → still one node (no storm).
+  retry → still one node (no storm); a synced join node arriving before its
+  edges is treated as an unsettled view, not a new fork to join.
 
 Conventions: pure logic uses Glados; service/wake tests stay deterministic
 example tests with mocks + fixed clocks (`test/README.md`); no real timers;
@@ -286,21 +306,22 @@ deterministic dates.
 
 ## Open decisions
 
-- **`appendJoin` vs. generalizing `_appendMessage`.** Leaning toward a dedicated
-  `appendJoin` (clear single responsibility; `_appendMessage`'s single-head
-  fast-path stays untouched and low-risk), but a generalized `_appendMessage(...,
-  {List<String>? explicitParents})` would be DRYer. Settle in J2.
-- **Envelope canonicalization (deferred from J4 — becomes load-bearing only with
-  `hostIdOf`).** Today the projection ignores a content-addressed event's
-  per-device envelope (`hostId = ''` in prod; joins are immutable; a synced
-  duplicate doesn't re-enqueue → stably divergent, no churn), so canonicalizing it
-  in the sync apply path is inert and not worth the risk. When/if the projection
-  starts deriving `hostId` from the message (populating `hostIdOf`), a divergent
-  stored envelope *would* change the `(hostId, id)` order across devices — at that
-  point route content-addressed duplicate-id events (joins **and** PR 5 summary
-  checkpoints) through a shared replica-independent canonicalizer (min canonical
-  VC, then lowest `hostId`, then earliest `createdAt`). Add it *with* the
-  `hostIdOf` change, not before.
+- **`appendJoin` vs. generalizing `_appendMessage` — RESOLVED in J2.** A
+  dedicated `appendJoin` is used so the single-parent append fast path stays
+  simple and cannot accidentally add a spurious `msgprev-${joinId}` edge.
+- **Envelope canonicalization (partially resolved; remaining part deferred from
+  J4 — becomes load-bearing only with `hostIdOf`).** Join structural fields are
+  canonical today (`threadId == joinId`, empty metadata), but the sync envelope
+  still carries per-device `createdAt` and vector-clock values. The projection
+  ignores that envelope (`hostId = ''` in prod; joins are immutable; a synced
+  duplicate doesn't re-enqueue → stably divergent, no churn), so canonicalizing
+  it in the sync apply path is inert and not worth the risk. When/if the
+  projection starts deriving `hostId` from the message (populating `hostIdOf`), a
+  divergent stored envelope *would* change the `(hostId, id)` order across
+  devices — at that point route content-addressed duplicate-id events (joins
+  **and** PR 5 summary checkpoints) through a shared replica-independent
+  canonicalizer (min canonical VC, then lowest `hostId`, then earliest
+  `createdAt`). Add it *with* the `hostIdOf` change, not before.
 - **Survival gate precision (red-team J1 confirmed real) — RESOLVED in J3 by
   dropping the marker.** The head-set-digest "unchanged since last wake" gate
   starved under one-branch-per-cycle churn. J3 replaced it with the stateless

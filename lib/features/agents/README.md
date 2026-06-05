@@ -545,16 +545,18 @@ The cost of an *unhealed* fork is only that the on-device prefix never re-warms
 folds the agent's full log (`getAgentMessages` + the `messagePrev` edges fetched by
 `getLinksFromMultiple(messageIds, type: message_prev)`), and `planJoin` emits a
 **join-by-continuation** node when there are ≥2 heads over a *complete* view (no
-dangling parents). `AgentSyncService.appendJoin` then writes a `system` message
-that links (`messagePrev`) to **every** head and advances `recentHeadMessageId` to
-it — so the DAG re-converges to one tip and the prefix re-warms.
+dangling parents, and no pending join head whose edges are still syncing).
+`AgentSyncService.appendJoin` then writes a canonical `system` message that links
+(`messagePrev`) to **every** head and advances `recentHeadMessageId` to it — so
+the DAG re-converges to one tip and the prefix re-warms.
 
 - **Content-addressed, deterministic.** The join id is
   `computeJoinId(headIds) = ContentDigest.of({'_tag':'join-v1','parents':sortedHeads})`
   and each edge id is `msgprev-${joinId}-${parentId}`. Two devices healing the
-  *same* fork mint byte-identical rows, so the log set-unions their concurrent
-  emissions into **one** node — no join storm. The join carries no payload and no
-  wall-clock/host/clock in its *content*; the per-device envelope (`createdAt`,
+  *same* fork mint the same structural row (`threadId == joinId`, empty metadata)
+  and edge set, so the log set-unions their concurrent emissions into **one**
+  node — no join storm. The join carries no payload and no wall-clock/host/clock
+  in its content-addressed identity; the per-device sync envelope (`createdAt`,
   vector clock) is **not yet canonicalized** — reconciliation is deferred because
   it is inert for the projection today, which orders by `(hostId, id)` with
   `hostId = ''` and never re-resolves an immutable join. It becomes load-bearing
@@ -563,8 +565,9 @@ it — so the DAG re-converges to one tip and the prefix re-warms.
   created by a *prior* cycle (this wake has appended nothing yet), so healing it is
   faithful to ADR 0018's "≥2 heads survive past one wake cycle." Forks never
   self-resolve, so there is nothing to wait out beyond a partially-synced view (a
-  node arrived before its parent edge) — which the *complete-view* gate covers. The
-  decision is a pure function of the current projection; no marker is persisted.
+  node arrived before its parent edge, or a peer's join node arrived before all
+  join edges) — which the complete-view and pending-join gates cover. The decision
+  is a pure function of the current projection; no marker is persisted.
 - **Wiring.** The four wake workflows share no base class but all dispatch through
   the `WakeOrchestrator`, which fires one optional `onWakeStart` hook just before
   the executor (covering every agent kind in one seam). Healing is best-effort and
@@ -582,7 +585,7 @@ it — so the DAG re-converges to one tip and the prefix re-warms.
 stateDiagram-v2
   [*] --> SingleHead
   SingleHead --> Forked: two devices append off the same head (concurrent messagePrev children)
-  Forked --> Forked: local view still settling (a dangling parent) — defer
+  Forked --> Forked: local view still settling (dangling parent or pending join edges) — defer
   Forked --> Joining: a wake starts and observes ≥2 heads over a complete view
   Joining --> SingleHead: appendJoin (messagePrev → all heads); recentHeadMessageId := joinId; prefix re-warms
   Joining --> SingleHead: peer emitted the same joinId concurrently → set-union merges to one node
