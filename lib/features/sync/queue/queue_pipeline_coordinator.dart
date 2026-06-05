@@ -726,7 +726,8 @@ class QueuePipelineCoordinator {
 
   void _countSuppressedSelfEcho() {
     _suppressedSelfEchoes++;
-    final now = DateTime.now();
+    // clock.now() so tests can drive the suppression window with withClock.
+    final now = clock.now();
     final last = _lastSuppressedLogAt;
     if (last == null || now.difference(last) >= _suppressionLogInterval) {
       final flushed = _suppressedSelfEchoes;

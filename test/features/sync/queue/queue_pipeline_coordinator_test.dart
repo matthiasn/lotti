@@ -739,6 +739,78 @@ void main() {
     },
   );
 
+  test(
+    'self-echo suppression logs once per interval and resets the counter',
+    () async {
+      final bench = _GladosBench();
+      final logMessages = <String>[];
+      when(
+        () => bench.logging.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((invocation) {
+        logMessages.add(invocation.positionalArguments[1] as String);
+      });
+      when(() => bench.roomManager.currentRoomId).thenReturn(roomId);
+      when(
+        () => bench.queue.enqueueLive(any()),
+      ).thenAnswer((_) async => EnqueueResult.empty);
+      when(() => bench.pen.hold(any())).thenReturn(false);
+
+      final coordinator = bench.buildCoordinator(
+        sentEventRegistry: bench.sentEventRegistry,
+      );
+
+      Event selfEcho(String id) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn(id);
+        when(() => e.roomId).thenReturn(roomId);
+        when(() => e.type).thenReturn(EventTypes.Message);
+        when(() => e.status).thenReturn(EventStatus.synced);
+        bench.sentEventRegistry.register(id);
+        return e;
+      }
+
+      Iterable<String> suppressionLogs() =>
+          logMessages.where((m) => m.contains('selfEchoSuppressed'));
+
+      var current = DateTime.utc(2026);
+      await withClock(Clock(() => current), () async {
+        await coordinator.start();
+
+        // First suppressed echo: no previous flush -> logs count=1 and
+        // starts the suppression window.
+        bench.timelineCtl.add(selfEcho(r'$echo-1'));
+        await pumpEventQueue();
+        expect(suppressionLogs(), hasLength(1));
+        expect(suppressionLogs().single, contains('count=1'));
+
+        // Echoes inside the 30s window accumulate silently.
+        bench.timelineCtl.add(selfEcho(r'$echo-2'));
+        bench.timelineCtl.add(selfEcho(r'$echo-3'));
+        await pumpEventQueue();
+        expect(suppressionLogs(), hasLength(1));
+
+        // First echo after the window flushes the accumulated count and
+        // resets the counter.
+        current = current.add(const Duration(seconds: 31));
+        bench.timelineCtl.add(selfEcho(r'$echo-4'));
+        await pumpEventQueue();
+        expect(suppressionLogs(), hasLength(2));
+        expect(suppressionLogs().last, contains('count=3'));
+
+        // Suppressed events never reach the pen or the queue.
+        verifyNever(() => bench.pen.hold(any()));
+        verifyNever(() => bench.queue.enqueueLive(any()));
+
+        await coordinator.stop();
+      });
+      await bench.dispose();
+    },
+  );
+
   glados.Glados(
     glados.any.liveIngressScenario,
     glados.ExploreConfig(numRuns: 120),
