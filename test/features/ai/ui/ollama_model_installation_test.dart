@@ -10,17 +10,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockAiConfigByTypeController extends AiConfigByTypeController {
-  MockAiConfigByTypeController(this._configs);
-
-  final List<AiConfig> _configs;
-
-  @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
-    return Stream.value(_configs);
-  }
-}
+import '../test_utils.dart';
 
 // Test wrapper widget that provides all necessary dependencies
 class TestOllamaDialogWrapper extends StatelessWidget {

@@ -1822,10 +1822,47 @@ void main() {
         );
         await tester.pump();
 
-        // All three entries should render (parent + 2 overlapping nested children)
-        // The nested children should be in separate lanes within the parent
-        expect(find.bySemanticsLabel('Work'), findsNWidgets(3));
-        expect(find.byType(DailyTimeline), findsOneWidget);
+        // All three entries render (parent + 2 overlapping nested children).
+        final blocks = find.bySemanticsLabel('Work');
+        expect(blocks, findsNWidgets(3));
+
+        // Geometry: identify the parent (largest rect) and the two nested
+        // children, then assert genuine lane splitting.
+        final rects = [for (var i = 0; i < 3; i++) tester.getRect(blocks.at(i))]
+          ..sort(
+            (a, b) => (b.width * b.height).compareTo(a.width * a.height),
+          );
+        final parentRect = rects.first;
+        final childA = rects[1];
+        final childB = rects[2];
+
+        // Both children are inside the parent block.
+        for (final child in [childA, childB]) {
+          expect(
+            parentRect.left <= child.left &&
+                child.right <= parentRect.right &&
+                parentRect.top <= child.top &&
+                child.bottom <= parentRect.bottom,
+            isTrue,
+            reason: 'child $child not inside parent $parentRect',
+          );
+        }
+
+        // The overlapping children occupy disjoint horizontal lanes even
+        // though their time ranges (and so vertical ranges) overlap.
+        expect(
+          childA.right <= childB.left || childB.right <= childA.left,
+          isTrue,
+          reason: 'children share a lane: $childA vs $childB',
+        );
+        expect(
+          childA.top < childB.bottom && childB.top < childA.bottom,
+          isTrue,
+          reason: 'children should overlap vertically: $childA vs $childB',
+        );
+
+        // NOTE: nesting depth > 1 (a child of a child) is intentionally not
+        // rendered — _NestedChildBlock passes nestedChildren: const [].
       },
     );
 
