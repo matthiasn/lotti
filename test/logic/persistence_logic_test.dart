@@ -1768,7 +1768,14 @@ void main() {
         // Pin the clock so shouldAddGeolocation is deterministically true
         // (data time == clock.now(); covers the `true` branch) — no
         // wall-clock race (fake-time policy).
-        final now = DateTime(2024, 3, 15, 10, 30);
+        //
+        // 10:32 (not the file-standard 10:30) because habit completion IDs
+        // are deterministic UUIDv5 hashes of json.encode(data): reusing the
+        // exact dateFrom/dateTo/habitId of the earlier
+        // 'updateJournalEntityText updates HabitCompletionEntry' test would
+        // collide with that entity in-suite and the insert (overwrite: false)
+        // would be rejected.
+        final now = DateTime(2024, 3, 15, 10, 32);
         await getIt<PersistenceLogic>().upsertEntityDefinition(habitFlossing);
 
         final completion = await withClock(

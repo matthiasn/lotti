@@ -86,8 +86,6 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/features/ai/functions/task_due_date_handler_test.dart` — `glados.ExploreConfig(numRuns: 220)` at line 638 exceeds the project guideline ceiling of ~200 runs noted in `test/README.md` ("If you find yourself going above 200, ask whether the property is actually generative"). The due-date handler Glados scenario is already well-covered; reducing to 150 would save ~30% on that property with no meaningful loss of coverage.
-
 - [ ] **[MED]** `test/features/ai/helpers/prompt_builder_helper_speech_dictionary_test.dart` — raw `setUp`/`tearDown` that calls `getIt.isRegistered` + `getIt.unregister` + `getIt.registerSingleton` on every test re-registers a `MockEntitiesCacheService` from scratch. Using `setUpTestGetIt()` (which uses a shared `getIt` scope) would avoid repeated registration overhead across ~20 tests in this file.
 
 - [ ] **[MED]** `test/features/ai/helpers/prompt_builder_helper_audio_transcript_test.dart` and `prompt_builder_helper_current_task_summary_test.dart` — same raw GetIt per-test cost as above. Both files also duplicate the `testTask` and `testAudio` fixture definitions that are already present in `prompt_builder_helper_speech_dictionary_test.dart`. Merging into one file (per the one-test-file-per-source-file rule) and sharing a file-level setup would remove 3× repeated fixture initialization.

@@ -49,13 +49,9 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` (1812 lines) — every `sendMessage` subtest re-declares the same 8-argument `when(() => mockOllamaRepo.generateTextWithMessages(...))` block verbatim. There are at least 18 copies (lines 157, 211, 274, 325, 399, 503, 588, 670, 711, 816, 914, 984, 1082, 1218, 1317, 1401, 1489, 1551, 1657, 1696). A `_stubGenerateText(mockOllamaRepo, {Stream? stream})` helper would reduce this by ~300 lines and make the tests readable. *(This file is in the conversation/ scope but the pattern also appears in the util/ tests.)*
-
 - [x] **[HIGH]** `test/features/ai/util/preconfigured_prompts_test.dart` (96 lines) only tests `imagePromptGenerationPrompt`. **`coverArtGenerationPrompt` has no tests at all** — its structure, required input data, `useReasoning: false`, `AiResponseType.imageGeneration`, and template placeholders (`{{audioTranscript}}`, `{{current_task_summary}}`, `{{task}}`) are untested. This is a meaningful gap because these are tested at the UI layer by checking the prompt type.
 
 - [ ] **[MED]** `test/features/ai/util/ai_error_utils_test.dart` line 204: the test `'test helpers expose dynamic fields'` only verifies that inline test helper class properties are readable. This is a constructor smoke test with zero value for the production code — it proves nothing about `AiErrorUtils`. Remove or collapse it into an actual extraction test.
-
-- [ ] **[MED]** `test/features/ai/conversation/conversation_repository_test.dart` lines 15–18 define `MockOllamaInferenceRepository` and `MockConversationStrategy` inline. Neither exists in `test/mocks/mocks.dart`. Per the test infrastructure rules, new mocks must be added to the central file first. `MockConversationStrategy` is particularly useful for other conversation tests.
 
 - [ ] **[MED]** `test/features/ai/util/known_models_test.dart` lines 480–489: `'should have image generation model in geminiModels'` and `'image generation model should have valid configuration'` (lines 480–489) are near-duplicates that both fetch the same model and assert very similar things. Merge into one parameterized test or at minimum remove the redundant `isNotEmpty` check from the second test.
 
@@ -103,8 +99,6 @@
 
 - [ ] **[MED]** `test/features/ai/util/mlx_audio_channel_test.dart` — the Glados `downloadProgressScenario` runs at 180 numRuns over 6 dimensions. This is appropriate, but two of the six dimensions (`includeByteCounts`, `includeProgress`) are boolean flags that produce only 4 combinations. A `combine4` + exhaustive flag enumeration would be equivalent to ~160 runs while being more deterministic.
 
-- [ ] **[LOW]** `test/features/ai/conversation/conversation_repository_test.dart` line 1781 — `completer.future.timeout(const Duration(milliseconds: 50))` uses a real wall-clock timeout inside a unit test for the `conversationEvents` error-emission path. This is a minor fake-time policy violation. The error is emitted synchronously from a `Stream.error(...)` so the `Completer` should complete almost instantly, but this pattern can be replaced with `expectLater` + `emitsError` to eliminate the real-time dependency entirely.
-
 - [ ] **[LOW]** `test/features/ai/util/known_models_test.dart` — the `maxCompletionTokens` group (lines 231–407) iterates over 8 provider model lists in a single `test` body (one test, 8 loops). If any assertion fails, the test name gives no indication of which provider failed. Splitting into one parameterized test per provider or using `for (final provider in [...]) test('...')` gives much faster failure diagnosis.
 
 ---
@@ -115,5 +109,5 @@
 - **3 oversized test** files: `ai_error_utils_test.dart` (1119), `mlx_audio_channel_test.dart` (1077), `model_prepopulation_service_test.dart` (659) — primary cause is repeated 8-argument mock stubs; extract shared `_stubRepo` / `_stubGenerateText` helpers.
 - **3 weak tests** identified: smoke-only constant-equality checks in `known_models_test.dart` (lines 1196–1206), the test-helper introspection test in `ai_error_utils_test.dart` (line 204), and near-duplicate image generation model checks (lines 480–489).
 - **2 Glados candidates**: `isMlxAudioSpeechToTextModel` modality invariant property; `preconfiguredPrompts` map-key round-trip property.
-- **2 speed wins**: `pcm_amplitude_test.dart` numRuns=200×2 → 120×2 saves ~160 Glados iterations; `conversation_repository_test.dart` line 1781 real-timeout → `expectLater`+`emitsError`.
+- **1 speed win**: `pcm_amplitude_test.dart` numRuns=200×2 → 120×2 saves ~160 Glados iterations.
 - **Biggest opportunity**: `coverArtGenerationPrompt` has zero test coverage — a simple group with ~6 assertions mirrors the existing `imagePromptGenerationPrompt` group and costs minimal effort while closing a genuine behavioral gap.
