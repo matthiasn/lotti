@@ -133,6 +133,15 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+    journalDb: ref.watch(journalDbProvider),
+    inputCaptureService: AgentInputCaptureService(
+      syncService: ref.watch(agentSyncServiceProvider),
+    ),
+    logSummarizer: AgentLogLlmSummarizer(
+      inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+    ),
+    // The `enable_agent_compaction` flag is read by the workflow at each wake
+    // (the wake executor captures this instance at initialization).
   );
 }
 
@@ -152,5 +161,14 @@ DayAgentWorkflow dayAgentWorkflow(Ref ref) {
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+    journalDb: ref.watch(journalDbProvider),
+    logSummarizer: AgentLogLlmSummarizer(
+      inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+    ),
+    // The `enable_agent_compaction` flag is read by the workflow at each wake
+    // (the wake executor captures this instance at initialization). No input
+    // capture service: the day agent's durable inputs (capture transcripts,
+    // observations) are already synced log entities, projected as inline
+    // events.
   );
 }

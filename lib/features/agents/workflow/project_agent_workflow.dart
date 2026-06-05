@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -14,11 +15,16 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
+import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/prompt_record.dart';
+import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -51,6 +57,12 @@ class ProjectAgentWorkflow {
     this.soulDocumentService,
     this.domainLogger,
     this.onPersistedStateChanged,
+    this.journalDb,
+    this.inputCaptureService,
+    this.logSummarizer,
+    this.compactionEnabled,
+    this.compactionTailBudgetTokens = 50000,
+    this.compactionTailRetainTokens = 20000,
   });
 
   final AgentRepository agentRepository;
@@ -63,6 +75,24 @@ class ProjectAgentWorkflow {
   final SoulDocumentService? soulDocumentService;
   final DomainLogger? domainLogger;
   final void Function(String agentId)? onPersistedStateChanged;
+
+  /// Journal DB for the per-wake `enable_agent_compaction` flag read (see
+  /// [AgentWakeMemory]); null in legacy constructions keeps compaction off.
+  final JournalDb? journalDb;
+
+  /// Captures the wake's project-linked journal entries into the agent's
+  /// append-only log (ADR 0020).
+  final AgentInputCaptureService? inputCaptureService;
+
+  /// LLM edge for compaction folds (ADR 0017).
+  final AgentLogLlmSummarizer? logSummarizer;
+
+  /// Test override for the compaction flag; null = consult it per wake.
+  final bool? compactionEnabled;
+
+  /// Compaction watermarks — see `TaskAgentWorkflow` for the rationale.
+  final int compactionTailBudgetTokens;
+  final int compactionTailRetainTokens;
 
   static const _uuid = Uuid();
 
@@ -163,6 +193,38 @@ class ProjectAgentWorkflow {
         state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
     final shouldInitializeSchedule = state.scheduledWakeAt == null;
 
+    // 2a. Capture this wake's project-linked journal entries into the log
+    // (ADR 0020) — same substrate and renderer as the task agent (only
+    // text/audio/image log entries are kept; member TASKS are state, not
+    // log, and stay in the linked-tasks context). Runs AFTER the dormant
+    // skip so no-activity scheduled wakes stay cheap (a dormant wake has
+    // nothing new to capture). Non-fatal.
+    final memory = AgentWakeMemory(
+      journalDb: journalDb,
+      syncService: syncService,
+      inputCaptureService: inputCaptureService,
+      logSummarizer: logSummarizer,
+      compactionEnabled: compactionEnabled,
+      domainLogger: domainLogger,
+    );
+    var captureSucceeded = false;
+    if (inputCaptureService != null) {
+      try {
+        final linked = await journalRepository.getLinkedEntities(
+          linkedTo: projectId,
+        );
+        captureSucceeded = await memory.capture(
+          agentId: agentId,
+          sources: renderTaskSources(linked),
+          at: now,
+          threadId: threadId,
+          runKey: runKey,
+        );
+      } catch (e) {
+        _logError('failed to capture wake inputs', error: e);
+      }
+    }
+
     // 3. Load project entity and linked task context.
     final projectEntity = await journalRepository.getJournalEntityById(
       projectId,
@@ -211,6 +273,21 @@ class ProjectAgentWorkflow {
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
 
+    // 6a2. Compaction (ADR 0017) — the shared per-wake memory pipeline: flag
+    // read, fold past the trigger watermark with the wake's resolved model,
+    // assemble the compacted log, evaluate the read-flip gates.
+    final memoryView = await memory.compactAndAssemble(
+      agentId: agentId,
+      captureSucceeded: captureSucceeded,
+      model: modelId,
+      provider: provider,
+      at: now,
+      threadId: threadId,
+      runKey: runKey,
+      budget: compactionTailBudgetTokens,
+      retainTokens: compactionTailRetainTokens,
+    );
+
     // 6b. Load observation payloads so we can render actual text.
     final observationPayloads = await _resolveObservationPayloads(
       journalObservations,
@@ -221,14 +298,18 @@ class ProjectAgentWorkflow {
 
     // 7. Assemble system prompt and user message.
     final systemPrompt = _buildSystemPrompt(templateCtx);
-    final userMessage = _buildUserMessage(
+    final builtMessage = _buildUserMessage(
       projectEntity: projectEntity,
       lastReport: lastReport,
       observations: journalObservations,
       observationPayloads: observationPayloads,
       linkedTasksContext: linkedTasksContext,
       triggerTokens: triggerTokens,
+      // Only attach the compacted log when the read actually flips; the
+      // legacy sections render otherwise.
+      compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
     );
+    final userMessage = builtMessage.text;
 
     // 8. Create conversation and run with strategy.
     final conversationId = conversationRepository.createConversation(
@@ -236,16 +317,28 @@ class ProjectAgentWorkflow {
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
 
-    // 8a. Persist user message for inspectability.
+    // 8a. Persist user message for inspectability — as a v2 prompt record
+    // when the read flipped (the log block is derivable from the synced
+    // event log; ADR 0020), or the legacy full blob otherwise.
     try {
       final userPayloadId = _uuid.v4();
+      final logStart = builtMessage.logStart;
+      final logEnd = builtMessage.logEnd;
+      final userPayloadContent = (logStart != null && logEnd != null)
+          ? encodePromptRecord(
+              head: userMessage.substring(0, logStart),
+              tail: userMessage.substring(logEnd),
+              summaryId: memoryView.activeSummaryId,
+              until: memoryView.lastEventPosition,
+            )
+          : <String, Object?>{'text': userMessage};
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessagePayload(
           id: userPayloadId,
           agentId: agentId,
           createdAt: now,
           vectorClock: null,
-          content: <String, Object?>{'text': userMessage},
+          content: userPayloadContent,
         ),
       );
       await syncService.upsertEntity(
@@ -814,23 +907,43 @@ immediately.''';
     }
   }
 
-  String _buildUserMessage({
+  ({String text, int? logStart, int? logEnd}) _buildUserMessage({
     required JournalEntity projectEntity,
     required AgentReportEntity? lastReport,
     required List<AgentMessageEntity> observations,
     required Map<String, AgentMessagePayloadEntity> observationPayloads,
     required String linkedTasksContext,
     required Set<String> triggerTokens,
+    String? compactedLog,
   }) {
-    final buf = StringBuffer()
+    final buf = StringBuffer();
+
+    // With compaction on (ADR 0017/0020), the append-only event log — the
+    // project's captured journal entries interleaved with the agent's own
+    // observations — leads as the largest stable block (summary changes only
+    // at folds, the tail only appends), so the provider prefix cache survives
+    // consecutive wakes. The mutable blocks follow. The block's offsets are
+    // recorded so the persisted prompt record can omit it (ADR 0020 v2).
+    int? logStart;
+    int? logEnd;
+    if (compactedLog != null) {
+      buf.writeln('## Project Log');
+      logStart = buf.length;
+      buf.write(compactedLog);
+      logEnd = buf.length;
+      buf
+        ..writeln()
+        ..writeln();
+    }
+
+    buf
       ..writeln('## Project Context')
       ..writeln();
 
     _writeProjectContext(buf, projectEntity);
 
-    // Stable header first (project identity + linked-task summaries) so the
-    // cross-wake prefix cache can restore it; the volatile tail (previous
-    // report, observations, trigger tokens) follows.
+    // Project identity + linked-task summaries, then the volatile tail
+    // (previous report, observations, trigger tokens).
     if (linkedTasksContext != '{}') {
       buf
         ..writeln()
@@ -847,7 +960,10 @@ immediately.''';
         ..writeln(lastReport.content);
     }
 
-    if (observations.isNotEmpty) {
+    // With the compacted log in place, observations live in the `## Project
+    // Log` event tail (folded into summaries by the same watermarks) — a
+    // separate capped listing would duplicate them.
+    if (compactedLog == null && observations.isNotEmpty) {
       buf
         ..writeln()
         ..writeln('## Recent Observations')
@@ -869,7 +985,7 @@ immediately.''';
         ..writeln(triggerTokens.join(', '));
     }
 
-    return buf.toString();
+    return (text: buf.toString(), logStart: logStart, logEnd: logEnd);
   }
 
   void _writeProjectContext(StringBuffer buf, JournalEntity entity) {

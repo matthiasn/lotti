@@ -439,6 +439,61 @@ void main() {
     expect(view.checkpoint!.coveredSources.keys, contains('e-late'));
   });
 
+  test('assembleContextAsOf re-derives a past view byte-identically after '
+      'later appends and folds', () async {
+    // Wake 1's view: a fold covering {e1,e2}, tail [e3].
+    await captureAll([
+      src('e1', 'alpha', day: 1),
+      src('e2', 'beta', day: 2),
+      src('e3', 'gamma', day: 3),
+    ], 10);
+    await compact(budget: 0);
+    final wake1 = await compactor.assembleContextDetailed(_agentId);
+    expect(wake1.activeSummaryId, isNotNull);
+    expect(wake1.lastEventPosition, isNotNull);
+
+    // History moves on: new content, an edit, an observation, another fold.
+    await seedObservation('obs-1', 'later note', day: 12);
+    await captureAll([
+      src('e1', 'alpha', day: 1),
+      src('e2', 'beta REVISED', day: 2),
+      src('e3', 'gamma', day: 3),
+      src('e4', 'delta', day: 13),
+    ], 13);
+    await compact(budget: 0, day: 14);
+    final nowView = await compactor.assembleContext(_agentId);
+    expect(nowView, isNot(wake1.text));
+
+    // The pinned marker reproduces wake 1's exact block.
+    final reconstructed = await compactor.assembleContextAsOf(
+      _agentId,
+      summaryId: wake1.activeSummaryId,
+      until: wake1.lastEventPosition,
+    );
+    expect(reconstructed, wake1.text);
+  });
+
+  test('assembleContextAsOf suppresses content retracted AFTER the wake — '
+      'deletions hold retroactively', () async {
+    await captureAll([
+      src('e1', 'sensitive note', day: 1),
+      src('e2', 'other note', day: 2),
+    ], 10);
+    final wake1 = await compactor.assembleContextDetailed(_agentId);
+    expect(wake1.text, contains('sensitive note'));
+
+    // The user deletes e1 after the wake (re-capture without it).
+    await captureAll([src('e2', 'other note', day: 2)], 11);
+
+    final reconstructed = await compactor.assembleContextAsOf(
+      _agentId,
+      summaryId: wake1.activeSummaryId,
+      until: wake1.lastEventPosition,
+    );
+    expect(reconstructed, isNot(contains('sensitive note')));
+    expect(reconstructed, contains('other note'));
+  });
+
   test('decision events share the substrate: they interleave, render as '
       '(decision) lines, and fold', () async {
     await captureAll([src('e1', 'user note', day: 9)], 9);

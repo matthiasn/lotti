@@ -1260,6 +1260,8 @@
   "configFlagEnableEmbeddings": "Generare încorporări",
   "configFlagEnableEvents": "Activează evenimentele",
   "configFlagEnableEventsDescription": "Afișează funcția Evenimente pentru a crea, urmări și gestiona evenimente în jurnalul dvs.",
+  "configFlagEnableForkHealing": "Repararea bifurcațiilor agentului",
+  "configFlagEnableForkHealingDescription": "Îmbină istoricurile divergente ale agentului rezultate din utilizarea pe mai multe dispozitive la următoarea activare.",
   "configFlagEnableHabitsPage": "Activează pagina Obiceiuri",
   "configFlagEnableHabitsPageDescription": "Afișează pagina Obiceiuri în navigarea principală. Urmăriți și gestionați-vă obiceiurile zilnice aici.",
   "configFlagEnableLogging": "Activează înregistrarea",

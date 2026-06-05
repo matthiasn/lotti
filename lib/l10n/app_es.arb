@@ -1260,6 +1260,8 @@
   "configFlagEnableEmbeddings": "Generar incrustaciones",
   "configFlagEnableEvents": "Activar eventos",
   "configFlagEnableEventsDescription": "Mostrar la función de eventos para crear, rastrear y gestionar eventos en tu diario.",
+  "configFlagEnableForkHealing": "Reparación de bifurcaciones del agente",
+  "configFlagEnableForkHealingDescription": "Fusiona historiales de agente divergentes por el uso en varios dispositivos en el siguiente despertar.",
   "configFlagEnableHabitsPage": "Habilitar página Hábitos",
   "configFlagEnableHabitsPageDescription": "Mostrar la página Hábitos en la navegación principal. Rastrea y administra tus hábitos diarios aquí.",
   "configFlagEnableLogging": "Habilitar registro",

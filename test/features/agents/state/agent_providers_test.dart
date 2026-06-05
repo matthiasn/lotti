@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -49,6 +51,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/consts.dart' show enableForkHealingFlag;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -624,6 +627,99 @@ void main() {
 
       expect(result, 'hello world');
       verify(() => mockRepository.getEntity(payloadId)).called(1);
+    });
+
+    test('reconstructs a v2 prompt record from the event log', () async {
+      const payloadId = 'payload-v2';
+      const tailContent = {'entryType': 'text', 'text': 'captured note'};
+      final tailDigest = ContentDigest.of(tailContent);
+      final link = makeTestMessagePayloadLink(
+        id: 'pl-1',
+        createdAt: DateTime(2024, 3, 10),
+        toId: tailDigest,
+        contentEntryId: 'e1',
+        sourceCreatedAt: DateTime(2024, 3, 9),
+      );
+      final payloadEntity = AgentDomainEntity.agentMessagePayload(
+        id: payloadId,
+        agentId: kTestAgentId,
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        content: <String, Object?>{
+          'promptFormat': 'v2',
+          'head': 'HEAD\n## Task Log\n',
+          'tail': '\n\nTAIL',
+          'log': <String, Object?>{
+            'until': <String, Object?>{
+              'at': link.createdAt.toIso8601String(),
+              'sourceAt': DateTime(2024, 3, 9).toIso8601String(),
+              'key': 'e1|pl-1',
+            },
+          },
+        },
+      );
+
+      when(
+        () => mockRepository.getEntity(payloadId),
+      ).thenAnswer((_) async => payloadEntity);
+      when(
+        () => mockRepository.getMessagesByKind(kTestAgentId, any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getLinksFrom(
+          kTestAgentId,
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getLinksFrom(kTestAgentId),
+      ).thenAnswer((_) async => [link]);
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(() => mockRepository.getEntity(tailDigest)).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: tailDigest,
+          agentId: 'shared-input-content',
+          createdAt: DateTime(2024, 3, 10),
+          vectorClock: null,
+          content: tailContent,
+        ),
+      );
+
+      // The reconstructor reads through the sync service's repository.
+      final outbox = MockOutboxService();
+      when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+      final vc = MockVectorClockService();
+      final container = ProviderContainer(
+        overrides: [
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+          agentSyncServiceProvider.overrideWithValue(
+            AgentSyncService(
+              repository: mockRepository,
+              outboxService: outbox,
+              vectorClockService: vc,
+            ),
+          ),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final result = await container.read(
+        agentMessagePayloadTextProvider(payloadId).future,
+      );
+
+      // head + re-derived log + tail.
+      expect(result, startsWith('HEAD\n## Task Log\n### Recent entries'));
+      expect(result, contains('(text) captured note'));
+      expect(result, endsWith('\n\nTAIL'));
     });
 
     test('returns null when entity is not found', () async {
@@ -2737,6 +2833,54 @@ void main() {
       verify(() => mockSyncService.upsertEntity(entity)).called(1);
     });
 
+    test('wires the fork-healing hook to the journalDb flag and the sync '
+        'service', () async {
+      // Exercises the PRODUCTION wiring: the hook reads the
+      // `enable_fork_healing` flag through journalDb per invocation and,
+      // when on, heals through the provider's sync service.
+      final bench = makeForkBench();
+      await seedForkInto(bench.repo, head: 'b'); // a 2-head fork {a, b}
+      final queue = WakeQueue();
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+
+      final journalDb = MockJournalDb();
+      var flag = false;
+      when(
+        () => journalDb.getConfigFlag(enableForkHealingFlag),
+      ).thenAnswer((_) async => flag);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+          agentSyncServiceProvider.overrideWithValue(bench.service),
+          journalDbProvider.overrideWithValue(journalDb),
+          wakeQueueProvider.overrideWithValue(queue),
+          wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final orchestrator = container.read(wakeOrchestratorProvider);
+
+      // Flag off: the hook returns without touching the log.
+      await orchestrator.onWakeStart!('agent-1', 'rk-1', 'thread-1');
+      expect(
+        headsOfLog(bench.repo.messages, bench.repo.links).toSet(),
+        {'a', 'b'},
+      );
+
+      // Flag flipped on: the SAME captured hook heals on the next wake.
+      flag = true;
+      await orchestrator.onWakeStart!('agent-1', 'rk-2', 'thread-1');
+      expect(headsOfLog(bench.repo.messages, bench.repo.links), [
+        computeJoinId(['a', 'b']),
+      ]);
+    });
+
     group('taskContentChecker', () {
       late MockAgentRepository mockRepo;
       late MockJournalDb mockDb;
@@ -3074,6 +3218,9 @@ void main() {
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           domainLoggerProvider.overrideWithValue(domainLogger),
+          // The workflow reads the compaction flag from the journal DB at
+          // each wake.
+          journalDbProvider.overrideWithValue(MockJournalDb()),
         ],
       );
       addTearDown(container.dispose);
@@ -4467,7 +4614,11 @@ void main() {
       final bench = makeForkBench();
       await seedForkInto(bench.repo, head: 'b'); // a 2-head fork {a, b}
 
-      final hook = forkHealingHook(bench.service, () => DateTime(2024, 2));
+      final hook = forkHealingHook(
+        () => bench.service,
+        () => DateTime(2024, 2),
+        isEnabled: () async => true,
+      );
       await hook('agent-1', 'run-key', 'thread-1');
 
       // The fork collapsed to a single head: the content-addressed join.
@@ -4480,13 +4631,45 @@ void main() {
       final bench = makeForkBench();
       await seedForkInto(bench.repo, head: 'b');
 
-      final hook = forkHealingHook(bench.service, () => DateTime(2024, 7, 4));
+      final hook = forkHealingHook(
+        () => bench.service,
+        () => DateTime(2024, 7, 4),
+        isEnabled: () async => true,
+      );
       await hook('agent-1', 'rk', 'thread-1');
 
       final join = bench.repo.messages.firstWhere(
         (m) => m.id == computeJoinId(['a', 'b']),
       );
       expect(join.createdAt, DateTime(2024, 7, 4));
+    });
+
+    test('consults the flag per invocation: off → no join, flipped on → '
+        'heals on the next wake without a rebuild', () async {
+      // The orchestrator captures the hook once at initialization; a Settings
+      // toggle must reach the NEXT invocation of the same closure.
+      final bench = makeForkBench();
+      await seedForkInto(bench.repo, head: 'b');
+
+      var flag = false;
+      final hook = forkHealingHook(
+        () => bench.service,
+        () => DateTime(2024, 2),
+        isEnabled: () async => flag,
+      );
+
+      await hook('agent-1', 'rk-1', 'thread-1');
+      // Disabled: the fork remains un-joined.
+      expect(
+        headsOfLog(bench.repo.messages, bench.repo.links).toSet(),
+        {'a', 'b'},
+      );
+
+      flag = true;
+      await hook('agent-1', 'rk-2', 'thread-1');
+      expect(headsOfLog(bench.repo.messages, bench.repo.links), [
+        computeJoinId(['a', 'b']),
+      ]);
     });
   });
 }

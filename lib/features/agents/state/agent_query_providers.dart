@@ -2,7 +2,9 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
+import 'package:lotti/features/agents/service/wake_prompt_reconstructor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -205,8 +207,11 @@ Future<List<AgentDomainEntity>> agentReportHistory(
 
 /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
 ///
-/// Returns the `text` field from the payload content map, or `null` if the
-/// payload doesn't exist or has no text.
+/// Legacy payloads return their `text` field directly. v2 prompt records
+/// (ADR 0020) store only the prompt's non-derivable halves — the log block
+/// is reconstructed on demand from the synced event log via
+/// [WakePromptReconstructor]. Returns `null` if the payload doesn't exist
+/// or has no renderable text.
 @riverpod
 Future<String?> agentMessagePayloadText(
   Ref ref,
@@ -214,10 +219,24 @@ Future<String?> agentMessagePayloadText(
 ) async {
   final repository = ref.watch(agentRepositoryProvider);
   final entity = await repository.getEntity(payloadId);
-  if (entity is AgentMessagePayloadEntity) {
-    final text = entity.content['text'];
-    if (text is String && text.isNotEmpty) return text;
+  if (entity is! AgentMessagePayloadEntity) return null;
+
+  if (entity.content['promptFormat'] == promptRecordFormatV2) {
+    final reconstructor = WakePromptReconstructor(
+      syncService: ref.watch(agentSyncServiceProvider),
+      domainLogger: ref.watch(domainLoggerProvider),
+    );
+    final reconstructed = await reconstructor.reconstruct(
+      agentId: entity.agentId,
+      content: entity.content,
+    );
+    if (reconstructed != null && reconstructed.isNotEmpty) {
+      return reconstructed;
+    }
   }
+
+  final text = entity.content['text'];
+  if (text is String && text.isNotEmpty) return text;
   return null;
 }
 

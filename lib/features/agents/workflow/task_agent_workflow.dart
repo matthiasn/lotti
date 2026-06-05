@@ -21,14 +21,15 @@ import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
-import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
+import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -53,7 +54,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -272,16 +272,19 @@ class TaskAgentWorkflow {
     // 1a. Capture this wake's user-content sources into the log (ADR 0020),
     // per-source and content-addressed, BEFORE assembly so the input frontier
     // reflects the latest content. Non-fatal: a capture failure must not abort.
-    final captureService = inputCaptureService;
-    // Whether THIS wake's capture refreshed the input frontier. The read-flip
-    // only trusts the captured frontier when this is true — otherwise capture
-    // failed (or didn't run) and the frontier may predate the current journal,
-    // so the wake falls back to the full inline log.
+    final memory = AgentWakeMemory(
+      journalDb: journalDb,
+      syncService: syncService,
+      inputCaptureService: inputCaptureService,
+      logSummarizer: logSummarizer,
+      compactionEnabled: compactionEnabled,
+      domainLogger: domainLogger,
+    );
     var captureSucceeded = false;
-    if (captureService != null) {
+    if (inputCaptureService != null) {
       try {
         final linked = await journalDb.getLinkedEntities(taskId);
-        await captureService.captureWakeInputs(
+        captureSucceeded = await memory.capture(
           agentId: agentId,
           sources: renderTaskSources(
             linked,
@@ -293,8 +296,9 @@ class TaskAgentWorkflow {
           threadId: threadId,
           runKey: runKey,
         );
-        captureSucceeded = true;
       } catch (e) {
+        // Source rendering failed (the capture call itself absorbs its own
+        // errors inside [AgentWakeMemory.capture]).
         _logError('failed to capture wake inputs', error: e);
       }
     }
@@ -361,63 +365,27 @@ class TaskAgentWorkflow {
       );
     }
 
-    // 1b. Compaction (ADR 0017) — gated behind the `enable_agent_compaction`
-    // config flag (read fresh each wake, so a Settings toggle applies on the
-    // next wake; an explicit [compactionEnabled] overrides it in tests) plus
-    // an injected summarizer: fold the oldest tail beyond the trigger
-    // watermark (down to the retain watermark) into a summary checkpoint so
-    // the assembled context stays bounded. The fold is distilled with the
-    // wake's resolved model — the agent summarizes its own memory with the
-    // brain it thinks with. Non-fatal.
-    //
-    // Resolved proposal verdicts join the event substrate as inline events:
-    // they interleave chronologically with the content that motivated them
-    // and fold into summaries — instead of being re-rendered (and eventually
-    // capped away) in a separate prompt section every wake.
-    var compactionOn = compactionEnabled ?? false;
-    if (compactionEnabled == null) {
-      try {
-        compactionOn = await journalDb.getConfigFlag(
-          enableAgentCompactionFlag,
-        );
-      } catch (e) {
-        // Non-fatal like the rest of the compaction chain: a failed flag
-        // read degrades the wake to the legacy inline log, never aborts it.
-        _logError(
-          'failed to read $enableAgentCompactionFlag — compaction off '
-          'this wake',
-          error: e,
-        );
-      }
-    }
-    final compactor = compactionOn
-        ? AgentLogCompactor(
-            syncService: syncService,
-            inlineEvents: decisionEventsFromLedger(ledger.resolved),
-          )
-        : null;
-    final summarizerService = logSummarizer;
-    if (compactor != null && summarizerService != null) {
-      try {
-        await compactor.maybeCompact(
-          agentId: agentId,
-          budget: compactionTailBudgetTokens,
-          retainTokens: compactionTailRetainTokens,
-          summarize: ({required sources, priorSummary}) =>
-              summarizerService.summarize(
-                sources: sources,
-                priorSummary: priorSummary,
-                model: modelId,
-                provider: provider,
-              ),
-          at: now,
-          threadId: threadId,
-          runKey: runKey,
-        );
-      } catch (e) {
-        _logError('failed to compact agent log', error: e);
-      }
-    }
+    // 1b. Compaction (ADR 0017) — the shared per-wake memory pipeline: flag
+    // read fresh each wake, fold past the trigger watermark with the wake's
+    // resolved model, assemble the compacted log, evaluate the read-flip
+    // gates. Resolved proposal verdicts join the event substrate as inline
+    // events — they interleave chronologically with the content that
+    // motivated them and fold into summaries, instead of being re-rendered
+    // (and eventually capped away) in a separate prompt section every wake.
+    final memoryView = await memory.compactAndAssemble(
+      agentId: agentId,
+      captureSucceeded: captureSucceeded,
+      model: modelId,
+      provider: provider,
+      at: now,
+      threadId: threadId,
+      runKey: runKey,
+      budget: compactionTailBudgetTokens,
+      retainTokens: compactionTailRetainTokens,
+      inlineEvents: decisionEventsFromLedger(ledger.resolved),
+    );
+    final compactedTaskLog = memoryView.compactedLog;
+    final useCompactedLog = memoryView.useCompactedLog;
 
     final lastReport = await agentRepository.getLatestReport(
       agentId,
@@ -435,37 +403,8 @@ class TaskAgentWorkflow {
     // related-task drill-down tool is currently hidden from the LLM until it
     // can be backed by a better retrieval path.
     // With compaction on, the inline log entries are dropped from the task
-    // header and supplied instead as `active summary + uncovered tail` from the
-    // captured log (the read-flip). But only when a real compacted replacement
-    // exists: capture/compaction are optional and non-fatal, so if nothing was
-    // captured (`assembleContext` empty), fall back to the full inline log
-    // rather than leaving the wake with no task log at all.
-    String? compactedTaskLog;
-    if (compactor != null) {
-      try {
-        compactedTaskLog = await compactor.assembleContext(agentId);
-      } catch (e) {
-        // Non-fatal like the rest of the compaction chain: a read-side bug
-        // degrades to the legacy inline log (and logs loudly) instead of
-        // killing the wake.
-        _logError('failed to assemble compacted task log', error: e);
-      }
-    }
-    // Only trust the captured frontier when this wake's capture succeeded;
-    // otherwise it may be stale relative to the journal, so keep the full log.
-    final useCompactedLog =
-        captureSucceeded &&
-        compactedTaskLog != null &&
-        compactedTaskLog.trim().isNotEmpty;
-    if (compactionOn) {
-      // PII-safe read-flip diagnostics: which gate kept the inline log?
-      _log(
-        'compaction read-flip: capture=$captureSucceeded '
-        'assembledChars=${compactedTaskLog?.length ?? -1} '
-        'useCompactedLog=$useCompactedLog',
-        subDomain: 'compaction',
-      );
-    }
+    // header and supplied instead as `active summary + uncovered tail` from
+    // the captured log (the read-flip).
     final (
       taskDetails,
       projectContextJson,
@@ -491,7 +430,7 @@ class TaskAgentWorkflow {
     final pendingSets = ledger.pendingSets;
 
     final systemPrompt = _buildSystemPrompt(templateCtx);
-    final userMessage = await _buildUserMessage(
+    final builtMessage = await _buildUserMessage(
       agentId: agentId,
       hasReport: lastReport != null,
       journalObservations: journalObservations,
@@ -506,6 +445,7 @@ class TaskAgentWorkflow {
       // log was dropped); otherwise the full inline log already carries it.
       compactedTaskLog: useCompactedLog ? compactedTaskLog : null,
     );
+    final userMessage = builtMessage.text;
 
     // 6. Create conversation and run with strategy.
     final conversationId = conversationRepository.createConversation(
@@ -559,13 +499,27 @@ class TaskAgentWorkflow {
     }
     try {
       final userPayloadId = _uuid.v4();
+      // ADR 0020 v2 prompt records: when the read flipped, the embedded log
+      // block is a pure function of the synced event log — store only the
+      // non-derivable halves plus the reconstruction marker, instead of the
+      // whole prompt. Legacy wakes (live journal render) keep the full blob.
+      final logStart = builtMessage.logStart;
+      final logEnd = builtMessage.logEnd;
+      final userPayloadContent = (logStart != null && logEnd != null)
+          ? encodePromptRecord(
+              head: userMessage.substring(0, logStart),
+              tail: userMessage.substring(logEnd),
+              summaryId: memoryView.activeSummaryId,
+              until: memoryView.lastEventPosition,
+            )
+          : <String, Object?>{'text': userMessage};
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessagePayload(
           id: userPayloadId,
           agentId: agentId,
           createdAt: now,
           vectorClock: null,
-          content: <String, Object?>{'text': userMessage},
+          content: userPayloadContent,
         ),
       );
       await syncService.upsertEntity(
@@ -1608,7 +1562,11 @@ to keep the user-facing suggestion list clean and trustworthy:
   /// markdown task state in compacted mode, or the full JSON header (inline
   /// log included) in legacy mode. [hasReport] gates the first-wake report
   /// bootstrap section; the prior report's prose is never injected.
-  Future<String> _buildUserMessage({
+  ///
+  /// Returns the full text plus the offsets of the embedded (derivable) log
+  /// block, so the persisted prompt record can store only the non-derivable
+  /// halves (ADR 0020 v2 prompt records).
+  Future<({String text, int? logStart, int? logEnd})> _buildUserMessage({
     required String agentId,
     required bool hasReport,
     required List<AgentMessageEntity> journalObservations,
@@ -1683,6 +1641,8 @@ to keep the user-facing suggestion list clean and trustworthy:
     final useCompactedLog =
         compactedTaskLog != null && compactedTaskLog.trim().isNotEmpty;
 
+    int? logStart;
+    int? logEnd;
     if (useCompactedLog) {
       // With compaction on (ADR 0017/0020), the task log is supplied as the
       // active summary + uncovered verbatim event tail from the captured log.
@@ -1691,9 +1651,12 @@ to keep the user-facing suggestion list clean and trustworthy:
       // The task STATE moves BELOW it into the volatile tail: its time fields
       // tick on every working wake, and a single byte flipped upstream voids
       // the provider prefix cache for everything after it.
+      buffer.writeln('## Task Log');
+      logStart = buffer.length;
+      buffer.write(compactedTaskLog);
+      logEnd = buffer.length;
       buffer
-        ..writeln('## Task Log')
-        ..writeln(compactedTaskLog)
+        ..writeln()
         ..writeln();
     } else {
       buffer
@@ -1810,7 +1773,7 @@ to keep the user-facing suggestion list clean and trustworthy:
       'Add observations if warranted.',
     );
 
-    return buffer.toString();
+    return (text: buffer.toString(), logStart: logStart, logEnd: logEnd);
   }
 
   /// Formats the [ProposalLedger] into a single markdown section the agent

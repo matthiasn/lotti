@@ -1260,6 +1260,8 @@
   "configFlagEnableEmbeddings": "Einbettungen generieren",
   "configFlagEnableEvents": "Ereignisse aktivieren",
   "configFlagEnableEventsDescription": "Ereignisfunktion anzeigen, um Ereignisse in deinem Journal zu erstellen, zu verfolgen und zu verwalten.",
+  "configFlagEnableForkHealing": "Agenten-Fork-Heilung",
+  "configFlagEnableForkHealingDescription": "Auseinandergelaufene Agenten-Verläufe aus der Nutzung mehrerer Geräte beim nächsten Aufwachen zusammenführen.",
   "configFlagEnableHabitsPage": "Seite Gewohnheiten aktivieren",
   "configFlagEnableHabitsPageDescription": "Zeigt die Seite \"Gewohnheiten\" in der Hauptnavigation an. Verfolge und verwalte hier deine täglichen Gewohnheiten.",
   "configFlagEnableLogging": "Protokollierung aktivieren",

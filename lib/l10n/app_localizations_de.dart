@@ -2647,6 +2647,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ereignisfunktion anzeigen, um Ereignisse in deinem Journal zu erstellen, zu verfolgen und zu verwalten.';
 
   @override
+  String get configFlagEnableForkHealing => 'Agenten-Fork-Heilung';
+
+  @override
+  String get configFlagEnableForkHealingDescription =>
+      'Auseinandergelaufene Agenten-Verläufe aus der Nutzung mehrerer Geräte beim nächsten Aufwachen zusammenführen.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Seite Gewohnheiten aktivieren';
 
   @override

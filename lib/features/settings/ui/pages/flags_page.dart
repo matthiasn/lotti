@@ -112,6 +112,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     showSyncActivityIndicatorFlag,
     showSidebarWakeQueueFlag,
     enableAgentCompactionFlag,
+    enableForkHealingFlag,
   ];
 
   @override
@@ -175,6 +176,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.alarm_rounded;
       case enableAgentCompactionFlag:
         return Icons.compress_rounded;
+      case enableForkHealingFlag:
+        return Icons.call_merge_rounded;
       default:
         return Icons.settings;
     }
@@ -228,6 +231,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagShowSidebarWakeQueueDescription;
       case enableAgentCompactionFlag:
         return context.messages.configFlagEnableAgentCompactionDescription;
+      case enableForkHealingFlag:
+        return context.messages.configFlagEnableForkHealingDescription;
       default:
         return flag.description;
     }
@@ -281,6 +286,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagShowSidebarWakeQueue;
       case enableAgentCompactionFlag:
         return context.messages.configFlagEnableAgentCompaction;
+      case enableForkHealingFlag:
+        return context.messages.configFlagEnableForkHealing;
       default:
         return flag.name;
     }

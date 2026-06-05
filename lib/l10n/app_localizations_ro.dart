@@ -2668,6 +2668,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează funcția Evenimente pentru a crea, urmări și gestiona evenimente în jurnalul dvs.';
 
   @override
+  String get configFlagEnableForkHealing => 'Repararea bifurcațiilor agentului';
+
+  @override
+  String get configFlagEnableForkHealingDescription =>
+      'Îmbină istoricurile divergente ale agentului rezultate din utilizarea pe mai multe dispozitive la următoarea activare.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Activează pagina Obiceiuri';
 
   @override

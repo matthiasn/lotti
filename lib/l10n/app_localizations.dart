@@ -4519,6 +4519,18 @@ abstract class AppLocalizations {
   /// **'Show the Events feature to create, track, and manage events in your journal.'**
   String get configFlagEnableEventsDescription;
 
+  /// No description provided for @configFlagEnableForkHealing.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent fork healing'**
+  String get configFlagEnableForkHealing;
+
+  /// No description provided for @configFlagEnableForkHealingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Heal divergent agent histories from multi-device use by merging them at the next wake.'**
+  String get configFlagEnableForkHealingDescription;
+
   /// No description provided for @configFlagEnableHabitsPage.
   ///
   /// In en, this message translates to:

@@ -179,9 +179,17 @@ class AgentLogCompactor {
   /// tail in capture order — append-only between folds, so consecutive wakes
   /// share a byte-identical prefix. Returns the empty string when the agent
   /// has no captured input yet. Pure read — no writes.
-  Future<String> assembleContext(String agentId) async {
+  Future<String> assembleContext(String agentId) async =>
+      (await assembleContextDetailed(agentId)).text;
+
+  /// [assembleContext] plus the reconstruction marker (ADR 0020 v2 prompt
+  /// records): the active checkpoint's summary-message id and the position of
+  /// the LAST rendered tail event — together they pin this assembly so
+  /// [assembleContextAsOf] can re-derive the identical block later, after
+  /// further appends and folds.
+  Future<AssembledLog> assembleContextDetailed(String agentId) async {
     final view = await _projectActiveView(agentId);
-    if (view.log.events.isEmpty) return '';
+    if (view.log.events.isEmpty) return const AssembledLog.empty();
 
     final tailEvents = visibleTailEvents(
       log: view.log,
@@ -195,8 +203,77 @@ class AgentLogCompactor {
         ),
     ];
 
+    return AssembledLog(
+      text: assembleCompactedTaskLog(
+        summaryText: view.active?.summaryText,
+        tail: tail,
+      ),
+      activeSummaryId: view.active?.id,
+      lastEventPosition: tailEvents.isEmpty ? null : tailEvents.last.position,
+    );
+  }
+
+  /// Re-derives the log block a PAST wake rendered (ADR 0020 v2 prompt
+  /// records): the checkpoint pinned by [summaryId] (used even if later
+  /// invalidated — the wake really rendered its prose) plus the visible
+  /// events in `(checkpoint.cutoff, until]`. A null [until] means the wake's
+  /// tail was empty.
+  ///
+  /// Inline events (decisions, day captures) must be re-derived by the
+  /// caller and supplied via the constructor's `inlineEvents`. Later
+  /// retractions still suppress: deleted content does not resurface in a
+  /// reconstruction. Late-arriving synced events with positions ≤ [until]
+  /// make the reconstruction reflect the CONVERGED log rather than the
+  /// device-local render — semantically auditable, not forensically
+  /// byte-exact.
+  Future<String> assembleContextAsOf(
+    String agentId, {
+    String? summaryId,
+    EventPosition? until,
+  }) async {
+    final systemMessages = await _repository.getMessagesByKind(
+      agentId,
+      AgentMessageKind.system,
+    );
+    final observations = await _repository.getMessagesByKind(
+      agentId,
+      AgentMessageKind.observation,
+    );
+    final links = await _repository.getLinksFrom(agentId);
+    final log = projectInputEvents(
+      messages: systemMessages,
+      links: links,
+      observationMessages: observations,
+      inlineEvents: inlineEvents,
+    );
+
+    SummaryCheckpoint? pinned;
+    if (summaryId != null) {
+      final summaries = await loadSummaries(agentId);
+      for (final summary in summaries) {
+        if (summary.id == summaryId) {
+          pinned = summary;
+          break;
+        }
+      }
+    }
+
+    final tailEvents = until == null
+        ? const <InputEvent>[]
+        : visibleTailEvents(
+            log: log,
+            cutoff: pinned?.cutoff,
+          ).where((e) => !e.position.isAfter(until)).toList();
+    final tail = [
+      for (final loaded in await _resolveEventContents(tailEvents))
+        TailLine(
+          source: _toRenderedSource(loaded.event, loaded.content),
+          edited: loaded.event.isEdit,
+        ),
+    ];
+
     return assembleCompactedTaskLog(
-      summaryText: view.active?.summaryText,
+      summaryText: pinned?.summaryText,
       tail: tail,
     );
   }
@@ -323,4 +400,31 @@ class AgentLogCompactor {
     });
     return summaryId;
   }
+}
+
+/// One assembled compacted log plus the marker that pins it for
+/// reconstruction (ADR 0020 v2 prompt records).
+class AssembledLog {
+  /// Wraps an assembly result.
+  const AssembledLog({
+    required this.text,
+    required this.activeSummaryId,
+    required this.lastEventPosition,
+  });
+
+  /// An empty assembly (agent has no captured input yet).
+  const AssembledLog.empty()
+    : text = '',
+      activeSummaryId = null,
+      lastEventPosition = null;
+
+  /// The rendered `summary + tail` block.
+  final String text;
+
+  /// The active checkpoint's summary-message id, or null when none.
+  final String? activeSummaryId;
+
+  /// The position of the last rendered tail event, or null when the tail
+  /// was empty.
+  final EventPosition? lastEventPosition;
 }

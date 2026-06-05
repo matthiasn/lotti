@@ -24,6 +24,7 @@ const enableWhatsNewFlag = 'enable_whats_new';
 const showSyncActivityIndicatorFlag = 'show_sync_activity_indicator';
 const showSidebarWakeQueueFlag = 'show_sidebar_wake_queue';
 const enableAgentCompactionFlag = 'enable_agent_compaction';
+const enableForkHealingFlag = 'enable_fork_healing';
 
 const logSlowQueriesFlag = 'log_slow_queries';
 

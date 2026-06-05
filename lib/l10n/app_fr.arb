@@ -1260,6 +1260,8 @@
   "configFlagEnableEmbeddings": "Générer des embeddings",
   "configFlagEnableEvents": "Activer les événements",
   "configFlagEnableEventsDescription": "Afficher la fonctionnalité Événements pour créer, suivre et gérer des événements dans ton journal.",
+  "configFlagEnableForkHealing": "Réparation des bifurcations d’agent",
+  "configFlagEnableForkHealingDescription": "Fusionne les historiques d’agent divergents issus du multi-appareil au prochain réveil.",
   "configFlagEnableHabitsPage": "Activer la page Habitudes",
   "configFlagEnableHabitsPageDescription": "Afficher la page Habitudes dans la navigation principale. Suis et gère tes habitudes quotidiennes ici.",
   "configFlagEnableLogging": "Activer la journalisation",

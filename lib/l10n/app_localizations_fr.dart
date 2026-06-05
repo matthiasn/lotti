@@ -2662,6 +2662,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la fonctionnalité Événements pour créer, suivre et gérer des événements dans ton journal.';
 
   @override
+  String get configFlagEnableForkHealing =>
+      'Réparation des bifurcations d’agent';
+
+  @override
+  String get configFlagEnableForkHealingDescription =>
+      'Fusionne les historiques d’agent divergents issus du multi-appareil au prochain réveil.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Activer la page Habitudes';
 
   @override

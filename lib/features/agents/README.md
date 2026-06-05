@@ -322,6 +322,18 @@ folds — is live behind the default-off `enable_agent_compaction` config flag
 (see the activation section below); with the flag off, only capture runs and
 the wake reads the journal as before.
 
+**Scope.** The substrate covers task agents (captured journal entries +
+observations + proposal verdicts), project agents (captured project-linked
+journal entries + observations), and day agents (submitted capture
+transcripts + observations, both projected as inline events from
+already-synced entities — no payload capture step). The **improver** agent is
+deliberately out: its wake context is a per-ritual *windowed* snapshot
+(feedback since the last scan watermark, instance reports, version history) —
+there is no unbounded per-agent input stream to fold, and capturing it would
+duplicate other agents' synced data. All workflows share one pipeline,
+`AgentWakeMemory` (capture → per-wake flag read → fold → assemble → read-flip
+gates), so the failure isolation and diagnostics are identical everywhere.
+
 **Capture (always on).** Each task wake snapshots the user-content
 sources it read — one per linked journal log entry, the rendered text only (an
 audio entry contributes its transcript, never the raw audio) — via
@@ -432,6 +444,25 @@ injected into the prompt (re-reading its own stale conclusions creates a
 feedback loop), and `update_report` is conditional: the agent publishes only
 when the report would materially change (the first report is still forced via
 a retry). A wake with nothing report-worthy ends with a plain-text note.
+
+**Prompt persistence stores only what isn't derivable (v2 prompt records).**
+A compacted wake no longer persists its full rendered prompt: the embedded
+log block is a pure function of the synced event log, so the payload stores
+just the non-derivable halves (the live-state head and volatile tail) plus a
+reconstruction marker — the active checkpoint's summary id and the position
+of the last rendered tail event (`prompt_record.dart`). The conversation
+view's expandable User row rebuilds the full prompt on demand via
+`WakePromptReconstructor` → `AgentLogCompactor.assembleContextAsOf`: the
+pinned checkpoint (even if since invalidated — the wake really rendered its
+prose) plus the visible events up to the boundary, with inline events
+(verdicts, day captures) re-derived from their synced entities. Later
+retractions still suppress, so deleted content never resurfaces in a
+reconstruction; a late-synced event inside the boundary makes the
+reconstruction reflect the CONVERGED log — semantically auditable rather
+than forensically byte-exact. The day agent splices its log back as the
+JSON `"dayLog"` line (`json-day-log-line` wrap). Legacy (flag-off) wakes
+keep full blobs — their prompts are live journal renders with nothing to
+re-derive.
 
 The dormant model fields now earn their keep: `AgentMessageKind.summary`,
 `summaryStartMessageId`/`summaryEndMessageId`/`summaryDepth`,
@@ -548,9 +579,13 @@ it — so the DAG re-converges to one tip and the prefix re-warms.
   non-fatal: a corrupt synced log (cycle / duplicate id) or a slow load is caught
   or timed out (`wakeStartHookTimeout`), and the wake proceeds regardless — healing
   is an optimization, never a correctness mechanism.
-- **Flag-gated off.** DI wires the hook only when
-  `--dart-define=LOTTI_JOIN_HEALING=true`; by default `onWakeStart` is null and
-  wakes are byte-identical to today.
+- **Flag-gated off.** The hook is always wired but consults the default-off
+  `enable_fork_healing` config flag (Settings → Flags → "Agent fork healing")
+  **per invocation** — the orchestrator captures the hook at initialization, so
+  the flag is read inside it at each wake and a Settings toggle applies on the
+  next wake without a restart (the same captured-instance topology as the
+  compaction flag). Off → the hook returns immediately and wakes are
+  byte-identical to before.
 
 ```mermaid
 stateDiagram-v2
@@ -1287,13 +1322,9 @@ the default-off `enable_agent_compaction` flag — see *Memory compaction &
 input capture* above for the live behavior (event-log read, LLM-distilled
 summary checkpoints, decision/observation events). Remaining work:
 
-- drop the per-wake **user-prompt blob** persistence (the system prompt is
-  already content-addressed; the user message is still stored once per wake);
-- extend capture + compaction to the **project/day/improver** workflows
-  (task agents only today);
 - **profile-aware watermarks** — derive trigger/retain from the resolved
   model's context window and local-vs-hosted inference instead of the global
-  50k/20k constructor defaults.
+  50k/20k defaults (`AgentWakeMemory` params are the seam).
 
 ## User-Facing UI Surfaces
 

@@ -250,6 +250,11 @@ void main() {
     when(() => repository.getEntitiesByIds(any())).thenAnswer(
       (_) async => const <String, AgentDomainEntity>{},
     );
+    // The memory substrate loads submitted captures each wake (inline
+    // events); default to none.
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: any(named: 'type')),
+    ).thenAnswer((_) async => const <AgentDomainEntity>[]);
     when(
       () => repository.updateWakeRunTemplate(
         any(),
@@ -278,6 +283,151 @@ void main() {
   });
 
   group('DayAgentWorkflow', () {
+    test('read-flips to a dayLog of capture transcripts and observations, '
+        'dropping the recentObservations listing', () async {
+      when(() => syncService.repository).thenReturn(repository);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+      ).thenAnswer((_) async => []);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+      ).thenAnswer((_) async => []);
+      when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.capture,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          AgentDomainEntity.capture(
+            id: 'cap-1',
+            agentId: agentId,
+            transcript: 'morning planning capture',
+            capturedAt: DateTime.utc(2026, 5, 25, 7),
+            createdAt: DateTime.utc(2026, 5, 25, 7, 1),
+            vectorClock: null,
+          ),
+        ],
+      );
+      final obs = AgentDomainEntity.agentMessage(
+        id: 'obs-1',
+        agentId: agentId,
+        threadId: 'old-thread',
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime.utc(2026, 5, 25, 8),
+        vectorClock: null,
+        contentEntryId: 'obs-payload-1',
+        metadata: const AgentMessageMetadata(),
+      );
+      when(
+        () =>
+            repository.getMessagesByKind(agentId, AgentMessageKind.observation),
+      ).thenAnswer((_) async => [obs as AgentMessageEntity]);
+      when(() => repository.getEntity('obs-payload-1')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: 'obs-payload-1',
+          agentId: agentId,
+          createdAt: DateTime.utc(2026, 5, 25, 8),
+          vectorClock: null,
+          content: const {'text': 'a day observation'},
+        ),
+      );
+
+      final sut = DayAgentWorkflow(
+        agentRepository: repository,
+        conversationRepository: conversationRepository,
+        aiConfigRepository: aiConfigRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        syncService: syncService,
+        templateService: templateService,
+        domainLogger: domainLogger,
+        onPersistedStateChanged: changedTokens.add,
+        compactionEnabled: true,
+      );
+      final result = await execute(sut, triggerTokens: {dayId});
+      expect(result.success, isTrue);
+
+      // The SENT prompt carries the dayLog with capture transcripts and
+      // observations interleaved in event order (capture 07:01 before
+      // observation 08:00), superseding the recentObservations listing.
+      final sent = conversationRepository.lastUserMessage!;
+      expect(sent, contains('"dayLog"'));
+      expect(sent, contains('(capture) morning planning capture'));
+      expect(sent, contains('(observation) a day observation'));
+      expect(sent, isNot(contains('"recentObservations"')));
+      expect(
+        sent.indexOf('morning planning capture'),
+        lessThan(sent.indexOf('a day observation')),
+      );
+
+      // The PERSISTED payload is a v2 record with the derivable line
+      // stripped and the marker stored.
+      final record = upsertedEntities
+          .whereType<AgentMessagePayloadEntity>()
+          .map((p) => p.content)
+          .firstWhere((c) => c['promptFormat'] == 'v2');
+      final head = record['head']! as String;
+      final tail = record['tail']! as String;
+      expect(record['wrap'], 'json-day-log-line');
+      expect(head, contains('"dayId"'));
+      expect(head, isNot(contains('"dayLog"')));
+      expect(tail, isNot(contains('"dayLog"')));
+      expect(tail, contains('"triggerTokens"'));
+      // The derivable log content is gone from storage…
+      expect(head + tail, isNot(contains('morning planning capture')));
+      // …and the substrate supersedes the separate listing.
+      expect(head + tail, isNot(contains('"recentObservations"')));
+      final marker = record['log']! as Map<String, Object?>;
+      expect(marker['until'], isNotNull);
+    });
+
+    test('falls back to the legacy prompt when the capture-entity load '
+        'throws', () async {
+      // The substrate is an optimization: a failed capture load is absorbed,
+      // the read-flip gate stays closed, and the wake proceeds legacy-shaped.
+      when(() => syncService.repository).thenReturn(repository);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+      ).thenAnswer((_) async => []);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+      ).thenAnswer((_) async => []);
+      when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.capture,
+        ),
+      ).thenThrow(StateError('capture table unavailable'));
+
+      final sut = DayAgentWorkflow(
+        agentRepository: repository,
+        conversationRepository: conversationRepository,
+        aiConfigRepository: aiConfigRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        syncService: syncService,
+        templateService: templateService,
+        domainLogger: domainLogger,
+        onPersistedStateChanged: changedTokens.add,
+        compactionEnabled: true,
+      );
+      final result = await execute(sut, triggerTokens: {dayId});
+      expect(result.success, isTrue);
+
+      // No dayLog in the sent prompt, and the persisted payload stays a
+      // legacy full blob (no v2 record without a usable compacted log).
+      expect(
+        conversationRepository.lastUserMessage,
+        isNot(contains('"dayLog"')),
+      );
+      final v2Records = upsertedEntities
+          .whereType<AgentMessagePayloadEntity>()
+          .map((p) => p.content)
+          .where((c) => c['promptFormat'] == 'v2');
+      expect(v2Records, isEmpty);
+    });
+
     test(
       'records observations, schedules wake, and persists wake output',
       () async {

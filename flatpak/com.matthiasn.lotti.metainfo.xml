@@ -35,6 +35,8 @@
     <release version="0.9.1015" date="2026-06-04">
       <description>
           <p>The linked entries "Filter and Sort" modal now has a "Show flagged entries only" toggle that narrows the list below a task to flagged entries, updating immediately when the toggle or an entry's flag changes.</p>
+          <p>New "Agent fork healing" flag in Settings (off by default): agents whose histories diverged through multi-device use merge them back together at the next wake.</p>
+          <p>The "Agent memory compaction" flag now also covers project and day agents: all three read their context from an append-only memory log and summarize its oldest entries into a rolling memory using their own model.</p>
       </description>
     </release>
     <release version="0.9.1014" date="2026-06-04">

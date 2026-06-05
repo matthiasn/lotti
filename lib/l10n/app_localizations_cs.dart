@@ -2651,6 +2651,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit funkci Události pro vytváření, sledování a správu událostí ve vašem deníku.';
 
   @override
+  String get configFlagEnableForkHealing => 'Slučování větví agenta';
+
+  @override
+  String get configFlagEnableForkHealingDescription =>
+      'Sloučí rozvětvené historie agenta z více zařízení při příštím probuzení.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Povolit stránku Návyků';
 
   @override
