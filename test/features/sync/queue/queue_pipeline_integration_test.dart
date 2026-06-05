@@ -95,7 +95,15 @@ Future<void> _waitForQueueStats(
   });
   try {
     await check();
-    await completer.future;
+    // Fail-fast guard, not a wait: this fires only if depthChanges stops
+    // emitting (a regression in _emitDepth) — without it the integration
+    // tests would hang until the CI job timeout instead of failing here.
+    await completer.future.timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => throw TimeoutException(
+        'queue stats never matched within 5s — depthChanges stalled?',
+      ),
+    );
   } finally {
     await sub.cancel();
   }

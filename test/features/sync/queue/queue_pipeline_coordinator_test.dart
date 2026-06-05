@@ -460,6 +460,116 @@ extension _AnyGeneratedDrainScenario on glados.Any {
       );
 }
 
+/// Shared scaffolding for the two Glados coordinator properties.
+///
+/// Creates the full local mock set with the same baseline stubs as the
+/// file-level `setUp()`, plus the in-memory databases the coordinator
+/// constructor requires (never written by these properties). Property
+/// bodies re-stub only the members their model drives (queue.stats,
+/// pen.flushInto, earliestReadyAt, ...) — a later `when(...)` wins.
+class _GladosBench {
+  _GladosBench() {
+    when(
+      () => sessionManager.timelineEvents,
+    ).thenAnswer((_) => timelineCtl.stream);
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => client.onSync).thenReturn(syncCtl);
+    when(() => roomManager.currentRoomId).thenReturn(null);
+    when(() => roomManager.currentRoom).thenReturn(null);
+    when(
+      () => settingsDb.itemByKey(any<String>()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+    ).thenAnswer((_) async => 1);
+    when(() => seeder.seedIfAbsent(any())).thenAnswer((_) async => true);
+    when(() => queue.pruneStrandedEntries(any())).thenAnswer((_) async => 0);
+    when(worker.start).thenAnswer((_) async {});
+    when(worker.stop).thenAnswer((_) async {});
+    when(worker.drainToCompletion).thenAnswer((_) async => 0);
+    when(bridge.start).thenReturn(null);
+    when(bridge.stop).thenAnswer((_) async {});
+    when(bridge.bridgeNow).thenAnswer((_) async {});
+    when(pen.stop).thenAnswer((_) async {});
+    when(() => pen.size).thenReturn(0);
+    when(queue.dispose).thenAnswer((_) async {});
+    when(queue.stats).thenAnswer(
+      (_) async => const QueueStats(
+        total: 0,
+        byProducer: {},
+        readyNow: 0,
+        oldestEnqueuedAt: null,
+      ),
+    );
+    when(queue.earliestReadyAt).thenAnswer((_) async => null);
+    when(
+      () => logging.log(
+        any<LogDomain>(),
+        any<String>(),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
+    when(
+      () => logging.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+
+  final syncDb = SyncDatabase(inMemoryDatabase: true);
+  final journalDb = JournalDb(inMemoryDatabase: true);
+  final settingsDb = MockSettingsDb();
+  final sessionManager = _MockSessionManager();
+  final roomManager = _MockRoomManager();
+  final processor = MockSyncEventProcessor();
+  final sequenceLog = MockSyncSequenceLogService();
+  final logging = MockDomainLogger();
+  final queue = MockInboundQueue();
+  final worker = _MockWorker();
+  final bridge = _MockBridge();
+  final pen = _MockPen();
+  final seeder = _MockSeeder();
+  final client = MockMatrixClient();
+  final room = MockRoom();
+  final timelineCtl = StreamController<Event>.broadcast(sync: true);
+  final syncCtl = CachedStreamController<SyncUpdate>();
+  final sentEventRegistry = SentEventRegistry();
+
+  QueuePipelineCoordinator buildCoordinator({
+    AttachmentIngestor? attachmentIngestor,
+    SentEventRegistry? sentEventRegistry,
+  }) {
+    return QueuePipelineCoordinator(
+      syncDb: syncDb,
+      settingsDb: settingsDb,
+      journalDb: journalDb,
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      eventProcessor: processor,
+      sequenceLogService: sequenceLog,
+      activityGate: null,
+      logging: logging,
+      attachmentIngestor: attachmentIngestor,
+      sentEventRegistry: sentEventRegistry,
+      queueOverride: queue,
+      workerOverride: worker,
+      bridgeOverride: bridge,
+      penOverride: pen,
+      seederOverride: seeder,
+    );
+  }
+
+  Future<void> dispose() async {
+    await timelineCtl.close();
+    await syncCtl.close();
+    await syncDb.close();
+    await journalDb.close();
+  }
+}
+
 void main() {
   late SyncDatabase syncDb;
   late JournalDb journalDb;
@@ -635,23 +745,7 @@ void main() {
   ).test(
     'generated live ingress filters room/status/self-echo before queueing',
     (scenario) async {
-      final localSyncDb = SyncDatabase(inMemoryDatabase: true);
-      final localJournalDb = JournalDb(inMemoryDatabase: true);
-      final localSettingsDb = MockSettingsDb();
-      final localSessionManager = _MockSessionManager();
-      final localRoomManager = _MockRoomManager();
-      final localProcessor = MockSyncEventProcessor();
-      final localSequenceLog = MockSyncSequenceLogService();
-      final localLogging = MockDomainLogger();
-      final localQueue = MockInboundQueue();
-      final localWorker = _MockWorker();
-      final localBridge = _MockBridge();
-      final localPen = _MockPen();
-      final localSeeder = _MockSeeder();
-      final localClient = MockMatrixClient();
-      final localTimelineCtl = StreamController<Event>.broadcast(sync: true);
-      final localSyncCtl = CachedStreamController<SyncUpdate>();
-      final sentEventRegistry = SentEventRegistry();
+      final bench = _GladosBench();
       final ingestor = _FakeAttachmentIngestor(
         shouldThrow:
             scenario.ingestorKind == _GeneratedLiveIngestorKind.throwsError,
@@ -661,78 +755,24 @@ void main() {
       final penHoldsByEventId = <String, bool>{};
       String? currentRoomId = scenario.currentRoomId;
 
-      when(
-        () => localSessionManager.timelineEvents,
-      ).thenAnswer((_) => localTimelineCtl.stream);
-      when(() => localSessionManager.client).thenReturn(localClient);
-      when(() => localClient.onSync).thenReturn(localSyncCtl);
-      when(() => localRoomManager.currentRoomId).thenAnswer(
+      when(() => bench.roomManager.currentRoomId).thenAnswer(
         (_) => currentRoomId,
       );
-      when(() => localRoomManager.currentRoom).thenReturn(null);
-      when(
-        () => localSettingsDb.itemByKey(any<String>()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => localSettingsDb.saveSettingsItem(any<String>(), any<String>()),
-      ).thenAnswer((_) async => 1);
-      when(() => localSeeder.seedIfAbsent(any())).thenAnswer((_) async => true);
-      when(
-        () => localQueue.pruneStrandedEntries(any()),
-      ).thenAnswer((_) async => 0);
-      when(localWorker.start).thenAnswer((_) async {});
-      when(localWorker.stop).thenAnswer((_) async {});
-      when(localWorker.drainToCompletion).thenAnswer((_) async => 0);
-      when(localBridge.start).thenReturn(null);
-      when(localBridge.stop).thenAnswer((_) async {});
-      when(localBridge.bridgeNow).thenAnswer((_) async {});
-      when(localPen.stop).thenAnswer((_) async {});
-      when(() => localPen.size).thenReturn(0);
-      when(localQueue.dispose).thenAnswer((_) async {});
-      when(() => localQueue.enqueueLive(any())).thenAnswer((invocation) async {
+      when(() => bench.queue.enqueueLive(any())).thenAnswer((
+        invocation,
+      ) async {
         enqueuedEvents.add(invocation.positionalArguments.single as Event);
         return EnqueueResult.empty;
       });
-      when(localQueue.stats).thenAnswer(
-        (_) async => const QueueStats(
-          total: 0,
-          byProducer: {},
-          readyNow: 0,
-          oldestEnqueuedAt: null,
-        ),
-      );
-      when(localQueue.earliestReadyAt).thenAnswer((_) async => null);
-      when(() => localPen.hold(any())).thenAnswer((invocation) {
+      when(() => bench.pen.hold(any())).thenAnswer((invocation) {
         final event = invocation.positionalArguments.single as Event;
         penEvents.add(event);
         return penHoldsByEventId[event.eventId] ?? false;
       });
-      when(
-        () => localLogging.error(
-          any<LogDomain>(),
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async {});
 
-      final coordinator = QueuePipelineCoordinator(
-        syncDb: localSyncDb,
-        settingsDb: localSettingsDb,
-        journalDb: localJournalDb,
-        sessionManager: localSessionManager,
-        roomManager: localRoomManager,
-        eventProcessor: localProcessor,
-        sequenceLogService: localSequenceLog,
-        activityGate: null,
-        logging: localLogging,
+      final coordinator = bench.buildCoordinator(
         attachmentIngestor: ingestor,
-        sentEventRegistry: sentEventRegistry,
-        queueOverride: localQueue,
-        workerOverride: localWorker,
-        bridgeOverride: localBridge,
-        penOverride: localPen,
-        seederOverride: localSeeder,
+        sentEventRegistry: bench.sentEventRegistry,
       );
 
       try {
@@ -745,7 +785,7 @@ void main() {
               : null;
           penHoldsByEventId[eventId] = operation.penHolds;
           if (operation.selfEcho) {
-            sentEventRegistry.register(eventId);
+            bench.sentEventRegistry.register(eventId);
           }
 
           final event = MockEvent();
@@ -753,7 +793,7 @@ void main() {
           when(() => event.roomId).thenReturn(scenario.eventRoomIdAt(i));
           when(() => event.type).thenReturn(operation.type);
           when(() => event.status).thenReturn(operation.status);
-          localTimelineCtl.add(event);
+          bench.timelineCtl.add(event);
         }
         await coordinator.stop();
 
@@ -773,10 +813,7 @@ void main() {
           reason: '$scenario',
         );
       } finally {
-        await localTimelineCtl.close();
-        await localSyncCtl.close();
-        await localSyncDb.close();
-        await localJournalDb.close();
+        await bench.dispose();
       }
     },
     tags: 'glados',
@@ -1462,23 +1499,7 @@ void main() {
     ).test(
       'generated drainUntilEmpty follows queue, pen, ready-at and timeout model',
       (scenario) async {
-        final localSyncDb = SyncDatabase(inMemoryDatabase: true);
-        final localJournalDb = JournalDb(inMemoryDatabase: true);
-        final localSettingsDb = MockSettingsDb();
-        final localSessionManager = _MockSessionManager();
-        final localRoomManager = _MockRoomManager();
-        final localProcessor = MockSyncEventProcessor();
-        final localSequenceLog = MockSyncSequenceLogService();
-        final localLogging = MockDomainLogger();
-        final localQueue = MockInboundQueue();
-        final localWorker = _MockWorker();
-        final localBridge = _MockBridge();
-        final localPen = _MockPen();
-        final localSeeder = _MockSeeder();
-        final localClient = MockMatrixClient();
-        final localRoom = MockRoom();
-        final localTimelineCtl = StreamController<Event>.broadcast(sync: true);
-        final localSyncCtl = CachedStreamController<SyncUpdate>();
+        final bench = _GladosBench();
         final events = <String>[];
         final exceptionSubDomains = <String>[];
         var statsCalls = 0;
@@ -1486,36 +1507,19 @@ void main() {
         var flushCalls = 0;
         var readyAtCalls = 0;
 
-        when(
-          () => localSessionManager.timelineEvents,
-        ).thenAnswer((_) => localTimelineCtl.stream);
-        when(() => localSessionManager.client).thenReturn(localClient);
-        when(() => localClient.onSync).thenReturn(localSyncCtl);
-        when(() => localRoomManager.currentRoomId).thenReturn(roomId);
-        when(() => localRoomManager.currentRoom).thenReturn(
-          scenario.hasRoom ? localRoom : null,
+        when(() => bench.roomManager.currentRoomId).thenReturn(roomId);
+        when(() => bench.roomManager.currentRoom).thenReturn(
+          scenario.hasRoom ? bench.room : null,
         );
-        when(() => localSeeder.seedIfAbsent(any())).thenAnswer(
-          (_) async => true,
-        );
-        when(
-          () => localQueue.pruneStrandedEntries(any()),
-        ).thenAnswer((_) async => 0);
-        when(localWorker.start).thenAnswer((_) async {});
-        when(localWorker.stop).thenAnswer((_) async {});
-        when(localWorker.drainToCompletion).thenAnswer((_) async {
+        when(bench.worker.drainToCompletion).thenAnswer((_) async {
           drainCalls++;
           if (scenario.workerThrows) {
             throw StateError('generated drain failure');
           }
           return 0;
         });
-        when(localBridge.start).thenReturn(null);
-        when(localBridge.stop).thenAnswer((_) async {});
-        when(localBridge.bridgeNow).thenAnswer((_) async {});
-        when(localPen.stop).thenAnswer((_) async {});
         when(
-          () => localPen.flushInto(queue: localQueue, room: localRoom),
+          () => bench.pen.flushInto(queue: bench.queue, room: bench.room),
         ).thenAnswer((_) async {
           flushCalls++;
           if (scenario.penThrows) {
@@ -1527,8 +1531,7 @@ void main() {
             dropped: 0,
           );
         });
-        when(localQueue.dispose).thenAnswer((_) async {});
-        when(localQueue.stats).thenAnswer((_) async {
+        when(bench.queue.stats).thenAnswer((_) async {
           final step = scenario.stepAt(statsCalls);
           statsCalls++;
           return QueueStats(
@@ -1538,11 +1541,11 @@ void main() {
             oldestEnqueuedAt: null,
           );
         });
-        when(() => localPen.size).thenAnswer((_) {
+        when(() => bench.pen.size).thenAnswer((_) {
           final index = statsCalls <= 0 ? 0 : statsCalls - 1;
           return scenario.stepAt(index).penSize;
         });
-        when(localQueue.earliestReadyAt).thenAnswer((_) async {
+        when(bench.queue.earliestReadyAt).thenAnswer((_) async {
           readyAtCalls++;
           final index = statsCalls <= 0 ? 0 : statsCalls - 1;
           final step = scenario.stepAt(index);
@@ -1559,7 +1562,7 @@ void main() {
           }
         });
         when(
-          () => localLogging.log(
+          () => bench.logging.log(
             any<LogDomain>(),
             any<String>(),
             subDomain: any<String>(named: 'subDomain'),
@@ -1568,7 +1571,7 @@ void main() {
           events.add(invocation.positionalArguments[1] as String);
         });
         when(
-          () => localLogging.error(
+          () => bench.logging.error(
             any<LogDomain>(),
             any<Object>(),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
@@ -1580,22 +1583,7 @@ void main() {
           );
         });
 
-        final coordinator = QueuePipelineCoordinator(
-          syncDb: localSyncDb,
-          settingsDb: localSettingsDb,
-          journalDb: localJournalDb,
-          sessionManager: localSessionManager,
-          roomManager: localRoomManager,
-          eventProcessor: localProcessor,
-          sequenceLogService: localSequenceLog,
-          activityGate: null,
-          logging: localLogging,
-          queueOverride: localQueue,
-          workerOverride: localWorker,
-          bridgeOverride: localBridge,
-          penOverride: localPen,
-          seederOverride: localSeeder,
-        );
+        final coordinator = bench.buildCoordinator();
 
         try {
           fakeAsync((async) {
@@ -1678,10 +1666,7 @@ void main() {
             reason: '$scenario',
           );
         } finally {
-          await localTimelineCtl.close();
-          await localSyncCtl.close();
-          await localSyncDb.close();
-          await localJournalDb.close();
+          await bench.dispose();
         }
       },
       tags: 'glados',
