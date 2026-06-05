@@ -92,6 +92,12 @@ void main() {
         final plan = _plan(
           energyBands: [
             DayAgentEnergyBand(
+              start: DateTime(2026, 5, 25, 8),
+              end: DateTime(2026, 5, 25, 9),
+              level: DayAgentEnergyLevel.low,
+              label: 'LOW ENERGY',
+            ),
+            DayAgentEnergyBand(
               start: DateTime(2026, 5, 25, 9),
               end: DateTime(2026, 5, 25, 12),
               level: DayAgentEnergyLevel.high,
@@ -217,6 +223,310 @@ void main() {
       expect(result.addBlockChanges.single['action'], 'added');
     });
 
+    test('accepts multi-day windows that overlap the plan day', () {
+      final plan = _plan(
+        energyBands: [
+          DayAgentEnergyBand(
+            start: DateTime(2026, 5, 25, 14),
+            end: DateTime(2026, 5, 25, 16),
+            level: DayAgentEnergyLevel.secondWind,
+            label: 'SECOND WIND',
+          ),
+        ],
+      );
+      final request = _request(
+        id: 'request-multi-day',
+        title: 'Long-lived ask',
+        energyFit: AttentionEnergyFit.high,
+        earliestStart: DateTime(2026, 5, 24, 9),
+        latestEnd: DateTime(2026, 5, 26, 17),
+      );
+
+      final result = arbitrator.arbitrate(
+        plannerAgentId: _plannerAgentId,
+        plan: plan,
+        requests: [request],
+        createdAt: _createdAt,
+      );
+
+      expect(result.skipped, isEmpty);
+      expect(
+        result.awards.single.plannedBlock.startTime,
+        DateTime(2026, 5, 25, 14),
+      );
+      expect(
+        result.awards.single.plannedBlock.endTime,
+        DateTime(2026, 5, 25, 14, 30),
+      );
+    });
+
+    test('rejects request windows entirely outside the plan day', () {
+      final scenarios = {
+        'after-day': _request(
+          id: 'request-after-day',
+          title: 'Tomorrow only',
+          earliestStart: DateTime(2026, 5, 26),
+          latestEnd: DateTime(2026, 5, 26, 17),
+        ),
+        'before-day': _request(
+          id: 'request-before-day',
+          title: 'Yesterday only',
+          earliestStart: DateTime(2026, 5, 24, 9),
+          latestEnd: DateTime(2026, 5, 25),
+        ),
+        'inverted': _request(
+          id: 'request-inverted',
+          title: 'Inverted window',
+          earliestStart: DateTime(2026, 5, 25, 12),
+          latestEnd: DateTime(2026, 5, 25, 11),
+        ),
+      };
+
+      for (final entry in scenarios.entries) {
+        final result = arbitrator.arbitrate(
+          plannerAgentId: _plannerAgentId,
+          plan: _plan(),
+          requests: [entry.value],
+          createdAt: _createdAt,
+        );
+
+        expect(result.awards, isEmpty, reason: entry.key);
+        expect(
+          result.skipped.single.reason,
+          AttentionSkipReason.outOfBounds,
+          reason: entry.key,
+        );
+      }
+    });
+
+    test(
+      'classifies deleted, non-pending, wrong-day, and invalid requests',
+      () {
+        final scenarios = {
+          AttentionSkipReason.deleted: _request(
+            id: 'request-deleted',
+            title: 'Deleted ask',
+            deletedAt: _createdAt,
+          ),
+          AttentionSkipReason.notPending: _request(
+            id: 'request-withdrawn',
+            title: 'Withdrawn ask',
+            status: AttentionRequestStatus.withdrawn,
+          ),
+          AttentionSkipReason.wrongDay: _request(
+            id: 'request-wrong-day',
+            title: 'Wrong day ask',
+            dayId: 'dayplan-2026-05-26',
+          ),
+          AttentionSkipReason.outOfBounds: _request(
+            id: 'request-bad-impact',
+            title: 'Bad impact ask',
+            impact: 0,
+          ),
+        };
+
+        for (final entry in scenarios.entries) {
+          final result = arbitrator.arbitrate(
+            plannerAgentId: _plannerAgentId,
+            plan: _plan(),
+            requests: [entry.value],
+            createdAt: _createdAt,
+          );
+
+          expect(result.awards, isEmpty, reason: entry.key.name);
+          expect(
+            result.skipped.single.reason,
+            entry.key,
+            reason: entry.key.name,
+          );
+        }
+
+        final invalidDuration = _request(
+          id: 'request-bad-duration',
+          title: 'Bad duration ask',
+          duration: 0,
+        );
+        final invalidDurationResult = arbitrator.arbitrate(
+          plannerAgentId: _plannerAgentId,
+          plan: _plan(),
+          requests: [invalidDuration],
+          createdAt: _createdAt,
+        );
+        expect(
+          invalidDurationResult.skipped.single.reason,
+          AttentionSkipReason.outOfBounds,
+        );
+      },
+    );
+
+    test('skips requests when no slot fits the request window', () {
+      final existing = PlannedBlock(
+        id: 'existing-block',
+        categoryId: 'work',
+        startTime: DateTime(2026, 5, 25, 9),
+        endTime: DateTime(2026, 5, 25, 10),
+        title: 'Existing focus',
+        reason: 'Already planned.',
+      );
+      final request = _request(
+        id: 'request-no-slot',
+        title: 'No slot',
+        earliestStart: DateTime(2026, 5, 25, 9),
+        latestEnd: DateTime(2026, 5, 25, 10),
+      );
+
+      final result = arbitrator.arbitrate(
+        plannerAgentId: _plannerAgentId,
+        plan: _plan(plannedBlocks: [existing]),
+        requests: [request],
+        createdAt: _createdAt,
+      );
+
+      expect(result.awards, isEmpty);
+      expect(result.skipped.single.reason, AttentionSkipReason.noSlot);
+    });
+
+    test('ignores dropped blocks when finding available slots', () {
+      final dropped = PlannedBlock(
+        id: 'dropped-block',
+        categoryId: 'work',
+        startTime: DateTime(2026, 5, 25, 9),
+        endTime: DateTime(2026, 5, 25, 10),
+        title: 'Dropped focus',
+        state: PlannedBlockState.dropped,
+        reason: 'No longer planned.',
+      );
+      final request = _request(
+        id: 'request-dropped-gap',
+        title: 'Use dropped gap',
+        earliestStart: DateTime(2026, 5, 25, 9),
+        latestEnd: DateTime(2026, 5, 25, 10),
+      );
+
+      final result = arbitrator.arbitrate(
+        plannerAgentId: _plannerAgentId,
+        plan: _plan(plannedBlocks: [dropped]),
+        requests: [request],
+        createdAt: _createdAt,
+      );
+
+      expect(
+        result.awards.single.plannedBlock.startTime,
+        DateTime(2026, 5, 25, 9),
+      );
+      expect(
+        result.awards.single.plannedBlock.endTime,
+        DateTime(2026, 5, 25, 9, 30),
+      );
+    });
+
+    test('keeps taskId null for non-task awards', () {
+      final request = _request(
+        id: 'request-project',
+        title: 'Project review',
+        kind: AttentionRequestKind.project,
+        targetId: 'project-001',
+      );
+
+      final result = arbitrator.arbitrate(
+        plannerAgentId: _plannerAgentId,
+        plan: _plan(),
+        requests: [request],
+        createdAt: _createdAt,
+      );
+
+      expect(result.awards.single.award.taskId, isNull);
+      expect(result.awards.single.plannedBlock.taskId, isNull);
+    });
+
+    test('uses UTC timestamps in stable award ids', () {
+      final request = _request(
+        id: 'request-with-offset',
+        title: 'Offset ask',
+        earliestStart: DateTime.parse('2026-05-25T09:00:00+02:00'),
+        latestEnd: DateTime.parse('2026-05-25T10:00:00+02:00'),
+      );
+
+      final result = arbitrator.arbitrate(
+        plannerAgentId: _plannerAgentId,
+        plan: _plan(),
+        requests: [request],
+        createdAt: _createdAt,
+      );
+
+      expect(
+        result.awards.single.award.id,
+        'attention_award:$_dayId:request-with-offset:'
+        '2026-05-25T07:00:00.000Z:2026-05-25T07:30:00.000Z',
+      );
+    });
+
+    test('scores deadline slack monotonically to the day boundary', () {
+      final urgent = _request(
+        id: 'request-urgent',
+        title: 'Due now',
+        deadline: DateTime(2026, 5, 25),
+      );
+      final midday = _request(
+        id: 'request-midday',
+        title: 'Due midday',
+        deadline: DateTime(2026, 5, 25, 12),
+      );
+      final tomorrow = _request(
+        id: 'request-tomorrow',
+        title: 'Due tomorrow',
+        deadline: DateTime(2026, 5, 26),
+      );
+
+      final result = arbitrator.arbitrate(
+        plannerAgentId: _plannerAgentId,
+        plan: _plan(),
+        requests: [tomorrow, midday, urgent],
+        createdAt: _createdAt,
+      );
+
+      final scores = {
+        for (final ranking in result.rankedRequests)
+          ranking.request.id: ranking.utilityScore,
+      };
+      expect(scores['request-urgent'], 5170);
+      expect(scores['request-midday'], 4870);
+      expect(scores['request-tomorrow'], 4570);
+      expect(
+        result.rankedRequests.map((ranking) => ranking.request.id),
+        ['request-urgent', 'request-midday', 'request-tomorrow'],
+      );
+    });
+
+    test('scores neutral energy above low energy when facts otherwise tie', () {
+      final neutral = _request(
+        id: 'request-neutral',
+        title: 'Neutral ask',
+      );
+      final low = _request(
+        id: 'request-low-energy',
+        title: 'Low-energy ask',
+        energyFit: AttentionEnergyFit.low,
+      );
+
+      final result = arbitrator.arbitrate(
+        plannerAgentId: _plannerAgentId,
+        plan: _plan(),
+        requests: [low, neutral],
+        createdAt: _createdAt,
+      );
+
+      expect(
+        result.rankedRequests.map((ranking) => ranking.request.id),
+        ['request-neutral', 'request-low-energy'],
+      );
+      expect(
+        result.rankedRequests.first.utilityScore -
+            result.rankedRequests.last.utilityScore,
+        50,
+      );
+    });
+
     glados.Glados(
       glados.any.attentionScenario,
       glados.ExploreConfig(),
@@ -283,17 +593,25 @@ AttentionRequestEntity _request({
   int impact = 3,
   int urgency = 3,
   int duration = 30,
+  AttentionRequestKind kind = AttentionRequestKind.task,
   AttentionEnergyFit energyFit = AttentionEnergyFit.neutral,
+  AttentionRequestStatus status = AttentionRequestStatus.pending,
   List<AttentionEvidenceRef> evidenceRefs = const [
     AttentionEvidenceRef(kind: AttentionEvidenceKind.task, id: 'task-001'),
   ],
+  String? dayId,
+  DateTime? earliestStart,
+  DateTime? latestEnd,
+  DateTime? deadline,
   DateTime? createdAt,
+  DateTime? deletedAt,
+  String? targetId,
 }) {
   return AgentDomainEntity.attentionRequest(
         id: id,
         agentId: 'task-agent-$id',
-        dayId: _dayId,
-        kind: AttentionRequestKind.task,
+        dayId: dayId ?? _dayId,
+        kind: kind,
         title: title,
         categoryId: 'work',
         requestedMinutes: duration,
@@ -301,12 +619,15 @@ AttentionRequestEntity _request({
         urgency: urgency,
         energyFit: energyFit,
         evidenceRefs: evidenceRefs,
-        earliestStart: DateTime(2026, 5, 25, 9),
-        latestEnd: DateTime(2026, 5, 25, 17),
-        targetId: 'task-$id',
-        targetKind: 'task',
+        status: status,
+        earliestStart: earliestStart ?? DateTime(2026, 5, 25, 9),
+        latestEnd: latestEnd ?? DateTime(2026, 5, 25, 17),
+        deadline: deadline,
+        targetId: targetId ?? 'task-$id',
+        targetKind: kind == AttentionRequestKind.task ? 'task' : kind.name,
         createdAt: createdAt ?? _createdAt,
         vectorClock: null,
+        deletedAt: deletedAt,
       )
       as AttentionRequestEntity;
 }

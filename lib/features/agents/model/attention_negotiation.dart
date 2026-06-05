@@ -102,8 +102,13 @@ class AttentionEvidenceRef {
 
   /// Creates an evidence reference from JSON.
   factory AttentionEvidenceRef.fromJson(Map<String, dynamic> json) {
+    final kindName = json['kind'] as String;
+    final kind = AttentionEvidenceKind.values.firstWhere(
+      (e) => e.name == kindName,
+      orElse: () => AttentionEvidenceKind.custom,
+    );
     return AttentionEvidenceRef(
-      kind: AttentionEvidenceKind.values.byName(json['kind'] as String),
+      kind: kind,
       id: json['id'] as String,
       label: json['label'] as String?,
     );

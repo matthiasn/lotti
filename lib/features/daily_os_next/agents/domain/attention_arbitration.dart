@@ -184,11 +184,11 @@ class AttentionPlannerArbitrator {
     final dayStart = localDay(plan.planDate);
     final dayEnd = dayStart.add(const Duration(days: 1));
     final earliest = request.earliestStart;
-    if (earliest != null && earliest.isBefore(dayStart)) {
+    if (earliest != null && !earliest.isBefore(dayEnd)) {
       return AttentionSkipReason.outOfBounds;
     }
     final latest = request.latestEnd;
-    if (latest != null && latest.isAfter(dayEnd)) {
+    if (latest != null && !latest.isAfter(dayStart)) {
       return AttentionSkipReason.outOfBounds;
     }
     if (earliest != null && latest != null && !latest.isAfter(earliest)) {
@@ -225,7 +225,7 @@ class AttentionPlannerArbitrator {
     final slackMinutes = deadline.difference(dayStart).inMinutes;
     if (slackMinutes <= 0) return 600;
     if (slackMinutes >= 24 * 60) return 0;
-    return 600 - (slackMinutes / 4).round();
+    return 600 - (slackMinutes / 2.4).round();
   }
 
   static int _clampInt(int value, int min, int max) {
@@ -362,7 +362,8 @@ class AttentionPlannerArbitrator {
     required DateTime end,
   }) {
     return 'attention_award:$dayId:$requestId:'
-        '${start.toIso8601String()}:${end.toIso8601String()}';
+        '${start.toUtc().toIso8601String()}:'
+        '${end.toUtc().toIso8601String()}';
   }
 
   static String _awardRationale(

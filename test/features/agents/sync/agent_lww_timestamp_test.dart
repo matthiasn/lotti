@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 
 import '../test_data/change_set_factories.dart';
@@ -97,6 +98,47 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
       vectorClock: null,
     ),
     expected: _updated,
+  ),
+  (
+    label: 'attentionRequest',
+    entity: AgentDomainEntity.attentionRequest(
+      id: 'attention-request-1',
+      agentId: 'agent-1',
+      dayId: 'dayplan-2024-06-01',
+      kind: AttentionRequestKind.task,
+      title: 'Focus block',
+      categoryId: 'work',
+      requestedMinutes: 45,
+      impact: 4,
+      urgency: 3,
+      energyFit: AttentionEnergyFit.high,
+      evidenceRefs: const [
+        AttentionEvidenceRef(kind: AttentionEvidenceKind.task, id: 'task-1'),
+      ],
+      createdAt: _created,
+      vectorClock: null,
+    ),
+    expected: _created,
+  ),
+  (
+    label: 'attentionAward',
+    entity: AgentDomainEntity.attentionAward(
+      id: 'attention-award-1',
+      agentId: 'day-agent-1',
+      requestId: 'attention-request-1',
+      dayId: 'dayplan-2024-06-01',
+      planId: 'day_agent_plan:dayplan-2024-06-01',
+      blockId: 'attention_block:dayplan-2024-06-01:attention-request-1',
+      categoryId: 'work',
+      title: 'Focus block',
+      startTime: _updated,
+      endTime: _updated.add(const Duration(minutes: 45)),
+      rank: 1,
+      utilityScore: 4000,
+      createdAt: _created,
+      vectorClock: null,
+    ),
+    expected: _created,
   ),
   (
     label: 'agentTemplate',
@@ -193,7 +235,7 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 23);
+      expect(_cases.length, 25);
     });
   });
 }
