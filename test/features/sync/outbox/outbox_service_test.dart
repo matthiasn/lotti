@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
@@ -810,6 +811,42 @@ void main() {
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
+    },
+  );
+
+  test(
+    'enqueueMessage accepts a notification jsonPath that normalizes to the '
+    'docs root itself (docsRoot == fullPath boundary)',
+    () async {
+      // '/' splits to no path parts, so the joined full path IS the docs
+      // root: the path guard's `docsRoot != fullPath` branch is false and
+      // the payload is accepted (length read fails on a directory and is
+      // treated as 0 attach bytes).
+      await service.enqueueMessage(
+        const SyncMessage.notification(
+          id: 'root-path',
+          jsonPath: '/',
+          vectorClock: VectorClock({'hostA': 1}),
+          originatingHostId: 'hostA',
+        ),
+      );
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured, hasLength(1));
+      final companion = captured.single as OutboxCompanion;
+      expect(companion.subject.value, 'notification:root-path');
+
+      verifyNever(
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(
+            that: contains('enqueue.skip invalid notification payload path'),
+          ),
+          subDomain: 'enqueueMessage',
+        ),
+      );
     },
   );
 
@@ -6810,6 +6847,77 @@ void main() {
 
         await sub.cancel();
         await svc.dispose();
+      },
+    );
+
+    test(
+      'notLoggedInGateStream DOES emit once the startup grace elapsed and '
+      'pending items exist',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+
+        final pendingItem = OutboxItem(
+          id: 2,
+          message: '{}',
+          subject: 's',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          filePath: null,
+          priority: OutboxPriority.low.index,
+        );
+        when(
+          () => repository.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [pendingItem]);
+
+        final matrixService = MockMatrixService();
+        final client = MockMatrixClient();
+        final cached = MockCachedLoginController();
+        when(() => matrixService.client).thenReturn(client);
+        when(
+          () => cached.stream,
+        ).thenAnswer((_) => const Stream<LoginState>.empty());
+        when(() => cached.value).thenReturn(LoginState.loggedOut);
+        when(() => client.onLoginStateChanged).thenReturn(cached);
+        when(matrixService.isLoggedIn).thenReturn(false);
+
+        // Drive the grace window with a controllable clock: construct the
+        // service at t0, then call sendNext after the 5 s grace elapsed.
+        var now = DateTime(2026, 3, 15, 10);
+        await withClock(Clock(() => now), () async {
+          final svc = OutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            processor: processor,
+            activityGate: createGate(),
+            ownsActivityGate: false,
+            matrixService: matrixService,
+            // Past the grace window the gate path queries pending items
+            // through the repository before emitting.
+            repository: repository,
+            postDrainSettle: Duration.zero,
+          );
+
+          final events = <void>[];
+          final sub = svc.notLoggedInGateStream.listen(events.add);
+
+          now = now.add(const Duration(seconds: 6));
+          await svc.sendNext();
+          // Let the broadcast stream deliver.
+          await Future<void>.value();
+
+          expect(events, hasLength(1));
+
+          await sub.cancel();
+          await svc.dispose();
+        });
       },
     );
   });

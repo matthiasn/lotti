@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -204,7 +205,9 @@ class OutboxService {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<LoginState>? _loginSubscription;
   StreamSubscription<int>? _outboxCountSubscription;
-  final DateTime _createdAt = DateTime.now();
+  // clock.now() (package:clock) so tests can drive the startup grace
+  // window with withClock instead of waiting out real seconds.
+  final DateTime _createdAt = clock.now();
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
   Timer? _watchdogTimer;
@@ -723,7 +726,7 @@ class OutboxService {
         // - There are pending outbox items
         // - We are past the initial startup window
         final withinGrace =
-            DateTime.now().difference(_createdAt) < _loginGateStartupGrace;
+            clock.now().difference(_createdAt) < _loginGateStartupGrace;
         if (!withinGrace && !_loginGateEventsController.isClosed) {
           final hasPending = (await _repository.fetchPending(
             limit: 1,
