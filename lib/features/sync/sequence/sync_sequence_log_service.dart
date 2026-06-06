@@ -1545,4 +1545,19 @@ class SyncSequenceLogService {
 
     return populated;
   }
+
+  Future<List<({String hostId, int counter})>> recordReceivedEntryLink({
+    required String linkId,
+    required VectorClock vectorClock,
+    required String originatingHostId,
+    List<VectorClock>? coveredVectorClocks,
+  }) {
+    return recordReceivedEntry(
+      entryId: linkId,
+      vectorClock: vectorClock,
+      originatingHostId: originatingHostId,
+      coveredVectorClocks: coveredVectorClocks,
+      payloadType: SyncSequencePayloadType.entryLink,
+    );
+  }
 }

@@ -80,21 +80,6 @@ extension SyncSequenceGapMaterializer on SyncSequenceLogService {
     return filtered;
   }
 
-  Future<List<({String hostId, int counter})>> recordReceivedEntryLink({
-    required String linkId,
-    required VectorClock vectorClock,
-    required String originatingHostId,
-    List<VectorClock>? coveredVectorClocks,
-  }) {
-    return recordReceivedEntry(
-      entryId: linkId,
-      vectorClock: vectorClock,
-      originatingHostId: originatingHostId,
-      coveredVectorClocks: coveredVectorClocks,
-      payloadType: SyncSequencePayloadType.entryLink,
-    );
-  }
-
   /// Mark counters from covered vector clocks as received.
   /// These are counters that were "spent" on superseded versions of the entry
   /// before the final version was sent.
