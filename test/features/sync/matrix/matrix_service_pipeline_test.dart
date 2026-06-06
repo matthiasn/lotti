@@ -3,51 +3,22 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
-import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
-import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
-import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class _MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
-
-class _MockSyncRoomManager extends Mock implements SyncRoomManager {}
-
-class _MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
-
-class _MockSettingsDb extends Mock implements SettingsDb {}
-
-class _MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
-
-class _MockSecureStorage extends Mock implements SecureStorage {}
-
-class _MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
-
-class _MockUserActivityGate extends Mock implements UserActivityGate {}
-
-class _MockMatrixStreamConsumer extends Mock implements MatrixStreamConsumer {}
-
-class _MockQueuePipelineCoordinator extends Mock
+class MockQueuePipelineCoordinator extends Mock
     implements QueuePipelineCoordinator {}
 
 class _MockInboundQueue extends Mock implements InboundQueue {}
-
-class _MockClient extends Mock implements Client {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -68,21 +39,21 @@ void main() {
     );
   });
 
-  late _MockMatrixSyncGateway gateway;
+  late MockMatrixSyncGateway gateway;
   late MockDomainLogger logging;
-  late _MockSettingsDb settingsDb;
-  late _MockSyncEventProcessor eventProcessor;
-  late _MockSecureStorage secureStorage;
-  late _MockMatrixMessageSender messageSender;
-  late _MockSyncRoomManager roomManager;
-  late _MockMatrixSessionManager sessionManager;
-  late _MockUserActivityGate activityGate;
-  late _MockMatrixStreamConsumer pipeline;
-  late _MockQueuePipelineCoordinator coordinator;
-  late _MockClient client;
+  late MockSettingsDb settingsDb;
+  late MockSyncEventProcessor eventProcessor;
+  late MockSecureStorage secureStorage;
+  late MockMatrixMessageSender messageSender;
+  late MockSyncRoomManager roomManager;
+  late MockMatrixSessionManager sessionManager;
+  late MockUserActivityGate activityGate;
+  late MockMatrixStreamConsumer pipeline;
+  late MockQueuePipelineCoordinator coordinator;
+  late MockMatrixClient client;
 
-  _MockQueuePipelineCoordinator buildDefaultCoordinator() {
-    final c = _MockQueuePipelineCoordinator();
+  MockQueuePipelineCoordinator buildDefaultCoordinator() {
+    final c = MockQueuePipelineCoordinator();
     when(c.start).thenAnswer((_) async {});
     when(() => c.isRunning).thenReturn(false);
     when(
@@ -99,7 +70,7 @@ void main() {
     Stream<List<ConnectivityResult>>? connectivity,
     Map<String, int> metricsSnapshot = const {'dbApplied': 4},
     Map<String, String> diagnostics = const {'nextRetry': 'soon'},
-    _MockQueuePipelineCoordinator? queueCoordinator,
+    MockQueuePipelineCoordinator? queueCoordinator,
   }) {
     final connectivityStream =
         connectivity ?? const Stream<List<ConnectivityResult>>.empty();
@@ -138,17 +109,17 @@ void main() {
   }
 
   setUp(() {
-    gateway = _MockMatrixSyncGateway();
+    gateway = MockMatrixSyncGateway();
     logging = MockDomainLogger();
-    settingsDb = _MockSettingsDb();
-    eventProcessor = _MockSyncEventProcessor();
-    secureStorage = _MockSecureStorage();
-    messageSender = _MockMatrixMessageSender();
-    roomManager = _MockSyncRoomManager();
-    sessionManager = _MockMatrixSessionManager();
-    activityGate = _MockUserActivityGate();
-    pipeline = _MockMatrixStreamConsumer();
-    client = _MockClient();
+    settingsDb = MockSettingsDb();
+    eventProcessor = MockSyncEventProcessor();
+    secureStorage = MockSecureStorage();
+    messageSender = MockMatrixMessageSender();
+    roomManager = MockSyncRoomManager();
+    sessionManager = MockMatrixSessionManager();
+    activityGate = MockUserActivityGate();
+    pipeline = MockMatrixStreamConsumer();
+    client = MockMatrixClient();
   });
 
   test('getSyncMetrics returns null when metrics collection disabled', () {

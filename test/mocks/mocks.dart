@@ -96,9 +96,17 @@ import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
+import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -134,6 +142,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
+import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:media_kit/media_kit.dart';
@@ -229,6 +238,25 @@ class MockSurfaceController extends Mock implements genui.SurfaceController {}
 class MockSurfaceContext extends Mock implements genui.SurfaceContext {}
 
 class MockMatrixClient extends Mock implements Client {}
+
+class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
+
+class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
+
+class MockSentEventRegistry extends Mock implements SentEventRegistry {}
+
+class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
+
+class MockSyncRoomManager extends Mock implements SyncRoomManager {}
+
+class MockMatrixStreamConsumer extends Mock implements MatrixStreamConsumer {}
+
+class MockSyncEngine extends Mock implements SyncEngine {}
+
+class MockSyncLifecycleCoordinator extends Mock
+    implements SyncLifecycleCoordinator {}
+
+class MockKeyVerification extends Mock implements KeyVerification {}
 
 class MockUserActivityGate extends Mock implements UserActivityGate {}
 
