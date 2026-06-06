@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
         AiConfigByTypeController,
         aiConfigByIdProvider,
         aiConfigByTypeControllerProvider;
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
