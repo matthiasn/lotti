@@ -374,11 +374,13 @@ void main() {
 
       // Open the popup menu (the "more_vert" icon).
       await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the export option.
       await tester.tap(find.byIcon(MdiIcons.exportVariant));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(clip.lastWritten, isNotNull);
       expect(clip.lastWritten, contains('Task A'));
@@ -399,11 +401,13 @@ void main() {
 
         // Open the popup menu.
         await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap export.
         await tester.tap(find.byIcon(MdiIcons.exportVariant));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should show the "nothing to export" snackbar.
         expect(find.byType(SnackBar), findsOneWidget);
@@ -461,9 +465,11 @@ void main() {
 
         // Open menu and tap export.
         await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.byIcon(MdiIcons.exportVariant));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should show the error snackbar.
         expect(find.byType(SnackBar), findsOneWidget);
@@ -705,9 +711,11 @@ void main() {
         // _resolveItems which hits the catchError branch (lines 65–74).
         // After recovering, the resolved list is empty → "nothing to export".
         await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.byIcon(MdiIcons.exportVariant));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // A snackbar (warning: nothing to export) is shown — confirming the
         // error branch was traversed without crashing the widget.
@@ -803,9 +811,11 @@ void main() {
 
       // Open the popup menu and tap Share.
       await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byIcon(Icons.ios_share));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(spy.lastText, isNotNull);
       expect(spy.lastText, contains('Buy apples'));
@@ -830,9 +840,11 @@ void main() {
         );
 
         await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.byIcon(Icons.ios_share));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Share was never called because shareText is empty.
         expect(spy.lastText, isNull);
@@ -854,9 +866,11 @@ void main() {
         // onShareMarkdown; the catch block (lines 238-246) should log via
         // DomainLogger without propagating the exception.
         await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.byIcon(Icons.ios_share));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // No snackbar — the error is logged silently, not shown to the user.
         expect(find.byType(SnackBar), findsNothing);
@@ -882,9 +896,11 @@ void main() {
         final result = await _pump(tester, items: [item1]);
 
         await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.byIcon(MdiIcons.exportVariant));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Clipboard should still be written.
         expect(result.clip.lastWritten, isNotNull);
