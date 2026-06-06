@@ -7,16 +7,11 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
-import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockOutboxRepository extends Mock implements OutboxRepository {}
-
-class MockMessageSender extends Mock implements OutboxMessageSender {}
 
 OutboxItem _item({
   int id = 1,
@@ -370,7 +365,7 @@ void main() {
   test('send timeout triggers retry and schedules backoff', () async {
     fakeAsync((async) {
       final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
+      final sender = MockOutboxMessageSender();
       final log = MockDomainLogger();
 
       final pending = _item();
@@ -406,7 +401,7 @@ void main() {
 
   test('exits early when claim returns null (empty queue)', () async {
     final repo = MockOutboxRepository();
-    final sender = MockMessageSender();
+    final sender = MockOutboxMessageSender();
     final log = MockDomainLogger();
 
     when(
@@ -433,7 +428,7 @@ void main() {
 
   test('schedules next pass when more items remain after send', () async {
     final repo = MockOutboxRepository();
-    final sender = MockMessageSender();
+    final sender = MockOutboxMessageSender();
     final log = MockDomainLogger();
 
     _stubClaimSequence(repo, [_item()]);
@@ -457,7 +452,7 @@ void main() {
 
   test('schedules no next pass when queue is drained after send', () async {
     final repo = MockOutboxRepository();
-    final sender = MockMessageSender();
+    final sender = MockOutboxMessageSender();
     final log = MockDomainLogger();
 
     _stubClaimSequence(repo, [_item()]);
@@ -485,7 +480,7 @@ void main() {
     'generated processQueue scenarios match the bundle state model',
     (scenario) async {
       final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
+      final sender = MockOutboxMessageSender();
       final log = MockDomainLogger();
       final claimedRows = scenario.claimedRows();
       final sentMessages = <SyncMessage>[];
@@ -605,7 +600,7 @@ void main() {
     test('retry cap on send failure advances queue (delay=0) and logs', () {
       fakeAsync((async) {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         // maxRetriesOverride=3 → retries=2 + 1 hits cap
@@ -653,7 +648,7 @@ void main() {
     test('retry cap on exception advances queue and logs', () {
       fakeAsync((async) {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final pending = _item(id: 2, subject: 'host:cap-ex', retries: 2);
@@ -701,7 +696,7 @@ void main() {
 
     test('queue continues processing after capped item', () async {
       final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
+      final sender = MockOutboxMessageSender();
       final log = MockDomainLogger();
 
       final a = _item(id: 11, subject: 'A', retries: 2, messageId: 'A');
@@ -741,7 +736,7 @@ void main() {
     test('timeout on slow send logs timedOut=true', () {
       fakeAsync((async) {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         _stubClaimSequence(repo, [_item(id: 3, subject: 'host:slow')]);
@@ -776,7 +771,7 @@ void main() {
 
     test('fast failure logs timedOut=false', () async {
       final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
+      final sender = MockOutboxMessageSender();
       final log = MockDomainLogger();
 
       _stubClaimSequence(repo, [_item(id: 4, subject: 'host:fastfail')]);
@@ -803,7 +798,7 @@ void main() {
   test('send completing at exact timeout boundary doesnt race', () async {
     fakeAsync((async) {
       final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
+      final sender = MockOutboxMessageSender();
       final log = MockDomainLogger();
 
       _stubClaimSequence(repo, [
@@ -841,7 +836,7 @@ void main() {
 
   test('repeated failure counter handles large values', () async {
     final repo = MockOutboxRepository();
-    final sender = MockMessageSender();
+    final sender = MockOutboxMessageSender();
     final log = MockDomainLogger();
 
     final item = _item(id: 1000, subject: 'S', messageId: 'repeat');
@@ -881,7 +876,7 @@ void main() {
       'repeated failure increments repeats counter for same subject',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final item0 = _item(id: 21, subject: 'S', messageId: 'X');
@@ -927,7 +922,7 @@ void main() {
 
     test('repeated failure resets on different subject', () async {
       final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
+      final sender = MockOutboxMessageSender();
       final log = MockDomainLogger();
 
       final a0 = _item(id: 31, subject: 'A', messageId: 'A');
@@ -961,7 +956,7 @@ void main() {
 
     test('repeated failure resets on success for the same subject', () async {
       final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
+      final sender = MockOutboxMessageSender();
       final log = MockDomainLogger();
 
       final s0 = _item(id: 41, subject: 'S', messageId: 'S');
@@ -1033,7 +1028,7 @@ void main() {
       // the exception handler must NOT call markRetry — that would flip the
       // already-sent row back to pending and cause a duplicate Matrix event.
       final repo = MockOutboxRepository();
-      final sender = MockMessageSender();
+      final sender = MockOutboxMessageSender();
       final log = MockDomainLogger();
 
       _stubClaimSequence(repo, [_item(subject: 'host:post-mark')]);
@@ -1068,7 +1063,7 @@ void main() {
         // the processor must send that content verbatim, not any stale
         // snapshot read earlier in the pipeline.
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final claimedItem = OutboxItem(
@@ -1185,7 +1180,7 @@ void main() {
       'when only one row is pending)',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final queue = [textItem(id: 1)];
@@ -1217,7 +1212,7 @@ void main() {
       'single-item path — attachments never travel inside a bundle',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final queue = [mediaItem(id: 1)];
@@ -1249,7 +1244,7 @@ void main() {
       'markSentBatch on success',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final queue = [
@@ -1294,7 +1289,7 @@ void main() {
       'and the result schedules the standard retry backoff',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final queue = [
@@ -1334,7 +1329,7 @@ void main() {
       'now-errored rows immediately',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final hotRow = textItem(id: 1).copyWith(retries: 1);
@@ -1368,7 +1363,7 @@ void main() {
       () async {
         fakeAsync((async) {
           final repo = MockOutboxRepository();
-          final sender = MockMessageSender();
+          final sender = MockOutboxMessageSender();
           final log = MockDomainLogger();
 
           final queue = [
@@ -1408,7 +1403,7 @@ void main() {
       'has succeeded the rows are considered acknowledged',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final queue = [
@@ -1445,7 +1440,7 @@ void main() {
       'bundle(50) × 8 — 500 rows ship in 11 sends instead of 500',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final queue = <OutboxItem>[
@@ -1508,7 +1503,7 @@ void main() {
       'bundle(50) → bundle(9) → image alone',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final queue = <OutboxItem>[
@@ -1553,7 +1548,7 @@ void main() {
       'the markedSent fast-path',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final queue = [
@@ -1592,7 +1587,7 @@ void main() {
       'still routes to delay=0 instead of the standard errorDelay',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         final queue = [
@@ -1626,7 +1621,7 @@ void main() {
       'subject across retries, exactly as for single-row failures',
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         // Same head row across both calls. We rebuild the queue each time
@@ -1663,7 +1658,7 @@ void main() {
       "doesn't inherit a stale repeat count from a different bundle",
       () async {
         final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
+        final sender = MockOutboxMessageSender();
         final log = MockDomainLogger();
 
         when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});

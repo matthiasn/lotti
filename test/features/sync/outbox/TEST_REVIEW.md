@@ -39,7 +39,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** **Inline mock classes violate the central-mock rule** (`test/mocks/mocks.dart`). Seven inline classes exist across outbox tests, none present in the central file:
+- [x] **[HIGH]** **Inline mock classes violate the central-mock rule** (`test/mocks/mocks.dart`). Seven inline classes exist across outbox tests, none present in the central file:
   - `outbox_service_test.dart` lines 45–57: `MockUserActivityGate`, `MockOutboxRepository`, `MockOutboxMessageSender`, `MockOutboxProcessor`, `MockMatrixClient` (note: `MockMatrixClient` also exists in `mocks.dart:211` — the inline one is a duplicate), `MockCachedLoginController`.
   - `outbox_processor_test.dart` lines 17–19: `MockOutboxRepository`, `MockMessageSender`.
   - All six unique mocks should be added to `test/mocks/mocks.dart` and the inline definitions removed.

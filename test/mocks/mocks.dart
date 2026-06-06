@@ -98,6 +98,8 @@ import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/outbox/outbox_processor.dart';
+import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
@@ -108,6 +110,7 @@ import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart'
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
@@ -130,6 +133,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -223,6 +227,17 @@ class MockSurfaceController extends Mock implements genui.SurfaceController {}
 class MockSurfaceContext extends Mock implements genui.SurfaceContext {}
 
 class MockMatrixClient extends Mock implements Client {}
+
+class MockUserActivityGate extends Mock implements UserActivityGate {}
+
+class MockOutboxRepository extends Mock implements OutboxRepository {}
+
+class MockOutboxMessageSender extends Mock implements OutboxMessageSender {}
+
+class MockOutboxProcessor extends Mock implements OutboxProcessor {}
+
+class MockCachedLoginController extends Mock
+    implements CachedStreamController<LoginState> {}
 
 class MockMatrixDatabase extends Mock implements DatabaseApi {}
 

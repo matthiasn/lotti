@@ -25,34 +25,20 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
-import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart' as matrix_utils;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockUserActivityGate extends Mock implements UserActivityGate {}
-
-class MockOutboxRepository extends Mock implements OutboxRepository {}
-
-class MockOutboxMessageSender extends Mock implements OutboxMessageSender {}
-
-class MockOutboxProcessor extends Mock implements OutboxProcessor {}
-
-class MockCachedLoginController extends Mock
-    implements matrix_utils.CachedStreamController<LoginState> {}
 
 class TestableOutboxService extends OutboxService {
   TestableOutboxService({
