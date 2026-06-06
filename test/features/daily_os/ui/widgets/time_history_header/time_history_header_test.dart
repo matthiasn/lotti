@@ -17,19 +17,14 @@ void main() {
   tearDown(tearDownEntitiesCacheService);
 
   group('TimeHistoryHeader', () {
-    testWidgets('renders the widget', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      expect(find.byType(TimeHistoryHeader), findsOneWidget);
-    });
-
     testWidgets('renders day segments for loaded data', (tester) async {
       final days = createTestDays(count: 5);
       await tester.pumpWidget(
         createTestWidget(historyData: createTestHistoryData(days: days)),
       );
       await tester.pumpAndSettle();
+
+      expect(find.byType(TimeHistoryHeader), findsOneWidget);
 
       // Should show day numbers
       expect(find.text('15'), findsOneWidget); // Today
@@ -57,19 +52,32 @@ void main() {
     });
 
     testWidgets('shows selection highlight on selected day', (tester) async {
-      await tester.pumpWidget(createTestWidget());
+      final days = createTestDays(count: 5);
+      await tester.pumpWidget(
+        createTestWidget(historyData: createTestHistoryData(days: days)),
+      );
       await tester.pumpAndSettle();
 
-      // Find the day segment with the selected day (15)
-      final dayText = find.text('15');
-      expect(dayText, findsOneWidget);
+      // The selected day (15) is wrapped in a filled, rounded pill.
+      bool isSelectionPill(Widget widget) =>
+          widget is Container &&
+          widget.decoration is BoxDecoration &&
+          (widget.decoration! as BoxDecoration).color != null &&
+          (widget.decoration! as BoxDecoration).borderRadius ==
+              BorderRadius.circular(8);
 
-      // The container should have a border for the selected day
-      final containerFinder = find.ancestor(
-        of: dayText,
-        matching: find.byType(Container),
+      final selectedPill = find.ancestor(
+        of: find.text('15'),
+        matching: find.byWidgetPredicate(isSelectionPill),
       );
-      expect(containerFinder, findsWidgets);
+      expect(selectedPill, findsOneWidget);
+
+      // An unselected weekday (14) carries no filled pill.
+      final unselectedPill = find.ancestor(
+        of: find.text('14'),
+        matching: find.byWidgetPredicate(isSelectionPill),
+      );
+      expect(unselectedPill, findsNothing);
     });
 
     testWidgets('shows sticky month label for visible days', (tester) async {

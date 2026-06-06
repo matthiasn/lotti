@@ -55,7 +55,7 @@ void main() {
   group('DateLabelRow', () {
     testWidgets('displays formatted date with day name', (tester) async {
       await tester.pumpWidget(createDateLabelRowWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // January 15, 2026 is a Thursday
       expect(find.textContaining('Thursday'), findsOneWidget);
@@ -64,14 +64,14 @@ void main() {
 
     testWidgets('date area tap opens date picker', (tester) async {
       await tester.pumpWidget(createDateLabelRowWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find and tap the date text containing Thursday
       final dateFinder = find.textContaining('Thursday');
       expect(dateFinder, findsOneWidget);
 
       await tester.tap(dateFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Date picker dialog should appear
       expect(find.byType(DatePickerDialog), findsOneWidget);
@@ -79,12 +79,12 @@ void main() {
 
     testWidgets('date picker cancellation keeps original date', (tester) async {
       await tester.pumpWidget(createDateLabelRowWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the date text to open picker
       final dateFinder = find.textContaining('Thursday');
       await tester.tap(dateFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Date picker should be open
       expect(find.byType(DatePickerDialog), findsOneWidget);
@@ -92,7 +92,7 @@ void main() {
       // Tap Cancel to dismiss without selecting
       final cancelButton = find.text('Cancel');
       await tester.tap(cancelButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Original date should still be displayed
       expect(find.textContaining('Jan 15'), findsOneWidget);
@@ -110,7 +110,7 @@ void main() {
         await tester.pumpWidget(
           createDateLabelRowWidget(selectedDate: todayMidnight),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // When viewing today - no Today button
         expect(find.byIcon(MdiIcons.calendarToday), findsNothing);
@@ -126,7 +126,7 @@ void main() {
         await tester.pumpWidget(
           createDateLabelRowWidget(selectedDate: yesterdayMidnight),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // When viewing yesterday - Today button should appear
         expect(find.byIcon(MdiIcons.calendarToday), findsOneWidget);
@@ -137,7 +137,7 @@ void main() {
       await tester.pumpWidget(
         createDateLabelRowWidget(dayLabel: 'Focus Day'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Focus Day'), findsOneWidget);
     });
@@ -146,7 +146,7 @@ void main() {
       await tester.pumpWidget(
         createDateLabelRowWidget(dayLabel: ''),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should not find any chip with empty label
       expect(find.byType(DayLabelChip), findsNothing);
@@ -163,7 +163,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show remaining time indicator
       expect(find.text('2 hours left'), findsOneWidget);
@@ -180,7 +180,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // No status indicator icons should be present
       expect(find.byIcon(MdiIcons.clockOutline), findsNothing);
@@ -200,13 +200,13 @@ void main() {
             onTodayPressed: () => callbackCalled = true,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final todayButton = find.byIcon(MdiIcons.calendarToday);
         expect(todayButton, findsOneWidget);
 
         await tester.tap(todayButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(callbackCalled, true);
       });
