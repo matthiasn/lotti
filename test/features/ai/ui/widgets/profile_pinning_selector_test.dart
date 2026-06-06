@@ -1,7 +1,9 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
@@ -330,4 +332,157 @@ void main() {
       );
     },
   );
+
+  group('pure helper properties', () {
+    // Local-runtime provider types (mapped to node capabilities) plus a few
+    // cloud-only ones (mapped to null → never required).
+    const localTypes = [
+      InferenceProviderType.mlxAudio,
+      InferenceProviderType.ollama,
+      InferenceProviderType.voxtral,
+      InferenceProviderType.whisper,
+    ];
+    const cloudTypes = [
+      InferenceProviderType.anthropic,
+      InferenceProviderType.gemini,
+      InferenceProviderType.openAi,
+    ];
+
+    SyncNodeProfile node(int seed) {
+      final capabilities = <NodeCapability>[
+        for (final c in NodeCapability.values)
+          if ((seed >> c.index) & 1 == 1) c,
+      ];
+      return SyncNodeProfile(
+        hostId: 'host-$seed',
+        displayName: 'Node $seed',
+        platform: 'linux',
+        capabilities: capabilities,
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+      );
+    }
+
+    glados.Glados2<List<int>, int>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        8,
+        glados.IntAnys(glados.any).intInRange(0, 16),
+      ),
+      glados.IntAnys(glados.any).intInRange(0, 1 << 7),
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'filterEligible keeps exactly the capability-superset nodes',
+      (nodeSeeds, typeMask) {
+        final nodes = [for (final s in nodeSeeds) node(s)];
+        final types = <InferenceProviderType>{
+          for (var i = 0; i < localTypes.length; i++)
+            if ((typeMask >> i) & 1 == 1) localTypes[i],
+          for (var i = 0; i < cloudTypes.length; i++)
+            if ((typeMask >> (4 + i)) & 1 == 1) cloudTypes[i],
+        };
+
+        final eligible = ProfilePinningSelector.filterEligible(
+          nodes,
+          types,
+        ).toList();
+
+        final requiredCapabilities = <NodeCapability>{
+          for (final t in types)
+            if (nodeCapabilityFromProviderType(t) != null)
+              nodeCapabilityFromProviderType(t)!,
+        };
+
+        if (requiredCapabilities.isEmpty) {
+          // Cloud-only (or no) requirements: every node is eligible.
+          expect(eligible, nodes);
+          return;
+        }
+        for (final n in nodes) {
+          final shouldPass = requiredCapabilities.every(
+            n.capabilities.contains,
+          );
+          expect(
+            eligible.contains(n),
+            shouldPass,
+            reason:
+                'node ${n.hostId} caps=${n.capabilities} '
+                'required=$requiredCapabilities',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.IntAnys(glados.any).intInRange(0, 1 << 12),
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'resolveReferencedProviderTypes maps resolvable ids to provider types',
+      (seed) {
+        // Three providers cycling through provider types; three models, one
+        // per provider; reference a seed-driven subset by providerModelId,
+        // by id (legacy), plus one unknown id that must resolve to nothing.
+        final providerTypes = [
+          localTypes[seed % localTypes.length],
+          cloudTypes[seed % cloudTypes.length],
+          localTypes[(seed >> 2) % localTypes.length],
+        ];
+        final providers = [
+          for (final (i, t) in providerTypes.indexed)
+            AiConfig.inferenceProvider(
+              id: 'provider-$i',
+              name: 'Provider $i',
+              baseUrl: 'https://example.com',
+              apiKey: 'k',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+              inferenceProviderType: t,
+            ),
+        ];
+        final models = [
+          for (var i = 0; i < 3; i++)
+            AiConfig.model(
+              id: 'model-$i',
+              name: 'Model $i',
+              providerModelId: 'pm-$i',
+              inferenceProviderId: 'provider-$i',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            ),
+        ];
+
+        final referenced = <String>{
+          if (seed & 1 == 1) 'pm-0', // by providerModelId
+          if (seed & 2 == 2) 'model-1', // by id (legacy)
+          if (seed & 4 == 4) 'pm-2',
+          'unknown-id', // never resolves
+        };
+
+        final resolved = ProfilePinningSelector.resolveReferencedProviderTypes(
+          AsyncData(models),
+          AsyncData(providers),
+          referencedModelIds: referenced,
+        );
+
+        final expected = <InferenceProviderType>{
+          if (seed & 1 == 1) providerTypes[0],
+          if (seed & 2 == 2) providerTypes[1],
+          if (seed & 4 == 4) providerTypes[2],
+        };
+        expect(resolved, expected, reason: 'seed=$seed refs=$referenced');
+
+        // While configs are loading, resolution yields nothing.
+        expect(
+          ProfilePinningSelector.resolveReferencedProviderTypes(
+            const AsyncLoading(),
+            const AsyncLoading(),
+            referencedModelIds: referenced,
+          ),
+          isEmpty,
+        );
+      },
+      tags: 'glados',
+    );
+  });
 }
