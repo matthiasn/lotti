@@ -27,7 +27,11 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart'
-    show resolveTestTheme, setUpTestGetIt, tearDownTestGetIt;
+    show
+        makeTestableWidgetNoScroll,
+        resolveTestTheme,
+        setUpTestGetIt,
+        tearDownTestGetIt;
 import '../test_utils.dart';
 
 /// Helper to create override for UnifiedAiController with a specific state.
@@ -118,29 +122,21 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  /// Thin wrapper over the central [makeTestableWidgetNoScroll] (DS theme,
+  /// localizations, phone media query) that adds the shared repository
+  /// overrides and a host Scaffold.
   Widget buildTestWidget(
     Widget child, {
     List<Override> overrides = const [],
   }) {
-    return ProviderScope(
+    return makeTestableWidgetNoScroll(
+      Scaffold(body: child),
       overrides: [
         unifiedAiInferenceRepositoryProvider.overrideWithValue(mockRepository),
         cloudInferenceRepositoryProvider.overrideWithValue(mockCloudRepository),
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
         ...overrides,
       ],
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: child,
-        ),
-      ),
     );
   }
 
@@ -1129,23 +1125,15 @@ Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
           );
         });
 
-        // buildTestWidget uses the default MaterialApp theme, which lacks
-        // the DsTokens extension the toast depends on. Wire a local
-        // ProviderScope + MaterialApp with resolveTestTheme() instead so
-        // the SnackBar (hosted by the root ScaffoldMessenger) can read
-        // design tokens.
+        // buildTestWidget resolves the DS theme, so the success SnackBar
+        // (hosted by the root ScaffoldMessenger) can read design tokens.
         await tester.pumpWidget(
-          ProviderScope(
+          buildTestWidget(
+            const UnifiedAiProgressContent(
+              entityId: entityId,
+              promptId: promptId,
+            ),
             overrides: [
-              unifiedAiInferenceRepositoryProvider.overrideWithValue(
-                mockRepository,
-              ),
-              cloudInferenceRepositoryProvider.overrideWithValue(
-                mockCloudRepository,
-              ),
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
               aiConfigByIdProvider(promptId).overrideWith(
                 (ref) async => promptGenConfig,
               ),
@@ -1169,17 +1157,6 @@ Generate a widget that renders a login form.''',
               ),
               triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
             ],
-            child: MaterialApp(
-              theme: resolveTestTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: const Scaffold(
-                body: UnifiedAiProgressContent(
-                  entityId: entityId,
-                  promptId: promptId,
-                ),
-              ),
-            ),
           ),
         );
 

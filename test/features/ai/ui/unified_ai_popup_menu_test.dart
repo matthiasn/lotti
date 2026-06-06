@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -22,7 +21,6 @@ import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_model_picker_modal.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:mocktail/mocktail.dart';
@@ -33,23 +31,18 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart' show MockAiConfigByTypeController;
 
-class MockNavigatorObserver extends Mock implements NavigatorObserver {}
-
 void main() {
   late JournalEntity testTaskEntity;
   late JournalEntity testJournalEntry;
   late JournalEntity testImageEntity;
   late JournalEntity testAudioEntity;
   late List<AiConfigSkill> testSkills;
-  late MockNavigatorObserver mockNavigatorObserver;
   late MockJournalDb mockJournalDb;
   late List<Override> defaultOverrides;
 
   setUpAll(registerAllFallbackValues);
 
   setUp(() async {
-    mockNavigatorObserver = MockNavigatorObserver();
-
     // Registers DomainLogger, JournalDb and UpdateNotifications (with an
     // empty updateStream stub) in GetIt.
     final mocks = await setUpTestGetIt();
@@ -191,29 +184,19 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   // Helper function to build test widget
+  /// Thin wrapper over the central [makeTestableWidgetNoScroll] (DS theme,
+  /// localizations, phone media query) that adds the shared default
+  /// overrides and a host Scaffold.
   Widget buildTestWidget(
     Widget child, {
     List<Override> overrides = const [],
   }) {
-    return ProviderScope(
+    return makeTestableWidgetNoScroll(
+      Scaffold(body: child),
       overrides: [
         ...defaultOverrides,
         ...overrides,
       ],
-      child: MaterialApp(
-        theme: resolveTestTheme(),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        navigatorObservers: [mockNavigatorObserver],
-        home: Scaffold(
-          body: child,
-        ),
-      ),
     );
   }
 
