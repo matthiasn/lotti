@@ -33,7 +33,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The modal content should render (title is now in Wolt header)
         expect(find.byType(ModalitySelectionModal), findsOneWidget);
@@ -41,7 +42,8 @@ void main() {
 
       testWidgets('has proper widget structure', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have proper structure with padding and columns
         expect(find.byType(ModalitySelectionModal), findsOneWidget);
@@ -58,7 +60,8 @@ void main() {
                 [], // No selections, so only save button has check icon
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(
           find.byIcon(Icons.check_rounded),
@@ -69,7 +72,8 @@ void main() {
 
       testWidgets('has proper modal styling', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Check for rounded corners container
         final containers = find.byType(Container);
@@ -83,7 +87,8 @@ void main() {
     group('Modality Options Display', () {
       testWidgets('displays all modality options', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have text for all modalities
         expect(find.text('Text'), findsOneWidget);
@@ -105,7 +110,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should show checkmarks for selected modalities (plus one in save button)
         final checkmarkIcons = find.byIcon(Icons.check_rounded);
@@ -119,7 +125,8 @@ void main() {
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Check for text modality (should always be present)
         expect(find.text('Text'), findsOneWidget);
@@ -139,7 +146,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should show checkmark for selected modality (plus one in save button)
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
@@ -160,7 +168,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Initially should have one checkmark (for text) plus save button
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
@@ -186,7 +195,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Initially should have one checkmark plus save button
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
@@ -214,7 +224,8 @@ void main() {
             onSave: savedModalities.addAll,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap save button by text
         await tester.tap(find.text('Save'));
@@ -235,7 +246,8 @@ void main() {
             onSave: savedModalities.addAll,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Find and tap the Image modality card to select it
         final imageCard = find.ancestor(
@@ -267,7 +279,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Initially should have two checkmarks (for text and image) plus save button
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(3));
@@ -293,7 +306,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should only have save button checkmark, no selected modalities
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
@@ -313,7 +327,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have checkmarks for all modalities plus save button
         expect(
@@ -326,7 +341,8 @@ void main() {
     group('Accessibility', () {
       testWidgets('has proper semantic structure', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have clickable InkWell areas
         final inkWells = find.byType(InkWell);
@@ -344,7 +360,8 @@ void main() {
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have text labels for all modalities
         expect(find.text('Text'), findsOneWidget);
@@ -363,7 +380,8 @@ void main() {
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have proper spacing with SizedBox widgets
         expect(find.byType(SizedBox), findsAtLeastNWidgets(1));
@@ -382,7 +400,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have header, content, and footer sections
         expect(find.byType(Column), findsAtLeastNWidgets(1));
@@ -393,7 +412,8 @@ void main() {
 
       testWidgets('applies proper theming', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(onSave: (_) {}));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have styled containers with decorations
         final containers = tester.widgetList<Container>(find.byType(Container));
@@ -415,7 +435,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final textCard = find.ancestor(
           of: find.text('Text'),
@@ -442,7 +463,8 @@ void main() {
             onSave: (_) {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Select all three modalities
         final textCard = find.ancestor(
@@ -481,7 +503,8 @@ void main() {
             onSave: savedModalities.addAll,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap save button with no selection by text
         await tester.tap(find.text('Save'));
