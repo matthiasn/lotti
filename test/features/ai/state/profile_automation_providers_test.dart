@@ -6,16 +6,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
-import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -39,26 +37,92 @@ void main() {
 
     tearDown(() => container.dispose());
 
-    test('profileResolverProvider constructs a ProfileResolver', () {
-      final resolver = container.read(profileResolverProvider);
-      expect(resolver, isA<ProfileResolver>());
-    });
-
     test(
-      'profileAutomationResolverProvider constructs a '
-      'ProfileAutomationResolver',
-      () {
-        final resolver = container.read(profileAutomationResolverProvider);
-        expect(resolver, isA<ProfileAutomationResolver>());
+      'profileResolverProvider wires the repo into a working resolver',
+      () async {
+        final mockAiConfigRepo = MockAiConfigRepository();
+        final profile = AiTestDataFactory.createTestProfile(id: 'profile-1');
+        when(
+          () => mockAiConfigRepo.getConfigById('profile-1'),
+        ).thenAnswer((_) async => profile);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'model-1',
+              providerModelId: profile.thinkingModelId,
+              inferenceProviderId: 'provider-1',
+            ),
+          ],
+        );
+        when(() => mockAiConfigRepo.getConfigById('provider-1')).thenAnswer(
+          (_) async => AiTestDataFactory.createTestProvider(id: 'provider-1'),
+        );
+
+        final scoped = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+            agentTemplateServiceProvider.overrideWithValue(
+              MockAgentTemplateService(),
+            ),
+          ],
+        );
+        addTearDown(scoped.dispose);
+
+        final resolver = scoped.read(profileResolverProvider);
+        final resolved = await resolver.resolveByProfileId('profile-1');
+
+        expect(resolved, isNotNull);
+        expect(resolved!.thinkingModelId, profile.thinkingModelId);
+        expect(resolved.thinkingProvider.id, 'provider-1');
+        verify(() => mockAiConfigRepo.getConfigById('profile-1')).called(1);
       },
     );
 
     test(
-      'profileAutomationServiceProvider constructs a '
-      'ProfileAutomationService',
-      () {
-        final service = container.read(profileAutomationServiceProvider);
-        expect(service, isA<ProfileAutomationService>());
+      'profileAutomationServiceProvider reports no automation when nothing '
+      'is configured',
+      () async {
+        final mockAiConfigRepo = MockAiConfigRepository();
+        final mockDb = MockJournalDb();
+        final mockTaskAgentService = MockTaskAgentService();
+        when(
+          () => mockAiConfigRepo.getConfigById(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDb.journalEntityById(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask(any()),
+        ).thenAnswer((_) async => null);
+
+        final scoped = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+            taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+            agentTemplateServiceProvider.overrideWithValue(
+              MockAgentTemplateService(),
+            ),
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        );
+        addTearDown(scoped.dispose);
+
+        final service = scoped.read(profileAutomationServiceProvider);
+        final hasTranscription = await service.hasAutomatedSkillType(
+          taskId: 'task-1',
+          skillType: SkillType.transcription,
+        );
+
+        expect(hasTranscription, isFalse);
+        verify(
+          () => mockTaskAgentService.getTaskAgentForTask('task-1'),
+        ).called(1);
       },
     );
   });

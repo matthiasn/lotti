@@ -109,6 +109,13 @@ extension AiResponseTypeDisplay on AiResponseType {
   /// Returns true if this is a legacy type superseded by the agent system.
   /// Legacy types are kept only for JSON/DB backwards-compatibility and
   /// should not be used for new prompts or automatic execution.
+  ///
+  /// [AiResponseType.imageGeneration] is intentionally listed here even
+  /// though the enum value is not `@Deprecated`: prompt-driven image
+  /// generation was superseded by the cover-art skill
+  /// (`triggerSkillProvider`), which still constructs the enum value when
+  /// persisting its responses — so the value stays current while the
+  /// prompt-execution path for it is gated off.
   bool get isLegacyType =>
       // ignore: deprecated_member_use_from_same_package
       this == AiResponseType.taskSummary ||
