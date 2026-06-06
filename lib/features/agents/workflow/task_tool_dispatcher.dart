@@ -3,9 +3,12 @@ import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/attention_request_handler.dart';
 import 'package:lotti/features/agents/tools/checklist_migration_handler.dart';
 import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
 import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
@@ -50,6 +53,9 @@ class TaskToolDispatcher {
     this.domainLogger,
     this.taskAgentService,
     this.projectRepository,
+    this.agentRepository,
+    this.syncService,
+    this.requestingAgentId,
   });
 
   final JournalDb journalDb;
@@ -61,6 +67,9 @@ class TaskToolDispatcher {
   final DomainLogger? domainLogger;
   final TaskAgentService? taskAgentService;
   final ProjectRepository? projectRepository;
+  final AgentRepository? agentRepository;
+  final AgentSyncService? syncService;
+  final String? requestingAgentId;
 
   static const _uuid = Uuid();
 
@@ -165,6 +174,9 @@ class TaskToolDispatcher {
 
       case TaskAgentToolNames.updateRunningTimer:
         return _handleUpdateRunningTimer(args, taskId);
+
+      case TaskAgentToolNames.requestAttention:
+        return _handleRequestAttention(taskEntity, args);
 
       default:
         return ToolExecutionResult(
@@ -596,5 +608,28 @@ class TaskToolDispatcher {
       domainLogger: domainLogger,
     );
     return handler.handle(taskId, args);
+  }
+
+  Future<ToolExecutionResult> _handleRequestAttention(
+    Task task,
+    Map<String, dynamic> args,
+  ) async {
+    final repository = agentRepository;
+    final sync = syncService;
+    final agentId = requestingAgentId;
+    if (repository == null || sync == null || agentId == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: request_attention is not configured.',
+        errorMessage: 'request_attention is not configured',
+      );
+    }
+
+    final handler = AttentionRequestHandler(
+      agentRepository: repository,
+      syncService: sync,
+      requestingAgentId: agentId,
+    );
+    return handler.handle(task, args);
   }
 }

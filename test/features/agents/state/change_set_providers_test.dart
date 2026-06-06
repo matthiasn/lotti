@@ -338,6 +338,7 @@ void main() {
           labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
           projectRepositoryProvider.overrideWithValue(
             MockProjectRepository(),
           ),
@@ -398,6 +399,7 @@ void main() {
             labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
             domainLoggerProvider.overrideWithValue(MockDomainLogger()),
             taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
             projectRepositoryProvider.overrideWithValue(
               MockProjectRepository(),
             ),

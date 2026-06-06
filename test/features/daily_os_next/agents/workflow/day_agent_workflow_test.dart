@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -255,6 +256,12 @@ void main() {
     when(
       () => repository.getEntitiesByAgentId(agentId, type: any(named: 'type')),
     ).thenAnswer((_) async => const <AgentDomainEntity>[]);
+    when(
+      () => repository.getAttentionPlanningInputsForWindow(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => const AttentionPlanningInputs.empty());
     when(
       () => repository.updateWakeRunTemplate(
         any(),

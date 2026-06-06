@@ -43,6 +43,7 @@ abstract final class TaskAgentToolNames {
   static const setTaskLanguage = 'set_task_language';
   static const setTaskStatus = 'set_task_status';
   static const getRelatedTaskDetails = 'get_related_task_details';
+  static const requestAttention = 'request_attention';
 
   // Task splitting tools.
   static const createFollowUpTask = 'create_follow_up_task';
@@ -519,6 +520,91 @@ class AgentToolRegistry {
           },
         },
         'required': ['taskId'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: TaskAgentToolNames.requestAttention,
+      description:
+          'Ask the day planner to reserve attention/time for this task. '
+          'Use this when the task needs scheduled work soon, has a deadline, '
+          'or should compete for planner attention. Do not use it for vague '
+          'interest; make a concrete evidence-backed claim. Check the '
+          'Attention Requests section in the task context first and do not '
+          'repeat an equivalent active request.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'title': {
+            'type': 'string',
+            'description':
+                'Short planner-facing label. Omit to use the task title.',
+          },
+          'requestedMinutes': {
+            'type': 'integer',
+            'minimum': 1,
+            'maximum': 1440,
+            'description': 'Minutes of planner time requested for the task.',
+          },
+          'impact': {
+            'type': 'integer',
+            'minimum': 1,
+            'maximum': 5,
+            'description':
+                'How valuable it is to schedule this task now, 1 low to 5 high.',
+          },
+          'urgency': {
+            'type': 'integer',
+            'minimum': 1,
+            'maximum': 5,
+            'description':
+                'How time-sensitive the request is, 1 low to 5 high.',
+          },
+          'energyFit': {
+            'type': 'string',
+            'enum': ['low', 'neutral', 'high'],
+            'description':
+                'Energy level needed for a good slot: low, neutral, or high.',
+          },
+          'earliestStart': {
+            'type': 'string',
+            'description':
+                'Optional earliest acceptable ISO-8601 start time/date.',
+          },
+          'latestEnd': {
+            'type': 'string',
+            'description': 'Optional latest acceptable ISO-8601 end time/date.',
+          },
+          'deadline': {
+            'type': 'string',
+            'description':
+                'Optional hard or meaningful ISO-8601 deadline for the work.',
+          },
+          'nextReviewAt': {
+            'type': 'string',
+            'description':
+                'Optional ISO-8601 time when the planner should reconsider.',
+          },
+          'scopeKind': {
+            'type': 'string',
+            'enum': ['day', 'dateRange', 'deadline', 'recurrence'],
+            'description':
+                'Optional explicit planning scope. Usually omit and let the '
+                'tool infer it from latestEnd/deadline.',
+          },
+          'rationale': {
+            'type': 'string',
+            'description':
+                'Brief evidence-backed reason the planner should consider it.',
+          },
+        },
+        'required': [
+          'requestedMinutes',
+          'impact',
+          'urgency',
+          'energyFit',
+          'rationale',
+        ],
         'additionalProperties': false,
       },
     ),

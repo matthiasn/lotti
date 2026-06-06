@@ -253,6 +253,13 @@ void main() {
       ),
     ).thenAnswer((_) async => const ProposalLedger.empty());
     when(
+      () => mockAgentRepository.getAttentionClaimsForTarget(
+        targetKind: any(named: 'targetKind'),
+        targetId: any(named: 'targetId'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => const <AttentionRequestEntity>[]);
+    when(
       () => mockAiInputRepository.buildLinkedFromContext(any()),
     ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
     when(

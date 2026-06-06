@@ -4464,6 +4464,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_attention_claims_active_deadline',
     'CREATE INDEX idx_attention_claims_active_deadline ON attention_claim_index (status, deadline, request_id) WHERE deleted_at IS NULL AND deadline IS NOT NULL',
   );
+  late final Index idxAttentionClaimsActiveTarget = Index(
+    'idx_attention_claims_active_target',
+    'CREATE INDEX idx_attention_claims_active_target ON attention_claim_index (target_kind, target_id, status, updated_at DESC, request_id) WHERE deleted_at IS NULL AND target_kind IS NOT NULL AND target_id IS NOT NULL',
+  );
   late final StandingAgreementIndex standingAgreementIndex =
       StandingAgreementIndex(this);
   late final Index idxStandingAgreementsActiveWindow = Index(
@@ -5120,6 +5124,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     attentionClaimIndex,
     idxAttentionClaimsActiveWindow,
     idxAttentionClaimsActiveDeadline,
+    idxAttentionClaimsActiveTarget,
     standingAgreementIndex,
     idxStandingAgreementsActiveWindow,
     idxStandingAgreementsActiveScopeWindow,
