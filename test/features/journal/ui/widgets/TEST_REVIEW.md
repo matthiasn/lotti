@@ -65,11 +65,11 @@ No genuine Glados candidates identified in this scope. All widgets under test ar
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/…/linked_entries_with_timer.dart` (44 lines) — **No test file.** This widget uses `getIt<TimeService>()` and `StreamBuilder` to derive the active timer entry ID and conditionally mark linked entries with `isActiveTimer`. There is no test that verifies: (a) when the stream emits a matching entry ID the `LinkedEntriesWidget` receives `activeTimerEntryId`, (b) when the stream emits a different ID the `activeTimerEntryId` is null, (c) the `.distinct()` operator prevents rebuilds when the same ID arrives twice.
+- [x] **[HIGH]** `lib/…/linked_entries_with_timer.dart` (44 lines) — **No test file.** This widget uses `getIt<TimeService>()` and `StreamBuilder` to derive the active timer entry ID and conditionally mark linked entries with `isActiveTimer`. There is no test that verifies: (a) when the stream emits a matching entry ID the `LinkedEntriesWidget` receives `activeTimerEntryId`, (b) when the stream emits a different ID the `activeTimerEntryId` is null, (c) the `.distinct()` operator prevents rebuilds when the same ID arrives twice.
 
-- [ ] **[HIGH]** `lib/…/text_viewer_widget.dart` (64 lines) — **No test file.** The scrollable variant (`TextViewerWidget`) used by `HabitSummary` and `TextViewerWidgetNonScrollable` has no unit tests. Key untested branches: `null` entryText, Quill vs markdown vs plainText content priority, `maxHeight` applied to `LimitedBox`.
+- [x] **[HIGH]** `lib/…/text_viewer_widget.dart` (64 lines) — **No test file.** The scrollable variant (`TextViewerWidget`) used by `HabitSummary` and `TextViewerWidgetNonScrollable` has no unit tests. Key untested branches: `null` entryText, Quill vs markdown vs plainText content priority, `maxHeight` applied to `LimitedBox`.
 
-- [ ] **[HIGH]** `lib/…/helpers.dart` (31 lines) — **No test file.** `EntryTextWidget` has configurable `maxLines` and `padding` parameters with no coverage. These are trivial to test but the absence means regressions go unnoticed.
+- [x] **[HIGH]** `lib/…/helpers.dart` (31 lines) — **No test file.** `EntryTextWidget` has configurable `maxLines` and `padding` parameters with no coverage. These are trivial to test but the absence means regressions go unnoticed.
 
 - [ ] **[MED]** `lib/…/journal_app_bar.dart` (26 lines) — **No test file.** `JournalSliverAppBar` renders a `SaveButton` and a `BackWidget`; no test verifies the correct `entryId` is forwarded to `SaveButton`.
 
