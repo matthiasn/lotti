@@ -3369,41 +3369,45 @@ void main() {
         () => processor.processQueue(),
       ).thenAnswer((_) async => OutboxProcessingResult.none);
 
-      // Gate simulates a short delay to exceed logging threshold
+      // The service measures the gate wait with clock.now(): advance a
+      // controllable clock from inside the gate stub so the 120 ms wait is
+      // observed deterministically without any real wall-clock sleep.
+      var now = DateTime(2026, 3, 15, 10);
       final gate = createGate();
-      when(gate.waitUntilIdle).thenAnswer(
-        (_) => Future<void>.delayed(const Duration(milliseconds: 120)),
-      );
+      when(gate.waitUntilIdle).thenAnswer((_) {
+        now = now.add(const Duration(milliseconds: 120));
+        return Future<void>.value();
+      });
 
-      final svc = OutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-        activityGate: gate,
-        ownsActivityGate: false,
-      );
+      await withClock(Clock(() => now), () async {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+        );
 
-      // Use real async waits here because the service measures with
-      // DateTime.now(), which fakeAsync does not advance.
-      // Trigger the runner via the public enqueue API
-      await svc.enqueueNextSendRequest(delay: Duration.zero);
-      // Allow enough wall time for the gate wait to exceed 50ms and the
-      // runner to log the instrumentation line.
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-      verify(
-        () => loggingService.log(
-          LogDomain.sync,
-          any<String>(that: startsWith('activityGate.wait ms=')),
-          subDomain: 'activityGate',
-        ),
-      ).called(greaterThanOrEqualTo(1));
-      await svc.dispose();
+        // Trigger the runner via the public enqueue API and drain the
+        // event queue so the runner callback completes.
+        await svc.enqueueNextSendRequest(delay: Duration.zero);
+        await pumpEventQueue();
+
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: startsWith('activityGate.wait ms=')),
+            subDomain: 'activityGate',
+          ),
+        ).called(greaterThanOrEqualTo(1));
+        await svc.dispose();
+      });
     });
   });
 

@@ -234,9 +234,11 @@ class OutboxService {
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
-        final started = DateTime.now();
+        // clock.now() so fakeAsync-driven tests can advance the measured
+        // wait deterministically (fake_async patches package:clock).
+        final started = clock.now();
         await _activityGate.waitUntilIdle();
-        final waitedMs = DateTime.now().difference(started).inMilliseconds;
+        final waitedMs = clock.now().difference(started).inMilliseconds;
         if (waitedMs > 50) {
           // Light instrumentation to correlate potential stalls.
           _loggingService.log(
