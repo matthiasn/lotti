@@ -38,7 +38,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `skillRegistryProvider` (line 452 of `built_in_skills.dart`) — the Riverpod provider is completely untested. Since the provider's purpose is to be overridable in tests (the docstring says "Tests can override this provider to inject a custom skill set"), verifying that its default value is `builtInSkills` and that it can be overridden with a custom list requires only a `ProviderContainer` test — no widget infrastructure needed:
+- [x] **[HIGH]** `skillRegistryProvider` (line 452 of `built_in_skills.dart`) — the Riverpod provider is completely untested. Since the provider's purpose is to be overridable in tests (the docstring says "Tests can override this provider to inject a custom skill set"), verifying that its default value is `builtInSkills` and that it can be overridden with a custom list requires only a `ProviderContainer` test — no widget infrastructure needed: **RESOLVED:** two `ProviderContainer` tests added to `built_in_skills_test.dart` — the default value is identical to `builtInSkills`, and `overrideWithValue` swaps in a custom list.
   ```dart
   test('defaults to builtInSkills', () {
     final container = ProviderContainer();

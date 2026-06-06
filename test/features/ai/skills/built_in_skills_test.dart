@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
@@ -156,6 +158,25 @@ void main() {
       for (final s in transcribeSkills) {
         expect(s.requiredInputModalities, [Modality.audio]);
       }
+    });
+  });
+
+  group('skillRegistryProvider', () {
+    test('defaults to the built-in skill set', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(skillRegistryProvider), same(builtInSkills));
+    });
+
+    test('can be overridden with a custom skill list', () {
+      final custom = [builtInSkills.first];
+      final container = ProviderContainer(
+        overrides: [skillRegistryProvider.overrideWithValue(custom)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(skillRegistryProvider), same(custom));
     });
   });
 }
