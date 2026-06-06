@@ -35,6 +35,7 @@
     <release version="0.9.1016" date="2026-06-06">
       <description>
           <p>Task agents now maintain their own day-planning attention requests during normal wakes, resolving stale requests when tasks are done or no longer need scheduled time.</p>
+          <p>Slow-query logging now starts from persisted logging settings during startup, so enabled slow_queries and super_slow_queries files capture boot-time database work instead of waiting for the next settings toggle.</p>
       </description>
     </release>
     <release version="0.9.1015" date="2026-06-04">

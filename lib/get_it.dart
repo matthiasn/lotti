@@ -191,6 +191,7 @@ Future<void> registerSingletons() async {
 
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
+  await getIt<LoggingService>().listenToConfigFlag();
 
   _registerLazyServiceSafely<NotificationService>(
     NotificationService.new,
@@ -666,7 +667,6 @@ Future<void> registerSingletons() async {
   );
 
   unawaited(getIt<MatrixService>().init());
-  getIt<LoggingService>().listenToConfigFlag();
 
   // Label validator used by the assignment processor
   _registerLazyServiceSafely<LabelValidator>(

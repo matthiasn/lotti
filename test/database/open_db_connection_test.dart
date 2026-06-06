@@ -209,4 +209,44 @@ void main() {
       await db.close();
     },
   );
+
+  test(
+    'openDbConnection appends slow queries for background executors',
+    () async {
+      final base = Directory.systemTemp.createTempSync('slow_query_log_test_');
+      addTearDown(
+        () => base.existsSync() ? base.deleteSync(recursive: true) : null,
+      );
+
+      SlowQueryLoggingGate.isEnabled = true;
+
+      final lazy = openDbConnection(
+        'test_slow_background.sqlite',
+        slowQueryThreshold: Duration.zero,
+        documentsDirectoryProvider: () async => base,
+        tempDirectoryProvider: () async => base,
+      );
+
+      final db = SyncDatabase.connect(DatabaseConnection(lazy));
+      await db.customSelect('SELECT 1 AS one').getSingle();
+      await SlowQueryInterceptor.flushFileSinkForTest();
+
+      final logFiles = Directory('${base.path}/logs')
+          .listSync()
+          .whereType<File>()
+          .where(
+            (f) =>
+                f.uri.pathSegments.last.startsWith('slow_queries-') &&
+                f.uri.pathSegments.last.endsWith('.log'),
+          )
+          .toList();
+
+      expect(logFiles, hasLength(1));
+      final contents = await logFiles.single.readAsString();
+      expect(contents, contains('[test_slow_background.sqlite] select'));
+      expect(contents, contains('SELECT 1 AS one'));
+
+      await db.close();
+    },
+  );
 }

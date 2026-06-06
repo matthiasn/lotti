@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   normal wakes, resolving stale requests when tasks are done or no longer need
   scheduled time.
 
+### Fixed
+- Slow-query logging now starts from persisted logging settings during startup,
+  so enabled `slow_queries` and `super_slow_queries` files capture boot-time
+  database work instead of waiting for the next settings toggle.
+
 ## [0.9.1015]
 ### Added
 - The linked entries "Filter & Sort" modal now has a "Show flagged entries
