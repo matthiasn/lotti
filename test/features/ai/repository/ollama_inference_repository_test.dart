@@ -13,8 +13,6 @@ import '../../../mocks/mocks.dart';
 
 class MockStreamedResponse extends Mock implements http.StreamedResponse {}
 
-class FakeRequest extends Fake implements http.Request {}
-
 void main() {
   late OllamaInferenceRepository repository;
   late MockHttpClient mockHttpClient;

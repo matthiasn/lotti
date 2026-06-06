@@ -968,6 +968,8 @@ class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 
 class FakeBaseRequest extends Fake implements http.BaseRequest {}
 
+class FakeRequest extends Fake implements http.Request {}
+
 class MockObjectBoxOps extends Mock implements ObjectBoxOps {}
 
 class MockEmbeddingService extends Mock implements EmbeddingService {}

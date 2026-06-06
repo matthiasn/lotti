@@ -16,68 +16,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/retry_fake_time.dart';
 import '../../../widget_test_utils.dart';
-
-class FakeRequest extends Fake implements http.Request {}
-
-/// Creates a mock SSE stream response for testing
-http.StreamedResponse createSseStreamedResponse({
-  required List<Map<String, dynamic>> events,
-  int statusCode = 200,
-}) {
-  final sseLines = <String>[];
-
-  for (final event in events) {
-    sseLines.add('data: ${jsonEncode(event)}\n\n');
-  }
-  sseLines.add('data: [DONE]\n\n');
-
-  final stream = Stream.fromIterable([utf8.encode(sseLines.join())]);
-  return http.StreamedResponse(stream, statusCode);
-}
-
-/// Creates a mock SSE event for a chunk with content
-Map<String, dynamic> createSseChunkEvent({
-  required String content,
-  String? id,
-  String? finishReason,
-  int? created,
-  String model = 'voxtral-mini',
-}) {
-  return {
-    'id': id ?? 'chatcmpl-test',
-    'object': 'chat.completion.chunk',
-    'created': created ?? 1234567890,
-    'model': model,
-    'choices': [
-      {
-        'index': 0,
-        'delta': {'content': content},
-        'finish_reason': finishReason,
-      },
-    ],
-  };
-}
-
-/// Creates a final SSE event with finish_reason but no content
-Map<String, dynamic> createSseFinalEvent({
-  String? id,
-  int? created,
-  String model = 'voxtral-mini',
-}) {
-  return {
-    'id': id ?? 'chatcmpl-test',
-    'object': 'chat.completion.chunk',
-    'created': created ?? 1234567890,
-    'model': model,
-    'choices': [
-      {
-        'index': 0,
-        'delta': <String, dynamic>{},
-        'finish_reason': 'stop',
-      },
-    ],
-  };
-}
+import 'sse_test_utils.dart';
 
 void main() {
   late VoxtralInferenceRepository repository;
