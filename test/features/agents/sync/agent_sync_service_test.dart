@@ -16,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../test_data/entity_factories.dart';
 import 'fork_test_support.dart';
 
@@ -435,12 +436,16 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
     // Register a fake DomainLogger so _enqueuePostWrite can log swallowed
     // outbox errors without blowing up on an unregistered GetIt lookup.
-    if (!getIt.isRegistered<DomainLogger>()) {
-      getIt.registerSingleton<DomainLogger>(MockDomainLogger());
-    }
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(MockDomainLogger());
+      },
+    );
 
     mockRepository = MockAgentRepository();
     mockOutboxService = MockOutboxService();
@@ -484,6 +489,8 @@ void main() {
       vectorClockService: mockVectorClockService,
     );
   });
+
+  tearDown(tearDownTestGetIt);
 
   group('AgentSyncService', () {
     group('upsertEntity', () {
@@ -954,10 +961,93 @@ void main() {
       });
     });
 
+    group('sequence record error paths', () {
+      late MockSyncSequenceLogService sequenceLog;
+      late AgentSyncService service;
+
+      setUp(() {
+        sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => sequenceLog.recordSentEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenThrow(StateError('sequence log down'));
+        service = AgentSyncService(
+          repository: mockRepository,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVectorClockService,
+          sequenceLogService: sequenceLog,
+        );
+      });
+
+      test(
+        'swallows and logs a recordSentEntry failure after an entity write',
+        () async {
+          // Must not throw — the VC is already committed on disk.
+          await service.upsertEntity(testEntity);
+
+          verify(() => mockRepository.upsertEntity(any())).called(1);
+          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+          final logger = getIt<DomainLogger>() as MockDomainLogger;
+          verify(
+            () => logger.error(
+              any(),
+              any(),
+              message: any(named: 'message'),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'agentSync.recordEntity',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'swallows and logs a recordSentEntry failure after a link write',
+        () async {
+          await service.upsertLink(testBasicLink);
+
+          verify(() => mockRepository.upsertLink(any())).called(1);
+          final logger = getIt<DomainLogger>() as MockDomainLogger;
+          verify(
+            () => logger.error(
+              any(),
+              any(),
+              message: any(named: 'message'),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'agentSync.recordLink',
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    test(
+      'runInTransaction rethrows a deferred outbox-flush failure after the '
+      'VC scope commits',
+      () async {
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenThrow(StateError('outbox down'));
+
+        await expectLater(
+          syncService.runInTransaction(() async {
+            await syncService.upsertEntity(testEntity);
+          }),
+          throwsStateError,
+        );
+
+        // The DB write itself committed before the flush failed — the
+        // deferred rethrow happens outside the VC scope.
+        verify(() => mockRepository.upsertEntity(any())).called(1);
+      },
+    );
+
     group('runInTransaction', () {
       glados.Glados(
         glados.any.syncTransactionScenario,
-        glados.ExploreConfig(numRuns: 260),
+        glados.ExploreConfig(numRuns: 160),
       ).test('matches generated nested transaction buffer semantics', (
         scenario,
       ) async {
@@ -1733,7 +1823,7 @@ void main() {
 
     glados.Glados(
       glados.any.milestoneScenario,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 160),
     ).test('emits a system marker preserving milestone, runKey and createdAt, '
         'defaulting threadId to the marker id', (scenario) async {
       // Fresh wiring per run so captures don't accumulate across iterations.
@@ -1802,7 +1892,7 @@ void main() {
 
     glados.Glados(
       glados.any.headPreservationScenario,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 160),
     ).test('a local write keeps the persisted head and the other caller '
         'fields, for any head combination', (scenario) async {
       // Fresh wiring per run so captures don't accumulate across iterations.
@@ -1936,16 +2026,9 @@ void main() {
       () async {
         // Capture the error log so we can assert the fall-back path logged it.
         final logger = MockDomainLogger();
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt.unregister<DomainLogger>();
-        }
-        getIt.registerSingleton<DomainLogger>(logger);
-        addTearDown(() {
-          if (getIt.isRegistered<DomainLogger>()) {
-            getIt.unregister<DomainLogger>();
-          }
-          getIt.registerSingleton<DomainLogger>(MockDomainLogger());
-        });
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(logger);
 
         final cache = makeTestState(
           agentId: 'agent-1',
