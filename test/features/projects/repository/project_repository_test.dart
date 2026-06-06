@@ -111,6 +111,17 @@ void main() {
     when(
       () => mockOutboxService.enqueueMessage(any()),
     ).thenAnswer((_) async {});
+
+    // Canonical happy-path stubs shared by most tests; individual tests
+    // re-stub these (mocktail last-wins) for error/edge paths.
+    when(() => mockNotifications.notify(any())).thenReturn(null);
+    when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+    when(
+      () => mockDb.journalEntityById('project-001'),
+    ).thenAnswer((_) async => projectEntry);
+    when(
+      () => mockDb.journalEntityById('task-001'),
+    ).thenAnswer((_) async => taskEntry);
     when(
       () => mockNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
@@ -140,10 +151,6 @@ void main() {
 
   group('getProjectById', () {
     test('returns ProjectEntry when entity is a project', () async {
-      when(
-        () => mockDb.journalEntityById('project-001'),
-      ).thenAnswer((_) async => projectEntry);
-
       final result = await repository.getProjectById('project-001');
 
       expect(result, isA<ProjectEntry>());
@@ -151,10 +158,6 @@ void main() {
     });
 
     test('returns null when entity is not a project', () async {
-      when(
-        () => mockDb.journalEntityById('task-001'),
-      ).thenAnswer((_) async => taskEntry);
-
       final result = await repository.getProjectById('task-001');
 
       expect(result, isNull);
@@ -581,16 +584,8 @@ void main() {
   group('linkTaskToProject', () {
     test('creates new link when task has no existing project', () async {
       when(
-        () => mockDb.journalEntityById('project-001'),
-      ).thenAnswer((_) async => projectEntry);
-      when(
-        () => mockDb.journalEntityById('task-001'),
-      ).thenAnswer((_) async => taskEntry);
-      when(
         () => mockDb.getProjectLinkForTask('task-001'),
       ).thenAnswer((_) async => null);
-      when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-      when(() => mockNotifications.notify(any())).thenReturn(null);
       when(
         mockVectorClockService.getNextVectorClock,
       ).thenAnswer((_) async => const VectorClock({'d': 1}));
@@ -638,9 +633,6 @@ void main() {
       );
 
       when(
-        () => mockDb.journalEntityById('project-001'),
-      ).thenAnswer((_) async => projectEntry);
-      when(
         () => mockDb.journalEntityById('task-cross'),
       ).thenAnswer((_) async => crossCategoryTask);
 
@@ -660,9 +652,6 @@ void main() {
       );
 
       when(
-        () => mockDb.journalEntityById('project-001'),
-      ).thenAnswer((_) async => projectEntry);
-      when(
         () => mockDb.journalEntityById('task-001'),
       ).thenAnswer((_) async => noteEntry);
 
@@ -679,9 +668,6 @@ void main() {
       when(
         () => mockDb.journalEntityById('missing'),
       ).thenAnswer((_) async => null);
-      when(
-        () => mockDb.journalEntityById('task-001'),
-      ).thenAnswer((_) async => taskEntry);
 
       final result = await repository.linkTaskToProject(
         projectId: 'missing',
@@ -692,9 +678,6 @@ void main() {
     });
 
     test('returns false when task does not exist', () async {
-      when(
-        () => mockDb.journalEntityById('project-001'),
-      ).thenAnswer((_) async => projectEntry);
       when(
         () => mockDb.journalEntityById('missing'),
       ).thenAnswer((_) async => null);
@@ -708,12 +691,6 @@ void main() {
     });
 
     test('returns false when upsert affects zero rows', () async {
-      when(
-        () => mockDb.journalEntityById('project-001'),
-      ).thenAnswer((_) async => projectEntry);
-      when(
-        () => mockDb.journalEntityById('task-001'),
-      ).thenAnswer((_) async => taskEntry);
       when(
         () => mockDb.getProjectLinkForTask('task-001'),
       ).thenAnswer((_) async => null);
@@ -743,12 +720,6 @@ void main() {
       );
 
       when(
-        () => mockDb.journalEntityById('project-001'),
-      ).thenAnswer((_) async => projectEntry);
-      when(
-        () => mockDb.journalEntityById('task-001'),
-      ).thenAnswer((_) async => taskEntry);
-      when(
         () => mockDb.getProjectLinkForTask('task-001'),
       ).thenAnswer((_) async => existingLink);
 
@@ -774,16 +745,8 @@ void main() {
         );
 
         when(
-          () => mockDb.journalEntityById('project-001'),
-        ).thenAnswer((_) async => projectEntry);
-        when(
-          () => mockDb.journalEntityById('task-001'),
-        ).thenAnswer((_) async => taskEntry);
-        when(
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
         when(
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
@@ -835,12 +798,6 @@ void main() {
         );
 
         when(
-          () => mockDb.journalEntityById('project-001'),
-        ).thenAnswer((_) async => projectEntry);
-        when(
-          () => mockDb.journalEntityById('task-001'),
-        ).thenAnswer((_) async => taskEntry);
-        when(
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
         // Soft-delete upsert returns 0 (failure)
@@ -875,12 +832,6 @@ void main() {
           vectorClock: null,
         );
 
-        when(
-          () => mockDb.journalEntityById('project-001'),
-        ).thenAnswer((_) async => projectEntry);
-        when(
-          () => mockDb.journalEntityById('task-001'),
-        ).thenAnswer((_) async => taskEntry);
         when(
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
@@ -933,8 +884,6 @@ void main() {
       when(
         () => mockDb.getProjectLinkForTask('task-001'),
       ).thenAnswer((_) async => existingLink);
-      when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-      when(() => mockNotifications.notify(any())).thenReturn(null);
       when(
         mockVectorClockService.getNextVectorClock,
       ).thenAnswer((_) async => const VectorClock({'d': 2}));
@@ -1018,16 +967,8 @@ void main() {
 
     test('linkTaskToProject records the new link sequence', () async {
       when(
-        () => mockDb.journalEntityById('project-001'),
-      ).thenAnswer((_) async => projectEntry);
-      when(
-        () => mockDb.journalEntityById('task-001'),
-      ).thenAnswer((_) async => taskEntry);
-      when(
         () => mockDb.getProjectLinkForTask('task-001'),
       ).thenAnswer((_) async => null);
-      when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-      when(() => mockNotifications.notify(any())).thenReturn(null);
       when(
         mockVectorClockService.getNextVectorClock,
       ).thenAnswer((_) async => const VectorClock({'d': 1}));
@@ -1058,16 +999,8 @@ void main() {
           vectorClock: null,
         );
         when(
-          () => mockDb.journalEntityById('project-001'),
-        ).thenAnswer((_) async => projectEntry);
-        when(
-          () => mockDb.journalEntityById('task-001'),
-        ).thenAnswer((_) async => taskEntry);
-        when(
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
         when(
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
@@ -1100,8 +1033,6 @@ void main() {
         when(
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => existingLink);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
         when(
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 2}));
@@ -1128,16 +1059,8 @@ void main() {
           ),
         ).thenThrow(StateError('sequence ledger boom'));
         when(
-          () => mockDb.journalEntityById('project-001'),
-        ).thenAnswer((_) async => projectEntry);
-        when(
-          () => mockDb.journalEntityById('task-001'),
-        ).thenAnswer((_) async => taskEntry);
-        when(
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => null);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
         when(
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
@@ -1415,16 +1338,8 @@ void main() {
         ).thenThrow(StateError('outbox boom'));
 
         when(
-          () => mockDb.journalEntityById('project-001'),
-        ).thenAnswer((_) async => projectEntry);
-        when(
-          () => mockDb.journalEntityById('task-001'),
-        ).thenAnswer((_) async => taskEntry);
-        when(
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => null);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
         when(
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
@@ -1468,16 +1383,8 @@ void main() {
         ).thenThrow(StateError('outbox boom during relink'));
 
         when(
-          () => mockDb.journalEntityById('project-001'),
-        ).thenAnswer((_) async => projectEntry);
-        when(
-          () => mockDb.journalEntityById('task-001'),
-        ).thenAnswer((_) async => taskEntry);
-        when(
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
         when(
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 2}));
@@ -1523,8 +1430,6 @@ void main() {
         when(
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => existingLink);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
         when(
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 3}));
@@ -1569,9 +1474,6 @@ void main() {
         () => mockDb.getProjectForTask('source-task'),
       ).thenAnswer((_) async => projectEntry);
       // linkTaskToProject internals
-      when(
-        () => mockDb.journalEntityById('project-001'),
-      ).thenAnswer((_) async => projectEntry);
       final newTaskMeta = taskMeta.copyWith(id: 'new-task');
       final newTaskEntry = Task(
         meta: newTaskMeta,
@@ -1583,8 +1485,6 @@ void main() {
       when(
         () => mockDb.getProjectLinkForTask('new-task'),
       ).thenAnswer((_) async => null);
-      when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-      when(() => mockNotifications.notify(any())).thenReturn(null);
       when(
         mockVectorClockService.getNextVectorClock,
       ).thenAnswer((_) async => const VectorClock({'d': 5}));
