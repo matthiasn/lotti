@@ -25,21 +25,51 @@ void main() {
       testCategoryId = const Uuid().v4();
     });
 
-    test('initial state is loading', () {
-      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-        (_) => const Stream.empty(),
-      );
-
+    /// Container with the standard repository override, disposed via
+    /// addTearDown.
+    ProviderContainer makeContainer() {
       final container = ProviderContainer(
         overrides: [
           categoryRepositoryProvider.overrideWithValue(mockRepository),
         ],
       );
       addTearDown(container.dispose);
+      return container;
+    }
 
-      container.read(
+    /// Instantiates the controller and resolves once the category has
+    /// loaded, returning the notifier for follow-up mutations.
+    Future<CategoryDetailsController> loadCategory(
+      ProviderContainer container,
+    ) async {
+      final completer = Completer<void>();
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+      addTearDown(subscription.close);
+      final controller = container.read(
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
+      await completer.future;
+      return controller;
+    }
+
+    test('initial state is loading', () {
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => const Stream.empty(),
+      );
+
+      final container = makeContainer()
+        ..read(
+          categoryDetailsControllerProvider(testCategoryId).notifier,
+        );
       final state = container.read(
         categoryDetailsControllerProvider(testCategoryId),
       );
@@ -53,37 +83,14 @@ void main() {
 
     test('loads category from repository', () async {
       final category = CategoryTestUtils.createTestCategory();
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Listen for state changes
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      // Wait for the category to load (short guard)
-      await completer.future;
+      await loadCategory(container);
 
       final state = container.read(
         categoryDetailsControllerProvider(testCategoryId),
@@ -92,8 +99,6 @@ void main() {
       expect(state.isLoading, isFalse);
       expect(state.category, equals(category));
       expect(state.hasChanges, isFalse);
-
-      subscription.close();
     });
 
     test('handles loading error', () async {
@@ -104,12 +109,7 @@ void main() {
         (_) => Stream.error(error),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
       // Listen for state changes
       final subscription = container.listen(
@@ -142,36 +142,14 @@ void main() {
 
     test('detects changes in form fields', () async {
       final category = CategoryTestUtils.createTestCategory();
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       // Test name change
       controller.updateFormField(name: 'New Name');
@@ -245,8 +223,6 @@ void main() {
             ?.defaultLanguageCode,
         equals('de'),
       );
-
-      subscription.close();
     });
 
     test('no changes when setting same values', () async {
@@ -255,36 +231,14 @@ void main() {
         color: '#FF0000',
         private: true,
       );
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       // Set same values
       controller.updateFormField(
@@ -299,44 +253,20 @@ void main() {
             .hasChanges,
         isFalse,
       );
-
-      subscription.close();
     });
 
     test('updates speech dictionary', () async {
       final category = CategoryTestUtils.createTestCategory(
         speechDictionary: ['term1'],
       );
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       // Update speech dictionary
       controller.updateSpeechDictionary(['term1', 'term2', 'term3']);
@@ -360,44 +290,20 @@ void main() {
             ?.speechDictionary,
         isNull,
       );
-
-      subscription.close();
     });
 
     test('no changes when setting same speech dictionary', () async {
       final category = CategoryTestUtils.createTestCategory(
         speechDictionary: ['term1', 'term2'],
       );
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       // Set same values
       controller.updateSpeechDictionary(['term1', 'term2']);
@@ -408,13 +314,10 @@ void main() {
             .hasChanges,
         isFalse,
       );
-
-      subscription.close();
     });
 
     test('saves changes successfully', () async {
       final category = CategoryTestUtils.createTestCategory(name: 'Original');
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
@@ -426,30 +329,9 @@ void main() {
         (_) async => category.copyWith(name: 'Updated'),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       // Make a change
       controller.updateFormField(name: 'Updated');
@@ -466,42 +348,18 @@ void main() {
       expect(state.errorMessage, isNull);
 
       verify(() => mockRepository.updateCategory(any())).called(1);
-
-      subscription.close();
     });
 
     test('validates name is not empty', () async {
       final category = CategoryTestUtils.createTestCategory(name: 'Original');
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       // Set empty name
       controller.updateFormField(name: '   ');
@@ -516,13 +374,10 @@ void main() {
       expect(state.isSaving, isFalse);
 
       verifyNever(() => mockRepository.updateCategory(any()));
-
-      subscription.close();
     });
 
     test('handles save error', () async {
       final category = CategoryTestUtils.createTestCategory(name: 'Original');
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
@@ -534,30 +389,9 @@ void main() {
         Exception('Save failed'),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       controller.updateFormField(name: 'Updated');
       await controller.saveChanges();
@@ -572,53 +406,26 @@ void main() {
       );
       expect(state.isSaving, isFalse);
       expect(state.hasChanges, isTrue); // Changes remain
-
-      subscription.close();
     });
 
     test('does nothing when no changes', () async {
       final category = CategoryTestUtils.createTestCategory();
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       await controller.saveChanges();
 
       verifyNever(() => mockRepository.updateCategory(any()));
-
-      subscription.close();
     });
 
     test('deletes category successfully', () async {
       final category = CategoryTestUtils.createTestCategory();
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
@@ -627,30 +434,9 @@ void main() {
         (_) async {},
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       await controller.deleteCategory();
 
@@ -662,13 +448,10 @@ void main() {
       expect(state.errorMessage, isNull);
 
       verify(() => mockRepository.deleteCategory(testCategoryId)).called(1);
-
-      subscription.close();
     });
 
     test('handles delete error', () async {
       final category = CategoryTestUtils.createTestCategory();
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
@@ -677,30 +460,9 @@ void main() {
         Exception('Delete failed'),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       await controller.deleteCategory();
 
@@ -713,8 +475,6 @@ void main() {
         equals('Failed to delete category. Please try again.'),
       );
       expect(state.isSaving, isFalse);
-
-      subscription.close();
     });
 
     test(
@@ -763,12 +523,7 @@ void main() {
           () => mockRepository.updateCategory(any()),
         ).thenAnswer((_) async => remoteCategory);
 
-        final container = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+        final container = makeContainer();
 
         // Wait for initial load
         final subscription = container.listen(
@@ -858,12 +613,7 @@ void main() {
           () => mockRepository.updateCategory(any()),
         ).thenAnswer((_) async => remoteCategory);
 
-        final container = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+        final container = makeContainer();
 
         final subscription = container.listen(
           categoryDetailsControllerProvider(testId),
@@ -944,36 +694,14 @@ void main() {
         final category = CategoryTestUtils.createTestCategory(
           correctionExamples: [exampleToDelete, exampleToKeep],
         );
-        final completer = Completer<void>();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
         );
 
-        final container = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+        final container = makeContainer();
 
-        // Wait for initial load
-        final subscription = container.listen(
-          categoryDetailsControllerProvider(testCategoryId),
-          (_, next) {
-            if (!next.isLoading &&
-                next.category != null &&
-                !completer.isCompleted) {
-              completer.complete();
-            }
-          },
-        );
-
-        final controller = container.read(
-          categoryDetailsControllerProvider(testCategoryId).notifier,
-        );
-
-        await completer.future;
+        final controller = await loadCategory(container);
 
         // Delete the first example (index 0)
         controller.deleteCorrectionExampleAt(0);
@@ -989,8 +717,6 @@ void main() {
           state.category?.correctionExamples!.first.before,
           equals('keep me'),
         );
-
-        subscription.close();
       },
     );
 
@@ -1006,36 +732,14 @@ void main() {
         final category = CategoryTestUtils.createTestCategory(
           correctionExamples: [onlyExample],
         );
-        final completer = Completer<void>();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
         );
 
-        final container = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+        final container = makeContainer();
 
-        // Wait for initial load
-        final subscription = container.listen(
-          categoryDetailsControllerProvider(testCategoryId),
-          (_, next) {
-            if (!next.isLoading &&
-                next.category != null &&
-                !completer.isCompleted) {
-              completer.complete();
-            }
-          },
-        );
-
-        final controller = container.read(
-          categoryDetailsControllerProvider(testCategoryId).notifier,
-        );
-
-        await completer.future;
+        final controller = await loadCategory(container);
 
         // Delete the only example (index 0)
         controller.deleteCorrectionExampleAt(0);
@@ -1047,8 +751,6 @@ void main() {
         // Should have changes and null correctionExamples
         expect(state.hasChanges, isTrue);
         expect(state.category?.correctionExamples, isNull);
-
-        subscription.close();
       },
     );
 
@@ -1062,35 +764,14 @@ void main() {
       final category = CategoryTestUtils.createTestCategory(
         correctionExamples: [example],
       );
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       // Try to delete at invalid indices
       controller
@@ -1104,8 +785,6 @@ void main() {
       // Should have no changes - examples remain unchanged
       expect(state.hasChanges, isFalse);
       expect(state.category?.correctionExamples, hasLength(1));
-
-      subscription.close();
     });
 
     test('deleteCorrectionExampleAt handles duplicates correctly', () async {
@@ -1119,35 +798,14 @@ void main() {
       final category = CategoryTestUtils.createTestCategory(
         correctionExamples: [duplicateExample, duplicateExample],
       );
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       // Delete only the first duplicate (index 0)
       controller.deleteCorrectionExampleAt(0);
@@ -1160,41 +818,18 @@ void main() {
       expect(state.hasChanges, isTrue);
       expect(state.category?.correctionExamples, hasLength(1));
       expect(state.category?.correctionExamples!.first.before, equals('same'));
-
-      subscription.close();
     });
 
     test('setDefaultProfileId updates profile and marks changes', () async {
       final category = CategoryTestUtils.createTestCategory();
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       controller.setDefaultProfileId('profile-123');
 
@@ -1212,41 +847,18 @@ void main() {
       expect(cleared.category?.defaultProfileId, isNull);
       // Back to original → no changes
       expect(cleared.hasChanges, isFalse);
-
-      subscription.close();
     });
 
     test('setDefaultTemplateId updates template and marks changes', () async {
       final category = CategoryTestUtils.createTestCategory();
-      final completer = Completer<void>();
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = makeContainer();
 
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future;
+      final controller = await loadCategory(container);
 
       controller.setDefaultTemplateId('template-456');
 
@@ -1263,8 +875,6 @@ void main() {
       );
       expect(cleared.category?.defaultTemplateId, isNull);
       expect(cleared.hasChanges, isFalse);
-
-      subscription.close();
     });
 
     test(
@@ -1274,35 +884,14 @@ void main() {
           defaultProfileId: 'existing-profile',
           defaultTemplateId: 'existing-template',
         );
-        final completer = Completer<void>();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
         );
 
-        final container = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-        );
-        addTearDown(container.dispose);
+        final container = makeContainer();
 
-        final subscription = container.listen(
-          categoryDetailsControllerProvider(testCategoryId),
-          (_, next) {
-            if (!next.isLoading &&
-                next.category != null &&
-                !completer.isCompleted) {
-              completer.complete();
-            }
-          },
-        );
-
-        final controller = container.read(
-          categoryDetailsControllerProvider(testCategoryId).notifier,
-        );
-
-        await completer.future;
+        final controller = await loadCategory(container);
 
         controller
           ..setDefaultProfileId('existing-profile')
@@ -1314,8 +903,6 @@ void main() {
               .hasChanges,
           isFalse,
         );
-
-        subscription.close();
       },
     );
 
