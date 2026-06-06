@@ -12,8 +12,9 @@ import '../test_utils.dart';
 extension _AnyProjectsModels on glados.Any {
   glados.Generator<String> get categoryId => glados.any.letterOrDigits;
 
-  glados.Generator<Set<String>> get categoryIdSet =>
-      glados.ListAnys(this).listWithLengthInRange(0, 4, categoryId).map(
+  glados.Generator<Set<String>> get categoryIdSet => glados.ListAnys(this)
+      .listWithLengthInRange(0, 4, categoryId)
+      .map(
         Set<String>.from,
       );
 
@@ -26,8 +27,9 @@ extension _AnyProjectsModels on glados.Any {
         ProjectStatusFilterIds.archived,
       ]);
 
-  glados.Generator<Set<String>> get statusFilterIdSet =>
-      glados.ListAnys(this).listWithLengthInRange(0, 5, statusFilterId).map(
+  glados.Generator<Set<String>> get statusFilterIdSet => glados.ListAnys(this)
+      .listWithLengthInRange(0, 5, statusFilterId)
+      .map(
         Set<String>.from,
       );
 

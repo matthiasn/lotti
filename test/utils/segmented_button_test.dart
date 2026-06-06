@@ -126,8 +126,7 @@ void main() {
         expect(
           textWidget.semanticsLabel,
           customSemantics,
-          reason:
-              'when semanticsLabel is supplied it must override the label',
+          reason: 'when semanticsLabel is supplied it must override the label',
         );
         expect(
           segment.value,

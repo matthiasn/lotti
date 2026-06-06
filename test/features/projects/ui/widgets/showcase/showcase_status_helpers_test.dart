@@ -15,12 +15,10 @@ import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_help
 
 extension _AnyDuration on glados.Any {
   /// Non-negative seconds spanning zero to well beyond one hour.
-  glados.Generator<int> get durationSeconds =>
-      glados.any.intInRange(0, 7200);
+  glados.Generator<int> get durationSeconds => glados.any.intInRange(0, 7200);
 
   /// Non-negative minutes to build Duration objects for the minute-path.
-  glados.Generator<int> get durationMinutes =>
-      glados.any.intInRange(0, 120);
+  glados.Generator<int> get durationMinutes => glados.any.intInRange(0, 120);
 }
 
 // ---------------------------------------------------------------------------
@@ -60,20 +58,25 @@ void main() {
       );
     });
 
-    test('hour path yields Nh Nm (seconds are dropped at hour granularity)', () {
-      expect(
-        showcaseFormatDuration(const Duration(hours: 1)),
-        '1h 0m',
-      );
-      expect(
-        showcaseFormatDuration(const Duration(hours: 2, minutes: 15)),
-        '2h 15m',
-      );
-      expect(
-        showcaseFormatDuration(const Duration(hours: 1, minutes: 30, seconds: 45)),
-        '1h 30m',
-      );
-    });
+    test(
+      'hour path yields Nh Nm (seconds are dropped at hour granularity)',
+      () {
+        expect(
+          showcaseFormatDuration(const Duration(hours: 1)),
+          '1h 0m',
+        );
+        expect(
+          showcaseFormatDuration(const Duration(hours: 2, minutes: 15)),
+          '2h 15m',
+        );
+        expect(
+          showcaseFormatDuration(
+            const Duration(hours: 1, minutes: 30, seconds: 45),
+          ),
+          '1h 30m',
+        );
+      },
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -117,8 +120,11 @@ void main() {
       'durations under one minute always end with s (seconds suffix)',
       (seconds) {
         final result = showcaseFormatDuration(Duration(seconds: seconds));
-        expect(result.endsWith('s'), isTrue,
-            reason: '"$result" should end with s for ${seconds}s duration');
+        expect(
+          result.endsWith('s'),
+          isTrue,
+          reason: '"$result" should end with s for ${seconds}s duration',
+        );
       },
       tags: 'glados',
     );
@@ -130,8 +136,11 @@ void main() {
       'durations of at least one hour always end with m (minute suffix)',
       (seconds) {
         final result = showcaseFormatDuration(Duration(seconds: seconds));
-        expect(result.endsWith('m'), isTrue,
-            reason: '"$result" should end with m for ${seconds}s duration');
+        expect(
+          result.endsWith('m'),
+          isTrue,
+          reason: '"$result" should end with m for ${seconds}s duration',
+        );
       },
       tags: 'glados',
     );
@@ -144,14 +153,23 @@ void main() {
       (minutes) {
         final result = showcaseFormatDuration(Duration(minutes: minutes));
         if (minutes == 0) {
-          expect(result.endsWith('s'), isTrue,
-              reason: '0 minutes = 0 seconds → should end with s');
+          expect(
+            result.endsWith('s'),
+            isTrue,
+            reason: '0 minutes = 0 seconds → should end with s',
+          );
         } else if (minutes < 60) {
-          expect(result.endsWith('m'), isTrue,
-              reason: '$minutes min (exact) should end with m');
+          expect(
+            result.endsWith('m'),
+            isTrue,
+            reason: '$minutes min (exact) should end with m',
+          );
         } else {
-          expect(result.endsWith('m'), isTrue,
-              reason: '$minutes min >= 60 should end with m');
+          expect(
+            result.endsWith('m'),
+            isTrue,
+            reason: '$minutes min >= 60 should end with m',
+          );
         }
       },
       tags: 'glados',

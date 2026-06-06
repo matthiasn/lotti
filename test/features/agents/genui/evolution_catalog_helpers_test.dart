@@ -65,11 +65,14 @@ void main() {
       glados.any.nonNegativeInt,
       glados.any.jsonKey,
       glados.ExploreConfig(numRuns: 120),
-    ).test('round-trips any non-negative int through a single-entry map',
-        (value, key) {
-      final result = readInt({key: value}, key);
-      expect(result, value, reason: 'key=$key value=$value');
-    }, tags: 'glados');
+    ).test(
+      'round-trips any non-negative int through a single-entry map',
+      (value, key) {
+        final result = readInt({key: value}, key);
+        expect(result, value, reason: 'key=$key value=$value');
+      },
+      tags: 'glados',
+    );
 
     glados.Glados2(
       glados.any.anyInt,
@@ -112,11 +115,14 @@ void main() {
       glados.any.nonNegativeDouble,
       glados.any.jsonKey,
       glados.ExploreConfig(numRuns: 120),
-    ).test('round-trips any non-negative double through a single-entry map',
-        (value, key) {
-      final result = readDouble({key: value}, key);
-      expect(result, closeTo(value, 1e-9), reason: 'key=$key value=$value');
-    }, tags: 'glados');
+    ).test(
+      'round-trips any non-negative double through a single-entry map',
+      (value, key) {
+        final result = readDouble({key: value}, key);
+        expect(result, closeTo(value, 1e-9), reason: 'key=$key value=$value');
+      },
+      tags: 'glados',
+    );
   });
 
   // ── readNumOrNull ─────────────────────────────────────────────────────────────
@@ -192,18 +198,23 @@ void main() {
       glados.any.shortAlphanumString,
       glados.any.jsonKey,
       glados.ExploreConfig(numRuns: 120),
-    ).test('round-trips any alphanumeric string through a single-entry map',
-        (value, key) {
-      final result = readString({key: value}, key);
-      expect(result, value, reason: 'key=$key value=$value');
-    }, tags: 'glados');
+    ).test(
+      'round-trips any alphanumeric string through a single-entry map',
+      (value, key) {
+        final result = readString({key: value}, key);
+        expect(result, value, reason: 'key=$key value=$value');
+      },
+      tags: 'glados',
+    );
 
     glados.Glados2(
       glados.any.shortAlphanumString,
       glados.any.jsonKey,
       glados.ExploreConfig(numRuns: 120),
-    ).test('returns the fallback string when the key is absent',
-        (fallback, key) {
+    ).test('returns the fallback string when the key is absent', (
+      fallback,
+      key,
+    ) {
       final result = readString({}, key, fallback);
       expect(result, fallback, reason: 'key=$key fallback=$fallback');
     }, tags: 'glados');

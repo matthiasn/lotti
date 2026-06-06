@@ -224,8 +224,11 @@ void main() {
         entity.affectedIds,
         containsAll(<String>{'entity-1', dataType}),
       );
-      expect(entity.affectedIds.length, 2,
-          reason: 'only entity id and dataType');
+      expect(
+        entity.affectedIds.length,
+        2,
+        reason: 'only entity id and dataType',
+      );
     });
 
     test('survey includes surveyNotification', () {
@@ -243,21 +246,24 @@ void main() {
       );
     });
 
-    test('habitCompletion includes habitId and habitCompletionNotification', () {
-      const habitId = 'habit-42';
-      final entity = JournalEntity.habitCompletion(
-        meta: meta,
-        data: HabitCompletionData(
-          dateFrom: fixedDate,
-          dateTo: fixedDate,
-          habitId: habitId,
-        ),
-      );
-      expect(
-        entity.affectedIds,
-        <String>{'entity-1', habitId, habitCompletionNotification},
-      );
-    });
+    test(
+      'habitCompletion includes habitId and habitCompletionNotification',
+      () {
+        const habitId = 'habit-42';
+        final entity = JournalEntity.habitCompletion(
+          meta: meta,
+          data: HabitCompletionData(
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+            habitId: habitId,
+          ),
+        );
+        expect(
+          entity.affectedIds,
+          <String>{'entity-1', habitId, habitCompletionNotification},
+        );
+      },
+    );
 
     test('workout includes workoutNotification and workoutType', () {
       const workoutType = 'HKWorkoutActivityTypeRunning';
@@ -353,8 +359,8 @@ void main() {
     final date = DateTime(2024, 3, 15, 10);
 
     Metadata roundTrip(Metadata m) => Metadata.fromJson(
-          jsonDecode(jsonEncode(m.toJson())) as Map<String, dynamic>,
-        );
+      jsonDecode(jsonEncode(m.toJson())) as Map<String, dynamic>,
+    );
 
     test('minimal Metadata survives JSON round-trip', () {
       final m = Metadata(
@@ -511,9 +517,14 @@ extension _AnyJournalEntities on glados.Any {
         glados.IntAnys(this).intInRange(0, 3),
         glados.IntAnys(this).intInRange(0, 5),
         glados.IntAnys(this).intInRange(0, 15),
-        (idSlot, dateSlot, categorySlot, labelCountSlot, flagSlot,
-                optionalsSlot) =>
-            _GeneratedMetadata(
+        (
+          idSlot,
+          dateSlot,
+          categorySlot,
+          labelCountSlot,
+          flagSlot,
+          optionalsSlot,
+        ) => _GeneratedMetadata(
           idSlot: idSlot,
           dateSlot: dateSlot,
           categorySlot: categorySlot,

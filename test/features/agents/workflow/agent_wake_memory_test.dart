@@ -60,18 +60,21 @@ void main() {
   );
 
   group('compactAndAssemble read-flip gates', () {
-    test('skips compactor reads when this wake did not refresh capture', () async {
-      final memory = AgentWakeMemory(
-        syncService: syncService,
-      );
+    test(
+      'skips compactor reads when this wake did not refresh capture',
+      () async {
+        final memory = AgentWakeMemory(
+          syncService: syncService,
+        );
 
-      final view = await assemble(memory, captureSucceeded: false);
+        final view = await assemble(memory, captureSucceeded: false);
 
-      expect(view.captureSucceeded, isFalse);
-      expect(view.compactedLog, isNull);
-      expect(view.useCompactedLog, isFalse);
-      verifyNever(() => syncService.repository);
-    });
+        expect(view.captureSucceeded, isFalse);
+        expect(view.compactedLog, isNull);
+        expect(view.useCompactedLog, isFalse);
+        verifyNever(() => syncService.repository);
+      },
+    );
 
     test('empty assembled log falls back to inline context', () async {
       when(() => syncService.repository).thenReturn(agentRepository);

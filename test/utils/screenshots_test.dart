@@ -809,8 +809,7 @@ void main() {
     group('Platform Detection', () {
       test('provides helpful error for unsupported platforms', () {
         const unsupportedPlatform = 'windows';
-        const errorMessage =
-            '$unsupportedPlatformMessage$unsupportedPlatform';
+        const errorMessage = '$unsupportedPlatformMessage$unsupportedPlatform';
 
         expect(errorMessage, contains('not supported'));
         expect(errorMessage, contains(unsupportedPlatform));

@@ -1189,8 +1189,11 @@ void main() {
     test('output always matches safe-char pattern for known inputs', () {
       for (final raw in ['../secret', 'a/b/c', 'hello world', 'abc?q=1']) {
         final result = sanitizeShardKey(raw);
-        expect(result, matches(_safeChars),
-            reason: '"$raw" → "$result" contains unsafe chars');
+        expect(
+          result,
+          matches(_safeChars),
+          reason: '"$raw" → "$result" contains unsafe chars',
+        );
       }
     });
   });

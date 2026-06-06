@@ -27,28 +27,27 @@ enum _EstimateTokensInputKind {
 }
 
 extension _AnyEstimateTokens on Any {
-  Generator<String> get estimateTokensInput =>
-      CombinableAny(this).combine2(
-        AnyUtils(this).choose(_EstimateTokensInputKind.values),
-        intInRange(2, 30), // word count or token count
-        (kind, countFactor) {
-          switch (kind) {
-            case _EstimateTokensInputKind.multiWord:
-              // Generate 2–30 ASCII words separated by spaces.
-              return List.generate(
-                countFactor,
-                (i) => 'word$i',
-              ).join(' ');
-            case _EstimateTokensInputKind.cjkSingleToken:
-              // 2–30 CJK characters with no spaces.
-              return List.generate(countFactor, (i) => '漢').join();
-            case _EstimateTokensInputKind.longNonCjkToken:
-              // Single ASCII token of length ≥ 1024.
-              final length = kChunkTargetTokens * 4 + countFactor * 10;
-              return 'a' * length;
-          }
-        },
-      );
+  Generator<String> get estimateTokensInput => CombinableAny(this).combine2(
+    AnyUtils(this).choose(_EstimateTokensInputKind.values),
+    intInRange(2, 30), // word count or token count
+    (kind, countFactor) {
+      switch (kind) {
+        case _EstimateTokensInputKind.multiWord:
+          // Generate 2–30 ASCII words separated by spaces.
+          return List.generate(
+            countFactor,
+            (i) => 'word$i',
+          ).join(' ');
+        case _EstimateTokensInputKind.cjkSingleToken:
+          // 2–30 CJK characters with no spaces.
+          return List.generate(countFactor, (i) => '漢').join();
+        case _EstimateTokensInputKind.longNonCjkToken:
+          // Single ASCII token of length ≥ 1024.
+          final length = kChunkTargetTokens * 4 + countFactor * 10;
+          return 'a' * length;
+      }
+    },
+  );
 }
 
 class _GeneratedChunkText {

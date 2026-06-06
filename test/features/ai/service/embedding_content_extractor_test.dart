@@ -517,11 +517,17 @@ void main() {
         }
         final trimmed = assembled.toString().trim();
         if (trimmed.length < kMinEmbeddingTextLength) {
-          expect(result, isNull,
-              reason: 'Short text ("$trimmed") should yield null');
+          expect(
+            result,
+            isNull,
+            reason: 'Short text ("$trimmed") should yield null',
+          );
         } else {
-          expect(result, isNotNull,
-              reason: 'Long-enough text ("$trimmed") should not be null');
+          expect(
+            result,
+            isNotNull,
+            reason: 'Long-enough text ("$trimmed") should not be null',
+          );
           expect(result, trimmed);
         }
       },
@@ -540,8 +546,11 @@ void main() {
           labelNames: labels,
         );
         if (result != null) {
-          expect(result, startsWith(title.trim()),
-              reason: 'Result must start with the trimmed title');
+          expect(
+            result,
+            startsWith(title.trim()),
+            reason: 'Result must start with the trimmed title',
+          );
         }
       },
       tags: 'glados',
@@ -560,8 +569,11 @@ void main() {
         );
         if (result != null && labels.isNotEmpty) {
           for (final label in labels) {
-            expect(result, contains(label),
-                reason: 'Result must contain label "$label"');
+            expect(
+              result,
+              contains(label),
+              reason: 'Result must contain label "$label"',
+            );
           }
         }
       },

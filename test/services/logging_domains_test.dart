@@ -19,7 +19,8 @@ void main() {
         expect(
           domain.wireName,
           equals(domain.name),
-          reason: '${domain.name}.wireName must equal .name for '
+          reason:
+              '${domain.name}.wireName must equal .name for '
               'stable wire format',
         );
       }
@@ -30,23 +31,28 @@ void main() {
         expect(
           domain.flagName.startsWith('log_'),
           isTrue,
-          reason: '${domain.name}.flagName="${domain.flagName}" '
+          reason:
+              '${domain.name}.flagName="${domain.flagName}" '
               'must start with "log_"',
         );
       }
     });
 
-    test('every flagName contains only lowercase letters, digits, and underscores', () {
-      final validChars = RegExp(r'^[a-z0-9_]+$');
-      for (final domain in LogDomain.values) {
-        expect(
-          validChars.hasMatch(domain.flagName),
-          isTrue,
-          reason: '${domain.name}.flagName="${domain.flagName}" '
-              'must contain only [a-z0-9_]',
-        );
-      }
-    });
+    test(
+      'every flagName contains only lowercase letters, digits, and underscores',
+      () {
+        final validChars = RegExp(r'^[a-z0-9_]+$');
+        for (final domain in LogDomain.values) {
+          expect(
+            validChars.hasMatch(domain.flagName),
+            isTrue,
+            reason:
+                '${domain.name}.flagName="${domain.flagName}" '
+                'must contain only [a-z0-9_]',
+          );
+        }
+      },
+    );
 
     test('all flagName values are unique across the enum', () {
       final flagNames = LogDomain.values.map((d) => d.flagName).toList();
@@ -80,7 +86,8 @@ void main() {
           expect(
             domain.routesToSyncFile,
             isFalse,
-            reason: '${domain.name}.routesToSyncFile must be false; '
+            reason:
+                '${domain.name}.routesToSyncFile must be false; '
                 'only sync routes there',
           );
         }
@@ -99,7 +106,8 @@ void main() {
           expect(
             domain.defaultEnabled,
             isTrue,
-            reason: '${domain.name}.defaultEnabled must be true; '
+            reason:
+                '${domain.name}.defaultEnabled must be true; '
                 'only sync is off by default',
           );
         }

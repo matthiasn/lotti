@@ -214,7 +214,11 @@ final List<ConfigFlag> _flagPool = List<ConfigFlag>.unmodifiable([
   const ConfigFlag(name: 'beta', description: 'Beta subtitle', status: true),
   const ConfigFlag(name: 'gamma', description: 'Gamma subtitle', status: false),
   const ConfigFlag(name: 'delta', description: 'Delta subtitle', status: false),
-  const ConfigFlag(name: 'epsilon', description: 'Epsilon subtitle', status: false),
+  const ConfigFlag(
+    name: 'epsilon',
+    description: 'Epsilon subtitle',
+    status: false,
+  ),
 ]);
 
 /// A resolver that uses each flag's `name` as its title and `description`

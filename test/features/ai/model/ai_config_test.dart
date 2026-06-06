@@ -40,14 +40,16 @@ extension _AnyAiConfig on glados.Any {
         _shortId,
         _shortId,
         _providerType,
-        (id, name, pt) => AiConfig.inferenceProvider(
-          id: id.isEmpty ? 'p' : id,
-          name: name.isEmpty ? 'n' : name,
-          baseUrl: 'https://example.com',
-          apiKey: 'sk-test',
-          createdAt: DateTime.utc(2025),
-          inferenceProviderType: pt,
-        ) as AiConfigInferenceProvider,
+        (id, name, pt) =>
+            AiConfig.inferenceProvider(
+                  id: id.isEmpty ? 'p' : id,
+                  name: name.isEmpty ? 'n' : name,
+                  baseUrl: 'https://example.com',
+                  apiKey: 'sk-test',
+                  createdAt: DateTime.utc(2025),
+                  inferenceProviderType: pt,
+                )
+                as AiConfigInferenceProvider,
       );
 
   glados.Generator<AiConfigModel> get aiConfigModelConfig =>
@@ -56,16 +58,18 @@ extension _AnyAiConfig on glados.Any {
         _smallListOf(_modality),
         _smallListOf(_modality),
         glados.any.bool,
-        (id, inMods, outMods, isReasoning) => AiConfig.model(
-          id: id.isEmpty ? 'm' : id,
-          name: 'model-name',
-          providerModelId: 'gpt-4o',
-          inferenceProviderId: 'provider-1',
-          createdAt: DateTime.utc(2025),
-          inputModalities: inMods.isEmpty ? [Modality.text] : inMods,
-          outputModalities: outMods.isEmpty ? [Modality.text] : outMods,
-          isReasoningModel: isReasoning,
-        ) as AiConfigModel,
+        (id, inMods, outMods, isReasoning) =>
+            AiConfig.model(
+                  id: id.isEmpty ? 'm' : id,
+                  name: 'model-name',
+                  providerModelId: 'gpt-4o',
+                  inferenceProviderId: 'provider-1',
+                  createdAt: DateTime.utc(2025),
+                  inputModalities: inMods.isEmpty ? [Modality.text] : inMods,
+                  outputModalities: outMods.isEmpty ? [Modality.text] : outMods,
+                  isReasoningModel: isReasoning,
+                )
+                as AiConfigModel,
       );
 
   glados.Generator<AiConfigPrompt> get aiConfigPromptConfig =>
@@ -74,18 +78,20 @@ extension _AnyAiConfig on glados.Any {
         _responseType,
         glados.any.bool,
         _smallListOf(_inputDataType),
-        (id, rt, useReasoning, inputData) => AiConfig.prompt(
-          id: id.isEmpty ? 'q' : id,
-          name: 'prompt-name',
-          systemMessage: 'You are a helpful assistant.',
-          userMessage: 'Summarise this.',
-          defaultModelId: 'model-1',
-          modelIds: <String>['model-1'],
-          createdAt: DateTime.utc(2025),
-          useReasoning: useReasoning,
-          requiredInputData: inputData,
-          aiResponseType: rt,
-        ) as AiConfigPrompt,
+        (id, rt, useReasoning, inputData) =>
+            AiConfig.prompt(
+                  id: id.isEmpty ? 'q' : id,
+                  name: 'prompt-name',
+                  systemMessage: 'You are a helpful assistant.',
+                  userMessage: 'Summarise this.',
+                  defaultModelId: 'model-1',
+                  modelIds: <String>['model-1'],
+                  createdAt: DateTime.utc(2025),
+                  useReasoning: useReasoning,
+                  requiredInputData: inputData,
+                  aiResponseType: rt,
+                )
+                as AiConfigPrompt,
       );
 
   glados.Generator<AiConfigSkill> get aiConfigSkillConfig =>
@@ -94,16 +100,18 @@ extension _AnyAiConfig on glados.Any {
         _skillType,
         _smallListOf(_modality),
         _contextPolicy,
-        (id, st, mods, cp) => AiConfig.skill(
-          id: id.isEmpty ? 's' : id,
-          name: 'skill-name',
-          createdAt: DateTime.utc(2025),
-          skillType: st,
-          requiredInputModalities: mods,
-          systemInstructions: 'Do something useful.',
-          userInstructions: 'Apply the skill.',
-          contextPolicy: cp,
-        ) as AiConfigSkill,
+        (id, st, mods, cp) =>
+            AiConfig.skill(
+                  id: id.isEmpty ? 's' : id,
+                  name: 'skill-name',
+                  createdAt: DateTime.utc(2025),
+                  skillType: st,
+                  requiredInputModalities: mods,
+                  systemInstructions: 'Do something useful.',
+                  userInstructions: 'Apply the skill.',
+                  contextPolicy: cp,
+                )
+                as AiConfigSkill,
       );
 }
 
@@ -204,18 +212,22 @@ void main() {
 
   group('AiConfigInferenceProvider JSON round-trip', () {
     test('round-trips required fields', () {
-      final config = AiConfig.inferenceProvider(
-        id: 'prov-1',
-        name: 'My Provider',
-        baseUrl: 'https://api.example.com',
-        apiKey: 'sk-abc',
-        createdAt: DateTime.utc(2025, 6),
-        inferenceProviderType: InferenceProviderType.openAi,
-      ) as AiConfigInferenceProvider;
+      final config =
+          AiConfig.inferenceProvider(
+                id: 'prov-1',
+                name: 'My Provider',
+                baseUrl: 'https://api.example.com',
+                apiKey: 'sk-abc',
+                createdAt: DateTime.utc(2025, 6),
+                inferenceProviderType: InferenceProviderType.openAi,
+              )
+              as AiConfigInferenceProvider;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigInferenceProvider;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigInferenceProvider;
 
       expect(decoded.id, config.id);
       expect(decoded.name, config.name);
@@ -226,62 +238,78 @@ void main() {
     });
 
     test('round-trips optional description', () {
-      final config = AiConfig.inferenceProvider(
-        id: 'prov-2',
-        name: 'Annotated',
-        baseUrl: 'https://api.example.com',
-        apiKey: 'sk-xyz',
-        createdAt: DateTime.utc(2025),
-        inferenceProviderType: InferenceProviderType.gemini,
-        description: 'My favourite provider',
-      ) as AiConfigInferenceProvider;
+      final config =
+          AiConfig.inferenceProvider(
+                id: 'prov-2',
+                name: 'Annotated',
+                baseUrl: 'https://api.example.com',
+                apiKey: 'sk-xyz',
+                createdAt: DateTime.utc(2025),
+                inferenceProviderType: InferenceProviderType.gemini,
+                description: 'My favourite provider',
+              )
+              as AiConfigInferenceProvider;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigInferenceProvider;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigInferenceProvider;
 
       expect(decoded.description, 'My favourite provider');
     });
 
     test('all InferenceProviderType values survive round-trip', () {
       for (final pt in InferenceProviderType.values) {
-        final config = AiConfig.inferenceProvider(
-          id: 'prov-${pt.name}',
-          name: pt.name,
-          baseUrl: 'https://example.com',
-          apiKey: 'k',
-          createdAt: DateTime.utc(2025),
-          inferenceProviderType: pt,
-        ) as AiConfigInferenceProvider;
+        final config =
+            AiConfig.inferenceProvider(
+                  id: 'prov-${pt.name}',
+                  name: pt.name,
+                  baseUrl: 'https://example.com',
+                  apiKey: 'k',
+                  createdAt: DateTime.utc(2025),
+                  inferenceProviderType: pt,
+                )
+                as AiConfigInferenceProvider;
 
-        final decoded = AiConfig.fromJson(
-          jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-        ) as AiConfigInferenceProvider;
+        final decoded =
+            AiConfig.fromJson(
+                  jsonDecode(jsonEncode(config.toJson()))
+                      as Map<String, dynamic>,
+                )
+                as AiConfigInferenceProvider;
 
-        expect(decoded.inferenceProviderType, pt,
-            reason: 'provider type ${pt.name} should survive round-trip');
+        expect(
+          decoded.inferenceProviderType,
+          pt,
+          reason: 'provider type ${pt.name} should survive round-trip',
+        );
       }
     });
   });
 
   group('AiConfigModel JSON round-trip', () {
     test('round-trips with multi-modal fields', () {
-      final config = AiConfig.model(
-        id: 'model-1',
-        name: 'GPT-4o',
-        providerModelId: 'gpt-4o',
-        inferenceProviderId: 'prov-1',
-        createdAt: DateTime.utc(2025, 3),
-        inputModalities: [Modality.text, Modality.image],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-        maxCompletionTokens: 4096,
-      ) as AiConfigModel;
+      final config =
+          AiConfig.model(
+                id: 'model-1',
+                name: 'GPT-4o',
+                providerModelId: 'gpt-4o',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime.utc(2025, 3),
+                inputModalities: [Modality.text, Modality.image],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+                supportsFunctionCalling: true,
+                maxCompletionTokens: 4096,
+              )
+              as AiConfigModel;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigModel;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigModel;
 
       expect(decoded.id, config.id);
       expect(decoded.providerModelId, config.providerModelId);
@@ -294,40 +322,48 @@ void main() {
     });
 
     test('maxCompletionTokens defaults to null when omitted', () {
-      final config = AiConfig.model(
-        id: 'model-2',
-        name: 'Small Model',
-        providerModelId: 'small',
-        inferenceProviderId: 'prov-1',
-        createdAt: DateTime.utc(2025),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      ) as AiConfigModel;
+      final config =
+          AiConfig.model(
+                id: 'model-2',
+                name: 'Small Model',
+                providerModelId: 'small',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime.utc(2025),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              )
+              as AiConfigModel;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigModel;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigModel;
 
       expect(decoded.maxCompletionTokens, isNull);
     });
 
     test('all Modality values survive round-trip', () {
       const modalities = Modality.values;
-      final config = AiConfig.model(
-        id: 'model-3',
-        name: 'All Modalities',
-        providerModelId: 'all',
-        inferenceProviderId: 'prov-1',
-        createdAt: DateTime.utc(2025),
-        inputModalities: modalities,
-        outputModalities: modalities,
-        isReasoningModel: false,
-      ) as AiConfigModel;
+      final config =
+          AiConfig.model(
+                id: 'model-3',
+                name: 'All Modalities',
+                providerModelId: 'all',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime.utc(2025),
+                inputModalities: modalities,
+                outputModalities: modalities,
+                isReasoningModel: false,
+              )
+              as AiConfigModel;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigModel;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigModel;
 
       expect(decoded.inputModalities, modalities);
       expect(decoded.outputModalities, modalities);
@@ -336,22 +372,27 @@ void main() {
 
   group('AiConfigPrompt JSON round-trip', () {
     test('round-trips required fields', () {
-      final config = AiConfig.prompt(
-        id: 'prompt-1',
-        name: 'Task Summary',
-        systemMessage: 'You are a summariser.',
-        userMessage: 'Summarise the task.',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1', 'model-2'],
-        createdAt: DateTime.utc(2025, 4),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary, // ignore: deprecated_member_use_from_same_package
-      ) as AiConfigPrompt;
+      final config =
+          AiConfig.prompt(
+                id: 'prompt-1',
+                name: 'Task Summary',
+                systemMessage: 'You are a summariser.',
+                userMessage: 'Summarise the task.',
+                defaultModelId: 'model-1',
+                modelIds: ['model-1', 'model-2'],
+                createdAt: DateTime.utc(2025, 4),
+                useReasoning: false,
+                requiredInputData: [InputDataType.task],
+                aiResponseType: AiResponseType
+                    .taskSummary, // ignore: deprecated_member_use_from_same_package
+              )
+              as AiConfigPrompt;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigPrompt;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigPrompt;
 
       expect(decoded.id, config.id);
       expect(decoded.systemMessage, config.systemMessage);
@@ -364,89 +405,113 @@ void main() {
     });
 
     test('nullable defaultVariables Map round-trips correctly', () {
-      final withVars = AiConfig.prompt(
-        id: 'prompt-2',
-        name: 'Prompt with vars',
-        systemMessage: 'Sys',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.utc(2025),
-        useReasoning: true,
-        requiredInputData: [],
-        aiResponseType: AiResponseType.audioTranscription,
-        defaultVariables: {'lang': 'en', 'style': 'concise'},
-      ) as AiConfigPrompt;
+      final withVars =
+          AiConfig.prompt(
+                id: 'prompt-2',
+                name: 'Prompt with vars',
+                systemMessage: 'Sys',
+                userMessage: 'User',
+                defaultModelId: 'model-1',
+                modelIds: ['model-1'],
+                createdAt: DateTime.utc(2025),
+                useReasoning: true,
+                requiredInputData: [],
+                aiResponseType: AiResponseType.audioTranscription,
+                defaultVariables: {'lang': 'en', 'style': 'concise'},
+              )
+              as AiConfigPrompt;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(withVars.toJson())) as Map<String, dynamic>,
-      ) as AiConfigPrompt;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(withVars.toJson()))
+                    as Map<String, dynamic>,
+              )
+              as AiConfigPrompt;
 
-      expect(decoded.defaultVariables, <String, String>{'lang': 'en', 'style': 'concise'});
+      expect(decoded.defaultVariables, <String, String>{
+        'lang': 'en',
+        'style': 'concise',
+      });
     });
 
     test('null defaultVariables survives round-trip as null', () {
-      final noVars = AiConfig.prompt(
-        id: 'prompt-3',
-        name: 'No vars',
-        systemMessage: 'Sys',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.utc(2025),
-        useReasoning: false,
-        requiredInputData: [],
-        aiResponseType: AiResponseType.imageAnalysis,
-      ) as AiConfigPrompt;
+      final noVars =
+          AiConfig.prompt(
+                id: 'prompt-3',
+                name: 'No vars',
+                systemMessage: 'Sys',
+                userMessage: 'User',
+                defaultModelId: 'model-1',
+                modelIds: ['model-1'],
+                createdAt: DateTime.utc(2025),
+                useReasoning: false,
+                requiredInputData: [],
+                aiResponseType: AiResponseType.imageAnalysis,
+              )
+              as AiConfigPrompt;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(noVars.toJson())) as Map<String, dynamic>,
-      ) as AiConfigPrompt;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(noVars.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigPrompt;
 
       expect(decoded.defaultVariables, isNull);
     });
 
     test('all AiResponseType values survive round-trip', () {
       for (final rt in AiResponseType.values) {
-        final config = AiConfig.prompt(
-          id: 'prompt-rt-${rt.name}',
-          name: rt.name,
-          systemMessage: 'S',
-          userMessage: 'U',
-          defaultModelId: 'm',
-          modelIds: <String>['m'],
-          createdAt: DateTime.utc(2025),
-          useReasoning: false,
-          requiredInputData: <InputDataType>[],
-          aiResponseType: rt,
-        ) as AiConfigPrompt;
+        final config =
+            AiConfig.prompt(
+                  id: 'prompt-rt-${rt.name}',
+                  name: rt.name,
+                  systemMessage: 'S',
+                  userMessage: 'U',
+                  defaultModelId: 'm',
+                  modelIds: <String>['m'],
+                  createdAt: DateTime.utc(2025),
+                  useReasoning: false,
+                  requiredInputData: <InputDataType>[],
+                  aiResponseType: rt,
+                )
+                as AiConfigPrompt;
 
-        final decoded = AiConfig.fromJson(
-          jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-        ) as AiConfigPrompt;
+        final decoded =
+            AiConfig.fromJson(
+                  jsonDecode(jsonEncode(config.toJson()))
+                      as Map<String, dynamic>,
+                )
+                as AiConfigPrompt;
 
-        expect(decoded.aiResponseType, rt,
-            reason: 'AiResponseType.${rt.name} should survive round-trip');
+        expect(
+          decoded.aiResponseType,
+          rt,
+          reason: 'AiResponseType.${rt.name} should survive round-trip',
+        );
       }
     });
   });
 
   group('AiConfigSkill JSON round-trip', () {
     test('round-trips required fields', () {
-      final config = AiConfig.skill(
-        id: 'skill-1',
-        name: 'Transcription',
-        createdAt: DateTime.utc(2025, 2),
-        skillType: SkillType.transcription,
-        requiredInputModalities: [Modality.audio],
-        systemInstructions: 'Transcribe the audio.',
-        userInstructions: 'Please transcribe.',
-        contextPolicy: ContextPolicy.dictionaryOnly,
-      ) as AiConfigSkill;
+      final config =
+          AiConfig.skill(
+                id: 'skill-1',
+                name: 'Transcription',
+                createdAt: DateTime.utc(2025, 2),
+                skillType: SkillType.transcription,
+                requiredInputModalities: [Modality.audio],
+                systemInstructions: 'Transcribe the audio.',
+                userInstructions: 'Please transcribe.',
+                contextPolicy: ContextPolicy.dictionaryOnly,
+              )
+              as AiConfigSkill;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigSkill;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigSkill;
 
       expect(decoded.id, config.id);
       expect(decoded.skillType, config.skillType);
@@ -459,62 +524,83 @@ void main() {
 
     test('all SkillType values survive round-trip', () {
       for (final st in SkillType.values) {
-        final config = AiConfig.skill(
-          id: 'skill-${st.name}',
-          name: st.name,
-          createdAt: DateTime.utc(2025),
-          skillType: st,
-          requiredInputModalities: <Modality>[],
-          systemInstructions: 'S',
-          userInstructions: 'U',
-        ) as AiConfigSkill;
+        final config =
+            AiConfig.skill(
+                  id: 'skill-${st.name}',
+                  name: st.name,
+                  createdAt: DateTime.utc(2025),
+                  skillType: st,
+                  requiredInputModalities: <Modality>[],
+                  systemInstructions: 'S',
+                  userInstructions: 'U',
+                )
+                as AiConfigSkill;
 
-        final decoded = AiConfig.fromJson(
-          jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-        ) as AiConfigSkill;
+        final decoded =
+            AiConfig.fromJson(
+                  jsonDecode(jsonEncode(config.toJson()))
+                      as Map<String, dynamic>,
+                )
+                as AiConfigSkill;
 
-        expect(decoded.skillType, st,
-            reason: 'SkillType.${st.name} should survive round-trip');
+        expect(
+          decoded.skillType,
+          st,
+          reason: 'SkillType.${st.name} should survive round-trip',
+        );
       }
     });
 
     test('all ContextPolicy values survive round-trip', () {
       for (final cp in ContextPolicy.values) {
-        final config = AiConfig.skill(
-          id: 'skill-cp-${cp.name}',
-          name: cp.name,
-          createdAt: DateTime.utc(2025),
-          skillType: SkillType.imageAnalysis,
-          requiredInputModalities: <Modality>[],
-          systemInstructions: 'S',
-          userInstructions: 'U',
-          contextPolicy: cp,
-        ) as AiConfigSkill;
+        final config =
+            AiConfig.skill(
+                  id: 'skill-cp-${cp.name}',
+                  name: cp.name,
+                  createdAt: DateTime.utc(2025),
+                  skillType: SkillType.imageAnalysis,
+                  requiredInputModalities: <Modality>[],
+                  systemInstructions: 'S',
+                  userInstructions: 'U',
+                  contextPolicy: cp,
+                )
+                as AiConfigSkill;
 
-        final decoded = AiConfig.fromJson(
-          jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-        ) as AiConfigSkill;
+        final decoded =
+            AiConfig.fromJson(
+                  jsonDecode(jsonEncode(config.toJson()))
+                      as Map<String, dynamic>,
+                )
+                as AiConfigSkill;
 
-        expect(decoded.contextPolicy, cp,
-            reason: 'ContextPolicy.${cp.name} should survive round-trip');
+        expect(
+          decoded.contextPolicy,
+          cp,
+          reason: 'ContextPolicy.${cp.name} should survive round-trip',
+        );
       }
     });
 
     test('AiConfigInferenceProfile with skillAssignments round-trips', () {
-      final profile = AiConfig.inferenceProfile(
-        id: 'prof-sa',
-        name: 'Profile with skills',
-        createdAt: DateTime.utc(2025),
-        thinkingModelId: 'model-think',
-        skillAssignments: const [
-          SkillAssignment(skillId: 'sk-1', automate: true),
-          SkillAssignment(skillId: 'sk-2'),
-        ],
-      ) as AiConfigInferenceProfile;
+      final profile =
+          AiConfig.inferenceProfile(
+                id: 'prof-sa',
+                name: 'Profile with skills',
+                createdAt: DateTime.utc(2025),
+                thinkingModelId: 'model-think',
+                skillAssignments: const [
+                  SkillAssignment(skillId: 'sk-1', automate: true),
+                  SkillAssignment(skillId: 'sk-2'),
+                ],
+              )
+              as AiConfigInferenceProfile;
 
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(profile.toJson())) as Map<String, dynamic>,
-      ) as AiConfigInferenceProfile;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(profile.toJson()))
+                    as Map<String, dynamic>,
+              )
+              as AiConfigInferenceProfile;
 
       expect(decoded.skillAssignments.length, 2);
       expect(decoded.skillAssignments[0].skillId, 'sk-1');
@@ -534,9 +620,11 @@ void main() {
   ).test(
     'AiConfigInferenceProvider JSON encode→decode is identity',
     (config) {
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigInferenceProvider;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigInferenceProvider;
       expect(decoded.id, config.id);
       expect(decoded.inferenceProviderType, config.inferenceProviderType);
       expect(decoded.baseUrl, config.baseUrl);
@@ -550,9 +638,11 @@ void main() {
   ).test(
     'AiConfigModel JSON encode→decode is identity',
     (config) {
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigModel;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigModel;
       expect(decoded.id, config.id);
       expect(decoded.inputModalities, config.inputModalities);
       expect(decoded.outputModalities, config.outputModalities);
@@ -567,9 +657,11 @@ void main() {
   ).test(
     'AiConfigPrompt JSON encode→decode is identity',
     (config) {
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigPrompt;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigPrompt;
       expect(decoded.id, config.id);
       expect(decoded.aiResponseType, config.aiResponseType);
       expect(decoded.useReasoning, config.useReasoning);
@@ -585,9 +677,11 @@ void main() {
   ).test(
     'AiConfigSkill JSON encode→decode is identity',
     (config) {
-      final decoded = AiConfig.fromJson(
-        jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
-      ) as AiConfigSkill;
+      final decoded =
+          AiConfig.fromJson(
+                jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>,
+              )
+              as AiConfigSkill;
       expect(decoded.id, config.id);
       expect(decoded.skillType, config.skillType);
       expect(decoded.contextPolicy, config.contextPolicy);

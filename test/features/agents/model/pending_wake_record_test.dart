@@ -18,7 +18,10 @@ void main() {
         dueAt: dueAt,
       );
 
-      expect(record.id, equals('agent-42:scheduled:${dueAt.toIso8601String()}'));
+      expect(
+        record.id,
+        equals('agent-42:scheduled:${dueAt.toIso8601String()}'),
+      );
     });
 
     test('pending type produces "pending" segment', () {
@@ -37,29 +40,31 @@ void main() {
       expect(record.id, endsWith(dueAt.toIso8601String()));
     });
 
-    test('different agentIds produce different ids for same type and dueAt',
-        () {
-      final identity1 = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
-      final identity2 = makeTestIdentity(id: 'agent-2', agentId: 'agent-2');
-      final state1 = makeTestState(agentId: 'agent-1');
-      final state2 = makeTestState(agentId: 'agent-2');
-      final dueAt = DateTime(2024, 6, 1, 9);
+    test(
+      'different agentIds produce different ids for same type and dueAt',
+      () {
+        final identity1 = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
+        final identity2 = makeTestIdentity(id: 'agent-2', agentId: 'agent-2');
+        final state1 = makeTestState(agentId: 'agent-1');
+        final state2 = makeTestState(agentId: 'agent-2');
+        final dueAt = DateTime(2024, 6, 1, 9);
 
-      final r1 = PendingWakeRecord(
-        agent: identity1,
-        state: state1,
-        type: PendingWakeType.pending,
-        dueAt: dueAt,
-      );
-      final r2 = PendingWakeRecord(
-        agent: identity2,
-        state: state2,
-        type: PendingWakeType.pending,
-        dueAt: dueAt,
-      );
+        final r1 = PendingWakeRecord(
+          agent: identity1,
+          state: state1,
+          type: PendingWakeType.pending,
+          dueAt: dueAt,
+        );
+        final r2 = PendingWakeRecord(
+          agent: identity2,
+          state: state2,
+          type: PendingWakeType.pending,
+          dueAt: dueAt,
+        );
 
-      expect(r1.id, isNot(equals(r2.id)));
-    });
+        expect(r1.id, isNot(equals(r2.id)));
+      },
+    );
 
     test('different dueAt timestamps produce different ids', () {
       final identity = makeTestIdentity();

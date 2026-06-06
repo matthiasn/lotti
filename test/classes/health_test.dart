@@ -10,8 +10,8 @@ void main() {
     final dateTo = DateTime(2024, 3, 15, 9);
 
     QuantitativeData roundTrip(QuantitativeData d) => QuantitativeData.fromJson(
-          jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>,
-        );
+      jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>,
+    );
 
     test('CumulativeQuantityData minimal fields survives JSON round-trip', () {
       final d = QuantitativeData.cumulativeQuantityData(
@@ -31,23 +31,25 @@ void main() {
       expect(typed.platformType, isNull);
     });
 
-    test('CumulativeQuantityData with all optional fields survives round-trip',
-        () {
-      final d = QuantitativeData.cumulativeQuantityData(
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-        value: 1234.5,
-        dataType: 'HealthDataType.ACTIVE_ENERGY_BURNED',
-        unit: 'kcal',
-        deviceType: 'iPhone',
-        platformType: 'iOS',
-      );
-      final decoded = roundTrip(d);
-      expect(decoded, d, reason: 'cumulative full round-trip');
-      final typed = decoded as CumulativeQuantityData;
-      expect(typed.deviceType, 'iPhone');
-      expect(typed.platformType, 'iOS');
-    });
+    test(
+      'CumulativeQuantityData with all optional fields survives round-trip',
+      () {
+        final d = QuantitativeData.cumulativeQuantityData(
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          value: 1234.5,
+          dataType: 'HealthDataType.ACTIVE_ENERGY_BURNED',
+          unit: 'kcal',
+          deviceType: 'iPhone',
+          platformType: 'iOS',
+        );
+        final decoded = roundTrip(d);
+        expect(decoded, d, reason: 'cumulative full round-trip');
+        final typed = decoded as CumulativeQuantityData;
+        expect(typed.deviceType, 'iPhone');
+        expect(typed.platformType, 'iOS');
+      },
+    );
 
     test('DiscreteQuantityData minimal fields survives JSON round-trip', () {
       final d = QuantitativeData.discreteQuantityData(
@@ -66,29 +68,31 @@ void main() {
       expect(typed.deviceId, isNull);
     });
 
-    test('DiscreteQuantityData with all optional fields survives round-trip',
-        () {
-      final d = QuantitativeData.discreteQuantityData(
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-        value: 98.6,
-        dataType: 'HealthDataType.BODY_TEMPERATURE',
-        unit: 'degF',
-        deviceType: 'Apple Watch',
-        platformType: 'watchOS',
-        sourceName: 'Health',
-        sourceId: 'com.apple.Health',
-        deviceId: 'device-uuid-1234',
-      );
-      final decoded = roundTrip(d);
-      expect(decoded, d, reason: 'discrete full round-trip');
-      final typed = decoded as DiscreteQuantityData;
-      expect(typed.sourceName, 'Health');
-      expect(typed.sourceId, 'com.apple.Health');
-      expect(typed.deviceId, 'device-uuid-1234');
-      expect(typed.deviceType, 'Apple Watch');
-      expect(typed.platformType, 'watchOS');
-    });
+    test(
+      'DiscreteQuantityData with all optional fields survives round-trip',
+      () {
+        final d = QuantitativeData.discreteQuantityData(
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          value: 98.6,
+          dataType: 'HealthDataType.BODY_TEMPERATURE',
+          unit: 'degF',
+          deviceType: 'Apple Watch',
+          platformType: 'watchOS',
+          sourceName: 'Health',
+          sourceId: 'com.apple.Health',
+          deviceId: 'device-uuid-1234',
+        );
+        final decoded = roundTrip(d);
+        expect(decoded, d, reason: 'discrete full round-trip');
+        final typed = decoded as DiscreteQuantityData;
+        expect(typed.sourceName, 'Health');
+        expect(typed.sourceId, 'com.apple.Health');
+        expect(typed.deviceId, 'device-uuid-1234');
+        expect(typed.deviceType, 'Apple Watch');
+        expect(typed.platformType, 'watchOS');
+      },
+    );
 
     test('DiscreteQuantityData with integer value survives round-trip', () {
       final d = QuantitativeData.discreteQuantityData(
@@ -113,7 +117,10 @@ void main() {
       );
       final decoded = roundTrip(d);
       expect(decoded, d);
-      expect((decoded as CumulativeQuantityData).value, closeTo(3.14159, 1e-10));
+      expect(
+        (decoded as CumulativeQuantityData).value,
+        closeTo(3.14159, 1e-10),
+      );
     });
   });
 
@@ -159,8 +166,12 @@ class _GeneratedQuantitativeData {
   final int optionalsSlot;
 
   QuantitativeData get data {
-    final dateFrom =
-        DateTime.utc(2024, (dateSlot % 12) + 1, (dateSlot % 28) + 1, 8);
+    final dateFrom = DateTime.utc(
+      2024,
+      (dateSlot % 12) + 1,
+      (dateSlot % 28) + 1,
+      8,
+    );
     final dateTo = dateFrom.add(const Duration(hours: 1));
     final value = valueSlot.isEven ? valueSlot * 1.0 : valueSlot + 0.5;
     final dataType = 'HealthDataType.TYPE_$dataTypeSlot';
@@ -202,10 +213,8 @@ class _GeneratedQuantitativeData {
 }
 
 extension _AnyHealth on glados.Any {
-  glados.Generator<_GeneratedQuantitativeDataKind>
-      get _quantitativeDataKind =>
-          glados.AnyUtils(this)
-              .choose(_GeneratedQuantitativeDataKind.values);
+  glados.Generator<_GeneratedQuantitativeDataKind> get _quantitativeDataKind =>
+      glados.AnyUtils(this).choose(_GeneratedQuantitativeDataKind.values);
 
   glados.Generator<_GeneratedQuantitativeData> get generatedQuantitativeData =>
       glados.CombinableAny(this).combine5(
@@ -216,11 +225,11 @@ extension _AnyHealth on glados.Any {
         glados.IntAnys(this).intInRange(0, 15),
         (kind, dateSlot, valueSlot, dataTypeSlot, optionalsSlot) =>
             _GeneratedQuantitativeData(
-          kind: kind,
-          dateSlot: dateSlot,
-          valueSlot: valueSlot,
-          dataTypeSlot: dataTypeSlot,
-          optionalsSlot: optionalsSlot,
-        ),
+              kind: kind,
+              dateSlot: dateSlot,
+              valueSlot: valueSlot,
+              dataTypeSlot: dataTypeSlot,
+              optionalsSlot: optionalsSlot,
+            ),
       );
 }

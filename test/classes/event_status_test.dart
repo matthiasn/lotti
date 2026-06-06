@@ -43,7 +43,11 @@ void main() {
     test('label is all-caps and non-empty for every variant', () {
       for (final status in EventStatus.values) {
         final lbl = status.label;
-        expect(lbl, isNotEmpty, reason: '${status.name}.label must be non-empty');
+        expect(
+          lbl,
+          isNotEmpty,
+          reason: '${status.name}.label must be non-empty',
+        );
         expect(
           lbl,
           equals(lbl.toUpperCase()),
@@ -54,8 +58,11 @@ void main() {
 
     test('each variant has a unique label', () {
       final labels = EventStatus.values.map((s) => s.label).toList();
-      expect(labels.toSet().length, EventStatus.values.length,
-          reason: 'all labels must be distinct');
+      expect(
+        labels.toSet().length,
+        EventStatus.values.length,
+        reason: 'all labels must be distinct',
+      );
     });
   });
 
@@ -87,7 +94,11 @@ void main() {
         // Verify the value is a Color (i.e. 32-bit ARGB).  Alpha must be
         // positive so the widget is not invisible.
         expect(c, isA<Color>(), reason: '${status.name}.color must be a Color');
-        expect(c.a, greaterThan(0), reason: '${status.name}.color must be visible');
+        expect(
+          c.a,
+          greaterThan(0),
+          reason: '${status.name}.color must be visible',
+        );
       }
     });
 

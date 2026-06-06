@@ -587,17 +587,26 @@ void main() {
         );
 
         // Result must contain exactly the days that have measurements.
-        expect(result, hasLength(scenario.measuredDayCount),
-            reason: '$scenario');
+        expect(
+          result,
+          hasLength(scenario.measuredDayCount),
+          reason: '$scenario',
+        );
 
         // Each observation must equal the per-day arithmetic mean.
         for (final obs in result) {
           final dayString = obs.dateTime.toIso8601String().substring(0, 10);
           final expected = scenario.expectedMeanForDay[dayString];
-          expect(expected, isNotNull,
-              reason: 'day $dayString not in expected map — $scenario');
-          expect(obs.value, closeTo(expected!, 1e-9),
-              reason: 'mean mismatch for $dayString — $scenario');
+          expect(
+            expected,
+            isNotNull,
+            reason: 'day $dayString not in expected map — $scenario',
+          );
+          expect(
+            obs.value,
+            closeTo(expected!, 1e-9),
+            reason: 'mean mismatch for $dayString — $scenario',
+          );
         }
       },
       tags: 'glados',

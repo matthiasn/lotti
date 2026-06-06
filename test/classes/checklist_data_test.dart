@@ -7,8 +7,8 @@ import 'package:lotti/classes/checklist_data.dart';
 void main() {
   group('ChecklistData JSON round-trips — static examples', () {
     ChecklistData roundTrip(ChecklistData d) => ChecklistData.fromJson(
-          jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>,
-        );
+      jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>,
+    );
 
     test('ChecklistData with empty lists survives JSON round-trip', () {
       const data = ChecklistData(
@@ -42,22 +42,27 @@ void main() {
         linkedTasks: [],
       );
       final decoded = roundTrip(data);
-      expect(decoded.title, 'Shopping: "fresh" & organic — Berlin',
-          reason: 'special characters preserved');
+      expect(
+        decoded.title,
+        'Shopping: "fresh" & organic — Berlin',
+        reason: 'special characters preserved',
+      );
       expect(decoded, data);
     });
 
-    test('ChecklistData with only tasks and no checklist items round-trips',
-        () {
-      const data = ChecklistData(
-        title: 'Project init',
-        linkedChecklistItems: [],
-        linkedTasks: ['task-main'],
-      );
-      final decoded = roundTrip(data);
-      expect(decoded.linkedChecklistItems, isEmpty);
-      expect(decoded.linkedTasks, ['task-main']);
-    });
+    test(
+      'ChecklistData with only tasks and no checklist items round-trips',
+      () {
+        const data = ChecklistData(
+          title: 'Project init',
+          linkedChecklistItems: [],
+          linkedTasks: ['task-main'],
+        );
+        final decoded = roundTrip(data);
+        expect(decoded.linkedChecklistItems, isEmpty);
+        expect(decoded.linkedTasks, ['task-main']);
+      },
+    );
 
     test('ChecklistData toJson produces correct keys', () {
       const data = ChecklistData(
@@ -66,12 +71,17 @@ void main() {
         linkedTasks: [],
       );
       final json = data.toJson();
-      expect(json.containsKey('title'), isTrue,
-          reason: 'title key must exist');
-      expect(json.containsKey('linkedChecklistItems'), isTrue,
-          reason: 'linkedChecklistItems key must exist');
-      expect(json.containsKey('linkedTasks'), isTrue,
-          reason: 'linkedTasks key must exist');
+      expect(json.containsKey('title'), isTrue, reason: 'title key must exist');
+      expect(
+        json.containsKey('linkedChecklistItems'),
+        isTrue,
+        reason: 'linkedChecklistItems key must exist',
+      );
+      expect(
+        json.containsKey('linkedTasks'),
+        isTrue,
+        reason: 'linkedTasks key must exist',
+      );
       expect(json['title'], 'My list');
       expect(json['linkedChecklistItems'], ['item-x']);
     });

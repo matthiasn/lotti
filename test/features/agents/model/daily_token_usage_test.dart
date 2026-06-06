@@ -182,16 +182,18 @@ void main() {
       expect(usage.cacheRate, equals(0.0));
     });
 
-    test('cacheRate is 0.0 when inputTokens and cachedInputTokens are both zero',
-        () {
-      final usage = DailyTokenUsage(
-        date: DateTime.utc(2024, 3, 15),
-        totalTokens: 0,
-        tokensByTimeOfDay: 0,
-        isToday: true,
-      );
-      expect(usage.cacheRate, equals(0.0));
-    });
+    test(
+      'cacheRate is 0.0 when inputTokens and cachedInputTokens are both zero',
+      () {
+        final usage = DailyTokenUsage(
+          date: DateTime.utc(2024, 3, 15),
+          totalTokens: 0,
+          tokensByTimeOfDay: 0,
+          isToday: true,
+        );
+        expect(usage.cacheRate, equals(0.0));
+      },
+    );
 
     glados.Glados(
       glados.any.dailyTokenUsageScenario,

@@ -160,8 +160,9 @@ void main() {
       'ClassifiedFeedbackItem toJson → fromJson round-trip preserves equality',
       (item) {
         final json = jsonDecode(jsonEncode(item.toJson()));
-        final restored =
-            ClassifiedFeedbackItem.fromJson(json as Map<String, dynamic>);
+        final restored = ClassifiedFeedbackItem.fromJson(
+          json as Map<String, dynamic>,
+        );
         expect(restored, equals(item), reason: 'item=$item');
       },
       tags: 'glados',

@@ -951,8 +951,11 @@ Longer report content.
       'sub-hour durations produce m:ss (no hour cell, exactly one colon)',
       (seconds) {
         final result = formatCountdown(seconds);
-        expect(result.split(':').length, 2,
-            reason: '"$result" should be m:ss for $seconds seconds');
+        expect(
+          result.split(':').length,
+          2,
+          reason: '"$result" should be m:ss for $seconds seconds',
+        );
       },
       tags: 'glados',
     );
@@ -964,8 +967,11 @@ Longer report content.
       'hour-or-more durations produce h:mm:ss (exactly two colons)',
       (seconds) {
         final result = formatCountdown(seconds);
-        expect(result.split(':').length, 3,
-            reason: '"$result" should be h:mm:ss for $seconds seconds');
+        expect(
+          result.split(':').length,
+          3,
+          reason: '"$result" should be h:mm:ss for $seconds seconds',
+        );
       },
       tags: 'glados',
     );
@@ -978,8 +984,11 @@ Longer report content.
       (totalSeconds) {
         final result = formatCountdown(totalSeconds);
         final ssSegment = result.split(':').last;
-        expect(ssSegment.length, 2,
-            reason: 'seconds segment "$ssSegment" in "$result" must be 2 digits');
+        expect(
+          ssSegment.length,
+          2,
+          reason: 'seconds segment "$ssSegment" in "$result" must be 2 digits',
+        );
       },
       tags: 'glados',
     );

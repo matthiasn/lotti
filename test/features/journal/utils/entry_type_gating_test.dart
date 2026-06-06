@@ -98,7 +98,8 @@ void main() {
               expect(
                 entryTypes,
                 contains(t),
-                reason: 'Unexpected type $t in result for '
+                reason:
+                    'Unexpected type $t in result for '
                     'events=$events habits=$habits dashboards=$dashboards',
               );
             }
@@ -119,7 +120,8 @@ void main() {
             expect(
               result.length,
               equals(result.toSet().length),
-              reason: 'Duplicates for '
+              reason:
+                  'Duplicates for '
                   'events=$events habits=$habits dashboards=$dashboards',
             );
           }

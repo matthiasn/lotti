@@ -112,8 +112,7 @@ void main() {
       expect(
         entryCacheDuration,
         lessThan(dashboardCacheDuration),
-        reason:
-            'entry cache should expire sooner than the dashboard aggregate',
+        reason: 'entry cache should expire sooner than the dashboard aggregate',
       );
     });
 

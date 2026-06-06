@@ -45,14 +45,19 @@ void main() {
       glados.any.agentText,
       glados.any.intInRange(2, 40),
       glados.ExploreConfig(numRuns: 150),
-    ).test('appends ellipsis exactly when content is truncated',
-        (text, maxLength) {
+    ).test('appends ellipsis exactly when content is truncated', (
+      text,
+      maxLength,
+    ) {
       final singleLine = text.replaceAll('\n', ' ').trim();
       final result = truncateAgentText(text, maxLength);
       if (singleLine.length > maxLength) {
         expect(result.endsWith('…'), isTrue, reason: 'should truncate');
-        expect(result.length, maxLength,
-            reason: 'truncated length should equal maxLength');
+        expect(
+          result.length,
+          maxLength,
+          reason: 'truncated length should equal maxLength',
+        );
       } else {
         expect(result, singleLine, reason: 'short content passes through');
       }

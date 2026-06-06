@@ -132,8 +132,11 @@ void main() {
         final result = formatAudioDuration(Duration(seconds: seconds));
         // Must contain exactly one colon → mm:ss form.
         expect(result.contains(':'), isTrue);
-        expect(result.split(':').length, 2,
-            reason: 'expected mm:ss but got "$result"');
+        expect(
+          result.split(':').length,
+          2,
+          reason: 'expected mm:ss but got "$result"',
+        );
       },
       tags: 'glados',
     );
@@ -145,8 +148,11 @@ void main() {
       'durations of at least one hour produce exactly hh:mm:ss (two colons)',
       (seconds) {
         final result = formatAudioDuration(Duration(seconds: seconds));
-        expect(result.split(':').length, 3,
-            reason: 'expected hh:mm:ss but got "$result"');
+        expect(
+          result.split(':').length,
+          3,
+          reason: 'expected hh:mm:ss but got "$result"',
+        );
       },
       tags: 'glados',
     );
@@ -159,8 +165,11 @@ void main() {
       (seconds) {
         final result = formatAudioDuration(Duration(seconds: seconds));
         for (final part in result.split(':')) {
-          expect(part.length, 2,
-              reason: 'component "$part" in "$result" is not 2 digits');
+          expect(
+            part.length,
+            2,
+            reason: 'component "$part" in "$result" is not 2 digits',
+          );
         }
       },
       tags: 'glados',

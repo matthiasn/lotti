@@ -11,8 +11,8 @@ void main() {
   // -------------------------------------------------------------------------
   group('EventData JSON round-trips — static examples', () {
     EventData roundTrip(EventData d) => EventData.fromJson(
-          jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>,
-        );
+      jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>,
+    );
 
     test('EventData with tentative status survives JSON round-trip', () {
       const d = EventData(
@@ -184,7 +184,11 @@ void main() {
         );
         expect(decoded, d, reason: '$scenario');
         expect(decoded.title, d.title, reason: 'title preserved');
-        expect(decoded.stars, closeTo(d.stars, 1e-10), reason: 'stars preserved');
+        expect(
+          decoded.stars,
+          closeTo(d.stars, 1e-10),
+          reason: 'stars preserved',
+        );
         expect(decoded.status, d.status, reason: 'status preserved');
       },
       tags: 'glados',

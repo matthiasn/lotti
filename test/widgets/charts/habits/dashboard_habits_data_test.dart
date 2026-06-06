@@ -227,24 +227,24 @@ class _HabitDeduplicationScenario {
 
 extension _AnyHabitDeduplication on glados.Any {
   glados.Generator<({int dayOffset, int typeIndex, int writtenHour})>
-      get completionSpec => glados.CombinableAny(this).combine3(
-            glados.IntAnys(this).intInRange(0, 6),
-            glados.IntAnys(this).intInRange(0, 3),
-            glados.IntAnys(this).intInRange(0, 23),
-            (dayOffset, typeIndex, writtenHour) => (
-              dayOffset: dayOffset,
-              typeIndex: typeIndex,
-              writtenHour: writtenHour,
-            ),
-          );
+  get completionSpec => glados.CombinableAny(this).combine3(
+    glados.IntAnys(this).intInRange(0, 6),
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 23),
+    (dayOffset, typeIndex, writtenHour) => (
+      dayOffset: dayOffset,
+      typeIndex: typeIndex,
+      writtenHour: writtenHour,
+    ),
+  );
 
   glados.Generator<_HabitDeduplicationScenario>
-      get habitDeduplicationScenario => glados.CombinableAny(this).combine2(
-            glados.IntAnys(this).intInRange(1, 7),
-            glados.ListAnys(this).listWithLengthInRange(0, 12, completionSpec),
-            (rangeDays, completionSpecs) => _HabitDeduplicationScenario(
-              rangeDays: rangeDays,
-              completionSpecs: completionSpecs,
-            ),
-          );
+  get habitDeduplicationScenario => glados.CombinableAny(this).combine2(
+    glados.IntAnys(this).intInRange(1, 7),
+    glados.ListAnys(this).listWithLengthInRange(0, 12, completionSpec),
+    (rangeDays, completionSpecs) => _HabitDeduplicationScenario(
+      rangeDays: rangeDays,
+      completionSpecs: completionSpecs,
+    ),
+  );
 }

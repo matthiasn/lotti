@@ -37,7 +37,8 @@ ConfigFlagResult _apply({
   Set<String> selectedProjectIds = const {},
 }) {
   final resolvedFlags = flags ?? _flags();
-  final resolvedTypes = selectedEntryTypes ??
+  final resolvedTypes =
+      selectedEntryTypes ??
       computeAllowedEntryTypes(
         events: enableEvents,
         habits: enableHabits,
@@ -71,17 +72,21 @@ void main() {
       expect(result.enableHabits, isFalse);
     });
 
-    test('result.enableDashboards reflects the incoming flags.dashboards value',
-        () {
-      final result = _apply(flags: _flags(dashboards: false));
-      expect(result.enableDashboards, isFalse);
-    });
+    test(
+      'result.enableDashboards reflects the incoming flags.dashboards value',
+      () {
+        final result = _apply(flags: _flags(dashboards: false));
+        expect(result.enableDashboards, isFalse);
+      },
+    );
 
-    test('result.enableProjects reflects the incoming flags.projects value',
-        () {
-      final result = _apply(flags: _flags(projects: false));
-      expect(result.enableProjects, isFalse);
-    });
+    test(
+      'result.enableProjects reflects the incoming flags.projects value',
+      () {
+        final result = _apply(flags: _flags(projects: false));
+        expect(result.enableProjects, isFalse);
+      },
+    );
 
     test('result.enableVectorSearch reflects flags.vectorSearch', () {
       final result = _apply(flags: _flags(vectorSearch: true));
@@ -95,23 +100,25 @@ void main() {
 
   group('applyJournalConfigFlags — selectedEntryTypes', () {
     test(
-        'when selectedEntryTypes is empty, result is the full new allowed set',
-        () {
-      final newFlags = _flags(events: true, habits: true, dashboards: true);
-      final expected =
-          computeAllowedEntryTypes(events: true, habits: true, dashboards: true)
-              .toSet();
+      'when selectedEntryTypes is empty, result is the full new allowed set',
+      () {
+        final newFlags = _flags(events: true, habits: true, dashboards: true);
+        final expected = computeAllowedEntryTypes(
+          events: true,
+          habits: true,
+          dashboards: true,
+        ).toSet();
 
-      final result = _apply(
-        flags: newFlags,
-        selectedEntryTypes: const <String>{},
-      );
+        final result = _apply(
+          flags: newFlags,
+          selectedEntryTypes: const <String>{},
+        );
 
-      expect(result.selectedEntryTypes, equals(expected));
-    });
+        expect(result.selectedEntryTypes, equals(expected));
+      },
+    );
 
-    test(
-        'when all previously-allowed types were selected, switches to new '
+    test('when all previously-allowed types were selected, switches to new '
         'allowed set (reset-on-change behavior)', () {
       // Old state: all types allowed (events+habits+dashboards on).
       final oldAllowed = computeAllowedEntryTypes(
@@ -139,8 +146,7 @@ void main() {
       expect(result.selectedEntryTypes, equals(newAllowed));
     });
 
-    test(
-        'when a partial selection was active, result is the intersection with '
+    test('when a partial selection was active, result is the intersection with '
         'the new allowed set', () {
       // Old partial selection: Task + JournalEvent only.
       const partial = <String>{'Task', 'JournalEvent'};
@@ -207,24 +213,26 @@ void main() {
       expect(result.entryTypesChanged, isFalse);
     });
 
-    test('entryTypesChanged is true when a type is removed by the new flags',
-        () {
-      final allTypes = computeAllowedEntryTypes(
-        events: true,
-        habits: true,
-        dashboards: true,
-      ).toSet();
+    test(
+      'entryTypesChanged is true when a type is removed by the new flags',
+      () {
+        final allTypes = computeAllowedEntryTypes(
+          events: true,
+          habits: true,
+          dashboards: true,
+        ).toSet();
 
-      final result = _apply(
-        flags: _flags(events: false),
-        enableEvents: true,
-        enableHabits: true,
-        enableDashboards: true,
-        selectedEntryTypes: allTypes,
-      );
+        final result = _apply(
+          flags: _flags(events: false),
+          enableEvents: true,
+          enableHabits: true,
+          enableDashboards: true,
+          selectedEntryTypes: allTypes,
+        );
 
-      expect(result.entryTypesChanged, isTrue);
-    });
+        expect(result.entryTypesChanged, isTrue);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -232,8 +240,7 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('applyJournalConfigFlags — project filter', () {
-    test(
-        'clears selectedProjectIds and sets shouldRefresh when projects flag '
+    test('clears selectedProjectIds and sets shouldRefresh when projects flag '
         'turns off and projectIds were non-empty', () {
       final result = _apply(
         flags: _flags(projects: false),
@@ -245,8 +252,7 @@ void main() {
       expect(result.shouldRefresh, isTrue);
     });
 
-    test(
-        'keeps selectedProjectIds unchanged when projects flag is on and ids '
+    test('keeps selectedProjectIds unchanged when projects flag is on and ids '
         'are non-empty', () {
       final result = _apply(
         flags: _flags(projects: true),
@@ -256,8 +262,7 @@ void main() {
       expect(result.selectedProjectIds, equals(const <String>{'proj-1'}));
     });
 
-    test(
-        'shouldRefresh stays false when projects flag is off but no project '
+    test('shouldRefresh stays false when projects flag is off but no project '
         'ids were selected', () {
       final result = _apply(
         flags: _flags(projects: false),
@@ -275,20 +280,21 @@ void main() {
 
   group('applyJournalConfigFlags — search-mode transitions', () {
     test(
-        'disabling vectorSearch while mode is vector switches mode to fullText '
-        'and sets shouldRefresh', () {
-      final result = _apply(
-        flags: _flags(vectorSearch: false),
-        enableVectorSearch: true,
-        searchMode: SearchMode.vector,
-      );
+      'disabling vectorSearch while mode is vector switches mode to fullText '
+      'and sets shouldRefresh',
+      () {
+        final result = _apply(
+          flags: _flags(vectorSearch: false),
+          enableVectorSearch: true,
+          searchMode: SearchMode.vector,
+        );
 
-      expect(result.searchMode, SearchMode.fullText);
-      expect(result.shouldRefresh, isTrue);
-    });
+        expect(result.searchMode, SearchMode.fullText);
+        expect(result.shouldRefresh, isTrue);
+      },
+    );
 
-    test(
-        'keeping vectorSearch enabled while mode is already vector does not '
+    test('keeping vectorSearch enabled while mode is already vector does not '
         'trigger a shouldRefresh for the search-mode branch', () {
       // Save and restore isDesktop so we can control the "showTasks+isDesktop"
       // guard reliably in test.
@@ -310,8 +316,7 @@ void main() {
       expect(result.shouldRefresh, isFalse);
     });
 
-    test(
-        'enableVectorSearch flag turns on, showTasks=true, isDesktop=true, '
+    test('enableVectorSearch flag turns on, showTasks=true, isDesktop=true, '
         'no explicit selection → mode switches to vector', () {
       final savedDesktop = platform.isDesktop;
       platform.isDesktop = true;
@@ -329,8 +334,7 @@ void main() {
       expect(result.shouldRefresh, isTrue);
     });
 
-    test(
-        'explicit search mode selection prevents auto-switch to vector even '
+    test('explicit search mode selection prevents auto-switch to vector even '
         'when all other conditions are met', () {
       final savedDesktop = platform.isDesktop;
       platform.isDesktop = true;

@@ -457,14 +457,16 @@ void main() {
           taskContext: '{"id": "t1"}',
         );
 
-        final expectContext = skillType == SkillType.imageAnalysis &&
+        final expectContext =
+            skillType == SkillType.imageAnalysis &&
             contextPolicy == ContextPolicy.fullTask;
 
         if (expectContext) {
           expect(
             result.systemMessage,
             contains('RELATED TASKS CONTEXT'),
-            reason: 'imageAnalysis+fullTask+taskContext must have context block',
+            reason:
+                'imageAnalysis+fullTask+taskContext must have context block',
           );
         } else {
           expect(
@@ -541,10 +543,13 @@ void main() {
           contextPolicy: contextPolicy,
         );
         const dict = 'Required spellings: ["macOS"]';
-        final result =
-            const SkillPromptBuilder().build(skill: skill, speechDictionary: dict);
+        final result = const SkillPromptBuilder().build(
+          skill: skill,
+          speechDictionary: dict,
+        );
 
-        final shouldInject = skillType == SkillType.transcription ||
+        final shouldInject =
+            skillType == SkillType.transcription ||
             contextPolicy == ContextPolicy.dictionaryOnly;
 
         if (shouldInject) {

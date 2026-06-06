@@ -1153,8 +1153,7 @@ void main() {
           expect(
             second,
             equals(first),
-            reason:
-                'parsePriority(first.short) must equal first for input $s',
+            reason: 'parsePriority(first.short) must equal first for input $s',
           );
         }
       },

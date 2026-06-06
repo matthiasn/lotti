@@ -16,12 +16,11 @@ extension _AnyAggregateScenario on glados.Any {
 
   /// Generates a short model ID string chosen from a small fixed set so that
   /// records with the same model ID are generated with reasonable frequency.
-  glados.Generator<String> get modelId =>
-      glados.AnyUtils(this).choose(<String>[
-        'models/alpha',
-        'models/beta',
-        'models/gamma',
-      ]);
+  glados.Generator<String> get modelId => glados.AnyUtils(this).choose(<String>[
+    'models/alpha',
+    'models/beta',
+    'models/gamma',
+  ]);
 
   /// Generates a [WakeTokenUsageEntity] with a generated model ID and nullable
   /// token fields.
@@ -71,9 +70,7 @@ int _sumTotalTokens(Iterable<WakeTokenUsageEntity> records) {
   var total = 0;
   for (final r in records) {
     total +=
-        (r.inputTokens ?? 0) +
-        (r.outputTokens ?? 0) +
-        (r.thoughtsTokens ?? 0);
+        (r.inputTokens ?? 0) + (r.outputTokens ?? 0) + (r.thoughtsTokens ?? 0);
   }
   return total;
 }
@@ -82,8 +79,7 @@ int _sumTotalTokens(Iterable<WakeTokenUsageEntity> records) {
 int _countForModel(
   Iterable<WakeTokenUsageEntity> records,
   String modelId,
-) =>
-    records.where((r) => r.modelId == modelId).length;
+) => records.where((r) => r.modelId == modelId).length;
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -96,19 +92,20 @@ void main() {
     });
 
     test('produces a single entry for a single record', () {
-      final record = AgentDomainEntity.wakeTokenUsage(
-            id: 'u-1',
-            agentId: 'a-1',
-            runKey: 'rk-1',
-            threadId: 'th-1',
-            modelId: 'models/flash',
-            createdAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            inputTokens: 100,
-            outputTokens: 60,
-            thoughtsTokens: 40,
-          )
-          as WakeTokenUsageEntity;
+      final record =
+          AgentDomainEntity.wakeTokenUsage(
+                id: 'u-1',
+                agentId: 'a-1',
+                runKey: 'rk-1',
+                threadId: 'th-1',
+                modelId: 'models/flash',
+                createdAt: DateTime(2024, 3, 15),
+                vectorClock: null,
+                inputTokens: 100,
+                outputTokens: 60,
+                thoughtsTokens: 40,
+              )
+              as WakeTokenUsageEntity;
 
       final result = aggregateByModel([record]);
 
@@ -138,7 +135,10 @@ void main() {
               )
               as WakeTokenUsageEntity;
 
-      final result = aggregateByModel([makeRecord(100, 50), makeRecord(200, 75)]);
+      final result = aggregateByModel([
+        makeRecord(100, 50),
+        makeRecord(200, 75),
+      ]);
 
       expect(result, hasLength(1));
       expect(result.first.modelId, 'models/pro');
@@ -179,17 +179,18 @@ void main() {
     });
 
     test('null token fields are treated as 0', () {
-      final record = AgentDomainEntity.wakeTokenUsage(
-            id: 'u-null',
-            agentId: 'a-1',
-            runKey: 'rk-1',
-            threadId: 'th-1',
-            modelId: 'models/tiny',
-            createdAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            // All token fields deliberately null.
-          )
-          as WakeTokenUsageEntity;
+      final record =
+          AgentDomainEntity.wakeTokenUsage(
+                id: 'u-null',
+                agentId: 'a-1',
+                runKey: 'rk-1',
+                threadId: 'th-1',
+                modelId: 'models/tiny',
+                createdAt: DateTime(2024, 3, 15),
+                vectorClock: null,
+                // All token fields deliberately null.
+              )
+              as WakeTokenUsageEntity;
 
       final result = aggregateByModel([record]);
 
@@ -257,18 +258,21 @@ void main() {
     glados.Glados(
       glados.any.wakeTokenUsageList,
       glados.ExploreConfig(numRuns: 120),
-    ).test('total tokens across all summaries equals total tokens in records',
-        (records) {
-      final result = aggregateByModel(records);
-      final sumBefore = _sumTotalTokens(records);
-      final sumAfter = result.fold<int>(0, (s, r) => s + r.totalTokens);
-      expect(
-        sumAfter,
-        sumBefore,
-        reason:
-            'aggregated total differs from record total; records=$records',
-      );
-    }, tags: 'glados');
+    ).test(
+      'total tokens across all summaries equals total tokens in records',
+      (records) {
+        final result = aggregateByModel(records);
+        final sumBefore = _sumTotalTokens(records);
+        final sumAfter = result.fold<int>(0, (s, r) => s + r.totalTokens);
+        expect(
+          sumAfter,
+          sumBefore,
+          reason:
+              'aggregated total differs from record total; records=$records',
+        );
+      },
+      tags: 'glados',
+    );
 
     glados.Glados(
       glados.any.wakeTokenUsageList,
@@ -303,40 +307,47 @@ void main() {
     glados.Glados(
       glados.any.wakeTokenUsageList,
       glados.ExploreConfig(numRuns: 120),
-    ).test('wakeCount for each modelId equals record count for that model',
-        (records) {
-      final result = aggregateByModel(records);
-      for (final summary in result) {
-        final expected = _countForModel(records, summary.modelId);
+    ).test(
+      'wakeCount for each modelId equals record count for that model',
+      (records) {
+        final result = aggregateByModel(records);
+        for (final summary in result) {
+          final expected = _countForModel(records, summary.modelId);
+          expect(
+            summary.wakeCount,
+            expected,
+            reason:
+                'modelId=${summary.modelId}: '
+                'wakeCount=${summary.wakeCount} != expected=$expected',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.wakeTokenUsageList,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'output length does not exceed the number of distinct modelIds',
+      (records) {
+        final result = aggregateByModel(records);
+        final distinctModels = records.map((r) => r.modelId).toSet().length;
         expect(
-          summary.wakeCount,
-          expected,
-          reason:
-              'modelId=${summary.modelId}: '
-              'wakeCount=${summary.wakeCount} != expected=$expected',
+          result.length,
+          lessThanOrEqualTo(distinctModels),
+          reason: 'output has more entries than distinct models',
         );
-      }
-    }, tags: 'glados');
+      },
+      tags: 'glados',
+    );
 
     glados.Glados(
       glados.any.wakeTokenUsageList,
       glados.ExploreConfig(numRuns: 120),
-    ).test('output length does not exceed the number of distinct modelIds',
-        (records) {
-      final result = aggregateByModel(records);
-      final distinctModels = records.map((r) => r.modelId).toSet().length;
-      expect(
-        result.length,
-        lessThanOrEqualTo(distinctModels),
-        reason: 'output has more entries than distinct models',
-      );
-    }, tags: 'glados');
-
-    glados.Glados(
-      glados.any.wakeTokenUsageList,
-      glados.ExploreConfig(numRuns: 120),
-    ).test('every AgentTokenUsageSummary has non-negative token fields',
-        (records) {
+    ).test('every AgentTokenUsageSummary has non-negative token fields', (
+      records,
+    ) {
       final result = aggregateByModel(records);
       for (final summary in result) {
         expect(

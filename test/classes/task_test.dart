@@ -275,8 +275,8 @@ void main() {
     );
 
     TaskStatus roundTrip(TaskStatus s) => TaskStatus.fromJson(
-          jsonDecode(jsonEncode(s.toJson())) as Map<String, dynamic>,
-        );
+      jsonDecode(jsonEncode(s.toJson())) as Map<String, dynamic>,
+    );
 
     test('TaskStatus.open survives JSON round-trip', () {
       final s = TaskStatus.open(
@@ -345,8 +345,7 @@ void main() {
     });
 
     test('TaskStatus.rejected survives JSON round-trip', () {
-      final s =
-          TaskStatus.rejected(id: id, createdAt: date, utcOffset: offset);
+      final s = TaskStatus.rejected(id: id, createdAt: date, utcOffset: offset);
       final decoded = roundTrip(s);
       expect(decoded, s, reason: 'rejected status round-trip');
     });
@@ -361,8 +360,8 @@ void main() {
     );
 
     TaskData roundTrip(TaskData d) => TaskData.fromJson(
-          jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>,
-        );
+      jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>,
+    );
 
     test('minimal TaskData survives JSON round-trip', () {
       final data = TaskData(
@@ -376,10 +375,16 @@ void main() {
       expect(decoded, data, reason: 'minimal TaskData round-trip');
       expect(decoded.title, 'My task');
       expect(decoded.languageCode, isNull);
-      expect(decoded.languageSource, ChangeSource.user,
-          reason: '@Default should survive round-trip');
-      expect(decoded.priority, TaskPriority.p2Medium,
-          reason: 'default priority survives round-trip');
+      expect(
+        decoded.languageSource,
+        ChangeSource.user,
+        reason: '@Default should survive round-trip',
+      );
+      expect(
+        decoded.priority,
+        TaskPriority.p2Medium,
+        reason: 'default priority survives round-trip',
+      );
     });
 
     test('TaskData with all optional fields survives JSON round-trip', () {
@@ -417,21 +422,26 @@ void main() {
       expect(decoded.statusHistory[1].toDbString, 'BLOCKED');
     });
 
-    test('TaskData with @JsonKey(unknownEnumValue) fallback for languageSource',
-        () {
-      // Simulate an unknown languageSource arriving from an older client.
-      final raw = <String, dynamic>{
-        'status': status.toJson(),
-        'dateFrom': date.toIso8601String(),
-        'dateTo': date.toIso8601String(),
-        'statusHistory': <Map<String, dynamic>>[],
-        'title': 'Legacy task',
-        'languageSource': 'unknownValue',
-      };
-      final decoded = TaskData.fromJson(raw);
-      expect(decoded.languageSource, ChangeSource.user,
-          reason: 'unknownEnumValue fallback must be ChangeSource.user');
-    });
+    test(
+      'TaskData with @JsonKey(unknownEnumValue) fallback for languageSource',
+      () {
+        // Simulate an unknown languageSource arriving from an older client.
+        final raw = <String, dynamic>{
+          'status': status.toJson(),
+          'dateFrom': date.toIso8601String(),
+          'dateTo': date.toIso8601String(),
+          'statusHistory': <Map<String, dynamic>>[],
+          'title': 'Legacy task',
+          'languageSource': 'unknownValue',
+        };
+        final decoded = TaskData.fromJson(raw);
+        expect(
+          decoded.languageSource,
+          ChangeSource.user,
+          reason: 'unknownEnumValue fallback must be ChangeSource.user',
+        );
+      },
+    );
 
     test('TaskData with all four TaskPriority values round-trips', () {
       for (final priority in TaskPriority.values) {
@@ -444,8 +454,11 @@ void main() {
           priority: priority,
         );
         final decoded = roundTrip(data);
-        expect(decoded.priority, priority,
-            reason: 'priority $priority must survive round-trip');
+        expect(
+          decoded.priority,
+          priority,
+          reason: 'priority $priority must survive round-trip',
+        );
       }
     });
   });
@@ -460,8 +473,11 @@ void main() {
         jsonDecode(jsonEncode(status.toJson())) as Map<String, dynamic>,
       );
       expect(decoded, status, reason: '$scenario');
-      expect(decoded.toDbString, status.toDbString,
-          reason: 'toDbString consistent after round-trip');
+      expect(
+        decoded.toDbString,
+        status.toDbString,
+        reason: 'toDbString consistent after round-trip',
+      );
     }, tags: 'glados');
 
     glados.Glados(
@@ -473,12 +489,21 @@ void main() {
         jsonDecode(jsonEncode(data.toJson())) as Map<String, dynamic>,
       );
       expect(decoded, data, reason: '$scenario');
-      expect(decoded.title, data.title,
-          reason: 'title preserved after round-trip');
-      expect(decoded.priority, data.priority,
-          reason: 'priority preserved after round-trip');
-      expect(decoded.languageSource, data.languageSource,
-          reason: 'languageSource preserved after round-trip');
+      expect(
+        decoded.title,
+        data.title,
+        reason: 'title preserved after round-trip',
+      );
+      expect(
+        decoded.priority,
+        data.priority,
+        reason: 'priority preserved after round-trip',
+      );
+      expect(
+        decoded.languageSource,
+        data.languageSource,
+        reason: 'languageSource preserved after round-trip',
+      );
     }, tags: 'glados');
   });
 
@@ -640,7 +665,11 @@ class _GeneratedTaskStatus {
 
   TaskStatus get status {
     final id = 'status-$idSlot';
-    final createdAt = DateTime.utc(2024, (dateSlot % 12) + 1, (dateSlot % 28) + 1);
+    final createdAt = DateTime.utc(
+      2024,
+      (dateSlot % 12) + 1,
+      (dateSlot % 28) + 1,
+    );
     final tz = timezoneSlot.isEven ? null : 'Europe/Berlin';
     final geo = hasGeo
         ? Geolocation(
@@ -654,26 +683,56 @@ class _GeneratedTaskStatus {
 
     return switch (kind) {
       _GeneratedTaskStatusKind.open => TaskStatus.open(
-          id: id, createdAt: createdAt, utcOffset: utcOffset,
-          timezone: tz, geolocation: geo),
+        id: id,
+        createdAt: createdAt,
+        utcOffset: utcOffset,
+        timezone: tz,
+        geolocation: geo,
+      ),
       _GeneratedTaskStatusKind.inProgress => TaskStatus.inProgress(
-          id: id, createdAt: createdAt, utcOffset: utcOffset,
-          timezone: tz, geolocation: geo),
+        id: id,
+        createdAt: createdAt,
+        utcOffset: utcOffset,
+        timezone: tz,
+        geolocation: geo,
+      ),
       _GeneratedTaskStatusKind.groomed => TaskStatus.groomed(
-          id: id, createdAt: createdAt, utcOffset: utcOffset,
-          timezone: tz, geolocation: geo),
+        id: id,
+        createdAt: createdAt,
+        utcOffset: utcOffset,
+        timezone: tz,
+        geolocation: geo,
+      ),
       _GeneratedTaskStatusKind.blocked => TaskStatus.blocked(
-          id: id, createdAt: createdAt, utcOffset: utcOffset,
-          reason: reason, timezone: tz, geolocation: geo),
+        id: id,
+        createdAt: createdAt,
+        utcOffset: utcOffset,
+        reason: reason,
+        timezone: tz,
+        geolocation: geo,
+      ),
       _GeneratedTaskStatusKind.onHold => TaskStatus.onHold(
-          id: id, createdAt: createdAt, utcOffset: utcOffset,
-          reason: reason, timezone: tz, geolocation: geo),
+        id: id,
+        createdAt: createdAt,
+        utcOffset: utcOffset,
+        reason: reason,
+        timezone: tz,
+        geolocation: geo,
+      ),
       _GeneratedTaskStatusKind.done => TaskStatus.done(
-          id: id, createdAt: createdAt, utcOffset: utcOffset,
-          timezone: tz, geolocation: geo),
+        id: id,
+        createdAt: createdAt,
+        utcOffset: utcOffset,
+        timezone: tz,
+        geolocation: geo,
+      ),
       _GeneratedTaskStatusKind.rejected => TaskStatus.rejected(
-          id: id, createdAt: createdAt, utcOffset: utcOffset,
-          timezone: tz, geolocation: geo),
+        id: id,
+        createdAt: createdAt,
+        utcOffset: utcOffset,
+        timezone: tz,
+        geolocation: geo,
+      ),
     };
   }
 
@@ -703,26 +762,69 @@ class _GeneratedTaskData {
   final int optionalsSlot;
 
   TaskStatus _makeStatus(String id) {
-    final createdAt = DateTime.utc(2024, (dateSlot % 12) + 1, (dateSlot % 28) + 1);
+    final createdAt = DateTime.utc(
+      2024,
+      (dateSlot % 12) + 1,
+      (dateSlot % 28) + 1,
+    );
     return switch (statusKind) {
-      _GeneratedTaskStatusKind.open => TaskStatus.open(id: id, createdAt: createdAt, utcOffset: 0),
-      _GeneratedTaskStatusKind.inProgress => TaskStatus.inProgress(id: id, createdAt: createdAt, utcOffset: 0),
-      _GeneratedTaskStatusKind.groomed => TaskStatus.groomed(id: id, createdAt: createdAt, utcOffset: 0),
-      _GeneratedTaskStatusKind.blocked => TaskStatus.blocked(id: id, createdAt: createdAt, utcOffset: 0, reason: 'blocked-$idSlot'),
-      _GeneratedTaskStatusKind.onHold => TaskStatus.onHold(id: id, createdAt: createdAt, utcOffset: 0, reason: 'onhold-$idSlot'),
-      _GeneratedTaskStatusKind.done => TaskStatus.done(id: id, createdAt: createdAt, utcOffset: 0),
-      _GeneratedTaskStatusKind.rejected => TaskStatus.rejected(id: id, createdAt: createdAt, utcOffset: 0),
+      _GeneratedTaskStatusKind.open => TaskStatus.open(
+        id: id,
+        createdAt: createdAt,
+        utcOffset: 0,
+      ),
+      _GeneratedTaskStatusKind.inProgress => TaskStatus.inProgress(
+        id: id,
+        createdAt: createdAt,
+        utcOffset: 0,
+      ),
+      _GeneratedTaskStatusKind.groomed => TaskStatus.groomed(
+        id: id,
+        createdAt: createdAt,
+        utcOffset: 0,
+      ),
+      _GeneratedTaskStatusKind.blocked => TaskStatus.blocked(
+        id: id,
+        createdAt: createdAt,
+        utcOffset: 0,
+        reason: 'blocked-$idSlot',
+      ),
+      _GeneratedTaskStatusKind.onHold => TaskStatus.onHold(
+        id: id,
+        createdAt: createdAt,
+        utcOffset: 0,
+        reason: 'onhold-$idSlot',
+      ),
+      _GeneratedTaskStatusKind.done => TaskStatus.done(
+        id: id,
+        createdAt: createdAt,
+        utcOffset: 0,
+      ),
+      _GeneratedTaskStatusKind.rejected => TaskStatus.rejected(
+        id: id,
+        createdAt: createdAt,
+        utcOffset: 0,
+      ),
     };
   }
 
   TaskData get data {
-    final dateFrom = DateTime.utc(2024, (dateSlot % 12) + 1, (dateSlot % 28) + 1);
+    final dateFrom = DateTime.utc(
+      2024,
+      (dateSlot % 12) + 1,
+      (dateSlot % 28) + 1,
+    );
     final status = _makeStatus('status-$idSlot');
     final history = optionalsSlot.isEven ? <TaskStatus>[] : [status];
-    final priority = TaskPriority.values[prioritySlot % TaskPriority.values.length];
-    final langSource = languageSourceSlot.isOdd ? ChangeSource.agent : ChangeSource.user;
+    final priority =
+        TaskPriority.values[prioritySlot % TaskPriority.values.length];
+    final langSource = languageSourceSlot.isOdd
+        ? ChangeSource.agent
+        : ChangeSource.user;
     final langCode = optionalsSlot % 3 == 0 ? null : 'lang-$optionalsSlot';
-    final suppressed = optionalsSlot % 4 == 0 ? null : <String>{'lbl-$optionalsSlot'};
+    final suppressed = optionalsSlot % 4 == 0
+        ? null
+        : <String>{'lbl-$optionalsSlot'};
 
     return TaskData(
       status: status,
@@ -758,14 +860,14 @@ extension _AnyTaskClasses on glados.Any {
         glados.any.bool,
         (kind, idSlot, dateSlot, utcOffset, timezoneSlot, reasonSlot, hasGeo) =>
             _GeneratedTaskStatus(
-          kind: kind,
-          idSlot: idSlot,
-          dateSlot: dateSlot,
-          utcOffset: utcOffset,
-          timezoneSlot: timezoneSlot,
-          reasonSlot: reasonSlot,
-          hasGeo: hasGeo,
-        ),
+              kind: kind,
+              idSlot: idSlot,
+              dateSlot: dateSlot,
+              utcOffset: utcOffset,
+              timezoneSlot: timezoneSlot,
+              reasonSlot: reasonSlot,
+              hasGeo: hasGeo,
+            ),
       );
 
   glados.Generator<_GeneratedTaskData> get generatedTaskData =>
@@ -777,9 +879,15 @@ extension _AnyTaskClasses on glados.Any {
         glados.IntAnys(this).intInRange(0, 3),
         glados.IntAnys(this).intInRange(0, 1),
         glados.IntAnys(this).intInRange(0, 15),
-        (statusKind, idSlot, dateSlot, titleSlot, prioritySlot,
-                languageSourceSlot, optionalsSlot) =>
-            _GeneratedTaskData(
+        (
+          statusKind,
+          idSlot,
+          dateSlot,
+          titleSlot,
+          prioritySlot,
+          languageSourceSlot,
+          optionalsSlot,
+        ) => _GeneratedTaskData(
           statusKind: statusKind,
           idSlot: idSlot,
           dateSlot: dateSlot,

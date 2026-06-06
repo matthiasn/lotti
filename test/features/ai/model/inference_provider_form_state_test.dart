@@ -10,8 +10,7 @@ extension _AnyBaseUrl on glados.Any {
       glados.CombinableAny(this).combine2(
         glados.AnyUtils(this).choose(const ['http', 'https']),
         glados.any.letterOrDigits,
-        (scheme, host) =>
-            '$scheme://${host.isEmpty ? 'a' : host}.example.com',
+        (scheme, host) => '$scheme://${host.isEmpty ? 'a' : host}.example.com',
       );
 
   /// Generates non-http scheme strings that should be invalid.
@@ -19,8 +18,7 @@ extension _AnyBaseUrl on glados.Any {
       glados.CombinableAny(this).combine2(
         glados.AnyUtils(this).choose(const ['ftp', 'ws', 'file', 'mailto']),
         glados.any.letterOrDigits,
-        (scheme, host) =>
-            '$scheme://${host.isEmpty ? 'a' : host}.example.com',
+        (scheme, host) => '$scheme://${host.isEmpty ? 'a' : host}.example.com',
       );
 }
 

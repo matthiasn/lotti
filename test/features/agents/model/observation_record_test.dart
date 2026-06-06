@@ -44,7 +44,10 @@ void main() {
           text: 'Template suggestion',
           category: ObservationCategory.templateImprovement,
         );
-        expect(record.category, equals(ObservationCategory.templateImprovement));
+        expect(
+          record.category,
+          equals(ObservationCategory.templateImprovement),
+        );
       });
 
       test('accepts grievance category', () {

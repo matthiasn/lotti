@@ -124,8 +124,8 @@ void main() {
   // -------------------------------------------------------------------------
   group('DashboardItem JSON round-trips — static examples', () {
     DashboardItem roundTrip(DashboardItem item) => DashboardItem.fromJson(
-          jsonDecode(jsonEncode(item.toJson())) as Map<String, dynamic>,
-        );
+      jsonDecode(jsonEncode(item.toJson())) as Map<String, dynamic>,
+    );
 
     test('DashboardItem.measurement round-trips', () {
       const item = DashboardItem.measurement(id: 'dt-1');
@@ -325,7 +325,11 @@ void main() {
         ),
       );
       final decoded = roundTrip(def);
-      expect(decoded, def, reason: 'HabitDefinition with autoComplete round-trip');
+      expect(
+        decoded,
+        def,
+        reason: 'HabitDefinition with autoComplete round-trip',
+      );
       final typed = decoded as HabitDefinition;
       expect(typed.autoCompleteRule, isNotNull);
     });
@@ -665,40 +669,41 @@ class _GeneratedDashboardItem {
 
   AggregationType? get _aggregationType {
     if (aggregationSlot % 5 == 0) return null;
-    return AggregationType.values[aggregationSlot % AggregationType.values.length];
+    return AggregationType.values[aggregationSlot %
+        AggregationType.values.length];
   }
 
   WorkoutValueType get _workoutValueType =>
-      WorkoutValueType.values[workoutValueSlot % WorkoutValueType.values.length];
+      WorkoutValueType.values[workoutValueSlot %
+          WorkoutValueType.values.length];
 
   DashboardItem get item => switch (kind) {
     _GeneratedDashboardItemKind.measurement => DashboardItem.measurement(
-        id: 'dt-$idSlot',
-        aggregationType: _aggregationType,
-      ),
+      id: 'dt-$idSlot',
+      aggregationType: _aggregationType,
+    ),
     _GeneratedDashboardItemKind.healthChart => DashboardItem.healthChart(
-        color: _colors[colorSlot % _colors.length],
-        healthType: 'HealthDataType.TYPE_$idSlot',
-      ),
+      color: _colors[colorSlot % _colors.length],
+      healthType: 'HealthDataType.TYPE_$idSlot',
+    ),
     _GeneratedDashboardItemKind.workoutChart => DashboardItem.workoutChart(
-        workoutType: 'HKWorkoutActivityType$idSlot',
-        displayName: 'Workout $idSlot',
-        color: _colors[colorSlot % _colors.length],
-        valueType: _workoutValueType,
-      ),
+      workoutType: 'HKWorkoutActivityType$idSlot',
+      displayName: 'Workout $idSlot',
+      color: _colors[colorSlot % _colors.length],
+      valueType: _workoutValueType,
+    ),
     _GeneratedDashboardItemKind.habitChart => DashboardItem.habitChart(
-        habitId: 'habit-$idSlot',
-      ),
+      habitId: 'habit-$idSlot',
+    ),
     _GeneratedDashboardItemKind.surveyChart => DashboardItem.surveyChart(
-        colorsByScoreKey: {'score-$idSlot': _colors[colorSlot % _colors.length]},
-        surveyType: 'Survey$idSlot',
-        surveyName: 'Survey Name $idSlot',
-      ),
+      colorsByScoreKey: {'score-$idSlot': _colors[colorSlot % _colors.length]},
+      surveyType: 'Survey$idSlot',
+      surveyName: 'Survey Name $idSlot',
+    ),
   };
 
   @override
-  String toString() =>
-      '_GeneratedDashboardItem(kind: $kind, idSlot: $idSlot)';
+  String toString() => '_GeneratedDashboardItem(kind: $kind, idSlot: $idSlot)';
 }
 
 class _GeneratedEntityDefinition {
@@ -741,7 +746,8 @@ class _GeneratedEntityDefinition {
         vectorClock: _vc,
         aggregationType: optionalsSlot.isEven
             ? null
-            : AggregationType.values[optionalsSlot % AggregationType.values.length],
+            : AggregationType.values[optionalsSlot %
+                  AggregationType.values.length],
         private: optionalsSlot % 3 == 0 ? null : optionalsSlot.isOdd,
         favorite: optionalsSlot % 4 == 0 ? null : optionalsSlot.isEven,
         categoryId: optionalsSlot % 5 == 0 ? null : 'cat-$idSlot',
@@ -755,7 +761,9 @@ class _GeneratedEntityDefinition {
         vectorClock: _vc,
         private: optionalsSlot.isOdd,
         active: optionalsSlot.isEven,
-        color: optionalsSlot % 3 == 0 ? null : '#${idSlot.toRadixString(16).padLeft(6, '0')}',
+        color: optionalsSlot % 3 == 0
+            ? null
+            : '#${idSlot.toRadixString(16).padLeft(6, '0')}',
         defaultLanguageCode: optionalsSlot % 4 == 0 ? null : 'en',
         speechDictionary: optionalsSlot.isEven
             ? null
@@ -771,48 +779,46 @@ class _GeneratedEntityDefinition {
         vectorClock: _vc,
         description: optionalsSlot % 3 == 0 ? null : 'Desc $nameSlot',
         sortOrder: optionalsSlot % 4 == 0 ? null : optionalsSlot,
-        applicableCategoryIds: optionalsSlot % 5 == 0
-            ? null
-            : ['cat-$idSlot'],
+        applicableCategoryIds: optionalsSlot % 5 == 0 ? null : ['cat-$idSlot'],
         private: optionalsSlot.isOdd ? null : false,
       ),
-    _GeneratedEntityDefinitionKind.habit =>
-      EntityDefinition.habit(
-        id: 'habit-$idSlot',
-        createdAt: _date,
-        updatedAt: _date,
-        name: 'Habit $nameSlot',
-        description: 'Habit desc $nameSlot',
-        habitSchedule: switch (scheduleKindSlot % 3) {
-          0 => HabitSchedule.daily(requiredCompletions: (optionalsSlot % 3) + 1),
-          1 => HabitSchedule.weekly(requiredCompletions: (optionalsSlot % 5) + 1),
-          _ => HabitSchedule.monthly(requiredCompletions: (optionalsSlot % 4) + 1),
-        },
-        vectorClock: _vc,
-        active: optionalsSlot.isEven,
-        private: optionalsSlot.isOdd,
-        categoryId: optionalsSlot % 3 == 0 ? null : 'cat-$idSlot',
-        priority: optionalsSlot % 4 == 0 ? null : optionalsSlot.isEven,
-      ),
-    _GeneratedEntityDefinitionKind.dashboard =>
-      EntityDefinition.dashboard(
-        id: 'dash-$idSlot',
-        createdAt: _date,
-        updatedAt: _date,
-        lastReviewed: _date,
-        name: 'Dashboard $nameSlot',
-        description: 'Dashboard desc $nameSlot',
-        items: List.generate(
-          itemCountSlot % 3,
-          (i) => DashboardItem.measurement(id: 'dt-$idSlot-$i'),
+    _GeneratedEntityDefinitionKind.habit => EntityDefinition.habit(
+      id: 'habit-$idSlot',
+      createdAt: _date,
+      updatedAt: _date,
+      name: 'Habit $nameSlot',
+      description: 'Habit desc $nameSlot',
+      habitSchedule: switch (scheduleKindSlot % 3) {
+        0 => HabitSchedule.daily(requiredCompletions: (optionalsSlot % 3) + 1),
+        1 => HabitSchedule.weekly(requiredCompletions: (optionalsSlot % 5) + 1),
+        _ => HabitSchedule.monthly(
+          requiredCompletions: (optionalsSlot % 4) + 1,
         ),
-        version: '${optionalsSlot % 5}.0',
-        vectorClock: _vc,
-        active: optionalsSlot.isEven,
-        private: optionalsSlot.isOdd,
-        days: optionalsSlot.isEven ? 30 : (optionalsSlot % 90) + 1,
-        categoryId: optionalsSlot % 4 == 0 ? null : 'cat-$idSlot',
+      },
+      vectorClock: _vc,
+      active: optionalsSlot.isEven,
+      private: optionalsSlot.isOdd,
+      categoryId: optionalsSlot % 3 == 0 ? null : 'cat-$idSlot',
+      priority: optionalsSlot % 4 == 0 ? null : optionalsSlot.isEven,
+    ),
+    _GeneratedEntityDefinitionKind.dashboard => EntityDefinition.dashboard(
+      id: 'dash-$idSlot',
+      createdAt: _date,
+      updatedAt: _date,
+      lastReviewed: _date,
+      name: 'Dashboard $nameSlot',
+      description: 'Dashboard desc $nameSlot',
+      items: List.generate(
+        itemCountSlot % 3,
+        (i) => DashboardItem.measurement(id: 'dt-$idSlot-$i'),
       ),
+      version: '${optionalsSlot % 5}.0',
+      vectorClock: _vc,
+      active: optionalsSlot.isEven,
+      private: optionalsSlot.isOdd,
+      days: optionalsSlot.isEven ? 30 : (optionalsSlot % 90) + 1,
+      categoryId: optionalsSlot % 4 == 0 ? null : 'cat-$idSlot',
+    ),
   };
 
   @override
@@ -837,12 +843,12 @@ extension _AnyEntityDefinitionExtended on glados.Any {
         glados.IntAnys(this).intInRange(0, 2),
         (kind, idSlot, colorSlot, aggregationSlot, workoutValueSlot) =>
             _GeneratedDashboardItem(
-          kind: kind,
-          idSlot: idSlot,
-          colorSlot: colorSlot,
-          aggregationSlot: aggregationSlot,
-          workoutValueSlot: workoutValueSlot,
-        ),
+              kind: kind,
+              idSlot: idSlot,
+              colorSlot: colorSlot,
+              aggregationSlot: aggregationSlot,
+              workoutValueSlot: workoutValueSlot,
+            ),
       );
 
   glados.Generator<_GeneratedEntityDefinition> get generatedEntityDefinition =>
@@ -855,9 +861,16 @@ extension _AnyEntityDefinitionExtended on glados.Any {
         glados.IntAnys(this).intInRange(0, 2),
         glados.IntAnys(this).intInRange(0, 3),
         glados.IntAnys(this).intInRange(0, 15),
-        (kind, idSlot, dateSlot, nameSlot, hasVectorClock, scheduleKindSlot,
-                itemCountSlot, optionalsSlot) =>
-            _GeneratedEntityDefinition(
+        (
+          kind,
+          idSlot,
+          dateSlot,
+          nameSlot,
+          hasVectorClock,
+          scheduleKindSlot,
+          itemCountSlot,
+          optionalsSlot,
+        ) => _GeneratedEntityDefinition(
           kind: kind,
           idSlot: idSlot,
           dateSlot: dateSlot,

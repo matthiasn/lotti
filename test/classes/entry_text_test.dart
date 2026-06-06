@@ -8,8 +8,8 @@ import 'package:lotti/classes/geolocation.dart';
 void main() {
   group('EntryText JSON round-trips — static examples', () {
     EntryText roundTrip(EntryText t) => EntryText.fromJson(
-          jsonDecode(jsonEncode(t.toJson())) as Map<String, dynamic>,
-        );
+      jsonDecode(jsonEncode(t.toJson())) as Map<String, dynamic>,
+    );
 
     test('minimal EntryText (plainText only) survives JSON round-trip', () {
       const t = EntryText(plainText: 'Hello world');
@@ -201,8 +201,7 @@ extension _AnyEntryText on glados.Any {
         glados.IntAnys(this).intInRange(0, 15),
         glados.IntAnys(this).intInRange(0, 15),
         glados.any.bool,
-        (plainTextSlot, markdownSlot, quillSlot, hasGeo) =>
-            _GeneratedEntryText(
+        (plainTextSlot, markdownSlot, quillSlot, hasGeo) => _GeneratedEntryText(
           plainTextSlot: plainTextSlot,
           markdownSlot: markdownSlot,
           quillSlot: quillSlot,

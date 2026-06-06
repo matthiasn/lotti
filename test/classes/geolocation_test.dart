@@ -7,8 +7,8 @@ import 'package:lotti/classes/geolocation.dart';
 void main() {
   group('Geolocation JSON round-trips — static examples', () {
     Geolocation roundTrip(Geolocation g) => Geolocation.fromJson(
-          jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>,
-        );
+      jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>,
+    );
 
     test('minimal Geolocation survives JSON round-trip', () {
       final g = Geolocation(
@@ -68,21 +68,23 @@ void main() {
       expect(decoded.longitude, 180.0);
     });
 
-    test('Geolocation with zero speed and altitude survives JSON round-trip',
-        () {
-      final g = Geolocation(
-        createdAt: DateTime(2024, 3, 15),
-        latitude: 0,
-        longitude: 0,
-        geohashString: 's0000',
-        speed: 0,
-        altitude: 0,
-      );
-      final decoded = roundTrip(g);
-      expect(decoded, g, reason: 'zero values round-trip');
-      expect(decoded.speed, 0.0);
-      expect(decoded.altitude, 0.0);
-    });
+    test(
+      'Geolocation with zero speed and altitude survives JSON round-trip',
+      () {
+        final g = Geolocation(
+          createdAt: DateTime(2024, 3, 15),
+          latitude: 0,
+          longitude: 0,
+          geohashString: 's0000',
+          speed: 0,
+          altitude: 0,
+        );
+        final decoded = roundTrip(g);
+        expect(decoded, g, reason: 'zero values round-trip');
+        expect(decoded.speed, 0.0);
+        expect(decoded.altitude, 0.0);
+      },
+    );
   });
 
   group('Geolocation Glados round-trips', () {
@@ -97,8 +99,11 @@ void main() {
       expect(decoded, geo, reason: '$scenario');
       expect(decoded.latitude, geo.latitude, reason: 'latitude preserved');
       expect(decoded.longitude, geo.longitude, reason: 'longitude preserved');
-      expect(decoded.geohashString, geo.geohashString,
-          reason: 'geohash preserved');
+      expect(
+        decoded.geohashString,
+        geo.geohashString,
+        reason: 'geohash preserved',
+      );
     }, tags: 'glados');
   });
 }
@@ -123,16 +128,21 @@ class _GeneratedGeolocation {
   final int optionalsSlot;
 
   Geolocation get geolocation {
-    final date =
-        DateTime.utc(2024, (dateSlot % 12) + 1, (dateSlot % 28) + 1);
+    final date = DateTime.utc(2024, (dateSlot % 12) + 1, (dateSlot % 28) + 1);
     final lat = (latSlot % 181) - 90.0;
     final lon = (lonSlot % 361) - 180.0;
     final geohash = 'gh${latSlot.toRadixString(36)}';
-    final utcOffset = optionalsSlot % 4 == 0 ? null : (utcOffsetSlot % 1440) - 720;
+    final utcOffset = optionalsSlot % 4 == 0
+        ? null
+        : (utcOffsetSlot % 1440) - 720;
     final timezone = optionalsSlot % 3 == 0 ? null : 'UTC';
-    final accuracy = optionalsSlot % 5 == 0 ? null : (optionalsSlot % 100) + 1.0;
+    final accuracy = optionalsSlot % 5 == 0
+        ? null
+        : (optionalsSlot % 100) + 1.0;
     final speed = optionalsSlot % 6 == 0 ? null : (optionalsSlot % 30) + 0.5;
-    final altitude = optionalsSlot % 7 == 0 ? null : (optionalsSlot % 500) - 50.0;
+    final altitude = optionalsSlot % 7 == 0
+        ? null
+        : (optionalsSlot % 500) - 50.0;
 
     return Geolocation(
       createdAt: date,
@@ -164,11 +174,11 @@ extension _AnyGeolocation on glados.Any {
         glados.IntAnys(this).intInRange(0, 20),
         (dateSlot, latSlot, lonSlot, utcOffsetSlot, optionalsSlot) =>
             _GeneratedGeolocation(
-          dateSlot: dateSlot,
-          latSlot: latSlot,
-          lonSlot: lonSlot,
-          utcOffsetSlot: utcOffsetSlot,
-          optionalsSlot: optionalsSlot,
-        ),
+              dateSlot: dateSlot,
+              latSlot: latSlot,
+              lonSlot: lonSlot,
+              utcOffsetSlot: utcOffsetSlot,
+              optionalsSlot: optionalsSlot,
+            ),
       );
 }

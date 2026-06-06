@@ -765,8 +765,7 @@ void main() {
       });
 
       test('stripThinking removes all thinking blocks', () {
-        const input =
-            'a<think>t</think>b[think]u[/think]c```think\nX\n```d';
+        const input = 'a<think>t</think>b[think]u[/think]c```think\nX\n```d';
         final stripped = ThinkingUtils.stripThinking(input);
         expect(stripped, 'abcd');
       });

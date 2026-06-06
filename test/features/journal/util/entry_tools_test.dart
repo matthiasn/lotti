@@ -50,13 +50,15 @@ void main() {
       expect(formatDuration(d), '09:59:59');
     });
 
-    test('does not truncate sub-second precision (only integer seconds shown)',
-        () {
-      const d = Duration(hours: 2, milliseconds: 500);
-      // Duration.toString strips sub-second: "2:00:00.500000" → first split
-      // on '.' → "2:00:00", then padded to "02:00:00".
-      expect(formatDuration(d), '02:00:00');
-    });
+    test(
+      'does not truncate sub-second precision (only integer seconds shown)',
+      () {
+        const d = Duration(hours: 2, milliseconds: 500);
+        // Duration.toString strips sub-second: "2:00:00.500000" → first split
+        // on '.' → "2:00:00", then padded to "02:00:00".
+        expect(formatDuration(d), '02:00:00');
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -88,8 +90,7 @@ void main() {
     glados.Glados(
       glados.any.boundedDuration,
       glados.ExploreConfig(numRuns: 120),
-    ).test(
-        'durations below 10 hours are padded to start with a two-character '
+    ).test('durations below 10 hours are padded to start with a two-character '
         'hour field', (d) {
       if (d.inHours >= 10) return; // only test the padding branch
       final result = formatDuration(d);
