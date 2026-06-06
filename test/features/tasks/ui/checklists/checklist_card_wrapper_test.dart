@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
+import 'package:lotti/features/tasks/state/checklist_completion_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
