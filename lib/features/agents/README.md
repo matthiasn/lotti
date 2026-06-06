@@ -209,6 +209,9 @@ Persisted agent-side entities include:
   `SoulDocumentHeadEntity`
 - `ChangeSetEntity` and `ChangeDecisionEntity`
 - `ProjectRecommendationEntity`
+- `AttentionRequestEntity`, `AttentionClaimDispositionEntity`, and
+  `AttentionAwardEntity`
+- `StandingAgreementEntity`
 - `WakeTokenUsageEntity`
 
 Persisted links include:
@@ -249,6 +252,7 @@ flowchart LR
     Msg["Messages + payloads"]
     Report["Reports + report heads"]
     Change["Change sets + decisions"]
+    Attention["Attention claims + agreements"]
     Template["Templates + versions + heads"]
     Evo["Evolution sessions + notes"]
     Reco["Project recommendations"]
@@ -262,6 +266,7 @@ flowchart LR
   Agent --> Msg
   Agent --> Report
   Agent --> Change
+  Agent --> Attention
   Agent --> Wake
   Template --> Agent
   Template --> Evo
@@ -289,6 +294,8 @@ The persisted memory surface includes:
 - structured observations, stored as observation messages plus payloads
 - reports and report-head pointers
 - change sets, decisions, and project recommendations
+- attention requests, claim dispositions, awards, and standing agreements used
+  by day-planning reads
 - template versions, evolution sessions, persisted ritual recaps, and
   evolution notes
 - wake token usage and wake-run history

@@ -24,10 +24,11 @@
   agent-state counters; content-addressed input capture and compaction; and
   flag-gated lazy join/fork healing.
 - **Gaps to close:** Foundation B leader leasing/fencing; attention negotiation
-  planner wiring; outcome tracking; EU fallback tier; and the content-addressed
-  response cache. Standing agreements are now modeled as durable
-  `StandingAgreementEntity` records with an indexed local projection, but the
-  planner does not consume them yet.
+  planner award/verification wiring; outcome tracking; EU fallback tier; and
+  the content-addressed response cache. Standing agreements are modeled as
+  durable `StandingAgreementEntity` records, have a first-class synced
+  authoring service, and are read by the day planner through the indexed local
+  projection rather than source-table JSON scans.
 
 ## PR sequence
 
@@ -116,7 +117,7 @@ default-off)**; detailed plan: [`2026-06-02_join_by_continuation_plan.md`](./202
 
 **PR 8 — Planner MVP (proposal-only)**
 - **Goal:** `attention_request` events (impact/priority/deadline-slack/energy-fit/cadence + **evidence references** + bounded fields), standing agreements, and indexed planner-window lookup feed an LLM-mediated planner behavior; a **deterministic non-negotiable verifier** (recurrence + preemption, checked against health actuals, with manual override/bypass) validates the result; VOI gate; output = `ChangeSet` proposal. **No auto-mutations.**
-- **Resolved foundation:** `AttentionRequestEntity`, `AttentionClaimDispositionEntity`, `AttentionAwardEntity`, `StandingAgreementEntity`, the evidence/award `AgentLink` variants, and indexed local projections for attention claims and standing agreements exist. Claims are producer-maintained: task/project/health agents must emit or withdraw them during their own scheduled or event-driven wakes, before day planning reads. The planner must not synchronously wake many producer agents during drafting. This does **not** yet wire a planner wake, brief builder, verifier, VOI gate, award persistence flow, or `ChangeSet` emission. There is no speculative deterministic planner arbitrator in production.
+- **Resolved foundation:** `AttentionRequestEntity`, `AttentionClaimDispositionEntity`, `AttentionAwardEntity`, `StandingAgreementEntity`, the evidence/award `AgentLink` variants, indexed local projections for attention claims and standing agreements, and a synced `StandingAgreementService` authoring/lifecycle path exist. Claims are producer-maintained: task/project/health agents must emit or withdraw them during their own scheduled or event-driven wakes, before day planning reads. The planner must not synchronously wake many producer agents during drafting. This does **not** yet wire a planner wake, brief builder, verifier, VOI gate, award persistence flow, or `ChangeSet` emission. There is no speculative deterministic planner arbitrator in production.
 - **Depends on:** PR 4 (projection). (Auto-commit later needs PR 7.)
 - **Touches:** new event/edge types; planner behavior; verifier; `ChangeSet` emission; `DayPlan` (awards → `PlannedBlock`).
 - **Defers:** auto-resolution of anything irreversible; auto-commit (needs lease).

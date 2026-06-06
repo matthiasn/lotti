@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
+import 'package:lotti/features/agents/service/standing_agreement_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
@@ -3159,6 +3160,28 @@ void main() {
       final service = container.read(agentTemplateServiceProvider);
       expect(service, isA<AgentTemplateService>());
       expect(service.repository, same(mockRepo));
+    });
+  });
+
+  group('standingAgreementServiceProvider', () {
+    test('creates service with injected dependencies', () {
+      final mockRepo = MockAgentRepository();
+      final mockSyncService = MockAgentSyncService();
+      final mockOutbox = MockOutboxService();
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          outboxServiceProvider.overrideWithValue(mockOutbox),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final service = container.read(standingAgreementServiceProvider);
+      expect(service, isA<StandingAgreementService>());
+      expect(service.repository, same(mockRepo));
+      expect(service.syncService, same(mockSyncService));
     });
   });
 
