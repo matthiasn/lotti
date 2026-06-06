@@ -141,6 +141,38 @@ void main() {
       },
     );
 
+    testWidgets('compact mode tightens the horizontal padding', (
+      tester,
+    ) async {
+      EdgeInsetsGeometry paddingFor() => tester
+          .widget<Container>(
+            find.byKey(const Key('daily_os_time_spent_card')),
+          )
+          .padding!;
+
+      await tester.pumpWidget(
+        _wrap(
+          TimeSpentCard(
+            blocks: [_session(id: 's1', title: 'Session', startHour: 8)],
+            compact: true,
+          ),
+        ),
+      );
+      final compactPadding = paddingFor().resolve(TextDirection.ltr);
+
+      await tester.pumpWidget(
+        _wrap(
+          TimeSpentCard(
+            blocks: [_session(id: 's1', title: 'Session', startHour: 8)],
+          ),
+        ),
+      );
+      final regularPadding = paddingFor().resolve(TextDirection.ltr);
+
+      expect(compactPadding.left, lessThan(regularPadding.left));
+      expect(compactPadding.right, lessThan(regularPadding.right));
+    });
+
     testWidgets('no expander when the sessions fit within maxRows', (
       tester,
     ) async {

@@ -87,6 +87,42 @@ void main() {
       expect(selected, DateTime(2026, 5, 13));
     });
 
+    testWidgets(
+      'a marked today renders its dot in the on-interactive contrast color',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            SidebarMonthCalendar(
+              month: DateTime(2026, 5),
+              today: DateTime(2026, 5, 24),
+              markedDays: {DateTime(2026, 5, 24)},
+              onPreviousMonth: () {},
+              onNextMonth: () {},
+              onDaySelected: (_) {},
+            ),
+          ),
+        );
+
+        final context = tester.element(find.byType(SidebarMonthCalendar));
+        final tokens = context.designTokens;
+        final todayCell = find
+            .ancestor(of: find.text('24'), matching: find.byType(Stack))
+            .first;
+        final dotColors = tester
+            .widgetList<DecoratedBox>(
+              find.descendant(
+                of: todayCell,
+                matching: find.byType(DecoratedBox),
+              ),
+            )
+            .map((box) => (box.decoration as BoxDecoration).color)
+            .toList();
+        // Teal today-circle + a dot in the contrast color on top of it.
+        expect(dotColors, contains(tokens.colors.interactive.enabled));
+        expect(dotColors, contains(tokens.colors.text.onInteractiveAlert));
+      },
+    );
+
     testWidgets('marked days carry a plan dot; unmarked days do not', (
       tester,
     ) async {

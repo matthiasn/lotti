@@ -247,41 +247,85 @@ void main() {
       test(
         'renames a standalone block and its derived agenda item in place',
         () async {
-          final plan = await agent.draftDayPlan(
-            captureId: const CaptureId('cap'),
-            decidedTaskIds: const ['t_deck_review'],
-            dayDate: DateTime(2026, 5, 25),
+          const category = DayAgentCategory(
+            id: 'c1',
+            name: 'Work',
+            colorHex: '5ED4B7',
           );
-          final standalone = plan.blocks.firstWhere(
-            (b) =>
-                (b.taskId == null || b.taskId!.isEmpty) &&
-                b.type != TimeBlockType.buffer,
+          final start = DateTime(2026, 5, 25, 12);
+          final plan = DraftPlan(
+            dayDate: DateTime(2026, 5, 25),
+            blocks: [
+              TimeBlock(
+                id: 'b_standalone',
+                title: 'Lunch',
+                start: start,
+                end: start.add(const Duration(hours: 1)),
+                type: TimeBlockType.manual,
+                state: TimeBlockState.drafted,
+                category: category,
+              ),
+              TimeBlock(
+                id: 'b_linked',
+                title: 'Deck work',
+                start: start.add(const Duration(hours: 2)),
+                end: start.add(const Duration(hours: 3)),
+                type: TimeBlockType.ai,
+                state: TimeBlockState.drafted,
+                category: category,
+                taskId: 'task-1',
+                reason: 'focus window',
+              ),
+            ],
+            bands: const [],
+            capacityMinutes: 480,
+            scheduledMinutes: 120,
+            agendaItems: const [
+              AgendaItem(
+                id: 'agenda_b_standalone',
+                title: 'Lunch',
+                category: category,
+                linkedBlockIds: ['b_standalone'],
+              ),
+              AgendaItem(
+                id: 'agenda_task-1',
+                title: 'Deck work',
+                category: category,
+                linkedBlockIds: ['b_linked'],
+                taskId: 'task-1',
+              ),
+            ],
           );
 
           final renamed = await agent.renameBlock(
             plan: plan,
-            blockId: standalone.id,
+            blockId: 'b_standalone',
             title: 'Renamed standalone',
           );
 
-          final block = renamed.blocks.singleWhere(
-            (b) => b.id == standalone.id,
+          expect(
+            renamed.blocks.singleWhere((b) => b.id == 'b_standalone').title,
+            'Renamed standalone',
           );
-          expect(block.title, 'Renamed standalone');
           // Untouched blocks keep their titles.
           expect(
-            renamed.blocks.where((b) => b.title == 'Renamed standalone'),
-            hasLength(1),
+            renamed.blocks.singleWhere((b) => b.id == 'b_linked').title,
+            'Deck work',
           );
-          // Standalone agenda items derived from the block follow along.
-          final agendaTitles = renamed.agendaItems
-              .where(
-                (item) =>
-                    item.taskId == null &&
-                    item.linkedBlockIds.contains(standalone.id),
-              )
-              .map((item) => item.title);
-          expect(agendaTitles, everyElement('Renamed standalone'));
+          // The standalone agenda item derived from the block follows
+          // along; the task-linked agenda item stays untouched.
+          expect(
+            renamed.agendaItems
+                .singleWhere((item) => item.id == 'agenda_b_standalone')
+                .title,
+            'Renamed standalone',
+          );
+          expect(
+            renamed.agendaItems
+                .singleWhere((item) => item.id == 'agenda_task-1')
+                .title,
+            'Deck work',
+          );
         },
       );
 

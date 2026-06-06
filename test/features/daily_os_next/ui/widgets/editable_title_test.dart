@@ -147,6 +147,11 @@ void main() {
       await tester.pump();
 
       expect(pencilOpacity().opacity, 0.6);
+
+      // Leaving the title dims the pencil back to its resting state.
+      await gesture.moveTo(Offset.zero);
+      await tester.pump();
+      expect(pencilOpacity().opacity, 0.25);
     });
   });
 }

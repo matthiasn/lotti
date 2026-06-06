@@ -33,6 +33,9 @@ class RecordingDayAgent implements DayAgentInterface {
   /// When set, [renameBlock] throws this error.
   final Error? renameError;
 
+  /// `(blockId, title)` pairs received by [renameBlock].
+  final List<(String, String)> renamedBlocks = [];
+
   /// When set, [proposePlanDiff] blocks on this future before returning,
   /// keeping callers pinned in their "thinking" phase so tests can observe
   /// the transient state.
@@ -140,6 +143,7 @@ class RecordingDayAgent implements DayAgentInterface {
     required String blockId,
     required String title,
   }) async {
+    renamedBlocks.add((blockId, title));
     final error = renameError;
     if (error != null) throw error;
     return plan.copyWith(

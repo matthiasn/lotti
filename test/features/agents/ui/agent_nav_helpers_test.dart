@@ -1,4 +1,3 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,11 +10,11 @@ import '../../../mocks/mocks.dart';
 
 void main() {
   late MockNavService mockNav;
-  late _RecordingBeamerDelegate mockDelegate;
+  late RecordingBeamerDelegate mockDelegate;
 
   setUp(() {
     mockNav = MockNavService();
-    mockDelegate = _RecordingBeamerDelegate();
+    mockDelegate = RecordingBeamerDelegate();
     if (getIt.isRegistered<NavService>()) {
       getIt.unregister<NavService>();
     }
@@ -226,30 +225,4 @@ void main() {
       },
     );
   });
-}
-
-class _RecordingBeamerDelegate extends BeamerDelegate {
-  _RecordingBeamerDelegate()
-    : super(
-        locationBuilder: RoutesLocationBuilder(
-          routes: {'*': (_, _, _) => const SizedBox.shrink()},
-        ).call,
-      );
-
-  final List<String> beamed = <String>[];
-
-  @override
-  void beamToNamed(
-    String uri, {
-    Object? data,
-    Object? routeState,
-    bool beamBackOnPop = false,
-    bool popBeamLocationOnPop = false,
-    bool stacked = true,
-    bool replaceRouteInformation = false,
-    TransitionDelegate<dynamic>? transitionDelegate,
-    String? popToNamed,
-  }) {
-    beamed.add(uri);
-  }
 }

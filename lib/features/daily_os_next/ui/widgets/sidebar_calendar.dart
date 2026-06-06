@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_month_calendar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Desktop-sidebar month calendar wired to the Daily OS Next state:
 /// plan-day dots come from [dailyOsPlanDaysProvider]; tapping a day
@@ -52,14 +53,24 @@ class _DailyOsSidebarCalendarState
     final markedDays =
         ref.watch(dailyOsPlanDaysProvider(_month)).value ?? const <DateTime>{};
 
-    return SidebarMonthCalendar(
-      month: _month,
-      today: clock.now(),
-      selectedDay: selectedDay,
-      markedDays: markedDays,
-      onPreviousMonth: () => _shiftMonth(-1),
-      onNextMonth: () => _shiftMonth(1),
-      onDaySelected: ref.read(dailyOsNextSelectedDateProvider.notifier).select,
+    // Indent to the nav rows' inner content padding so the month title
+    // lines up with the destination icons instead of hugging the
+    // sidebar's outer edge.
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: context.designTokens.spacing.step5,
+      ),
+      child: SidebarMonthCalendar(
+        month: _month,
+        today: clock.now(),
+        selectedDay: selectedDay,
+        markedDays: markedDays,
+        onPreviousMonth: () => _shiftMonth(-1),
+        onNextMonth: () => _shiftMonth(1),
+        onDaySelected: ref
+            .read(dailyOsNextSelectedDateProvider.notifier)
+            .select,
+      ),
     );
   }
 }

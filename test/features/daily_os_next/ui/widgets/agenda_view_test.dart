@@ -190,6 +190,44 @@ void main() {
       expect(thumbnail.cropX, 0.25);
     });
 
+    testWidgets(
+      'surfaces the linked AI block reason as the why pill',
+      (tester) async {
+        final day = DateTime(2026, 5, 26);
+        final draft = DraftPlan(
+          dayDate: day,
+          blocks: [
+            TimeBlock(
+              id: 'block-1',
+              title: 'Deep work',
+              start: DateTime(2026, 5, 26, 9),
+              end: DateTime(2026, 5, 26, 10),
+              type: TimeBlockType.ai,
+              state: TimeBlockState.drafted,
+              category: _category,
+              reason: 'High-energy window 8-10:30.',
+            ),
+          ],
+          bands: const [],
+          capacityMinutes: 480,
+          scheduledMinutes: 60,
+          agendaItems: const [
+            AgendaItem(
+              id: 'agenda-1',
+              title: 'Deep work',
+              category: _category,
+              linkedBlockIds: ['block-1'],
+            ),
+          ],
+        );
+        await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
+        await tester.pump();
+
+        // The AI placement's reason reaches the card as the why tooltip.
+        expect(find.byTooltip('High-energy window 8-10:30.'), findsOneWidget);
+      },
+    );
+
     testWidgets('comfortable capacity (< 90%) shows comfortable overline', (
       tester,
     ) async {

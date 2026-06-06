@@ -19,6 +19,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -26,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_data/entity_factories.dart';
 import '../../test_utils.dart';
 
 const _category = DayAgentCategory(
@@ -264,6 +266,121 @@ void main() {
 
         final messages = tester.element(find.byType(DayPage)).messages;
         expect(find.text(messages.dailyOsNextRenameFailed), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'inline block rename on the Day view persists via the agent; a '
+      'failure surfaces the toast',
+      (tester) async {
+        _setSurface(tester);
+        DraftPlan draftWithStandaloneBlock() => DraftPlan(
+          dayDate: DateTime(2026, 5, 26),
+          blocks: [
+            TimeBlock(
+              id: 'blk_1',
+              title: 'Standalone block',
+              start: DateTime(2026, 5, 26, 9),
+              end: DateTime(2026, 5, 26, 10, 30),
+              type: TimeBlockType.manual,
+              state: TimeBlockState.drafted,
+              category: _category,
+            ),
+          ],
+          bands: const [],
+          capacityMinutes: 240,
+          scheduledMinutes: 90,
+        );
+
+        Future<void> renameOnDayView(RecordingDayAgent agent) async {
+          await tester.pumpWidget(
+            _wrap(
+              DayPage(draft: draftWithStandaloneBlock()),
+              overrides: [dayAgentProvider.overrideWithValue(agent)],
+            ),
+          );
+          await tester.pump();
+
+          // Switch to the Day projection.
+          final messages = tester.element(find.byType(DayPage)).messages;
+          await tester.tap(find.text(messages.dailyOsNextPlanViewDay));
+          await tester.pump();
+          await tester.pump();
+
+          await tester.tap(find.text('Standalone block'));
+          await tester.pump();
+          await tester.enterText(
+            find.byKey(const Key('daily_os_editable_title_field')),
+            'Renamed block',
+          );
+          await tester.testTextInput.receiveAction(TextInputAction.done);
+          await tester.pump();
+          await tester.pump();
+        }
+
+        // Success path: the agent receives the rename, no toast.
+        final agent = RecordingDayAgent();
+        await renameOnDayView(agent);
+        expect(agent.renamedBlocks, [('blk_1', 'Renamed block')]);
+        final messages = tester.element(find.byType(DayPage)).messages;
+        expect(find.text(messages.dailyOsNextRenameFailed), findsNothing);
+
+        // Failure path: the error toast appears.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        final failingAgent = RecordingDayAgent(
+          renameError: StateError('db down'),
+        );
+        await renameOnDayView(failingAgent);
+        expect(find.text(messages.dailyOsNextRenameFailed), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'inspect-agent menu action beams to the agent instance when the '
+      'day-agent identity resolves',
+      (tester) async {
+        _setSurface(tester);
+        final mockNav = MockNavService();
+        final settingsDelegate = RecordingBeamerDelegate();
+        when(() => mockNav.index).thenReturn(0);
+        when(() => mockNav.settingsIndex).thenReturn(6);
+        when(() => mockNav.setIndex(any())).thenReturn(null);
+        when(() => mockNav.settingsDelegate).thenReturn(settingsDelegate);
+        when(() => mockNav.persistNamedRoute(any())).thenAnswer((_) async {});
+        if (getIt.isRegistered<nav_service.NavService>()) {
+          getIt.unregister<nav_service.NavService>();
+        }
+        getIt.registerSingleton<nav_service.NavService>(mockNav);
+        addTearDown(() => getIt.unregister<nav_service.NavService>());
+
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(draft: _drafted()),
+            overrides: [
+              agent_providers.dayAgentProvider.overrideWith(
+                (ref, date) async => makeTestIdentity(
+                  id: 'day-agent-001',
+                  agentId: 'day-agent-001',
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.more_vert_rounded));
+        await tester.pump();
+        // Let the popup menu's open animation finish before tapping.
+        await tester.pump(const Duration(milliseconds: 200));
+        final messages = tester.element(find.byType(DayPage)).messages;
+        await tester.tap(find.text(messages.dailyOsNextDayMenuInspectAgent));
+        await tester.pump();
+        await tester.pump();
+
+        expect(settingsDelegate.beamed, [
+          '/settings/agents/instances/day-agent-001',
+        ]);
       },
     );
 
