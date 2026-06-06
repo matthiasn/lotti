@@ -61,7 +61,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(AgentTestBench().build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Proposed changes'), findsOneWidget);
       expect(find.textContaining('No open proposals'), findsOneWidget);
@@ -81,7 +82,8 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Proposed changes'), findsOneWidget);
       expect(find.text('Estimate'), findsOneWidget);
@@ -106,7 +108,8 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Confirm all'), findsNothing);
     });
@@ -166,11 +169,13 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Confirm all'), findsOneWidget);
       await tester.tap(find.text('Confirm all'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => service.confirmAll(csA)).called(1);
       verify(() => service.confirmAll(csB)).called(1);
@@ -199,10 +204,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byIcon(Icons.check_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => service.confirmItem(pending.changeSet, 0)).called(1);
       verify(() => notifier.notify(any())).called(1);
@@ -262,7 +269,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.textContaining('Set status to GROOMED'), findsOneWidget);
 
@@ -328,7 +336,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.textContaining('Set status to GROOMED'), findsOneWidget);
 
@@ -440,10 +449,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byIcon(Icons.close_rounded).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => service.rejectItem(pending.changeSet, 0)).called(1);
       verify(() => notifier.notify(any())).called(1);
@@ -471,10 +482,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.drag(find.text('Status'), const Offset(150, 0));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => service.confirmItem(pending.changeSet, 0)).called(1);
     });
@@ -501,10 +514,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.drag(find.text('Status'), const Offset(-150, 0));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => service.rejectItem(pending.changeSet, 0)).called(1);
     });
@@ -528,10 +543,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.drag(find.text('Status'), const Offset(40, 0));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verifyNever(() => service.confirmItem(any(), any()));
       verifyNever(() => service.rejectItem(any(), any()));
@@ -557,10 +574,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byIcon(Icons.check_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Failed to apply change'), findsWidgets);
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
@@ -586,10 +605,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byIcon(Icons.close_rounded).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => service.rejectItem(any(), any())).called(1);
       expect(find.text('Failed to apply change'), findsWidgets);
@@ -619,10 +640,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byIcon(Icons.check_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.textContaining('partial issue'), findsWidgets);
     });
@@ -671,10 +694,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Confirm all'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Failed to apply change'), findsWidgets);
       verify(() => notifier.notify(any())).called(1);
@@ -729,10 +754,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Confirm all'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Failed to apply change'), findsWidgets);
     });
@@ -754,7 +781,8 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final gesture = await tester.startGesture(
         tester.getCenter(find.text('Status')),
@@ -762,7 +790,8 @@ void main() {
       await gesture.moveBy(const Offset(40, 0));
       await tester.pump();
       await gesture.cancel();
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verifyNever(() => service.confirmItem(any(), any()));
       verifyNever(() => service.rejectItem(any(), any()));
@@ -793,20 +822,23 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.textContaining('History · 2'), findsOneWidget);
       expect(find.textContaining('OPEN → GROOMED'), findsNothing);
 
       await tester.tap(find.textContaining('History · 2'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.textContaining('OPEN → GROOMED'), findsOneWidget);
       expect(find.text('Confirmed'), findsOneWidget);
       expect(find.text('Dismissed'), findsOneWidget);
 
       await tester.tap(find.textContaining('History · 2'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.textContaining('OPEN → GROOMED'), findsNothing);
     });
 
@@ -828,10 +860,12 @@ void main() {
       );
 
       await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.textContaining('History · 1'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Dismissed'), findsOneWidget);
       final bodyText = tester.widget<Text>(find.text('"Stale row"'));
@@ -910,7 +944,8 @@ void main() {
           );
 
           await tester.pumpWidget(bench.build());
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           final labelFinder = find.text(c.expectedLabel);
           expect(labelFinder, findsOneWidget);
@@ -974,10 +1009,12 @@ void main() {
         );
 
         await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.byIcon(Icons.check_rounded));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         verify(() => service.confirmItem(any(), any())).called(1);
         verify(() => notifier.notify(any())).called(1);
@@ -1008,10 +1045,12 @@ void main() {
         );
 
         await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.byIcon(Icons.close_rounded).first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         verify(() => service.rejectItem(any(), any())).called(1);
         expect(find.text('Failed to apply change'), findsWidgets);
@@ -1047,7 +1086,8 @@ void main() {
         );
 
         await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // No animation controller is created, so the row never peeks:
         // the swipe-intent labels stay hidden until the user drags.
@@ -1085,7 +1125,8 @@ void main() {
         );
 
         await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Before any drag the reject backdrop is not shown.
         expect(find.byIcon(Icons.close), findsNothing);
@@ -1106,7 +1147,8 @@ void main() {
 
         // Releasing below the trigger must not call the service.
         await gesture.up();
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         verifyNever(() => service.rejectItem(any(), any()));
         verifyNever(() => service.confirmItem(any(), any()));
       },
@@ -1142,7 +1184,8 @@ void main() {
         );
 
         await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap confirm and rebuild only (no settle) so we observe the
         // in-flight busy layout.
@@ -1162,7 +1205,8 @@ void main() {
         completer.complete(
           const ToolExecutionResult(success: true, output: 'ok'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       },
     );
@@ -1225,7 +1269,8 @@ void main() {
         );
 
         await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Confirm all'));
         // Don't settle — drain the tap and rebuild only.
@@ -1244,7 +1289,8 @@ void main() {
 
         // Release the future so the test tear-down doesn't hang.
         completer.complete(const []);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       },
     );
   });
