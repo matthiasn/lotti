@@ -30,7 +30,7 @@ void main() {
       registerFallbackValue(FakeHabitCompletionData());
     });
 
-    setUp(() {
+    setUp(() async {
       mockJournalDb = mockJournalDbWithHabits([
         habitFlossing,
       ]);
@@ -40,12 +40,17 @@ void main() {
         () => mockEntitiesCacheService.getHabitById(habitFlossing.id),
       ).thenAnswer((_) => habitFlossing);
 
-      getIt
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        },
+      );
     });
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     Future<void> pumpHabitDialog(WidgetTester tester) async {
       final delegate = BeamerDelegate(
@@ -76,7 +81,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
     testWidgets('Habit completion can be recorded', (tester) async {
@@ -99,7 +106,8 @@ void main() {
       expect(saveButtonFinder, findsOneWidget);
 
       await tester.tap(saveButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('Fail button records a failed completion', (tester) async {
@@ -114,7 +122,8 @@ void main() {
       await pumpHabitDialog(tester);
 
       await tester.tap(find.byKey(const Key('habit_fail')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final captured = verify(
         () => mockPersistenceLogic.createHabitCompletionEntry(
@@ -140,7 +149,8 @@ void main() {
       await pumpHabitDialog(tester);
 
       await tester.tap(find.byKey(const Key('habit_skip')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final captured = verify(
         () => mockPersistenceLogic.createHabitCompletionEntry(
@@ -192,6 +202,8 @@ void main() {
 
       await tester.ensureVisible(closeButton);
       await tester.tap(closeButton);
+      // The route-pop transition must fully complete before the dialog
+      // leaves the tree — keep the unbounded settle here.
       await tester.pumpAndSettle();
 
       // After Navigator.pop the HabitDialog is no longer in the tree.
@@ -230,7 +242,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The DateTimeField should display a time of 23:59 — confirming endOfDay()
         // was called and _started was set to the end of the supplied dateString.
@@ -260,7 +273,8 @@ void main() {
         );
 
         await tester.tap(find.byKey(const Key('habit_save')));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final captured = verify(
           () => mockPersistenceLogic.createHabitCompletionEntry(
@@ -331,7 +345,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // When habitDefinition is null, the widget returns SizedBox.shrink()
       // so none of the dialog content should be present.
@@ -345,24 +360,25 @@ void main() {
     late UrlLauncherPlatform originalPlatform;
     final mockEntitiesCacheService = MockEntitiesCacheService();
 
-    setUp(() {
+    setUp(() async {
       originalPlatform = UrlLauncherPlatform.instance;
       mockUrlLauncher = MockUrlLauncher();
       UrlLauncherPlatform.instance = mockUrlLauncher;
       registerFallbackValue(FakeLaunchOptions());
 
-      final loggingService = LoggingService();
-      getIt
-        ..registerSingleton<LoggingService>(loggingService)
-        ..registerSingleton<DomainLogger>(
-          DomainLogger(loggingService: loggingService),
-        )
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+      // setUpTestGetIt registers LoggingService/DomainLogger already.
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<EntitiesCacheService>(
+            mockEntitiesCacheService,
+          );
+        },
+      );
     });
 
     tearDown(() async {
       UrlLauncherPlatform.instance = originalPlatform;
-      await getIt.reset();
+      await tearDownTestGetIt();
     });
 
     Future<void> pumpDescription(WidgetTester tester) async {
@@ -373,7 +389,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
     testWidgets('renders habit description text', (tester) async {
@@ -406,7 +423,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Find the Linkify widget and invoke its onOpen callback directly
         // to exercise the canLaunchUrl → launchUrl branch.
@@ -442,7 +460,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final linkify = tester.widget<Linkify>(find.byType(Linkify));
         expect(linkify.onOpen, isNotNull);
