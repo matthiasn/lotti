@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/classes/change_source.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -1018,6 +1018,48 @@ void main() {
 
           expect(result.success, isTrue);
           expect(result.output, contains('Follow-Up Task'));
+          expect(result.mutatedEntityId, 'new-task-001');
+
+          // The created task carries the requested title (trimmed) and the
+          // source task is linked to the new one.
+          final capturedData =
+              verify(
+                    () => mockPersistenceLogic.createTaskEntry(
+                      data: captureAny(named: 'data'),
+                      entryText: any(named: 'entryText'),
+                      categoryId: any(named: 'categoryId'),
+                    ),
+                  ).captured.single
+                  as TaskData;
+          expect(capturedData.title, 'Follow-Up Task');
+          expect(capturedData.priority, TaskPriority.p2Medium);
+          verify(
+            () => mockPersistenceLogic.createLink(
+              fromId: taskId,
+              toId: 'new-task-001',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'create_follow_up_task rejects a missing title without persisting',
+        () async {
+          final result = await dispatcher.dispatch(
+            'create_follow_up_task',
+            {'description': 'no title given'},
+            taskId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('"title" must be a non-empty'));
+          verifyNever(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
         },
       );
 
@@ -1126,8 +1168,69 @@ void main() {
           expect(result.output, contains('checklist item item-x not found'));
         },
       );
+
+      test(
+        'migrate_checklist_items (plural) routes to the same migration '
+        'handler',
+        () async {
+          when(
+            () => mockJournalDb.journalEntityById('item-y'),
+          ).thenAnswer((_) async => null);
+
+          final result = await dispatcher.dispatch(
+            'migrate_checklist_items',
+            {'id': 'item-y', 'targetTaskId': 'target-001'},
+            taskId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('checklist item item-y not found'));
+        },
+      );
+
+      test(
+        'migrate_checklist_item skips an already-archived item idempotently',
+        () async {
+          // Replayed migrations must not fail or double-migrate: the
+          // handler reports success without touching the checklists.
+          when(
+            () => mockJournalDb.journalEntityById('item-archived'),
+          ).thenAnswer(
+            (_) async => _makeChecklistItem('item-archived', isArchived: true),
+          );
+
+          final result = await dispatcher.dispatch(
+            'migrate_checklist_item',
+            {'id': 'item-archived', 'targetTaskId': 'target-001'},
+            taskId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('already archived'));
+          expect(result.mutatedEntityId, isNull);
+        },
+      );
     });
   });
+}
+
+/// Creates a minimal [ChecklistItem] entity for migration tests.
+ChecklistItem _makeChecklistItem(String id, {bool isArchived = false}) {
+  return ChecklistItem(
+    meta: Metadata(
+      id: id,
+      dateFrom: DateTime(2024, 3, 15),
+      dateTo: DateTime(2024, 3, 15),
+      createdAt: DateTime(2024, 3, 15),
+      updatedAt: DateTime(2024, 3, 15),
+    ),
+    data: ChecklistItemData(
+      title: 'Item $id',
+      isChecked: false,
+      linkedChecklists: const ['checklist-001'],
+      isArchived: isArchived,
+    ),
+  );
 }
 
 JournalEntry _makeJournalEntry(String id) {
