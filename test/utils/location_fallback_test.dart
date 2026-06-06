@@ -8,6 +8,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/linux_location_portal.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
@@ -15,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
+import '../widget_test_utils.dart';
 
 class _FakeLinuxBackend implements LinuxLocationBackend {
   _FakeLinuxBackend({this.result, this.error, this.closeError});
@@ -74,21 +76,20 @@ void main() {
     registerFallbackValue(FakeException());
   });
 
-  setUp(() {
+  setUp(() async {
     mockLocation = MockLocation();
     mockJournalDb = MockJournalDb();
     mockLoggingService = MockDomainLogger();
 
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<DomainLogger>(mockLoggingService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb)
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockLoggingService);
+      },
+    );
 
     // Stub captureException to prevent errors in tests
     when(
@@ -100,19 +101,32 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
+
+  /// Builds the unit under test with the standard mock wiring; pass
+  /// [ipProvider] to swap in a failing/null IP geolocation provider.
+  DeviceLocation buildDeviceLocation({
+    IpGeolocationProvider? ipProvider,
+    LinuxLocationBackendFactory? linuxBackendFactory,
+  }) => DeviceLocation(
+    locationService: mockLocation,
+    ipGeolocationProvider: ipProvider ?? fakeIpGeolocationProvider,
+    linuxBackendFactory: linuxBackendFactory,
+  );
+
+  /// Stubs the record-location config flag.
+  void stubRecordLocationFlag({required bool enabled}) {
+    when(
+      () => mockJournalDb.getConfigFlag(recordLocationFlag),
+    ).thenAnswer((_) async => enabled);
+  }
 
   group('DeviceLocation', () {
     group('getCurrentGeoLocation', () {
       test('returns null when location recording is disabled', () async {
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => false);
+        stubRecordLocationFlag(enabled: false);
 
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
-        );
+        deviceLocation = buildDeviceLocation();
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNull);
@@ -127,9 +141,7 @@ void main() {
           return;
         }
 
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => true);
+        stubRecordLocationFlag(enabled: true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
@@ -150,10 +162,7 @@ void main() {
           () => mockLocation.getLocation(),
         ).thenAnswer((_) async => mockLocationData);
 
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
-        );
+        deviceLocation = buildDeviceLocation();
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
@@ -174,9 +183,7 @@ void main() {
         if (Platform.isLinux) {
           return;
         }
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => true);
+        stubRecordLocationFlag(enabled: true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
@@ -188,10 +195,7 @@ void main() {
           () => mockLocation.requestPermission(),
         ).thenAnswer((_) async => PermissionStatus.denied);
 
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
-        );
+        deviceLocation = buildDeviceLocation();
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
@@ -211,9 +215,7 @@ void main() {
           return;
         }
 
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => true);
+        stubRecordLocationFlag(enabled: true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
@@ -226,10 +228,7 @@ void main() {
         ).thenThrow(Exception('Location service failed'));
 
         // The result should fall back to IP geolocation
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
-        );
+        deviceLocation = buildDeviceLocation();
         final result = await deviceLocation.getCurrentGeoLocation();
 
         // Verify that the exception was logged
@@ -252,9 +251,7 @@ void main() {
       test(
         'falls back to IP when location data has null coordinates',
         () async {
-          when(
-            () => mockJournalDb.getConfigFlag(recordLocationFlag),
-          ).thenAnswer((_) async => true);
+          stubRecordLocationFlag(enabled: true);
 
           when(
             () => mockLocation.serviceEnabled(),
@@ -286,9 +283,7 @@ void main() {
         if (Platform.isLinux) {
           return;
         }
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => true);
+        stubRecordLocationFlag(enabled: true);
 
         when(
           () => mockLocation.serviceEnabled(),
@@ -307,10 +302,7 @@ void main() {
         ).thenAnswer((_) async => PermissionStatus.denied);
 
         // Should fall back to IP geolocation
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
-        );
+        deviceLocation = buildDeviceLocation();
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
@@ -331,9 +323,7 @@ void main() {
           if (Platform.isLinux) {
             return;
           }
-          when(
-            () => mockJournalDb.getConfigFlag(recordLocationFlag),
-          ).thenAnswer((_) async => true);
+          stubRecordLocationFlag(enabled: true);
 
           when(
             () => mockLocation.serviceEnabled(),
@@ -344,10 +334,7 @@ void main() {
           ).thenAnswer((_) async => PermissionStatus.deniedForever);
 
           // Should fall back to IP geolocation
-          deviceLocation = DeviceLocation(
-            locationService: mockLocation,
-            ipGeolocationProvider: fakeIpGeolocationProvider,
-          );
+          deviceLocation = buildDeviceLocation();
           final result = await deviceLocation.getCurrentGeoLocation();
 
           expect(result, isNotNull);
@@ -366,9 +353,7 @@ void main() {
         () async {
           if (Platform.isLinux || Platform.isWindows) return;
 
-          when(
-            () => mockJournalDb.getConfigFlag(recordLocationFlag),
-          ).thenAnswer((_) async => true);
+          stubRecordLocationFlag(enabled: true);
 
           when(
             () => mockLocation.serviceEnabled(),
@@ -395,10 +380,7 @@ void main() {
             () => mockLocation.getLocation(),
           ).thenAnswer((_) async => mockLocationData);
 
-          deviceLocation = DeviceLocation(
-            locationService: mockLocation,
-            ipGeolocationProvider: fakeIpGeolocationProvider,
-          );
+          deviceLocation = buildDeviceLocation();
           final result = await deviceLocation.getCurrentGeoLocation();
 
           expect(result, isNotNull);
@@ -412,9 +394,7 @@ void main() {
       test('returns null when both native and IP geolocation fail', () async {
         if (Platform.isLinux || Platform.isWindows) return;
 
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => true);
+        stubRecordLocationFlag(enabled: true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
@@ -426,9 +406,8 @@ void main() {
           () => mockLocation.requestPermission(),
         ).thenAnswer((_) async => PermissionStatus.denied);
 
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: nullIpGeolocationProvider,
+        deviceLocation = buildDeviceLocation(
+          ipProvider: nullIpGeolocationProvider,
         );
         final result = await deviceLocation.getCurrentGeoLocation();
 
@@ -440,9 +419,7 @@ void main() {
         () async {
           if (Platform.isLinux || Platform.isWindows) return;
 
-          when(
-            () => mockJournalDb.getConfigFlag(recordLocationFlag),
-          ).thenAnswer((_) async => true);
+          stubRecordLocationFlag(enabled: true);
 
           when(
             () => mockLocation.serviceEnabled(),
@@ -456,9 +433,8 @@ void main() {
             () => mockLocation.getLocation(),
           ).thenThrow(Exception('Native failed'));
 
-          deviceLocation = DeviceLocation(
-            locationService: mockLocation,
-            ipGeolocationProvider: nullIpGeolocationProvider,
+          deviceLocation = buildDeviceLocation(
+            ipProvider: nullIpGeolocationProvider,
           );
           final result = await deviceLocation.getCurrentGeoLocation();
 
@@ -473,9 +449,7 @@ void main() {
         () async {
           if (!Platform.isLinux) return;
 
-          when(
-            () => mockJournalDb.getConfigFlag(recordLocationFlag),
-          ).thenAnswer((_) async => true);
+          stubRecordLocationFlag(enabled: true);
 
           final backend = _FakeLinuxBackend(
             result: PortalLocation(
@@ -488,9 +462,7 @@ void main() {
             ),
           );
 
-          deviceLocation = DeviceLocation(
-            locationService: mockLocation,
-            ipGeolocationProvider: fakeIpGeolocationProvider,
+          deviceLocation = buildDeviceLocation(
             linuxBackendFactory: () => backend,
           );
           final result = await deviceLocation.getCurrentGeoLocation();
@@ -510,9 +482,7 @@ void main() {
       test('falls back to IP when the portal denies or times out', () async {
         if (!Platform.isLinux) return;
 
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => true);
+        stubRecordLocationFlag(enabled: true);
 
         final backend = _FakeLinuxBackend(
           error: TimeoutException(
@@ -521,9 +491,7 @@ void main() {
           ),
         );
 
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
+        deviceLocation = buildDeviceLocation(
           linuxBackendFactory: () => backend,
         );
         final result = await deviceLocation.getCurrentGeoLocation();
@@ -546,18 +514,14 @@ void main() {
         () async {
           if (!Platform.isLinux) return;
 
-          when(
-            () => mockJournalDb.getConfigFlag(recordLocationFlag),
-          ).thenAnswer((_) async => true);
+          stubRecordLocationFlag(enabled: true);
 
           final backend = _FakeLinuxBackend(
             result: PortalLocation(latitude: 1, longitude: 2),
             closeError: Exception('cleanup boom'),
           );
 
-          deviceLocation = DeviceLocation(
-            locationService: mockLocation,
-            ipGeolocationProvider: fakeIpGeolocationProvider,
+          deviceLocation = buildDeviceLocation(
             linuxBackendFactory: () => backend,
           );
           final result = await deviceLocation.getCurrentGeoLocation();
@@ -588,9 +552,7 @@ void main() {
           return;
         }
 
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => true);
+        stubRecordLocationFlag(enabled: true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
@@ -611,10 +573,7 @@ void main() {
           () => mockLocation.getLocation(),
         ).thenAnswer((_) async => mockLocationData);
 
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
-        );
+        deviceLocation = buildDeviceLocation();
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
@@ -630,9 +589,7 @@ void main() {
           return;
         }
 
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => true);
+        stubRecordLocationFlag(enabled: true);
 
         when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
 
@@ -653,10 +610,7 @@ void main() {
           () => mockLocation.getLocation(),
         ).thenAnswer((_) async => mockLocationData);
 
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
-        );
+        deviceLocation = buildDeviceLocation();
         final result = await deviceLocation.getCurrentGeoLocation();
 
         expect(result, isNotNull);
