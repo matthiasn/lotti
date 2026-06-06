@@ -302,6 +302,30 @@ class DayAgentWorkflow {
         strategy: strategy,
       );
 
+      if (_requiresCaptureParse(
+        triggerTokens: triggerTokens,
+        captureContext: captureContext,
+      )) {
+        if (!strategy.didPersistCaptureParse) {
+          final captureId = captureIdFromTriggerTokens(triggerTokens)!;
+          final retryUsage = await _forceCaptureParseIfMissing(
+            conversationId: conversationId,
+            modelId: modelId,
+            provider: provider,
+            inferenceRepo: inferenceRepo,
+            tools: tools,
+            strategy: strategy,
+            captureId: captureId,
+          );
+          if (retryUsage != null) {
+            usage = usage == null ? retryUsage : usage.merge(retryUsage);
+          }
+        }
+        if (!strategy.didPersistCaptureParse) {
+          throw const _MissingCaptureParseException();
+        }
+      }
+
       if (_requiresDraftDayPlan(
         dayId: dayId,
         triggerTokens: triggerTokens,
@@ -1123,6 +1147,63 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
         draftingDayIdFromTriggerTokens(triggerTokens) == dayId;
   }
 
+  bool _requiresCaptureParse({
+    required Set<String> triggerTokens,
+    required _CaptureContext? captureContext,
+  }) {
+    return captureService != null &&
+        captureContext != null &&
+        captureIdFromTriggerTokens(triggerTokens) != null &&
+        draftingDayIdFromTriggerTokens(triggerTokens) == null &&
+        refineDayIdFromTriggerTokens(triggerTokens) == null;
+  }
+
+  Future<InferenceUsage?> _forceCaptureParseIfMissing({
+    required String conversationId,
+    required String modelId,
+    required AiConfigInferenceProvider provider,
+    required CloudInferenceWrapper inferenceRepo,
+    required List<ChatCompletionTool> tools,
+    required DayAgentStrategy strategy,
+    required String captureId,
+  }) {
+    _log(
+      'capture wake missed parse_capture_to_items — retrying with forced '
+      'tool choice',
+      subDomain: 'execute',
+    );
+    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
+      ChatCompletionNamedToolChoice(
+        type: ChatCompletionNamedToolChoiceType.function,
+        function: ChatCompletionFunctionCallOption(
+          name: DayAgentToolNames.parseCaptureToItems,
+        ),
+      ),
+    );
+    final parseOnlyTools = tools
+        .where(
+          (tool) => tool.function.name == DayAgentToolNames.parseCaptureToItems,
+        )
+        .toList(growable: false);
+
+    return conversationRepository.sendMessage(
+      conversationId: conversationId,
+      message:
+          'You did not call `parse_capture_to_items` before stopping. Call it '
+          'now for capture `$captureId` using the capture transcript and task '
+          'corpus already provided in this wake. This is the mandatory output '
+          'of a capture-submitted wake. Do not respond with plain text or call '
+          'any other tool.',
+      model: modelId,
+      provider: provider,
+      inferenceRepo: inferenceRepo,
+      tools: parseOnlyTools,
+      toolChoice: forcedToolChoice,
+      temperature: 0.3,
+      strategy: strategy,
+    );
+  }
+
   Future<InferenceUsage?> _forceDraftDayPlanIfMissing({
     required String conversationId,
     required String modelId,
@@ -1259,6 +1340,16 @@ class _MissingDraftDayPlanException implements Exception {
   @override
   String toString() {
     return 'Drafting wake did not persist draft_day_plan after forced retry.';
+  }
+}
+
+class _MissingCaptureParseException implements Exception {
+  const _MissingCaptureParseException();
+
+  @override
+  String toString() {
+    return 'Capture wake did not persist parse_capture_to_items after forced '
+        'retry.';
   }
 }
 

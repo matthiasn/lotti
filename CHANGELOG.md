@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task-agent suggestions now suppress verbatim duplicate proposals even when
   their underlying tool arguments differ, so identical checklist suggestions
   appear only once.
+- Daily OS Next capture wakes now retry with a forced parse step when the first
+  model response skips parsing, so Reconcile no longer stays stuck with an
+  empty "Here's what I heard" column.
 
 ### Fixed
 - Saving an event now clears the unsaved-changes state, so the save button
