@@ -27,7 +27,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `editor_widget_test.dart` uses a hand-rolled `buildEditorTestWidget` helper (lines 940–982) that creates a raw `ProviderScope` + `MediaQuery` + `MaterialApp` instead of using `makeTestableWidget()` from `test/widget_test_utils.dart`. This bypasses the centralized widget test infrastructure. The `setUpAll` blocks (lines 36–56, 592–614) also perform inline `getIt.registerSingleton` / `getIt.reset()` instead of using `setUpTestGetIt()` / `tearDownTestGetIt()`.
+- [x] **[HIGH]** `editor_widget_test.dart` uses a hand-rolled `buildEditorTestWidget` helper (lines 940–982) that creates a raw `ProviderScope` + `MediaQuery` + `MaterialApp` instead of using `makeTestableWidget()` from `test/widget_test_utils.dart`. This bypasses the centralized widget test infrastructure. The `setUpAll` blocks (lines 36–56, 592–614) also perform inline `getIt.registerSingleton` / `getIt.reset()` instead of using `setUpTestGetIt()` / `tearDownTestGetIt()`. **RESOLVED (partially assessed):** both setUpAll blocks now use `setUpTestGetIt(additionalSetup:)`; the hand-rolled MaterialApp wrapper is necessary — Quill widgets require `FlutterQuillLocalizations.delegate`, which `makeTestableWidget` does not register.
 
 - [ ] **[MED]** `editor_widget_test.dart:68–81` (`'editor toolbar is invisible without autofocus'`) uses `tester.pumpAndSettle()` after rendering a widget that has no running animations. `await tester.pump()` would suffice. This is also the only test using the global `testTextEntry` fixture (from `test_data.dart`) in a group that otherwise uses `buildEditorTestWidget` with synthetic entry IDs, creating an inconsistency.
 
@@ -41,7 +41,7 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `editor_tools.dart` contains several pure functions that are strong Glados candidates:
+- [x] **[HIGH]** `editor_tools.dart` contains several pure functions that are strong Glados candidates: **RESOLVED:** Glados round-trip (serialize → makeController → re-serialize identity), insertDividerEmbed caret/keyboard invariants over generated documents+cursors, and entryTextFromController totality (120–160 runs each).
   - `quillJsonFromDelta(delta)` and the inverse `Document.fromJson(json)` form a **round-trip pair** (`encode → decode → re-encode` should be identity). This is a classic property that Glados excels at.
   - `entryTextFromController(controller)` is a pure transformation from `QuillController` state to `EntryText`. A Glados property could assert that `plainText` is never null and `markdown` is non-empty when the document is non-empty.
   - `makeController(serializedQuill: ...)` / `quillJsonFromDelta(deltaFromController(...))` form another **round-trip**: deserialise JSON → controller → re-serialize should produce equivalent JSON (structural equality on the Quill Delta ops). Generate arbitrary valid Quill delta JSON strings and assert round-trip stability.
@@ -51,11 +51,11 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `editor_styles.dart` has **no test file**. The `customEditorStyles` function accepts two parameters (`ThemeData`, `DsTokens`) and returns a `DefaultStyles` struct with 9 named style slots. There is no test verifying that the returned styles contain the correct font sizes, weights, or colors under different themes.
+- [x] **[HIGH]** `editor_styles.dart` has **no test file**. The `customEditorStyles` function accepts two parameters (`ThemeData`, `DsTokens`) and returns a `DefaultStyles` struct with 9 named style slots. There is no test verifying that the returned styles contain the correct font sizes, weights, or colors under different themes. **RESOLVED:** new editor_styles_test pins heading/paragraph/list/placeholder/bold/inline-code/code-block styles against the token set in both themes.
 
-- [ ] **[HIGH]** `editor_toolbar.dart` has **no test file**. `ToolbarWidget` has non-trivial branching: when `notifier.animationCompleted` is `false` vs `true` (animation path vs static path). The animation completion path (setting `animationCompleted = true` via `onComplete`) is entirely untested.
+- [x] **[HIGH]** `editor_toolbar.dart` has **no test file**. `ToolbarWidget` has non-trivial branching: when `notifier.animationCompleted` is `false` vs `true` (animation path vs static path). The animation completion path (setting `animationCompleted = true` via `onComplete`) is entirely untested. **RESOLVED:** new editor_toolbar_test — onComplete wiring flips `animationCompleted` (invoked as the controller would; the provider is kept alive as the editor page does), the static branch renders the fixed 45px box with no Animate wrapper, and the custom divider button inserts the embed.
 
-- [ ] **[HIGH]** `editor_tools_test.dart` tests only `insertDividerEmbed` (2 cases). The following functions have **zero direct test coverage**:
+- [x] **[HIGH]** `editor_tools_test.dart` tests only `insertDividerEmbed` (2 cases). The following functions have **zero direct test coverage**: **RESOLVED:** makeController (incl. the '[]' guard), entryTextFromController, and quillJsonFromDelta now have direct worked + property coverage.
   - `deltaFromController(controller)` — tested only transitively via `insertDividerEmbed`
   - `quillJsonFromDelta(delta)` — not tested at all
   - `entryTextFromController(controller)` — not tested at all (returns an `EntryText` with `plainText`, `markdown`, `quill` fields)
@@ -69,7 +69,7 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `editor_widget_test.dart` contains **25 `pumpAndSettle` calls** — the largest count in the editor group. Many of these are in tests involving purely static widgets (toolbar hidden, embed configuration, scroll controller) where `await tester.pump()` suffices. Specifically:
+- [x] **[HIGH]** `editor_widget_test.dart` contains **25 `pumpAndSettle` calls** — the largest count in the editor group. Many of these are in tests involving purely static widgets (toolbar hidden, embed configuration, scroll controller) where `await tester.pump()` suffices. Specifically: **RESOLVED:** 17 of 25 settles replaced with bounded pumps; the 8 remaining sit in the two toolbar-animation-coupled tests where the entrance animation genuinely needs to settle.
   - Lines 76, 95, 103, 120, 145, 150, 156, 172, 179, 196, 213, 226, 232, 254, 258, 634, 654 — all in tests where no animation is expected. **Potential saving: up to 10 s timeout risk each if any future test accidentally triggers an animation.**
 
 - [ ] **[MED]** `editor_widget_test.dart` has two `setUpAll` blocks (lines 36, 592) that each open `JournalDb` + `EditorDb` in memory — these are independent test groups that share no state yet repeat the same heavy setup. Merging into one shared setup, or using `setUpTestGetIt`, would reduce SQLite open/close overhead.

@@ -34,24 +34,28 @@ void main() {
     final mockTimeService = MockTimeService();
 
     setUpAll(() async {
-      await getIt.reset();
       final mockUpdateNotifications = MockUpdateNotifications();
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
       );
-
-      getIt
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<VectorClockService>(MockVectorClockService())
-        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
-        ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<EditorStateService>(EditorStateService());
-
       when(
         mockTimeService.getStream,
       ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+            ..registerSingleton<VectorClockService>(MockVectorClockService())
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
+            ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
+            ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+            ..registerSingleton<TimeService>(mockTimeService)
+            ..registerSingleton<EditorStateService>(EditorStateService());
+        },
+      );
     });
 
     tearDownAll(() async {
@@ -74,7 +78,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 450));
 
       final boldIconFinder = find.byIcon(Icons.format_bold);
       expect(boldIconFinder, findsNothing);
@@ -92,7 +96,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 450));
 
       final card = tester.widget<Card>(find.byType(Card));
       expect(card.clipBehavior, equals(Clip.none));
@@ -254,7 +258,7 @@ void main() {
 
       // Remove the widget from the tree
       await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 450));
 
       // The widget should be removed without errors
       // (dispose was called properly)
@@ -343,7 +347,7 @@ void main() {
       );
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 450));
 
       expect(find.text(messages.addToDictionarySuccess), findsOneWidget);
     });
@@ -372,7 +376,7 @@ void main() {
       );
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 450));
 
       expect(find.text(messages.addToDictionaryNoCategory), findsOneWidget);
     });
@@ -405,7 +409,7 @@ void main() {
       );
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 450));
 
       expect(showResult, isFalse);
       // No snackbar should be shown
@@ -438,7 +442,7 @@ void main() {
       );
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 450));
 
       expect(showResult, isTrue);
       expect(find.text(messages.addToDictionaryDuplicate), findsOneWidget);
@@ -466,7 +470,7 @@ void main() {
         ),
       );
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 450));
     }
 
     testWidgets('maps saveFailed to the error tone', (tester) async {
@@ -589,7 +593,6 @@ void main() {
     late AppLocalizations messages;
 
     setUpAll(() async {
-      await getIt.reset();
       registerAllFallbackValues();
 
       final mockUpdateNotifications = MockUpdateNotifications();
@@ -601,14 +604,20 @@ void main() {
         (_) => Stream<JournalEntity>.fromIterable([]),
       );
 
-      getIt
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<VectorClockService>(MockVectorClockService())
-        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
-        ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<EditorStateService>(EditorStateService());
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+            ..registerSingleton<VectorClockService>(MockVectorClockService())
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
+            ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
+            ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+            ..registerSingleton<TimeService>(mockTimeService)
+            ..registerSingleton<EditorStateService>(EditorStateService());
+        },
+      );
 
       messages = await AppLocalizations.delegate.load(const Locale('en'));
     });
@@ -632,7 +641,7 @@ void main() {
         await tester.pumpWidget(
           buildEditorTestWidget(entryId: entryId, showToolbar: false),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 450));
 
         final quillEditor = tester.widget<QuillEditor>(
           find.byType(QuillEditor),
@@ -651,7 +660,7 @@ void main() {
         await tester.pumpWidget(
           buildEditorTestWidget(entryId: entryId, showToolbar: false),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 450));
 
         // Re-acquire the state after re-pump.
         final freshState = tester.state<QuillRawEditorState>(
@@ -691,7 +700,7 @@ void main() {
         await tester.pumpWidget(
           buildEditorTestWidget(entryId: entryId, showToolbar: false),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 450));
 
         final quillEditor = tester.widget<QuillEditor>(
           find.byType(QuillEditor),
@@ -745,7 +754,7 @@ void main() {
             speechDictionaryServiceOverride: mockDictionaryService,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 450));
 
         final quillEditor = tester.widget<QuillEditor>(
           find.byType(QuillEditor),
@@ -779,7 +788,7 @@ void main() {
 
         // Press the "Add to Dictionary" button.
         dictionaryButtonItem.onPressed?.call();
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 450));
 
         // The service should have been called with the selected term.
         verify(
@@ -812,7 +821,7 @@ void main() {
             speechDictionaryServiceOverride: mockDictionaryService,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 450));
 
         final quillEditor = tester.widget<QuillEditor>(
           find.byType(QuillEditor),
@@ -842,7 +851,7 @@ void main() {
           (item) => item.label == messages.addToDictionary,
         );
         dictionaryButtonItem.onPressed?.call();
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 450));
 
         verify(
           () => mockDictionaryService.addTermForEntry(
@@ -873,7 +882,7 @@ void main() {
             speechDictionaryServiceOverride: mockDictionaryService,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 450));
 
         final quillEditor = tester.widget<QuillEditor>(
           find.byType(QuillEditor),
@@ -903,7 +912,7 @@ void main() {
           (item) => item.label == messages.addToDictionary,
         );
         dictionaryButtonItem.onPressed?.call();
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 450));
 
         // Service was called but result is silent — no toast rendered.
         verify(
