@@ -24,8 +24,8 @@ void main() {
   late Directory mockDocumentsDirectory;
 
   setUp(() async {
-    await getIt.reset();
-    getIt.allowReassignment = true;
+    // Per-test GetIt scope, popped in tearDown.
+    getIt.pushNewScope();
 
     // Create a temp directory to simulate the documents directory
     mockDocumentsDirectory = Directory.systemTemp.createTempSync(
@@ -53,7 +53,7 @@ void main() {
   });
 
   tearDown(() async {
-    await getIt.reset();
+    await getIt.popScope();
     try {
       mockDocumentsDirectory.deleteSync(recursive: true);
     } catch (_) {
@@ -128,7 +128,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should render the image structure: SizedBox > ClipRect > FittedBox > Image.file
         expect(find.byType(ClipRect), findsOneWidget);
@@ -156,7 +156,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
         expect(fittedBox.alignment, Alignment.centerLeft);
@@ -183,7 +183,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
         expect(fittedBox.alignment, Alignment.center);
@@ -209,7 +209,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
         expect(fittedBox.alignment, Alignment.centerRight);
@@ -237,7 +237,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
         expect(fittedBox.alignment, const Alignment(-0.5, 0));
@@ -263,7 +263,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Find the outer SizedBox (the one wrapping the image content)
         final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
@@ -304,7 +304,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should NOT render ClipRect/FittedBox/Image
         expect(find.byType(ClipRect), findsNothing);
@@ -357,7 +357,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should NOT render image widgets
         expect(find.byType(ClipRect), findsNothing);
@@ -395,7 +395,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should NOT render image widgets since file doesn't exist
         expect(find.byType(ClipRect), findsNothing);
@@ -430,7 +430,7 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           // File doesn't exist, so should show fallback
           expect(find.byType(Image), findsNothing);
@@ -468,7 +468,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Verify image-1 is showing
         expect(find.byType(Image), findsOneWidget);
@@ -490,7 +490,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // After imageId change, widget should still render correctly
         expect(find.byType(CoverArtThumbnail), findsOneWidget);
@@ -519,7 +519,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(Image), findsOneWidget);
 
@@ -540,7 +540,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Widget should still render correctly
         expect(find.byType(Image), findsOneWidget);
@@ -579,7 +579,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // First image should render
         expect(find.byType(Image), findsOneWidget);
@@ -601,7 +601,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should now show fallback (no Image widget)
         expect(find.byType(Image), findsNothing);
@@ -633,7 +633,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(CoverArtThumbnail), findsOneWidget);
 
@@ -650,7 +650,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Widget should be gone
         expect(find.byType(CoverArtThumbnail), findsNothing);
@@ -680,7 +680,7 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
           expect(find.byType(CoverArtThumbnail), findsOneWidget);
 
           // Unmount
@@ -696,7 +696,7 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
           expect(find.byType(CoverArtThumbnail), findsNothing);
         }
       });
@@ -778,7 +778,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(CoverArtThumbnail), findsOneWidget);
       });
@@ -804,7 +804,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(CoverArtThumbnail), findsOneWidget);
       });

@@ -5,8 +5,9 @@ import 'package:lotti/features/tasks/ui/utils.dart';
 
 /// Glados generator for task-status-like strings.
 extension _AnyStatus on glados.Any {
-  glados.Generator<String> get statusString =>
-      glados.any.stringOf('abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789');
+  glados.Generator<String> get statusString => glados.any.stringOf(
+    'abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789',
+  );
 }
 
 /// The canonical set of known normalized statuses that the switch covers.
@@ -208,8 +209,10 @@ void main() {
   group('taskColorFromStatusString', () {
     test('OPEN returns different colors for light vs dark', () {
       final darkColor = taskColorFromStatusString('OPEN');
-      final lightColor =
-          taskColorFromStatusString('OPEN', brightness: Brightness.light);
+      final lightColor = taskColorFromStatusString(
+        'OPEN',
+        brightness: Brightness.light,
+      );
       expect(darkColor, isNot(equals(lightColor)));
     });
 
@@ -219,8 +222,10 @@ void main() {
     });
 
     test('BLOCKED dark mode returns a Color value', () {
-      final c =
-          taskColorFromStatusString('BLOCKED', brightness: Brightness.dark);
+      final c = taskColorFromStatusString(
+        'BLOCKED',
+        brightness: Brightness.dark,
+      );
       expect(c, isNotNull);
     });
 

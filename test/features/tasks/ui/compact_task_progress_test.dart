@@ -7,6 +7,9 @@ import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/platform.dart' as platform;
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class _FixedProgressController extends TaskProgressController {
   _FixedProgressController({
@@ -30,9 +33,18 @@ void main() {
   late bool originalIsMobile;
 
   setUpAll(() {
-    if (!getIt.isRegistered<TimeService>()) {
-      getIt.registerSingleton<TimeService>(TimeService());
-    }
+    // Scoped mock instead of a real TimeService (fake-time policy).
+    final mockTimeService = MockTimeService();
+    when(mockTimeService.getStream).thenAnswer((_) => const Stream.empty());
+    when(() => mockTimeService.linkedFrom).thenReturn(null);
+    when(mockTimeService.getCurrent).thenReturn(null);
+    getIt
+      ..pushNewScope()
+      ..registerSingleton<TimeService>(mockTimeService);
+  });
+
+  tearDownAll(() async {
+    await getIt.popScope();
   });
 
   setUp(() {
