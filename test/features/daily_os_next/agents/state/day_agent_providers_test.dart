@@ -1,18 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 import '../../../agents/test_utils.dart';
 
 void main() {
@@ -90,6 +94,59 @@ void main() {
       verify(
         () => notifications.notifyUiOnly({
           'dayplan-2026-05-25',
+          agentNotification,
+        }),
+      ).called(1);
+    });
+  });
+
+  group('dayAgentCaptureServiceProvider', () {
+    test('wires dependencies and persisted-state notifications', () async {
+      final repository = MockAgentRepository();
+      final syncService = MockAgentSyncService();
+      final journalDb = MockJournalDb();
+      final journalRepository = MockJournalRepository();
+      final fts5Db = MockFts5Db();
+      final orchestrator = MockWakeOrchestrator();
+      final domainLogger = MockDomainLogger();
+      final notifications = MockUpdateNotifications();
+
+      // Fts5Db is resolved through getIt rather than a Riverpod provider.
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<Fts5Db>(fts5Db);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repository),
+          agentSyncServiceProvider.overrideWithValue(syncService),
+          journalDbProvider.overrideWithValue(journalDb),
+          journalRepositoryProvider.overrideWithValue(journalRepository),
+          wakeOrchestratorProvider.overrideWithValue(orchestrator),
+          domainLoggerProvider.overrideWithValue(domainLogger),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final service = container.read(dayAgentCaptureServiceProvider);
+
+      expect(service.agentRepository, same(repository));
+      expect(service.syncService, same(syncService));
+      expect(service.journalDb, same(journalDb));
+      expect(service.journalRepository, same(journalRepository));
+      expect(service.fts5Db, same(fts5Db));
+      expect(service.orchestrator, same(orchestrator));
+      expect(service.domainLogger, same(domainLogger));
+
+      service.onPersistedStateChanged?.call('capture-2026-05-25');
+
+      verify(
+        () => notifications.notifyUiOnly({
+          'capture-2026-05-25',
           agentNotification,
         }),
       ).called(1);
