@@ -51,7 +51,7 @@ This keeps the orchestrator test file under 800 lines.
 
 ## Test quality improvements
 
-- [ ] [HIGH] Inline `DayPlanEntity` / `CaptureEntity` / `ParsedItemEntity` constructions in workflow test (lines 462–714)
+- [x] [HIGH] Inline `DayPlanEntity` / `CaptureEntity` / `ParsedItemEntity` constructions in workflow test (lines 462–714) — **RESOLVED:** the shared factories now exist — `makeTestCapture`/`makeTestParsedItem`/`makeTestDayPlan` added to `test/features/agents/test_data/entity_factories.dart` (they previously did not; only identity/state/message factories were shared) — and the workflow test's inline capture/parsed-item/day-plan/observation constructions use them.
 
 The tests `'includes capture context…'` (line 462), `'surfaces the existing draft…'`
 (line 564), and `'surfaces decided tasks…'` (line 668) each construct 3–6 full
@@ -62,7 +62,7 @@ test-data factories from `test/features/agents/test_data/entity_factories.dart`
 (already imported in the service tests via `test_utils.dart`). The workflow test
 currently does not import that file and constructs every entity from scratch.
 
-- [ ] [HIGH] `workflow()` helper re-creates a fresh `DayAgentWorkflow` per test with redundant `when(...)` repetitions
+- [x] [HIGH] `workflow()` helper re-creates a fresh `DayAgentWorkflow` per test with redundant `when(...)` repetitions — **RESOLVED:** `stubDraftingPlanContext` now takes `{baselinePlan, decidedTasks}` and the duplicated inline draftPlanForDay+hydrateDecidedTasks stub pairs route through it.
 
 Each of the 9 tests that need `planService` or `captureService` sets up
 `MockDayAgentPlanService` / `MockDayAgentCaptureService` with 1–4 overlapping
@@ -149,7 +149,7 @@ already well-covered by example tests.
 
 ## Coverage / missing-behavior gaps
 
-- [ ] [HIGH] `_executeToolHandler` with `record_observations` or `set_next_wake` called via the workflow harness but not through the tool handler path
+- [x] [HIGH] `_executeToolHandler` with `record_observations` or `set_next_wake` called via the workflow harness but not through the tool handler path — **RESOLVED:** new test pins the routing contract — `workflowHandlerTools` excludes `record_observations`, and a record_observations tool call is answered by the strategy ('Recorded 1 observation(s).') with `verifyNever` on both services' `executeTool`. The handler's own unknown-tool branch is a defensive guard that is architecturally unreachable (`workflowHandlerTools` is exactly foundation∪capture∪plan).
 
 The workflow test uses `_ConversationHarness.processToolCalls` to trigger tool
 responses, which goes through `DayAgentStrategy.processToolCalls`, NOT through
@@ -162,11 +162,11 @@ as the tool name (because `DayAgentStrategy` handles that before the handler is
 called). The routing logic itself (line ~353–680 of the impl) should have a
 direct test.
 
-- [ ] [HIGH] `execute()` with `state == null` (no reconciled agent state)
+- [x] [HIGH] `execute()` with `state == null` (no reconciled agent state) — **RESOLVED:** new test — null reconciled state fails with 'No agent state found', no conversation, no persisted entities.
 
 `syncService.reconciledAgentState` returning `null` causes an early `WakeResult(success: false, error: 'No agent state found')` at line 119. No test covers this branch.
 
-- [ ] [HIGH] `execute()` with empty `activeDayId` or null slot
+- [x] [HIGH] `execute()` with empty `activeDayId` or null slot — **RESOLVED:** new test — empty `activeDayId` fails with 'No active day ID', no conversation, no persisted entities.
 
 Similarly the `dayId == null || dayId.isEmpty` guard at line 124 is not tested.
 

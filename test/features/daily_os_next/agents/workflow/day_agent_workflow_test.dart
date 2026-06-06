@@ -184,20 +184,26 @@ void main() {
     );
   }
 
-  void stubDraftingPlanContext(MockDayAgentPlanService planService) {
+  /// Stubs the drafting-context lookups: the baseline plan (default none)
+  /// and the decided-tasks hydration (default empty).
+  void stubDraftingPlanContext(
+    MockDayAgentPlanService planService, {
+    DayPlanEntity? baselinePlan,
+    List<DecidedTaskRef> decidedTasks = const [],
+  }) {
     when(
       () => planService.draftPlanForDay(
         agentId: agentId,
         dayId: dayId,
       ),
-    ).thenAnswer((_) async => null);
+    ).thenAnswer((_) async => baselinePlan);
     when(
       () => planService.hydrateDecidedTasks(
         allowedCategoryIds: any(named: 'allowedCategoryIds'),
         explicitTaskIds: any(named: 'explicitTaskIds'),
         parsedItems: any(named: 'parsedItems'),
       ),
-    ).thenAnswer((_) async => const []);
+    ).thenAnswer((_) async => decidedTasks);
   }
 
   void stubSuccessfulDraftToolCall(MockDayAgentPlanService planService) {
@@ -283,6 +289,83 @@ void main() {
   });
 
   group('DayAgentWorkflow', () {
+    test('fails the wake when no reconciled agent state exists', () async {
+      when(
+        () => syncService.reconciledAgentState(agentId),
+      ).thenAnswer((_) async => null);
+
+      final result = await execute(workflow());
+
+      expect(result.success, isFalse);
+      expect(result.error, 'No agent state found');
+      // Nothing ran: no conversation, no persisted entities.
+      expect(conversationRepository.lastUserMessage, isNull);
+      expect(upsertedEntities, isEmpty);
+    });
+
+    test('fails the wake when the active day id is empty', () async {
+      currentState = state(activeDayId: '');
+
+      final result = await execute(workflow());
+
+      expect(result.success, isFalse);
+      expect(result.error, 'No active day ID');
+      expect(conversationRepository.lastUserMessage, isNull);
+      expect(upsertedEntities, isEmpty);
+    });
+
+    test(
+      'record_observations is handled by the strategy and never routed to '
+      'the capture or plan services',
+      () async {
+        // The workflow handler only routes capture/plan/set_next_wake names;
+        // record_observations is intercepted by the strategy beforehand.
+        expect(
+          DayAgentToolNames.workflowHandlerTools,
+          isNot(contains(DayAgentToolNames.recordObservations)),
+        );
+
+        final captureService = MockDayAgentCaptureService();
+        final planService = MockDayAgentPlanService();
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.recordObservations,
+            args: {
+              'observations': ['Morning wake was useful.'],
+            },
+          ),
+        ];
+
+        final result = await execute(
+          workflow(captureService: captureService, planService: planService),
+        );
+
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          'Recorded 1 observation(s).',
+        );
+        verifyNever(
+          () => captureService.executeTool(
+            agentId: any(named: 'agentId'),
+            threadId: any(named: 'threadId'),
+            runKey: any(named: 'runKey'),
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+          ),
+        );
+        verifyNever(
+          () => planService.executeTool(
+            agentId: any(named: 'agentId'),
+            threadId: any(named: 'threadId'),
+            runKey: any(named: 'runKey'),
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+          ),
+        );
+      },
+    );
+
     test('read-flips to a dayLog of capture transcripts and observations, '
         'dropping the recentObservations listing', () async {
       when(() => syncService.repository).thenReturn(repository);
@@ -429,27 +512,21 @@ void main() {
     test(
       'records observations, schedules wake, and persists wake output',
       () async {
-        final observationPayload =
-            AgentDomainEntity.agentMessagePayload(
-                  id: 'payload-old-observation',
-                  agentId: agentId,
-                  createdAt: now.subtract(const Duration(hours: 2)),
-                  vectorClock: null,
-                  content: const {'text': 'Earlier wake was too late.'},
-                )
-                as AgentMessagePayloadEntity;
-        final observationMessage =
-            AgentDomainEntity.agentMessage(
-                  id: 'old-observation',
-                  agentId: agentId,
-                  threadId: 'old-thread',
-                  kind: AgentMessageKind.observation,
-                  createdAt: now.subtract(const Duration(hours: 2)),
-                  vectorClock: null,
-                  contentEntryId: observationPayload.id,
-                  metadata: const AgentMessageMetadata(runKey: 'old-run'),
-                )
-                as AgentMessageEntity;
+        final observationPayload = makeTestMessagePayload(
+          id: 'payload-old-observation',
+          agentId: agentId,
+          createdAt: now.subtract(const Duration(hours: 2)),
+          content: const {'text': 'Earlier wake was too late.'},
+        );
+        final observationMessage = makeTestMessage(
+          id: 'old-observation',
+          agentId: agentId,
+          threadId: 'old-thread',
+          kind: AgentMessageKind.observation,
+          createdAt: now.subtract(const Duration(hours: 2)),
+          contentEntryId: observationPayload.id,
+          metadata: const AgentMessageMetadata(runKey: 'old-run'),
+        );
         currentState = state(
           toolCounterByKey: const {
             'day_agent_set_next_wake:2026-05-24': 4,
@@ -608,17 +685,14 @@ void main() {
     );
 
     test('includes capture context for capture-submitted wakes', () async {
-      final capture =
-          AgentDomainEntity.capture(
-                id: 'capture-1',
-                agentId: agentId,
-                transcript: 'Prep demo and buy milk',
-                capturedAt: DateTime(2026, 5, 25, 7, 45),
-                createdAt: DateTime(2026, 5, 25, 7, 45),
-                vectorClock: null,
-                audioRef: 'audio-1',
-              )
-              as CaptureEntity;
+      final capture = makeTestCapture(
+        id: 'capture-1',
+        agentId: agentId,
+        transcript: 'Prep demo and buy milk',
+        capturedAt: DateTime(2026, 5, 25, 7, 45),
+        createdAt: DateTime(2026, 5, 25, 7, 45),
+        audioRef: 'audio-1',
+      );
       final captureService = MockDayAgentCaptureService();
       when(() => captureService.getCapture('capture-1')).thenAnswer(
         (_) async => capture,
@@ -672,19 +746,7 @@ void main() {
       'includes a null-baseline drafting context for drafting-token wakes',
       () async {
         final planService = MockDayAgentPlanService();
-        when(
-          () => planService.draftPlanForDay(
-            agentId: agentId,
-            dayId: dayId,
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => planService.hydrateDecidedTasks(
-            allowedCategoryIds: any(named: 'allowedCategoryIds'),
-            explicitTaskIds: any(named: 'explicitTaskIds'),
-            parsedItems: any(named: 'parsedItems'),
-          ),
-        ).thenAnswer((_) async => const []);
+        stubDraftingPlanContext(planService);
         stubSuccessfulDraftToolCall(planService);
 
         final result = await execute(
@@ -713,54 +775,37 @@ void main() {
       'surfaces the existing draft as the baseline for drafting wakes',
       () async {
         final planService = MockDayAgentPlanService();
-        final baselinePlan =
-            AgentDomainEntity.dayPlan(
-                  id: 'day_agent_plan:$dayId',
-                  agentId: agentId,
-                  dayId: dayId,
-                  planDate: DateTime(2026, 5, 25),
-                  data: DayPlanData(
-                    planDate: DateTime(2026, 5, 25),
-                    status: const DayPlanStatus.draft(),
-                    plannedBlocks: [
-                      PlannedBlock(
-                        id: 'block-1',
-                        categoryId: 'work',
-                        startTime: DateTime(2026, 5, 25, 9),
-                        endTime: DateTime(2026, 5, 25, 10),
-                        title: 'Prep demo',
-                        reason: 'High-energy window.',
-                      ),
-                    ],
-                  ),
-                  energyBands: [
-                    DayAgentEnergyBand(
-                      start: DateTime(2026, 5, 25, 9),
-                      end: DateTime(2026, 5, 25, 12),
-                      level: DayAgentEnergyLevel.high,
-                      label: 'HIGH ENERGY',
-                    ),
-                  ],
-                  capacityMinutes: 360,
-                  scheduledMinutes: 60,
-                  createdAt: DateTime(2026, 5, 25, 8),
-                  updatedAt: DateTime(2026, 5, 25, 8),
-                  vectorClock: null,
-                )
-                as DayPlanEntity;
-        when(
-          () => planService.draftPlanForDay(
-            agentId: agentId,
-            dayId: dayId,
+        final baselinePlan = makeTestDayPlan(
+          agentId: agentId,
+          planDate: DateTime(2026, 5, 25),
+          data: DayPlanData(
+            planDate: DateTime(2026, 5, 25),
+            status: const DayPlanStatus.draft(),
+            plannedBlocks: [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 10),
+                title: 'Prep demo',
+                reason: 'High-energy window.',
+              ),
+            ],
           ),
-        ).thenAnswer((_) async => baselinePlan);
-        when(
-          () => planService.hydrateDecidedTasks(
-            allowedCategoryIds: any(named: 'allowedCategoryIds'),
-            explicitTaskIds: any(named: 'explicitTaskIds'),
-            parsedItems: any(named: 'parsedItems'),
-          ),
-        ).thenAnswer((_) async => const []);
+          energyBands: [
+            DayAgentEnergyBand(
+              start: DateTime(2026, 5, 25, 9),
+              end: DateTime(2026, 5, 25, 12),
+              level: DayAgentEnergyLevel.high,
+              label: 'HIGH ENERGY',
+            ),
+          ],
+          capacityMinutes: 360,
+          scheduledMinutes: 60,
+          createdAt: DateTime(2026, 5, 25, 8),
+          updatedAt: DateTime(2026, 5, 25, 8),
+        );
+        stubDraftingPlanContext(planService, baselinePlan: baselinePlan);
         stubSuccessfulDraftToolCall(planService);
 
         final result = await execute(
@@ -828,37 +873,28 @@ void main() {
                   vectorClock: null,
                 )
                 as CaptureEntity;
-        final parsedItem =
-            AgentDomainEntity.parsedItem(
-                  id: 'parsed-1',
-                  agentId: agentId,
-                  captureId: 'capture-1',
-                  kind: ParsedItemKind.matched,
-                  title: 'Buy milk',
-                  categoryId: 'life',
-                  confidence: ParsedItemConfidence.high,
-                  confidenceScore: 0.9,
-                  matchedTaskId: 'task-milk',
-                  createdAt: DateTime(2026, 5, 25, 7, 50),
-                  vectorClock: null,
-                )
-                as ParsedItemEntity;
-        final newParsedItem =
-            AgentDomainEntity.parsedItem(
-                  id: 'parsed-new',
-                  agentId: agentId,
-                  captureId: 'capture-1',
-                  kind: ParsedItemKind.newTask,
-                  title: 'Prep demo follow-up',
-                  categoryId: 'work',
-                  confidence: ParsedItemConfidence.medium,
-                  confidenceScore: 0.6,
-                  spokenPhrase: 'prep the follow-up',
-                  estimateMinutes: 25,
-                  createdAt: DateTime(2026, 5, 25, 7, 51),
-                  vectorClock: null,
-                )
-                as ParsedItemEntity;
+        final parsedItem = makeTestParsedItem(
+          id: 'parsed-1',
+          agentId: agentId,
+          captureId: 'capture-1',
+          kind: ParsedItemKind.matched,
+          title: 'Buy milk',
+          categoryId: 'life',
+          matchedTaskId: 'task-milk',
+          createdAt: DateTime(2026, 5, 25, 7, 50),
+        );
+        final newParsedItem = makeTestParsedItem(
+          id: 'parsed-new',
+          agentId: agentId,
+          captureId: 'capture-1',
+          title: 'Prep demo follow-up',
+          categoryId: 'work',
+          confidence: ParsedItemConfidence.medium,
+          confidenceScore: 0.6,
+          spokenPhrase: 'prep the follow-up',
+          estimateMinutes: 25,
+          createdAt: DateTime(2026, 5, 25, 7, 51),
+        );
         when(() => captureService.getCapture('capture-1')).thenAnswer(
           (_) async => capture,
         );
