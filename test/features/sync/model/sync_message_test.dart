@@ -186,6 +186,32 @@ SyncMessage _roundTripSyncMessage(SyncMessage msg) => SyncMessage.fromJson(
   jsonDecode(jsonEncode(msg.toJson())) as Map<String, dynamic>,
 );
 
+/// Round-trips an agentEntity message and unwraps the decoded entity,
+/// asserting the envelope type and status on the way.
+AgentDomainEntity _roundTripAgentEntity(
+  SyncMessage msg, {
+  required SyncEntryStatus expectStatus,
+}) {
+  final decoded = _roundTripSyncMessage(msg);
+  expect(decoded, isA<SyncAgentEntity>());
+  final decodedMsg = decoded as SyncAgentEntity;
+  expect(decodedMsg.status, expectStatus);
+  return decodedMsg.agentEntity!;
+}
+
+/// Round-trips an agentLink message and unwraps the decoded link,
+/// asserting the envelope type and status on the way.
+AgentLink _roundTripAgentLink(
+  SyncMessage msg, {
+  required SyncEntryStatus expectStatus,
+}) {
+  final decoded = _roundTripSyncMessage(msg);
+  expect(decoded, isA<SyncAgentLink>());
+  final decodedMsg = decoded as SyncAgentLink;
+  expect(decodedMsg.status, expectStatus);
+  return decodedMsg.agentLink!;
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -369,16 +395,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedEntity = _roundTripAgentEntity(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      expect(decoded, isA<SyncAgentEntity>());
-      final decodedMsg = decoded as SyncAgentEntity;
-      expect(decodedMsg.status, SyncEntryStatus.update);
-
-      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentIdentityEntity>());
       final identity = decodedEntity as AgentIdentityEntity;
       expect(identity.id, 'agent-1');
@@ -405,16 +425,10 @@ void main() {
         status: SyncEntryStatus.initial,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedEntity = _roundTripAgentEntity(
+        msg,
+        expectStatus: SyncEntryStatus.initial,
       );
-
-      expect(decoded, isA<SyncAgentEntity>());
-      final decodedMsg = decoded as SyncAgentEntity;
-      expect(decodedMsg.status, SyncEntryStatus.initial);
-
-      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentStateEntity>());
       final state = decodedEntity as AgentStateEntity;
       expect(state.revision, 5);
@@ -440,13 +454,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedEntity = _roundTripAgentEntity(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedMsg = decoded as SyncAgentEntity;
-      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentMessageEntity>());
       final message = decodedEntity as AgentMessageEntity;
       expect(message.threadId, 'thread-1');
@@ -468,13 +479,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedEntity = _roundTripAgentEntity(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedMsg = decoded as SyncAgentEntity;
-      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentMessagePayloadEntity>());
       final payload = decodedEntity as AgentMessagePayloadEntity;
       expect(payload.content['text'], 'hello world');
@@ -497,13 +505,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedEntity = _roundTripAgentEntity(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedMsg = decoded as SyncAgentEntity;
-      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentReportEntity>());
       final report = decodedEntity as AgentReportEntity;
       expect(report.scope, 'current');
@@ -526,13 +531,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedEntity = _roundTripAgentEntity(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedMsg = decoded as SyncAgentEntity;
-      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentReportHeadEntity>());
       final head = decodedEntity as AgentReportHeadEntity;
       expect(head.scope, 'current');
@@ -560,13 +562,12 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
-      );
-
-      final decodedMsg = decoded as SyncAgentEntity;
-      final identity = decodedMsg.agentEntity! as AgentIdentityEntity;
+      final identity =
+          _roundTripAgentEntity(
+                msg,
+                expectStatus: SyncEntryStatus.update,
+              )
+              as AgentIdentityEntity;
       expect(identity.vectorClock, isNull);
     });
   });
@@ -590,16 +591,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedLink = _roundTripAgentLink(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      expect(decoded, isA<SyncAgentLink>());
-      final decodedMsg = decoded as SyncAgentLink;
-      expect(decodedMsg.status, SyncEntryStatus.update);
-
-      final decodedLink = decodedMsg.agentLink!;
       expect(decodedLink, isA<BasicAgentLink>());
       expect(decodedLink.id, 'link-1');
       expect(decodedLink.fromId, 'agent-1');
@@ -622,12 +617,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedLink = _roundTripAgentLink(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<AgentStateLink>());
     });
 
@@ -646,12 +639,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedLink = _roundTripAgentLink(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<MessagePrevLink>());
     });
 
@@ -670,12 +661,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedLink = _roundTripAgentLink(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<MessagePayloadLink>());
     });
 
@@ -694,12 +683,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedLink = _roundTripAgentLink(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<ToolEffectLink>());
     });
 
@@ -718,12 +705,10 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedLink = _roundTripAgentLink(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<AgentTaskLink>());
     });
 
@@ -742,14 +727,11 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      final json = jsonEncode(msg.toJson());
-      final decoded = SyncMessage.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
+      final decodedLink = _roundTripAgentLink(
+        msg,
+        expectStatus: SyncEntryStatus.update,
       );
-
-      final decodedLink = (decoded as SyncAgentLink).agentLink;
-      expect(decodedLink, isNotNull);
-      expect(decodedLink!.vectorClock, isNull);
+      expect(decodedLink.vectorClock, isNull);
     });
   });
 

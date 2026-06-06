@@ -49,7 +49,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `AiConfigInferenceProviderUsability.isUsable` (lines 98–109 of `provider_config.dart`) — this extension method is the most important logic in the file (it gates whether a provider is usable at runtime) and has **zero** test coverage. The logic has four cases:
+- [x] **[HIGH]** `AiConfigInferenceProviderUsability.isUsable` (lines 98–109 of `provider_config.dart`) — this extension method is the most important logic in the file (it gates whether a provider is usable at runtime) and has **zero** test coverage. The logic has four cases: **RESOLVED:** four explicit tests added to `provider_config_test.dart` covering the cases — non-empty key (usable regardless of type), keyless local provider with/without base URL, `mlxAudio` with neither, and a key-requiring provider without a key (unusable). Whitespace-only values exercise the `trim()` behavior.
   1. `apiKey` is non-empty → usable (regardless of type).
   2. `apiKey` is empty AND provider does not require a key AND uses a base URL AND base URL is non-empty → usable.
   3. `apiKey` is empty AND provider does not require a key AND does not use a base URL (`mlxAudio`) → usable.

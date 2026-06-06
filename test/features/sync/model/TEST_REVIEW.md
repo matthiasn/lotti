@@ -30,7 +30,7 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `sync_message_test.dart`: every `SyncAgentEntity` and `SyncAgentLink` variant test follows an identical 15-line copy-paste pattern: create entity → wrap in `SyncMessage` → `jsonEncode`/`jsonDecode` → assert three fields. Eight tests share this exact structure (lines 147–549). Extract a parameterized helper:
+- [x] **[HIGH]** `sync_message_test.dart`: every `SyncAgentEntity` and `SyncAgentLink` variant test follows an identical 15-line copy-paste pattern: create entity → wrap in `SyncMessage` → `jsonEncode`/`jsonDecode` → assert three fields. Eight tests share this exact structure (lines 147–549). Extract a parameterized helper: **RESOLVED:** `_roundTripAgentEntity(msg, expectStatus:)` and `_roundTripAgentLink(msg, expectStatus:)` unwrap helpers (built on the existing `_roundTripSyncMessage`) now replace the 13 inline encode/decode/cast blocks; each variant test keeps only its variant-specific field assertions.
   ```dart
   SyncMessage _roundTrip(SyncMessage original) {
     final encoded = jsonEncode(original.toJson());
