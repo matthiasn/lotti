@@ -6,6 +6,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -248,6 +250,48 @@ void main() {
         // LinkedFromChecklistWidget is present in the widget tree when item is
         // a ChecklistItem (covers source line 159).
         expect(find.byType(LinkedFromChecklistWidget), findsOneWidget);
+      },
+    );
+
+    // -------------------------------------------------------------------------
+    // Checklist entry: renders LinkedFromTaskWidget (line 160)
+    // -------------------------------------------------------------------------
+    testWidgets(
+      'Checklist entry renders LinkedFromTaskWidget',
+      (tester) async {
+        final checklist = Checklist(
+          meta: Metadata(
+            id: 'test-checklist-page-id',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15, 1),
+            starred: false,
+          ),
+          // The checklist card renders linkedTasks.first, so the fixture
+          // must reference a parent task.
+          data: const ChecklistData(
+            title: 'Test checklist for page',
+            linkedChecklistItems: [],
+            linkedTasks: ['parent-task-id'],
+          ),
+        );
+
+        when(
+          () => mockJournalDb.journalEntityById(checklist.meta.id),
+        ).thenAnswer((_) async => checklist);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailsPage(itemId: checklist.meta.id),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // LinkedFromTaskWidget is present when the item is a Checklist
+        // (covers source line 160).
+        expect(find.byType(LinkedFromTaskWidget), findsOneWidget);
       },
     );
 
