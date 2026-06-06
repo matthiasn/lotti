@@ -101,6 +101,7 @@ import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
@@ -248,6 +249,12 @@ class MockSurfaceContext extends Mock implements genui.SurfaceContext {}
 
 class MockMatrixClient extends Mock implements Client {}
 
+class MockLoginResponse extends Mock implements LoginResponse {}
+
+class MockMatrixFile extends Mock implements MatrixFile {}
+
+class MockGetVersionsResponse extends Mock implements GetVersionsResponse {}
+
 class MockSyncMaintenanceRepository extends Mock
     implements SyncMaintenanceRepository {}
 
@@ -272,6 +279,8 @@ class MockSyncLifecycleCoordinator extends Mock
     implements SyncLifecycleCoordinator {}
 
 class MockKeyVerification extends Mock implements KeyVerification {}
+
+class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
 
 class MockUserActivityGate extends Mock implements UserActivityGate {}
 
@@ -629,17 +638,68 @@ class MockNotificationScheduler extends Mock implements NotificationScheduler {}
 
 class MockOutboxService extends Mock implements OutboxService {}
 
-class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
+class FakeDashboardDefinition extends Fake implements DashboardDefinition {
+  FakeDashboardDefinition({this.id = 'fake-dashboard-id', this.deletedAt});
+  @override
+  final String id;
+  @override
+  final DateTime? deletedAt;
+}
 
-class FakeHabitDefinition extends Fake implements HabitDefinition {}
+class FakeHabitDefinition extends Fake implements HabitDefinition {
+  FakeHabitDefinition({this.id = 'fake-habit-id', this.deletedAt});
+  @override
+  final String id;
+  @override
+  final DateTime? deletedAt;
+}
 
-class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
+class FakeCategoryDefinition extends Fake implements CategoryDefinition {
+  FakeCategoryDefinition({this.id = 'fake-category-id', this.deletedAt});
+  @override
+  final String id;
+  @override
+  final DateTime? deletedAt;
+}
+
+class FakeMeasurableDataType extends Fake implements MeasurableDataType {
+  FakeMeasurableDataType({this.id = 'fake-measurable-id', this.deletedAt});
+  @override
+  final String id;
+  @override
+  final DateTime? deletedAt;
+}
 
 class FakeEntryText extends Fake implements EntryText {}
 
 class FakeEventData extends Fake implements EventData {}
 
 class FakeTaskData extends Fake implements TaskData {}
+
+/// Task stand-in serving a fixed [data] payload and deterministic metadata —
+/// for tests that only read `data`/`meta`.
+class MockTask extends Mock implements Task {
+  MockTask({this.id = 'test-task-id', TaskData? data, DateTime? date})
+    // ignore: prefer_initializing_formals
+    : _data = data,
+      _date = date ?? DateTime(2024, 3, 15);
+
+  final String id;
+  final TaskData? _data;
+  final DateTime _date;
+
+  @override
+  TaskData get data => _data!;
+
+  @override
+  Metadata get meta => Metadata(
+    id: id,
+    createdAt: _date,
+    updatedAt: _date,
+    dateFrom: _date,
+    dateTo: _date,
+  );
+}
 
 class FakeMetadata extends Fake implements Metadata {}
 
@@ -942,6 +1002,8 @@ class MockVectorSearchRepository extends Mock
 class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 
 class FakeBaseRequest extends Fake implements http.BaseRequest {}
+
+class FakeRequest extends Fake implements http.Request {}
 
 class MockObjectBoxOps extends Mock implements ObjectBoxOps {}
 

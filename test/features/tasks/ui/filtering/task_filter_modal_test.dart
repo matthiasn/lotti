@@ -25,6 +25,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   late FakeJournalPageController fakeController;
@@ -68,7 +69,7 @@ void main() {
     ),
   ];
 
-  setUp(() {
+  setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (
@@ -112,24 +113,34 @@ void main() {
       () => mockJournalDb.getProjectsForCategory(any()),
     ).thenAnswer((_) async => <ProjectEntry>[]);
 
-    getIt.allowReassignment = true;
     final mockSettingsDb = MockSettingsDb();
     when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
     when(
       () => mockSettingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
-    getIt
-      ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<SettingsDb>(mockSettingsDb);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb)
+          ..unregister<SettingsDb>()
+          ..registerSingleton<SettingsDb>(mockSettingsDb);
+      },
+    );
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
-  Widget buildSubject() {
+  Widget buildSubject({
+    SavedTaskFiltersController Function()? savedTaskFiltersController,
+    bool hasUnsavedClauses = false,
+    MediaQueryData? mediaQueryData,
+  }) {
     fakeController = FakeJournalPageController(mockState);
 
     return WidgetTestBench(
+      mediaQueryData: mediaQueryData,
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
@@ -137,49 +148,11 @@ void main() {
             () => fakeController,
           ),
           // Saved-filter providers depend on the live JournalPageController.
-          // Override them with safe defaults so this test exercises the
+          // Override them with safe defaults so these tests exercise the
           // existing filter UI without spinning up the saved-filter stack.
           savedTaskFiltersControllerProvider.overrideWith(
-            () => _StubSavedTaskFiltersController(const []),
-          ),
-          currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
-          tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
-        ],
-        child: Scaffold(
-          body: Builder(
-            builder: (context) {
-              return ElevatedButton(
-                key: const ValueKey('open-filter-modal'),
-                onPressed: () => showTaskFilterModal(
-                  context,
-                  showTasks: true,
-                ),
-                child: const Text('Open Filter'),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Builds the subject with the save flow enabled.
-  Widget buildWithSaveEnabled({
-    required List<SavedTaskFilter> savedFilters,
-    required bool hasUnsavedClauses,
-    required SavedTaskFiltersController savedTaskFiltersController,
-  }) {
-    fakeController = FakeJournalPageController(mockState);
-
-    return WidgetTestBench(
-      child: ProviderScope(
-        overrides: [
-          journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(true).overrideWith(
-            () => fakeController,
-          ),
-          savedTaskFiltersControllerProvider.overrideWith(
-            () => savedTaskFiltersController,
+            savedTaskFiltersController ??
+                () => _StubSavedTaskFiltersController(const []),
           ),
           currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
           tasksFilterHasUnsavedClausesProvider.overrideWith(
@@ -204,44 +177,22 @@ void main() {
     );
   }
 
+  /// Builds the subject with the save flow enabled.
+  Widget buildWithSaveEnabled({
+    required bool hasUnsavedClauses,
+    required SavedTaskFiltersController savedTaskFiltersController,
+  }) => buildSubject(
+    savedTaskFiltersController: () => savedTaskFiltersController,
+    hasUnsavedClauses: hasUnsavedClauses,
+  );
+
   /// Builds subject with enableProjects on the initial state, using a tall
   /// phone-width screen so the project field is not obscured by the sticky
   /// action bar inside the Wolt modal sheet.
   Widget buildWithProjects({required bool enableProjects}) {
     mockState = mockState.copyWith(enableProjects: enableProjects);
-    fakeController = FakeJournalPageController(mockState);
-
-    return WidgetTestBench(
+    return buildSubject(
       mediaQueryData: const MediaQueryData(size: Size(390, 844)),
-      child: ProviderScope(
-        overrides: [
-          journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(true).overrideWith(
-            () => fakeController,
-          ),
-          savedTaskFiltersControllerProvider.overrideWith(
-            () => _StubSavedTaskFiltersController(const []),
-          ),
-          currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
-          tasksFilterHasUnsavedClausesProvider.overrideWith(
-            (ref) => false,
-          ),
-        ],
-        child: Scaffold(
-          body: Builder(
-            builder: (context) {
-              return ElevatedButton(
-                key: const ValueKey('open-filter-modal'),
-                onPressed: () => showTaskFilterModal(
-                  context,
-                  showTasks: true,
-                ),
-                child: const Text('Open Filter'),
-              );
-            },
-          ),
-        ),
-      ),
     );
   }
 
@@ -494,7 +445,6 @@ void main() {
       // Need hasUnsavedClauses=true so canSave is enabled.
       await tester.pumpWidget(
         buildWithSaveEnabled(
-          savedFilters: const [],
           hasUnsavedClauses: true,
           savedTaskFiltersController: _ThrowingSavedTaskFiltersController(
             throwOnCreate: false,
@@ -535,11 +485,12 @@ void main() {
       'save error logs via DomainLogger and keeps modal open',
       (tester) async {
         final mockDomainLogger = MockDomainLogger();
-        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockDomainLogger);
 
         await tester.pumpWidget(
           buildWithSaveEnabled(
-            savedFilters: const [],
             hasUnsavedClauses: true,
             savedTaskFiltersController: _ThrowingSavedTaskFiltersController(
               throwOnCreate: true,

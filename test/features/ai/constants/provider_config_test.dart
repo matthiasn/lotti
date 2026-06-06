@@ -238,4 +238,74 @@ void main() {
       });
     });
   });
+
+  group('AiConfigInferenceProviderUsability.isUsable', () {
+    AiConfigInferenceProvider provider({
+      required InferenceProviderType type,
+      required String apiKey,
+      required String baseUrl,
+    }) =>
+        AiConfig.inferenceProvider(
+              id: 'p-1',
+              name: 'Provider',
+              apiKey: apiKey,
+              baseUrl: baseUrl,
+              createdAt: DateTime(2024, 3, 15),
+              inferenceProviderType: type,
+            )
+            as AiConfigInferenceProvider;
+
+    test('a non-empty API key makes any provider usable', () {
+      expect(
+        provider(
+          type: InferenceProviderType.genericOpenAi,
+          apiKey: 'sk-123',
+          baseUrl: '',
+        ).isUsable,
+        isTrue,
+      );
+    });
+
+    test('a keyless local provider needs its base URL set', () {
+      expect(
+        provider(
+          type: InferenceProviderType.ollama,
+          apiKey: '',
+          baseUrl: 'http://localhost:11434',
+        ).isUsable,
+        isTrue,
+      );
+      // Cleared base URL -> cannot connect -> not usable.
+      expect(
+        provider(
+          type: InferenceProviderType.ollama,
+          apiKey: '  ',
+          baseUrl: '   ',
+        ).isUsable,
+        isFalse,
+      );
+    });
+
+    test('mlxAudio needs neither key nor base URL', () {
+      expect(
+        provider(
+          type: InferenceProviderType.mlxAudio,
+          apiKey: '',
+          baseUrl: '',
+        ).isUsable,
+        isTrue,
+      );
+    });
+
+    test('a key-requiring provider without a key is unusable', () {
+      expect(
+        provider(
+          type: InferenceProviderType.genericOpenAi,
+          apiKey: '   ',
+          baseUrl: 'https://api.example.com/v1',
+        ).isUsable,
+        isFalse,
+      );
+    });
+  });
 }

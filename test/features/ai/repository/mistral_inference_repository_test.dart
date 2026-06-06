@@ -3,89 +3,18 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-
-class FakeRequest extends Fake implements http.Request {}
-
-/// Creates a mock SSE stream response for testing
-http.StreamedResponse createSseStreamedResponse({
-  required List<Map<String, dynamic>> events,
-  int statusCode = 200,
-  bool includeDone = true,
-}) {
-  final sseLines = <String>[];
-
-  for (final event in events) {
-    sseLines.add('data: ${jsonEncode(event)}\n\n');
-  }
-  if (includeDone) {
-    sseLines.add('data: [DONE]\n\n');
-  }
-
-  final stream = Stream.fromIterable([utf8.encode(sseLines.join())]);
-  return http.StreamedResponse(stream, statusCode);
-}
-
-/// Creates a mock SSE event for a chunk with content
-Map<String, dynamic> createSseChunkEvent({
-  String? content,
-  String? id,
-  String? finishReason,
-  int? created,
-  String model = 'magistral-medium-2509',
-  String? role,
-  List<Map<String, dynamic>>? toolCalls,
-  Map<String, dynamic>? usage,
-}) {
-  return {
-    'id': id ?? 'chatcmpl-test',
-    'object': 'chat.completion.chunk',
-    'created': created ?? 1234567890,
-    'model': model,
-    'choices': [
-      {
-        'index': 0,
-        'delta': {
-          'content': ?content,
-          'role': ?role,
-          'tool_calls': ?toolCalls,
-        },
-        'finish_reason': finishReason,
-      },
-    ],
-    'usage': ?usage,
-  };
-}
-
-/// Creates a final SSE event with finish_reason but no content
-Map<String, dynamic> createSseFinalEvent({
-  String? id,
-  int? created,
-  String model = 'magistral-medium-2509',
-}) {
-  return {
-    'id': id ?? 'chatcmpl-test',
-    'object': 'chat.completion.chunk',
-    'created': created ?? 1234567890,
-    'model': model,
-    'choices': [
-      {
-        'index': 0,
-        'delta': <String, dynamic>{},
-        'finish_reason': 'stop',
-      },
-    ],
-  };
-}
+import '../../../widget_test_utils.dart';
+import 'sse_test_utils.dart';
 
 void main() {
   late MistralInferenceRepository repository;
@@ -1092,15 +1021,14 @@ data: [DONE]
       test('should throw after exceeding the parse error threshold', () async {
         // Arrange - register a logger so the threshold branch also logs.
         final mockDomainLogger = MockDomainLogger();
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
-        addTearDown(() {
-          if (GetIt.instance.isRegistered<DomainLogger>()) {
-            GetIt.instance.unregister<DomainLogger>();
-          }
-        });
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..unregister<DomainLogger>()
+              ..registerSingleton<DomainLogger>(mockDomainLogger);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
         when(
           () => mockDomainLogger.error(
             any<LogDomain>(),
@@ -1732,19 +1660,18 @@ data: not valid json 5
       const apiKey = 'test-api-key';
       late MockDomainLogger mockDomainLogger;
 
-      setUp(() {
+      setUp(() async {
         mockDomainLogger = MockDomainLogger();
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..unregister<DomainLogger>()
+              ..registerSingleton<DomainLogger>(mockDomainLogger);
+          },
+        );
       });
 
-      tearDown(() {
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-      });
+      tearDown(tearDownTestGetIt);
 
       test('should log exception on unexpected error', () async {
         // Arrange

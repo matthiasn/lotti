@@ -3,14 +3,15 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 enum _GeneratedProgressStatusShape {
   installed,
@@ -502,16 +503,14 @@ void main() {
       'getModelStatus failure logs to the registered LoggingService',
       () async {
         final mockDomainLogger = MockDomainLogger();
-        final getIt = GetIt.instance;
-        addTearDown(() {
-          if (getIt.isRegistered<DomainLogger>()) {
-            getIt.unregister<DomainLogger>();
-          }
-        });
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt.unregister<DomainLogger>();
-        }
-        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..unregister<DomainLogger>()
+              ..registerSingleton<DomainLogger>(mockDomainLogger);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
 
         const methodChannel = MethodChannel(
           'test_mlx_audio_logger_status_failure',

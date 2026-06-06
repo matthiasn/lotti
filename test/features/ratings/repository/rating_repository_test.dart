@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -278,6 +280,118 @@ void main() {
 
         // Should not create a new link
         verifyNever(() => mockDb.upsertEntryLink(any()));
+      });
+
+      test(
+        'passes a non-default catalogId through to the created rating',
+        () async {
+          when(
+            () => mockDb.getRatingForTimeEntry(
+              testTimeEntryId,
+              catalogId: any(named: 'catalogId'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockDb.journalEntityById(testTimeEntryId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockPersistence.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              categoryId: any(named: 'categoryId'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+            ),
+          ).thenAnswer((_) async => testMetadata);
+          when(
+            () => mockPersistence.createDbEntity(
+              any(),
+              shouldAddGeolocation: false,
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockVectorClock.getNextVectorClock(),
+          ).thenAnswer((_) async => testVectorClock);
+          when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+          when(() => mockNotifications.notify(any())).thenReturn(null);
+          when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+
+          final result = await repository.createOrUpdateRating(
+            targetId: testTimeEntryId,
+            dimensions: testDimensions,
+            catalogId: 'project_review',
+          );
+
+          expect(result!.data.catalogId, equals('project_review'));
+
+          // Both the existing-rating lookup and the deterministic id input
+          // must use the caller's catalogId, not the 'session' default.
+          verify(
+            () => mockDb.getRatingForTimeEntry(
+              testTimeEntryId,
+              catalogId: 'project_review',
+            ),
+          ).called(1);
+          final uuidInput =
+              verify(
+                    () => mockPersistence.createMetadata(
+                      dateFrom: any(named: 'dateFrom'),
+                      dateTo: any(named: 'dateTo'),
+                      categoryId: any(named: 'categoryId'),
+                      uuidV5Input: captureAny(named: 'uuidV5Input'),
+                    ),
+                  ).captured.single
+                  as String?;
+          expect(
+            uuidInput,
+            jsonEncode(['rating', testTimeEntryId, 'project_review']),
+          );
+        },
+      );
+
+      test('updating preserves the existing non-default catalogId', () async {
+        final existing = RatingEntry(
+          meta: testMetadata,
+          data: const RatingData(
+            targetId: testTimeEntryId,
+            dimensions: testDimensions,
+            catalogId: 'project_review',
+            note: 'Good session',
+          ),
+        );
+        final updatedMeta = testMetadata.copyWith(
+          updatedAt: DateTime(2024, 3, 15, 11),
+        );
+
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+            catalogId: any(named: 'catalogId'),
+          ),
+        ).thenAnswer((_) async => existing);
+        when(
+          () => mockPersistence.updateMetadata(testMetadata),
+        ).thenAnswer((_) async => updatedMeta);
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await repository.createOrUpdateRating(
+          targetId: testTimeEntryId,
+          dimensions: testDimensions,
+          catalogId: 'project_review',
+          note: 'tweaked',
+        );
+
+        // The update path only swaps dimensions and note — the stored
+        // catalogId must survive the copyWith round trip.
+        expect(result!.data.catalogId, equals('project_review'));
+        expect(result.data.note, equals('tweaked'));
+        final persisted =
+            verify(
+                  () => mockPersistence.updateDbEntity(captureAny()),
+                ).captured.single
+                as RatingEntry;
+        expect(persisted.data.catalogId, equals('project_review'));
       });
 
       test('creates rating without note', () async {

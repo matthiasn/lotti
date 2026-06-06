@@ -200,6 +200,33 @@ void main() {
         expect(due, 1);
       },
     );
+    testWidgets(
+      'crumb segments without tap handlers render as plain non-tappable '
+      'padding',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+          ),
+        );
+
+        // With onCategoryTap/onProjectTap omitted, neither crumb gets an
+        // InkWell — the breadcrumb row contains no tappable surface.
+        final crumbRow = find.ancestor(
+          of: find.text('No project'),
+          matching: find.byType(Row),
+        );
+        expect(
+          find.descendant(of: crumbRow.first, matching: find.byType(InkWell)),
+          findsNothing,
+        );
+        // Tapping the crumb text is a no-op rather than a crash.
+        await tester.tap(find.text('No project'), warnIfMissed: false);
+        await tester.pump();
+      },
+    );
   });
 
   group('DesktopTaskHeader — title editing', () {

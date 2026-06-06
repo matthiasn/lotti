@@ -5,9 +5,9 @@ import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -15,68 +15,8 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/retry_fake_time.dart';
-
-class FakeRequest extends Fake implements http.Request {}
-
-/// Creates a mock SSE stream response for testing
-http.StreamedResponse createSseStreamedResponse({
-  required List<Map<String, dynamic>> events,
-  int statusCode = 200,
-}) {
-  final sseLines = <String>[];
-
-  for (final event in events) {
-    sseLines.add('data: ${jsonEncode(event)}\n\n');
-  }
-  sseLines.add('data: [DONE]\n\n');
-
-  final stream = Stream.fromIterable([utf8.encode(sseLines.join())]);
-  return http.StreamedResponse(stream, statusCode);
-}
-
-/// Creates a mock SSE event for a chunk with content
-Map<String, dynamic> createSseChunkEvent({
-  required String content,
-  String? id,
-  String? finishReason,
-  int? created,
-  String model = 'voxtral-mini',
-}) {
-  return {
-    'id': id ?? 'chatcmpl-test',
-    'object': 'chat.completion.chunk',
-    'created': created ?? 1234567890,
-    'model': model,
-    'choices': [
-      {
-        'index': 0,
-        'delta': {'content': content},
-        'finish_reason': finishReason,
-      },
-    ],
-  };
-}
-
-/// Creates a final SSE event with finish_reason but no content
-Map<String, dynamic> createSseFinalEvent({
-  String? id,
-  int? created,
-  String model = 'voxtral-mini',
-}) {
-  return {
-    'id': id ?? 'chatcmpl-test',
-    'object': 'chat.completion.chunk',
-    'created': created ?? 1234567890,
-    'model': model,
-    'choices': [
-      {
-        'index': 0,
-        'delta': <String, dynamic>{},
-        'finish_reason': 'stop',
-      },
-    ],
-  };
-}
+import '../../../widget_test_utils.dart';
+import 'sse_test_utils.dart';
 
 void main() {
   late VoxtralInferenceRepository repository;
@@ -966,20 +906,18 @@ data: [DONE]
       const audioBase64 = 'base64_audio_data';
       late MockDomainLogger mockDomainLogger;
 
-      setUp(() {
+      setUp(() async {
         mockDomainLogger = MockDomainLogger();
-        // Register LoggingService in GetIt
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..unregister<DomainLogger>()
+              ..registerSingleton<DomainLogger>(mockDomainLogger);
+          },
+        );
       });
 
-      tearDown(() {
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-      });
+      tearDown(tearDownTestGetIt);
 
       test('should log exception when model is not available', () async {
         // Arrange

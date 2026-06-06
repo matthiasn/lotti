@@ -10,6 +10,17 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
+/// Lifecycle states a stored notification can be in when `reconcile` runs.
+enum _GeneratedLifecycle { activeDue, activeUpcoming, seen, actedOn, deleted }
+
+extension _ReconcileAnys on glados.Any {
+  glados.Generator<_GeneratedLifecycle> get lifecycle =>
+      glados.AnyUtils(this).choose(_GeneratedLifecycle.values);
+
+  glados.Generator<bool> get flagState =>
+      glados.AnyUtils(this).choose([false, true]);
+}
+
 void main() {
   late NotificationsDb notificationsDb;
   late MockNotificationService notificationService;
@@ -314,6 +325,98 @@ void main() {
         expect(hash, NotificationScheduler.notificationIdFor(id));
         expect(hash, greaterThanOrEqualTo(0));
         expect(hash, lessThanOrEqualTo(0x7fffffff));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2<bool, _GeneratedLifecycle>(
+      glados.any.flagState,
+      glados.any.lifecycle,
+      glados.ExploreConfig(numRuns: 24),
+    ).test(
+      'reconcile is idempotent: a second run repeats exactly the same '
+      'OS-level calls',
+      (enabled, lifecycle) async {
+        // Fresh fixtures per iteration — the file-level setUp only runs once
+        // per test, and the property records per-iteration call sequences.
+        final db = NotificationsDb(inMemoryDatabase: true, background: false);
+        final service = MockNotificationService();
+        final journal = MockJournalDb();
+        final propScheduler = NotificationScheduler(
+          notificationsDb: db,
+          notificationServiceProvider: () => service,
+          journalDb: journal,
+        );
+        _stubFlag(journal, enabled: enabled);
+
+        // Recording stubs: every OS-level call lands in [calls].
+        final calls = <String>[];
+        when(
+          () => service.showNotificationNow(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationId: any(named: 'notificationId'),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        ).thenAnswer((inv) async {
+          calls.add('show:${inv.namedArguments[#notificationId]}');
+        });
+        when(
+          () => service.scheduleNotificationAt(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notifyAt: any(named: 'notifyAt'),
+            notificationId: any(named: 'notificationId'),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        ).thenAnswer((inv) async {
+          calls.add(
+            'schedule:${inv.namedArguments[#notificationId]}'
+            '@${inv.namedArguments[#notifyAt]}',
+          );
+        });
+        when(() => service.cancelNotification(any())).thenAnswer((inv) async {
+          calls.add('cancel:${inv.positionalArguments[0]}');
+        });
+
+        final now = DateTime.utc(2026, 5, 17, 10);
+        final entity = _notification(
+          id: 'idempotency-prop',
+          scheduledFor: lifecycle == _GeneratedLifecycle.activeUpcoming
+              ? now.add(const Duration(hours: 2))
+              : now.subtract(const Duration(minutes: 5)),
+          seenAt: lifecycle == _GeneratedLifecycle.seen ? now : null,
+          actedOnAt: lifecycle == _GeneratedLifecycle.actedOn ? now : null,
+          deletedAt: lifecycle == _GeneratedLifecycle.deleted ? now : null,
+        );
+        await db.upsertNotification(entity);
+
+        try {
+          await propScheduler.reconcile(now: now);
+          final firstRun = List<String>.of(calls);
+          calls.clear();
+
+          await propScheduler.reconcile(now: now);
+
+          // Reconcile derives everything from the DB and the flag, so a
+          // second run with identical inputs must repeat the identical
+          // OS-level effect — no extra shows, schedules, or cancels.
+          expect(calls, firstRun);
+
+          // Sanity anchor: an active notification with the flag on produces
+          // exactly one OS-level call per run.
+          if (enabled &&
+              (lifecycle == _GeneratedLifecycle.activeDue ||
+                  lifecycle == _GeneratedLifecycle.activeUpcoming)) {
+            expect(firstRun, hasLength(1));
+          }
+        } finally {
+          await db.close();
+        }
       },
       tags: 'glados',
     );

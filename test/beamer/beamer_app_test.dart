@@ -57,6 +57,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
 import '../widget_test_utils.dart';
@@ -117,15 +118,6 @@ class _CountingAiSetupPromptService extends AiSetupPromptService {
     onBuild();
     return false;
   }
-}
-
-class _TestAudioRecorderController extends AudioRecorderController {
-  _TestAudioRecorderController(this.stateOverride);
-
-  final AudioRecorderState stateOverride;
-
-  @override
-  AudioRecorderState build() => stateOverride;
 }
 
 class _EmptyLocation extends BeamLocation<BeamState> {
@@ -275,7 +267,7 @@ Future<void> _pumpAppScreen(
         ),
         journalDbProvider.overrideWithValue(effectiveJournalDb),
         audioRecorderControllerProvider.overrideWith(
-          () => _TestAudioRecorderController(
+          () => StubAudioRecorderController(
             audioRecorderState ??
                 AudioRecorderState(
                   status: AudioRecorderStatus.stopped,
@@ -367,7 +359,7 @@ Future<void> _pumpAppScreenCustomProviders(
         ),
         journalDbProvider.overrideWithValue(mockJournalDb),
         audioRecorderControllerProvider.overrideWith(
-          () => _TestAudioRecorderController(
+          () => StubAudioRecorderController(
             AudioRecorderState(
               status: AudioRecorderStatus.stopped,
               progress: Duration.zero,
@@ -1320,7 +1312,7 @@ void main() {
               ),
               journalDbProvider.overrideWithValue(mockJournalDb),
               audioRecorderControllerProvider.overrideWith(
-                () => _TestAudioRecorderController(
+                () => StubAudioRecorderController(
                   AudioRecorderState(
                     status: AudioRecorderStatus.stopped,
                     progress: Duration.zero,
@@ -1992,7 +1984,7 @@ void main() {
                 _MockAiSetupPromptService.new,
               ),
               audioRecorderControllerProvider.overrideWith(
-                () => _TestAudioRecorderController(
+                () => StubAudioRecorderController(
                   AudioRecorderState(
                     status: AudioRecorderStatus.stopped,
                     progress: Duration.zero,

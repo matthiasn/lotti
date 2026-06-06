@@ -168,10 +168,15 @@ class AudioWaveformService {
   AudioWaveformService({
     AudioWaveformExtractor? extractor,
     this._zoom = _defaultZoom,
-  }) : _extractor = extractor ?? _defaultWaveformExtractor;
+    @visibleForTesting int maxCacheEntries = _maxCacheEntries,
+  }) : _extractor = extractor ?? _defaultWaveformExtractor,
+       _maxEntries = maxCacheEntries;
 
   final AudioWaveformExtractor _extractor;
   final WaveformZoom _zoom;
+
+  /// Cache-prune threshold; injectable so tests don't need 1000+ files.
+  final int _maxEntries;
 
   DomainLogger get _loggingService => getIt<DomainLogger>();
 
@@ -450,7 +455,7 @@ class AudioWaveformService {
         }
       }
 
-      if (files.length <= _maxCacheEntries) {
+      if (files.length <= _maxEntries) {
         return;
       }
 
@@ -470,7 +475,7 @@ class AudioWaveformService {
         (a, b) => a.modified.compareTo(b.modified),
       );
 
-      final toRemove = datedFiles.length - _maxCacheEntries;
+      final toRemove = datedFiles.length - _maxEntries;
       for (var i = 0; i < toRemove; i++) {
         try {
           await datedFiles[i].file.delete();

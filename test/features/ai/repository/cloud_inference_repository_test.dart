@@ -33,8 +33,6 @@ class MockGeminiInferenceRepository extends Mock
 class FakeCreateChatCompletionRequest extends Fake
     implements CreateChatCompletionRequest {}
 
-class FakeRequest extends Fake implements http.Request {}
-
 class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
 /// Shared scaffolding for CloudInferenceRepository tests: a container with

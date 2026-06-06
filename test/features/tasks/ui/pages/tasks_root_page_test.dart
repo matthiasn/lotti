@@ -29,7 +29,9 @@ void main() {
   setUp(() async {
     await setUpTestGetIt(
       additionalSetup: () {
-        getIt.registerSingleton<UserActivityService>(UserActivityService());
+        final mockUserActivityService = MockUserActivityService();
+        when(mockUserActivityService.updateActivity).thenReturn(null);
+        getIt.registerSingleton<UserActivityService>(mockUserActivityService);
         final mockNavService = MockNavService();
         when(() => mockNavService.isDesktopMode).thenReturn(false);
         when(

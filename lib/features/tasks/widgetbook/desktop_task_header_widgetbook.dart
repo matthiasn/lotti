@@ -438,6 +438,8 @@ class _Dropdown<T> extends StatelessWidget {
           child: DropdownButton<T>(
             value: value,
             isDense: true,
+            // Constrain long item labels to the 220px control width.
+            isExpanded: true,
             items: items,
             onChanged: onChanged,
           ),

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
@@ -15,7 +14,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -23,10 +21,6 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 class MockClient extends Mock implements Client {}
-
-class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
-
-class MockKeyVerification extends Mock implements KeyVerification {}
 
 class _FakeDeviceKeys extends Fake implements DeviceKeys {}
 

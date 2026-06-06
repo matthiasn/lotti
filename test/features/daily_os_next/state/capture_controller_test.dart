@@ -78,6 +78,47 @@ class _StopRecorderFallback extends Fake {
   Future<void> call() async {}
 }
 
+/// Shared batch-path wiring: fresh recorder/transcriber/realtime mocks with
+/// the standard "realtime not configured" stubs. Pass [transcript] to also
+/// stub `transcriber.transcribe`; groups that stub it per-test omit it.
+({
+  MockAudioRecorderRepository recorder,
+  MockAudioTranscriptionService transcriber,
+  MockRealtimeTranscriptionService realtimeService,
+  StreamController<Amplitude> ampController,
+})
+_batchWiring({String? transcript}) {
+  final recorder = MockAudioRecorderRepository();
+  final transcriber = MockAudioTranscriptionService();
+  final realtimeService = MockRealtimeTranscriptionService();
+  final ampController = StreamController<Amplitude>.broadcast();
+
+  // Realtime not configured → controller falls back to the batch path.
+  when(realtimeService.resolveRealtimeConfig).thenAnswer((_) async => null);
+  // `_cleanupSync` disposes the realtime service unconditionally so route
+  // teardown also tears down any active realtime session. The batch tests
+  // still hit it because the dispose call sits before the branching.
+  when(realtimeService.dispose).thenAnswer((_) async {});
+  when(recorder.hasPermission).thenAnswer((_) async => true);
+  when(() => recorder.amplitudeStream).thenAnswer((_) => ampController.stream);
+  when(recorder.startRecording).thenAnswer((_) async => _audioNoteFixture());
+  when(recorder.stopRecording).thenAnswer((_) async {});
+  if (transcript != null) {
+    when(
+      () => transcriber.transcribe(
+        any(),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+      ),
+    ).thenAnswer((_) async => transcript);
+  }
+  return (
+    recorder: recorder,
+    transcriber: transcriber,
+    realtimeService: realtimeService,
+    ampController: ampController,
+  );
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_audioNoteFixture());
@@ -94,38 +135,13 @@ void main() {
     JournalAudio? persistResult;
 
     setUp(() {
-      recorder = MockAudioRecorderRepository();
-      transcriber = MockAudioTranscriptionService();
-      realtimeService = MockRealtimeTranscriptionService();
-      ampController = StreamController<Amplitude>.broadcast();
+      final wiring = _batchWiring(transcript: '  hello world  ');
+      recorder = wiring.recorder;
+      transcriber = wiring.transcriber;
+      realtimeService = wiring.realtimeService;
+      ampController = wiring.ampController;
       persistedNotes = <AudioNote>[];
       persistResult = _persistedAudio();
-
-      // Realtime not configured → controller falls back to the batch
-      // path for every test in this group.
-      when(
-        () => realtimeService.resolveRealtimeConfig(),
-      ).thenAnswer((_) async => null);
-      // `_cleanupSync` disposes the realtime service unconditionally so
-      // route teardown also tears down any active realtime session. The
-      // batch tests still hit it because the dispose call sits before
-      // the realtime/batch branching.
-      when(realtimeService.dispose).thenAnswer((_) async {});
-
-      when(recorder.hasPermission).thenAnswer((_) async => true);
-      when(
-        () => recorder.amplitudeStream,
-      ).thenAnswer((_) => ampController.stream);
-      when(
-        recorder.startRecording,
-      ).thenAnswer((_) async => _audioNoteFixture());
-      when(recorder.stopRecording).thenAnswer((_) async {});
-      when(
-        () => transcriber.transcribe(
-          any(),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-        ),
-      ).thenAnswer((_) async => '  hello world  ');
     });
 
     tearDown(() async {
@@ -632,29 +648,11 @@ void main() {
     late StreamController<Amplitude> ampController;
 
     setUp(() {
-      recorder = MockAudioRecorderRepository();
-      transcriber = MockAudioTranscriptionService();
-      realtimeService = MockRealtimeTranscriptionService();
-      ampController = StreamController<Amplitude>.broadcast();
-
-      when(
-        () => realtimeService.resolveRealtimeConfig(),
-      ).thenAnswer((_) async => null);
-      when(realtimeService.dispose).thenAnswer((_) async {});
-      when(recorder.hasPermission).thenAnswer((_) async => true);
-      when(
-        () => recorder.amplitudeStream,
-      ).thenAnswer((_) => ampController.stream);
-      when(
-        recorder.startRecording,
-      ).thenAnswer((_) async => _audioNoteFixture());
-      when(recorder.stopRecording).thenAnswer((_) async {});
-      when(
-        () => transcriber.transcribe(
-          any(),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-        ),
-      ).thenAnswer((_) async => 'hello world');
+      final wiring = _batchWiring(transcript: 'hello world');
+      recorder = wiring.recorder;
+      transcriber = wiring.transcriber;
+      realtimeService = wiring.realtimeService;
+      ampController = wiring.ampController;
     });
 
     tearDown(() async {
@@ -747,22 +745,11 @@ void main() {
     late StreamController<Amplitude> ampController;
 
     setUp(() {
-      recorder = MockAudioRecorderRepository();
-      transcriber = MockAudioTranscriptionService();
-      realtimeService = MockRealtimeTranscriptionService();
-      ampController = StreamController<Amplitude>.broadcast();
-      when(
-        () => realtimeService.resolveRealtimeConfig(),
-      ).thenAnswer((_) async => null);
-      when(realtimeService.dispose).thenAnswer((_) async {});
-      when(recorder.hasPermission).thenAnswer((_) async => true);
-      when(
-        () => recorder.amplitudeStream,
-      ).thenAnswer((_) => ampController.stream);
-      when(
-        recorder.startRecording,
-      ).thenAnswer((_) async => _audioNoteFixture());
-      when(recorder.stopRecording).thenAnswer((_) async {});
+      final wiring = _batchWiring();
+      recorder = wiring.recorder;
+      transcriber = wiring.transcriber;
+      realtimeService = wiring.realtimeService;
+      ampController = wiring.ampController;
     });
 
     tearDown(() async {
@@ -1359,29 +1346,11 @@ void main() {
       late StreamController<Amplitude> ampController;
 
       setUp(() {
-        recorder = MockAudioRecorderRepository();
-        transcriber = MockAudioTranscriptionService();
-        realtimeService = MockRealtimeTranscriptionService();
-        ampController = StreamController<Amplitude>.broadcast();
-
-        when(
-          () => realtimeService.resolveRealtimeConfig(),
-        ).thenAnswer((_) async => null);
-        when(realtimeService.dispose).thenAnswer((_) async {});
-        when(recorder.hasPermission).thenAnswer((_) async => true);
-        when(
-          () => recorder.amplitudeStream,
-        ).thenAnswer((_) => ampController.stream);
-        when(
-          recorder.startRecording,
-        ).thenAnswer((_) async => _audioNoteFixture());
-        when(recorder.stopRecording).thenAnswer((_) async {});
-        when(
-          () => transcriber.transcribe(
-            any(),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          ),
-        ).thenAnswer((_) async => 'hello world');
+        final wiring = _batchWiring(transcript: 'hello world');
+        recorder = wiring.recorder;
+        transcriber = wiring.transcriber;
+        realtimeService = wiring.realtimeService;
+        ampController = wiring.ampController;
       });
 
       tearDown(() async {
@@ -1461,25 +1430,13 @@ void main() {
 
     setUp(() async {
       await getIt.reset();
-      recorder = MockAudioRecorderRepository();
-      transcriber = MockAudioTranscriptionService();
-      realtimeService = MockRealtimeTranscriptionService();
-      ampController = StreamController<Amplitude>.broadcast();
+      final wiring = _batchWiring();
+      recorder = wiring.recorder;
+      transcriber = wiring.transcriber;
+      realtimeService = wiring.realtimeService;
+      ampController = wiring.ampController;
       persistenceLogic = MockPersistenceLogic();
       latestUpdated = null;
-
-      when(
-        () => realtimeService.resolveRealtimeConfig(),
-      ).thenAnswer((_) async => null);
-      when(realtimeService.dispose).thenAnswer((_) async {});
-      when(recorder.hasPermission).thenAnswer((_) async => true);
-      when(
-        () => recorder.amplitudeStream,
-      ).thenAnswer((_) => ampController.stream);
-      when(
-        recorder.startRecording,
-      ).thenAnswer((_) async => _audioNoteFixture());
-      when(recorder.stopRecording).thenAnswer((_) async {});
 
       registerFallbackValue(
         Metadata(

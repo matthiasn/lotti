@@ -21,39 +21,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
-// Fake classes for EntityDefinition parts
-class FakeMeasurableDataType extends Fake implements MeasurableDataType {
-  FakeMeasurableDataType({required this.id, this.deletedAt});
-  @override
-  final String id;
-  @override
-  final DateTime? deletedAt;
-}
-
-class FakeCategoryDefinition extends Fake implements CategoryDefinition {
-  FakeCategoryDefinition({required this.id, this.deletedAt});
-  @override
-  final String id;
-  @override
-  final DateTime? deletedAt;
-}
-
-class FakeDashboardDefinition extends Fake implements DashboardDefinition {
-  FakeDashboardDefinition({required this.id, this.deletedAt});
-  @override
-  final String id;
-  @override
-  final DateTime? deletedAt;
-}
-
-class FakeHabitDefinition extends Fake implements HabitDefinition {
-  FakeHabitDefinition({required this.id, this.deletedAt});
-  @override
-  final String id;
-  @override
-  final DateTime? deletedAt;
-}
-
 void main() {
   late MockJournalDb mockJournalDb;
   late MockOutboxService mockOutboxService;
@@ -124,286 +91,104 @@ void main() {
   });
 
   group('SyncMaintenanceRepository - Original Tests', () {
-    test('syncMeasurables enqueues measurables for sync', () async {
-      final testMeasurable = FakeMeasurableDataType(id: '1');
-      when(
-        () => mockJournalDb.getAllMeasurableDataTypes(),
-      ).thenAnswer((_) async => [testMeasurable]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
+    // The four entity-definition sync methods share one shape: read all
+    // rows, skip deleted ones, enqueue an update SyncMessage per active
+    // row. One spec per method drives both tests below.
+    final entitySyncSpecs =
+        <
+          ({
+            String name,
+            void Function(List<EntityDefinition> rows) stubRows,
+            Future<void> Function() callSync,
+            EntityDefinition Function(String id, {DateTime? deletedAt}) make,
+          })
+        >[
+          (
+            name: 'measurables',
+            stubRows: (rows) => when(
+              () => mockJournalDb.getAllMeasurableDataTypes(),
+            ).thenAnswer((_) async => rows.cast<MeasurableDataType>()),
+            callSync: () => syncMaintenanceRepository.syncMeasurables(),
+            make: (id, {deletedAt}) =>
+                FakeMeasurableDataType(id: id, deletedAt: deletedAt),
+          ),
+          (
+            name: 'categories',
+            stubRows: (rows) => when(
+              () => mockJournalDb.getAllCategories(),
+            ).thenAnswer((_) async => rows.cast<CategoryDefinition>()),
+            callSync: () => syncMaintenanceRepository.syncCategories(),
+            make: (id, {deletedAt}) =>
+                FakeCategoryDefinition(id: id, deletedAt: deletedAt),
+          ),
+          (
+            name: 'dashboards',
+            stubRows: (rows) => when(
+              () => mockJournalDb.getAllDashboards(),
+            ).thenAnswer((_) async => rows.cast<DashboardDefinition>()),
+            callSync: () => syncMaintenanceRepository.syncDashboards(),
+            make: (id, {deletedAt}) =>
+                FakeDashboardDefinition(id: id, deletedAt: deletedAt),
+          ),
+          (
+            name: 'habits',
+            stubRows: (rows) => when(
+              () => mockJournalDb.getAllHabitDefinitions(),
+            ).thenAnswer((_) async => rows.cast<HabitDefinition>()),
+            callSync: () => syncMaintenanceRepository.syncHabits(),
+            make: (id, {deletedAt}) =>
+                FakeHabitDefinition(id: id, deletedAt: deletedAt),
+          ),
+        ];
 
-      await syncMaintenanceRepository.syncMeasurables();
+    String? capturedEntityId(SyncMessage message) =>
+        message.mapOrNull(entityDefinition: (s) => s.entityDefinition.id);
 
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final capturedMessage = captured.first as SyncMessage;
-      expect(
-        capturedMessage.mapOrNull(
-          entityDefinition: (s) =>
-              (s.entityDefinition as MeasurableDataType).id,
-        ),
-        testMeasurable.id,
-      );
-      expect(
-        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
-        SyncEntryStatus.update,
-      );
-    });
+    for (final spec in entitySyncSpecs) {
+      test('sync ${spec.name}: enqueues active rows as updates', () async {
+        final active = spec.make('1');
+        spec.stubRows([active]);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
 
-    test('syncMeasurables skips deleted measurables', () async {
-      final deletedMeasurable = FakeMeasurableDataType(
-        id: '2',
-        deletedAt: DateTime(2024, 3, 15, 10, 30),
-      );
-      final activeMeasurable = FakeMeasurableDataType(id: '3');
+        await spec.callSync();
 
-      when(
-        () => mockJournalDb.getAllMeasurableDataTypes(),
-      ).thenAnswer((_) async => [deletedMeasurable, activeMeasurable]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncMeasurables();
-
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final capturedMessage = captured.first as SyncMessage;
-      expect(
-        capturedMessage.mapOrNull(
-          entityDefinition: (s) =>
-              (s.entityDefinition as MeasurableDataType).id,
-        ),
-        activeMeasurable.id,
-      );
-      expect(
-        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
-        SyncEntryStatus.update,
-      );
-
-      for (final msg in captured) {
-        final id = (msg as SyncMessage).mapOrNull(
-          entityDefinition: (s) =>
-              (s.entityDefinition as MeasurableDataType).id,
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        expect(captured.length, 1);
+        final capturedMessage = captured.first as SyncMessage;
+        expect(capturedEntityId(capturedMessage), active.id);
+        expect(
+          capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
+          SyncEntryStatus.update,
         );
-        expect(id, isNot(deletedMeasurable.id));
-      }
-    });
+      });
 
-    test('syncCategories enqueues categories for sync', () async {
-      final testCategory = FakeCategoryDefinition(id: '1');
-      when(
-        () => mockJournalDb.getAllCategories(),
-      ).thenAnswer((_) async => [testCategory]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncCategories();
-
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final capturedMessage = captured.first as SyncMessage;
-      expect(
-        capturedMessage.mapOrNull(
-          entityDefinition: (s) =>
-              (s.entityDefinition as CategoryDefinition).id,
-        ),
-        testCategory.id,
-      );
-      expect(
-        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
-        SyncEntryStatus.update,
-      );
-    });
-
-    test('syncCategories skips deleted categories', () async {
-      final deletedCategory = FakeCategoryDefinition(
-        id: '2',
-        deletedAt: DateTime(2024, 3, 15, 10, 30),
-      );
-      final activeCategory = FakeCategoryDefinition(id: '3');
-
-      when(
-        () => mockJournalDb.getAllCategories(),
-      ).thenAnswer((_) async => [deletedCategory, activeCategory]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncCategories();
-
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final capturedMessage = captured.first as SyncMessage;
-      expect(
-        capturedMessage.mapOrNull(
-          entityDefinition: (s) =>
-              (s.entityDefinition as CategoryDefinition).id,
-        ),
-        activeCategory.id,
-      );
-      expect(
-        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
-        SyncEntryStatus.update,
-      );
-
-      for (final msg in captured) {
-        final id = (msg as SyncMessage).mapOrNull(
-          entityDefinition: (s) =>
-              (s.entityDefinition as CategoryDefinition).id,
+      test('sync ${spec.name}: skips deleted rows', () async {
+        final deleted = spec.make(
+          '2',
+          deletedAt: DateTime(2024, 3, 15, 10, 30),
         );
-        expect(id, isNot(deletedCategory.id));
-      }
-    });
+        final active = spec.make('3');
+        spec.stubRows([deleted, active]);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
 
-    test('syncDashboards enqueues dashboards for sync', () async {
-      final testDashboard = FakeDashboardDefinition(id: '1');
-      when(
-        () => mockJournalDb.getAllDashboards(),
-      ).thenAnswer((_) async => [testDashboard]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
+        await spec.callSync();
 
-      await syncMaintenanceRepository.syncDashboards();
-
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final capturedMessage = captured.first as SyncMessage;
-      expect(
-        capturedMessage.mapOrNull(
-          entityDefinition: (s) =>
-              (s.entityDefinition as DashboardDefinition).id,
-        ),
-        testDashboard.id,
-      );
-      expect(
-        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
-        SyncEntryStatus.update,
-      );
-    });
-
-    test('syncDashboards skips deleted dashboards', () async {
-      final deletedDashboard = FakeDashboardDefinition(
-        id: '2',
-        deletedAt: DateTime(2024, 3, 15, 10, 30),
-      );
-      final activeDashboard = FakeDashboardDefinition(id: '3');
-
-      when(
-        () => mockJournalDb.getAllDashboards(),
-      ).thenAnswer((_) async => [deletedDashboard, activeDashboard]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncDashboards();
-
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final capturedMessage = captured.first as SyncMessage;
-      expect(
-        capturedMessage.mapOrNull(
-          entityDefinition: (s) =>
-              (s.entityDefinition as DashboardDefinition).id,
-        ),
-        activeDashboard.id,
-      );
-      expect(
-        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
-        SyncEntryStatus.update,
-      );
-
-      for (final msg in captured) {
-        final id = (msg as SyncMessage).mapOrNull(
-          entityDefinition: (s) =>
-              (s.entityDefinition as DashboardDefinition).id,
-        );
-        expect(id, isNot(deletedDashboard.id));
-      }
-    });
-
-    test('syncHabits enqueues habits for sync', () async {
-      final testHabit = FakeHabitDefinition(id: '1');
-      when(
-        () => mockJournalDb.getAllHabitDefinitions(),
-      ).thenAnswer((_) async => [testHabit]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncHabits();
-
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final capturedMessage = captured.first as SyncMessage;
-      expect(
-        capturedMessage.mapOrNull(
-          entityDefinition: (s) => (s.entityDefinition as HabitDefinition).id,
-        ),
-        testHabit.id,
-      );
-      expect(
-        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
-        SyncEntryStatus.update,
-      );
-    });
-
-    test('syncHabits skips deleted habits', () async {
-      final deletedHabit = FakeHabitDefinition(
-        id: '2',
-        deletedAt: DateTime(2024, 3, 15, 10, 30),
-      );
-      final activeHabit = FakeHabitDefinition(id: '3');
-
-      when(
-        () => mockJournalDb.getAllHabitDefinitions(),
-      ).thenAnswer((_) async => [deletedHabit, activeHabit]);
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
-      await syncMaintenanceRepository.syncHabits();
-
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final capturedMessage = captured.first as SyncMessage;
-      expect(
-        capturedMessage.mapOrNull(
-          entityDefinition: (s) => (s.entityDefinition as HabitDefinition).id,
-        ),
-        activeHabit.id,
-      );
-      expect(
-        capturedMessage.mapOrNull(entityDefinition: (s) => s.status),
-        SyncEntryStatus.update,
-      );
-
-      for (final msg in captured) {
-        final id = (msg as SyncMessage).mapOrNull(
-          entityDefinition: (s) => (s.entityDefinition as HabitDefinition).id,
-        );
-        expect(id, isNot(deletedHabit.id));
-      }
-    });
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        expect(captured.length, 1);
+        expect(capturedEntityId(captured.first as SyncMessage), active.id);
+        for (final msg in captured) {
+          expect(capturedEntityId(msg as SyncMessage), isNot(deleted.id));
+        }
+      });
+    }
 
     test('syncAiSettings enqueues active AI configs for sync', () async {
       final createdAt = DateTime(2024, 3, 15, 10, 30);
@@ -696,6 +481,68 @@ void main() {
         ).called(1);
       });
     });
+
+    // The four agent-related methods route through the same
+    // _runWithLogging / _runOperation error funnel — one spec each.
+    final agentErrorSpecs =
+        <
+          ({
+            String subDomain,
+            void Function() stubThrow,
+            Future<void> Function() call,
+          })
+        >[
+          (
+            subDomain: 'syncAgentEntities',
+            stubThrow: () => when(
+              () => mockAgentRepository.getAllEntities(),
+            ).thenThrow(testException),
+            call: () => syncMaintenanceRepository.syncAgentEntities(),
+          ),
+          (
+            subDomain: 'syncAgentLinks',
+            stubThrow: () => when(
+              () => mockAgentRepository.getAllLinks(),
+            ).thenThrow(testException),
+            call: () => syncMaintenanceRepository.syncAgentLinks(),
+          ),
+          (
+            subDomain: 'backfillAgentEntityClocks',
+            stubThrow: () => when(
+              () => mockAgentRepository.getEntitiesWithNullVectorClock(),
+            ).thenThrow(testException),
+            call: () => syncMaintenanceRepository.backfillAgentEntityClocks(),
+          ),
+          (
+            subDomain: 'backfillAgentLinkClocks',
+            stubThrow: () => when(
+              () => mockAgentRepository.getLinksWithNullVectorClock(),
+            ).thenThrow(testException),
+            call: () => syncMaintenanceRepository.backfillAgentLinkClocks(),
+          ),
+        ];
+
+    for (final spec in agentErrorSpecs) {
+      group(spec.subDomain, () {
+        test(
+          'should log and rethrow exception when repository fails',
+          () async {
+            spec.stubThrow();
+
+            await expectLater(spec.call, throwsA(testException));
+
+            verify(
+              () => mockLoggingService.error(
+                LogDomain.sync,
+                testException,
+                stackTrace: any<StackTrace>(named: 'stackTrace'),
+                subDomain: spec.subDomain,
+              ),
+            ).called(1);
+          },
+        );
+      });
+    }
   });
 
   group('fetchTotalsForSteps', () {

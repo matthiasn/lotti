@@ -28,6 +28,7 @@ import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
 import '../widget_test_utils.dart';
@@ -377,7 +378,7 @@ void main() {
                   _MockAiSetupPromptService.new,
                 ),
                 audioRecorderControllerProvider.overrideWith(
-                  () => _TestAudioRecorderController(
+                  () => StubAudioRecorderController(
                     AudioRecorderState(
                       status: AudioRecorderStatus.stopped,
                       progress: Duration.zero,
@@ -462,12 +463,4 @@ class _TestZoomController extends ZoomController {
 class _MockAiSetupPromptService extends AiSetupPromptService {
   @override
   Future<bool> build() async => false;
-}
-
-class _TestAudioRecorderController extends AudioRecorderController {
-  _TestAudioRecorderController(this.stateOverride);
-  final AudioRecorderState stateOverride;
-
-  @override
-  AudioRecorderState build() => stateOverride;
 }

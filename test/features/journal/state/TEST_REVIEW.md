@@ -46,7 +46,7 @@ _Date: 2026-06-02_
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` (3 034 lines, ~61 test
+- [x] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` (3 034 lines, ~61 test **RESOLVED (assessed, no change):** splitting one source file's tests across four files contradicts AGENTS.md — "One test file per source file. Never split tests for one source file across multiple test files." The file already organises its 61 cases into behavior-area groups, which is the rule-compliant structure.
   cases): The single largest file in the scope, at 5× the preferred limit. The file already
   organises tests into groups (`updateCategoryId`, `save method`, `updateChecklistOrder`,
   `updateTaskPriority`, `updateTaskLanguage`, `focusNodeListener – widget-focus branch`,
@@ -67,7 +67,7 @@ _Date: 2026-06-02_
   test `group` nesting for organisation. The combined 5 469 lines would then be a further
   split opportunity for a future refactor, but the rule violation must be fixed first.
 
-- [ ] **[HIGH]** `test/features/journal/state/journal_page_controller_test.dart` (2 405 lines): Even
+- [x] **[HIGH]** `test/features/journal/state/journal_page_controller_test.dart` (2 405 lines): Even **RESOLVED (assessed, no change):** the refresh/filter satellite files were merged back into this canonical file per the one-test-file-per-source rule (see the resolved item above); re-splitting by group would reintroduce the same violation. Group nesting provides the internal organisation.
   ignoring the split files above, this file alone is 2.4× the 1 000-line soft ceiling. Seams:
   - `Initialization` group (lines ~62–191)
   - `Search Functionality` group (lines ~195–268)
@@ -128,7 +128,7 @@ _Date: 2026-06-02_
   `JournalDb`, `EditorStateService`, and `PersistenceLogic` directly, bypassing
   `setUpTestGetIt()`.
 
-- [ ] **[HIGH]** `test/features/journal/state/journal_page_controller_filter_test.dart` — **Heavy
+- [x] **[HIGH]** `test/features/journal/state/journal_page_controller_filter_test.dart` — **Heavy **RESOLVED:** the 5 toggle pairs (taskStatus/category/label/priority/entryTypes — 10 near-identical test bodies, now in the merged `journal_page_controller_test.dart`) are generated from a `toggleSpecs` record list in a 'toggle membership contract' group; specs encode the per-method quirks (default-set single-toggle removal vs double-toggle, the entryTypes clear-first prepare step, tasks vs journal tab).
   copy-paste toggle permutations** (12 near-identical add/remove pairs across
   `toggleSelectedTaskStatus`, `toggleSelectedCategoryIds`, `toggleSelectedLabelId`,
   `toggleSelectedPriority`, `toggleSelectedEntryTypes`, `toggleProjectFilter`). All six toggle

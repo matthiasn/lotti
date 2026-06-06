@@ -28,17 +28,22 @@ void main() {
       registerFallbackValue(FakeMeasurementData());
     });
 
-    setUp(() {
+    setUp(() async {
       mockJournalDb = mockJournalDbWithMeasurableTypes([
         measurableWater,
         measurableChocolate,
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
-      getIt
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        },
+      );
 
       when(
         () => mockEntitiesCacheService.getDataTypeById(
@@ -58,7 +63,7 @@ void main() {
         () => mockJournalDb.getMeasurableDataTypeById(any()),
       ).thenAnswer((_) async => measurableWater);
     });
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     testWidgets(
       'create measurement dialog is displayed with measurable type water, '
@@ -101,7 +106,9 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The displayName appears in the value field label (e.g., "Water [ml]")
         // Title is now provided by Wolt Modal Sheet wrapper, not the dialog itself
@@ -127,7 +134,8 @@ void main() {
         expect(saveButtonFinder, findsOneWidget);
 
         await tester.tap(saveButtonFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         verify(mockCreateMeasurementEntry).called(1);
       },
@@ -151,7 +159,9 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The displayName appears in the value field label (e.g., "Water [ml]")
         // Title is now provided by Wolt Modal Sheet wrapper, not the dialog itself
@@ -189,7 +199,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Enter a value to make the form dirty
       final valueFieldFinder = find.byKey(const Key('measurement_value_field'));
@@ -225,7 +237,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify dialog does NOT use AlertDialog wrapper
       expect(find.byType(AlertDialog), findsNothing);
@@ -249,7 +263,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the value TextField and check autofocus
       final valueFieldFinder = find.byKey(const Key('measurement_value_field'));
@@ -284,7 +300,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // measurableWater has unitName 'ml'
       // Verify unit badge is displayed
@@ -308,7 +326,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // measurableWater has description 'H₂O, with or without bubbles'
       // Verify description is NOT displayed in the dialog body
@@ -332,7 +352,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       final commentFieldFinder = find.byKey(
         const Key('measurement_comment_field'),
@@ -363,7 +385,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // When form is not dirty, suggestions should be shown
       // (MeasurementSuggestions widget is rendered)
@@ -379,7 +403,9 @@ void main() {
         when(
           () => mockUpdateNotifications.updateStream,
         ).thenAnswer((_) => const Stream.empty());
-        getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+        getIt
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
         // Create mock measurements with popular values
         final testDate1 = DateTime(2024, 3, 15, 10, 30);
@@ -472,14 +498,16 @@ void main() {
         );
 
         // Wait for async providers to load
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Find and tap the suggestion chip with value 500
         final chipFinder = find.text('500');
         expect(chipFinder, findsOneWidget);
 
         await tester.tap(chipFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Verify createMeasurementEntry was called with the chip value
         verify(
@@ -515,7 +543,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should render SizedBox.shrink (empty) when dataType is null
       // FormBuilder should not be present
@@ -539,7 +569,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Enter an invalid number (passes character filter but fails num.tryParse)
       final valueFieldFinder = find.byKey(const Key('measurement_value_field'));
@@ -569,7 +601,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the date time field (it's a TextField inside DateTimeField)
       // The DateTimeField shows the date/time text
@@ -578,7 +612,8 @@ void main() {
 
       // Tap to open the date time picker modal
       await tester.tap(dateTimeFieldFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The modal should open with "now" button
       final nowButton = find.textContaining(
@@ -588,7 +623,8 @@ void main() {
 
       // Tap "now" to set the date time and close the modal
       await tester.tap(nowButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Modal should be closed, measurement dialog still visible
       expect(find.byType(FormBuilder), findsOneWidget);

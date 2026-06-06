@@ -34,7 +34,7 @@ This document also serves as the index for the sync feature's subdir-level test 
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `matrix_test.dart` (15 lines): the single test asserts `MatrixService != null`, `MatrixSessionManager != null`, `MatrixStats != null`, `SyncRoomManager != null`. These are purely compile-time checks — if any export were removed the file would fail to compile before the test even runs. Per AGENTS.md "no constructor smoke tests" — this test has zero behavioral value. Either delete the file or replace it with a meaningful integration check (e.g., assert that `MatrixService` can be instantiated with mocked dependencies).
+- [x] **[HIGH]** `matrix_test.dart` (15 lines): the single test asserts `MatrixService != null`, `MatrixSessionManager != null`, `MatrixStats != null`, `SyncRoomManager != null`. These are purely compile-time checks — if any export were removed the file would fail to compile before the test even runs. Per AGENTS.md "no constructor smoke tests" — this test has zero behavioral value. Either delete the file or replace it with a meaningful integration check (e.g., assert that `MatrixService` can be instantiated with mocked dependencies). **RESOLVED:** `matrix_test.dart` is deleted (same change recorded under the coverage item below) — compile-time-only assertions with zero behavioral value.
 
 - [ ] **[MED]** `vector_clock_logging_test.dart` (68 lines): all four tests call `logVectorClockAssignment(...)` and verify only that no exception is thrown. `MockDomainLogger` is wired but never queried with `verify(...)`. The function's contract is to call `loggingService.log(...)` — this is never asserted. Add `verify(() => loggingService.log(LogDomain.sync, any(), subDomain: any(named: 'subDomain'))).called(1)` to at least one test to confirm the logging call fires.
 
@@ -58,7 +58,7 @@ This document also serves as the index for the sync feature's subdir-level test 
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `matrix_test.dart` provides no behavioral coverage of the barrel file. The `matrix.dart` barrel itself just re-exports types — the real behavior is in the exported files. This file could be deleted without any coverage loss.
+- [x] **[HIGH]** `matrix_test.dart` provides no behavioral coverage of the barrel file. The `matrix.dart` barrel itself just re-exports types — the real behavior is in the exported files. This file could be deleted without any coverage loss. **RESOLVED:** `matrix_test.dart` is deleted — it only asserted type literals were non-null, which any importing file already guarantees at compile time.
 
 - [ ] **[MED]** `client_runner_test.dart`: `ClientRunner.close()` is called after the queue drains in the third test, but there is no test for calling `close()` while items are still being processed (i.e., the callback is mid-execution when `close()` is called). This is a race condition that affects sync teardown. Add a test that enqueues work, starts processing (without completing), calls `close()`, and asserts no panic / clean exit.
 

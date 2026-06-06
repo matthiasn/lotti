@@ -7,10 +7,8 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -18,455 +16,20 @@ import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:stream_channel/stream_channel.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+
+import 'realtime_transcription_test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Fakes & Mocks
 // ---------------------------------------------------------------------------
 
-/// Deliberately file-local instead of the central `MockDomainLogger`: this
-/// file asserts on *accumulated* log/error content across whole flows
-/// (e.g. "any exception message contains X"), which list collection
-/// expresses more directly than per-call mocktail `verify` matching.
-class _FakeDomainLogger extends Fake implements DomainLogger {
-  final events = <String>[];
-  final exceptions = <Object>[];
-
-  @override
-  void log(
-    LogDomain domain,
-    String message, {
-    String? subDomain,
-    InsightLevel level = InsightLevel.info,
-  }) {
-    events.add('${domain.name}/$subDomain: $message');
-  }
-
-  @override
-  void error(
-    LogDomain domain,
-    Object error, {
-    StackTrace? stackTrace,
-    String? subDomain,
-    String? message,
-  }) {
-    exceptions.add(error);
-  }
-}
-
-class _FakeWebSocketChannel extends StreamChannelMixin<dynamic>
-    implements WebSocketChannel {
-  _FakeWebSocketChannel() : _readyCompleter = Completer<void>() {
-    _readyCompleter.complete();
-  }
-
-  final Completer<void> _readyCompleter;
-  final _incomingController = StreamController<dynamic>.broadcast();
-  final _outgoingMessages = <String>[];
-  bool _isClosed = false;
-
-  @override
-  Future<void> get ready => _readyCompleter.future;
-
-  @override
-  Stream<dynamic> get stream => _incomingController.stream;
-
-  @override
-  WebSocketSink get sink => _FakeWebSocketSink(this);
-
-  @override
-  int? get closeCode => _isClosed ? 1000 : null;
-
-  @override
-  String? get closeReason => null;
-
-  @override
-  String? get protocol => null;
-
-  void simulateServerMessage(Map<String, dynamic> json) {
-    if (!_incomingController.isClosed) {
-      _incomingController.add(jsonEncode(json));
-    }
-  }
-
-  Future<void> simulateClose() async {
-    _isClosed = true;
-    await _incomingController.close();
-  }
-
-  List<String> get sentMessages => List.unmodifiable(_outgoingMessages);
-
-  void _addOutgoing(dynamic message) {
-    if (message is String) _outgoingMessages.add(message);
-  }
-
-  Future<void> _close() async {
-    _isClosed = true;
-    await _incomingController.close();
-  }
-}
-
-class _FakeWebSocketSink implements WebSocketSink {
-  _FakeWebSocketSink(this._channel);
-  final _FakeWebSocketChannel _channel;
-
-  @override
-  void add(dynamic data) => _channel._addOutgoing(data);
-
-  @override
-  void addError(Object error, [StackTrace? stackTrace]) {}
-
-  @override
-  Future<dynamic> addStream(Stream<dynamic> stream) => stream.forEach(add);
-
-  @override
-  Future<void> close([int? closeCode, String? closeReason]) =>
-      _channel._close();
-
-  @override
-  Future<dynamic> get done => _channel._readyCompleter.future;
-}
-
-/// Controllable [MistralRealtimeTranscriptionRepository] subclass used to drive
-/// the service's stream handlers directly — in particular the `onError`
-/// callback wired onto [transcriptionDone] inside `stop()`, which the real
-/// repository never triggers (it only ever calls `.add` on its done
-/// controller).
-class _ControllableRepository extends MistralRealtimeTranscriptionRepository {
-  final deltaController = StreamController<String>.broadcast();
-  final languageController = StreamController<String>.broadcast();
-  final doneController =
-      StreamController<RealtimeTranscriptionDone>.broadcast();
-  final sentChunks = <Uint8List>[];
-  bool connected = false;
-  bool endAudioCalled = false;
-  bool disconnected = false;
-
-  @override
-  Future<void> connect({
-    required String apiKey,
-    required String baseUrl,
-    String? model,
-  }) async {
-    connected = true;
-  }
-
-  @override
-  void sendAudioChunk(Uint8List pcmBytes) {
-    sentChunks.add(Uint8List.fromList(pcmBytes));
-  }
-
-  @override
-  Future<void> endAudio() async {
-    endAudioCalled = true;
-  }
-
-  @override
-  Future<void> disconnect() async {
-    disconnected = true;
-  }
-
-  @override
-  Stream<String> get transcriptionDeltas => deltaController.stream;
-
-  @override
-  Stream<String> get detectedLanguage => languageController.stream;
-
-  @override
-  Stream<RealtimeTranscriptionDone> get transcriptionDone =>
-      doneController.stream;
-
-  Future<void> close() async {
-    await deltaController.close();
-    await languageController.close();
-    await doneController.close();
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Test bench
-// ---------------------------------------------------------------------------
-
-const _providerId = 'p-rt-svc';
-const _modelId = 'm-rt-svc';
-const _providerModelId = 'voxtral-mini-transcribe-realtime-2602';
-const _mlxProviderId = 'p-mlx-rt-svc';
-const _mlxModelId = 'm-mlx-rt-svc';
-
-class _FakeMlxAudioChannel extends MlxAudioChannel {
-  final eventsController = StreamController<MlxAudioRealtimeEvent>.broadcast(
-    sync: true,
-  );
-  final appendedPcm = <Uint8List>[];
-  String? startedModelId;
-  String? startedDelayPreset;
-  String? doneTextOnStop;
-  Exception? startError;
-  Exception? appendError;
-  Exception? stopError;
-  bool stopped = false;
-  bool cancelled = false;
-
-  @override
-  Stream<MlxAudioRealtimeEvent> get realtimeTranscriptionEvents =>
-      eventsController.stream;
-
-  @override
-  Future<void> startRealtimeTranscription({
-    required String modelId,
-    String? language,
-    String delayPreset = 'subtitle',
-  }) async {
-    final error = startError;
-    if (error != null) {
-      throw error;
-    }
-    startedModelId = modelId;
-    startedDelayPreset = delayPreset;
-  }
-
-  @override
-  Future<void> appendRealtimePcm(Uint8List pcm16) async {
-    final error = appendError;
-    if (error != null) {
-      throw error;
-    }
-    appendedPcm.add(Uint8List.fromList(pcm16));
-  }
-
-  @override
-  Future<void> stopRealtimeTranscription() async {
-    stopped = true;
-    final error = stopError;
-    if (error != null) {
-      throw error;
-    }
-    final text = doneTextOnStop;
-    if (text != null) {
-      scheduleMicrotask(() {
-        emit(
-          MlxAudioRealtimeEvent(
-            type: MlxAudioRealtimeEventType.done,
-            text: text,
-          ),
-        );
-      });
-    }
-  }
-
-  @override
-  Future<void> cancelRealtimeTranscription() async {
-    cancelled = true;
-  }
-
-  void emit(MlxAudioRealtimeEvent event) {
-    eventsController.add(event);
-  }
-
-  Future<void> close() => eventsController.close();
-}
-
-/// Encapsulates all the shared state and helpers for realtime transcription
-/// service tests.
-class _TestBench {
-  _TestBench._({
-    required this.container,
-    required this.channel,
-    required this.service,
-    required this.mlxAudioChannel,
-  });
-
-  final ProviderContainer container;
-  final _FakeWebSocketChannel channel;
-  final RealtimeTranscriptionService service;
-  final _FakeMlxAudioChannel mlxAudioChannel;
-
-  /// PCM controller for feeding audio data — created lazily per
-  /// [startTranscription] call so each test gets a fresh one.
-  StreamController<Uint8List>? _pcmController;
-
-  /// Creates a fully wired test bench with config in the DB.
-  static Future<_TestBench> create({
-    bool addConfig = true,
-    bool addMlxConfig = false,
-    Duration doneTimeout = const Duration(seconds: 10),
-  }) async {
-    final db = AiConfigDb(inMemoryDatabase: true);
-    final aiRepo = AiConfigRepository(db);
-
-    if (addConfig) {
-      await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
-          id: _providerId,
-          baseUrl: 'https://api.mistral.ai/v1',
-          apiKey: 'test-key',
-          name: 'Mistral',
-          createdAt: DateTime(2024),
-          inferenceProviderType: InferenceProviderType.mistral,
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        AiConfig.model(
-          id: _modelId,
-          name: 'Voxtral Realtime',
-          providerModelId: _providerModelId,
-          inferenceProviderId: _providerId,
-          createdAt: DateTime(2024),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        ),
-        fromSync: true,
-      );
-    }
-    if (addMlxConfig) {
-      await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
-          id: _mlxProviderId,
-          baseUrl: '',
-          apiKey: '',
-          name: 'MLX Audio',
-          createdAt: DateTime(2024),
-          inferenceProviderType: InferenceProviderType.mlxAudio,
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        AiConfig.model(
-          id: _mlxModelId,
-          name: 'Qwen3 ASR',
-          providerModelId: mlxAudioQwenAsrModelId,
-          inferenceProviderId: _mlxProviderId,
-          createdAt: DateTime(2024),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        ),
-        fromSync: true,
-      );
-    }
-
-    final fakeChannel = _FakeWebSocketChannel();
-    final fakeMlxAudioChannel = _FakeMlxAudioChannel();
-
-    final repo = MistralRealtimeTranscriptionRepository(
-      channelFactory: (_, _) {
-        // Simulate the session.created handshake after a microtask
-        Future<void>.delayed(Duration.zero).then((_) {
-          fakeChannel.simulateServerMessage({
-            'type': 'session.created',
-            'session': {'request_id': 'test-123'},
-          });
-        });
-        return fakeChannel;
-      },
-    );
-
-    final container = ProviderContainer(
-      overrides: [
-        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-        realtimeTranscriptionServiceProvider.overrideWith(
-          (ref) => RealtimeTranscriptionService(
-            ref,
-            repository: repo,
-            mlxAudioChannel: fakeMlxAudioChannel,
-            doneTimeout: doneTimeout,
-          ),
-        ),
-      ],
-    );
-
-    final service = container.read(realtimeTranscriptionServiceProvider);
-
-    return _TestBench._(
-      container: container,
-      channel: fakeChannel,
-      service: service,
-      mlxAudioChannel: fakeMlxAudioChannel,
-    );
-  }
-
-  /// Starts a transcription session with optional [onDelta] callback.
-  Future<StreamController<Uint8List>> startTranscription({
-    void Function(String)? onDelta,
-  }) async {
-    _pcmController = StreamController<Uint8List>();
-    await service.startRealtimeTranscription(
-      pcmStream: _pcmController!.stream,
-      onDelta: onDelta ?? (_) {},
-    );
-    return _pcmController!;
-  }
-
-  /// Sends PCM data and waits a microtask for it to be processed.
-  Future<void> sendPcm(Uint8List data) async {
-    _pcmController!.add(data);
-    await Future<void>.delayed(Duration.zero);
-  }
-
-  /// Sends PCM data synchronously — use inside `fakeAsync` blocks.
-  /// Call `async.flushMicrotasks()` after to process.
-  void sendPcmSync(Uint8List data) {
-    _pcmController!.add(data);
-  }
-
-  /// Sends a `transcription.done` event immediately — use inside `fakeAsync`
-  /// blocks after elapsing time past the scheduled delay, or via
-  /// [stop]'s `afterListening` hook once the done listener is active.
-  void simulateDone(String text, {Map<String, dynamic>? extra}) {
-    channel.simulateServerMessage({
-      'type': 'transcription.done',
-      'text': text,
-      ...?extra,
-    });
-  }
-
-  /// Calls `service.stop` with a temp output directory.
-  /// Returns the stop result and cleans up the temp dir.
-  ///
-  /// [afterListening] runs synchronously right after `service.stop` is
-  /// invoked. The service subscribes to the `transcription.done` broadcast
-  /// stream synchronously before its first await, so a done event fired
-  /// here is guaranteed to be observed — no wall-clock delay needed
-  /// (fake-time policy).
-  Future<RealtimeStopResult> stop({
-    Future<void> Function()? stopRecorder,
-    String? outputPath,
-    void Function()? afterListening,
-  }) async {
-    final dir =
-        outputPath ?? (await Directory.systemTemp.createTemp('rt_test_')).path;
-    addTearDown(() async {
-      final d = Directory(dir);
-      if (d.existsSync()) await d.delete(recursive: true);
-    });
-
-    final result = service.stop(
-      stopRecorder: stopRecorder ?? () async {},
-      outputPath: '$dir/output',
-    );
-    afterListening?.call();
-    return result;
-  }
-
-  void dispose() {
-    _pcmController?.close();
-    unawaited(mlxAudioChannel.close());
-    container.dispose();
-  }
-}
-
-Uint8List _pcmSilence(int bytes) => Uint8List(bytes);
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late _FakeDomainLogger fakeLogging;
+  late FakeRealtimeDomainLogger fakeLogging;
 
   setUp(() {
-    fakeLogging = _FakeDomainLogger();
+    fakeLogging = FakeRealtimeDomainLogger();
     if (getIt.isRegistered<DomainLogger>()) {
       getIt.unregister<DomainLogger>();
     }
@@ -481,39 +44,41 @@ void main() {
 
   group('resolveRealtimeConfig', () {
     test('returns config when realtime model exists', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       final config = await bench.service.resolveRealtimeConfig();
 
       expect(config, isNotNull);
-      expect(config!.provider.id, _providerId);
-      expect(config.model.providerModelId, _providerModelId);
+      expect(config!.provider.id, kTestProviderId);
+      expect(config.model.providerModelId, kTestProviderModelId);
     });
 
     test(
       'prefers Mistral over MLX when both are configured (cloud-first '
       'default)',
       () async {
-        final bench = await _TestBench.create(addMlxConfig: true);
+        final bench = await RealtimeTranscriptionTestBench.create(
+          addMlxConfig: true,
+        );
         addTearDown(bench.dispose);
 
         final config = await bench.service.resolveRealtimeConfig();
 
         expect(config, isNotNull);
-        expect(config!.provider.id, _providerId);
+        expect(config!.provider.id, kTestProviderId);
         expect(
           config.provider.inferenceProviderType,
           InferenceProviderType.mistral,
         );
-        expect(config.model.providerModelId, _providerModelId);
+        expect(config.model.providerModelId, kTestProviderModelId);
       },
     );
 
     test(
       'falls back to MLX when only the local model is configured',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
         );
@@ -522,7 +87,7 @@ void main() {
         final config = await bench.service.resolveRealtimeConfig();
 
         expect(config, isNotNull);
-        expect(config!.provider.id, _mlxProviderId);
+        expect(config!.provider.id, kTestMlxProviderId);
         expect(
           config.provider.inferenceProviderType,
           InferenceProviderType.mlxAudio,
@@ -532,7 +97,9 @@ void main() {
     );
 
     test('returns null when no realtime model configured', () async {
-      final bench = await _TestBench.create(addConfig: false);
+      final bench = await RealtimeTranscriptionTestBench.create(
+        addConfig: false,
+      );
       addTearDown(bench.dispose);
 
       final config = await bench.service.resolveRealtimeConfig();
@@ -545,7 +112,7 @@ void main() {
 
       await aiRepo.saveConfig(
         AiConfig.inferenceProvider(
-          id: _providerId,
+          id: kTestProviderId,
           baseUrl: 'https://api.mistral.ai/v1',
           apiKey: 'key',
           name: 'Mistral',
@@ -559,8 +126,8 @@ void main() {
         AiConfig.model(
           id: 'text-only',
           name: 'Text Model',
-          providerModelId: _providerModelId,
-          inferenceProviderId: _providerId,
+          providerModelId: kTestProviderModelId,
+          inferenceProviderId: kTestProviderId,
           createdAt: DateTime(2024),
           inputModalities: const [Modality.text],
           outputModalities: const [Modality.text],
@@ -605,7 +172,7 @@ void main() {
         AiConfig.model(
           id: 'wrong-provider',
           name: 'Realtime',
-          providerModelId: _providerModelId,
+          providerModelId: kTestProviderModelId,
           inferenceProviderId: 'p-gemini',
           createdAt: DateTime(2024),
           inputModalities: const [Modality.audio],
@@ -634,7 +201,9 @@ void main() {
 
   group('startRealtimeTranscription', () {
     test('throws StateError when no config available', () async {
-      final bench = await _TestBench.create(addConfig: false);
+      final bench = await RealtimeTranscriptionTestBench.create(
+        addConfig: false,
+      );
       addTearDown(bench.dispose);
 
       await expectLater(
@@ -647,7 +216,7 @@ void main() {
     });
 
     test('connects WebSocket and sets isActive', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       final pcm = await bench.startTranscription();
@@ -656,11 +225,11 @@ void main() {
     });
 
     test('forwards PCM chunks to repository as base64', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
-      await bench.sendPcm(_pcmSilence(64));
+      await bench.sendPcm(pcmSilence(64));
 
       expect(bench.channel.sentMessages, isNotEmpty);
       final msg =
@@ -670,22 +239,22 @@ void main() {
     });
 
     test('emits amplitude values from PCM chunks', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       final amplitudes = <double>[];
       bench.service.amplitudeStream.listen(amplitudes.add);
 
       await bench.startTranscription();
-      await bench.sendPcm(_pcmSilence(64));
+      await bench.sendPcm(pcmSilence(64));
 
       expect(amplitudes, isNotEmpty);
     });
 
     test('calls onDelta callback for each transcription delta', () {
       fakeAsync((async) {
-        late _TestBench bench;
-        _TestBench.create().then((b) => bench = b);
+        late RealtimeTranscriptionTestBench bench;
+        RealtimeTranscriptionTestBench.create().then((b) => bench = b);
         async.flushMicrotasks();
         addTearDown(bench.dispose);
 
@@ -717,7 +286,7 @@ void main() {
     test(
       'uses MLX Qwen streaming channel when local model is configured',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
         );
@@ -729,7 +298,7 @@ void main() {
         expect(bench.mlxAudioChannel.startedModelId, mlxAudioQwenAsrModelId);
         expect(bench.mlxAudioChannel.startedDelayPreset, 'subtitle');
 
-        await bench.sendPcm(_pcmSilence(64));
+        await bench.sendPcm(pcmSilence(64));
         expect(bench.mlxAudioChannel.appendedPcm, hasLength(1));
         expect(bench.mlxAudioChannel.appendedPcm.single, hasLength(64));
 
@@ -754,7 +323,7 @@ void main() {
     test(
       'deduplicates MLX confirmed text when the backend drops old context',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
         );
@@ -783,7 +352,7 @@ void main() {
     );
 
     test('ignores MLX provisional display and stats events', () async {
-      final bench = await _TestBench.create(
+      final bench = await RealtimeTranscriptionTestBench.create(
         addConfig: false,
         addMlxConfig: true,
       );
@@ -820,7 +389,7 @@ void main() {
     test(
       'cleans up the MLX backend when native realtime startup fails',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
         );
@@ -846,7 +415,7 @@ void main() {
     test(
       'logs MLX append failures without dropping the active session',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
         );
@@ -854,7 +423,7 @@ void main() {
         bench.mlxAudioChannel.appendError = Exception('append failed');
 
         final pcm = await bench.startTranscription();
-        pcm.add(_pcmSilence(64));
+        pcm.add(pcmSilence(64));
         await Future<void>.value();
         await Future<void>.value();
 
@@ -870,7 +439,7 @@ void main() {
     test(
       'handles MLX confirmed-text truncation and shared-prefix rewrites',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
         );
@@ -907,7 +476,7 @@ void main() {
     test(
       'records detected language from Mistral transcription.language events',
       () async {
-        final bench = await _TestBench.create();
+        final bench = await RealtimeTranscriptionTestBench.create();
         addTearDown(bench.dispose);
 
         await bench.startTranscription();
@@ -927,7 +496,7 @@ void main() {
     test(
       'logs and surfaces MLX error events through the done completer',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
           doneTimeout: const Duration(seconds: 5),
@@ -976,7 +545,7 @@ void main() {
     test(
       'logs MLX realtime event stream errors via the outer onError handler',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
           doneTimeout: const Duration(seconds: 5),
@@ -1013,8 +582,8 @@ void main() {
       'logs MLX PCM stream errors and keeps the session active',
       () {
         fakeAsync((async) {
-          late _TestBench bench;
-          _TestBench.create(
+          late RealtimeTranscriptionTestBench bench;
+          RealtimeTranscriptionTestBench.create(
             addConfig: false,
             addMlxConfig: true,
           ).then((b) => bench = b);
@@ -1046,11 +615,11 @@ void main() {
 
   group('stop', () {
     test('returns transcript from transcription.done event', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
-      await bench.sendPcm(_pcmSilence(64));
+      await bench.sendPcm(pcmSilence(64));
 
       final result = await bench.stop(
         afterListening: () => bench.simulateDone(
@@ -1065,11 +634,11 @@ void main() {
     });
 
     test('keeps accumulated deltas when done text is shorter', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
-      await bench.sendPcm(_pcmSilence(64));
+      await bench.sendPcm(pcmSilence(64));
       bench.channel
         ..simulateServerMessage({
           'type': 'transcription.text.delta',
@@ -1092,7 +661,7 @@ void main() {
     });
 
     test('falls back to accumulated deltas on timeout', () async {
-      final bench = await _TestBench.create(
+      final bench = await RealtimeTranscriptionTestBench.create(
         doneTimeout: const Duration(milliseconds: 50),
       );
       addTearDown(bench.dispose);
@@ -1125,7 +694,7 @@ void main() {
     });
 
     test('sends endAudio to server on stop', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
@@ -1138,7 +707,7 @@ void main() {
     });
 
     test('calls stopRecorder callback', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
@@ -1155,7 +724,7 @@ void main() {
     });
 
     test('sets isActive to false after stop', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
@@ -1167,7 +736,7 @@ void main() {
     });
 
     test('returns null audioFilePath when no PCM data', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
@@ -1183,14 +752,14 @@ void main() {
     test(
       'stops MLX Qwen streaming and returns final native transcript',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
         );
         addTearDown(bench.dispose);
 
         await bench.startTranscription();
-        await bench.sendPcm(_pcmSilence(64));
+        await bench.sendPcm(pcmSilence(64));
         bench.mlxAudioChannel.doneTextOnStop = 'Local final transcript';
 
         final result = await bench.stop();
@@ -1205,7 +774,7 @@ void main() {
     test(
       'uses accumulated MLX text when done event omits final text',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
         );
@@ -1238,7 +807,7 @@ void main() {
     test(
       'falls back to accumulated MLX confirmed text when stop times out',
       () async {
-        final bench = await _TestBench.create(
+        final bench = await RealtimeTranscriptionTestBench.create(
           addConfig: false,
           addMlxConfig: true,
           doneTimeout: const Duration(milliseconds: 10),
@@ -1273,7 +842,7 @@ void main() {
     );
 
     test('falls back to confirmed MLX text when native stop fails', () async {
-      final bench = await _TestBench.create(
+      final bench = await RealtimeTranscriptionTestBench.create(
         addConfig: false,
         addMlxConfig: true,
       );
@@ -1312,7 +881,7 @@ void main() {
         // error; the subsequent `await ...future.timeout(...)` rethrows it.
         // stop() only catches TimeoutException, so a generic error surfaces to
         // the caller (after endAudio + done-subscription cleanup).
-        final repo = _ControllableRepository();
+        final repo = ControllableRealtimeRepository();
         final container = ProviderContainer(
           overrides: [
             realtimeTranscriptionServiceProvider.overrideWith(
@@ -1335,7 +904,7 @@ void main() {
 
         final provider =
             AiConfig.inferenceProvider(
-                  id: _providerId,
+                  id: kTestProviderId,
                   baseUrl: 'https://api.mistral.ai/v1',
                   apiKey: 'test-key',
                   name: 'Mistral',
@@ -1345,10 +914,10 @@ void main() {
                 as AiConfigInferenceProvider;
         final model =
             AiConfig.model(
-                  id: _modelId,
+                  id: kTestModelId,
                   name: 'Voxtral Realtime',
-                  providerModelId: _providerModelId,
-                  inferenceProviderId: _providerId,
+                  providerModelId: kTestProviderModelId,
+                  inferenceProviderId: kTestProviderId,
                   createdAt: DateTime(2024),
                   inputModalities: const [Modality.audio],
                   outputModalities: const [Modality.text],
@@ -1395,7 +964,7 @@ void main() {
 
   group('dispose', () {
     test('cancels subscriptions and cleans up', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
@@ -1406,11 +975,11 @@ void main() {
     });
 
     test('cleans up even with buffered PCM data', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
-      await bench.sendPcm(_pcmSilence(64));
+      await bench.sendPcm(pcmSilence(64));
 
       await bench.service.dispose();
       expect(bench.service.isActive, isFalse);
@@ -1420,8 +989,8 @@ void main() {
   group('PCM stream error handling', () {
     test('logs exception when PCM stream emits error', () {
       fakeAsync((async) {
-        late _TestBench bench;
-        _TestBench.create().then((b) => bench = b);
+        late RealtimeTranscriptionTestBench bench;
+        RealtimeTranscriptionTestBench.create().then((b) => bench = b);
         async.flushMicrotasks();
         addTearDown(bench.dispose);
 
@@ -1449,7 +1018,7 @@ void main() {
 
   group('WAV file output', () {
     test('writes valid WAV header for PCM data', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
@@ -1505,11 +1074,11 @@ void main() {
               .setMockMethodCallHandler(channel, null);
         });
 
-        final bench = await _TestBench.create();
+        final bench = await RealtimeTranscriptionTestBench.create();
         addTearDown(bench.dispose);
 
         await bench.startTranscription();
-        await bench.sendPcm(_pcmSilence(3200));
+        await bench.sendPcm(pcmSilence(3200));
 
         final result = await bench.stop(
           afterListening: () => bench.simulateDone('converted ok'),
@@ -1530,11 +1099,11 @@ void main() {
     );
 
     test('audio file has .wav extension as fallback', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
-      await bench.sendPcm(_pcmSilence(64));
+      await bench.sendPcm(pcmSilence(64));
 
       final result = await bench.stop(
         afterListening: () => bench.simulateDone('test'),
@@ -1545,31 +1114,45 @@ void main() {
       expect(result.audioFilePath, endsWith('.wav'));
     });
 
-    test('returns null audioFilePath when WAV writing fails', () async {
-      final bench = await _TestBench.create();
-      addTearDown(bench.dispose);
+    test(
+      'falls back to the temp WAV path when the output move fails',
+      () async {
+        final bench = await RealtimeTranscriptionTestBench.create();
+        addTearDown(bench.dispose);
 
-      await bench.startTranscription();
-      await bench.sendPcm(_pcmSilence(64));
+        await bench.startTranscription();
+        await bench.sendPcm(pcmSilence(64));
 
-      // Use an invalid path to trigger the catch block in _saveAudio.
-      // service.stop subscribes to the done stream synchronously, so the
-      // done event fired right after the call cannot be missed.
-      final stopFuture = bench.service.stop(
-        stopRecorder: () async {},
-        outputPath: '/nonexistent/deeply/nested/path/output',
-      );
-      bench.simulateDone('test');
-      final result = await stopFuture;
+        // Use an invalid path to trigger the catch block in _saveAudio.
+        // service.stop subscribes to the done stream synchronously, so the
+        // done event fired right after the call cannot be missed.
+        final stopFuture = bench.service.stop(
+          stopRecorder: () async {},
+          outputPath: '/nonexistent/deeply/nested/path/output',
+        );
+        bench.simulateDone('test');
+        final result = await stopFuture;
 
-      // Should gracefully handle the error
-      expect(result.transcript, 'test');
-    });
+        // _saveAudio's catch block deliberately keeps the already-written
+        // temp WAV rather than losing the recording: the result carries the
+        // systemTemp fallback path instead of the unreachable output path.
+        expect(result.transcript, 'test');
+        expect(result.audioFilePath, isNotNull);
+        expect(result.audioFilePath, endsWith('.wav'));
+        expect(
+          result.audioFilePath,
+          startsWith(Directory.systemTemp.path),
+        );
+        expect(File(result.audioFilePath!).existsSync(), isTrue);
+        // Clean up the kept temp WAV.
+        File(result.audioFilePath!).deleteSync();
+      },
+    );
   });
 
   group('PCM buffer cap', () {
     test('caps buffer to prevent OOM on long recordings', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       final pcm = await bench.startTranscription();
@@ -1590,7 +1173,7 @@ void main() {
     });
 
     test('single chunk exceeding max buffer keeps only tail', () async {
-      final bench = await _TestBench.create();
+      final bench = await RealtimeTranscriptionTestBench.create();
       addTearDown(bench.dispose);
 
       await bench.startTranscription();
@@ -1614,11 +1197,11 @@ void main() {
     test(
       'returns temp WAV path when conversion throws but WAV exists',
       () async {
-        final bench = await _TestBench.create();
+        final bench = await RealtimeTranscriptionTestBench.create();
         addTearDown(bench.dispose);
 
         await bench.startTranscription();
-        await bench.sendPcm(_pcmSilence(3200));
+        await bench.sendPcm(pcmSilence(3200));
 
         final result = await bench.stop(
           afterListening: () => bench.simulateDone('save error test'),

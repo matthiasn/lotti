@@ -54,10 +54,13 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     verify(() => mockMatrixService.deleteDevice(mockDeviceKeys)).called(1);
     expect(refreshed, isTrue);
@@ -88,10 +91,13 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     verify(() => mockMatrixService.deleteDevice(mockDeviceKeys)).called(1);
     expect(refreshed, isFalse);
@@ -114,7 +120,9 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Pixel 7'), findsOneWidget);
     expect(find.text('@user:server'), findsOneWidget);
@@ -136,7 +144,9 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('DEVICE1'), findsOneWidget);
   });
@@ -168,7 +178,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Both display name and id are null → the Text widget shows ''
       // (empty string), which means no named device text is present.
@@ -177,7 +189,8 @@ void main() {
 
       // Tapping delete with null name/id falls back to 'unknown' in the toast.
       await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => mockMatrixService.deleteDevice(mockDeviceKeys)).called(1);
       expect(refreshed, isTrue);
@@ -232,13 +245,16 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Lock starts released.
       expect(container.read(matrixVerificationModalLockProvider), isFalse);
 
       await tester.tap(find.text('Verify'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Modal is open and lock is acquired.
       expect(find.byType(VerificationModal), findsOneWidget);
@@ -248,7 +264,8 @@ void main() {
       final closeButton = find.byIcon(Icons.close_rounded);
       await tester.ensureVisible(closeButton);
       await tester.tap(closeButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Lock is released and refreshListCallback was called.
       expect(find.byType(VerificationModal), findsNothing);
@@ -282,10 +299,13 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Verify'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Lock was pre-acquired so tryAcquire() returns false → no modal shown
       // and the verification service call is short-circuited.

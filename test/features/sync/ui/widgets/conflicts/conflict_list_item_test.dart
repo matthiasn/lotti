@@ -10,7 +10,7 @@ import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_list_item.dart
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 
-import '../../../../widget_test_utils.dart';
+import '../../../../../widget_test_utils.dart';
 
 const _wideSurface = Size(800, 600);
 const _compactSurface = Size(400, 800);

@@ -24,9 +24,9 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/…/speech_modal/speech_modal_test.dart:45–54` — Both tests are smoke: `expect(() => testAudioEntry, returnsNormally)` and `expect(testAudioEntry.meta, isNotNull)`. These verify that the *test fixture* loads, not that `SpeechModal` itself renders correctly or behaves as expected. A widget test pumping `SpeechModal` with a mock `JournalAudio` and asserting that the audio player widget or transcript list is present would be far more valuable. Consider replacing or augmenting with a real widget test.
+- [x] **[HIGH]** `test/…/speech_modal/speech_modal_test.dart:45–54` — Both tests are smoke: `expect(() => testAudioEntry, returnsNormally)` and `expect(testAudioEntry.meta, isNotNull)`. These verify that the *test fixture* loads, not that `SpeechModal` itself renders correctly or behaves as expected. A widget test pumping `SpeechModal` with a mock `JournalAudio` and asserting that the audio player widget or transcript list is present would be far more valuable. Consider replacing or augmenting with a real widget test. **RESOLVED:** the fixture-only smoke tests are replaced by three real widget tests pumping `SpeechModalContent` with a `FakeEntryController` override — asserting the dropdown + per-transcript rows render with their actual `Lang:`/`Model:` text, that selecting 'Deutsch' forwards `setLanguage('de')` to the controller, and that a non-audio entry collapses both children.
 
-- [ ] **[HIGH]** `test/…/speech_modal/transcripts_list_item_test.dart:52–60` — `setUp` uses `await getIt.reset()` followed by direct `getIt.registerSingleton` calls. Per AGENTS.md, use `setUpTestGetIt()` from `test/widget_test_utils.dart` instead of inline GetIt manipulation. This applies to all tests in this file (600 lines of setUp boilerplate risk contamination if tests run in parallel in CI).
+- [x] **[HIGH]** `test/…/speech_modal/transcripts_list_item_test.dart:52–60` — `setUp` uses `await getIt.reset()` followed by direct `getIt.registerSingleton` calls. Per AGENTS.md, use `setUpTestGetIt()` from `test/widget_test_utils.dart` instead of inline GetIt manipulation. This applies to all tests in this file (600 lines of setUp boilerplate risk contamination if tests run in parallel in CI). **RESOLVED:** converted to `setUpTestGetIt(additionalSetup: ...)` + `tearDown(tearDownTestGetIt)`.
 
 - [ ] **[MED]** `test/…/speech_modal/transcripts_list_item_test.dart` — Approximately 28 `pumpAndSettle()` calls across 25+ tests. For a widget that handles text editing and icon buttons (no heavy animation), most of these can be replaced with `tester.pump()`. The `pumpAndSettle()` calls are a timeout risk if any async provider stalls.
 
@@ -40,7 +40,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/…/speech_modal/speech_modal.dart` (22 lines) — The `speech_modal_test.dart` only tests the fixture; no test exercises the `SpeechModal` widget itself. At minimum, add a `testWidgets` test that pumps `SpeechModal` with a valid `JournalAudio` and verifies the player/transcript list is visible.
+- [x] **[HIGH]** `lib/…/speech_modal/speech_modal.dart` (22 lines) — The `speech_modal_test.dart` only tests the fixture; no test exercises the `SpeechModal` widget itself. At minimum, add a `testWidgets` test that pumps `SpeechModal` with a valid `JournalAudio` and verifies the player/transcript list is visible. **RESOLVED:** covered by the new `SpeechModalContent` widget tests (see the speech_modal_test item above) — render, language-selection interaction, and the non-audio collapse path.
 
 - [ ] **[MED]** `test/…/speech_modal/language_dropdown_test.dart` — Verify that selecting a language from the dropdown calls `entryController.setLanguage(language)`. The `_FakeEntryController` already tracks `setLanguageCalls` — confirm at least one test asserts `setLanguageCalls` is populated after a dropdown selection.
 
@@ -48,7 +48,7 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/…/speech_modal/transcripts_list_item_test.dart` — 28 `pumpAndSettle()` calls across ~25 tests. Each has a 10-second default timeout. In the worst case (provider stall), this is 280 seconds of CI time. Replace with `tester.pump()` + `tester.pump()` pairs, adding `tester.pump(const Duration(milliseconds: 100))` only where animations are genuinely needed.
+- [x] **[HIGH]** `test/…/speech_modal/transcripts_list_item_test.dart` — 28 `pumpAndSettle()` calls across ~25 tests. Each has a 10-second default timeout. In the worst case (provider stall), this is 280 seconds of CI time. Replace with `tester.pump()` + `tester.pump()` pairs, adding `tester.pump(const Duration(milliseconds: 100))` only where animations are genuinely needed. **RESOLVED:** all 20 unbounded settles replaced with bounded `pump()` + `pump(100ms)` pairs; full file passes.
 
 - [ ] **[MED]** Same file: `await getIt.reset()` in every `setUp`. This is the correct approach but heavier than `setUpTestGetIt()` which does targeted registration. Migrating to `setUpTestGetIt()` would reduce setup time slightly per test.
 

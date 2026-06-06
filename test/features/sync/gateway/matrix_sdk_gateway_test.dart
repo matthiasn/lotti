@@ -14,14 +14,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockClient extends Mock implements Client {}
-
-class MockLoginResponse extends Mock implements LoginResponse {}
-
-class MockMatrixFile extends Mock implements MatrixFile {}
-
-class MockGetVersionsResponse extends Mock implements GetVersionsResponse {}
-
 MatrixEvent _stateEvent({
   required String type,
   String stateKey = '',
@@ -55,7 +47,7 @@ void main() {
     registerFallbackValue(<StateEvent>[]);
   });
 
-  late MockClient client;
+  late MockMatrixClient client;
   late MatrixSdkGateway gateway;
   late StreamController<({String roomId, StrippedStateEvent state})>
   roomStateController;
@@ -65,7 +57,7 @@ void main() {
   late SentEventRegistry sentEventRegistry;
 
   setUp(() {
-    client = MockClient();
+    client = MockMatrixClient();
     roomStateController =
         StreamController<
           ({String roomId, StrippedStateEvent state})
@@ -619,7 +611,7 @@ void main() {
   });
 
   test('keyVerificationRequests proxies the underlying stream', () async {
-    final verification = FakeKeyVerification();
+    final verification = MockKeyVerification();
     final expectation = expectLater(
       gateway.keyVerificationRequests,
       emits(verification),
@@ -631,7 +623,7 @@ void main() {
 
   test('startKeyVerification delegates to device implementation', () async {
     final device = MockDeviceKeys();
-    final verification = FakeKeyVerification();
+    final verification = MockKeyVerification();
     when(device.startVerification).thenAnswer((_) async => verification);
 
     final result = await gateway.startKeyVerification(device);
@@ -674,5 +666,3 @@ void main() {
     },
   );
 }
-
-class FakeKeyVerification extends Fake implements KeyVerification {}

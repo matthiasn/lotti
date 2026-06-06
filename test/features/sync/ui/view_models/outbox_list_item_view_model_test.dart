@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -112,27 +113,13 @@ void main() {
       );
     });
 
-    testWidgets('shows backfill request payload label', (tester) async {
+    // The payload-kind label cases share one shape: encode a sync-message
+    // JSON into an OutboxItem, build the view model, and compare the label
+    // against the localized string. One spec per message kind.
+    Future<({OutboxListItemViewModel viewModel, BuildContext context})>
+    pumpPayloadItem(WidgetTester tester, OutboxItem item) async {
       late OutboxListItemViewModel viewModel;
       late BuildContext capturedContext;
-
-      final item = OutboxItem(
-        id: 10,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        status: 0,
-        retries: 0,
-        message: jsonEncode({
-          'runtimeType': 'backfillRequest',
-          'entries': [
-            {'hostId': 'host-1', 'counter': 5},
-          ],
-          'requesterId': 'requester-1',
-        }),
-        subject: 'Backfill',
-        priority: OutboxPriority.low.index,
-      );
-
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Builder(
@@ -147,295 +134,168 @@ void main() {
           ),
         ),
       );
-
       await tester.pump();
+      return (viewModel: viewModel, context: capturedContext);
+    }
 
-      expect(
-        viewModel.payloadKindLabel,
-        capturedContext.messages.syncPayloadBackfillRequest,
-      );
-    });
-
-    testWidgets('shows backfill response payload label', (tester) async {
-      late OutboxListItemViewModel viewModel;
-      late BuildContext capturedContext;
-
-      final item = OutboxItem(
-        id: 11,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        status: 0,
-        retries: 0,
-        message: jsonEncode({
-          'runtimeType': 'backfillResponse',
-          'hostId': 'host-1',
-          'counter': 5,
-          'deleted': true,
-        }),
-        subject: 'Backfill Response',
-        priority: OutboxPriority.low.index,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              viewModel = OutboxListItemViewModel.fromItem(
-                context: context,
-                item: item,
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(
-        viewModel.payloadKindLabel,
-        capturedContext.messages.syncPayloadBackfillResponse,
-      );
-    });
-    testWidgets('shows agent entity payload label', (tester) async {
-      late OutboxListItemViewModel viewModel;
-      late BuildContext capturedContext;
-
-      final item = OutboxItem(
-        id: 12,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        status: 0,
-        retries: 0,
-        priority: OutboxPriority.low.index,
-        message: jsonEncode({
-          'runtimeType': 'agentEntity',
-          'agentEntity': {
-            'runtimeType': 'agent',
-            'id': 'entity-001',
-            'agentId': 'agent-001',
-            'kind': 'task_agent',
-            'displayName': 'Test Agent',
-            'lifecycle': 'active',
-            'mode': 'autonomous',
-            'allowedCategoryIds': <String>[],
-            'currentStateId': 'state-001',
-            'config': <String, dynamic>{},
-            'createdAt': '2024-01-01T00:00:00.000',
-            'updatedAt': '2024-01-01T00:00:00.000',
-          },
-          'status': 'update',
-        }),
-        subject: 'agentEntity:entity-001',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              viewModel = OutboxListItemViewModel.fromItem(
-                context: context,
-                item: item,
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(
-        viewModel.payloadKindLabel,
-        capturedContext.messages.syncPayloadAgentEntity,
-      );
-    });
-
-    testWidgets('shows agent link payload label', (tester) async {
-      late OutboxListItemViewModel viewModel;
-      late BuildContext capturedContext;
-
-      final item = OutboxItem(
-        id: 13,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        status: 0,
-        retries: 0,
-        priority: OutboxPriority.low.index,
-        message: jsonEncode({
-          'runtimeType': 'agentLink',
-          'agentLink': {
-            'runtimeType': 'basic',
-            'id': 'link-001',
-            'fromId': 'agent-001',
-            'toId': 'entity-001',
-            'createdAt': '2024-01-01T00:00:00.000',
-            'updatedAt': '2024-01-01T00:00:00.000',
-          },
-          'status': 'update',
-        }),
-        subject: 'agentLink:link-001',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              viewModel = OutboxListItemViewModel.fromItem(
-                context: context,
-                item: item,
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(
-        viewModel.payloadKindLabel,
-        capturedContext.messages.syncPayloadAgentLink,
-      );
-    });
-
-    testWidgets('shows notification payload label', (tester) async {
-      late OutboxListItemViewModel viewModel;
-      late BuildContext capturedContext;
-
-      final item = OutboxItem(
-        id: 30,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        status: 0,
-        retries: 0,
-        priority: OutboxPriority.normal.index,
-        message: jsonEncode({
-          'runtimeType': 'notification',
-          'id': 'notification-id',
-          'jsonPath': '/notifications/notification-id.json',
-          'vectorClock': {'host-1': 1},
-          'originatingHostId': 'host-1',
-        }),
-        subject: 'notification:notification-id',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              viewModel = OutboxListItemViewModel.fromItem(
-                context: context,
-                item: item,
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      expect(
-        viewModel.payloadKindLabel,
-        capturedContext.messages.syncPayloadNotification,
-      );
-    });
-
-    testWidgets(
-      'shows notification state update payload label',
-      (tester) async {
-        late OutboxListItemViewModel viewModel;
-        late BuildContext capturedContext;
-
-        final item = OutboxItem(
-          id: 31,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          status: 0,
-          retries: 0,
-          priority: OutboxPriority.normal.index,
-          message: jsonEncode({
-            'runtimeType': 'notificationStateUpdate',
-            'id': 'notification-id',
-            'vectorClock': {'host-1': 2},
-            'originatingHostId': 'host-1',
-          }),
-          subject: 'notificationStateUpdate:notification-id',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                viewModel = OutboxListItemViewModel.fromItem(
-                  context: context,
-                  item: item,
-                );
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        expect(
-          viewModel.payloadKindLabel,
-          capturedContext.messages.syncPayloadNotificationStateUpdate,
-        );
-      },
+    OutboxItem payloadItem({
+      required int id,
+      required Map<String, dynamic> message,
+      required String subject,
+      OutboxPriority priority = OutboxPriority.low,
+    }) => OutboxItem(
+      id: id,
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+      status: 0,
+      retries: 0,
+      priority: priority.index,
+      message: jsonEncode(message),
+      subject: subject,
     );
 
-    testWidgets('shows agent bundle payload label', (tester) async {
-      late OutboxListItemViewModel viewModel;
-      late BuildContext capturedContext;
-
-      final item = OutboxItem(
-        id: 14,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        status: 0,
-        retries: 0,
-        priority: OutboxPriority.low.index,
-        message: jsonEncode({
-          'runtimeType': 'agentBundle',
-          'agentId': 'agent-001',
-          'wakeRunKey': 'run-001',
-          'entities': <Object?>[],
-          'links': <Object?>[],
-          'jsonPath': '/agent_bundles/run-001.json',
-        }),
-        subject: 'agentBundle:agent-001:run-001',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              viewModel = OutboxListItemViewModel.fromItem(
-                context: context,
-                item: item,
-              );
-              return const SizedBox.shrink();
-            },
+    final payloadKindCases =
+        <
+          ({
+            String name,
+            OutboxItem item,
+            String Function(BuildContext ctx) expectedLabel,
+          })
+        >[
+          (
+            name: 'backfill request',
+            item: payloadItem(
+              id: 10,
+              message: {
+                'runtimeType': 'backfillRequest',
+                'entries': [
+                  {'hostId': 'host-1', 'counter': 5},
+                ],
+                'requesterId': 'requester-1',
+              },
+              subject: 'Backfill',
+            ),
+            expectedLabel: (ctx) => ctx.messages.syncPayloadBackfillRequest,
           ),
-        ),
-      );
+          (
+            name: 'backfill response',
+            item: payloadItem(
+              id: 11,
+              message: {
+                'runtimeType': 'backfillResponse',
+                'hostId': 'host-1',
+                'counter': 5,
+                'deleted': true,
+              },
+              subject: 'Backfill Response',
+            ),
+            expectedLabel: (ctx) => ctx.messages.syncPayloadBackfillResponse,
+          ),
+          (
+            name: 'agent entity',
+            item: payloadItem(
+              id: 12,
+              message: {
+                'runtimeType': 'agentEntity',
+                'agentEntity': {
+                  'runtimeType': 'agent',
+                  'id': 'entity-001',
+                  'agentId': 'agent-001',
+                  'kind': 'task_agent',
+                  'displayName': 'Test Agent',
+                  'lifecycle': 'active',
+                  'mode': 'autonomous',
+                  'allowedCategoryIds': <String>[],
+                  'currentStateId': 'state-001',
+                  'config': <String, dynamic>{},
+                  'createdAt': '2024-01-01T00:00:00.000',
+                  'updatedAt': '2024-01-01T00:00:00.000',
+                },
+                'status': 'update',
+              },
+              subject: 'agentEntity:entity-001',
+            ),
+            expectedLabel: (ctx) => ctx.messages.syncPayloadAgentEntity,
+          ),
+          (
+            name: 'agent link',
+            item: payloadItem(
+              id: 13,
+              message: {
+                'runtimeType': 'agentLink',
+                'agentLink': {
+                  'runtimeType': 'basic',
+                  'id': 'link-001',
+                  'fromId': 'agent-001',
+                  'toId': 'entity-001',
+                  'createdAt': '2024-01-01T00:00:00.000',
+                  'updatedAt': '2024-01-01T00:00:00.000',
+                },
+                'status': 'update',
+              },
+              subject: 'agentLink:link-001',
+            ),
+            expectedLabel: (ctx) => ctx.messages.syncPayloadAgentLink,
+          ),
+          (
+            name: 'notification',
+            item: payloadItem(
+              id: 30,
+              message: {
+                'runtimeType': 'notification',
+                'id': 'notification-id',
+                'jsonPath': '/notifications/notification-id.json',
+                'vectorClock': {'host-1': 1},
+                'originatingHostId': 'host-1',
+              },
+              subject: 'notification:notification-id',
+              priority: OutboxPriority.normal,
+            ),
+            expectedLabel: (ctx) => ctx.messages.syncPayloadNotification,
+          ),
+          (
+            name: 'notification state update',
+            item: payloadItem(
+              id: 31,
+              message: {
+                'runtimeType': 'notificationStateUpdate',
+                'id': 'notification-id',
+                'vectorClock': {'host-1': 2},
+                'originatingHostId': 'host-1',
+              },
+              subject: 'notificationStateUpdate:notification-id',
+              priority: OutboxPriority.normal,
+            ),
+            expectedLabel: (ctx) =>
+                ctx.messages.syncPayloadNotificationStateUpdate,
+          ),
+          (
+            name: 'agent bundle',
+            item: payloadItem(
+              id: 14,
+              message: {
+                'runtimeType': 'agentBundle',
+                'agentId': 'agent-001',
+                'wakeRunKey': 'run-001',
+                'entities': <Object?>[],
+                'links': <Object?>[],
+                'jsonPath': '/agent_bundles/run-001.json',
+              },
+              subject: 'agentBundle:agent-001:run-001',
+            ),
+            expectedLabel: (ctx) => ctx.messages.syncPayloadAgentBundle,
+          ),
+        ];
 
-      await tester.pump();
-
-      expect(
-        viewModel.payloadKindLabel,
-        capturedContext.messages.syncPayloadAgentBundle,
-      );
-    });
+    for (final c in payloadKindCases) {
+      testWidgets('shows ${c.name} payload label', (tester) async {
+        final result = await pumpPayloadItem(tester, c.item);
+        expect(
+          result.viewModel.payloadKindLabel,
+          c.expectedLabel(result.context),
+        );
+      });
+    }
 
     // Two bundle-count cases share the same widget setup. The behaviour
     // under test is purely the count-formatting in the view model, so the
@@ -865,5 +725,64 @@ void main() {
         }
       });
     });
+  });
+
+  group('OutboxListItemViewModel.formatBytes — properties', () {
+    test('null in, null out', () {
+      expect(OutboxListItemViewModel.formatBytes(null), isNull);
+    });
+
+    glados.Glados<int>(
+      glados.any.intInRange(0, 1024),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'values below 1 KiB render as whole bytes',
+      (bytes) {
+        expect(OutboxListItemViewModel.formatBytes(bytes), '$bytes B');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.intInRange(1024, 1024 * 1024),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'KiB range renders one decimal and round-trips within rounding error',
+      (bytes) {
+        final label = OutboxListItemViewModel.formatBytes(bytes)!;
+        expect(label, endsWith(' KB'));
+        final value = double.parse(label.split(' ').first);
+        expect(value, closeTo(bytes / 1024, 0.051));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.intInRange(1024 * 1024, 1024 * 1024 * 1024),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'MiB range renders one decimal and round-trips within rounding error',
+      (bytes) {
+        final label = OutboxListItemViewModel.formatBytes(bytes)!;
+        expect(label, endsWith(' MB'));
+        final value = double.parse(label.split(' ').first);
+        expect(value, closeTo(bytes / (1024 * 1024), 0.051));
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.intInRange(1024 * 1024 * 1024, 64 * 1024 * 1024 * 1024),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'GiB range renders two decimals and round-trips within rounding error',
+      (bytes) {
+        final label = OutboxListItemViewModel.formatBytes(bytes)!;
+        expect(label, endsWith(' GB'));
+        final value = double.parse(label.split(' ').first);
+        expect(value, closeTo(bytes / (1024 * 1024 * 1024), 0.0051));
+      },
+      tags: 'glados',
+    );
   });
 }

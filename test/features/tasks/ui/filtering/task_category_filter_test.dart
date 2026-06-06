@@ -126,7 +126,8 @@ void main() {
   group('TaskCategoryFilter', () {
     testWidgets('renders correctly with categories', (tester) async {
       await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the widget is rendered
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
@@ -153,7 +154,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Initially, we should see only favorites (2) + unassigned + all + "..." button = 5 chips
       expect(find.byType(FilterChoiceChip), findsNWidgets(5));
@@ -165,7 +167,8 @@ void main() {
       expect(ellipsisChip, findsOneWidget);
 
       await tester.tap(ellipsisChip);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Now we should see all categories (3) + unassigned + all = 5 chips (no "..." button)
       expect(find.byType(FilterChoiceChip), findsNWidgets(5));
@@ -176,7 +179,8 @@ void main() {
       'calls toggleSelectedCategoryIds when category chip is tapped',
       (tester) async {
         await tester.pumpWidget(buildWithState(mockState));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Find a category chip and tap it
         final workChip = find.byWidgetPredicate(
@@ -196,7 +200,8 @@ void main() {
       'calls toggleSelectedCategoryIds when unassigned chip is tapped',
       (tester) async {
         await tester.pumpWidget(buildWithState(mockState));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Find the unassigned chip by looking for an empty string ID
         // Find the unassigned chip - it will be labeled "Unassigned" or similar
@@ -231,7 +236,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the "All" chip
       final allChip = find.byWidgetPredicate(
@@ -255,7 +261,8 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
       await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify that the widget is rendered
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
@@ -296,7 +303,8 @@ void main() {
       );
 
       await tester.pumpWidget(buildWithState(stateWithUnassigned));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the unassigned chip
       final chips = tester.widgetList<FilterChoiceChip>(
@@ -332,7 +340,8 @@ void main() {
       );
 
       await tester.pumpWidget(buildWithState(stateWithMultiple));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find selected chips
       final selectedChips = tester
@@ -346,7 +355,8 @@ void main() {
 
     testWidgets('displays category colors correctly', (tester) async {
       await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the Work category chip
       final workChip = find.byWidgetPredicate(
@@ -384,7 +394,8 @@ void main() {
       ).thenReturn(allCategories);
 
       await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should not find the Hidden category
       expect(
@@ -398,7 +409,8 @@ void main() {
     testWidgets('all chip shows correct selection state', (tester) async {
       // First state - some categories selected
       await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       var allChip = find.byWidgetPredicate(
         (widget) =>
@@ -429,7 +441,8 @@ void main() {
 
       // Update state through the controller (not rebuilding widget tree)
       fakeController.updateState(stateNoneSelected);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       allChip = find.byWidgetPredicate(
         (widget) =>
@@ -450,7 +463,8 @@ void main() {
       ).thenReturn(mockCategories);
 
       await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Initially, only favorites should be visible (Work and Health)
       // Plus unassigned, all, and ellipsis = 5 total
@@ -471,7 +485,8 @@ void main() {
       expect(ellipsisChip, findsOneWidget);
 
       await tester.tap(ellipsisChip);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // After tapping, all categories should be visible
       // All 3 categories + unassigned + all = 5 total (no ellipsis)
@@ -507,7 +522,8 @@ void main() {
       ).thenReturn(favoriteCategories);
 
       await tester.pumpWidget(buildWithState(mockState));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Even with only favorites, ellipsis is shown initially
       // 2 favorites + unassigned + all + ellipsis = 5 total
@@ -520,7 +536,8 @@ void main() {
       expect(ellipsisChip, findsOneWidget);
 
       await tester.tap(ellipsisChip);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // After tapping, ellipsis should disappear
       // 2 favorites + unassigned + all = 4 total

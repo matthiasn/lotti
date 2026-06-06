@@ -39,16 +39,21 @@ void main() {
     );
   });
 
-  setUp(() {
+  setUp(() async {
     mockDb = MockJournalDb();
     mockLabelsRepo = MockLabelsRepository();
     mockAiInputRepo = MockAiInputRepository();
     mockLogging = MockLoggingService();
 
-    getIt
-      ..registerSingleton<JournalDb>(mockDb)
-      ..registerSingleton<LoggingService>(mockLogging);
-    ensureDomainLoggerRegistered();
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockDb)
+          ..unregister<LoggingService>()
+          ..registerSingleton<LoggingService>(mockLogging);
+      },
+    );
 
     container = ProviderContainer(
       overrides: [
@@ -62,9 +67,9 @@ void main() {
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    getIt.reset();
+    await tearDownTestGetIt();
   });
 
   Task makeTask({List<String>? labels}) => Task(

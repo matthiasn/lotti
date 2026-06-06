@@ -20,18 +20,6 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import '../../../../test_helper.dart';
 import '../widgets/time_history_header/test_helpers.dart';
 
-/// Mock controller that returns fixed unified data.
-class _TestUnifiedController extends UnifiedDailyOsDataController {
-  _TestUnifiedController(this._data);
-
-  final DailyOsData _data;
-
-  @override
-  Future<DailyOsData> build({required DateTime date}) async {
-    return _data;
-  }
-}
-
 /// Mock controller that tracks agreeToPlan calls.
 class _TrackingUnifiedController extends UnifiedDailyOsDataController {
   _TrackingUnifiedController(this._data);
@@ -55,41 +43,6 @@ class _ErrorUnifiedController extends UnifiedDailyOsDataController {
   @override
   Future<DailyOsData> build({required DateTime date}) async {
     throw Exception('test error');
-  }
-}
-
-/// Mock controller for time history header data.
-class _TestTimeHistoryController extends TimeHistoryHeaderController {
-  _TestTimeHistoryController(this._data);
-
-  final TimeHistoryData _data;
-
-  @override
-  Future<TimeHistoryData> build() async {
-    return _data;
-  }
-}
-
-/// Mock notifier for date selection that tracks selected date.
-class _TestDailyOsSelectedDate extends DailyOsSelectedDate {
-  _TestDailyOsSelectedDate(this._initialDate, {DateTime? today})
-    : _today = today ?? _initialDate;
-
-  final DateTime _initialDate;
-  final DateTime _today;
-
-  @override
-  DateTime build() => _initialDate;
-
-  @override
-  void selectDate(DateTime date) {
-    state = date;
-  }
-
-  @override
-  void goToToday() {
-    // Use injected "today" instead of DateTime.now() for deterministic tests
-    state = _today;
   }
 }
 
@@ -133,6 +86,7 @@ void main() {
     DayBudgetStats? stats,
     List<TimeBudgetProgress> budgetProgress = const [],
     List<Override> additionalOverrides = const [],
+    UnifiedDailyOsDataController Function()? unifiedControllerFactory,
   }) {
     final effectivePlan = plan ?? createTestPlan();
     final effectiveStats =
@@ -172,13 +126,13 @@ void main() {
     return RiverpodWidgetTestBench(
       overrides: [
         dailyOsSelectedDateProvider.overrideWith(
-          () => _TestDailyOsSelectedDate(testDate),
+          () => TestDailyOsSelectedDate(testDate),
         ),
         timeHistoryHeaderControllerProvider.overrideWith(
-          () => _TestTimeHistoryController(historyData),
+          () => TestTimeHistoryController(historyData),
         ),
         unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
-          () => _TestUnifiedController(unifiedData),
+          unifiedControllerFactory ?? () => TestUnifiedController(unifiedData),
         ),
         dayBudgetStatsProvider(date: testDate).overrideWith(
           (ref) async => effectiveStats,
@@ -201,7 +155,8 @@ void main() {
 
     testWidgets('renders main structure', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DailyOsPage), findsOneWidget);
       expect(find.byType(Scaffold), findsAtLeastNWidgets(1));
@@ -209,35 +164,40 @@ void main() {
 
     testWidgets('contains TimeHistoryHeader', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(TimeHistoryHeader), findsOneWidget);
     });
 
     testWidgets('contains DailyTimeline', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DailyTimeline), findsOneWidget);
     });
 
     testWidgets('contains TimeBudgetList', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(TimeBudgetList), findsOneWidget);
     });
 
     testWidgets('contains DaySummary', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DaySummary), findsOneWidget);
     });
 
     testWidgets('has FloatingActionButton', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(FloatingActionButton), findsOneWidget);
       expect(find.byIcon(Icons.add), findsOneWidget);
@@ -249,7 +209,8 @@ void main() {
 
     testWidgets('has RefreshIndicator for pull-to-refresh', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(RefreshIndicator), findsOneWidget);
     });
@@ -260,7 +221,8 @@ void main() {
           plan: createTestPlan(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show the draft message and agree button
       expect(find.text('Agree to Plan'), findsOneWidget);
@@ -277,7 +239,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show the re-agree button
       expect(find.text('Re-agree'), findsOneWidget);
@@ -291,7 +254,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should not show agree or re-agree buttons
       expect(find.text('Agree to Plan'), findsNothing);
@@ -300,21 +264,24 @@ void main() {
 
     testWidgets('is scrollable', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
 
     testWidgets('has SafeArea', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(SafeArea), findsOneWidget);
     });
 
     testWidgets('FAB is tappable', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final fab = find.byType(FloatingActionButton);
       expect(fab, findsOneWidget);
@@ -330,7 +297,8 @@ void main() {
           plan: createTestPlan(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final agreeButton = find.widgetWithText(TextButton, 'Agree to Plan');
       expect(agreeButton, findsOneWidget);
@@ -341,7 +309,8 @@ void main() {
 
     testWidgets('shows correct layout structure', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Main column for header + content
       expect(find.byType(Column), findsWidgets);
@@ -355,7 +324,8 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(plan: createTestPlan()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text('Plan is in draft. Agree to lock it in.'),
@@ -375,7 +345,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text('Changes detected. Review your plan.'),
@@ -393,63 +364,16 @@ void main() {
         DailyOsData(
           date: testDate,
           dayPlan: createTestPlan(),
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: [],
-            actualSlots: [],
-            dayStartHour: 8,
-            dayEndHour: 18,
-          ),
+          timelineData: createTestTimelineData(),
           budgetProgress: [],
         ),
       );
 
-      final historyData = TimeHistoryData(
-        days: [
-          DayTimeSummary(
-            day: DateTime(testDate.year, testDate.month, testDate.day, 12),
-            durationByCategoryId: const {},
-            total: Duration.zero,
-          ),
-        ],
-        earliestDay: testDate,
-        latestDay: testDate,
-        maxDailyTotal: Duration.zero,
-        categoryOrder: const [],
-        isLoadingMore: false,
-        canLoadMore: true,
-        stackedHeights: const {},
-      );
-
       await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWith(
-              () => _TestDailyOsSelectedDate(testDate),
-            ),
-            timeHistoryHeaderControllerProvider.overrideWith(
-              () => _TestTimeHistoryController(historyData),
-            ),
-            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
-              () => trackingController,
-            ),
-            dayBudgetStatsProvider(date: testDate).overrideWith(
-              (ref) async => const DayBudgetStats(
-                totalPlanned: Duration.zero,
-                totalRecorded: Duration.zero,
-                budgetCount: 0,
-                overBudgetCount: 0,
-              ),
-            ),
-            activeFocusCategoryIdProvider.overrideWith(
-              (ref) => Stream.value(null),
-            ),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
-          ],
-          child: const DailyOsPage(),
-        ),
+        createTestWidget(unifiedControllerFactory: () => trackingController),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(trackingController.agreeToPlanCallCount, 0);
 
@@ -467,74 +391,25 @@ void main() {
     testWidgets('tapping re-agree button on review banner calls agreeToPlan', (
       tester,
     ) async {
-      final reviewPlan = createTestPlan(
-        status: DayPlanStatus.needsReview(
-          triggeredAt: testDate,
-          reason: DayPlanReviewReason.blockModified,
-        ),
-      );
-
       final trackingController = _TrackingUnifiedController(
         DailyOsData(
           date: testDate,
-          dayPlan: reviewPlan,
-          timelineData: DailyTimelineData(
-            date: testDate,
-            plannedSlots: [],
-            actualSlots: [],
-            dayStartHour: 8,
-            dayEndHour: 18,
+          dayPlan: createTestPlan(
+            status: DayPlanStatus.needsReview(
+              triggeredAt: testDate,
+              reason: DayPlanReviewReason.blockModified,
+            ),
           ),
+          timelineData: createTestTimelineData(),
           budgetProgress: [],
         ),
       );
 
-      final historyData = TimeHistoryData(
-        days: [
-          DayTimeSummary(
-            day: DateTime(testDate.year, testDate.month, testDate.day, 12),
-            durationByCategoryId: const {},
-            total: Duration.zero,
-          ),
-        ],
-        earliestDay: testDate,
-        latestDay: testDate,
-        maxDailyTotal: Duration.zero,
-        categoryOrder: const [],
-        isLoadingMore: false,
-        canLoadMore: true,
-        stackedHeights: const {},
-      );
-
       await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWith(
-              () => _TestDailyOsSelectedDate(testDate),
-            ),
-            timeHistoryHeaderControllerProvider.overrideWith(
-              () => _TestTimeHistoryController(historyData),
-            ),
-            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
-              () => trackingController,
-            ),
-            dayBudgetStatsProvider(date: testDate).overrideWith(
-              (ref) async => const DayBudgetStats(
-                totalPlanned: Duration.zero,
-                totalRecorded: Duration.zero,
-                budgetCount: 0,
-                overBudgetCount: 0,
-              ),
-            ),
-            activeFocusCategoryIdProvider.overrideWith(
-              (ref) => Stream.value(null),
-            ),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
-          ],
-          child: const DailyOsPage(),
-        ),
+        createTestWidget(unifiedControllerFactory: () => trackingController),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(trackingController.agreeToPlanCallCount, 0);
 
@@ -552,52 +427,11 @@ void main() {
     testWidgets('shows no banner when unified data controller errors', (
       tester,
     ) async {
-      final historyData = TimeHistoryData(
-        days: [
-          DayTimeSummary(
-            day: DateTime(testDate.year, testDate.month, testDate.day, 12),
-            durationByCategoryId: const {},
-            total: Duration.zero,
-          ),
-        ],
-        earliestDay: testDate,
-        latestDay: testDate,
-        maxDailyTotal: Duration.zero,
-        categoryOrder: const [],
-        isLoadingMore: false,
-        canLoadMore: true,
-        stackedHeights: const {},
-      );
-
       await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWith(
-              () => _TestDailyOsSelectedDate(testDate),
-            ),
-            timeHistoryHeaderControllerProvider.overrideWith(
-              () => _TestTimeHistoryController(historyData),
-            ),
-            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
-              _ErrorUnifiedController.new,
-            ),
-            dayBudgetStatsProvider(date: testDate).overrideWith(
-              (ref) async => const DayBudgetStats(
-                totalPlanned: Duration.zero,
-                totalRecorded: Duration.zero,
-                budgetCount: 0,
-                overBudgetCount: 0,
-              ),
-            ),
-            activeFocusCategoryIdProvider.overrideWith(
-              (ref) => Stream.value(null),
-            ),
-            runningTimerCategoryIdProvider.overrideWithValue(null),
-          ],
-          child: const DailyOsPage(),
-        ),
+        createTestWidget(unifiedControllerFactory: _ErrorUnifiedController.new),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Error state produces SizedBox.shrink — no banner text
       expect(find.text('Agree to Plan'), findsNothing);
@@ -610,13 +444,15 @@ void main() {
 
     testWidgets('tapping FAB opens AddBlockSheet', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final fab = find.byType(FloatingActionButton);
       expect(fab, findsOneWidget);
       await tester.ensureVisible(fab);
       await tester.tap(fab);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(add_block.AddBlockSheet), findsOneWidget);
     });
@@ -627,7 +463,8 @@ void main() {
       'scroll physics switch to NeverScrollable when drag is active',
       (tester) async {
         await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Initially scrolling is allowed (AlwaysScrollableScrollPhysics)
         final scrollView = tester.widget<SingleChildScrollView>(
@@ -683,7 +520,8 @@ void main() {
       addTearDown(tester.view.reset);
 
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Dispatch a fling downward to trigger the RefreshIndicator.
       await tester.fling(
@@ -694,7 +532,8 @@ void main() {
       // Let the refresh indicator settle (it runs async).
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // After refresh the page structure is still intact — no crash.
       expect(find.byType(RefreshIndicator), findsOneWidget);

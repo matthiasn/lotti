@@ -19,6 +19,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -70,17 +71,6 @@ class _FakeTimeService implements TimeService {
   }
 
   Future<void> close() => _controller.close();
-}
-
-/// Stand-in for the audio recorder controller so the action bar can
-/// observe a recorder state without booting the real recorder
-/// repository (which depends on platform plugins).
-class _StubAudioRecorderController extends AudioRecorderController {
-  _StubAudioRecorderController(this._initial);
-  final AudioRecorderState _initial;
-
-  @override
-  AudioRecorderState build() => _initial;
 }
 
 AudioRecorderState _idleRecorderState() => AudioRecorderState(
@@ -214,7 +204,7 @@ void main() {
           ...extraOverrides,
           entryCreationServiceProvider.overrideWithValue(mockCreationService),
           audioRecorderControllerProvider.overrideWith(
-            () => _StubAudioRecorderController(
+            () => StubAudioRecorderController(
               recorderState ?? _idleRecorderState(),
             ),
           ),

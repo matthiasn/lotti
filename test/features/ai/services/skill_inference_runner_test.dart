@@ -551,6 +551,20 @@ void main() {
     }
   });
 
+  /// Writes the stub audio file at the path [makeAudioEntity] points to.
+  Future<void> createStubAudioFile() async {
+    final audioDir = Directory('${tempDir.path}/audio');
+    await audioDir.create(recursive: true);
+    await File('${audioDir.path}/test.aac').writeAsBytes([0x01]);
+  }
+
+  /// Writes the stub image file at the path the image fixtures point to.
+  Future<void> createStubImageFile() async {
+    final imageDir = Directory('${tempDir.path}/images');
+    await imageDir.create(recursive: true);
+    await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+  }
+
   group('SkillInferenceRunner', () {
     group('runTranscription', () {
       test(
@@ -736,9 +750,7 @@ void main() {
         final audioEntity = makeAudioEntity();
 
         // Create the audio file on disk.
-        final audioDir = Directory('${tempDir.path}/audio');
-        await audioDir.create(recursive: true);
-        await File('${audioDir.path}/test.aac').writeAsBytes([0x01]);
+        await createStubAudioFile();
 
         when(
           () => mockAiInputRepo.getEntity('audio-1'),
@@ -776,9 +788,7 @@ void main() {
       test('builds task context when linkedTaskId is provided', () async {
         final audioEntity = makeAudioEntity();
 
-        final audioDir = Directory('${tempDir.path}/audio');
-        await audioDir.create(recursive: true);
-        await File('${audioDir.path}/test.aac').writeAsBytes([0x01]);
+        await createStubAudioFile();
 
         when(
           () => mockAiInputRepo.getEntity('audio-1'),
@@ -830,9 +840,7 @@ void main() {
         'model without mutating the profile',
         () async {
           final audioEntity = makeAudioEntity();
-          final audioDir = Directory('${tempDir.path}/audio');
-          await audioDir.create(recursive: true);
-          await File('${audioDir.path}/test.aac').writeAsBytes([0x01]);
+          await createStubAudioFile();
 
           final overrideProvider =
               AiConfig.inferenceProvider(
@@ -932,9 +940,7 @@ void main() {
         'a deleted-between-picker-and-runner override',
         () async {
           final audioEntity = makeAudioEntity();
-          final audioDir = Directory('${tempDir.path}/audio');
-          await audioDir.create(recursive: true);
-          await File('${audioDir.path}/test.aac').writeAsBytes([0x01]);
+          await createStubAudioFile();
 
           when(
             () => mockAiConfigRepo.getConfigById('stale-id'),
@@ -1205,9 +1211,7 @@ void main() {
                 )
                 as JournalImage;
 
-        final imageDir = Directory('${tempDir.path}/images');
-        await imageDir.create(recursive: true);
-        await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+        await createStubImageFile();
 
         when(
           () => mockAiInputRepo.getEntity('img-1'),
@@ -1252,9 +1256,7 @@ void main() {
       test('returns early on empty image analysis response', () async {
         final imageEntity = makeImageEntity();
 
-        final imageDir = Directory('${tempDir.path}/images');
-        await imageDir.create(recursive: true);
-        await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+        await createStubImageFile();
 
         when(
           () => mockAiInputRepo.getEntity('img-1'),
@@ -1351,9 +1353,7 @@ void main() {
       test('builds task context when linkedTaskId is provided', () async {
         final imageEntity = makeImageEntity();
 
-        final imageDir = Directory('${tempDir.path}/images');
-        await imageDir.create(recursive: true);
-        await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+        await createStubImageFile();
 
         when(
           () => mockAiInputRepo.getEntity('img-1'),
@@ -1429,9 +1429,7 @@ void main() {
         'model without mutating the profile',
         () async {
           final imageEntity = makeImageEntity();
-          final imageDir = Directory('${tempDir.path}/images');
-          await imageDir.create(recursive: true);
-          await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+          await createStubImageFile();
 
           final overrideProvider =
               AiConfig.inferenceProvider(
@@ -1517,9 +1515,7 @@ void main() {
         'a deleted-between-picker-and-runner override',
         () async {
           final imageEntity = makeImageEntity();
-          final imageDir = Directory('${tempDir.path}/images');
-          await imageDir.create(recursive: true);
-          await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+          await createStubImageFile();
 
           when(
             () => mockAiConfigRepo.getConfigById('stale-id'),
@@ -1585,9 +1581,7 @@ void main() {
         'fallback',
         () async {
           final imageEntity = makeImageEntity();
-          final imageDir = Directory('${tempDir.path}/images');
-          await imageDir.create(recursive: true);
-          await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
+          await createStubImageFile();
 
           final orphanModel = AiConfig.model(
             id: 'override-model-id',
@@ -3100,6 +3094,104 @@ void main() {
           final prompt = captured.first as String;
           expect(prompt, contains('**Entry Notes:**'));
           expect(prompt, contains('Sunset over mountains, painterly style'));
+        },
+      );
+
+      test(
+        'threads the [No transcription available] placeholder into the '
+        'prompt for an audio entry without transcript or entry text',
+        () async {
+          // No entryText and no transcripts → _resolveEntryContent falls
+          // through to the placeholder for runImageGeneration too.
+          final audioEntity = makeAudioEntity(id: 'audio-img');
+          final taskEntity = makeTaskEntity('task-audio-img');
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-img'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-audio-img'),
+          ).thenAnswer((_) async => '{"id": "task-audio-img"}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-audio-img'),
+          ).thenAnswer((_) async => '{"linked": []}');
+          when(
+            () => mockTaskSummaryResolver.resolve('task-audio-img'),
+          ).thenAnswer((_) async => 'Audio task brief');
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenAnswer(
+            (_) async => const GeneratedImage(
+              bytes: [0x89, 0x50, 0x4E, 0x47],
+              mimeType: 'image/png',
+            ),
+          );
+
+          final mockPersistenceLogic = MockPersistenceLogic();
+          getIt
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..unregister<DomainLogger>()
+            ..registerSingleton<DomainLogger>(mockLoggingService);
+
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => Metadata(
+              id: 'gen-img-audio',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+          );
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              enqueueSync: any(named: 'enqueueSync'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-audio-img'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockPersistenceLogic.updateTask(
+              journalEntityId: any(named: 'journalEntityId'),
+              taskData: any(named: 'taskData'),
+            ),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageGeneration(
+            entryId: 'audio-img',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-audio-img',
+          );
+
+          final captured = verify(
+            () => mockCloudRepo.generateImage(
+              prompt: captureAny(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).captured;
+          final prompt = captured.first as String;
+          expect(prompt, contains('[No transcription available]'));
         },
       );
 

@@ -15,10 +15,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
-class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
-
-class MockKeyVerification extends Mock implements KeyVerification {}
-
 class FakeKeyVerificationEmoji extends Fake implements KeyVerificationEmoji {
   FakeKeyVerificationEmoji(this.emoji, this.name);
 

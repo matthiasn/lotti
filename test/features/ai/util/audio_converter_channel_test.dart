@@ -5,6 +5,8 @@ import 'package:lotti/features/ai/util/audio_converter_channel.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+import '../../../widget_test_utils.dart';
+
 class _FakeDomainLogger extends Fake implements DomainLogger {
   String? lastEvent;
 
@@ -37,20 +39,21 @@ void main() {
   late _FakeDomainLogger fakeLogging;
 
   group('AudioConverterChannel', () {
-    setUp(() {
+    setUp(() async {
       fakeLogging = _FakeDomainLogger();
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
-      getIt.registerSingleton<DomainLogger>(fakeLogging);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<DomainLogger>()
+            ..registerSingleton<DomainLogger>(fakeLogging);
+        },
+      );
     });
 
-    tearDown(() {
+    tearDown(() async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, null);
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
+      await tearDownTestGetIt();
     });
 
     test('returns true on successful conversion', () async {

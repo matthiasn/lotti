@@ -13,6 +13,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
 /// Records the most recent push so tests can assert WHICH widget was
@@ -37,7 +38,7 @@ void main() {
 
     setUpAll(AiTestSetup.registerFallbackValues);
 
-    setUp(() {
+    setUp(() async {
       service = const AiSettingsNavigationService();
 
       // The v4 navigation service beams URLs (provider/model/profile
@@ -45,12 +46,13 @@ void main() {
       // `getIt<NavService>()`. Tests that exercise `navigateToConfigEdit`
       // for any config kind would otherwise crash with a missing-
       // registration error — register a no-op mock for both arms.
-      if (getIt.isRegistered<NavService>()) {
-        getIt.unregister<NavService>();
-      }
       mockNavService = MockNavService();
       when(() => mockNavService.beamToNamed(any())).thenReturn(null);
-      getIt.registerSingleton<NavService>(mockNavService);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<NavService>(mockNavService);
+        },
+      );
 
       testProvider = AiTestDataFactory.createTestProvider(
         id: 'test-provider-id',
@@ -63,11 +65,7 @@ void main() {
       );
     });
 
-    tearDown(() {
-      if (getIt.isRegistered<NavService>()) {
-        getIt.unregister<NavService>();
-      }
-    });
+    tearDown(tearDownTestGetIt);
 
     Widget createTestWidget({Widget? child}) {
       return MaterialApp(

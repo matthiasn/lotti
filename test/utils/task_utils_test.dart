@@ -32,14 +32,6 @@ void main() {
         Colors.blue,
       );
       expect(
-        TaskStatus.inProgress(
-          id: 'id',
-          createdAt: testDate,
-          utcOffset: 120,
-        ).colorForBrightness(Brightness.dark),
-        Colors.blue,
-      );
-      expect(
         TaskStatus.blocked(
           id: 'id',
           createdAt: testDate,

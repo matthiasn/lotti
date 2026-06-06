@@ -2039,12 +2039,11 @@ void main() {
 
   group('cancel error paths for realtime subscriptions', () {
     test('logs error when deltaSub.cancel throws during cancel', () async {
-      // Replace LoggingService with a mock to verify logging
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
+      // Replace the helper-registered logger with a mock to verify logging.
       final mockLogging = MockDomainLogger();
-      getIt.registerSingleton<DomainLogger>(mockLogging);
+      getIt
+        ..unregister<DomainLogger>()
+        ..registerSingleton<DomainLogger>(mockLogging);
       when(
         () => mockLogging.log(
           any<LogDomain>(),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
@@ -18,15 +19,10 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-
-class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
-
-class MockKeyVerification extends Mock implements KeyVerification {}
 
 /// A fake provisioning controller that provides a fixed state.
 class _FakeProvisioningController extends ProvisioningController {
@@ -103,62 +99,54 @@ void main() {
     pageIndexNotifier.dispose();
   });
 
+  /// Pumps the widget under test with the standard matrix-service
+  /// override and the provisioning controller seeded to [state].
+  Future<void> pumpConfigWidget(
+    WidgetTester tester,
+    ProvisioningState state, {
+    List<Override> extraOverrides = const [],
+  }) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          provisioningControllerProvider.overrideWith(
+            () => _FakeProvisioningController(state),
+          ),
+          ...extraOverrides,
+        ],
+      ),
+    );
+    await tester.pump();
+  }
+
   group('ProvisionedConfigWidget', () {
     testWidgets('shows spinner when in initial state', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.initial(),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.initial(),
       );
-      await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
     testWidgets('shows spinner when in bundleDecoded state', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.bundleDecoded(testBundle),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.bundleDecoded(testBundle),
       );
-      await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
     testWidgets('shows progress when in loggingIn state', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.loggingIn(),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.loggingIn(),
       );
-      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedConfigWidget));
       expect(
@@ -170,20 +158,10 @@ void main() {
     });
 
     testWidgets('shows progress when in joiningRoom state', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.joiningRoom(),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.joiningRoom(),
       );
-      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedConfigWidget));
       expect(
@@ -195,20 +173,10 @@ void main() {
     testWidgets('shows progress when in rotatingPassword state', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.rotatingPassword(),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.rotatingPassword(),
       );
-      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedConfigWidget));
       expect(
@@ -221,20 +189,10 @@ void main() {
     });
 
     testWidgets('shows QR code when in ready state', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
       );
-      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedConfigWidget));
       expect(
@@ -269,20 +227,10 @@ void main() {
           return checks < 3 ? [device] : [];
         });
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-                ),
-              ),
-            ],
-          ),
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
         );
-        await tester.pump();
 
         incomingController.add(runner);
         await tester.pump(const Duration(seconds: 2));
@@ -312,20 +260,10 @@ void main() {
         ).thenAnswer((_) => outgoingController.stream);
         when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-                ),
-              ),
-            ],
-          ),
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
         );
-        await tester.pump();
 
         outgoingController.add(runner);
         await tester.pump(const Duration(seconds: 2));
@@ -357,20 +295,10 @@ void main() {
           return checks < 3 ? [device] : [];
         });
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-                ),
-              ),
-            ],
-          ),
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
         );
-        await tester.pump();
 
         outgoingController.add(runner);
         await tester.pump(const Duration(seconds: 2));
@@ -380,20 +308,10 @@ void main() {
     );
 
     testWidgets('shows success when in done state', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.done(),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.done(),
       );
-      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedConfigWidget));
       expect(
@@ -421,20 +339,10 @@ void main() {
           () => mockMatrixService.keyVerificationStream,
         ).thenAnswer((_) => const Stream.empty());
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.done(),
-                ),
-              ),
-            ],
-          ),
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.done(),
         );
-        await tester.pump();
 
         // Before the 3s delay, no modal should be shown
         expect(find.byType(VerificationModal), findsNothing);
@@ -453,20 +361,10 @@ void main() {
       (tester) async {
         when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.done(),
-                ),
-              ),
-            ],
-          ),
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.done(),
         );
-        await tester.pump();
 
         // Advance past the 3 second delay
         await tester.pump(const Duration(seconds: 3));
@@ -478,20 +376,10 @@ void main() {
     );
 
     testWidgets('shows error and retry button in error state', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.error(ProvisioningError.loginFailed),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.error(ProvisioningError.loginFailed),
       );
-      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedConfigWidget));
       expect(
@@ -512,22 +400,12 @@ void main() {
     testWidgets(
       'shows configuration error message for configurationError',
       (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.error(
-                    ProvisioningError.configurationError,
-                  ),
-                ),
-              ),
-            ],
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.error(
+            ProvisioningError.configurationError,
           ),
         );
-        await tester.pump();
 
         final context = tester.element(find.byType(ProvisionedConfigWidget));
         expect(
@@ -538,20 +416,10 @@ void main() {
     );
 
     testWidgets('shows masked handover data by default', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
       );
-      await tester.pump();
 
       // Handover text should be masked by default
       expect(find.text('dGVzdC1oYW5kb3Zlci1kYXRh'), findsNothing);
@@ -562,20 +430,10 @@ void main() {
     testWidgets('reveals handover data when visibility toggled', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
       );
-      await tester.pump();
 
       // Tap the visibility toggle
       await tester.tap(find.byKey(const Key('toggleHandoverVisibility')));
@@ -608,20 +466,10 @@ void main() {
         );
       });
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
       );
-      await tester.pump();
 
       final copyFinder = find.byKey(const Key('copyHandoverData'));
       await tester.ensureVisible(copyFinder);
@@ -641,20 +489,10 @@ void main() {
     testWidgets('retry button invokes controller retry in error state', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.error(ProvisioningError.loginFailed),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.error(ProvisioningError.loginFailed),
       );
-      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedConfigWidget));
       final retryFinder = find.text(context.messages.provisionedSyncRetry);
@@ -672,20 +510,10 @@ void main() {
       isDesktop = false;
       addTearDown(() => isDesktop = wasDesktop);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.loggingIn(),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.loggingIn(),
       );
-      await tester.pump();
 
       expect(find.text('1 / 2'), findsOneWidget);
     });
@@ -697,20 +525,10 @@ void main() {
       isDesktop = false;
       addTearDown(() => isDesktop = wasDesktop);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            provisioningControllerProvider.overrideWith(
-              () => _FakeProvisioningController(
-                const ProvisioningState.joiningRoom(),
-              ),
-            ),
-          ],
-        ),
+      await pumpConfigWidget(
+        tester,
+        const ProvisioningState.joiningRoom(),
       );
-      await tester.pump();
 
       expect(find.text('2 / 2'), findsOneWidget);
     });
@@ -1143,20 +961,10 @@ void main() {
           return checks < 3 ? [device] : [];
         });
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              provisioningControllerProvider.overrideWith(
-                () => _FakeProvisioningController(
-                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-                ),
-              ),
-            ],
-          ),
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
         );
-        await tester.pump();
 
         outgoingController.add(runner);
         // Drive the delayed polling (20 × 350 ms max; we get early-exit at
@@ -1196,20 +1004,10 @@ void main() {
             () => mockMatrixService.getUnverifiedDevices(),
           ).thenReturn([device]);
 
-          await tester.pumpWidget(
-            makeTestableWidgetWithScaffold(
-              ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
-              overrides: [
-                matrixServiceProvider.overrideWithValue(mockMatrixService),
-                provisioningControllerProvider.overrideWith(
-                  () => _FakeProvisioningController(
-                    const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
-                  ),
-                ),
-              ],
-            ),
+          await pumpConfigWidget(
+            tester,
+            const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
           );
-          await tester.pump();
 
           outgoingController.add(runner);
           // Drive past 20 × 350 ms = 7 000 ms of polling time; use 8 s to

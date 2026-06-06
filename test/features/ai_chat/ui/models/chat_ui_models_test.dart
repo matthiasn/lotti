@@ -165,6 +165,23 @@ void main() {
         expect(domainSession.metadata, equals({}));
       });
 
+      test('a single message anchors both createdAt and lastMessageAt', () {
+        final message = ChatMessage.user('Only one');
+        final uiModel = ChatSessionUiModel(
+          id: 'single-id',
+          title: 'Single',
+          messages: [message],
+          isLoading: false,
+          isStreaming: false,
+        );
+
+        final domainSession = uiModel.toDomain();
+
+        // first == last: both timestamps collapse onto the lone message.
+        expect(domainSession.createdAt, message.timestamp);
+        expect(domainSession.lastMessageAt, message.timestamp);
+      });
+
       test('includes selectedModelId in metadata when present', () {
         const uiModel = ChatSessionUiModel(
           id: 'test-id',

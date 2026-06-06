@@ -554,6 +554,62 @@ void main() {
           );
         },
       );
+
+      test(
+        'agenda items for unscripted taskIds carry no outcome or progress',
+        () async {
+          // A block whose taskId matches none of the scripted cases drives
+          // both `_scriptedOutcome` and `_scriptedProgress` into their
+          // `return null` fallbacks.
+          final start = DateTime(2026, 5, 25, 8);
+          final plan = DraftPlan(
+            dayDate: DateTime(2026, 5, 25),
+            blocks: [
+              TimeBlock(
+                id: 'b_unscripted',
+                title: 'Completely new work',
+                start: start,
+                end: start.add(const Duration(hours: 1)),
+                type: TimeBlockType.ai,
+                state: TimeBlockState.drafted,
+                category: const DayAgentCategory(
+                  id: 'cat_work',
+                  name: 'Work',
+                  colorHex: '5ED4B7',
+                ),
+                taskId: 't_unscripted_task',
+                reason: 'placeholder',
+              ),
+            ],
+            bands: const [],
+            capacityMinutes: 480,
+            scheduledMinutes: 60,
+          );
+
+          final diff = await agent.proposePlanDiff(
+            currentPlan: plan,
+            voiceTranscript: 'shuffle things around',
+          );
+
+          final agendaItem = diff.updatedPlan.agendaItems.firstWhere(
+            (a) => a.taskId == 't_unscripted_task',
+          );
+          expect(agendaItem.outcome, isNull);
+          expect(agendaItem.progress, isNull);
+          expect(agendaItem.totalEstimateMinutes, greaterThan(0));
+        },
+      );
+    });
+
+    test('currentPlanForDate always reports no stored plan', () async {
+      expect(await agent.currentPlanForDate(DateTime(2026, 5, 25)), isNull);
+      // Even right after drafting a plan, the mock stores nothing.
+      await agent.draftDayPlan(
+        captureId: const CaptureId('cap'),
+        decidedTaskIds: const ['t_deck_review'],
+        dayDate: DateTime(2026, 5, 25),
+      );
+      expect(await agent.currentPlanForDate(DateTime(2026, 5, 25)), isNull);
     });
   });
 }

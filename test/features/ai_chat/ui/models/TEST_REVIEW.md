@@ -39,7 +39,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `toDomain()` when `messages` is non-empty: the test at line 143–165 checks `createdAt == messages.first.timestamp` and `lastMessageAt == messages.last.timestamp`, but only with two messages where first ≠ last. A single-message case (where first == last) is not tested.
+- [x] **[HIGH]** `toDomain()` when `messages` is non-empty: the test at line 143–165 checks `createdAt == messages.first.timestamp` and `lastMessageAt == messages.last.timestamp`, but only with two messages where first ≠ last. A single-message case (where first == last) is not tested. **RESOLVED:** new test 'a single message anchors both createdAt and lastMessageAt' covers the first == last case.
 - [ ] **[MED]** `ChatSessionUiModel.fromDomain` with `metadata` containing a non-String `selectedModelId` (e.g., `{'selectedModelId': 42}`): the type-guard at line 44 (`is String ? ... : null`) should return null. No test covers this coercion/fallback path.
 - [ ] **[MED]** `ChatStateUiModel.copyWith` with `error: null` explicitly passed: because `error` uses the `Object()` sentinel, passing `null` explicitly should clear the error. The static test at line 395–403 only tests updating `recentSessions` and adding an error, not clearing it. The `clearError()` test covers clearing via the method, but not via `copyWith(error: null)`.
 - [ ] **[LOW]** `ChatSessionUiModel.streamingMessage` when multiple messages are streaming simultaneously: `firstOrNull` returns only the first. The behaviour for multi-streaming is implicitly defined but never tested.

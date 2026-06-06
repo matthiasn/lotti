@@ -29,6 +29,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
 // Local fake (not a plain mock): computes real union durations so the
@@ -296,7 +297,7 @@ void main() {
     late ProviderContainer container;
     late AiInputRepository repository;
 
-    setUp(() {
+    setUp(() async {
       mockDb = MockJournalDb();
       mockTaskProgressRepository = _ComputingTaskProgressRepository();
       mockPersistenceLogic = MockPersistenceLogic();
@@ -304,10 +305,14 @@ void main() {
       mockAgentRepository = MockAgentRepository();
       containerBuilder = TestContainerBuilder(mockTaskProgressRepository);
 
-      // Register function for service locator
-      getIt
-        ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockDb)
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        },
+      );
 
       // Set initial value to null
       containerBuilder.setTaskProgress(taskId, null);
@@ -351,11 +356,9 @@ void main() {
       ).thenAnswer((_) async => <String, List<JournalEntity>>{});
     });
 
-    tearDown(() {
+    tearDown(() async {
       container.dispose();
-      getIt
-        ..unregister<JournalDb>()
-        ..unregister<PersistenceLogic>();
+      await tearDownTestGetIt();
     });
 
     test('generate returns null when entity is not a Task', () async {
@@ -2387,24 +2390,25 @@ void main() {
             )
             as ProjectEntry;
 
-    setUp(() {
+    setUp(() async {
       mockDb = MockJournalDb();
       mockProjectRepository = MockProjectRepository();
-      getIt.registerSingleton<JournalDb>(mockDb);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          // These tests exercise both the registered and the absent branch
+          // for AgentDatabase/DomainLogger — start from the absent state.
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockDb)
+            ..unregister<DomainLogger>();
+        },
+      );
       when(
         () => mockProjectRepository.getProjectForTask(any()),
       ).thenAnswer((_) async => project);
     });
 
-    tearDown(() {
-      getIt.unregister<JournalDb>();
-      if (getIt.isRegistered<AgentDatabase>()) {
-        getIt.unregister<AgentDatabase>();
-      }
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
-    });
+    tearDown(tearDownTestGetIt);
 
     ProviderContainer buildContainer() {
       final container = ProviderContainer(
@@ -2543,16 +2547,20 @@ void main() {
       );
     }
 
-    setUp(() {
+    setUp(() async {
       mockDbLang = MockJournalDb();
       mockTaskProgressRepoLang = MockTaskProgressRepository();
       mockPersistenceLogicLang = MockPersistenceLogic();
       mockProjectRepositoryLang = MockProjectRepository();
 
-      getIt.allowReassignment = true;
-      getIt
-        ..registerSingleton<JournalDb>(mockDbLang)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogicLang);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockDbLang)
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogicLang);
+        },
+      );
 
       containerLang = ProviderContainer(
         overrides: [
@@ -2570,14 +2578,9 @@ void main() {
       );
     });
 
-    tearDown(() {
+    tearDown(() async {
       containerLang.dispose();
-      if (getIt.isRegistered<JournalDb>()) {
-        getIt.unregister<JournalDb>();
-      }
-      if (getIt.isRegistered<PersistenceLogic>()) {
-        getIt.unregister<PersistenceLogic>();
-      }
+      await tearDownTestGetIt();
     });
 
     test('includes languageCode in generated task object', () async {
@@ -2986,12 +2989,17 @@ void main() {
     test('buildTaskDetailsJson includes aiSuppressedLabelIds', () async {
       final db = MockJournalDb();
       final mockProjectRepository = MockProjectRepository();
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<JournalDb>(db);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(db);
+        },
+      );
       final container = ProviderContainer();
-      addTearDown(() {
+      addTearDown(() async {
         container.dispose();
-        getIt.reset();
+        await tearDownTestGetIt();
       });
 
       final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -3028,9 +3036,6 @@ void main() {
       expect(jsonStr, isNotNull);
       final map = jsonDecode(jsonStr!) as Map<String, dynamic>;
       expect(map['aiSuppressedLabelIds'], containsAll(['x', 'y']));
-
-      // Clean up registration
-      await getIt.reset();
     });
   });
 
@@ -3406,7 +3411,7 @@ void main() {
     const childTaskId = 'child-task-456';
     const parentTaskId = 'parent-task-789';
 
-    setUp(() {
+    setUp(() async {
       mockDbLinked = MockJournalDb();
       mockTaskProgressRepositoryLinked = _ComputingTaskProgressRepository();
       mockPersistenceLogicLinked = MockPersistenceLogic();
@@ -3423,11 +3428,15 @@ void main() {
         ],
       );
 
-      getIt.allowReassignment = true;
-      getIt
-        ..registerSingleton<JournalDb>(mockDbLinked)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogicLinked)
-        ..registerSingleton<EntitiesCacheService>(mockCacheServiceLinked);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockDbLinked)
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogicLinked)
+            ..registerSingleton<EntitiesCacheService>(mockCacheServiceLinked);
+        },
+      );
 
       repositoryLinked = containerLinked.read(aiInputRepositoryProvider);
 
@@ -3455,12 +3464,9 @@ void main() {
       ).thenAnswer((_) async => null);
     });
 
-    tearDown(() {
+    tearDown(() async {
       containerLinked.dispose();
-      getIt
-        ..unregister<JournalDb>()
-        ..unregister<PersistenceLogic>()
-        ..unregister<EntitiesCacheService>();
+      await tearDownTestGetIt();
     });
 
     Task createTestTask({

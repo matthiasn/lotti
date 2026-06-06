@@ -21,29 +21,26 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Mock controller that returns a specific state based on selectedCategoryIds
-class _MockJournalPageController extends JournalPageController {
-  _MockJournalPageController(this._selectedCategoryIds);
-  final Set<String> _selectedCategoryIds;
-
-  @override
-  JournalPageState build(bool showTasks) {
-    return JournalPageState(
-      selectedEntryTypes: const [],
-      match: '',
-      filters: const {},
-      showPrivateEntries: false,
-      showTasks: true,
-      fullTextMatches: const {},
-      pagingController: null,
-      taskStatuses: const [],
-      selectedTaskStatuses: const {},
-      selectedCategoryIds: _selectedCategoryIds,
-      selectedLabelIds: const {},
-    );
-  }
+/// Builds the minimal journal page state the chat modal reads, with the
+/// given category selection, for the shared [FakeJournalPageController].
+JournalPageState _journalStateWithCategories(Set<String> selectedCategoryIds) {
+  return JournalPageState(
+    selectedEntryTypes: const [],
+    match: '',
+    filters: const {},
+    showPrivateEntries: false,
+    showTasks: true,
+    fullTextMatches: const {},
+    pagingController: null,
+    taskStatuses: const [],
+    selectedTaskStatuses: const {},
+    selectedCategoryIds: selectedCategoryIds,
+    selectedLabelIds: const {},
+  );
 }
 
 /// Pumps a [ChatModalPage] wrapped in the required providers and localization.
@@ -69,7 +66,9 @@ Future<void> _pumpChatModalPage(
           chatRepositoryProvider.overrideWithValue(chatRepository),
         journalPageScopeProvider.overrideWithValue(true),
         journalPageControllerProvider(true).overrideWith(
-          () => _MockJournalPageController(selectedCategoryIds),
+          () => FakeJournalPageController(
+            _journalStateWithCategories(selectedCategoryIds),
+          ),
         ),
         ...extraOverrides,
       ],

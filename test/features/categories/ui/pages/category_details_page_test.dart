@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -75,6 +76,22 @@ void main() {
       beamToNamedOverride = null;
     });
 
+    /// Pumps the page with the standard repository override.
+    Future<void> pumpCategoryDetailsPage(
+      WidgetTester tester, {
+      List<Override> extraOverrides = const [],
+    }) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ...extraOverrides,
+          ],
+          child: CategoryDetailsPage(categoryId: testCategoryId),
+        ),
+      );
+    }
+
     testWidgets(
       'name field does not reseed selection/text on rebuild during edit',
       (tester) async {
@@ -95,14 +112,7 @@ void main() {
           active: true,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         // Emit initial category
         streamController.add(category);
@@ -136,14 +146,7 @@ void main() {
           (_) => const Stream.empty(),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
@@ -154,14 +157,7 @@ void main() {
           (_) => Stream.error(Exception('Test error')),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         // Wait for the error to be processed
         await tester.pump();
@@ -181,14 +177,7 @@ void main() {
           (_) => streamController.stream,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         // Emit null (category not found)
         streamController.add(null);
@@ -211,14 +200,7 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -236,14 +218,7 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -267,14 +242,7 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -301,14 +269,7 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -331,14 +292,7 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -362,14 +316,7 @@ void main() {
           (_) async => category.copyWith(name: 'Updated'),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         streamController.add(category);
         await tester.pump();
@@ -396,14 +343,7 @@ void main() {
           (_) => streamController.stream,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         streamController.add(category);
         await tester.pump();
@@ -442,14 +382,7 @@ void main() {
             (_) => Stream.value(category),
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -472,14 +405,7 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -505,14 +431,7 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -543,14 +462,7 @@ void main() {
             (_) async {},
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
@@ -586,14 +498,7 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -630,14 +535,7 @@ void main() {
           (_) async => category,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         // Initially shows loading
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -668,14 +566,7 @@ void main() {
           (_) => controller.stream,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         controller.add(category);
         await tester.pump();
@@ -701,14 +592,7 @@ void main() {
           (_) => controller.stream,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
         controller.add(category);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -744,14 +628,7 @@ void main() {
           (_) => streamController.stream,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         streamController.add(category);
         await tester.pump();
@@ -843,14 +720,7 @@ void main() {
           (_) async => category,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         streamController.add(category);
         await tester.pump();
@@ -961,14 +831,7 @@ void main() {
           (_) async => category,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         streamController.add(category);
         await tester.pump();
@@ -1079,14 +942,7 @@ void main() {
           (_) => streamController.stream,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         streamController.add(category);
         await tester.pump();
@@ -1136,14 +992,7 @@ void main() {
           (_) => streamController.stream,
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
+        await pumpCategoryDetailsPage(tester);
 
         // Even in loading state, CustomScrollView should be present
         expect(find.byType(CustomScrollView), findsOneWidget);
@@ -1253,14 +1102,7 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           // Emit null → category not found
           streamController.add(null);
@@ -1382,14 +1224,7 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           streamController.add(category);
           await tester.pump();
@@ -1430,14 +1265,7 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           streamController.add(category);
           await tester.pump();
@@ -1489,14 +1317,7 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           streamController.add(category);
           await tester.pump();
@@ -1538,14 +1359,7 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           streamController.add(category);
           await tester.pump();
@@ -1685,14 +1499,7 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           streamController.add(category);
           await tester.pump();
@@ -1739,14 +1546,7 @@ void main() {
             (_) => Stream.value(category),
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
@@ -1775,14 +1575,7 @@ void main() {
             (_) => Stream.value(category),
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
@@ -1819,14 +1612,7 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           streamController.add(category);
           await tester.pump();
@@ -1877,14 +1663,7 @@ void main() {
             Exception('Save failed'),
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           streamController.add(category);
           await tester.pump();
@@ -2011,14 +1790,7 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
-          );
+          await pumpCategoryDetailsPage(tester);
 
           streamController.add(category);
           await tester.pump();

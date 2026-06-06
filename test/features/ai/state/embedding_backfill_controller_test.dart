@@ -26,6 +26,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Test data helpers
@@ -129,18 +130,23 @@ void main() {
   });
 
   setUp(() async {
-    await getIt.reset();
-
     mockJournalDb = MockJournalDb();
     mockEmbeddingStore = MockEmbeddingStore();
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
     mockAiConfigRepo = MockAiConfigRepository();
 
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
-      ..registerSingleton<OllamaEmbeddingRepository>(mockEmbeddingRepo)
-      ..registerSingleton<AiConfigRepository>(mockAiConfigRepo);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb)
+          ..unregister<EmbeddingStore>()
+          ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
+          ..unregister<OllamaEmbeddingRepository>()
+          ..registerSingleton<OllamaEmbeddingRepository>(mockEmbeddingRepo)
+          ..registerSingleton<AiConfigRepository>(mockAiConfigRepo);
+      },
+    );
 
     _stubOllamaProvider(mockAiConfigRepo);
     _stubNoExistingHash(mockEmbeddingStore);
@@ -162,7 +168,7 @@ void main() {
 
   tearDown(() async {
     container.dispose();
-    await getIt.reset();
+    await tearDownTestGetIt();
   });
 
   EmbeddingBackfillController controller() =>
@@ -829,11 +835,9 @@ void main() {
       vectorClock: null,
     );
 
-    setUp(() async {
+    setUp(() {
       mockAgentRepo = MockAgentRepository();
-      if (getIt.isRegistered<AgentRepository>()) {
-        getIt.unregister<AgentRepository>();
-      }
+      // The file-level setUpTestGetIt reset GetIt, so this is always fresh.
       getIt.registerSingleton<AgentRepository>(mockAgentRepo);
     });
 

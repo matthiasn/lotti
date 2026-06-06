@@ -173,9 +173,18 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      // The drag handle is a Container with 40x4 dimensions
-      // We verify the overall layout rendered properly
-      expect(find.byType(RatingModal), findsOneWidget);
+      // The drag handle is a 40x4 rounded Container at the top of the sheet.
+      final handle = find.byWidgetPredicate(
+        (widget) =>
+            widget is Container &&
+            widget.constraints ==
+                const BoxConstraints.tightFor(width: 40, height: 4) &&
+            widget.decoration is BoxDecoration &&
+            (widget.decoration! as BoxDecoration).borderRadius ==
+                BorderRadius.circular(2),
+      );
+      expect(handle, findsOneWidget);
+      expect(tester.getSize(handle), const Size(40, 4));
     });
 
     testWidgets('submit calls repository when all dimensions set', (

@@ -14,11 +14,16 @@ void main() {
       );
     });
 
-    test('constructor accepts headers parameter', () {
+    test('headers reach the image provider produced by getImage', () {
       final headers = {'User-Agent': 'test-app'};
       provider = CachedTileProvider(headers: headers);
+      const coordinates = TileCoordinates(0, 0, 1);
 
-      expect(provider, isNotNull);
+      final imageProvider =
+          provider.getImage(coordinates, tileLayer)
+              as CachedNetworkImageProvider;
+
+      expect(imageProvider.headers, headers);
     });
 
     test('getImage returns CachedNetworkImageProvider', () {

@@ -89,7 +89,8 @@ void main() {
       await tester.pumpWidget(
         harness(self: _self(), directory: [_self()]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final field = tester.widget<TextFormField>(find.byType(TextFormField));
       expect(field.controller?.text, 'Studio Mac');
@@ -102,7 +103,8 @@ void main() {
       await tester.pumpWidget(
         harness(self: _self(), directory: [_self()]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(Chip), findsNWidgets(2));
       expect(find.text('MLX Audio (local)'), findsOneWidget);
@@ -119,7 +121,8 @@ void main() {
           directory: [_self(capabilities: const [])],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(Chip), findsNothing);
       expect(
@@ -149,7 +152,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Other Mac'), findsOneWidget);
       expect(find.text('Linux Box'), findsOneWidget);
@@ -165,7 +169,8 @@ void main() {
       await tester.pumpWidget(
         harness(self: _self(), directory: [_self()]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.enterText(find.byType(TextFormField), '  New Name  ');
       // Pump so the controller listener's setState rebuilds the
@@ -173,7 +178,8 @@ void main() {
       // would land on a still-disabled button.
       await tester.pump();
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => broadcaster.broadcastIfChanged(
@@ -191,7 +197,8 @@ void main() {
       await tester.pumpWidget(
         harness(self: _self(), directory: [_self()]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.textContaining('No other devices have published a profile'),
@@ -207,12 +214,14 @@ void main() {
       await tester.pumpWidget(
         harness(self: _self(), directory: [_self()]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Clear the seeded display name; this should fail validation on save.
       await tester.enterText(find.byType(TextFormField), '   ');
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verifyNever(
         () => broadcaster.broadcastIfChanged(
@@ -229,7 +238,8 @@ void main() {
       await tester.pumpWidget(
         harness(self: _self(), directory: [_self()]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       TextButton saveButton() => tester.widget<TextButton>(
         find.ancestor(
@@ -260,7 +270,8 @@ void main() {
       await tester.pumpWidget(
         harness(self: _self(), directory: [_self()]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.enterText(find.byType(TextFormField), '   ');
       await tester.pump();
@@ -281,12 +292,14 @@ void main() {
       await tester.pumpWidget(
         harness(self: _self(), directory: [_self()]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.enterText(find.byType(TextFormField), 'Renamed');
       await tester.pump();
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final saveButton = tester.widget<TextButton>(
         find.ancestor(
@@ -325,7 +338,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(Chip), findsNWidgets(4));
       expect(find.text('MLX Audio (local)'), findsOneWidget);

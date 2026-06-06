@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 /// Mock What's New controller that returns no unseen releases
 class _MockWhatsNewController extends WhatsNewController {
@@ -28,15 +29,18 @@ void main() {
     // Use in-memory database for tests
     settingsDb = SettingsDb(inMemoryDatabase: true);
 
-    if (getIt.isRegistered<SettingsDb>()) {
-      getIt.unregister<SettingsDb>();
-    }
-    getIt.registerSingleton<SettingsDb>(settingsDb);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<SettingsDb>()
+          ..registerSingleton<SettingsDb>(settingsDb);
+      },
+    );
   });
 
   tearDown(() async {
     await settingsDb.close();
-    await getIt.reset();
+    await tearDownTestGetIt();
   });
 
   ProviderContainer createContainer() {
