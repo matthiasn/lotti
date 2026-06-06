@@ -184,7 +184,7 @@ void main() {
       expect(logger, isA<DomainLogger>());
 
       // Let the config flag streams emit so ref.listen fires.
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       await container.pump();
 
       expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
@@ -227,7 +227,7 @@ void main() {
       runtimeController.add(true);
       workflowController.add(true);
       syncController.add(false);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       await container.pump();
 
       expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
@@ -237,7 +237,7 @@ void main() {
       // Toggle: agent_runtime off, sync on.
       runtimeController.add(false);
       syncController.add(true);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       await container.pump();
 
       expect(logger.enabledDomains, isNot(contains(LogDomain.agentRuntime)));

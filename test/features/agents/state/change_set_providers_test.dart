@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -801,4 +802,96 @@ void main() {
       },
     );
   });
+
+  group('deduplicateChangeSets properties', () {
+    glados.Glados(
+      glados.any.changeSetDedupeScenario,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('dedupe invariants hold for generated racing change sets', (
+      scenario,
+    ) {
+      final input = scenario.sets;
+      final output = deduplicateChangeSets(input);
+
+      // Never grows, and idempotent.
+      expect(output.length, lessThanOrEqualTo(input.length));
+      final second = deduplicateChangeSets(output);
+      expect(
+        second.map((e) => e.id).toSet(),
+        output.map((e) => e.id).toSet(),
+      );
+
+      // Fully-resolved sets (no pending items) are never collapsed.
+      final resolvedIn = input
+          .whereType<ChangeSetEntity>()
+          .where(
+            (cs) => !cs.items.any((i) => i.status == ChangeItemStatus.pending),
+          )
+          .map((e) => e.id)
+          .toSet();
+      final outIds = output.map((e) => e.id).toSet();
+      expect(outIds.containsAll(resolvedIn), isTrue, reason: '$resolvedIn');
+
+      // For every surviving set with pending items, no other input set with
+      // the same pending fingerprint is newer.
+      String keyOf(ChangeSetEntity cs) =>
+          (cs.items
+                  .where((i) => i.status == ChangeItemStatus.pending)
+                  .map(ChangeItem.fingerprint)
+                  .toList()
+                ..sort())
+              .join('|');
+      for (final survivor in output.whereType<ChangeSetEntity>()) {
+        final key = keyOf(survivor);
+        if (key.isEmpty) continue;
+        for (final other in input.whereType<ChangeSetEntity>()) {
+          if (keyOf(other) == key) {
+            expect(
+              other.createdAt.isAfter(survivor.createdAt),
+              isFalse,
+              reason: 'newer duplicate ${other.id} should have won',
+            );
+          }
+        }
+      }
+    }, tags: 'glados');
+  });
+}
+
+/// Deterministic dedupe scenario: a pool of change sets where some share
+/// pending fingerprints (racing wakes), some are fully resolved, and
+/// createdAt varies by seed.
+class _ChangeSetDedupeScenario {
+  _ChangeSetDedupeScenario(int count, int seed) {
+    sets = [
+      for (var i = 0; i < count; i++)
+        makeTestChangeSet(
+          id: 'cs-$i',
+          createdAt: kAgentTestDate.add(Duration(minutes: (seed + i) % 60)),
+          items: [
+            ChangeItem(
+              toolName: 'update_task_estimate',
+              // Only a few distinct arg shapes so fingerprints collide.
+              args: {'minutes': 30 * ((seed + i) % 3 + 1)},
+              humanSummary: 'estimate',
+              // Every third set is fully resolved (confirmed item).
+              status: (seed + i) % 3 == 0
+                  ? ChangeItemStatus.confirmed
+                  : ChangeItemStatus.pending,
+            ),
+          ],
+        ),
+    ];
+  }
+
+  late final List<AgentDomainEntity> sets;
+}
+
+extension _AnyChangeSetDedupe on glados.Any {
+  glados.Generator<_ChangeSetDedupeScenario> get changeSetDedupeScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 12),
+        glados.IntAnys(this).intInRange(0, 1 << 16),
+        _ChangeSetDedupeScenario.new,
+      );
 }
