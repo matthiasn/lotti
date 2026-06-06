@@ -98,7 +98,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.text(habitFlossing.name),
@@ -109,13 +109,13 @@ void main() {
       expect(searchButtonFinder, findsOneWidget);
 
       await tester.tap(searchButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final timeSpanButtonFinder = find.byIcon(Icons.calendar_month);
       expect(timeSpanButtonFinder, findsOneWidget);
 
       await tester.tap(timeSpanButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final habitCategoryFilterFinder = find.byKey(
         const Key('habit_category_filter'),
@@ -123,7 +123,7 @@ void main() {
       expect(habitCategoryFilterFinder, findsOneWidget);
 
       await tester.tap(habitCategoryFilterFinder);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
     });
 
     testWidgets(
@@ -150,7 +150,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should have exactly 1 HabitCompletionCard for openNow habit
         expect(find.byType(HabitCompletionCard), findsOneWidget);
@@ -183,7 +183,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should have exactly 1 HabitCompletionCard for completed habit
         expect(find.byType(HabitCompletionCard), findsOneWidget);
@@ -215,7 +215,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should have exactly 1 HabitCompletionCard for pendingLater habit
         expect(find.byType(HabitCompletionCard), findsOneWidget);
@@ -245,7 +245,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // No HabitCompletionCards when all lists are empty
       expect(find.byType(HabitCompletionCard), findsNothing);
@@ -274,7 +274,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
       },
@@ -308,7 +308,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
         expect(find.byKey(Key(habitFlossing.id)), findsNothing);

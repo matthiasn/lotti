@@ -51,7 +51,9 @@ void main() {
       categoryMindfulness,
     );
 
+    // Per-test GetIt scope, popped in tearDown.
     getIt
+      ..pushNewScope()
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
@@ -60,7 +62,7 @@ void main() {
   tearDown(() async {
     await definitionsController.close();
     await updateController.close();
-    await getIt.reset();
+    await getIt.popScope();
   });
 
   group('HabitsFilter', () {
