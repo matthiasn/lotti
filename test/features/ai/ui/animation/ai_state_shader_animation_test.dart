@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 
 void main() {
@@ -185,6 +186,39 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets(
+      'does not reload the program when programLoader is unchanged',
+      (tester) async {
+        var loadCount = 0;
+
+        Future<ui.FragmentProgram> loader() {
+          loadCount += 1;
+          return Future<ui.FragmentProgram>.error(StateError('loader'));
+        }
+
+        Widget build({required double dbfs}) => _TestSurface(
+          child: AiVoiceInputShader(
+            dbfs: dbfs,
+            size: 120,
+            primaryColor: const Color(0xFF63D7C7),
+            secondaryColor: const Color(0xFFE9EEF2),
+            backgroundColor: const Color(0x00000000),
+            programLoader: loader,
+          ),
+        );
+
+        await tester.pumpWidget(build(dbfs: -34));
+        await tester.pump(const Duration(milliseconds: 16));
+
+        // Same loader identity → didUpdateWidget must reuse the program.
+        await tester.pumpWidget(build(dbfs: -20));
+        await tester.pump(const Duration(milliseconds: 16));
+
+        expect(loadCount, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('AiThinkingLineShader', () {
@@ -312,6 +346,39 @@ void main() {
         await tester.pump();
 
         expect(loadCount, 2);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'does not reload the program when programLoader is unchanged',
+      (tester) async {
+        var loadCount = 0;
+
+        Future<ui.FragmentProgram> loader() {
+          loadCount += 1;
+          return Future<ui.FragmentProgram>.error(StateError('loader'));
+        }
+
+        Widget build({required double width}) => _TestSurface(
+          child: AiThinkingLineShader(
+            width: width,
+            height: 72,
+            primaryColor: const Color(0xFF63D7C7),
+            secondaryColor: const Color(0xFFE9EEF2),
+            backgroundColor: const Color(0x00000000),
+            programLoader: loader,
+          ),
+        );
+
+        await tester.pumpWidget(build(width: 320));
+        await tester.pump(const Duration(milliseconds: 16));
+
+        // Same loader identity → didUpdateWidget must reuse the program.
+        await tester.pumpWidget(build(width: 280));
+        await tester.pump(const Duration(milliseconds: 16));
+
+        expect(loadCount, 1);
         expect(tester.takeException(), isNull);
       },
     );
@@ -549,6 +616,127 @@ void main() {
         isTrue,
       );
     });
+  });
+
+  group('shouldRepaint properties', () {
+    late ui.FragmentProgram voiceProgram;
+    late ui.FragmentProgram thinkingProgram;
+
+    setUpAll(() async {
+      voiceProgram = await ui.FragmentProgram.fromAsset(
+        AiStateShaderAssets.voiceInput,
+      );
+      thinkingProgram = await ui.FragmentProgram.fromAsset(
+        AiStateShaderAssets.thinkingLine,
+      );
+    });
+
+    AiVoiceInputShaderPainter voicePainter({
+      required int seed,
+      int? bumpField,
+    }) {
+      // Field i gets a deterministic base value from the seed; bumpField
+      // (when set) perturbs exactly that field.
+      double f(int i) => (seed % 97) + i + (bumpField == i ? 0.5 : 0.0);
+      Color c(int i) => Color(
+        0xFF000000 |
+            ((((seed + i) * 2654435761) & 0x00FFFFFF) ^
+                (bumpField == i ? 1 : 0)),
+      );
+      return AiVoiceInputShaderPainter(
+        program: voiceProgram,
+        dbfs: f(0),
+        dbfsFloor: f(1),
+        time: f(2),
+        intensity: f(3),
+        lineDensity: f(4),
+        orbitalMix: f(5),
+        route:
+            AiVoiceShaderRoute.values[(seed + (bumpField == 6 ? 1 : 0)) %
+                AiVoiceShaderRoute.values.length],
+        primaryColor: c(7),
+        secondaryColor: c(8),
+        backgroundColor: c(9),
+      );
+    }
+
+    AiThinkingLineShaderPainter thinkingPainter({
+      required int seed,
+      int? bumpField,
+    }) {
+      double f(int i) => (seed % 89) + i + (bumpField == i ? 0.5 : 0.0);
+      Color c(int i) => Color(
+        0xFF000000 |
+            ((((seed + i) * 2654435761) & 0x00FFFFFF) ^
+                (bumpField == i ? 1 : 0)),
+      );
+      return AiThinkingLineShaderPainter(
+        program: thinkingProgram,
+        time: f(0),
+        speed: f(1),
+        amplitude: f(2),
+        randomness: f(3),
+        lineCount: (seed % 7) + 1 + (bumpField == 4 ? 1 : 0),
+        pulse: f(5),
+        opacity: (seed.isEven ? 0.5 : 1.0) - (bumpField == 6 ? 0.1 : 0.0),
+        route:
+            AiThinkingShaderRoute.values[(seed + (bumpField == 7 ? 1 : 0)) %
+                AiThinkingShaderRoute.values.length],
+        primaryColor: c(8),
+        secondaryColor: c(9),
+        backgroundColor: c(10),
+      );
+    }
+
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 1 << 16),
+      glados.IntAnys(glados.any).intInRange(0, 10),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'voice painter repaints iff any field differs',
+      (seed, field) {
+        final base = voicePainter(seed: seed);
+        final equal = voicePainter(seed: seed);
+        expect(
+          base.shouldRepaint(equal),
+          isFalse,
+          reason: 'identical fields must not repaint (seed=$seed)',
+        );
+
+        final bumped = voicePainter(seed: seed, bumpField: field);
+        expect(
+          base.shouldRepaint(bumped),
+          isTrue,
+          reason: 'field $field changed (seed=$seed)',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 1 << 16),
+      glados.IntAnys(glados.any).intInRange(0, 11),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'thinking painter repaints iff any field differs',
+      (seed, field) {
+        final base = thinkingPainter(seed: seed);
+        final equal = thinkingPainter(seed: seed);
+        expect(
+          base.shouldRepaint(equal),
+          isFalse,
+          reason: 'identical fields must not repaint (seed=$seed)',
+        );
+
+        final bumped = thinkingPainter(seed: seed, bumpField: field);
+        expect(
+          base.shouldRepaint(bumped),
+          isTrue,
+          reason: 'field $field changed (seed=$seed)',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }
 

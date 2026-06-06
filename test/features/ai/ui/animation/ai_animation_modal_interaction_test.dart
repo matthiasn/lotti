@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   late MockDomainLogger mockLoggingService;
@@ -28,16 +29,22 @@ void main() {
     registerFallbackValue(AiConfigType.prompt);
   });
 
-  setUp(() {
+  setUp(() async {
     mockLoggingService = MockDomainLogger();
     mockAiConfigRepository = MockAiConfigRepository();
     mockAiConfigDb = MockAiConfigDb();
 
-    // Register mocks in GetIt
-    getIt
-      ..registerSingleton<DomainLogger>(mockLoggingService)
-      ..registerSingleton<AiConfigRepository>(mockAiConfigRepository)
-      ..registerSingleton<AiConfigDb>(mockAiConfigDb);
+    // setUpTestGetIt registers a real DomainLogger; swap in the mock so the
+    // log stubs below are hit, and add the AI config services on top.
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockLoggingService)
+          ..registerSingleton<AiConfigRepository>(mockAiConfigRepository)
+          ..registerSingleton<AiConfigDb>(mockAiConfigDb);
+      },
+    );
 
     // Setup mock behaviors
     when(
@@ -58,7 +65,7 @@ void main() {
     ).thenAnswer((_) => const Stream.empty());
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   group('AI Animation Modal Interaction Tests', () {
     const testId = 'test-entity-id';
@@ -140,11 +147,14 @@ void main() {
         expect(find.byType(AiRunningAnimation), findsOneWidget);
         expect(find.byType(GestureDetector), findsOneWidget);
 
-        // Verify the tap handler exists
-        final gesture = tester.widget<GestureDetector>(
-          find.byType(GestureDetector),
-        );
-        expect(gesture.onTap, isNotNull);
+        // Tapping must actually open the progress modal: the Wolt sheet
+        // page is titled with the prompt name. The sheet hosts the looping
+        // running animation, so settle would never finish — bounded pumps.
+        await tester.tap(find.byType(GestureDetector));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+
+        expect(find.text(testPrompt.name), findsOneWidget);
 
         container.dispose();
       },
