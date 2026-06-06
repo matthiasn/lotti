@@ -11,10 +11,42 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 import '../../../test_utils.dart';
 
+/// Shared harness for the per-provider FTUE setup tests: a button whose
+/// callback receives a (context, ref) pair backed by the given repository
+/// overrides. The per-provider result types all flow through the same shape.
+Widget _buildFtueHarness({
+  required MockAiConfigRepository repository,
+  required MockCategoryRepository categoryRepository,
+  required Future<Object?> Function(BuildContext, WidgetRef) onPressed,
+}) {
+  return makeTestableWidgetNoScroll(
+    Scaffold(
+      body: Consumer(
+        builder: (context, ref, _) {
+          return ElevatedButton(
+            onPressed: () async {
+              await onPressed(context, ref);
+            },
+            child: const Text('Test'),
+          );
+        },
+      ),
+    ),
+    overrides: [
+      aiConfigRepositoryProvider.overrideWithValue(repository),
+      categoryRepositoryProvider.overrideWithValue(categoryRepository),
+    ],
+  );
+}
+
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('Service Construction', () {
     test('should be const constructible', () {
       const service1 = ProviderPromptSetupService();
@@ -93,32 +125,6 @@ void main() {
     late MockCategoryRepository mockCategoryRepository;
     late AiConfigInferenceProvider geminiProvider;
 
-    setUpAll(() {
-      registerFallbackValue(
-        AiConfig.model(
-          id: 'fallback-model',
-          name: 'Fallback',
-          providerModelId: 'fallback',
-          inferenceProviderId: 'fallback',
-          createdAt: DateTime(2024, 3, 15),
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-        ),
-      );
-      registerFallbackValue(
-        CategoryDefinition(
-          id: 'fallback-category',
-          name: 'Fallback',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-          private: false,
-          active: true,
-        ),
-      );
-    });
-
     setUp(() {
       setupService = const ProviderPromptSetupService();
       mockRepository = MockAiConfigRepository();
@@ -135,32 +141,6 @@ void main() {
         () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
       ).thenAnswer((_) async => [geminiProvider]);
     });
-
-    Widget createGeminiFtueTestWidget({
-      required Future<GeminiFtueResult?> Function(BuildContext, WidgetRef)
-      onPressed,
-    }) {
-      return ProviderScope(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    await onPressed(context, ref);
-                  },
-                  child: const Text('Test'),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-    }
 
     testWidgets(
       'creates the sample category bound to the seeded Gemini Flash '
@@ -195,7 +175,9 @@ void main() {
         );
 
         await tester.pumpWidget(
-          createGeminiFtueTestWidget(
+          _buildFtueHarness(
+            repository: mockRepository,
+            categoryRepository: mockCategoryRepository,
             onPressed: (context, ref) async {
               return setupService.performGeminiFtueSetup(
                 context: context,
@@ -283,7 +265,9 @@ void main() {
 
         GeminiFtueResult? result;
         await tester.pumpWidget(
-          createGeminiFtueTestWidget(
+          _buildFtueHarness(
+            repository: mockRepository,
+            categoryRepository: mockCategoryRepository,
             onPressed: (context, ref) async {
               return result = await setupService.performGeminiFtueSetup(
                 context: context,
@@ -357,7 +341,9 @@ void main() {
 
         GeminiFtueResult? result;
         await tester.pumpWidget(
-          createGeminiFtueTestWidget(
+          _buildFtueHarness(
+            repository: mockRepository,
+            categoryRepository: mockCategoryRepository,
             onPressed: (context, ref) async {
               return result = await setupService.performGeminiFtueSetup(
                 context: context,
@@ -446,32 +432,6 @@ void main() {
     late MockCategoryRepository mockCategoryRepository;
     late AiConfigInferenceProvider openAiProvider;
 
-    setUpAll(() {
-      registerFallbackValue(
-        AiConfig.model(
-          id: 'fallback-model',
-          name: 'Fallback',
-          providerModelId: 'fallback',
-          inferenceProviderId: 'fallback',
-          createdAt: DateTime(2024, 3, 15),
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-        ),
-      );
-      registerFallbackValue(
-        CategoryDefinition(
-          id: 'fallback-category',
-          name: 'Fallback',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-          private: false,
-          active: true,
-        ),
-      );
-    });
-
     setUp(() {
       setupService = const ProviderPromptSetupService();
       mockRepository = MockAiConfigRepository();
@@ -489,32 +449,6 @@ void main() {
       ).thenAnswer((_) async => [openAiProvider]);
     });
 
-    Widget createOpenAiFtueTestWidget({
-      required Future<OpenAiFtueResult?> Function(BuildContext, WidgetRef)
-      onPressed,
-    }) {
-      return ProviderScope(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    await onPressed(context, ref);
-                  },
-                  child: const Text('Test'),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-    }
-
     testWidgets('should return null for non-OpenAI provider', (
       WidgetTester tester,
     ) async {
@@ -526,7 +460,9 @@ void main() {
 
       OpenAiFtueResult? result;
       await tester.pumpWidget(
-        createOpenAiFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performOpenAiFtueSetup(
               context: context,
@@ -578,7 +514,9 @@ void main() {
 
       OpenAiFtueResult? result;
       await tester.pumpWidget(
-        createOpenAiFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performOpenAiFtueSetup(
               context: context,
@@ -663,7 +601,9 @@ void main() {
 
       OpenAiFtueResult? result;
       await tester.pumpWidget(
-        createOpenAiFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performOpenAiFtueSetup(
               context: context,
@@ -705,7 +645,9 @@ void main() {
 
       OpenAiFtueResult? result;
       await tester.pumpWidget(
-        createOpenAiFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performOpenAiFtueSetup(
               context: context,
@@ -793,32 +735,6 @@ void main() {
     late MockCategoryRepository mockCategoryRepository;
     late AiConfigInferenceProvider mistralProvider;
 
-    setUpAll(() {
-      registerFallbackValue(
-        AiConfig.model(
-          id: 'fallback-model',
-          name: 'Fallback',
-          providerModelId: 'fallback',
-          inferenceProviderId: 'fallback',
-          createdAt: DateTime(2024, 3, 15),
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-        ),
-      );
-      registerFallbackValue(
-        CategoryDefinition(
-          id: 'fallback-category',
-          name: 'Fallback',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-          private: false,
-          active: true,
-        ),
-      );
-    });
-
     setUp(() {
       setupService = const ProviderPromptSetupService();
       mockRepository = MockAiConfigRepository();
@@ -836,32 +752,6 @@ void main() {
       ).thenAnswer((_) async => [mistralProvider]);
     });
 
-    Widget createMistralFtueTestWidget({
-      required Future<MistralFtueResult?> Function(BuildContext, WidgetRef)
-      onPressed,
-    }) {
-      return ProviderScope(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    await onPressed(context, ref);
-                  },
-                  child: const Text('Test'),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-    }
-
     testWidgets('should return null for non-Mistral provider', (
       WidgetTester tester,
     ) async {
@@ -873,7 +763,9 @@ void main() {
 
       MistralFtueResult? result;
       await tester.pumpWidget(
-        createMistralFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performMistralFtueSetup(
               context: context,
@@ -925,7 +817,9 @@ void main() {
 
       MistralFtueResult? result;
       await tester.pumpWidget(
-        createMistralFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performMistralFtueSetup(
               context: context,
@@ -1004,7 +898,9 @@ void main() {
 
       MistralFtueResult? result;
       await tester.pumpWidget(
-        createMistralFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performMistralFtueSetup(
               context: context,
@@ -1046,7 +942,9 @@ void main() {
 
       MistralFtueResult? result;
       await tester.pumpWidget(
-        createMistralFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performMistralFtueSetup(
               context: context,
@@ -1110,7 +1008,9 @@ void main() {
       );
 
       await tester.pumpWidget(
-        createMistralFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return setupService.performMistralFtueSetup(
               context: context,
@@ -1192,32 +1092,6 @@ void main() {
     late MockCategoryRepository mockCategoryRepository;
     late AiConfigInferenceProvider alibabaProvider;
 
-    setUpAll(() {
-      registerFallbackValue(
-        AiConfig.model(
-          id: 'fallback-model',
-          name: 'Fallback',
-          providerModelId: 'fallback',
-          inferenceProviderId: 'fallback',
-          createdAt: DateTime(2024, 3, 15),
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-        ),
-      );
-      registerFallbackValue(
-        CategoryDefinition(
-          id: 'fallback-category',
-          name: 'Fallback',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-          private: false,
-          active: true,
-        ),
-      );
-    });
-
     setUp(() {
       setupService = const ProviderPromptSetupService();
       mockRepository = MockAiConfigRepository();
@@ -1235,32 +1109,6 @@ void main() {
       ).thenAnswer((_) async => [alibabaProvider]);
     });
 
-    Widget createAlibabaFtueTestWidget({
-      required Future<AlibabaFtueResult?> Function(BuildContext, WidgetRef)
-      onPressed,
-    }) {
-      return ProviderScope(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    await onPressed(context, ref);
-                  },
-                  child: const Text('Test'),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-    }
-
     testWidgets('should return null for non-Alibaba provider', (
       WidgetTester tester,
     ) async {
@@ -1272,7 +1120,9 @@ void main() {
 
       AlibabaFtueResult? result;
       await tester.pumpWidget(
-        createAlibabaFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performAlibabaFtueSetup(
               context: context,
@@ -1324,7 +1174,9 @@ void main() {
 
       AlibabaFtueResult? result;
       await tester.pumpWidget(
-        createAlibabaFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performAlibabaFtueSetup(
               context: context,
@@ -1415,7 +1267,9 @@ void main() {
 
       AlibabaFtueResult? result;
       await tester.pumpWidget(
-        createAlibabaFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performAlibabaFtueSetup(
               context: context,
@@ -1457,7 +1311,9 @@ void main() {
 
       AlibabaFtueResult? result;
       await tester.pumpWidget(
-        createAlibabaFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performAlibabaFtueSetup(
               context: context,
@@ -1521,7 +1377,9 @@ void main() {
       );
 
       await tester.pumpWidget(
-        createAlibabaFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return setupService.performAlibabaFtueSetup(
               context: context,
@@ -1605,32 +1463,6 @@ void main() {
       ).thenAnswer((_) async => [anthropicProvider]);
     });
 
-    Widget createAnthropicFtueTestWidget({
-      required Future<AnthropicFtueResult?> Function(BuildContext, WidgetRef)
-      onPressed,
-    }) {
-      return ProviderScope(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    await onPressed(context, ref);
-                  },
-                  child: const Text('Test'),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-    }
-
     testWidgets('returns null for non-Anthropic provider', (tester) async {
       final geminiProvider = AiTestDataFactory.createTestProvider(
         id: 'gemini-id',
@@ -1640,7 +1472,9 @@ void main() {
 
       AnthropicFtueResult? result;
       await tester.pumpWidget(
-        createAnthropicFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performAnthropicFtueSetup(
               context: context,
@@ -1687,7 +1521,9 @@ void main() {
 
       AnthropicFtueResult? result;
       await tester.pumpWidget(
-        createAnthropicFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performAnthropicFtueSetup(
               context: context,
@@ -1747,7 +1583,9 @@ void main() {
 
         AnthropicFtueResult? result;
         await tester.pumpWidget(
-          createAnthropicFtueTestWidget(
+          _buildFtueHarness(
+            repository: mockRepository,
+            categoryRepository: mockCategoryRepository,
             onPressed: (context, ref) async {
               return result = await setupService.performAnthropicFtueSetup(
                 context: context,
@@ -1805,7 +1643,9 @@ void main() {
         );
 
         await tester.pumpWidget(
-          createAnthropicFtueTestWidget(
+          _buildFtueHarness(
+            repository: mockRepository,
+            categoryRepository: mockCategoryRepository,
             onPressed: (context, ref) async {
               return setupService.performAnthropicFtueSetup(
                 context: context,
@@ -1873,32 +1713,6 @@ void main() {
       );
     });
 
-    Widget createOllamaFtueTestWidget({
-      required Future<OllamaFtueResult?> Function(BuildContext, WidgetRef)
-      onPressed,
-    }) {
-      return ProviderScope(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                return ElevatedButton(
-                  onPressed: () async {
-                    await onPressed(context, ref);
-                  },
-                  child: const Text('Test'),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-    }
-
     testWidgets('returns null for non-Ollama provider', (tester) async {
       final geminiProvider = AiTestDataFactory.createTestProvider(
         id: 'gemini-id',
@@ -1908,7 +1722,9 @@ void main() {
 
       OllamaFtueResult? result;
       await tester.pumpWidget(
-        createOllamaFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performOllamaFtueSetup(
               context: context,
@@ -1952,7 +1768,9 @@ void main() {
 
         OllamaFtueResult? result;
         await tester.pumpWidget(
-          createOllamaFtueTestWidget(
+          _buildFtueHarness(
+            repository: mockRepository,
+            categoryRepository: mockCategoryRepository,
             onPressed: (context, ref) async {
               return result = await setupService.performOllamaFtueSetup(
                 context: context,
@@ -2004,7 +1822,9 @@ void main() {
 
       OllamaFtueResult? result;
       await tester.pumpWidget(
-        createOllamaFtueTestWidget(
+        _buildFtueHarness(
+          repository: mockRepository,
+          categoryRepository: mockCategoryRepository,
           onPressed: (context, ref) async {
             return result = await setupService.performOllamaFtueSetup(
               context: context,

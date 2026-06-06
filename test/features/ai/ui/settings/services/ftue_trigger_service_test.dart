@@ -43,93 +43,28 @@ void main() {
 
   group('FtueTriggerService', () {
     group('isFtueSupported', () {
-      test('returns true for Gemini provider type', () {
+      // Exhaustive over the enum: any newly added provider type must be
+      // classified here explicitly.
+      const supported = {
+        InferenceProviderType.gemini,
+        InferenceProviderType.openAi,
+        InferenceProviderType.mistral,
+        InferenceProviderType.alibaba,
+        InferenceProviderType.ollama,
+        InferenceProviderType.anthropic,
+      };
+
+      test('classifies every provider type', () {
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        expect(service.isFtueSupported(InferenceProviderType.gemini), isTrue);
-      });
-
-      test('returns true for OpenAI provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(service.isFtueSupported(InferenceProviderType.openAi), isTrue);
-      });
-
-      test('returns true for Mistral provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(service.isFtueSupported(InferenceProviderType.mistral), isTrue);
-      });
-
-      test('returns true for Alibaba provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(service.isFtueSupported(InferenceProviderType.alibaba), isTrue);
-      });
-
-      test('returns true for Ollama provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(service.isFtueSupported(InferenceProviderType.ollama), isTrue);
-      });
-
-      test('returns true for Anthropic provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(
-          service.isFtueSupported(InferenceProviderType.anthropic),
-          isTrue,
-        );
-      });
-
-      test('returns false for genericOpenAi provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(
-          service.isFtueSupported(InferenceProviderType.genericOpenAi),
-          isFalse,
-        );
-      });
-
-      test('returns false for Whisper provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(service.isFtueSupported(InferenceProviderType.whisper), isFalse);
-      });
-
-      test('returns false for Voxtral provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(service.isFtueSupported(InferenceProviderType.voxtral), isFalse);
-      });
-
-      test('returns false for NebiusAiStudio provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(
-          service.isFtueSupported(InferenceProviderType.nebiusAiStudio),
-          isFalse,
-        );
-      });
-
-      test('returns false for OpenRouter provider type', () {
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        expect(
-          service.isFtueSupported(InferenceProviderType.openRouter),
-          isFalse,
-        );
+        for (final type in InferenceProviderType.values) {
+          expect(
+            service.isFtueSupported(type),
+            supported.contains(type),
+            reason: '$type',
+          );
+        }
       });
     });
 
@@ -697,64 +632,24 @@ void main() {
     });
 
     group('FtueProviderTypeExtension.ftueDisplayName', () {
-      test('returns Gemini for gemini provider type', () {
-        expect(InferenceProviderType.gemini.ftueDisplayName, equals('Gemini'));
-      });
+      // Exhaustive over the enum: unsupported types map to null.
+      const displayNames = {
+        InferenceProviderType.gemini: 'Gemini',
+        InferenceProviderType.openAi: 'OpenAI',
+        InferenceProviderType.mistral: 'Mistral',
+        InferenceProviderType.alibaba: 'Alibaba Cloud (Qwen)',
+        InferenceProviderType.ollama: 'Ollama (local)',
+        InferenceProviderType.anthropic: 'Anthropic',
+      };
 
-      test('returns OpenAI for openAi provider type', () {
-        expect(InferenceProviderType.openAi.ftueDisplayName, equals('OpenAI'));
-      });
-
-      test('returns Mistral for mistral provider type', () {
-        expect(
-          InferenceProviderType.mistral.ftueDisplayName,
-          equals('Mistral'),
-        );
-      });
-
-      test('returns Alibaba Cloud (Qwen) for alibaba provider type', () {
-        expect(
-          InferenceProviderType.alibaba.ftueDisplayName,
-          equals('Alibaba Cloud (Qwen)'),
-        );
-      });
-
-      test('returns Ollama (local) for ollama provider type', () {
-        expect(
-          InferenceProviderType.ollama.ftueDisplayName,
-          equals('Ollama (local)'),
-        );
-      });
-
-      test('returns Anthropic for anthropic provider type', () {
-        expect(
-          InferenceProviderType.anthropic.ftueDisplayName,
-          equals('Anthropic'),
-        );
-      });
-
-      test('returns null for genericOpenAi provider type', () {
-        expect(InferenceProviderType.genericOpenAi.ftueDisplayName, isNull);
-      });
-
-      test('returns null for whisper provider type', () {
-        expect(InferenceProviderType.whisper.ftueDisplayName, isNull);
-      });
-
-      test('returns null for mlxAudio provider type', () {
-        expect(InferenceProviderType.mlxAudio.ftueDisplayName, isNull);
-      });
-
-      test('returns null for voxtral provider type', () {
-        expect(InferenceProviderType.voxtral.ftueDisplayName, isNull);
-      });
-
-      test('returns null for nebiusAiStudio provider type', () {
-        expect(InferenceProviderType.nebiusAiStudio.ftueDisplayName, isNull);
-      });
-
-      test('returns null for openRouter provider type', () {
-        expect(InferenceProviderType.openRouter.ftueDisplayName, isNull);
+      test('maps every provider type to its display name or null', () {
+        for (final type in InferenceProviderType.values) {
+          expect(
+            type.ftueDisplayName,
+            displayNames[type],
+            reason: '$type',
+          );
+        }
       });
     });
   });
