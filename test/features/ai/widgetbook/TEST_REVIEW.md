@@ -41,7 +41,7 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `applyVoiceDbfsEnvelope` (lines 300–320) is a pure function with structured numeric inputs. It has three branches:
+- [x] **[HIGH]** `applyVoiceDbfsEnvelope` (lines 300–320) is a pure function with structured numeric inputs. It has three branches: **RESOLVED:** added a `Glados3` property (160 runs, `tags: 'glados'`) over centi-dB triples spanning the full meter range — asserts the result stays within `[floor, 0]`, instant-attack equality when the clamped target ≥ current, and bounded monotone release (≤ current, ≥ target) otherwise. The existing example tests keep the exact-value release-step cases.
   1. `target >= current` → return `target` (fast attack).
   2. `target < current` and `current - releaseStep <= target` → return `target` (floor clamp, bounded release).
   3. `target < current` and `current - releaseStep > target` → return `current - releaseStep` (gradual release).
@@ -58,7 +58,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** The vast majority of `ai_shader_animations_widgetbook.dart` (the ~1170 lines of private widget classes) is untested. These are widgetbook-only UI components (`_VoiceInputOrbUseCase`, `_ThinkingLineUseCase`, etc.) and are expected to be exercised interactively in widgetbook rather than by automated tests. This is the correct design for widgetbook use-cases. However, the private state classes (`_VoiceOrbState`, `_ThinkingLineState`, etc.) contain real logic such as the live-recorder subscription, PCM capture callbacks, and timer-based animation updates. If these state classes grow, consider extracting them to separately testable classes.
+- [x] **[HIGH]** The vast majority of `ai_shader_animations_widgetbook.dart` (the ~1170 lines of private widget classes) is untested. These are widgetbook-only UI components (`_VoiceInputOrbUseCase`, `_ThinkingLineUseCase`, etc.) and are expected to be exercised interactively in widgetbook rather than by automated tests. This is the correct design for widgetbook use-cases. However, the private state classes (`_VoiceOrbState`, `_ThinkingLineState`, etc.) contain real logic such as the live-recorder subscription, PCM capture callbacks, and timer-based animation updates. If these state classes grow, consider extracting them to separately testable classes. **RESOLVED (assessed, no change):** the item itself concludes the widgetbook-only widgets are correctly exercised interactively and only suggests extraction "if these state classes grow" — a future condition, not a present gap. The one piece of real logic already extracted (`applyVoiceDbfsEnvelope`) is example- and property-tested.
 - [ ] **[MED]** `applyVoiceDbfsEnvelope` — the exact-boundary case (`target == current - releaseStep`, i.e. the step lands exactly on the target) is not tested. The function returns `math.max(target, current - releaseStep)` which covers this case correctly, but it is not exercised.
 - [ ] **[MED]** `voiceRecorderReleaseDbPerSecond` constant (64.0 dB/s) — only implicitly tested through the `closeTo(-19.28, 0.001)` assertion. A direct test of `voiceRecorderReleaseDbPerSecond == 64.0` would make it clear the constant is intentional and flag accidental changes.
 - [ ] **[LOW]** Non-default `elapsed` parameter of `applyVoiceDbfsEnvelope` — never tested. Add one case with `elapsed: const Duration(milliseconds: 10)` to confirm the formula scales correctly with half the default interval.
