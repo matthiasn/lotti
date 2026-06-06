@@ -608,6 +608,50 @@ void main() {
       expect(result.entities, hasLength(1));
     });
 
+    test(
+      'drops unresolvable entity ids without wasting k slots on them',
+      () async {
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).thenAnswer((_) async => fakeVector);
+
+        // Best hit is an orphaned id (deleted entry / agent report) the
+        // journal DB cannot resolve; the resolvable runner-up must still
+        // surface, even with k=1.
+        when(
+          () => mockEmbeddingStore.search(
+            queryVector: any(named: 'queryVector'),
+            k: any(named: 'k'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenReturn([
+          const EmbeddingSearchResult(
+            entityId: 'orphan-id',
+            distance: 0.1,
+            entityType: 'TextEntry',
+          ),
+          EmbeddingSearchResult(
+            entityId: testTextEntry.meta.id,
+            distance: 0.4,
+            entityType: 'TextEntry',
+          ),
+        ]);
+
+        when(
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+        ).thenAnswer((_) async => [testTextEntry]);
+
+        final result = await sut.searchRelatedEntries(query: 'orphan', k: 1);
+
+        expect(result.entities, hasLength(1));
+        expect(result.entities.single.meta.id, testTextEntry.meta.id);
+        expect(result.distances, {testTextEntry.meta.id: 0.4});
+      },
+    );
+
     test('returns empty when no Ollama provider configured', () async {
       when(
         () => mockAiConfigRepo.resolveOllamaBaseUrl(),

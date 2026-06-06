@@ -3698,6 +3698,47 @@ void main() {
         expect(result[0].timeSpent, equals('12:30'));
       });
 
+      test(
+        'buildLinkedTasksJson combines both directions in one JSON document',
+        () async {
+          final childTask = createTestTask(
+            id: childTaskId,
+            title: 'Child Task',
+          );
+          final parentTask = createTestTask(
+            id: parentTaskId,
+            title: 'Parent Epic',
+          );
+
+          // linked_from: children linking TO this task (raw DB rows).
+          when(
+            () => mockDbLinked.getLinkedToEntities(taskId),
+          ).thenAnswer((_) async => [createDbEntityFromTask(childTask)]);
+          // linked_to: parents this task links to.
+          when(
+            () => mockDbLinked.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [parentTask]);
+          when(
+            () => mockDbLinked.getBulkLinkedEntities(any()),
+          ).thenAnswer((_) async => {});
+
+          final json = await repositoryLinked.buildLinkedTasksJson(taskId);
+          final decoded = jsonDecode(json) as Map<String, dynamic>;
+
+          expect(decoded.keys, containsAll(['linked_from', 'linked_to']));
+          final linkedFrom = decoded['linked_from'] as List<dynamic>;
+          final linkedTo = decoded['linked_to'] as List<dynamic>;
+          expect(
+            (linkedFrom.single as Map<String, dynamic>)['id'],
+            childTaskId,
+          );
+          expect(
+            (linkedTo.single as Map<String, dynamic>)['id'],
+            parentTaskId,
+          );
+        },
+      );
+
       test('filters non-Task entities from results', () async {
         final parentTask = createTestTask(
           id: parentTaskId,
