@@ -56,33 +56,44 @@ void main() {
     return c;
   }
 
+  ActiveEvolutionSession makeSession({String sessionId = 'session-1'}) =>
+      ActiveEvolutionSession(
+        sessionId: sessionId,
+        templateId: kTestTemplateId,
+        conversationId: 'conv-1',
+        strategy: EvolutionStrategy(),
+        modelId: 'model-1',
+      );
+
+  /// Stubs the canonical successful session start: startSession returns
+  /// [response], the active session resolves, no current proposal, and
+  /// abandonSession is a no-op. Re-stub individual calls after this for
+  /// test-specific behavior (mocktail last-wins).
+  void stubSuccessfulStart({
+    String response = 'Hello!',
+    ActiveEvolutionSession? session,
+  }) {
+    final activeSession = session ?? makeSession();
+    when(
+      () => mockWorkflow.startSession(templateId: kTestTemplateId),
+    ).thenAnswer((_) async => response);
+    when(
+      () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+    ).thenReturn(activeSession);
+    when(
+      () => mockWorkflow.getCurrentProposal(
+        sessionId: activeSession.sessionId,
+      ),
+    ).thenReturn(null);
+    when(
+      () => mockWorkflow.abandonSession(sessionId: activeSession.sessionId),
+    ).thenAnswer((_) async {});
+  }
+
   group('EvolutionChatState', () {
     group('build', () {
       test('starts session and returns data with opening message', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Welcome to the evolution session!');
-
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
-
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
-
+        stubSuccessfulStart(response: 'Welcome to the evolution session!');
         container = createContainer();
         final data = await withClock(
           testClock,
@@ -138,13 +149,7 @@ void main() {
           when(
             () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
           ).thenReturn(
-            ActiveEvolutionSession(
-              sessionId: 'session-1',
-              templateId: kTestTemplateId,
-              conversationId: 'conv-1',
-              strategy: EvolutionStrategy(),
-              modelId: 'model-1',
-            ),
+            makeSession(),
           );
 
           when(
@@ -175,30 +180,7 @@ void main() {
       test(
         'does not add proposal message (proposals handled via GenUI)',
         () async {
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Here is my proposal.');
-
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
-              sessionId: 'session-1',
-              templateId: kTestTemplateId,
-              conversationId: 'conv-1',
-              strategy: EvolutionStrategy(),
-              modelId: 'model-1',
-            ),
-          );
-
-          when(
-            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-          ).thenReturn(null);
-
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
-
+          stubSuccessfulStart(response: 'Here is my proposal.');
           container = createContainer();
           final data = await withClock(
             testClock,
@@ -280,23 +262,7 @@ void main() {
       test(
         'abandons the active session on dispose, swallowing failures',
         () async {
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Welcome!');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
-              sessionId: 'session-1',
-              templateId: kTestTemplateId,
-              conversationId: 'conv-1',
-              strategy: EvolutionStrategy(),
-              modelId: 'model-1',
-            ),
-          );
-          when(
-            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-          ).thenReturn(null);
+          stubSuccessfulStart(response: 'Welcome!');
           // Fail the abandon on dispose to exercise the catchError log branch.
           // Return a failing Future (not a sync throw) so the production
           // `.catchError` handler is the one that catches it.
@@ -327,30 +293,7 @@ void main() {
 
     group('sendMessage', () {
       test('adds user message and assistant response', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Hello!');
-
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
-
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
-
+        stubSuccessfulStart();
         when(() => mockWorkflow.getSession(any())).thenReturn(null);
 
         when(
@@ -494,20 +437,7 @@ void main() {
             content: '## Recap\n\nWe tightened the report rules.',
           );
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Please review this proposal.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
-              sessionId: 'session-1',
-              templateId: kTestTemplateId,
-              conversationId: 'conv-1',
-              strategy: EvolutionStrategy(),
-              modelId: 'model-1',
-            ),
-          );
+          stubSuccessfulStart(response: 'Please review this proposal.');
           when(
             () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
           ).thenReturn(
@@ -586,20 +516,7 @@ void main() {
             content: '## Recap\n\nFalling back to the full recap content.',
           );
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Please review this proposal.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
-              sessionId: 'session-1',
-              templateId: kTestTemplateId,
-              conversationId: 'conv-1',
-              strategy: EvolutionStrategy(),
-              modelId: 'model-1',
-            ),
-          );
+          stubSuccessfulStart(response: 'Please review this proposal.');
           when(
             () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
           ).thenReturn(
@@ -661,20 +578,7 @@ void main() {
       test(
         'skipApprovalCheck bypasses implicit approval even when proposal is pending',
         () async {
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Please review this proposal.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
-              sessionId: 'session-1',
-              templateId: kTestTemplateId,
-              conversationId: 'conv-1',
-              strategy: EvolutionStrategy(),
-              modelId: 'model-1',
-            ),
-          );
+          stubSuccessfulStart(response: 'Please review this proposal.');
           when(
             () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
           ).thenReturn(
@@ -744,20 +648,7 @@ void main() {
       test(
         'adds approval_failed system message when implicit approval fails',
         () async {
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Please review this proposal.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
-              sessionId: 'session-1',
-              templateId: kTestTemplateId,
-              conversationId: 'conv-1',
-              strategy: EvolutionStrategy(),
-              modelId: 'model-1',
-            ),
-          );
+          stubSuccessfulStart(response: 'Please review this proposal.');
           when(
             () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
           ).thenReturn(
@@ -822,26 +713,7 @@ void main() {
 
     group('rejectProposal', () {
       test('adds rejection system message', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Here is a proposal.');
-
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
-
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-
+        stubSuccessfulStart(response: 'Here is a proposal.');
         when(
           () => mockWorkflow.rejectProposal(sessionId: 'session-1'),
         ).thenReturn(null);
@@ -1506,27 +1378,7 @@ void main() {
 
     group('sendMessage - edge cases', () {
       test('does nothing when isWaiting is already true', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Hello!');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
-
+        stubSuccessfulStart();
         container = createContainer();
         await withClock(
           testClock,
@@ -1556,26 +1408,7 @@ void main() {
       });
 
       test('handles null response from workflow', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Hello!');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
+        stubSuccessfulStart();
         when(() => mockWorkflow.getSession(any())).thenReturn(null);
         when(
           () => mockWorkflow.sendMessage(
@@ -1610,26 +1443,7 @@ void main() {
       });
 
       test('catches errors and clears waiting state', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Hello!');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
+        stubSuccessfulStart();
         when(
           () => mockWorkflow.sendMessage(
             sessionId: 'session-1',
@@ -1659,26 +1473,7 @@ void main() {
       });
 
       test('does not append an empty assistant bubble', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Hello!');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
+        stubSuccessfulStart();
         when(
           () => mockWorkflow.sendMessage(
             sessionId: 'session-1',
@@ -1786,27 +1581,7 @@ void main() {
 
     group('approveProposal - edge cases', () {
       test('returns false when no pending proposal', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Hello!');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
-
+        stubSuccessfulStart();
         container = createContainer();
         await withClock(
           testClock,
@@ -1826,20 +1601,7 @@ void main() {
       });
 
       test('returns false when approveProposal returns null version', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Proposal.');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
+        stubSuccessfulStart(response: 'Proposal.');
         when(
           () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
         ).thenReturn(
@@ -1879,20 +1641,7 @@ void main() {
       });
 
       test('catches errors and returns false', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Proposal.');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
+        stubSuccessfulStart(response: 'Proposal.');
         when(
           () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
         ).thenReturn(
@@ -1960,27 +1709,7 @@ void main() {
 
     group('endSession', () {
       test('abandons session and adds system message', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Hello!');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
-            sessionId: 'session-1',
-            templateId: kTestTemplateId,
-            conversationId: 'conv-1',
-            strategy: EvolutionStrategy(),
-            modelId: 'model-1',
-          ),
-        );
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
-
+        stubSuccessfulStart();
         container = createContainer();
         await withClock(
           testClock,
@@ -2107,26 +1836,7 @@ void main() {
     test('adds success system message when soul version is created', () async {
       final soulVersion = makeTestSoulDocumentVersion(version: 3);
 
-      when(
-        () => mockWorkflow.startSession(templateId: kTestTemplateId),
-      ).thenAnswer((_) async => 'Review the soul proposal.');
-
-      when(
-        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-      ).thenReturn(
-        ActiveEvolutionSession(
-          sessionId: 'session-1',
-          templateId: kTestTemplateId,
-          conversationId: 'conv-1',
-          strategy: EvolutionStrategy(),
-          modelId: 'model-1',
-        ),
-      );
-
-      when(
-        () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-      ).thenReturn(null);
-
+      stubSuccessfulStart(response: 'Review the soul proposal.');
       when(
         () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
       ).thenAnswer((_) async => soulVersion);
@@ -2168,26 +1878,7 @@ void main() {
     });
 
     test('adds failure system message when approve returns null', () async {
-      when(
-        () => mockWorkflow.startSession(templateId: kTestTemplateId),
-      ).thenAnswer((_) async => 'Review the soul proposal.');
-
-      when(
-        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-      ).thenReturn(
-        ActiveEvolutionSession(
-          sessionId: 'session-1',
-          templateId: kTestTemplateId,
-          conversationId: 'conv-1',
-          strategy: EvolutionStrategy(),
-          modelId: 'model-1',
-        ),
-      );
-
-      when(
-        () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-      ).thenReturn(null);
-
+      stubSuccessfulStart(response: 'Review the soul proposal.');
       when(
         () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
       ).thenAnswer((_) async => null);
@@ -2225,26 +1916,7 @@ void main() {
     });
 
     test('handles exception without crashing', () async {
-      when(
-        () => mockWorkflow.startSession(templateId: kTestTemplateId),
-      ).thenAnswer((_) async => 'Review the soul proposal.');
-
-      when(
-        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-      ).thenReturn(
-        ActiveEvolutionSession(
-          sessionId: 'session-1',
-          templateId: kTestTemplateId,
-          conversationId: 'conv-1',
-          strategy: EvolutionStrategy(),
-          modelId: 'model-1',
-        ),
-      );
-
-      when(
-        () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-      ).thenReturn(null);
-
+      stubSuccessfulStart(response: 'Review the soul proposal.');
       when(
         () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
       ).thenThrow(Exception('Soul service error'));
@@ -2311,26 +1983,7 @@ void main() {
 
   group('rejectSoulProposal', () {
     test('adds rejection system message', () async {
-      when(
-        () => mockWorkflow.startSession(templateId: kTestTemplateId),
-      ).thenAnswer((_) async => 'Review the soul proposal.');
-
-      when(
-        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-      ).thenReturn(
-        ActiveEvolutionSession(
-          sessionId: 'session-1',
-          templateId: kTestTemplateId,
-          conversationId: 'conv-1',
-          strategy: EvolutionStrategy(),
-          modelId: 'model-1',
-        ),
-      );
-
-      when(
-        () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-      ).thenReturn(null);
-
+      stubSuccessfulStart(response: 'Review the soul proposal.');
       when(
         () => mockWorkflow.rejectSoulProposal(sessionId: 'session-1'),
       ).thenReturn(null);
