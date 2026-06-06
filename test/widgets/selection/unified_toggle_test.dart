@@ -6,62 +6,69 @@ import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 void main() {
   group('UnifiedToggle', () {
-    testWidgets('renders with normal variant', (WidgetTester tester) async {
-      var value = false;
+    // The material variants differ only in the variant parameter and the
+    // expected activeTrackColor — parameterised to avoid copy-paste bodies.
+    for (final (variant, colorOf) in [
+      (
+        UnifiedToggleVariant.normal,
+        (BuildContext c) => Theme.of(c).colorScheme.primary,
+      ),
+      (
+        UnifiedToggleVariant.warning,
+        (BuildContext c) => Theme.of(c).colorScheme.error,
+      ),
+      (UnifiedToggleVariant.priority, (BuildContext c) => starredGold),
+      (
+        UnifiedToggleVariant.archived,
+        (BuildContext c) => Theme.of(c).colorScheme.outline,
+      ),
+    ]) {
+      testWidgets('renders $variant with its active track color', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.light(),
+            home: Scaffold(
+              body: UnifiedToggle(
+                value: false,
+                onChanged: (_) {},
+                variant: variant,
+              ),
+            ),
+          ),
+        );
 
+        final switchWidget = tester.widget<Switch>(find.byType(Switch));
+        expect(switchWidget.value, false);
+        final context = tester.element(find.byType(Switch));
+        expect(switchWidget.activeTrackColor, colorOf(context));
+      });
+    }
+
+    testWidgets('renders cupertino variant as CupertinoSwitch', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.light(),
           home: Scaffold(
             body: UnifiedToggle(
-              value: value,
-              onChanged: (newValue) {
-                value = newValue;
-              },
+              value: false,
+              onChanged: (_) {},
+              variant: UnifiedToggleVariant.cupertino,
             ),
           ),
         ),
       );
 
-      expect(find.byType(Switch), findsOneWidget);
-
-      // Verify the switch is rendered
-      final switchWidget = tester.widget<Switch>(find.byType(Switch));
-      expect(switchWidget.value, false);
-    });
-
-    testWidgets('renders with warning variant', (WidgetTester tester) async {
-      var value = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: UnifiedToggle(
-              value: value,
-              onChanged: (newValue) {
-                value = newValue;
-              },
-              variant: UnifiedToggleVariant.warning,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(Switch), findsOneWidget);
-
-      // Verify the switch uses error color for warning variant
-      final switchWidget = tester.widget<Switch>(find.byType(Switch));
-      expect(switchWidget.value, false);
-
-      // The active color should be the error color for warning variant
-      final context = tester.element(find.byType(Switch));
+      expect(find.byType(CupertinoSwitch), findsOneWidget);
+      expect(find.byType(Switch), findsNothing);
       expect(
-        switchWidget.activeTrackColor,
-        Theme.of(context).colorScheme.error,
+        tester.widget<CupertinoSwitch>(find.byType(CupertinoSwitch)).value,
+        false,
       );
     });
-
     testWidgets('UnifiedToggleField renders with title and subtitle', (
       WidgetTester tester,
     ) async {
@@ -121,7 +128,7 @@ void main() {
 
       // Tap to toggle
       await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 150));
 
       // Verify state changed
       switchWidget = tester.widget<Switch>(find.byType(Switch));
@@ -147,121 +154,6 @@ void main() {
 
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
       expect(switchWidget.onChanged, null);
-    });
-
-    testWidgets('renders with priority variant', (WidgetTester tester) async {
-      var value = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: UnifiedToggle(
-              value: value,
-              onChanged: (newValue) {
-                value = newValue;
-              },
-              variant: UnifiedToggleVariant.priority,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(Switch), findsOneWidget);
-
-      // Verify the switch uses gold color for priority variant
-      final switchWidget = tester.widget<Switch>(find.byType(Switch));
-      expect(switchWidget.value, false);
-      expect(switchWidget.activeTrackColor, starredGold);
-    });
-
-    testWidgets('renders with archived variant', (WidgetTester tester) async {
-      var value = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: UnifiedToggle(
-              value: value,
-              onChanged: (newValue) {
-                value = newValue;
-              },
-              variant: UnifiedToggleVariant.archived,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(Switch), findsOneWidget);
-
-      // Verify the switch uses outline color for archived variant
-      final switchWidget = tester.widget<Switch>(find.byType(Switch));
-      expect(switchWidget.value, false);
-
-      final context = tester.element(find.byType(Switch));
-      expect(
-        switchWidget.activeTrackColor,
-        Theme.of(context).colorScheme.outline,
-      );
-    });
-
-    testWidgets('renders with ai variant', (WidgetTester tester) async {
-      var value = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: UnifiedToggle(
-              value: value,
-              onChanged: (newValue) {
-                value = newValue;
-              },
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(Switch), findsOneWidget);
-
-      // Verify the switch uses primary color for ai variant
-      final switchWidget = tester.widget<Switch>(find.byType(Switch));
-      expect(switchWidget.value, false);
-
-      final context = tester.element(find.byType(Switch));
-      expect(
-        switchWidget.activeTrackColor,
-        Theme.of(context).colorScheme.primary,
-      );
-    });
-
-    testWidgets('renders with cupertino variant', (WidgetTester tester) async {
-      var value = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: UnifiedToggle(
-              value: value,
-              onChanged: (newValue) {
-                value = newValue;
-              },
-              variant: UnifiedToggleVariant.cupertino,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(CupertinoSwitch), findsOneWidget);
-      expect(find.byType(Switch), findsNothing);
-
-      // Verify the CupertinoSwitch is rendered
-      final cupertinoSwitch = tester.widget<CupertinoSwitch>(
-        find.byType(CupertinoSwitch),
-      );
-      expect(cupertinoSwitch.value, false);
     });
 
     testWidgets('custom active color overrides variant color', (
@@ -366,7 +258,7 @@ void main() {
 
       // Tap on the text area (not just the switch)
       await tester.tap(find.text('Tap Me'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 150));
 
       expect(value, true);
     });
@@ -551,7 +443,7 @@ void main() {
       expect(value, false);
 
       await tester.tap(find.text('AI Feature'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 150));
 
       expect(value, true);
     });

@@ -240,7 +240,10 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(SizedBox), findsAtLeastNWidgets(1));
+        // The empty body must not break the modal chrome: the title still
+        // renders and no layout exception is thrown.
+        expect(find.text('Test Modal'), findsOneWidget);
+        expect(tester.takeException(), isNull);
       });
 
       testWidgets('handles very long title', (tester) async {

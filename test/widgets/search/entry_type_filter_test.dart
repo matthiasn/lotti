@@ -163,7 +163,8 @@ void main() {
         ),
       });
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('Event'), findsNothing);
 
       // Update: flag ON, verify Event chip appears
@@ -175,7 +176,8 @@ void main() {
         ),
       });
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('Event'), findsOneWidget);
 
       await flagController.close();
@@ -345,7 +347,8 @@ void main() {
       await _pumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Initial state: all flags loading (empty set means no flags active)
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Assert: All feature-gated chips are hidden
       expect(find.text('Event'), findsNothing);
