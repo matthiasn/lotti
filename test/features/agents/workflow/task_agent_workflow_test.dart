@@ -120,6 +120,24 @@ void main() {
           )
           as AiConfigModel;
 
+  // GetIt registrations are identical for every test in this 135-test file:
+  // register once (item: avoid 135x getIt.reset + re-registration). Tests
+  // that start the shared TimeService stop it via addTearDown, and the
+  // MockPersistenceLogic singleton is never verified against, so no
+  // cross-test state leaks.
+  setUpAll(() async {
+    registerAllFallbackValues();
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+          ..registerSingleton<TimeService>(TimeService());
+      },
+    );
+  });
+
+  tearDownAll(tearDownTestGetIt);
+
   setUp(() async {
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
@@ -135,16 +153,6 @@ void main() {
     mockChecklistRepository = MockChecklistRepository();
     mockLabelsRepository = MockLabelsRepository();
     mockTemplateService = MockAgentTemplateService();
-
-    registerAllFallbackValues();
-
-    await setUpTestGetIt(
-      additionalSetup: () {
-        getIt
-          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-          ..registerSingleton<TimeService>(TimeService());
-      },
-    );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     stubAppendMilestone(mockSyncService);
@@ -295,8 +303,6 @@ void main() {
         ..enabledDomains.add(LogDomain.agentWorkflow),
     );
   });
-
-  tearDownAll(tearDownTestGetIt);
 
   group('TaskAgentWorkflow', () {
     group('execute returns error', () {
