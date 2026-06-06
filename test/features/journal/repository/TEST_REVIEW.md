@@ -25,11 +25,12 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/features/journal/repository/journal_repository_test.dart` is **2 426 lines** — well above the 1 000-line warning threshold and approaching the project's acknowledged worst case. The test groups map cleanly onto split seams:
+- [x] **[HIGH]** `test/features/journal/repository/journal_repository_test.dart` is **2 426 lines** — well above the 1 000-line warning threshold and approaching the project's acknowledged worst case. The test groups map cleanly onto split seams:
   - **Seam 1 — mutation methods** (`updateCategoryId`, `deleteJournalEntity`, `updateJournalEntityDate`, `updateJournalEntity`, lines 149–911): ~760 lines → `journal_repository_mutations_test.dart`
   - **Seam 2 — link management** (`updateLink`, `removeLink`, `getLinksFromId`, lines 912–1563): ~650 lines → `journal_repository_links_test.dart` (could absorb `journal_repository_collapsed_test.dart` too, resolving the rule violation in one move)
   - **Seam 3 — read methods** (`getJournalEntityById`, `getJournalEntitiesByIds`, `getLinkedEntities`, `getLinkedToEntities`, `getLinkedImagesForTask`, lines 1217–2089): ~870 lines → `journal_repository_queries_test.dart`
   - **Seam 4 — factory methods** (`createTextEntry`, `createImageEntry`, lines 1565–2425): ~500 lines → `journal_repository_create_test.dart`
+  **RESOLVED (assessed, adapted):** the four-file split would violate the one-test-file-per-source rule (the source is a single 401-line `journal_repository.dart` with no impl seam), so the file stays the single mirror with its groups as the structure; `journal_repository_collapsed_test.dart` was already merged in (resolving the rule violation), and the obsolete `LoggingService` registration from the transplanted harness was removed. The Metadata constructions are varied per-test fixtures (ids/dates/flags all differ), not 64 identical copies — no helper extraction applies.
 
 - [ ] **[MED]** `test/features/journal/repository/journal_repository_collapsed_test.dart` (583 lines) **must be merged into** whichever split file owns `updateLink`/`_hasChange` tests. AGENTS.md rule: "One test file per source file." Both files test `journal_repository.dart`, creating a forbidden split.
 

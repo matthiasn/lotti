@@ -38,14 +38,15 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/projects/ui/widgets/shared_widgets.dart` (1006 lines) — contains at least six distinct responsibilities. Concrete split seams:
+- [x] **[HIGH]** `lib/features/projects/ui/widgets/shared_widgets.dart` (1006 lines) — contains at least six distinct responsibilities. Concrete split seams:
   - **Tag widgets** (`CategoryTag`, `ProjectHealthBandTag`, `OutlinedMetaTag`, `_ShowcaseMetaTag`) → `tag_widgets.dart`
   - **Status widgets** (`ProjectStatusPill`, `ProjectStatusLabel`, `_ProjectStatusIcon`, `TaskStatePill`) → `status_widgets.dart`
   - **Badge + panel chrome** (`CountDotBadge`, `ShowcasePanel`, `NoResultsPane`, `TextSection`) → `showcase_chrome.dart`
   - **ExpandableReportSection + countdown** (`ExpandableReportSection`, `_ReportCountdownPill`, `_ReportCountdownPillState`, `ShowcaseCountdownPill`, `formatCountdown`, `showcaseUpdatedLabel`) → `expandable_report_section.dart`
   - The companion test (`shared_widgets_test.dart`, 1647 lines) should mirror-split exactly.
+  **RESOLVED (adapted):** split via `part` files — `shared_tag_widgets.dart` (tag/status/badge/panel widgets) and `expandable_report_section.dart` (report section + countdown pills); the library file is down to 148 lines and importers are untouched. The test stays as the single mirror of the part-file library per the one-test-file-per-source rule.
 
-- [ ] **[MED]** `test/features/projects/ui/widgets/shared_widgets_test.dart` (1647 lines) — largest test file; should be split alongside the impl. Each split file will be <500 lines.
+- [x] **[MED]** `test/features/projects/ui/widgets/shared_widgets_test.dart` (1647 lines) — largest test file; should be split alongside the impl. Each split file will be <500 lines. **RESOLVED (assessed, no change):** the impl split used `part` files (one library), so the single mirror test remains correct under the one-test-file-per-source rule.
 
 - [ ] **[MED]** `lib/features/projects/ui/widgets/project_list_shared.dart` (462 lines) — three distinct concerns:
   - Group header/section widgets (`ProjectGroupHeader`, `ProjectGroupSection`) 
